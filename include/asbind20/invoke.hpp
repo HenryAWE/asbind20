@@ -1,6 +1,7 @@
 
 #include <variant>
 #include <tuple>
+#include <functional>
 #include <angelscript.h>
 
 namespace asbind20
@@ -373,12 +374,7 @@ namespace detail
         if constexpr(is_script_obj<std::remove_cvref_t<T>>)
         {
             asIScriptObject* ptr = *reinterpret_cast<asIScriptObject**>(ctx->GetAddressOfReturnValue());
-            ptr->AddRef();
-
-            if constexpr(std::is_same_v<std::remove_cvref_t<T>, object>)
-                return object(ptr, false);
-            else
-                return ptr;
+            return T(ptr);
         }
         else if constexpr(std::is_reference_v<T>)
         {
@@ -425,7 +421,7 @@ namespace detail
 } // namespace detail
 
 template <typename R, typename... Args>
-script_invoke_result<R> script_invoke(asIScriptFunction* func, asIScriptContext* ctx, Args&&... args)
+script_invoke_result<R> script_invoke(asIScriptContext* ctx, asIScriptFunction* func, Args&&... args)
 {
     assert(func != nullptr);
     assert(ctx != nullptr);
@@ -438,7 +434,7 @@ script_invoke_result<R> script_invoke(asIScriptFunction* func, asIScriptContext*
 
 // Calling a method on script class
 template <typename R, typename... Args>
-script_invoke_result<R> script_invoke(asIScriptObject* obj, asIScriptFunction* func, asIScriptContext* ctx, Args&&... args)
+script_invoke_result<R> script_invoke(asIScriptContext* ctx, asIScriptObject* obj, asIScriptFunction* func, Args&&... args)
 {
     assert(func != nullptr);
     assert(ctx != nullptr);
@@ -454,8 +450,159 @@ script_invoke_result<R> script_invoke(asIScriptObject* obj, asIScriptFunction* f
 
 // Calling a method on script class
 template <typename R, typename... Args>
-script_invoke_result<R> script_invoke(const object& obj, asIScriptFunction* func, asIScriptContext* ctx, Args&&... args)
+script_invoke_result<R> script_invoke(asIScriptContext* ctx, const object& obj, asIScriptFunction* func, Args&&... args)
 {
-    return script_invoke<R>(obj.get(), func, ctx, std::forward<Args>(args)...);
+    return script_invoke<R>(ctx, obj.get(), func, std::forward<Args>(args)...);
 }
+
+namespace detail
+{
+    class script_function_base
+    {
+    public:
+        script_function_base() noexcept
+            : m_fp(nullptr) {}
+
+        script_function_base(const script_function_base&) noexcept = default;
+
+        script_function_base(asIScriptFunction* fp)
+            : m_fp(fp) {}
+
+        script_function_base& operator=(const script_function_base&) noexcept = default;
+
+        asIScriptFunction* target() const noexcept
+        {
+            return m_fp;
+        }
+
+        explicit operator bool() const noexcept
+        {
+            return static_cast<bool>(m_fp);
+        }
+
+    protected:
+        [[noreturn]]
+        static void throw_bad_call()
+        {
+            throw std::bad_function_call();
+        }
+
+        void set_target(asIScriptFunction* fp) noexcept
+        {
+            m_fp = fp;
+        }
+
+    private:
+        asIScriptFunction* m_fp;
+    };
+
+    template <bool IsMethod, typename R, typename... Args>
+    class script_function_impl;
+
+    template <typename R, typename... Args>
+    class script_function_impl<false, R, Args...> : public script_function_base
+    {
+        using my_base = script_function_base;
+
+    public:
+        using my_base::my_base;
+
+        auto operator()(asIScriptContext* ctx, Args&&... args) const
+        {
+            asIScriptFunction* fp = target();
+            if(!fp)
+                throw_bad_call();
+
+            auto result = script_invoke<R>(ctx, target(), std::forward<Args>(args)...);
+
+            return std::move(result).value();
+        }
+    };
+
+    template <typename R, typename... Args>
+    class script_function_impl<true, R, Args...> : public script_function_base
+    {
+        using my_base = script_function_base;
+
+    public:
+        using my_base::my_base;
+
+        auto operator()(asIScriptContext* ctx, asIScriptObject* obj, Args&&... args) const
+        {
+            asIScriptFunction* fp = target();
+            if(!fp)
+                throw_bad_call();
+
+            auto result = script_invoke<R>(ctx, obj, target(), std::forward<Args>(args)...);
+
+            return std::move(result).value();
+        }
+
+        auto operator()(asIScriptContext* ctx, const object& obj, Args&&... args) const
+        {
+            return (*this)(ctx, obj.get(), std::forward<Args>(args)...);
+        }
+    };
+} // namespace detail
+
+
+template <typename... Ts>
+class script_function;
+
+template <typename R, typename... Args>
+class script_function<R(Args...)> : public detail::script_function_impl<false, R, Args...>
+{
+    using my_base = detail::script_function_impl<false, R, Args...>;
+
+public:
+    using my_base::my_base;
+
+    script_function& operator=(const script_function&) noexcept = default;
+
+    script_function& operator=(asIScriptFunction* fp) noexcept
+    {
+        this->set_target(fp);
+        return *this;
+    }
+};
+
+template <typename... Ts>
+class script_method;
+
+template <typename R, typename... Args>
+class script_method<R(Args...)> : public detail::script_function_impl<true, R, Args...>
+{
+    using my_base = detail::script_function_impl<true, R, Args...>;
+
+public:
+    using my_base::my_base;
+
+    script_method& operator=(const script_method&) noexcept = default;
+
+    script_method& operator=(asIScriptFunction* fp) noexcept
+    {
+        this->set_target(fp);
+        return *this;
+    }
+};
+
+// Instantiate a script class using its default factory function
+[[nodiscard]]
+inline object instantiate_class(asIScriptContext* ctx, asITypeInfo* class_info)
+{
+    if(!class_info) [[unlikely]]
+        return object();
+
+    const char* name = class_info->GetName();
+
+    asIScriptFunction* factory = class_info->GetFactoryByDecl(
+        (std::string(name) + "@ " + name + "()").c_str()
+    );
+    if(!factory) [[unlikely]]
+        return object();
+
+    auto result = script_invoke<object>(ctx, factory);
+    return result.has_value() ? std::move(*result) : object();
+}
+
 } // namespace asbind20

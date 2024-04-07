@@ -6,5 +6,6 @@
 #include "utility.hpp"
 #include "bind.hpp"
 #include "invoke.hpp"
+#include "builder.hpp"
 
 #endif

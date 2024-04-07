@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include "shared.hpp"
 #include <asbind20/asbind.hpp>
 
 TEST(script_invoke_result, common)
@@ -56,9 +57,11 @@ template <typename T>
     }
 }
 
-TEST(asbind20, invoke)
+using asbind_test::asbind_test_suite;
+
+TEST_F(asbind_test_suite, invoke)
 {
-    asIScriptEngine* engine = asCreateScriptEngine();
+    asIScriptEngine* engine = get_engine();
     asIScriptModule* m = engine->GetModule("test_invoke", asGM_ALWAYS_CREATE);
 
     m->AddScriptSection(
@@ -74,8 +77,8 @@ TEST(asbind20, invoke)
 
         asIScriptContext* ctx = engine->CreateContext();
 
-        EXPECT_EQ(asbind20::script_invoke<int>(fp, ctx, 0).value(), 1);
-        EXPECT_EQ(asbind20::script_invoke<int>(fp, ctx, 1).value(), 2);
+        EXPECT_EQ(asbind20::script_invoke<int>(ctx, fp, 0).value(), 1);
+        EXPECT_EQ(asbind20::script_invoke<int>(ctx, fp, 1).value(), 2);
 
         ctx->Release();
     }
@@ -87,18 +90,16 @@ TEST(asbind20, invoke)
         asIScriptContext* ctx = engine->CreateContext();
 
         int val = 0;
-        asbind20::script_invoke<void>(fp, ctx, 1, std::ref(val));
+        asbind20::script_invoke<void>(ctx, fp, 1, std::ref(val));
         EXPECT_EQ(val, 2);
 
         ctx->Release();
     }
-
-    engine->ShutDownAndRelease();
 }
 
-TEST(asbind20, script_class)
+TEST_F(asbind_test_suite, script_class)
 {
-    asIScriptEngine* engine = asCreateScriptEngine();
+    asIScriptEngine* engine = get_engine();
     asIScriptModule* m = engine->GetModule("test_script_class", asGM_ALWAYS_CREATE);
 
     m->AddScriptSection(
@@ -115,39 +116,33 @@ TEST(asbind20, script_class)
 
     asITypeInfo* my_class_t = m->GetTypeInfoByName("my_class");
     ASSERT_NE(my_class_t, nullptr);
-    asIScriptFunction* factory = my_class_t->GetFactoryByDecl("my_class@ my_class()");
-    ASSERT_NE(factory, nullptr);
 
     asIScriptContext* ctx = engine->CreateContext();
     {
-        auto my_class = asbind20::script_invoke<asbind20::object>(factory, ctx);
-        ASSERT_TRUE(my_class.has_value());
-        ASSERT_EQ(my_class->get()->GetTypeId(), my_class_t->GetTypeId());
+        auto my_class = asbind20::instantiate_class(ctx, my_class_t);
 
         asIScriptFunction* set_val = my_class_t->GetMethodByDecl("void set_val(int)");
-        asbind20::script_invoke<void>(*my_class, set_val, ctx, 182375);
+        asbind20::script_invoke<void>(ctx, my_class, set_val, 182375);
 
         asIScriptFunction* get_val = my_class_t->GetMethodByDecl("int get_val() const");
-        auto val = asbind20::script_invoke<int>(*my_class, get_val, ctx);
+        auto val = asbind20::script_invoke<int>(ctx, my_class, get_val);
 
         ASSERT_TRUE(result_has_value(val));
         EXPECT_EQ(val.value(), 182375);
 
         asIScriptFunction* get_val_ref = my_class_t->GetMethodByDecl("int& get_val_ref()");
-        auto val_ref = asbind20::script_invoke<int&>(*my_class, get_val_ref, ctx);
+        auto val_ref = asbind20::script_invoke<int&>(ctx, my_class, get_val_ref);
 
         ASSERT_TRUE(result_has_value(val_ref));
         EXPECT_EQ(val_ref.value(), 182375);
 
         *val_ref = 182376;
 
-        val = asbind20::script_invoke<int>(*my_class, get_val, ctx);
+        val = asbind20::script_invoke<int>(ctx, my_class, get_val);
         ASSERT_TRUE(result_has_value(val));
         EXPECT_EQ(val.value(), 182376);
     }
     ctx->Release();
-
-    engine->ShutDownAndRelease();
 }
 
 int main(int argc, char* argv[])
