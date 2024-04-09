@@ -160,7 +160,7 @@ private:
         new(m_data) R(std::forward<Args>(args)...);
     }
 
-    [[nodiscard]]
+    [[noreturn]]
     void throw_bad_access() const
     {
         throw bad_script_invoke_result_access(error());
@@ -322,7 +322,7 @@ public:
 private:
     int m_r;
 
-    [[nodiscard]]
+    [[noreturn]]
     void throw_bad_access() const
     {
         throw bad_script_invoke_result_access(m_r);

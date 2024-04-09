@@ -10,7 +10,7 @@ namespace asbind20
 int load_file(
     asIScriptModule* m,
     const std::filesystem::path& filename,
-    std::ios_base::openmode mode = 0
+    std::ios_base::openmode mode = std::ios_base::in
 );
 } // namespace asbind20
 

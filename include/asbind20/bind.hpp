@@ -85,7 +85,7 @@ public:
     value_class& register_default_ctor() requires(std::is_default_constructible_v<T>)
     {
         if constexpr(use_pod_v)
-            return;
+            return *this;
 
         static auto* wrapper = +[](void* mem)
         {
@@ -128,7 +128,7 @@ public:
     value_class& register_dtor()
     {
         if constexpr(use_pod_v)
-            return;
+            return *this;
 
         static auto* wrapper = +[](void* ptr)
         {
