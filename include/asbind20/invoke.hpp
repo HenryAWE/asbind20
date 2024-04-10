@@ -595,9 +595,20 @@ inline object instantiate_class(asIScriptContext* ctx, asITypeInfo* class_info)
 
     const char* name = class_info->GetName();
 
-    asIScriptFunction* factory = class_info->GetFactoryByDecl(
-        (std::string(name) + "@ " + name + "()").c_str()
-    );
+    asIScriptFunction* factory = nullptr;
+    if(int flags = class_info->GetFlags(); flags & asOBJ_REF)
+    {
+        for(asUINT i = 0; i < class_info->GetFactoryCount(); ++i)
+        {
+            asIScriptFunction* fp = class_info->GetFactoryByIndex(i);
+            if(fp->GetParamCount() == 0) // Default factory
+            {
+                factory = fp;
+                break;
+            }
+        }
+    }
+
     if(!factory) [[unlikely]]
         return object();
 
