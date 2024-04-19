@@ -20,3 +20,7 @@ configure_file(test_build_1.as ${CMAKE_CURRENT_BINARY_DIR}/test_build_1.as COPYO
 add_executable(test_utility test_utility.cpp)
 target_link_libraries(test_utility PRIVATE shared_test_lib)
 gtest_discover_tests(test_utility)
+
+add_executable(test_meta test_meta.cpp)
+target_link_libraries(test_meta PRIVATE shared_test_lib)
+gtest_discover_tests(test_meta)

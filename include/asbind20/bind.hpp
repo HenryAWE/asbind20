@@ -13,27 +13,6 @@ namespace asbind20
 {
 namespace detail
 {
-    template <typename T>
-    class function_traits;
-
-    template <typename R, typename... Args>
-    class function_traits<R(Args...)>
-    {
-    public:
-        using type = R(Args...);
-        using return_type = R;
-        using args_type = std::tuple<Args...>;
-    };
-
-    template <typename R, typename... Args>
-    class function_traits<R (*)(Args...)>
-    {
-    public:
-        using type = R(Args...);
-        using return_type = R;
-        using args_type = std::tuple<Args...>;
-    };
-
     template <typename T, typename Class>
     concept is_this_arg =
         std::is_same_v<T, Class*> ||
