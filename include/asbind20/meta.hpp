@@ -1,10 +1,191 @@
 #pragma once
 
+#include <array>
 #include <concepts>
 #include <type_traits>
 
 namespace asbind20
 {
+namespace detail
+{
+    class static_string_tag
+    {};
+} // namespace detail
+
+template <std::size_t Size>
+class static_string : public detail::static_string_tag
+{
+public:
+    constexpr static_string() = default;
+
+    constexpr static_string(const static_string&) = default;
+
+    constexpr static_string(char ch, std::size_t sz)
+    {
+        for(std::size_t i = 0; i < Size; ++i)
+        {
+            raw_data[i] = i < sz ? ch : '\0';
+        }
+    }
+
+    explicit constexpr static_string(char ch)
+        : static_string(ch, length()) {}
+
+    template <std::size_t N1, std::size_t N2>
+    constexpr static_string(const static_string<N1>& str1, const static_string<N2>& str2)
+    {
+        // Copy data from first string
+        for(std::size_t i = 0; i < str1.length(); ++i)
+        {
+            raw_data[i] = str1.c_str()[i];
+        }
+
+        std::size_t off = str1.length();
+        // Copy data from second string
+        for(std::size_t i = 0; i < str2.length(); ++i)
+        {
+            raw_data[i + off] = str2.c_str()[i];
+        }
+
+        raw_data[Size - 1] = '\0';
+    }
+
+    consteval static_string(const char (&arr)[Size])
+    {
+        for(std::size_t i = 0; i < Size; ++i)
+        {
+            raw_data[i] = arr[i];
+        }
+    }
+
+    constexpr static_string(const char* cstr, std::size_t sz)
+    {
+        for(std::size_t i = 0; i < Size; ++i)
+        {
+            raw_data[i] = i < sz ? cstr[i] : '\0';
+        }
+        raw_data[Size - 1] = '\0';
+    }
+
+    // WARNING: This includes the trailing zero!
+    constexpr static std::size_t size() noexcept
+    {
+        return Size;
+    }
+
+    consteval static std::size_t length() noexcept
+    {
+        return Size - 1; // Remove trailing zero
+    }
+
+    consteval static bool empty() noexcept
+    {
+        return Size <= 1;
+    }
+
+    constexpr const char* c_str() const noexcept
+    {
+        return raw_data.data();
+    }
+
+    constexpr std::string_view to_string_view() const noexcept
+    {
+        return std::string_view(raw_data.data(), length());
+    }
+
+    constexpr operator std::string_view() const noexcept
+    {
+        return to_string_view();
+    }
+
+    template <std::size_t Idx>
+    constexpr char get() const noexcept
+    {
+        static_assert(Idx < Size, "out of range");
+        return raw_data[Idx];
+    }
+
+    constexpr std::array<char, Size> to_array() const noexcept
+    {
+        return raw_data;
+    }
+
+    template <std::size_t Pos, std::size_t N = std::size_t(-1)>
+    consteval auto substr() const noexcept
+    {
+        constexpr std::size_t len = length();
+        static_assert(Pos < len, "out of range");
+
+        constexpr std::size_t avail = len - Pos;
+        constexpr std::size_t new_size = std::min(avail, N) + 1;
+        return static_string<new_size>(raw_data.data() + Pos, new_size);
+    }
+
+    template <std::size_t N>
+    consteval auto append(const static_string<N>& other) const noexcept
+    {
+        constexpr std::size_t new_size = length() + other.length() + 1;
+        return static_string<new_size>(*this, other);
+    }
+
+    // Internal, DO NOT USE!
+    // Because we need static_string as a non-type template argument (NTTP),
+    // this data member cannot be private.
+    std::array<char, Size> raw_data;
+};
+
+template <std::size_t N1, std::size_t N2>
+consteval auto operator+(const static_string<N1>& str1, const static_string<N2>& str2) noexcept
+{
+    return str1.append(str2);
+}
+
+// CTAD
+static_string() -> static_string<0>;
+static_string(char) -> static_string<2>;
+
+namespace detail
+{
+    template <typename T>
+    concept static_str = std::is_base_of_v<static_string_tag, T>;
+} // namespace detail
+
+template <detail::static_str auto... Strings>
+constexpr auto static_concat() noexcept
+{
+    if constexpr(sizeof...(Strings) == 0)
+        return static_string<0>();
+    else
+    {
+        return (Strings + ...);
+    }
+}
+
+namespace detail
+{
+    template <static_str auto Sep, static_str auto String, static_str auto... Strings>
+    constexpr auto static_join_impl()
+    {
+        if constexpr(sizeof...(Strings) == 0)
+            return String;
+        else
+        {
+            return static_concat<String, Sep, static_join_impl<Sep, Strings...>()>();
+        }
+    }
+} // namespace detail
+
+template <detail::static_str auto Sep, detail::static_str auto... Strings>
+constexpr auto static_join() noexcept
+{
+    if constexpr(sizeof...(Strings) == 0)
+        return static_string<0>();
+    else
+    {
+        return detail::static_join_impl<Sep, Strings...>();
+    }
+}
+
 namespace detail
 {
     template <typename T>
