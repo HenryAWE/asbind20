@@ -206,8 +206,8 @@ namespace detail
 #if defined _MSC_VER && !defined __clang__ // clang-cl also defines _MSC_VER
         {
             result = __FUNCSIG__;
-            auto start = result.find("name_of<");
-            start += 8; // strlen("nameof_<")
+            auto start = result.find("raw_name_of_impl<");
+            start += 17; // strlen("raw_name_of_impl<")
             auto stop = result.rfind('>');
 
             result = result.substr(start, stop - start);
@@ -291,7 +291,7 @@ namespace detail
     template <typename T>
     class func_traits_impl;
 
-#define ASBIND20_FUNC_TRAITS_IMPL_GLOBAL(noexcept_)                  \
+#define ASBIND20_FUNC_TRAITS_IMPL_GLOBAL(noexcept_, ...)             \
     template <typename R, typename... Args>                          \
     class func_traits_impl<R(Args...) noexcept_>                     \
     {                                                                \
@@ -314,7 +314,7 @@ namespace detail
     }
 
     ASBIND20_FUNC_TRAITS_IMPL_GLOBAL(noexcept);
-    ASBIND20_FUNC_TRAITS_IMPL_GLOBAL();
+    ASBIND20_FUNC_TRAITS_IMPL_GLOBAL(, );
 
 #undef ASBIND20_FUNC_TRAITS_IMPL_GLOBAL
 
