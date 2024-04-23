@@ -97,6 +97,23 @@ TEST(static_string, join)
     }
 }
 
+TEST(meta, name_of)
+{
+    using namespace asbind20;
+
+    {
+        constexpr auto name = name_of<int>();
+        static_assert(name.to_string_view() == "int");
+        EXPECT_STREQ(name.c_str(), "int");
+    }
+
+    {
+        constexpr auto name = name_of<std::string>();
+        static_assert(name.to_string_view() == "string");
+        EXPECT_STREQ(name.c_str(), "string");
+    }
+}
+
 void check_compile_fp()
 {
     using asbind20::function_traits;

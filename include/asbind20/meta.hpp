@@ -188,6 +188,98 @@ constexpr auto static_join() noexcept
 
 namespace detail
 {
+    // Original implementation:
+    // https://gist.github.com/HenryAWE/e7f6a2274be307ac04e557fe062e9ebd
+    template <typename T>
+    constexpr std::string_view raw_name_of_impl() noexcept
+    {
+        std::string_view result;
+
+#if defined _MSC_VER && !defined __clang__ // clang-cl also defines _MSC_VER
+        {
+            result = __FUNCSIG__;
+            auto start = result.find("name_of<");
+            start += 8; // strlen("nameof_<")
+            auto stop = result.rfind('>');
+
+            result = result.substr(start, stop - start);
+        }
+
+#elif defined __clang__
+        {
+            result = __PRETTY_FUNCTION__;
+            auto start = result.find("T = ");
+            start += 4; // strlen("T = ")
+            auto stop = result.rfind(']');
+
+            result = result.substr(start, start - stop);
+        }
+
+#elif defined __GNUC__
+        {
+            result = __PRETTY_FUNCTION__;
+            auto start = result.find("with T = ");
+            start += 9; // strlen("with T = ")
+            auto stop = result.find(';', start);
+            result = result.substr(start, stop - start);
+        }
+
+#else
+        static_assert(false, "Unknown compiler");
+
+#endif
+        // Remove namespace prefix and template arguments
+        {
+            result = result.substr(0, result.find('<'));
+
+            auto i = result.find("::");
+            while(i != result.npos)
+            {
+                i += 2; // strlen("::")
+                result = result.substr(i);
+                i = result.find("::");
+            }
+        }
+
+        return result;
+    }
+} // namespace detail
+
+template <typename T>
+constexpr auto raw_name_of() noexcept
+{
+    constexpr std::string_view raw_name_sv = detail::raw_name_of_impl<std::remove_cvref_t<T>>();
+    constexpr std::size_t len = raw_name_sv.size();
+
+    return static_string<len + 1>(raw_name_sv.data(), len);
+}
+
+template <typename T>
+struct type_info
+{
+    constexpr static auto name() noexcept
+    {
+        return raw_name_of<T>();
+    }
+};
+
+template <>
+struct type_info<std::string>
+{
+    constexpr static auto name() noexcept
+    {
+        return static_string("string");
+    }
+};
+
+template <typename T>
+constexpr auto name_of() noexcept
+{
+    return type_info<std::remove_cvref_t<T>>::name();
+}
+
+namespace detail
+{
     template <typename T>
     class func_traits_impl;
 
