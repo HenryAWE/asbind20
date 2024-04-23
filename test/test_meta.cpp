@@ -194,6 +194,56 @@ void check_func_empty_arg()
     static_assert(std::is_void_v<func_t::last_arg_type>);
 }
 
+namespace test_meta
+{
+int my_func(int)
+{
+    return 0;
+}
+} // namespace test_meta
+
+TEST(function_tratis, static_decl)
+{
+    using asbind20::function_traits;
+    using asbind20::static_string;
+
+    {
+        using func_t = function_traits<int()>;
+
+        constexpr auto decl = func_t::static_decl<static_string("f")>();
+
+        static_assert(decl.to_string_view() == "int f()");
+        EXPECT_STREQ(decl.c_str(), "int f()");
+    }
+
+    {
+        using func_t = function_traits<int(int)>;
+
+        constexpr auto decl = func_t::static_decl<static_string("f")>();
+
+        static_assert(decl.to_string_view() == "int f(int)");
+        EXPECT_STREQ(decl.c_str(), "int f(int)");
+    }
+
+    {
+        using func_t = function_traits<int(int, int)>;
+
+        constexpr auto decl = func_t::static_decl<static_string("f")>();
+
+        static_assert(decl.to_string_view() == "int f(int,int)");
+        EXPECT_STREQ(decl.c_str(), "int f(int,int)");
+    }
+
+    {
+        using test_meta::my_func;
+
+        constexpr auto decl = ASBIND_FUNC_DECL(my_func);
+
+        static_assert(decl.to_string_view() == "int my_func(int)");
+        EXPECT_STREQ(decl.c_str(), "int my_func(int)");
+    }
+}
+
 int main(int argc, char* argv[])
 {
     ::testing::InitGoogleTest(&argc, argv);

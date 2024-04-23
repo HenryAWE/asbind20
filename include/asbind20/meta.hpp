@@ -3,6 +3,7 @@
 #include <array>
 #include <concepts>
 #include <type_traits>
+#include <angelscript.h>
 
 namespace asbind20
 {
@@ -124,8 +125,15 @@ public:
     template <std::size_t N>
     consteval auto append(const static_string<N>& other) const noexcept
     {
-        constexpr std::size_t new_size = length() + other.length() + 1;
-        return static_string<new_size>(*this, other);
+        if constexpr(empty())
+            return other;
+        else if constexpr(other.empty())
+            return *this;
+        else
+        {
+            constexpr std::size_t new_size = length() + other.length() + 1;
+            return static_string<new_size>(*this, other);
+        }
     }
 
     // Internal, DO NOT USE!
@@ -407,5 +415,43 @@ public:
     using first_arg_type = arg_type_optional<0>;
 
     using last_arg_type = arg_type_optional<arg_count_v - 1>;
+
+private:
+    static constexpr asECallConvTypes default_call_conv() noexcept
+    {
+        return is_method_v ? asCALL_THISCALL : asCALL_CDECL;
+    }
+
+    template <typename... Ts>
+    constexpr static auto arg_list_str_impl()
+    {
+        return static_join<
+            static_string(","),
+            name_of<Ts>()...>();
+    }
+
+    constexpr static auto arg_list_str()
+    {
+        return []<std::size_t... Is>(std::index_sequence<Is...>)
+        {
+            return arg_list_str_impl<std::tuple_element_t<Is, args_tuple>...>();
+        }(std::make_index_sequence<arg_count_v>());
+    }
+
+public:
+    template <detail::static_str auto Name, asECallConvTypes CallConv = default_call_conv()>
+    constexpr static auto static_decl()
+    {
+        return static_concat<
+            name_of<return_type>(),
+            static_string(" "),
+            Name,
+            static_string("("),
+            arg_list_str(),
+            static_string(")")>();
+    }
 };
+
+#define ASBIND_FUNC_DECL(func) \
+    (::asbind20::function_traits<decltype(&func)>::static_decl<::asbind20::static_string(#func)>())
 } // namespace asbind20
