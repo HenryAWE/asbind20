@@ -8,6 +8,7 @@
 #include <string>
 #include <tuple>
 #include <angelscript.h>
+#include "utility.hpp"
 
 namespace asbind20
 {
@@ -95,7 +96,7 @@ public:
         int r = m_engine->RegisterObjectBehaviour(
             m_name,
             asBEHAVE_CONSTRUCT,
-            ("void f(const "s + m_name + " &in)").c_str(),
+            detail::concat("void f(const "s, m_name, " &in)").c_str(),
             asFUNCTION(wrapper),
             asCALL_CDECL_OBJLAST
         );
@@ -135,7 +136,7 @@ public:
 
         int r = m_engine->RegisterObjectMethod(
             m_name,
-            (m_name + "& opAssign(const "s + m_name + " &in)").c_str(),
+            detail::concat(m_name, "& opAssign(const "s, m_name, " &in)").c_str(),
             asMETHODPR(T, operator=, (const T&), T&),
             asCALL_THISCALL
         );
