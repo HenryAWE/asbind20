@@ -17,7 +17,9 @@ namespace detail
     template <typename T, typename Class>
     concept is_this_arg =
         std::is_same_v<T, Class*> ||
-        std::is_same_v<T, const Class*>;
+        std::is_same_v<T, const Class*> ||
+        std::is_same_v<T, Class&> ||
+        std::is_same_v<T, const Class&>;
 } // namespace detail
 
 template <asECallConvTypes CallConv>
@@ -210,8 +212,8 @@ private:
         using first_arg_t = std::tuple_element_t<0, args_t>;
         using last_arg_t = std::tuple_element_t<sizeof...(Args) - 1, args_t>;
 
-        constexpr bool obj_last = detail::is_this_arg<std::remove_cvref_t<last_arg_t>, T>;
-        constexpr bool obj_first = detail::is_this_arg<std::remove_cvref_t<first_arg_t>, T> && arg_count != 1;
+        constexpr bool obj_last = detail::is_this_arg<std::remove_cv_t<last_arg_t>, T>;
+        constexpr bool obj_first = detail::is_this_arg<std::remove_cv_t<first_arg_t>, T> && arg_count != 1;
 
         static_assert(!(obj_last && obj_first), "Ambiguous object parameter");
         static_assert(obj_last || obj_first, "Missing object parameter");

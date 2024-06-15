@@ -36,6 +36,16 @@ void mul_obj_first(my_value_class* this_, int val)
 {
     this_->value *= val;
 }
+
+void add_obj_last_ref(int val, my_value_class& this_)
+{
+    this_.value += val;
+}
+
+void mul_obj_first_ref(my_value_class& this_, int val)
+{
+    this_.value *= val;
+}
 } // namespace test_bind
 
 using asbind_test::asbind_test_suite;
@@ -51,7 +61,9 @@ TEST_F(asbind_test_suite, value_class)
         .method("void set_val(int)", &my_value_class::set_val)
         .method("int get_val() const", &my_value_class::get_val)
         .method("void add(int val)", test_bind::add_obj_last)
-        .method("void mul(int val)", test_bind::mul_obj_first);
+        .method("void mul(int val)", test_bind::mul_obj_first)
+        .method("void add2(int val)", test_bind::add_obj_last_ref)
+        .method("void mul2(int val)", test_bind::mul_obj_first_ref);
 
     asIScriptModule* m = engine->GetModule("test_value_class", asGM_ALWAYS_CREATE);
 
@@ -77,6 +89,14 @@ TEST_F(asbind_test_suite, value_class)
         "val.mul(3);"
         "return val.get_val();"
         "}"
+        "int test_4()"
+        "{"
+        "my_value_class val;"
+        "val.set_val(2);"
+        "val.add2(1);"
+        "val.mul2(3);"
+        "return val.get_val();"
+        "}"
     );
     ASSERT_GE(m->Build(), 0);
 
@@ -90,6 +110,9 @@ TEST_F(asbind_test_suite, value_class)
 
         auto test_3 = asbind20::script_function<int()>(m->GetFunctionByName("test_3"));
         EXPECT_EQ(test_3(ctx), 6);
+
+        auto test_4 = asbind20::script_function<int()>(m->GetFunctionByName("test_4"));
+        EXPECT_EQ(test_4(ctx), 9);
     }
     ctx->Release();
 }
