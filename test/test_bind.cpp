@@ -10,6 +10,9 @@ public:
     my_value_class() = default;
     my_value_class(const my_value_class&) = default;
 
+    my_value_class(int val)
+        : value(val) {}
+
     ~my_value_class() = default;
 
     my_value_class& operator=(const my_value_class&) = default;
@@ -58,12 +61,14 @@ TEST_F(asbind_test_suite, value_class)
 
     asbind20::value_class<my_value_class>(engine, "my_value_class")
         .register_basic_methods()
+        .register_ctor<int>("void f(int val)")
         .method("void set_val(int)", &my_value_class::set_val)
         .method("int get_val() const", &my_value_class::get_val)
         .method("void add(int val)", test_bind::add_obj_last)
         .method("void mul(int val)", test_bind::mul_obj_first)
         .method("void add2(int val)", test_bind::add_obj_last_ref)
-        .method("void mul2(int val)", test_bind::mul_obj_first_ref);
+        .method("void mul2(int val)", test_bind::mul_obj_first_ref)
+        .property("int value", &my_value_class::value);
 
     asIScriptModule* m = engine->GetModule("test_value_class", asGM_ALWAYS_CREATE);
 
@@ -97,6 +102,12 @@ TEST_F(asbind_test_suite, value_class)
         "val.mul2(3);"
         "return val.get_val();"
         "}"
+        "int test_5()"
+        "{"
+        "my_value_class val(4);"
+        "val.value += 1;"
+        "return val.value;"
+        "}"
     );
     ASSERT_GE(m->Build(), 0);
 
@@ -113,6 +124,9 @@ TEST_F(asbind_test_suite, value_class)
 
         auto test_4 = asbind20::script_function<int()>(m->GetFunctionByName("test_4"));
         EXPECT_EQ(test_4(ctx), 9);
+
+        auto test_5 = asbind20::script_function<int()>(m->GetFunctionByName("test_5"));
+        EXPECT_EQ(test_5(ctx), 5);
     }
     ctx->Release();
 }

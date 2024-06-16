@@ -132,6 +132,13 @@ public:
 private:
     asIScriptObject* m_obj = nullptr;
 };
+
+template <typename T, typename Class>
+std::size_t member_offset(T Class::*mp) noexcept
+{
+    Class* p = nullptr;
+    return std::size_t(std::addressof(p->*mp)) - std::size_t(p);
+}
 } // namespace asbind20
 
 #endif

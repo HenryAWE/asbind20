@@ -64,6 +64,26 @@ public:
         return *this;
     }
 
+    template <typename Arg, typename... Args>
+    value_class& register_ctor(const char* decl) requires(std::is_constructible_v<T, Arg, Args...>)
+    {
+        static auto* wrapper = +[](void* mem, Arg arg, Args... args)
+        {
+            new(mem) T(std::forward<Arg>(arg), std::forward<Args>(args)...);
+        };
+
+        int r = m_engine->RegisterObjectBehaviour(
+            m_name,
+            asBEHAVE_CONSTRUCT,
+            decl,
+            asFUNCTION(wrapper),
+            asCALL_CDECL_OBJFIRST
+        );
+        assert(r >= 0);
+
+        return *this;
+    }
+
     value_class& register_default_ctor() requires(std::is_default_constructible_v<T>)
     {
         if constexpr(use_pod_v)
@@ -196,6 +216,19 @@ public:
         static_assert(sizeof...(Args) != 0, "Empty parameters");
 
         method_wrapper_impl<R, Args...>(decl, fn);
+
+        return *this;
+    }
+
+    template <typename U>
+    value_class& property(const char* decl, U T::*mp)
+    {
+        int r = m_engine->RegisterObjectProperty(
+            m_name,
+            decl,
+            static_cast<int>(member_offset(mp))
+        );
+        assert(r >= 0);
 
         return *this;
     }
