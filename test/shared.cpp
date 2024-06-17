@@ -1,4 +1,5 @@
 #include "shared.hpp"
+#include <asbind20/ext/stdstring.hpp>
 
 namespace asbind_test
 {
@@ -12,6 +13,10 @@ void asbind_test_suite::SetUp()
 {
     m_engine = asCreateScriptEngine();
     m_engine->SetMessageCallback(asFUNCTION(msg_callback), this, asCALL_CDECL);
+
+    using namespace asbind20;
+
+    ext::register_std_string(m_engine, true);
 }
 
 void asbind_test_suite::TearDown()

@@ -12,42 +12,42 @@ namespace asbind20
 {
 namespace detail
 {
-    void concat_impl(std::string& out, const std::string& str)
+    inline void concat_impl(std::string& out, const std::string& str)
     {
         out += str;
     }
 
-    void concat_impl(std::string& out, std::string_view sv)
+    inline void concat_impl(std::string& out, std::string_view sv)
     {
         out.append(sv);
     }
 
-    void concat_impl(std::string& out, const char* cstr)
+    inline void concat_impl(std::string& out, const char* cstr)
     {
         out.append(cstr);
     }
 
-    void concat_impl(std::string& out, char ch)
+    inline void concat_impl(std::string& out, char ch)
     {
         out.append(1, ch);
     }
 
-    std::size_t concat_size(const std::string& str)
+    inline std::size_t concat_size(const std::string& str)
     {
         return str.size();
     }
 
-    std::size_t concat_size(std::string_view sv)
+    inline std::size_t concat_size(std::string_view sv)
     {
         return sv.size();
     }
 
-    std::size_t concat_size(const char* cstr)
+    inline std::size_t concat_size(const char* cstr)
     {
         return std::char_traits<char>::length(cstr);
     }
 
-    std::size_t concat_size(char ch)
+    inline std::size_t concat_size(char ch)
     {
         return 1;
     }
