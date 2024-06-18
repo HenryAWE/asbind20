@@ -593,8 +593,6 @@ inline object instantiate_class(asIScriptContext* ctx, asITypeInfo* class_info)
     if(!class_info) [[unlikely]]
         return object();
 
-    const char* name = class_info->GetName();
-
     asIScriptFunction* factory = nullptr;
     if(int flags = class_info->GetFlags(); flags & asOBJ_REF)
     {
