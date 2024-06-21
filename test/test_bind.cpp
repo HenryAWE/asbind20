@@ -49,6 +49,54 @@ void mul_obj_first_ref(my_value_class& this_, int val)
 {
     this_.value *= val;
 }
+
+class my_ref_class
+{
+public:
+    static my_ref_class* create_default()
+    {
+        return new my_ref_class;
+    }
+
+    static my_ref_class* create_by_val(int val)
+    {
+        return new my_ref_class(val);
+    }
+
+    my_ref_class() = default;
+
+    my_ref_class(int val)
+        : data(val) {}
+
+    void addref()
+    {
+        m_use_count += 1;
+    }
+
+    void release()
+    {
+        assert(m_use_count != 0);
+
+        m_use_count -= 1;
+        if(m_use_count == 0)
+            delete this;
+    }
+
+    asUINT use_count() const
+    {
+        return m_use_count;
+    }
+
+    int data = 0;
+
+private:
+    asUINT m_use_count = 1;
+};
+
+int exchange_data(my_ref_class& this_, int new_data)
+{
+    return std::exchange(this_.data, new_data);
+}
 } // namespace test_bind
 
 using asbind_test::asbind_test_suite;
@@ -131,8 +179,63 @@ TEST_F(asbind_test_suite, value_class)
     ctx->Release();
 }
 
+TEST_F(asbind_test_suite, ref_class)
+{
+    asIScriptEngine* engine = get_engine();
+
+    using test_bind::my_ref_class;
+
+    asbind20::ref_class<my_ref_class>(engine, "my_ref_class")
+        .factory("my_ref_class@ f()", &my_ref_class::create_default)
+        .factory("my_ref_class@ f(int)", &my_ref_class::create_by_val)
+        .addref(&my_ref_class::addref)
+        .release(&my_ref_class::release)
+        .method("uint use_count() const", &my_ref_class::use_count)
+        .method("int exchange_data(int new_data)", &test_bind::exchange_data)
+        .property("int data", &my_ref_class::data);
+
+    asIScriptModule* m = engine->GetModule("test_value_class", asGM_ALWAYS_CREATE);
+
+    m->AddScriptSection(
+        "test_ref_class.as",
+        "int test_1()"
+        "{"
+        "my_ref_class val;"
+        "return val.use_count();"
+        "}"
+        "int test_2()"
+        "{"
+        "my_ref_class val;"
+        "my_ref_class@ val2 = val;"
+        "return val.use_count();"
+        "}"
+        "int test_3()"
+        "{"
+        "my_ref_class val(2);"
+        "int old = val.exchange_data(3);"
+        "return old + val.data;"
+        "}"
+    );
+    ASSERT_GE(m->Build(), 0);
+
+    asIScriptContext* ctx = engine->CreateContext();
+    {
+        auto test_1 = asbind20::script_function<int()>(m->GetFunctionByName("test_1"));
+        EXPECT_EQ(test_1(ctx), 1);
+
+        auto test_2 = asbind20::script_function<int()>(m->GetFunctionByName("test_2"));
+        EXPECT_EQ(test_2(ctx), 2);
+
+        auto test_3 = asbind20::script_function<int()>(m->GetFunctionByName("test_3"));
+        EXPECT_EQ(test_3(ctx), 5);
+    }
+    ctx->Release();
+}
+
 int main(int argc, char* argv[])
 {
     ::testing::InitGoogleTest(&argc, argv);
+    std::cerr << "asGetLibraryVersion(): " << asGetLibraryVersion() << std::endl;
+    std::cerr << "asGetLibraryOptions(): " << asGetLibraryOptions() << std::endl;
     return RUN_ALL_TESTS();
 }
