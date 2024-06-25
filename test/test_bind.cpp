@@ -53,11 +53,6 @@ void mul_obj_first_ref(my_value_class& this_, int val)
 class my_ref_class
 {
 public:
-    static my_ref_class* create_default()
-    {
-        return new my_ref_class;
-    }
-
     static my_ref_class* create_by_val(int val)
     {
         return new my_ref_class(val);
@@ -107,9 +102,9 @@ TEST_F(asbind_test_suite, value_class)
 
     using test_bind::my_value_class;
 
-    asbind20::value_class<my_value_class>(engine, "my_value_class")
-        .register_basic_methods()
-        .register_ctor<int>("void f(int val)")
+    asbind20::value_class<my_value_class>(engine, "my_value_class", asOBJ_APP_CLASS_CDAK)
+        .common_behaviours()
+        .constructor<int>("void f(int val)")
         .method("void set_val(int)", &my_value_class::set_val)
         .method("int get_val() const", &my_value_class::get_val)
         .method("void add(int val)", test_bind::add_obj_last)
@@ -186,7 +181,7 @@ TEST_F(asbind_test_suite, ref_class)
     using test_bind::my_ref_class;
 
     asbind20::ref_class<my_ref_class>(engine, "my_ref_class")
-        .factory("my_ref_class@ f()", &my_ref_class::create_default)
+        .default_factory()
         .factory("my_ref_class@ f(int)", &my_ref_class::create_by_val)
         .addref(&my_ref_class::addref)
         .release(&my_ref_class::release)

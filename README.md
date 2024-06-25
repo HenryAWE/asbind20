@@ -44,8 +44,8 @@ Binding code
 ```c++
 asIScriptEngine* engine = /* ... */;
 asbind20::value_class<my_value_class>(engine, "my_value_class")
-    .register_basic_methods()
-    .register_ctor<int>("void f(int val)")
+    .common_behaviours()
+    .constructor<int>("void f(int val)")
     .method("void set_val(int)", &my_value_class::set_val)
     .method("int get_val() const", &my_value_class::get_val)
     .method("void add(int val)", add_obj_last)

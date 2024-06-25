@@ -23,12 +23,11 @@ void register_std_string(asIScriptEngine* engine, bool as_default)
 {
     using std::string;
 
-    value_class<string>(engine, "string")
-        .register_basic_methods()
+    value_class<string>(engine, "string", asOBJ_APP_CLASS_CDAK)
+        .common_behaviours()
         .method(
             "bool opEquals(const string &in)",
-            &string_opEquals,
-            call_conv<asCALL_CDECL_OBJFIRST>
+            &string_opEquals
         )
         .method(
             "int opCmp(const string &in)",
@@ -40,8 +39,7 @@ void register_std_string(asIScriptEngine* engine, bool as_default)
         )
         .method(
             "string opAdd(const string &in) const",
-            &string_opAdd,
-            call_conv<asCALL_CDECL_OBJFIRST>
+            &string_opAdd
         )
         .method("string substr(uint off, uint len) const", &string_substr)
         .method("bool empty()", &string::empty);

@@ -131,10 +131,9 @@ namespace detail
             using first_arg_t = std::tuple_element_t<0, args_t>;
             using last_arg_t = std::tuple_element_t<sizeof...(Args) - 1, args_t>;
 
-            constexpr bool obj_last = is_this_arg<std::remove_cv_t<last_arg_t>, Class>;
-            constexpr bool obj_first = is_this_arg<std::remove_cv_t<first_arg_t>, Class> && arg_count != 1;
+            constexpr bool obj_first = is_this_arg<std::remove_cv_t<first_arg_t>, Class>;
+            constexpr bool obj_last = is_this_arg<std::remove_cv_t<last_arg_t>, Class> && arg_count != 1;
 
-            static_assert(!(obj_last && obj_first), "Ambiguous object parameter");
             static_assert(obj_last || obj_first, "Missing object parameter");
 
             if(obj_first)
@@ -183,44 +182,60 @@ class value_class : private detail::class_register_base
     using my_base = detail::class_register_base;
 
 public:
-    value_class(asIScriptEngine* engine, const char* name)
-        : my_base(engine, name)
+    value_class(asIScriptEngine* engine, const char* name, asDWORD flags = asGetTypeTraits<T>())
+        : my_base(engine, name), m_flags(asOBJ_VALUE | flags)
     {
-        asWORD flags = asOBJ_VALUE | asGetTypeTraits<T>();
+        assert(!(m_flags & asOBJ_REF));
 
         int r = m_engine->RegisterObjectType(
             m_name,
             sizeof(T),
-            flags
+            m_flags
         );
         assert(r >= 0);
     }
 
-    value_class& register_basic_methods()
+    /**
+     * @brief Registering common behaviours based on flags.
+     *
+     * Registering default constructor, copy constructor,
+     * copy assignment operator (opAssign/operator=), and destructor based on flags of the type.
+     */
+    value_class& common_behaviours()
     {
         if constexpr(std::is_default_constructible_v<T>)
-            register_default_ctor();
+        {
+            if(m_flags & asOBJ_APP_CLASS_CONSTRUCTOR)
+                default_constructor();
+        }
 
         if constexpr(std::is_copy_constructible_v<T>)
-            register_copy_ctor();
+        {
+            if(m_flags & asOBJ_APP_CLASS_COPY_CONSTRUCTOR)
+                copy_constructor();
+        }
 
         if constexpr(std::is_copy_assignable_v<T>)
-            register_op_assign();
+        {
+            if(m_flags & asOBJ_APP_CLASS_ASSIGNMENT)
+                op_assign();
+        }
 
-        register_dtor();
+        if(m_flags & asOBJ_APP_CLASS_DESTRUCTOR)
+            destructor();
 
         return *this;
     }
 
-    template <typename Arg, typename... Args>
-    value_class& register_ctor(const char* decl) requires(std::is_constructible_v<T, Arg, Args...>)
+    template <typename... Args>
+    value_class& constructor(const char* decl) requires(std::is_constructible_v<T, Args...>)
     {
         behaviour(
             asBEHAVE_CONSTRUCT,
             decl,
-            +[](void* mem, Arg arg, Args... args)
+            +[](void* mem, Args... args)
             {
-                new(mem) T(std::forward<Arg>(arg), std::forward<Args>(args)...);
+                new(mem) T(std::forward<Args>(args)...);
             },
             call_conv<asCALL_CDECL_OBJFIRST>
         );
@@ -228,42 +243,41 @@ public:
         return *this;
     }
 
-    value_class& register_default_ctor() requires(std::is_default_constructible_v<T>)
+    value_class& default_constructor() requires(std::is_default_constructible_v<T>)
     {
         if constexpr(use_pod_v)
             return *this;
+        if(m_flags & asOBJ_POD)
+            return *this;
 
-        behaviour(
-            asBEHAVE_CONSTRUCT,
-            "void f()",
-            +[](void* mem) -> void
-            {
-                new(mem) T();
-            },
-            call_conv<asCALL_CDECL_OBJLAST>
-        );
+        constructor<>("void f()");
 
         return *this;
     }
 
-    value_class& register_copy_ctor()
+    value_class& copy_constructor() requires(std::is_copy_constructible_v<T>)
     {
-        behaviour(
-            asBEHAVE_CONSTRUCT,
-            detail::concat("void f(const ", m_name, " &in)").c_str(),
-            +[](const T& other, void* mem)
-            {
-                new(mem) T(other);
-            },
-            call_conv<asCALL_CDECL_OBJLAST>
-        );
+        if constexpr(std::is_constructible_v<T, const T&>)
+        {
+            constructor<const T&>(
+                detail::concat("void f(const ", m_name, " &in)").c_str()
+            );
+        }
+        else
+        {
+            constructor<T&>(
+                detail::concat("void f(", m_name, " &in)").c_str()
+            );
+        }
 
         return *this;
     }
 
-    value_class& register_dtor()
+    value_class& destructor()
     {
         if constexpr(use_pod_v)
+            return *this;
+        if(m_flags & asOBJ_POD)
             return *this;
 
         behaviour(
@@ -279,20 +293,17 @@ public:
         return *this;
     }
 
-    value_class& register_op_assign()
+    value_class& op_assign() requires(std::is_copy_assignable_v<T>)
     {
         if(use_pod_v)
             return *this;
+        if(m_flags & asOBJ_POD)
+            return *this;
 
-        using namespace std::literals;
-
-        int r = m_engine->RegisterObjectMethod(
-            m_name,
-            detail::concat(m_name, "& opAssign(const "s, m_name, " &in)").c_str(),
-            asMETHODPR(T, operator=, (const T&), T&),
-            asCALL_THISCALL
+        method(
+            detail::concat(m_name, "& opAssign(const ", m_name, " &in)").c_str(),
+            static_cast<T& (T::*)(const T&)>(&T::operator=)
         );
-        assert(r >= 0);
 
         return *this;
     }
@@ -346,6 +357,9 @@ public:
 
         return *this;
     }
+
+private:
+    asDWORD m_flags;
 };
 
 template <typename T>
@@ -396,6 +410,19 @@ public:
     ref_class& method(const char* decl, R (*fn)(Args...))
     {
         method_wrapper_impl<T>(decl, fn);
+
+        return *this;
+    }
+
+    ref_class& default_factory()
+    {
+        factory(
+            detail::concat(m_name, "@ f()").c_str(),
+            +[]()
+            {
+                return new T();
+            }
+        );
 
         return *this;
     }
