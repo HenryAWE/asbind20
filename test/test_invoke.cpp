@@ -41,15 +41,15 @@ template <typename T>
         const char* state_str = "";
         switch(r.error())
         {
-        case asEXECUTION_FINISHED: state_str = "FINISHED";
-        case asEXECUTION_SUSPENDED: state_str = "SUSPENDED";
-        case asEXECUTION_ABORTED: state_str = "ABORTED";
-        case asEXECUTION_EXCEPTION: state_str = "EXCEPTION";
-        case asEXECUTION_PREPARED: state_str = "PREPARED";
-        case asEXECUTION_UNINITIALIZED: state_str = "UNINITIALIZED";
-        case asEXECUTION_ACTIVE: state_str = "ACTIVE";
-        case asEXECUTION_ERROR: state_str = "ERROR";
-        case asEXECUTION_DESERIALIZATION: state_str = "DESERIALIZATION";
+        case asEXECUTION_FINISHED: state_str = "FINISHED"; break;
+        case asEXECUTION_SUSPENDED: state_str = "SUSPENDED"; break;
+        case asEXECUTION_ABORTED: state_str = "ABORTED"; break;
+        case asEXECUTION_EXCEPTION: state_str = "EXCEPTION"; break;
+        case asEXECUTION_PREPARED: state_str = "PREPARED"; break;
+        case asEXECUTION_UNINITIALIZED: state_str = "UNINITIALIZED"; break;
+        case asEXECUTION_ACTIVE: state_str = "ACTIVE"; break;
+        case asEXECUTION_ERROR: state_str = "ERROR"; break;
+        case asEXECUTION_DESERIALIZATION: state_str = "DESERIALIZATION"; break;
         }
 
         return ::testing::AssertionFailure()
@@ -156,6 +156,7 @@ TEST_F(asbind_test_suite, script_string)
         "test_script_string.as",
         "string create_str() { return \"hello\"; }"
         "void output_ref(string &out str) { str = \"hello\" + \" from ref\"; }"
+        "void check_str(string &in str) { testing::expect_eq(str, \"world\"); }"
     );
     ASSERT_GE(m->Build(), 0);
 
@@ -171,6 +172,12 @@ TEST_F(asbind_test_suite, script_string)
         auto result = asbind20::script_invoke<void>(ctx, m->GetFunctionByName("output_ref"), std::ref(str));
         ASSERT_TRUE(result_has_value(result));
         EXPECT_EQ(str, "hello from ref");
+    }
+
+    {
+        std::string str = "world";
+        auto result = asbind20::script_invoke<void>(ctx, m->GetFunctionByName("check_str"), std::ref(str));
+        ASSERT_TRUE(result_has_value(result));
     }
 
     ctx->Release();

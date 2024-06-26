@@ -121,6 +121,7 @@ TEST_F(asbind_test_suite, value_class)
         "{"
         "my_value_class val;"
         "val.set_val(42);"
+        "testing::expect_eq(val.value, 42);"
         "return val.get_val();"
         "}"
         "int test_2()"

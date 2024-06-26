@@ -353,6 +353,11 @@ namespace detail
             ctx->SetArgQWord(idx, val);
     }
 
+    inline void set_arg(asIScriptContext* ctx, asUINT idx, asIScriptObject* obj)
+    {
+        ctx->SetArgAddress(idx, obj);
+    }
+
     template <typename Tuple>
     void set_args(asIScriptContext* ctx, Tuple&& tp)
     {
@@ -438,7 +443,7 @@ script_invoke_result<R> script_invoke(asIScriptContext* ctx, asIScriptObject* ob
 {
     assert(func != nullptr);
     assert(ctx != nullptr);
-    assert(obj->GetTypeId() == func->GetObjectType()->GetTypeId());
+    //assert(obj->GetTypeId() == func->GetObjectType()->GetTypeId());
 
     ctx->Prepare(func);
     ctx->SetObject(obj);

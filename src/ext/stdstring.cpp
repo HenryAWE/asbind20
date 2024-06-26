@@ -2,7 +2,7 @@
 
 namespace asbind20::ext
 {
-static bool string_opEquals(std::string& lhs, std::string& rhs)
+static bool string_opEquals(const std::string& lhs, const std::string& rhs)
 {
     return lhs == rhs;
 }
@@ -26,7 +26,7 @@ void register_std_string(asIScriptEngine* engine, bool as_default)
     value_class<string>(engine, "string", asOBJ_APP_CLASS_CDAK)
         .common_behaviours()
         .method(
-            "bool opEquals(const string &in)",
+            "bool opEquals(const string &in) const",
             &string_opEquals
         )
         .method(

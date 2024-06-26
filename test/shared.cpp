@@ -1,5 +1,6 @@
 #include "shared.hpp"
 #include <asbind20/ext/stdstring.hpp>
+#include <asbind20/ext/unittest.hpp>
 
 namespace asbind_test
 {
@@ -17,6 +18,7 @@ void asbind_test_suite::SetUp()
     using namespace asbind20;
 
     ext::register_std_string(m_engine, true);
+    ext::register_unittest(m_engine);
 }
 
 void asbind_test_suite::TearDown()
