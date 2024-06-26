@@ -1,4 +1,5 @@
 #include <asbind20/ext/unittest.hpp>
+#include <cstring>
 
 namespace asbind20::ext
 {
