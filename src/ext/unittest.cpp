@@ -1,5 +1,6 @@
 #include <asbind20/ext/unittest.hpp>
 #include <cstring>
+#include <asbind20/ext/helper.hpp>
 
 namespace asbind20::ext
 {
@@ -116,6 +117,81 @@ bool expect_eq(void* lhs_ref, int lhs_t_id, void* rhs_ref, int rhs_t_id)
     return true;
 }
 
+template <typename Fn>
+bool expect_cmp_impl(
+    Fn&& pred,
+    const char* expected_name,
+    void* lhs_ref,
+    int lhs_t_id,
+    void* rhs_ref,
+    int rhs_t_id,
+    const char* func_name
+)
+{
+    auto result = script_compare(
+        asGetActiveContext()->GetEngine(),
+        lhs_ref,
+        lhs_t_id,
+        rhs_ref,
+        rhs_t_id
+    );
+
+    if(result == std::partial_ordering::unordered)
+    {
+        std::string info = "[";
+        info += func_name;
+        info += "] Cannot compare two values";
+        asGetActiveContext()->SetException(info.c_str());
+        return false;
+    }
+
+    auto relation_name = [](std::weak_ordering r) -> const char*
+    {
+        if(r == std::weak_ordering::less)
+            return "less";
+        else if(r == std::weak_ordering::greater)
+            return "greater";
+        else
+            return "equal";
+    };
+
+    std::weak_ordering r =
+        result == std::partial_ordering::greater ? std::weak_ordering::greater :
+        result == std::partial_ordering::less    ? std::weak_ordering::less :
+                                                   std::weak_ordering::equivalent;
+    if(pred(r))
+    {
+        return true;
+    }
+    else
+    {
+        std::string info = "[";
+        info += func_name;
+        info += "] Expected \"";
+        info += expected_name;
+        info += "\" Actual: \"";
+        info += relation_name(r);
+        info += '"';
+        asGetActiveContext()->SetException(info.c_str());
+
+        return false;
+    }
+}
+
+bool expect_le(void* lhs_ref, int lhs_t_id, void* rhs_ref, int rhs_t_id)
+{
+    return expect_cmp_impl(
+        [](std::weak_ordering r)
+        { return r <= 0; },
+        "less or equal",
+        lhs_ref,
+        lhs_t_id,
+        rhs_ref,
+        rhs_t_id,
+        __func__
+    );
+}
+
 int register_unittest(asIScriptEngine* engine)
 {
     std::string previous_ns = engine->GetDefaultNamespace();
@@ -124,6 +200,11 @@ int register_unittest(asIScriptEngine* engine)
     engine->RegisterGlobalFunction(
         "bool expect_eq(?&in, ?&in)",
         asFUNCTION(expect_eq),
+        asCALL_CDECL
+    );
+    engine->RegisterGlobalFunction(
+        "bool expect_le(?&in, ?&in)",
+        asFUNCTION(expect_le),
         asCALL_CDECL
     );
 

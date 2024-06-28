@@ -128,6 +128,7 @@ TEST_F(asbind_test_suite, value_class)
         "{"
         "my_value_class val;"
         "val.set_val(182375);"
+        "testing::expect_le(val.value, 182376);"
         "val.add(1);"
         "return val.get_val();"
         "}"
