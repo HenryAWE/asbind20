@@ -15,4 +15,8 @@ namespace detail
         : m_engine(engine), m_name(name), m_force_generic(max_portability_req())
     {}
 } // namespace detail
+
+global::global(asIScriptEngine* engine)
+    : m_engine(engine), m_force_generic(detail::max_portability_req())
+{}
 } // namespace asbind20

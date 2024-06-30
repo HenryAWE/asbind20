@@ -174,6 +174,65 @@ namespace detail
     };
 } // namespace detail
 
+class global
+{
+public:
+    global(asIScriptEngine* engine);
+    global(const global&) = delete;
+
+    template <typename Return, typename... Args>
+    global& function(
+        const char* decl,
+        Return (*fn)(Args...)
+    )
+    {
+        int r = m_engine->RegisterGlobalFunction(
+            decl,
+            asFunctionPtr(fn),
+            asCALL_CDECL
+        );
+        assert(r >= 0);
+
+        return *this;
+    }
+
+    template <typename T, typename Return, typename Class, typename... Args>
+    global& function(
+        const char* decl,
+        Return (Class::*fn)(Args...),
+        T&& instance
+    ) requires(std::is_convertible_v<T, Class>)
+    {
+        int r = m_engine->RegisterGlobalFunction(
+            decl,
+            asSMethodPtr<sizeof(fn)>::Convert(fn),
+            asCALL_THISCALL_ASGLOBAL,
+            std::addressof(instance)
+        );
+        assert(r >= 0);
+
+        return *this;
+    }
+
+    template <typename T>
+    global& property(
+        const char* decl,
+        T&& val
+    )
+    {
+        int r = m_engine->RegisterGlobalProperty(
+            decl, std::addressof(val)
+        );
+        assert(r >= 0);
+
+        return *this;
+    }
+
+private:
+    asIScriptEngine* m_engine;
+    bool m_force_generic;
+};
+
 template <typename T>
 class value_class : private detail::class_register_base
 {

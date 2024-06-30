@@ -34,6 +34,12 @@ std::partial_ordering script_compare(
     void* rhs_ref,
     int rhs_type_id
 );
+
+int exec(
+    asIScriptEngine* engine,
+    std::string_view code,
+    asIScriptContext* ctx = nullptr
+);
 } // namespace asbind20::ext
 
 #endif

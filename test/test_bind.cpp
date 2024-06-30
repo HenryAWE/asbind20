@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include "shared.hpp"
 #include <asbind20/asbind.hpp>
+#include <asbind20/ext/helper.hpp>
 
 namespace test_bind
 {
@@ -225,6 +226,52 @@ TEST_F(asbind_test_suite, ref_class)
 
         auto test_3 = asbind20::script_function<int()>(m->GetFunctionByName("test_3"));
         EXPECT_EQ(test_3(ctx), 5);
+    }
+    ctx->Release();
+}
+
+TEST_F(asbind_test_suite, global)
+{
+    std::string val = "val";
+
+    struct class_wrapper
+    {
+        int value = 0;
+
+        void set_val(int val)
+        {
+            value = val;
+        }
+    };
+
+    class_wrapper wrapper;
+
+    asbind20::global(get_engine())
+        .function(
+            "int gen_int()",
+            +[]() -> int
+            { return 42; }
+        )
+        .function(
+            "void set_val(int val)",
+            &class_wrapper::set_val,
+            wrapper
+        )
+        .property("string val", val);
+
+    EXPECT_EQ(val, "val");
+    asbind20::ext::exec(get_engine(), "val = \"new string\"");
+    EXPECT_EQ(val, "new string");
+
+    EXPECT_EQ(wrapper.value, 0);
+    asbind20::ext::exec(get_engine(), "set_val(gen_int())");
+    EXPECT_EQ(wrapper.value, 42);
+
+    asIScriptContext* ctx = get_engine()->CreateContext();
+    {
+        asIScriptFunction* gen_int = get_engine()->GetGlobalFunctionByDecl("int gen_int()");
+        auto result = asbind20::script_invoke<int>(ctx, gen_int);
+        EXPECT_EQ(result.value(), 42);
     }
     ctx->Release();
 }

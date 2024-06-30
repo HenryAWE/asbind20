@@ -174,4 +174,63 @@ std::partial_ordering script_compare(
 
     return std::partial_ordering::unordered;
 }
+
+namespace detail
+{
+    int exec_impl(
+        asIScriptEngine* engine,
+        asIScriptContext* ctx,
+        std::string_view code,
+        const char* ret_decl = "void",
+        const char* module_name = "asbind20_exec"
+    )
+    {
+        int r = 0;
+
+        std::string func_code;
+        func_code = asbind20::detail::concat(
+            ret_decl,
+            ' ',
+            module_name,
+            "(){\n",
+            code,
+            "\n;}"
+        );
+
+        asIScriptModule* m = engine->GetModule(module_name, asGM_ALWAYS_CREATE);
+        asIScriptFunction* f = nullptr;
+        r = m->CompileFunction(module_name, func_code.c_str(), -1, 0, &f);
+        if(r < 0)
+            return r;
+
+        assert(f);
+        auto result = script_invoke<void>(ctx, f);
+        f->Release();
+
+        if(!result)
+            return result.error();
+        else
+            return asSUCCESS;
+    }
+} // namespace detail
+
+int exec(
+    asIScriptEngine* engine,
+    std::string_view code,
+    asIScriptContext* ctx
+)
+{
+    asIScriptContext* exec_ctx =
+        ctx ? ctx : engine->RequestContext();
+
+    int r = detail::exec_impl(
+        engine,
+        exec_ctx,
+        code
+    );
+
+    if(!ctx)
+        engine->ReturnContext(exec_ctx);
+    return r;
+}
 } // namespace asbind20::ext
