@@ -11,6 +11,8 @@ bool is_primitive_type(int type_id);
 
 asUINT sizeof_script_type(asIScriptEngine* engine, int type_id);
 
+std::string extract_string(asIStringFactory* factory, void* str);
+
 using primitive_t = std::variant<
     std::monostate, // void
     bool,

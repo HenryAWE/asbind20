@@ -19,6 +19,27 @@ asUINT sizeof_script_type(asIScriptEngine* engine, int type_id)
     return ti->GetSize();
 }
 
+std::string extract_string(asIStringFactory* factory, void* str)
+{
+    assert(factory);
+
+    asUINT sz = 0;
+    if(factory->GetRawStringData(str, nullptr, &sz) < 0)
+    {
+        throw std::runtime_error("failed to get raw string data");
+    }
+
+    std::string result;
+    result.resize(sz);
+
+    if(factory->GetRawStringData(str, result.data(), nullptr) < 0)
+    {
+        throw std::runtime_error("failed to get raw string data");
+    }
+
+    return result;
+}
+
 primitive_t extract_primitive_value(asIScriptEngine* engine, void* ref, int type_id)
 {
     switch(type_id)

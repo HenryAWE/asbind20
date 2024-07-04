@@ -228,6 +228,23 @@ public:
         return *this;
     }
 
+    global& function(
+        const char* decl,
+        void (*gen)(asIScriptGeneric*),
+        void* auxiliary = nullptr
+    )
+    {
+        int r = m_engine->RegisterGlobalFunction(
+            decl,
+            asFunctionPtr(gen),
+            asCALL_GENERIC,
+            auxiliary
+        );
+        assert(r >= 0);
+
+        return *this;
+    }
+
 private:
     asIScriptEngine* m_engine;
     bool m_force_generic;
