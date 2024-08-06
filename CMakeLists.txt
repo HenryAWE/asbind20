@@ -13,12 +13,39 @@ project(
 
 find_package(Angelscript CONFIG REQUIRED)
 
-file(GLOB_RECURSE asbind20_src "include/*.hpp" "src/*.cpp")
+file(GLOB asbind20_src "include/*.hpp" "src/*.cpp")
+option(asbind_build_ext "Build extensions" ON)
+option(asbind_build_ext_math "Build math extension" ON)
+option(asbind_build_ext_helper "Build helper extension" ON)
+option(asbind_build_ext_stdstring "Build std::string extension" ON)
+option(asbind_build_ext_assert "Build assert extension" ON)
+option(asbind_build_ext_unittest "Build unittest extension" ON)
+
+if(${asbind_build_ext})
+    if(${asbind_build_ext_math})
+        list(APPEND asbind20_src "src/ext/math.cpp")
+    endif()
+    if(${asbind_build_ext_helper})
+        list(APPEND asbind20_src "src/ext/helper.cpp")
+    endif()
+    if(${asbind_build_ext_stdstring})
+        list(APPEND asbind20_src "src/ext/stdstring.cpp")
+    endif()
+    if(${asbind_build_ext_assert})
+        list(APPEND asbind20_src "src/ext/assert.cpp")
+    endif()
+    if(${asbind_build_ext_unittest})
+        list(APPEND asbind20_src "src/ext/unittest.cpp")
+    endif()
+endif()
+
 add_library(asbind20 ${asbind20_src})
 target_include_directories(asbind20 PUBLIC include)
 target_link_libraries(asbind20 PUBLIC Angelscript::angelscript)
 
-option("asbind_build_test" OFF)
+option(asbind_build_test "Build tests" OFF)
+mark_as_advanced(asbind_build_test)
+
 if(${asbind_build_test})
     message(STATUS "Fetching GoogleTest v1.14.0 from GitHub")
 

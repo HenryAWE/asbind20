@@ -40,7 +40,7 @@ public:
 
     const void* GetStringConstant(const char* data, asUINT length) override
     {
-        asAcquireExclusiveLock();
+        std::lock_guard lock(as_exclusive_lock);
 
         std::string_view view(data, length);
         auto it = m_cache.find(view);
@@ -59,14 +59,11 @@ public:
             }
             catch(...)
             {
-                asReleaseExclusiveLock();
                 if(asIScriptContext* ctx = asGetActiveContext(); ctx)
                     ctx->SetException("Failed to create string");
                 return nullptr;
             }
         }
-
-        asReleaseExclusiveLock();
 
         return &it->first;
     }
@@ -80,7 +77,7 @@ public:
 
         int r = asSUCCESS;
 
-        asAcquireExclusiveLock();
+        std::lock_guard lock(as_exclusive_lock);
 
         auto it = m_cache.find(*ptr);
 
@@ -93,8 +90,6 @@ public:
             if(it->second == 0)
                 m_cache.erase(it);
         }
-
-        asReleaseExclusiveLock();
 
         return r;
     }

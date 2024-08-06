@@ -6,10 +6,27 @@
 #include <cassert>
 #include <string>
 #include <utility>
+#include <mutex>
 #include <angelscript.h>
 
 namespace asbind20
 {
+class as_exclusive_lock_t
+{
+public:
+    static void lock()
+    {
+        asAcquireExclusiveLock();
+    }
+
+    static void unlock()
+    {
+        asReleaseExclusiveLock();
+    }
+};
+
+inline constexpr as_exclusive_lock_t as_exclusive_lock = {};
+
 namespace detail
 {
     inline void concat_impl(std::string& out, const std::string& str)

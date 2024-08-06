@@ -2,6 +2,7 @@
 #include <asbind20/ext/stdstring.hpp>
 #include <asbind20/ext/unittest.hpp>
 #include <asbind20/ext/assert.hpp>
+#include <asbind20/ext/math.hpp>
 
 namespace asbind_test
 {
@@ -30,6 +31,7 @@ void asbind_test_suite::SetUp()
     using namespace asbind20;
 
     ext::register_std_string(m_engine, true);
+    ext::register_math_function(m_engine);
     ext::register_unittest(m_engine);
     ext::register_script_assert(
         m_engine,
