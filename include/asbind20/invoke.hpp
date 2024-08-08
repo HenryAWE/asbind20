@@ -1,3 +1,7 @@
+#ifndef ASBIND20_INVOKE_HPP
+#define ASBIND20_INVOKE_HPP
+
+#pragma once
 
 #include <variant>
 #include <tuple>
@@ -31,6 +35,11 @@ private:
     int m_r;
 };
 
+/**
+ * @brief Script invocation result
+ *
+ * @tparam R Result type
+ */
 template <typename R>
 class script_invoke_result
 {
@@ -167,6 +176,9 @@ private:
     }
 };
 
+/**
+ * @brief Script invocation result for references
+ */
 template <typename R>
 class script_invoke_result<R&>
 {
@@ -276,6 +288,9 @@ private:
     }
 };
 
+/**
+ * @brief Script invocation result for void type
+ */
 template <>
 class script_invoke_result<void>
 {
@@ -425,6 +440,9 @@ namespace detail
     }
 } // namespace detail
 
+/**
+ * @brief Call a script function
+ */
 template <typename R, typename... Args>
 script_invoke_result<R> script_invoke(asIScriptContext* ctx, asIScriptFunction* func, Args&&... args)
 {
@@ -437,7 +455,9 @@ script_invoke_result<R> script_invoke(asIScriptContext* ctx, asIScriptFunction* 
     return detail::execute_impl<R>(func, ctx);
 }
 
-// Calling a method on script class
+/**
+ * @brief Calling a method on script class
+ */
 template <typename R, typename... Args>
 script_invoke_result<R> script_invoke(asIScriptContext* ctx, asIScriptObject* obj, asIScriptFunction* func, Args&&... args)
 {
@@ -453,7 +473,9 @@ script_invoke_result<R> script_invoke(asIScriptContext* ctx, asIScriptObject* ob
     return detail::execute_impl<R>(func, ctx);
 }
 
-// Calling a method on script class
+/**
+ * @brief Calling a method on script class
+ */
 template <typename R, typename... Args>
 script_invoke_result<R> script_invoke(asIScriptContext* ctx, const object& obj, asIScriptFunction* func, Args&&... args)
 {
@@ -554,6 +576,9 @@ namespace detail
 template <typename... Ts>
 class script_function;
 
+/**
+ * @brief Wrapper of script function
+ */
 template <typename R, typename... Args>
 class script_function<R(Args...)> : public detail::script_function_impl<false, R, Args...>
 {
@@ -574,6 +599,9 @@ public:
 template <typename... Ts>
 class script_method;
 
+/**
+ * @brief Wrapper of script method, a.k.a member function
+ */
 template <typename R, typename... Args>
 class script_method<R(Args...)> : public detail::script_function_impl<true, R, Args...>
 {
@@ -591,7 +619,16 @@ public:
     }
 };
 
-// Instantiate a script class using its default factory function
+/**
+ * @brief Instantiate a script class using its default factory function
+ *
+ * @param ctx Script context
+ * @param class_info Script class type information
+ *
+ * @return object Instantiated script object, or empty object if failed
+ *
+ * @note This function requires the class to be default constructible
+ */
 [[nodiscard]]
 inline object instantiate_class(asIScriptContext* ctx, asITypeInfo* class_info)
 {
@@ -620,3 +657,5 @@ inline object instantiate_class(asIScriptContext* ctx, asITypeInfo* class_info)
 }
 
 } // namespace asbind20
+
+#endif

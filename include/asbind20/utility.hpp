@@ -25,6 +25,11 @@ public:
     }
 };
 
+/**
+ * @brief Wrapper for `asAcquireExclusiveLock()` and `asReleaseExclusiveLock()`
+ *
+ * @see as_exclusive_lock_t
+ */
 inline constexpr as_exclusive_lock_t as_exclusive_lock = {};
 
 namespace detail
@@ -97,6 +102,9 @@ namespace detail
     }
 } // namespace detail
 
+/**
+ * @brief Wrapper for script object, similar to a `std::unique_ptr`
+ */
 class object
 {
 public:
@@ -150,6 +158,11 @@ private:
     asIScriptObject* m_obj = nullptr;
 };
 
+/**
+ * @brief Get offset from a member pointer
+ *
+ * @note This function is implemented by undefined behavior but is expected to work on most platforms
+ */
 template <typename T, typename Class>
 std::size_t member_offset(T Class::*mp) noexcept
 {

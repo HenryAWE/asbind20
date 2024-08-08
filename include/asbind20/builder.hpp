@@ -1,6 +1,8 @@
 #ifndef ASBIND20_BUILDER_HPP
 #define ASBIND20_BUILDER_HPP
 
+#pragma once
+
 #include <angelscript.h>
 #include <filesystem>
 #include <string>

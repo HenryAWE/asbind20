@@ -1,16 +1,26 @@
 #ifndef ASBIND20_EXT_HELPER_HPP
 #define ASBIND20_EXT_HELPER_HPP
 
+#pragma once
+
 #include <variant>
 #include <compare>
 #include "../asbind.hpp"
 
 namespace asbind20::ext
 {
-bool is_primitive_type(int type_id);
+bool is_primitive_type(int type_id) noexcept;
 
 asUINT sizeof_script_type(asIScriptEngine* engine, int type_id);
 
+/**
+ * @brief Extracts the contents from a script string
+ *
+ * @param factory The string factory
+ * @param str The script string
+ *
+ * @return std::string Result string
+ */
 std::string extract_string(asIStringFactory* factory, void* str);
 
 using primitive_t = std::variant<
@@ -27,6 +37,17 @@ using primitive_t = std::variant<
     float,
     double>;
 
+/**
+ * @brief Extracts the value of a primitive type
+ *
+ * @param engine The script engine
+ * @param ref The reference
+ * @param type_id The type id
+ *
+ * @return primitive_t Result value
+ *
+ * @exception std::invalid_argument if the type is not a primitive type
+ */
 primitive_t extract_primitive_value(asIScriptEngine* engine, void* ref, int type_id);
 
 std::partial_ordering script_compare(

@@ -2,7 +2,7 @@
 
 namespace asbind20::ext
 {
-bool is_primitive_type(int type_id)
+bool is_primitive_type(int type_id) noexcept
 {
     return type_id >= asTYPEID_VOID && type_id <= asTYPEID_DOUBLE;
 }

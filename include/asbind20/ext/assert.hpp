@@ -1,6 +1,8 @@
 #ifndef ASBIND20_EXT_ASSERT_HPP
 #define ASBIND20_EXT_ASSERT_HPP
 
+#pragma once
+
 #include "../asbind.hpp"
 #include <functional>
 
