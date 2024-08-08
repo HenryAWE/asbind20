@@ -1,6 +1,5 @@
 #include "shared.hpp"
 #include <asbind20/ext/stdstring.hpp>
-#include <asbind20/ext/unittest.hpp>
 #include <asbind20/ext/assert.hpp>
 #include <asbind20/ext/math.hpp>
 
@@ -32,7 +31,6 @@ void asbind_test_suite::SetUp()
 
     ext::register_std_string(m_engine, true);
     ext::register_math_function(m_engine);
-    ext::register_unittest(m_engine);
     ext::register_script_assert(
         m_engine,
         &assert_callback,

@@ -156,7 +156,7 @@ TEST_F(asbind_test_suite, script_string)
         "test_script_string.as",
         "string create_str() { return \"hello\"; }"
         "void output_ref(string &out str) { str = \"hello\" + \" from ref\"; }"
-        "void check_str(string &in str) { testing::expect_eq(str, \"world\"); }"
+        "void check_str(string &in str) { assert(str == \"world\"); }"
     );
     ASSERT_GE(m->Build(), 0);
 
