@@ -20,3 +20,8 @@ configure_file(test_build_1.as ${CMAKE_CURRENT_BINARY_DIR}/test_build_1.as COPYO
 add_executable(test_utility test_utility.cpp)
 target_link_libraries(test_utility PRIVATE shared_test_lib)
 gtest_discover_tests(test_utility)
+
+add_executable(test_ext_stdstring test_ext_stdstring.cpp)
+target_link_libraries(test_ext_stdstring PRIVATE shared_test_lib)
+gtest_discover_tests(test_ext_stdstring)
+configure_file(script/test_string.as ${CMAKE_CURRENT_BINARY_DIR}/script/test_string.as COPYONLY)
