@@ -294,7 +294,7 @@ public:
         if constexpr(std::is_copy_assignable_v<T>)
         {
             if(m_flags & asOBJ_APP_CLASS_ASSIGNMENT)
-                op_assign();
+                opAssign();
         }
 
         if(m_flags & asOBJ_APP_CLASS_DESTRUCTOR)
@@ -369,7 +369,7 @@ public:
         return *this;
     }
 
-    value_class& op_assign() requires(std::is_copy_assignable_v<T>)
+    value_class& opAssign() requires(std::is_copy_assignable_v<T>)
     {
         if(use_pod_v)
             return *this;
@@ -378,6 +378,26 @@ public:
 
         method(
             detail::concat(m_name, "& opAssign(const ", m_name, " &in)").c_str(),
+            static_cast<T& (T::*)(const T&)>(&T::operator=)
+        );
+
+        return *this;
+    }
+
+    value_class& opAddAssign()
+    {
+        method(
+            detail::concat(m_name, "& opAddAssign(const ", m_name, " &in)").c_str(),
+            static_cast<T& (T::*)(const T&)>(&T::operator+=)
+        );
+
+        return *this;
+    }
+
+    value_class& opEquals()
+    {
+        method(
+            detail::concat(m_name, "& opEquals(const ", m_name, " &in)").c_str(),
             static_cast<T& (T::*)(const T&)>(&T::operator=)
         );
 

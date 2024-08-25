@@ -118,6 +118,19 @@ private:
     map_t m_cache;
 };
 
+/**
+ * @brief Get offset in byte of a UTF-8 string's nth character
+ *
+ * @return Offset in bytes, or -1 if `n` is out of range
+ */
+std::size_t u8_index(std::string_view str, std::size_t n) noexcept;
+
+std::size_t u8_strlen(std::string_view str) noexcept;
+
+char32_t u8_bytes_to_int(const char* bytes);
+
+unsigned int u8_int_to_bytes(char32_t ch, char* buf);
+
 void register_std_string(asIScriptEngine* engine, bool as_default = true);
 } // namespace asbind20::ext
 
