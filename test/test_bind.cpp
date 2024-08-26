@@ -95,7 +95,7 @@ int exchange_data(my_ref_class& this_, int new_data)
 }
 } // namespace test_bind
 
-using asbind_test::asbind_test_suite;
+using namespace asbind_test;
 
 TEST_F(asbind_test_suite, value_class)
 {
@@ -274,6 +274,38 @@ TEST_F(asbind_test_suite, global)
         EXPECT_EQ(result.value(), 42);
     }
     ctx->Release();
+}
+
+TEST_F(asbind_test_suite, interface)
+{
+    asIScriptEngine* engine = get_engine();
+
+    asbind20::interface(engine, "my_interface")
+        .method("int get() const");
+
+    asIScriptModule* m = engine->GetModule("test_interface", asGM_ALWAYS_CREATE);
+
+    m->AddScriptSection(
+        "test_interface.as",
+        "class my_impl : my_interface"
+        "{"
+        "int get() const override { return 42; }"
+        "};"
+        "int test() { my_impl val; return val.get(); }"
+    );
+    ASSERT_GE(m->Build(), 0);
+
+    asIScriptContext* ctx = engine->CreateContext();
+    asIScriptFunction* func = m->GetFunctionByDecl("int test()");
+    ASSERT_TRUE(func);
+
+    auto result = asbind20::script_invoke<int>(ctx, func);
+    ASSERT_TRUE(result_has_value(result));
+    EXPECT_EQ(result.value(), 42);
+
+    ctx->Release();
+
+    m->Discard();
 }
 
 int main(int argc, char* argv[])

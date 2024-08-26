@@ -570,6 +570,35 @@ public:
         return *this;
     }
 };
+
+class interface
+{
+public:
+    interface() = delete;
+    interface(const interface&) = default;
+
+    interface(asIScriptEngine* engine, const char* name)
+        : m_engine(engine), m_name(name)
+    {
+        int r = m_engine->RegisterInterface(m_name);
+        assert(r >= 0);
+    }
+
+    interface& method(const char* decl)
+    {
+        int r = m_engine->RegisterInterfaceMethod(
+            m_name,
+            decl
+        );
+        assert(r >= 0);
+
+        return *this;
+    }
+
+private:
+    asIScriptEngine* m_engine;
+    const char* m_name;
+};
 } // namespace asbind20
 
 #endif

@@ -368,9 +368,26 @@ namespace detail
             ctx->SetArgQWord(idx, val);
     }
 
+    inline void set_arg(asIScriptContext* ctx, asUINT idx, float val)
+    {
+        ctx->SetArgFloat(idx, val);
+    }
+
+    inline void set_arg(asIScriptContext* ctx, asUINT idx, double val)
+    {
+        ctx->SetArgDouble(idx, val);
+    }
+
     inline void set_arg(asIScriptContext* ctx, asUINT idx, asIScriptObject* obj)
     {
         ctx->SetArgAddress(idx, obj);
+    }
+
+    template <typename Class>
+    requires std::is_class_v<std::remove_cvref_t<Class>>
+    void set_arg(asIScriptContext* ctx, asUINT idx, Class&& obj)
+    {
+        ctx->SetArgAddress(idx, std::addressof(obj));
     }
 
     template <typename Tuple>
@@ -419,6 +436,14 @@ namespace detail
                     return ctx->GetReturnDWord();
                 else if constexpr(sizeof(ret_t) == 8)
                     return ctx->GetReturnQWord();
+            }
+            else if constexpr(std::is_same_v<ret_t, float>)
+            {
+                return ctx->GetReturnFloat();
+            }
+            else if constexpr(std::is_same_v<ret_t, double>)
+            {
+                return ctx->GetReturnDouble();
             }
         }
     }

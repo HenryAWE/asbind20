@@ -2,6 +2,8 @@
 #include "shared.hpp"
 #include <asbind20/asbind.hpp>
 
+using namespace asbind_test;
+
 TEST(script_invoke_result, common)
 {
     using namespace asbind20;
@@ -31,34 +33,6 @@ TEST(script_invoke_result, void)
     }
 }
 
-template <typename T>
-::testing::AssertionResult result_has_value(const asbind20::script_invoke_result<T>& r)
-{
-    if(r.has_value())
-        return ::testing::AssertionSuccess();
-    else
-    {
-        const char* state_str = "";
-        switch(r.error())
-        {
-        case asEXECUTION_FINISHED: state_str = "FINISHED"; break;
-        case asEXECUTION_SUSPENDED: state_str = "SUSPENDED"; break;
-        case asEXECUTION_ABORTED: state_str = "ABORTED"; break;
-        case asEXECUTION_EXCEPTION: state_str = "EXCEPTION"; break;
-        case asEXECUTION_PREPARED: state_str = "PREPARED"; break;
-        case asEXECUTION_UNINITIALIZED: state_str = "UNINITIALIZED"; break;
-        case asEXECUTION_ACTIVE: state_str = "ACTIVE"; break;
-        case asEXECUTION_ERROR: state_str = "ERROR"; break;
-        case asEXECUTION_DESERIALIZATION: state_str = "DESERIALIZATION"; break;
-        }
-
-        return ::testing::AssertionFailure()
-               << "r = " << r.error() << ' ' << state_str;
-    }
-}
-
-using asbind_test::asbind_test_suite;
-
 TEST_F(asbind_test_suite, invoke)
 {
     asIScriptEngine* engine = get_engine();
@@ -68,6 +42,8 @@ TEST_F(asbind_test_suite, invoke)
         "test_invoke.as",
         "int add_1(int i) { return i + 1; }\n"
         "void add_ref_1(int i, int& out o) { o = i + 1; }\n"
+        "float flt_identity(float val) { return val; }\n"
+        "double dbl_identity(double val) { return val; }"
     );
     ASSERT_GE(m->Build(), 0);
 
@@ -92,6 +68,30 @@ TEST_F(asbind_test_suite, invoke)
         int val = 0;
         asbind20::script_invoke<void>(ctx, fp, 1, std::ref(val));
         EXPECT_EQ(val, 2);
+
+        ctx->Release();
+    }
+
+    {
+        asIScriptFunction* fp = m->GetFunctionByName("flt_identity");
+        ASSERT_NE(fp, nullptr);
+
+        asIScriptContext* ctx = engine->CreateContext();
+        auto result = asbind20::script_invoke<float>(ctx, fp, 3.14f);
+        ASSERT_TRUE(result_has_value(result));
+        EXPECT_FLOAT_EQ(result.value(), 3.14f);
+
+        ctx->Release();
+    }
+
+    {
+        asIScriptFunction* fp = m->GetFunctionByName("dbl_identity");
+        ASSERT_NE(fp, nullptr);
+
+        asIScriptContext* ctx = engine->CreateContext();
+        auto result = asbind20::script_invoke<double>(ctx, fp, 3.14);
+        ASSERT_TRUE(result_has_value(result));
+        EXPECT_DOUBLE_EQ(result.value(), 3.14);
 
         ctx->Release();
     }
@@ -142,44 +142,6 @@ TEST_F(asbind_test_suite, script_class)
         ASSERT_TRUE(result_has_value(val));
         EXPECT_EQ(val.value(), 182376);
     }
-    ctx->Release();
-}
-
-#include <asbind20/ext/stdstring.hpp>
-
-TEST_F(asbind_test_suite, script_string)
-{
-    asIScriptEngine* engine = get_engine();
-    asIScriptModule* m = engine->GetModule("test_script_string", asGM_ALWAYS_CREATE);
-
-    m->AddScriptSection(
-        "test_script_string.as",
-        "string create_str() { return \"hello\"; }"
-        "void output_ref(string &out str) { str = \"hello\" + \" from ref\"; }"
-        "void check_str(string &in str) { assert(str == \"world\"); }"
-    );
-    ASSERT_GE(m->Build(), 0);
-
-    asIScriptContext* ctx = engine->CreateContext();
-    {
-        auto str = asbind20::script_invoke<std::string>(ctx, m->GetFunctionByName("create_str"));
-        ASSERT_TRUE(result_has_value(str));
-        EXPECT_EQ(str.value(), "hello");
-    }
-
-    {
-        std::string str = "origin";
-        auto result = asbind20::script_invoke<void>(ctx, m->GetFunctionByName("output_ref"), std::ref(str));
-        ASSERT_TRUE(result_has_value(result));
-        EXPECT_EQ(str, "hello from ref");
-    }
-
-    {
-        std::string str = "world";
-        auto result = asbind20::script_invoke<void>(ctx, m->GetFunctionByName("check_str"), std::ref(str));
-        ASSERT_TRUE(result_has_value(result));
-    }
-
     ctx->Release();
 }
 

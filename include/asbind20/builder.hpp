@@ -9,6 +9,13 @@
 
 namespace asbind20
 {
+int load_string(
+    asIScriptModule* m,
+    const char* section_name,
+    std::string_view code,
+    int line_offset = 0
+);
+
 int load_file(
     asIScriptModule* m,
     const std::filesystem::path& filename,
