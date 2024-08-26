@@ -1,0 +1,73 @@
+name: Build
+
+on: [push, pull_request]
+
+jobs:
+    MSVC:
+      runs-on: windows-2022
+
+      name: Windows MSVC
+
+      env:
+        VCPKG_BUILD_TYPE: release
+        VCPKG_DEFAULT_TRIPLET: x64-windows
+
+      steps:
+      - uses: actions/checkout@v4
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: amd64
+
+      - name: Configure
+        run: >
+          cmake
+          -S ${{github.workspace}}
+          -B build
+          -G Ninja
+          -DCMAKE_CXX_STANDARD=20
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake"
+          -Dasbind_build_ext=1
+          -Dasbind_build_test=1
+
+      - name: Build
+        run: cmake --build ${{github.workspace}}/build
+
+      - name: Test
+        working-directory: ${{github.workspace}}/build
+        run: ctest
+
+    GCC:
+      runs-on: ubuntu-22.04
+
+      name: Linux GCC 12
+
+      env:
+        VCPKG_BUILD_TYPE: release
+
+      steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+            sudo apt-get update
+            sudo apt-get install -y cmake ninja-build gcc-12
+
+      - name: Configure
+        run: >
+          cmake
+          -S ${{github.workspace}}
+          -B build
+          -G Ninja
+          -DCMAKE_CXX_STANDARD=20
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_TOOLCHAIN_FILE="${VCPKG_INSTALLATION_ROOT}/scripts/buildsystems/vcpkg.cmake"
+          -Dasbind_build_ext=1
+          -Dasbind_build_test=1
+
+      - name: Build
+        run: cmake --build ${{github.workspace}}/build
+
+      - name: Test
+        working-directory: ${{github.workspace}}/build
+        run: ctest
