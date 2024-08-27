@@ -245,6 +245,64 @@ public:
         return *this;
     }
 
+    global& funcdef(
+        const char* decl
+    )
+    {
+        int r = m_engine->RegisterFuncdef(decl);
+        assert(r >= 0);
+
+        return *this;
+    }
+
+    global& typedef_(
+        const char* type_decl,
+        const char* new_name
+    )
+    {
+        int r = m_engine->RegisterTypedef(new_name, type_decl);
+        assert(r >= 0);
+
+        return *this;
+    }
+
+    template <typename Enum>
+    requires std::is_enum_v<Enum>
+    using enum_value_name_pair = std::pair<Enum, const char*>;
+
+    global& enum_type(
+        const char* type
+    )
+    {
+        int r = m_engine->RegisterEnum(type);
+        assert(r >= 0);
+
+        return *this;
+    }
+
+    template <typename Enum>
+    requires std::is_enum_v<Enum>
+    global& enum_value(
+        const char* type,
+        Enum val,
+        const char* name
+    )
+    {
+        static_assert(
+            sizeof(std::underlying_type_t<Enum>) <= sizeof(int),
+            "Enum value too big"
+        );
+
+        int r = m_engine->RegisterEnumValue(
+            type,
+            name,
+            static_cast<int>(val)
+        );
+        assert(r >= 0);
+
+        return *this;
+    }
+
 private:
     asIScriptEngine* m_engine;
     bool m_force_generic;

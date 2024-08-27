@@ -308,6 +308,98 @@ TEST_F(asbind_test_suite, interface)
     m->Discard();
 }
 
+TEST_F(asbind_test_suite, funcdef_and_typedef)
+{
+    asIScriptEngine* engine = get_engine();
+
+    asbind20::global(engine)
+        .funcdef("bool callback(int, int)")
+        .typedef_("float", "real32");
+
+    asIScriptModule* m = engine->GetModule("test_def", asGM_ALWAYS_CREATE);
+
+    m->AddScriptSection(
+        "test_def.as",
+        "bool pred(int a, int b) { return a < b; }"
+        "void main() { callback@ cb = @pred; assert(cb(1, 2)); }"
+        "real32 get_pi() { return 3.14f; }"
+    );
+    ASSERT_GE(m->Build(), 0);
+
+    asIScriptContext* ctx = engine->CreateContext();
+    {
+        asIScriptFunction* func = m->GetFunctionByDecl("void main()");
+        ASSERT_TRUE(func);
+
+        auto result = asbind20::script_invoke<void>(ctx, func);
+        ASSERT_TRUE(result_has_value(result));
+    }
+
+    {
+        asIScriptFunction* func = m->GetFunctionByDecl("real32 get_pi()");
+        ASSERT_TRUE(func);
+
+        auto result = asbind20::script_invoke<float>(ctx, func);
+        ASSERT_TRUE(result_has_value(result));
+        EXPECT_FLOAT_EQ(result.value(), 3.14f);
+    }
+    ctx->Release();
+
+    m->Discard();
+}
+
+namespace test_bind
+{
+enum class my_enum : int
+{
+    A,
+    B
+};
+} // namespace test_bind
+
+TEST_F(asbind_test_suite, enum)
+{
+    asIScriptEngine* engine = get_engine();
+
+    using test_bind::my_enum;
+
+    asbind20::global(engine)
+        .enum_type("my_enum")
+        .enum_value("my_enum", my_enum::A, "A")
+        .enum_value("my_enum", my_enum::B, "B");
+
+    asIScriptModule* m = engine->GetModule("test_enum", asGM_ALWAYS_CREATE);
+
+    m->AddScriptSection(
+        "test_enum.as",
+        "my_enum get_enum_val() { return my_enum::A; }"
+        "bool check_enum_val(my_enum val) { return val == my_enum::B; }"
+    );
+    ASSERT_GE(m->Build(), 0);
+
+    asIScriptContext* ctx = engine->CreateContext();
+    {
+        asIScriptFunction* func = m->GetFunctionByDecl("my_enum get_enum_val()");
+        ASSERT_TRUE(func);
+
+        auto result = asbind20::script_invoke<my_enum>(ctx, func);
+        ASSERT_TRUE(result_has_value(result));
+        EXPECT_EQ(result.value(), my_enum::A);
+    }
+
+    {
+        asIScriptFunction* func = m->GetFunctionByDecl("bool check_enum_val(my_enum val)");
+        ASSERT_TRUE(func);
+
+        auto result = asbind20::script_invoke<bool>(ctx, func, my_enum::B);
+        ASSERT_TRUE(result_has_value(result));
+        EXPECT_TRUE(result.value());
+    }
+    ctx->Release();
+
+    m->Discard();
+}
+
 int main(int argc, char* argv[])
 {
     ::testing::InitGoogleTest(&argc, argv);

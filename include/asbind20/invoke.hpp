@@ -368,6 +368,13 @@ namespace detail
             ctx->SetArgQWord(idx, val);
     }
 
+    template <typename Enum>
+    requires std::is_enum_v<Enum>
+    void set_arg(asIScriptContext* ctx, asUINT idx, Enum val)
+    {
+        set_arg(ctx, idx, static_cast<std::underlying_type_t<Enum>>(val));
+    }
+
     inline void set_arg(asIScriptContext* ctx, asUINT idx, float val)
     {
         ctx->SetArgFloat(idx, val);
@@ -425,17 +432,20 @@ namespace detail
         }
         else
         {
-            using ret_t = std::remove_cvref_t<T>;
+            using ret_t = typename std::conditional_t<
+                std::is_enum_v<T>,
+                std::underlying_type<T>,
+                std::remove_cvref<T>>::type;
             if constexpr(std::integral<ret_t>)
             {
                 if constexpr(sizeof(ret_t) == 1)
-                    return ctx->GetReturnByte();
+                    return static_cast<T>(ctx->GetReturnByte());
                 else if constexpr(sizeof(ret_t) == 2)
-                    return ctx->GetReturnWord();
+                    return static_cast<T>(ctx->GetReturnWord());
                 else if constexpr(sizeof(ret_t) == 4)
-                    return ctx->GetReturnDWord();
+                    return static_cast<T>(ctx->GetReturnDWord());
                 else if constexpr(sizeof(ret_t) == 8)
-                    return ctx->GetReturnQWord();
+                    return static_cast<T>(ctx->GetReturnQWord());
             }
             else if constexpr(std::is_same_v<ret_t, float>)
             {
