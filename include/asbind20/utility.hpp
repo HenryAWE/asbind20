@@ -32,6 +32,22 @@ public:
  */
 inline constexpr as_exclusive_lock_t as_exclusive_lock = {};
 
+class as_shared_lock_t
+{
+public:
+    static void lock()
+    {
+        asAcquireSharedLock();
+    }
+
+    static void unlock()
+    {
+        asReleaseSharedLock();
+    }
+};
+
+inline constexpr as_shared_lock_t as_shared_lock = {};
+
 namespace detail
 {
     inline void concat_impl(std::string& out, const std::string& str)

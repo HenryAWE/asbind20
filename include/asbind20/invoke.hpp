@@ -7,6 +7,7 @@
 #include <tuple>
 #include <functional>
 #include <angelscript.h>
+#include "utility.hpp"
 
 namespace asbind20
 {
@@ -372,7 +373,8 @@ namespace detail
     requires std::is_enum_v<Enum>
     void set_arg(asIScriptContext* ctx, asUINT idx, Enum val)
     {
-        set_arg(ctx, idx, static_cast<std::underlying_type_t<Enum>>(val));
+        static_assert(sizeof(Enum) <= sizeof(int), "Value out of range");
+        set_arg(ctx, idx, static_cast<int>(val));
     }
 
     inline void set_arg(asIScriptContext* ctx, asUINT idx, float val)
