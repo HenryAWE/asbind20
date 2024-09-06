@@ -1,55 +1,112 @@
 #include <asbind20/ext/math.hpp>
+#include <cmath>
 #include <limits>
+#include <type_traits>
 
 namespace asbind20::ext
 {
 template <typename T>
-static std::string close_to_decl()
+requires std::is_fundamental_v<T>
+static T script_math_min(T a, T b)
 {
-    std::string_view type_name;
-    if constexpr(std::is_same_v<T, float>)
-        type_name = "float";
-    else if constexpr(std::is_same_v<T, double>)
-        type_name = "double";
-    else
-        static_assert(!sizeof(T), "Invalid type");
-    return asbind20::detail::concat(
-        type_name,
-        " close_to(",
-        type_name,
-        ',',
-        type_name,
-        ',',
-        type_name,
-        '=',
-        std::to_string(std::numeric_limits<T>::epsilon()),
-        ')'
-    );
+    return std::min(a, b);
+}
+
+template <typename T>
+requires std::is_fundamental_v<T>
+static T script_math_max(T a, T b)
+{
+    return std::max(a, b);
+}
+
+template <typename T>
+static constexpr T constant_PI = static_cast<T>(M_PI);
+
+template <typename T>
+static constexpr T constant_E = static_cast<T>(M_E);
+
+template <typename T>
+static constexpr T constant_INFINITY = std::numeric_limits<T>::infinity();
+
+template <typename T>
+static bool script_close_to_simple(float a, float b)
+{
+    return close_to<T>(a, b, std::numeric_limits<T>::epsilon());
+}
+
+static bool script_isfinite(float x)
+{
+    return std::isfinite(x);
+}
+
+static bool script_isnan(float x)
+{
+    return std::isnan(x);
+}
+
+static bool script_isinf(float x)
+{
+    return std::isinf(x);
 }
 
 void register_math_function(asIScriptEngine* engine, bool disable_double)
 {
     global(engine)
-        .function("int abs(int)", static_cast<int (*)(int)>(&std::abs));
+        .function("int min(int a, int b)", &script_math_min<int>)
+        .function("int max(int a, int b)", &script_math_max<int>)
+        .function("int abs(int x)", static_cast<int (*)(int)>(&std::abs));
+
+#define ASBIND20_EXT_MATH_UNARY_FUNC(name) \
+    function("float " #name "(float x)", static_cast<float (*)(float)>(&std::name))
+
+#define ASBIND20_EXT_MATH_BINARY_FUNC(name) \
+    function("float " #name "(float x, float y)", static_cast<float (*)(float, float)>(&std::name))
+
 
     global(engine)
-        .function(close_to_decl<float>().c_str(), &script_close_to<float>)
-        .function("float ceil(float)", static_cast<float (*)(float)>(&std::ceil))
-        .function("float floor(float)", static_cast<float (*)(float)>(&std::floor))
-        .function("float abs(float)", static_cast<float (*)(float)>(&std::abs))
-        .function("float sqrt(float)", static_cast<float (*)(float)>(&std::sqrt))
-        .function("float exp(float)", static_cast<float (*)(float)>(&std::exp))
-        .function("float cos(float)", static_cast<float (*)(float)>(&std::cos))
-        .function("float sin(float)", static_cast<float (*)(float)>(&std::sin))
-        .function("float tan(float)", static_cast<float (*)(float)>(&std::tan))
-        .function("float acos(float)", static_cast<float (*)(float)>(&std::acos))
-        .function("float asin(float)", static_cast<float (*)(float)>(&std::asin))
-        .function("float atan(float)", static_cast<float (*)(float)>(&std::atan))
-        .function("float cosh(float)", static_cast<float (*)(float)>(&std::cosh))
-        .function("float sinh(float)", static_cast<float (*)(float)>(&std::sinh))
-        .function("float tanh(float)", static_cast<float (*)(float)>(&std::tanh));
+        .property("const float PI_f", constant_PI<float>)
+        .property("const float E_f", constant_E<float>)
+        .property("const float INFINITY_f", constant_INFINITY<float>)
+        .function("bool close_to(float a, float b)", &script_close_to_simple<float>)
+        .function("bool close_to(float a, float b, float epsilon)", &close_to<float>)
+        .function("float min(float a, float b)", &script_math_min<float>)
+        .function("float max(float a, float b)", &script_math_min<float>)
+        .ASBIND20_EXT_MATH_UNARY_FUNC(ceil)
+        .ASBIND20_EXT_MATH_UNARY_FUNC(floor)
+        .ASBIND20_EXT_MATH_UNARY_FUNC(round)
+        .ASBIND20_EXT_MATH_UNARY_FUNC(trunc)
+        .ASBIND20_EXT_MATH_UNARY_FUNC(abs)
+        .ASBIND20_EXT_MATH_UNARY_FUNC(sqrt)
+        .ASBIND20_EXT_MATH_UNARY_FUNC(cbrt)
+        .ASBIND20_EXT_MATH_UNARY_FUNC(exp)
+        .ASBIND20_EXT_MATH_UNARY_FUNC(exp2)
+        .ASBIND20_EXT_MATH_UNARY_FUNC(log)
+        .ASBIND20_EXT_MATH_UNARY_FUNC(log2)
+        .ASBIND20_EXT_MATH_UNARY_FUNC(log10)
+        .ASBIND20_EXT_MATH_UNARY_FUNC(cos)
+        .ASBIND20_EXT_MATH_UNARY_FUNC(sin)
+        .ASBIND20_EXT_MATH_UNARY_FUNC(tan)
+        .ASBIND20_EXT_MATH_UNARY_FUNC(acos)
+        .ASBIND20_EXT_MATH_UNARY_FUNC(asin)
+        .ASBIND20_EXT_MATH_UNARY_FUNC(atan)
+        .ASBIND20_EXT_MATH_UNARY_FUNC(cosh)
+        .ASBIND20_EXT_MATH_UNARY_FUNC(sinh)
+        .ASBIND20_EXT_MATH_UNARY_FUNC(tanh)
+        .ASBIND20_EXT_MATH_UNARY_FUNC(acosh)
+        .ASBIND20_EXT_MATH_UNARY_FUNC(asinh)
+        .ASBIND20_EXT_MATH_UNARY_FUNC(atanh)
+        .function("bool isfinite(float x)", &script_isfinite)
+        .function("bool isnan(float x)", &script_isnan)
+        .function("bool isinf(float x)", &script_isinf)
+        .ASBIND20_EXT_MATH_BINARY_FUNC(pow)
+        .ASBIND20_EXT_MATH_BINARY_FUNC(atan2)
+        .ASBIND20_EXT_MATH_BINARY_FUNC(hypot);
 
+    // TODO: double support
     if(disable_double)
         return;
+
+#undef ASBIND20_EXT_MATH_UNARY_FUNC
+#undef ASBIND20_EXT_MATH_BINARY_FUNC
 }
 } // namespace asbind20::ext

@@ -5,6 +5,15 @@
 
 using namespace asbind_test;
 
+TEST(ext_string, unicode_support)
+{
+    using namespace std::literals;
+    using namespace asbind20;
+
+    EXPECT_EQ(ext::u8_remove_prefix("hello world!", 6), "world!"sv);
+    EXPECT_EQ(ext::u8_remove_suffix("hello world!", 1), "hello world"sv);
+}
+
 TEST_F(asbind_test_suite, ext_stdstring)
 {
     run_file("script/test_string.as");

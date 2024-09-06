@@ -11,9 +11,9 @@ namespace asbind20::ext
 void register_math_function(asIScriptEngine* engine, bool disable_double = true);
 
 template <std::floating_point T>
-bool script_close_to(T lhs, T rhs, T epsilon)
+bool close_to(T a, T b, T epsilon)
 {
-    return std::abs(lhs - rhs) < epsilon;
+    return std::abs(a - b) < epsilon;
 }
 } // namespace asbind20::ext
 

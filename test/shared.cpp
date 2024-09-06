@@ -33,9 +33,12 @@ void asbind_test_suite::SetUp()
     m_engine = asCreateScriptEngine();
     m_engine->SetMessageCallback(asFUNCTION(msg_callback), this, asCALL_CDECL);
 
+    m_engine->SetEngineProperty(asEP_USE_CHARACTER_LITERALS, true);
+
     using namespace asbind20;
 
     ext::register_std_string(m_engine, true);
+    ext::register_string_utils(m_engine);
     ext::register_math_function(m_engine);
     ext::register_script_assert(
         m_engine,

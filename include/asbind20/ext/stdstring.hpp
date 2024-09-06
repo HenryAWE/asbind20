@@ -131,7 +131,21 @@ char32_t u8_bytes_to_int(const char* bytes);
 
 unsigned int u8_int_to_bytes(char32_t ch, char* buf);
 
+std::string_view u8_substr(
+    std::string_view sv,
+    std::size_t pos,
+    std::size_t n = std::string_view::npos
+);
+
+std::string_view u8_remove_prefix(std::string_view str, std::size_t n);
+
+std::string_view u8_remove_suffix(std::string_view str, std::size_t n);
+
+void string_append_ch(std::string& this_, std::uint32_t ch);
+
 void register_std_string(asIScriptEngine* engine, bool as_default = true);
+
+void register_string_utils(asIScriptEngine* engine);
 } // namespace asbind20::ext
 
 #endif

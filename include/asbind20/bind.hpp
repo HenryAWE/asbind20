@@ -221,7 +221,7 @@ public:
     )
     {
         int r = m_engine->RegisterGlobalProperty(
-            decl, std::addressof(val)
+            decl, (void*)std::addressof(val)
         );
         assert(r >= 0);
 
