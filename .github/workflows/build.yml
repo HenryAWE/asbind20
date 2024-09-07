@@ -18,6 +18,13 @@ jobs:
         with:
           arch: amd64
 
+      - name: Setup vcpkg
+        working-directory: C:/vcpkg
+        run: |
+          git fetch
+          git reset --hard HEAD
+          git merge 8cffd44a0fef633597c4f79d93a8b16b875ac6f9
+
       - name: Configure
         run: >
           cmake
@@ -52,6 +59,13 @@ jobs:
         run: |
             sudo apt-get update
             sudo apt-get install -y cmake ninja-build gcc-12
+
+      - name: Setup vcpkg
+        working-directory: /usr/local/share/vcpkg
+        run: |
+          git fetch
+          git reset --hard HEAD
+          git merge 8cffd44a0fef633597c4f79d93a8b16b875ac6f9
 
       - name: Configure
         run: >

@@ -11,7 +11,7 @@ project(
     LANGUAGES CXX
 )
 
-find_package(Angelscript CONFIG REQUIRED)
+find_package(Angelscript 2.37.0 CONFIG REQUIRED)
 
 file(GLOB asbind20_src "include/*.hpp" "src/*.cpp")
 option(asbind_build_ext "Build extensions" ON)

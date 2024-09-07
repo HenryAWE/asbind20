@@ -1,8 +1,11 @@
 {
-    "name": "asbind20",
-    "version": "0.1.0",
-    "dependencies": [
-        "angelscript"
-    ]
+  "name": "asbind20",
+  "version": "0.1.0",
+  "builtin-baseline": "8cffd44a0fef633597c4f79d93a8b16b875ac6f9",
+  "dependencies": [
+    {
+      "name": "angelscript",
+      "version>=": "2.37.0"
+    }
+  ]
 }
-

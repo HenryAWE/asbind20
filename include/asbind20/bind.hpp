@@ -316,7 +316,7 @@ class value_class : private detail::class_register_base
     using my_base = detail::class_register_base;
 
 public:
-    value_class(asIScriptEngine* engine, const char* name, asDWORD flags = asGetTypeTraits<T>())
+    value_class(asIScriptEngine* engine, const char* name, asQWORD flags = asGetTypeTraits<T>())
         : my_base(engine, name), m_flags(asOBJ_VALUE | flags)
     {
         assert(!(m_flags & asOBJ_REF));
@@ -513,7 +513,7 @@ public:
     }
 
 private:
-    asDWORD m_flags;
+    asQWORD m_flags;
 };
 
 template <typename T>
@@ -522,7 +522,7 @@ class ref_class : private detail::class_register_base
     using my_base = detail::class_register_base;
 
 public:
-    ref_class(asIScriptEngine* engine, const char* name, asDWORD flags = 0)
+    ref_class(asIScriptEngine* engine, const char* name, asQWORD flags = 0)
         : my_base(engine, name)
     {
         assert(!(flags & asOBJ_VALUE));
