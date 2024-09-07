@@ -1,6 +1,7 @@
 #include <asbind20/ext/math.hpp>
 #include <cmath>
 #include <limits>
+#include <numbers>
 #include <type_traits>
 
 namespace asbind20::ext
@@ -18,12 +19,6 @@ static T script_math_max(T a, T b)
 {
     return std::max(a, b);
 }
-
-template <typename T>
-static constexpr T constant_PI = static_cast<T>(M_PI);
-
-template <typename T>
-static constexpr T constant_E = static_cast<T>(M_E);
 
 template <typename T>
 static constexpr T constant_INFINITY = std::numeric_limits<T>::infinity();
@@ -64,8 +59,8 @@ void register_math_function(asIScriptEngine* engine, bool disable_double)
 
 
     global(engine)
-        .property("const float PI_f", constant_PI<float>)
-        .property("const float E_f", constant_E<float>)
+        .property("const float PI_f", std::numbers::pi_v<float>)
+        .property("const float E_f", std::numbers::e_v<float>)
         .property("const float INFINITY_f", constant_INFINITY<float>)
         .function("bool close_to(float a, float b)", &script_close_to_simple<float>)
         .function("bool close_to(float a, float b, float epsilon)", &close_to<float>)

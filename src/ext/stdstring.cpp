@@ -39,20 +39,27 @@ std::size_t u8_index(std::string_view str, std::size_t n) noexcept
 
 std::size_t u8_index_r(std::string_view str, std::size_t n) noexcept
 {
+    if(str.empty())
+        return -1;
+
     std::size_t count = 0;
 
-    std::size_t i = str.size();
+    std::size_t i = str.size() - 1;
 
-    while(i != 0)
+    while(true)
     {
-        std::uint8_t b = str[i--];
+        std::uint8_t b = str[i];
         if((b & 0b1100'0000) != 0b1000'0000)
         {
             ++count;
             if(count == n)
                 return i;
         }
-    }
+
+        if(i == 0)
+            break;
+        --i;
+    };
 
     return -1;
 }
