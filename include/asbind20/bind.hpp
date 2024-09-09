@@ -454,10 +454,30 @@ public:
 
     value_class& opEquals()
     {
-        method(
-            detail::concat(m_name, "& opEquals(const ", m_name, " &in)").c_str(),
-            static_cast<T& (T::*)(const T&)>(&T::operator=)
-        );
+        constexpr bool has_member_op_eq = requires() {
+            static_cast<bool (T::*)(const T&) const>(&T::operator==);
+        };
+
+        if constexpr(has_member_op_eq)
+        {
+            method(
+                detail::concat(m_name, "& opEquals(const ", m_name, " &in) const").c_str(),
+                static_cast<bool (T::*)(const T&) const>(&T::operator==)
+            );
+        }
+        else
+        {
+            auto wrapper_obj_last = +[](const T& rhs, const T& lhs) // Reversed order for asCALL_CDECL_OBJLAST
+                -> bool
+            {
+                return lhs == rhs;
+            };
+            method(
+                detail::concat(m_name, "& opEquals(const ", m_name, " &in) const").c_str(),
+                wrapper_obj_last,
+                call_conv<asCALL_CDECL_OBJLAST>
+            );
+        }
 
         return *this;
     }
@@ -523,14 +543,14 @@ class ref_class : private detail::class_register_base
 
 public:
     ref_class(asIScriptEngine* engine, const char* name, asQWORD flags = 0)
-        : my_base(engine, name)
+        : my_base(engine, name), m_flags(asOBJ_REF | flags)
     {
-        assert(!(flags & asOBJ_VALUE));
+        assert(!(m_flags & asOBJ_VALUE));
 
         int r = m_engine->RegisterObjectType(
             m_name,
             sizeof(T),
-            asOBJ_REF | flags
+            m_flags
         );
         assert(r >= 0);
     }
@@ -539,6 +559,21 @@ public:
     ref_class& behaviour(asEBehaviours beh, const char* decl, Fn&& fn, call_conv_t<asCALL_THISCALL>)
     {
         behaviour_impl(beh, decl, std::forward<Fn>(fn), call_conv<asCALL_THISCALL>);
+
+        return *this;
+    }
+
+    template <typename Fn>
+    ref_class& template_(Fn&& fn)
+    {
+        int r = m_engine->RegisterObjectBehaviour(
+            m_name,
+            asBEHAVE_TEMPLATE_CALLBACK,
+            "bool f(int&in,bool&out)",
+            asFunctionPtr(fn),
+            asCALL_CDECL
+        );
+        assert(r >= 0);
 
         return *this;
     }
@@ -570,13 +605,32 @@ public:
 
     ref_class& default_factory()
     {
-        factory(
-            detail::concat(m_name, "@ f()").c_str(),
-            +[]()
-            {
-                return new T();
-            }
-        );
+        if constexpr(std::is_default_constructible_v<T>)
+        {
+            assert(!(m_flags & asOBJ_TEMPLATE));
+            factory(
+                detail::concat(m_name, "@ f()").c_str(),
+                +[]()
+                {
+                    return new T();
+                }
+            );
+        }
+        else if constexpr(std::is_constructible_v<T, asITypeInfo*>)
+        {
+            assert(m_flags & asOBJ_TEMPLATE);
+            factory(
+                detail::concat(m_name, "@ f(int&in)").c_str(),
+                +[](asITypeInfo* ti)
+                {
+                    return new T(ti);
+                }
+            );
+        }
+        else
+        {
+            static_assert(!sizeof(T), "T is not default constructible");
+        }
 
         return *this;
     }
@@ -592,6 +646,35 @@ public:
             asCALL_CDECL
         );
         assert(r >= 0);
+
+        return *this;
+    }
+
+    template <typename... Args>
+    ref_class& list_factory(const char* decl, T* (*fn)(Args...))
+    {
+        int r = m_engine->RegisterObjectBehaviour(
+            m_name,
+            asBEHAVE_LIST_FACTORY,
+            decl,
+            asFunctionPtr(fn),
+            asCALL_CDECL
+        );
+        assert(r >= 0);
+
+        return *this;
+    }
+
+    template <typename... Args>
+    ref_class& list_factory(std::string_view elem_type_name)
+    {
+        list_factory(
+            detail::concat(m_name, "@ f(int&in,int&in) {repeat ", elem_type_name, "}").c_str(),
+            +[](asITypeInfo* ti, void* list_buf)
+            {
+                return new T(ti, list_buf);
+            }
+        );
 
         return *this;
     }
@@ -620,6 +703,66 @@ public:
         return *this;
     }
 
+    ref_class& get_refcount(int (T::*fn)() const)
+    {
+        behaviour(
+            asBEHAVE_GETREFCOUNT,
+            "int f()",
+            fn,
+            call_conv<asCALL_THISCALL>
+        );
+
+        return *this;
+    }
+
+    ref_class& set_flag(void (T::*fn)())
+    {
+        behaviour(
+            asBEHAVE_SETGCFLAG,
+            "void f()",
+            fn,
+            call_conv<asCALL_THISCALL>
+        );
+
+        return *this;
+    }
+
+    ref_class& get_flag(bool (T::*fn)() const)
+    {
+        behaviour(
+            asBEHAVE_GETGCFLAG,
+            "bool f()",
+            fn,
+            call_conv<asCALL_THISCALL>
+        );
+
+        return *this;
+    }
+
+    ref_class& enum_refs(void (T::*fn)(asIScriptEngine*))
+    {
+        behaviour(
+            asBEHAVE_ENUMREFS,
+            "void f(int&in)",
+            fn,
+            call_conv<asCALL_THISCALL>
+        );
+
+        return *this;
+    }
+
+    ref_class& release_refs(void (T::*fn)(asIScriptEngine*))
+    {
+        behaviour(
+            asBEHAVE_RELEASEREFS,
+            "void f(int&in)",
+            fn,
+            call_conv<asCALL_THISCALL>
+        );
+
+        return *this;
+    }
+
     template <typename U>
     ref_class& property(const char* decl, U T::*mp)
     {
@@ -627,6 +770,9 @@ public:
 
         return *this;
     }
+
+private:
+    asQWORD m_flags;
 };
 
 class interface

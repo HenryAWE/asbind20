@@ -387,9 +387,14 @@ namespace detail
         ctx->SetArgDouble(idx, val);
     }
 
-    inline void set_arg(asIScriptContext* ctx, asUINT idx, asIScriptObject* obj)
+    inline void set_arg(asIScriptContext* ctx, asUINT idx, void* obj)
     {
         ctx->SetArgAddress(idx, obj);
+    }
+
+    inline void set_arg(asIScriptContext* ctx, asUINT idx, const void* obj)
+    {
+        ctx->SetArgAddress(idx, const_cast<void*>(obj));
     }
 
     template <typename Class>
@@ -504,6 +509,23 @@ script_invoke_result<R> script_invoke(asIScriptContext* ctx, asIScriptObject* ob
 
     ctx->Prepare(func);
     ctx->SetObject(obj);
+
+    detail::set_args(ctx, std::forward_as_tuple(args...));
+
+    return detail::execute_impl<R>(func, ctx);
+}
+
+/**
+ * @brief Calling a method on script class
+ */
+template <typename R, typename... Args>
+script_invoke_result<R> script_invoke(asIScriptContext* ctx, const asIScriptObject* obj, asIScriptFunction* func, Args&&... args)
+{
+    assert(func != nullptr);
+    assert(ctx != nullptr);
+
+    ctx->Prepare(func);
+    ctx->SetObject(const_cast<asIScriptObject*>(obj));
 
     detail::set_args(ctx, std::forward_as_tuple(args...));
 
@@ -675,15 +697,7 @@ inline object instantiate_class(asIScriptContext* ctx, asITypeInfo* class_info)
     asIScriptFunction* factory = nullptr;
     if(int flags = class_info->GetFlags(); flags & asOBJ_REF)
     {
-        for(asUINT i = 0; i < class_info->GetFactoryCount(); ++i)
-        {
-            asIScriptFunction* fp = class_info->GetFactoryByIndex(i);
-            if(fp->GetParamCount() == 0) // Default factory
-            {
-                factory = fp;
-                break;
-            }
-        }
+        factory = get_default_factory(class_info);
     }
 
     if(!factory) [[unlikely]]

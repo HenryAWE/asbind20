@@ -1,4 +1,5 @@
 #include "shared.hpp"
+#include <asbind20/ext/array.hpp>
 #include <asbind20/ext/stdstring.hpp>
 #include <asbind20/ext/assert.hpp>
 #include <asbind20/ext/math.hpp>
@@ -9,7 +10,12 @@ namespace asbind_test
 static void msg_callback(const asSMessageInfo* msg, void*)
 {
     if(msg->type == asEMsgType::asMSGTYPE_ERROR)
-        FAIL() << msg->message;
+    {
+        FAIL()
+            << msg->section
+            << "(" << msg->row << ':' << msg->col << "): "
+            << msg->message;
+    }
 }
 
 static void assert_callback(std::string_view sv)
@@ -37,6 +43,7 @@ void asbind_test_suite::SetUp()
 
     using namespace asbind20;
 
+    ext::register_script_array(m_engine);
     ext::register_std_string(m_engine, true);
     ext::register_string_utils(m_engine);
     ext::register_math_function(m_engine);

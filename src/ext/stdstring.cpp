@@ -1,10 +1,8 @@
-#include <angelscript.h>
 #include <asbind20/ext/stdstring.hpp>
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <charconv>
-#include <asbind20/bind.hpp>
 #include <string>
 #include <string_view>
 
@@ -325,7 +323,7 @@ void register_std_string(asIScriptEngine* engine, bool as_default)
         .common_behaviours()
         .opEquals()
         .method(
-            "int opCmp(const string &in)",
+            "int opCmp(const string &in) const",
             &string_opCmp
         )
         .method(

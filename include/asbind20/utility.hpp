@@ -185,6 +185,15 @@ std::size_t member_offset(T Class::*mp) noexcept
     Class* p = nullptr;
     return std::size_t(std::addressof(p->*mp)) - std::size_t(p);
 }
+
+asIScriptFunction* get_default_factory(asITypeInfo* ti);
+
+asIScriptFunction* get_default_constructor(asITypeInfo* ti);
+
+void set_script_exception(asIScriptContext* ctx, const char* info);
+void set_script_exception(asIScriptContext* ctx, const std::string& info);
+void set_script_exception(const char* info);
+void set_script_exception(const std::string& info);
 } // namespace asbind20
 
 #endif

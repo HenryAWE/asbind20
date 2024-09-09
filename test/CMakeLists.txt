@@ -21,6 +21,11 @@ add_executable(test_utility test_utility.cpp)
 target_link_libraries(test_utility PRIVATE shared_test_lib)
 gtest_discover_tests(test_utility)
 
+add_executable(test_ext_array test_ext_array.cpp)
+target_link_libraries(test_ext_array PRIVATE shared_test_lib)
+gtest_discover_tests(test_ext_array)
+configure_file(script/test_array.as ${CMAKE_CURRENT_BINARY_DIR}/script/test_array.as COPYONLY)
+
 add_executable(test_ext_math test_ext_math.cpp)
 target_link_libraries(test_ext_math PRIVATE shared_test_lib)
 gtest_discover_tests(test_ext_math)
