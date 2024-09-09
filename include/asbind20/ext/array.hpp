@@ -87,7 +87,7 @@ private:
         int opEquals_status;
     };
 
-    bool equals_impl(const void* lhs, const void* rhs, asIScriptContext* ctx, const array_cache* cache) const;
+    bool operator_eq_impl(const void* lhs, const void* rhs, asIScriptContext* ctx, const array_cache* cache) const;
 
     void cache_data();
     static void cache_cleanup_callback(asITypeInfo* ti);
@@ -98,7 +98,10 @@ private:
     void enum_refs(asIScriptEngine* engine);
     void release_refs(asIScriptEngine* engine);
 
+    bool member_indirect() const;
+
     void* ref_at(asUINT idx);
+    const void* ref_at(asUINT idx) const;
 
     void* opIndex(asUINT idx);
 

@@ -278,7 +278,7 @@ void script_array::assign_impl(void* ptr, void* value)
     }
 }
 
-bool script_array::equals_impl(const void* lhs, const void* rhs, asIScriptContext* ctx, const array_cache* cache) const
+bool script_array::operator_eq_impl(const void* lhs, const void* rhs, asIScriptContext* ctx, const array_cache* cache) const
 {
     if(!(m_subtype_id & ~asTYPEID_MASK_SEQNBR))
     {
@@ -315,18 +315,17 @@ bool script_array::equals_impl(const void* lhs, const void* rhs, asIScriptContex
         {
             auto result = script_invoke<bool>(
                 ctx,
-                static_cast<const asIScriptObject*>(*((void**)const_cast<void*>(lhs))),
+                static_cast<const asIScriptObject*>(*(void**)lhs),
                 cache->subtype_opEquals,
-                rhs
+                *(void**)rhs
             );
 
             if(!result.has_value())
                 return false;
             return *result;
         }
-
         // Fallback to OpCmp() == 0
-        if(cache->subtype_opCmp)
+        else if(cache->subtype_opCmp)
         {
             auto result = script_invoke<int>(
                 ctx,
@@ -437,7 +436,7 @@ void script_array::cache_data()
                     cache->opEquals_status = asMULTIPLE_FUNCTIONS;
                 }
                 else
-                    cache->subtype_opCmp = func;
+                    cache->subtype_opEquals = func;
             }
         }
     }
@@ -492,9 +491,22 @@ const void* script_array::operator[](asUINT idx) const
     return m_data.ptr + offset;
 }
 
+bool script_array::member_indirect() const
+{
+    return ((m_subtype_id & asTYPEID_MASK_OBJECT) && !(m_subtype_id & asTYPEID_OBJHANDLE));
+}
+
 void* script_array::ref_at(size_type idx)
 {
-    if((m_subtype_id & asTYPEID_MASK_OBJECT) && !(m_subtype_id & asTYPEID_OBJHANDLE))
+    if(member_indirect())
+        return *(void**)(*this)[idx];
+    else
+        return (*this)[idx];
+}
+
+const void* script_array::ref_at(size_type idx) const
+{
+    if(member_indirect())
         return *(void**)(*this)[idx];
     else
         return (*this)[idx];
@@ -538,7 +550,7 @@ bool script_array::operator==(const script_array& other) const
     array_cache* cache = reinterpret_cast<array_cache*>(m_ti->GetUserData(script_array_cache_id()));
     for(size_type i = 0; i < size(); ++i)
     {
-        if(!equals_impl((*this)[i], other[i], ctx, cache))
+        if(!operator_eq_impl((*this)[i], other[i], ctx, cache))
         {
             result = false;
             break;

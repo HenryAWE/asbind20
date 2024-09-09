@@ -85,9 +85,10 @@ void string_array()
     assert(strs[0] == "hello");
     assert(strs[1] == "world");
     assert(strs[2] == "array");
+    assert(strs == {"hello", "world", "array"});
 }
 
-void main()
+void check_int_array()
 {
     array<int> ia = {1, 2, 3, 4};
 
@@ -102,7 +103,11 @@ void main()
     assert(ia.size == 5);
     assert(ia.back == 5);
     assert(ia == {0, 2, 3, 4, 5});
+}
 
+void main()
+{
+    check_int_array();
     my_pair_array();
     my_pair_ref_array();
     string_array();

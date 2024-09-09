@@ -461,7 +461,7 @@ public:
         if constexpr(has_member_op_eq)
         {
             method(
-                detail::concat(m_name, "& opEquals(const ", m_name, " &in) const").c_str(),
+                detail::concat("bool opEquals(const ", m_name, " &in) const").c_str(),
                 static_cast<bool (T::*)(const T&) const>(&T::operator==)
             );
         }
@@ -473,7 +473,7 @@ public:
                 return lhs == rhs;
             };
             method(
-                detail::concat(m_name, "& opEquals(const ", m_name, " &in) const").c_str(),
+                detail::concat("bool opEquals(const ", m_name, " &in) const").c_str(),
                 wrapper_obj_last,
                 call_conv<asCALL_CDECL_OBJLAST>
             );
