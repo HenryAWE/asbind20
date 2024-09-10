@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <mutex>
 #include "../asbind.hpp"
 
 namespace asbind20::ext
@@ -15,6 +16,8 @@ class script_array
 {
     friend void register_script_array(asIScriptEngine* engine, bool as_default);
 
+    void notify_gc_for_this();
+
 public:
     using size_type = asUINT;
 
@@ -24,16 +27,27 @@ public:
 
     script_array(const script_array&);
 
+    script_array(asITypeInfo* ti, size_type n);
+
+    script_array(asITypeInfo* ti, size_type n, const void* value);
+
     script_array(asITypeInfo* ti, void* list_buf);
 
     ~script_array();
 
     script_array& operator=(const script_array& other);
 
+    void swap(script_array& other) noexcept;
+
     bool operator==(const script_array& other) const;
 
-    void* operator[](asUINT idx);
-    const void* operator[](asUINT idx) const;
+    void* operator[](size_type idx);
+    const void* operator[](size_type idx) const;
+
+    bool member_indirect() const;
+
+    void* pointer_to(size_type idx);
+    const void* pointer_to(size_type idx) const;
 
     void addref();
     void release();
@@ -61,8 +75,37 @@ public:
     }
 
     void reserve(size_type new_cap);
+    void shrink_to_fit();
 
-    void push_back(void* ref);
+    void clear();
+
+    void push_back(const void* value);
+
+    void pop_back();
+
+    void append_range(const script_array& rng, size_type n = -1);
+
+    void insert(size_type idx, void* value);
+
+    void insert_range(size_type idx, const script_array& rng, size_type n = -1);
+
+    void erase(size_type idx, size_type n = 1);
+
+    [[nodiscard]]
+    asITypeInfo* script_type_info() const noexcept
+    {
+        return m_ti;
+    }
+
+    void lock()
+    {
+        m_mx.lock();
+    }
+
+    void unlock() noexcept
+    {
+        m_mx.unlock();
+    }
 
 private:
     struct array_data
@@ -72,12 +115,16 @@ private:
         std::byte* ptr = nullptr;
     };
 
-    /**
-     * @brief Move data to a newly allocated `array_data`. (INTERNAL)
-     */
-    void move_data(array_data& src, array_data& dst);
+    void copy_construct_range(void* start, const void* rng_start, size_type n);
+    void move_construct_range(void* start, void* rng_start, size_type n);
+    void move_construct_range_backward(void* start, void* rng_start, size_type n);
+    void copy_assign_range_backward(void* start, const void* rng_start, size_type n);
 
-    void assign_impl(void* ptr, void* value);
+    void insert_range_impl(size_type idx, const void* src, size_type n);
+
+    void copy_assign_at(void* ptr, void* value);
+
+    void destroy_n(void* start, size_type n);
 
     struct array_cache
     {
@@ -98,15 +145,13 @@ private:
     void enum_refs(asIScriptEngine* engine);
     void release_refs(asIScriptEngine* engine);
 
-    bool member_indirect() const;
-
-    void* ref_at(asUINT idx);
-    const void* ref_at(asUINT idx) const;
-
-    void* opIndex(asUINT idx);
+    void* opIndex(size_type idx);
 
     void* get_front();
     void* get_back();
+
+    void set_front(void* value);
+    void set_back(void* value);
 
     mutable int m_refcount = 1;
     mutable bool m_gc_flag = false;
@@ -114,21 +159,18 @@ private:
     int m_subtype_id = 0;
     size_type m_elem_size = 0;
     array_data m_data = array_data();
+    std::mutex m_mx;
 
     asQWORD subtype_flags() const;
 
     static void* allocate(std::size_t bytes);
-    static void deallocate(void* ptr) noexcept;
+    static void deallocate(void* mem) noexcept;
 
-    void alloc_data(size_type cap);
+    void default_construct_n(void* start, size_type n);
+    void value_construct_n(void* start, const void* value, size_type n);
 
-    void construct_elem(void* ptr, size_type n = 1);
-
-    bool mem_grow_to(size_type new_cap);
-
-    void copy_other_impl(script_array& other);
+    bool mem_resize_to(size_type new_cap);
 };
-
 } // namespace asbind20::ext
 
 #endif

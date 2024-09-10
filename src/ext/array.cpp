@@ -2,6 +2,7 @@
 #include <cassert>
 #include <cstddef>
 #include <cstring>
+#include <algorithm>
 #include <asbind20/invoke.hpp>
 
 #ifndef ASBIND20_EXT_ARRAY_CACHE_ID
@@ -23,18 +24,24 @@ static asUINT get_elem_size(asIScriptEngine* engine, int subtype_id)
         return engine->GetSizeOfPrimitiveType(subtype_id);
 }
 
+void script_array::notify_gc_for_this()
+{
+    assert(m_ti != nullptr);
+    if(m_ti->GetFlags() & asOBJ_GC)
+        m_ti->GetEngine()->NotifyGarbageCollectorOfNewObject(this, m_ti);
+}
+
 script_array::script_array(asITypeInfo* ti)
     : m_ti(ti), m_subtype_id(ti->GetSubTypeId())
 {
-    asIScriptEngine* engine = ti->GetEngine();
+    asIScriptEngine* engine = m_ti->GetEngine();
 
     m_ti->AddRef();
     m_elem_size = get_elem_size(engine, m_subtype_id);
 
     cache_data();
 
-    if(m_ti->GetFlags() & asOBJ_GC)
-        engine->NotifyGarbageCollectorOfNewObject(this, m_ti);
+    notify_gc_for_this();
 }
 
 script_array::script_array(const script_array& other)
@@ -45,10 +52,56 @@ script_array::script_array(const script_array& other)
     m_ti->AddRef();
     m_elem_size = get_elem_size(engine, m_subtype_id);
 
-    if(m_ti->GetFlags() & asOBJ_GC)
+    if(!other.empty())
     {
-        m_ti->GetEngine()->NotifyGarbageCollectorOfNewObject(this, m_ti);
+        mem_resize_to(other.size());
+        copy_construct_range(
+            m_data.ptr,
+            other.m_data.ptr,
+            other.size()
+        );
+        m_data.size = other.size();
     }
+
+    notify_gc_for_this();
+}
+
+script_array::script_array(asITypeInfo* ti, size_type n)
+    : m_ti(ti), m_subtype_id(ti->GetSubTypeId())
+{
+    asIScriptEngine* engine = m_ti->GetEngine();
+
+    m_ti->AddRef();
+    m_elem_size = get_elem_size(engine, m_subtype_id);
+
+    cache_data();
+
+    if(n != 0)
+    {
+        mem_resize_to(n);
+        default_construct_n(m_data.ptr, n);
+        m_data.size = n;
+    }
+
+    notify_gc_for_this();
+}
+
+script_array::script_array(asITypeInfo* ti, size_type n, const void* value)
+    : m_ti(ti), m_subtype_id(ti->GetSubTypeId())
+{
+    asIScriptEngine* engine = m_ti->GetEngine();
+
+    m_ti->AddRef();
+    m_elem_size = get_elem_size(engine, m_subtype_id);
+
+    if(n != 0)
+    {
+        mem_resize_to(n);
+        value_construct_n(m_data.ptr, value, n);
+        m_data.size = n;
+    }
+
+    notify_gc_for_this();
 }
 
 script_array::script_array(asITypeInfo* ti, void* list_buf)
@@ -64,20 +117,34 @@ script_array::script_array(asITypeInfo* ti, void* list_buf)
 
     cache_data();
 
-    alloc_data(buf_sz);
+    mem_resize_to(buf_sz);
     if(!(m_subtype_id & asTYPEID_MASK_OBJECT))
     {
         m_data.size = buf_sz;
         if(buf_sz > 0)
-            std::memcpy(m_data.ptr, list_buf, buf_sz * m_elem_size);
+        {
+            std::memcpy(
+                m_data.ptr,
+                list_buf,
+                static_cast<std::size_t>(buf_sz) * m_elem_size
+            );
+        }
     }
     else if((m_subtype_id & asTYPEID_OBJHANDLE) || (m_subtype_id & asOBJ_REF))
     {
         m_data.size = buf_sz;
         if(buf_sz > 0)
         {
-            std::memcpy(m_data.ptr, list_buf, buf_sz * m_elem_size);
-            std::memset(list_buf, 0, buf_sz * m_elem_size);
+            std::memcpy(
+                m_data.ptr,
+                list_buf,
+                static_cast<std::size_t>(buf_sz) * m_elem_size
+            );
+            std::memset(
+                list_buf,
+                0,
+                static_cast<std::size_t>(buf_sz) * m_elem_size
+            );
         }
     }
     else
@@ -105,28 +172,49 @@ script_array::script_array(asITypeInfo* ti, void* list_buf)
         m_data.size = buf_sz;
     }
 
-    if(m_ti->GetFlags() & asOBJ_GC)
-        m_ti->GetEngine()->NotifyGarbageCollectorOfNewObject(this, m_ti);
+    notify_gc_for_this();
 }
 
 script_array::~script_array()
 {
+    clear();
     deallocate(m_data.ptr);
     if(m_ti)
         m_ti->Release();
 }
 
+script_array& script_array::operator=(const script_array& other)
+{
+    if(this == &other)
+        return *this;
+    script_array(other).swap(*this);
+    return *this;
+}
+
+void script_array::swap(script_array& other) noexcept
+{
+    using std::swap;
+
+    swap(m_refcount, other.m_refcount);
+    swap(m_gc_flag, other.m_gc_flag);
+    swap(m_ti, other.m_ti);
+    swap(m_subtype_id, other.m_subtype_id);
+    swap(m_elem_size, other.m_elem_size);
+    swap(m_data, other.m_data);
+}
+
 void script_array::addref()
 {
-    ++m_refcount;
+    asAtomicInc(m_refcount);
 }
 
 void script_array::release()
 {
-    assert(m_refcount != 0);
-    --m_refcount;
-    if(m_refcount == 0)
+    m_gc_flag = false;
+    if(asAtomicDec(m_refcount) == 0)
+    {
         delete this;
+    }
 }
 
 void script_array::reserve(size_type new_cap)
@@ -140,105 +228,330 @@ void script_array::reserve(size_type new_cap)
     else
         target_cap = new_cap;
 
-    mem_grow_to(new_cap);
+    mem_resize_to(target_cap);
 }
 
-void script_array::push_back(void* value)
+void script_array::shrink_to_fit()
+{
+    if(size() == 0)
+    {
+        if(!m_data.ptr)
+            return;
+        deallocate(m_data.ptr);
+        m_data.ptr = nullptr;
+    }
+    mem_resize_to(size());
+}
+
+void script_array::clear()
+{
+    if(empty())
+        return;
+    destroy_n(m_data.ptr, size());
+    m_data.size = 0;
+}
+
+void script_array::push_back(const void* value)
 {
     reserve(size() + 1);
-
-    void* ptr = m_data.ptr + m_data.size * m_elem_size;
-
-    if((m_subtype_id & ~asTYPEID_MASK_SEQNBR) && !(m_subtype_id & asTYPEID_OBJHANDLE))
-    {
-        void** dst = static_cast<void**>(ptr);
-        *dst = m_ti->GetEngine()->CreateScriptObjectCopy(value, m_ti->GetSubType());
-    }
-    else if(m_subtype_id & asTYPEID_OBJHANDLE)
-    {
-        void* tmp = *(void**)ptr;
-        *(void**)ptr = *(void**)value;
-        m_ti->GetEngine()->AddRefScriptObject(*(void**)value, m_ti->GetSubType());
-        if(tmp)
-            m_ti->GetEngine()->ReleaseScriptObject(tmp, m_ti->GetSubType());
-    }
-    else if(m_subtype_id == asTYPEID_BOOL ||
-            m_subtype_id == asTYPEID_INT8 ||
-            m_subtype_id == asTYPEID_UINT8)
-    {
-        *(char*)ptr = *(char*)value;
-    }
-    else if(m_subtype_id == asTYPEID_INT16 ||
-            m_subtype_id == asTYPEID_UINT16)
-    {
-        *(short*)ptr = *(short*)value;
-    }
-    else if(m_subtype_id == asTYPEID_INT32 ||
-            m_subtype_id == asTYPEID_UINT32 ||
-            m_subtype_id == asTYPEID_FLOAT ||
-            m_subtype_id > asTYPEID_DOUBLE) // enums
-    {
-        *(int*)ptr = *(int*)value;
-    }
-    else if(m_subtype_id == asTYPEID_INT64 ||
-            m_subtype_id == asTYPEID_UINT64 ||
-            m_subtype_id == asTYPEID_DOUBLE)
-    {
-        *(double*)ptr = *(double*)value;
-    }
-
+    value_construct_n(
+        m_data.ptr + m_data.size * m_elem_size,
+        value,
+        1
+    );
     ++m_data.size;
 
     return;
 }
 
-void script_array::move_data(array_data& src, array_data& dst)
+void script_array::pop_back()
+{
+    if(empty())
+        return;
+
+    erase(size() - 1);
+}
+
+void script_array::append_range(const script_array& rng, size_type n)
+{
+    n = std::min(rng.size(), n);
+    if(n == 0)
+        return;
+    reserve(size() + n);
+
+    copy_construct_range(
+        m_data.ptr + size() * m_elem_size,
+        rng.m_data.ptr,
+        n
+    );
+    m_data.size += n;
+}
+
+void script_array::insert(size_type idx, void* value)
+{
+    if(idx > size())
+    {
+        set_script_exception("out of range");
+        return;
+    }
+    if(idx == size())
+    {
+        push_back(value);
+        return;
+    }
+
+    reserve(size() + 1);
+    insert_range_impl(idx, value, 1);
+}
+
+void script_array::insert_range(size_type idx, const script_array& rng, size_type n)
+{
+    if(idx > size())
+    {
+        set_script_exception("out of range");
+        return;
+    }
+    if(idx == size())
+    {
+        append_range(rng, n);
+        return;
+    }
+
+    n = std::min(rng.size(), n);
+    if(n == 0)
+        return;
+    reserve(size() + n);
+    insert_range_impl(idx, rng[0], n);
+}
+
+void script_array::erase(size_type idx, size_type n)
+{
+    if(idx >= size())
+    {
+        set_script_exception("out of range");
+        return;
+    }
+    if(n == 0)
+        return;
+
+    n = std::min(size() - idx, n);
+    size_type elems_to_move = size() - idx - n;
+    destroy_n((*this)[idx], n);
+    if(elems_to_move != 0)
+    {
+        move_construct_range(
+            (*this)[idx],
+            (*this)[idx + n],
+            elems_to_move
+        );
+    }
+
+    m_data.size -= n;
+}
+
+void script_array::copy_construct_range(void* start, const void* input_start, size_type n)
 {
     asIScriptEngine* engine = m_ti->GetEngine();
     if(m_subtype_id & asTYPEID_OBJHANDLE)
     {
-        assert(dst.capacity >= src.size);
+        void** sentinel = (void**)start + n;
+        void** src = (void**)input_start;
+        void** dst = (void**)start;
 
-        void** sentinel = (void**)(dst.ptr + src.size);
-        void** p = (void**)src.ptr;
-        void** q = (void**)dst.ptr;
-
-        while(q < sentinel)
+        asITypeInfo* subtype_ti = engine->GetTypeInfoById(m_subtype_id);
+        while(dst < sentinel)
         {
-            assert(*q == nullptr);
-            *q = *p;
-            if(*q)
-                engine->AddRefScriptObject(*q, m_ti->GetSubType());
+            *dst = *src;
+            if(*dst)
+                engine->AddRefScriptObject(*dst, subtype_ti);
 
-            ++p;
-            ++q;
+            ++src;
+            ++dst;
         }
     }
     else if(m_subtype_id & asTYPEID_MASK_OBJECT)
     {
-        void** sentinel = (void**)dst.ptr + src.size;
-        void** p = (void**)src.ptr;
-        void** q = (void**)dst.ptr;
+        void** sentinel = (void**)start + n;
+        void** src = (void**)input_start;
+        void** dst = (void**)start;
 
         asITypeInfo* subtype_ti = m_ti->GetSubType();
-        while(q < sentinel)
+        while(dst < sentinel)
         {
-            *q = engine->CreateScriptObjectCopy(*p, subtype_ti);
-            engine->ReleaseScriptObject(*p, subtype_ti);
+            *dst = engine->CreateScriptObjectCopy(*src, subtype_ti);
 
-            ++p;
-            ++q;
+            ++src;
+            ++dst;
         }
     }
     else // Primitive types
     {
-        std::memcpy(dst.ptr, src.ptr, src.size * m_elem_size);
+        std::memcpy(
+            start,
+            input_start,
+            static_cast<std::size_t>(n) * m_elem_size
+        );
     }
-
-    dst.size = src.size;
 }
 
-void script_array::assign_impl(void* ptr, void* value)
+void script_array::move_construct_range(void* start, void* input_start, size_type n)
+{
+    asIScriptEngine* engine = m_ti->GetEngine();
+    if(m_subtype_id & asTYPEID_OBJHANDLE)
+    {
+        void** sentinel = (void**)start + n;
+        void** src = (void**)input_start;
+        void** dst = (void**)start;
+
+        while(dst < sentinel)
+        {
+            assert(*dst == nullptr);
+            *dst = std::exchange(*src, nullptr);
+
+            ++src;
+            ++dst;
+        }
+    }
+    else if(m_subtype_id & asTYPEID_MASK_OBJECT)
+    {
+        void** sentinel = (void**)start + n;
+        void** src = (void**)input_start;
+        void** dst = (void**)start;
+
+        asITypeInfo* subtype_ti = m_ti->GetSubType();
+        while(dst < sentinel)
+        {
+            *dst = engine->CreateScriptObjectCopy(*src, subtype_ti);
+            engine->ReleaseScriptObject(*src, subtype_ti);
+
+            ++src;
+            ++dst;
+        }
+    }
+    else // Primitive types
+    {
+        std::memcpy(
+            start,
+            input_start,
+            static_cast<std::size_t>(n) * m_elem_size
+        );
+    }
+}
+
+void script_array::move_construct_range_backward(void* start, void* input_start, size_type n)
+{
+    asIScriptEngine* engine = m_ti->GetEngine();
+    if(m_subtype_id & asTYPEID_OBJHANDLE)
+    {
+        void** sentinel = (void**)start;
+        void** p = (void**)input_start + n;
+        void** q = (void**)start + n;
+
+        while(q != sentinel)
+        {
+            assert(*(q - 1) == nullptr);
+            *(q - 1) = std::exchange(*(p - 1), nullptr);
+
+            --p;
+            --q;
+        }
+    }
+    else if(m_subtype_id & asTYPEID_MASK_OBJECT)
+    {
+        void** sentinel = (void**)start;
+        void** p = (void**)input_start + n;
+        void** q = (void**)start + n;
+
+        asITypeInfo* subtype_ti = m_ti->GetSubType();
+        while(q != sentinel)
+        {
+            *(q - 1) = engine->CreateScriptObjectCopy(*(p - 1), subtype_ti);
+            engine->ReleaseScriptObject(*(p - 1), subtype_ti);
+
+            --p;
+            --q;
+        }
+    }
+    else // Primitive types
+    {
+        std::size_t offset_bytes = static_cast<std::size_t>(n) * m_elem_size;
+        std::copy_backward(
+            (std::byte*)input_start,
+            (std::byte*)input_start + offset_bytes,
+            (std::byte*)start + offset_bytes
+        );
+    }
+}
+
+void script_array::copy_assign_range_backward(void* start, const void* input_start, size_type n)
+{
+    asIScriptEngine* engine = m_ti->GetEngine();
+    if(m_subtype_id & asTYPEID_OBJHANDLE)
+    {
+        void** sentinel = (void**)start;
+        void** src = (void**)input_start + n;
+        void** dst = (void**)start + n;
+
+        asITypeInfo* subtype_ti = engine->GetTypeInfoById(m_subtype_id);
+        while(dst != sentinel)
+        {
+            void* old = *(dst - 1);
+            *(dst - 1) = *(src - 1);
+            if(*(dst - 1) != nullptr)
+                engine->AddRefScriptObject(*(dst - 1), subtype_ti);
+            if(old)
+                engine->ReleaseScriptObject(old, subtype_ti);
+
+            --src;
+            --dst;
+        }
+    }
+    else if(m_subtype_id & asTYPEID_MASK_OBJECT)
+    {
+        void** sentinel = (void**)start;
+        void** src = (void**)input_start + n;
+        void** dst = (void**)start + n;
+
+        asITypeInfo* subtype_ti = m_ti->GetSubType();
+        while(dst != sentinel)
+        {
+            *(dst - 1) = engine->CreateScriptObjectCopy(*(src - 1), subtype_ti);
+
+            --src;
+            --dst;
+        }
+    }
+    else // Primitive types
+    {
+        std::size_t offset_bytes = static_cast<std::size_t>(n) * m_elem_size;
+        std::copy_backward(
+            (std::byte*)input_start,
+            (std::byte*)input_start + offset_bytes,
+            (std::byte*)start + offset_bytes
+        );
+    }
+}
+
+void script_array::insert_range_impl(size_type idx, const void* src, size_type n)
+{
+    assert(idx < size());
+    assert(size() + n <= capacity());
+
+    size_type elems_to_move = size() - idx;
+    move_construct_range_backward(
+        (*this)[idx + n],
+        (*this)[idx],
+        elems_to_move
+    );
+    copy_assign_range_backward(
+        (*this)[idx],
+        src,
+        n
+    );
+    m_data.size += n;
+}
+
+void script_array::copy_assign_at(void* ptr, void* value)
 {
     if((m_subtype_id & ~asTYPEID_MASK_SEQNBR) && !(m_subtype_id & asTYPEID_OBJHANDLE))
     {
@@ -252,30 +565,44 @@ void script_array::assign_impl(void* ptr, void* value)
         if(tmp)
             m_ti->GetEngine()->ReleaseScriptObject(tmp, m_ti->GetSubType());
     }
-    else if(m_subtype_id == asTYPEID_BOOL ||
-            m_subtype_id == asTYPEID_INT8 ||
-            m_subtype_id == asTYPEID_UINT8)
+    else if(m_subtype_id == asTYPEID_BOOL || m_subtype_id == asTYPEID_INT8 || m_subtype_id == asTYPEID_UINT8)
     {
         *(char*)ptr = *(char*)value;
     }
-    else if(m_subtype_id == asTYPEID_INT16 ||
-            m_subtype_id == asTYPEID_UINT16)
+    else if(m_subtype_id == asTYPEID_INT16 || m_subtype_id == asTYPEID_UINT16)
     {
         *(short*)ptr = *(short*)value;
     }
-    else if(m_subtype_id == asTYPEID_INT32 ||
-            m_subtype_id == asTYPEID_UINT32 ||
-            m_subtype_id == asTYPEID_FLOAT ||
-            m_subtype_id > asTYPEID_DOUBLE) // enums
+    else if(m_subtype_id == asTYPEID_INT32 || m_subtype_id == asTYPEID_UINT32 || m_subtype_id == asTYPEID_FLOAT || m_subtype_id > asTYPEID_DOUBLE) // enums
     {
         *(int*)ptr = *(int*)value;
     }
-    else if(m_subtype_id == asTYPEID_INT64 ||
-            m_subtype_id == asTYPEID_UINT64 ||
-            m_subtype_id == asTYPEID_DOUBLE)
+    else if(m_subtype_id == asTYPEID_INT64 || m_subtype_id == asTYPEID_UINT64 || m_subtype_id == asTYPEID_DOUBLE)
     {
         *(double*)ptr = *(double*)value;
     }
+}
+
+void script_array::destroy_n(void* start, size_type n)
+{
+    if(m_subtype_id & asTYPEID_MASK_OBJECT)
+    {
+        asIScriptEngine* engine = m_ti->GetEngine();
+
+        void** sentinel = (void**)start + n;
+
+        for(void** p = static_cast<void**>(start); p != sentinel; ++p)
+        {
+            if(*p)
+                engine->ReleaseScriptObject(*p, m_ti->GetSubType());
+        }
+    }
+
+    std::memset(
+        start,
+        0,
+        static_cast<std::size_t>(n) * m_elem_size
+    );
 }
 
 bool script_array::operator_eq_impl(const void* lhs, const void* rhs, asIScriptContext* ctx, const array_cache* cache) const
@@ -471,23 +798,48 @@ bool script_array::get_gc_flag() const
 
 void script_array::enum_refs(asIScriptEngine* engine)
 {
+    std::lock_guard guard(*this);
+
+    // Mainly using implementation from the official add-oon
+
+    if(m_subtype_id & asTYPEID_MASK_OBJECT)
+    {
+        void** p = (void**)m_data.ptr;
+
+        asITypeInfo* subType = engine->GetTypeInfoById(m_subtype_id);
+        if((subType->GetFlags() & asOBJ_REF))
+        {
+            for(asUINT i = 0; i < m_data.size; ++i)
+            {
+                if(p[i])
+                    engine->GCEnumCallback(p[i]);
+            }
+        }
+        else if((subType->GetFlags() & asOBJ_VALUE) && (subType->GetFlags() & asOBJ_GC))
+        {
+            for(asUINT i = 0; i < m_data.size; ++i)
+            {
+                if(p[i])
+                    engine->ForwardGCEnumReferences(p[i], subType);
+            }
+        }
+    }
 }
 
 void script_array::release_refs(asIScriptEngine* engine)
 {
+    clear();
 }
 
-void* script_array::operator[](asUINT idx)
+void* script_array::operator[](size_type idx)
 {
-    assert(idx < size());
-    std::size_t offset = idx * m_elem_size;
+    std::size_t offset = static_cast<std::size_t>(idx) * m_elem_size;
     return m_data.ptr + offset;
 }
 
-const void* script_array::operator[](asUINT idx) const
+const void* script_array::operator[](size_type idx) const
 {
-    assert(idx < size());
-    std::size_t offset = idx * m_elem_size;
+    std::size_t offset = static_cast<std::size_t>(idx) * m_elem_size;
     return m_data.ptr + offset;
 }
 
@@ -496,7 +848,7 @@ bool script_array::member_indirect() const
     return ((m_subtype_id & asTYPEID_MASK_OBJECT) && !(m_subtype_id & asTYPEID_OBJHANDLE));
 }
 
-void* script_array::ref_at(size_type idx)
+void* script_array::pointer_to(size_type idx)
 {
     if(member_indirect())
         return *(void**)(*this)[idx];
@@ -504,7 +856,7 @@ void* script_array::ref_at(size_type idx)
         return (*this)[idx];
 }
 
-const void* script_array::ref_at(size_type idx) const
+const void* script_array::pointer_to(size_type idx) const
 {
     if(member_indirect())
         return *(void**)(*this)[idx];
@@ -512,7 +864,7 @@ const void* script_array::ref_at(size_type idx) const
         return (*this)[idx];
 }
 
-void* script_array::opIndex(asUINT idx)
+void* script_array::opIndex(size_type idx)
 {
     if(idx >= size())
     {
@@ -520,7 +872,7 @@ void* script_array::opIndex(asUINT idx)
         return nullptr;
     }
 
-    return ref_at(idx);
+    return pointer_to(idx);
 }
 
 bool script_array::operator==(const script_array& other) const
@@ -579,7 +931,7 @@ void* script_array::get_front()
     {
         set_script_exception("Empty array");
     }
-    return ref_at(0);
+    return pointer_to(0);
 }
 
 void* script_array::get_back()
@@ -589,7 +941,31 @@ void* script_array::get_back()
         set_script_exception("Empty array");
     }
 
-    return ref_at(size() - 1);
+    return pointer_to(size() - 1);
+}
+
+void script_array::set_front(void* value)
+{
+    if(empty())
+    {
+        push_back(value);
+    }
+    else
+    {
+        copy_assign_at(pointer_to(0), value);
+    }
+}
+
+void script_array::set_back(void* value)
+{
+    if(empty())
+    {
+        push_back(value);
+    }
+    else
+    {
+        copy_assign_at(pointer_to(size() - 1), value);
+    }
 }
 
 asQWORD script_array::subtype_flags() const
@@ -602,33 +978,21 @@ void* script_array::allocate(std::size_t bytes)
     return asAllocMem(bytes);
 }
 
-void script_array::deallocate(void* ptr) noexcept
+void script_array::deallocate(void* mem) noexcept
 {
-    asFreeMem(ptr);
+    asFreeMem(mem);
 }
 
-void script_array::alloc_data(size_type cap)
-{
-    assert(m_data.ptr == nullptr);
-    assert(size() == 0);
-
-    if(cap == 0)
-        return;
-
-    m_data.ptr = (std::byte*)allocate(cap * m_elem_size);
-    m_data.capacity = cap;
-}
-
-void script_array::construct_elem(void* ptr, size_type n)
+void script_array::default_construct_n(void* start, size_type n)
 {
     if((m_subtype_id & asTYPEID_MASK_OBJECT) && !(m_subtype_id & asTYPEID_OBJHANDLE))
     {
-        void** sentinel = (void**)(static_cast<std::byte*>(ptr) + n * sizeof(void*));
+        void** sentinel = (void**)(static_cast<std::byte*>(start) + n * sizeof(void*));
 
         asIScriptEngine* engine = m_ti->GetEngine();
         asITypeInfo* subtype_ti = m_ti->GetSubType();
 
-        for(void** p = static_cast<void**>(ptr); p < sentinel; ++p)
+        for(void** p = static_cast<void**>(start); p < sentinel; ++p)
         {
             *p = static_cast<void*>(engine->CreateScriptObject(subtype_ti));
 
@@ -644,40 +1008,97 @@ void script_array::construct_elem(void* ptr, size_type n)
     }
     else
     {
-        std::memset(ptr, 0, n * m_elem_size);
+        std::memset(
+            start,
+            0,
+            static_cast<std::size_t>(n) * m_elem_size
+        );
     }
 }
 
-bool script_array::mem_grow_to(size_type new_cap)
+void script_array::value_construct_n(void* start, const void* value, size_type n)
 {
-    assert(new_cap > capacity());
+    for(size_type i = 0; i < n; ++i)
+    {
+        void* ptr = static_cast<std::byte*>(start) + i * m_elem_size;
 
-    array_data tmp;
-    tmp.capacity = new_cap;
-    tmp.size = 0;
-    tmp.ptr = (std::byte*)allocate(new_cap * m_elem_size);
-    if(!tmp.ptr)
+        if((m_subtype_id & ~asTYPEID_MASK_SEQNBR) && !(m_subtype_id & asTYPEID_OBJHANDLE))
+        {
+            void** dst = static_cast<void**>(ptr);
+            *dst = m_ti->GetEngine()->CreateScriptObjectCopy(
+                const_cast<void*>(value),
+                m_ti->GetSubType()
+            );
+        }
+        else if(m_subtype_id & asTYPEID_OBJHANDLE)
+        {
+            void* tmp = *(void**)ptr;
+            *(void**)ptr = *(void**)value;
+            m_ti->GetEngine()->AddRefScriptObject(*(void**)value, m_ti->GetSubType());
+            if(tmp)
+                m_ti->GetEngine()->ReleaseScriptObject(tmp, m_ti->GetSubType());
+        }
+        else if(m_subtype_id == asTYPEID_BOOL ||
+                m_subtype_id == asTYPEID_INT8 ||
+                m_subtype_id == asTYPEID_UINT8)
+        {
+            *(char*)ptr = *(char*)value;
+        }
+        else if(m_subtype_id == asTYPEID_INT16 ||
+                m_subtype_id == asTYPEID_UINT16)
+        {
+            *(short*)ptr = *(short*)value;
+        }
+        else if(m_subtype_id == asTYPEID_INT32 ||
+                m_subtype_id == asTYPEID_UINT32 ||
+                m_subtype_id == asTYPEID_FLOAT ||
+                m_subtype_id > asTYPEID_DOUBLE) // enums
+        {
+            *(int*)ptr = *(int*)value;
+        }
+        else if(m_subtype_id == asTYPEID_INT64 ||
+                m_subtype_id == asTYPEID_UINT64 ||
+                m_subtype_id == asTYPEID_DOUBLE)
+        {
+            *(double*)ptr = *(double*)value;
+        }
+    }
+}
+
+bool script_array::mem_resize_to(size_type new_cap)
+{
+    assert(new_cap != 0);
+    assert(new_cap >= size());
+
+    std::byte* tmp = (std::byte*)allocate(
+        static_cast<std::size_t>(new_cap) * m_elem_size
+    );
+    if(!tmp)
     {
         set_script_exception("out of memory");
         return false;
     }
-    std::memset(tmp.ptr, 0, new_cap * m_elem_size);
+    std::memset(
+        tmp,
+        0,
+        static_cast<std::size_t>(new_cap) * m_elem_size
+    );
 
-    move_data(m_data, tmp);
-    deallocate(m_data.ptr);
-    m_data = tmp;
+    if(m_data.ptr)
+    {
+        move_construct_range(tmp, m_data.ptr, m_data.size);
+        deallocate(m_data.ptr);
+    }
+    m_data.capacity = new_cap;
+    m_data.ptr = tmp;
 
     return true;
 }
 
-void script_array::copy_other_impl(script_array& other)
-{
-    assert(m_ti == other.m_ti);
-    assert(m_elem_size == other.m_elem_size);
-}
-
 static bool check_array_template(asITypeInfo* ti, bool& no_gc)
 {
+    // Using implementation from the official add-on
+
     int type_id = ti->GetSubTypeId();
     if(type_id == asTYPEID_VOID)
         return false;
@@ -744,7 +1165,6 @@ static bool check_array_template(asITypeInfo* ti, bool& no_gc)
         }
     }
 
-
     return true;
 }
 
@@ -753,7 +1173,10 @@ void register_script_array(asIScriptEngine* engine, bool as_default)
     ref_class<script_array>(engine, "array<T>", asOBJ_TEMPLATE | asOBJ_GC)
         .template_(&check_array_template)
         .default_factory()
+        .factory<asITypeInfo*, asUINT>("array<T>@ f(int&in, uint)")
+        .factory<asITypeInfo*, asUINT, const void*>("array<T>@ f(int&in, uint, const T&in)")
         .list_factory("T")
+        .opAssign()
         .addref(&script_array::addref)
         .release(&script_array::release)
         .get_refcount(&script_array::get_refcount)
@@ -766,12 +1189,22 @@ void register_script_array(asIScriptEngine* engine, bool as_default)
         .method("const T& opIndex(uint idx) const", &script_array::opIndex)
         .method("T& get_front() property", &script_array::get_front)
         .method("const T& get_front() const property", &script_array::get_front)
+        .method("void set_front(const T&in) property", &script_array::set_front)
         .method("T& get_back() property", &script_array::get_back)
         .method("const T& get_back() const property", &script_array::get_back)
+        .method("void set_back(const T&in) property", &script_array::set_back)
         .method("uint get_size() const property", &script_array::size)
         .method("uint get_capacity() const property", &script_array::capacity)
         .method("bool get_empty() const property", &script_array::empty)
-        .method("void push_back(const T&in)", &script_array::push_back);
+        .method("void reserve(uint)", &script_array::reserve)
+        .method("void shrink_to_fit()", &script_array::shrink_to_fit)
+        .method("void push_back(const T&in value)", &script_array::push_back)
+        .method("void append_range(const array<T>&in rng, uint n=-1)", &script_array::append_range)
+        .method("void insert(uint idx, const T&in value)", &script_array::insert)
+        .method("void insert_range(uint idx, const array<T>&in rng, uint n=-1)", &script_array::insert_range)
+        .method("void pop_back()", &script_array::pop_back)
+        .method("void erase(uint idx, uint n=1)", &script_array::erase)
+        .method("void clear()", &script_array::clear);
 
     engine->SetTypeInfoUserDataCleanupCallback(
         &script_array::cache_cleanup_callback,

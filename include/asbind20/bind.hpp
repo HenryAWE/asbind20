@@ -651,6 +651,21 @@ public:
     }
 
     template <typename... Args>
+    requires std::is_constructible_v<T, Args...>
+    ref_class& factory(const char* decl)
+    {
+        factory(
+            decl,
+            +[](Args... args) -> T*
+            {
+                return new T(args...);
+            }
+        );
+
+        return *this;
+    }
+
+    template <typename... Args>
     ref_class& list_factory(const char* decl, T* (*fn)(Args...))
     {
         int r = m_engine->RegisterObjectBehaviour(
@@ -666,14 +681,24 @@ public:
     }
 
     template <typename... Args>
-    ref_class& list_factory(std::string_view elem_type_name)
+    ref_class& list_factory(std::string_view repeated_type_name)
     {
         list_factory(
-            detail::concat(m_name, "@ f(int&in,int&in) {repeat ", elem_type_name, "}").c_str(),
+            detail::concat(m_name, "@ f(int&in,int&in) {repeat ", repeated_type_name, "}").c_str(),
             +[](asITypeInfo* ti, void* list_buf)
             {
                 return new T(ti, list_buf);
             }
+        );
+
+        return *this;
+    }
+
+    ref_class& opAssign() requires std::is_copy_assignable_v<T>
+    {
+        method(
+            detail::concat(m_name, "& opAssign(const ", m_name, " &in)").c_str(),
+            static_cast<T& (T::*)(const T&)>(&T::operator=)
         );
 
         return *this;
