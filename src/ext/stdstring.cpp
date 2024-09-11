@@ -20,11 +20,11 @@ std::size_t u8_index(std::string_view str, std::size_t n) noexcept
 
         std::uint8_t ch = str[i];
 
-        if((ch & 0b1111'1000) == 0b1110'0000)
+        if((ch & 0b1111'1000) == 0b1111'0000)
             i += 4;
-        else if((ch & 0b1110'0000) == 0b1100'0000)
+        else if((ch & 0b1111'0000) == 0b1110'0000)
             i += 3;
-        else if((ch & 0b1100'0000) == 0b1000'0000)
+        else if((ch & 0b1110'0000) == 0b1100'0000)
             i += 2;
         else
             ++i;
@@ -83,11 +83,11 @@ std::size_t u8_strlen(std::string_view str) noexcept
     {
         std::uint8_t ch = str[i];
 
-        if((ch & 0b1111'1000) == 0b1110'0000)
+        if((ch & 0b1111'1000) == 0b1111'0000)
             i += 4;
-        else if((ch & 0b1110'0000) == 0b1100'0000)
+        else if((ch & 0b1111'0000) == 0b1110'0000)
             i += 3;
-        else if((ch & 0b1100'0000) == 0b1000'0000)
+        else if((ch & 0b1110'0000) == 0b1100'0000)
             i += 2;
         else
             ++i;
@@ -98,8 +98,10 @@ std::size_t u8_strlen(std::string_view str) noexcept
     return result;
 }
 
-char32_t u8_bytes_to_int(const char* bytes)
+char32_t u8_bytes_to_int(const char* str)
 {
+    const std::uint8_t* bytes = reinterpret_cast<const std::uint8_t*>(str);
+
     // ASCII (single byte)
     if(bytes[0] <= 0b0111'1111)
     {
@@ -177,29 +179,12 @@ unsigned int u8_int_to_bytes(char32_t ch, char* buf)
     return 0;
 }
 
-static int string_opCmp(const std::string& lhs, const std::string& rhs)
-{
-    return lhs.compare(rhs);
-}
-
-static std::string string_opAdd(const std::string& lhs, const std::string& rhs)
-{
-    return lhs + rhs;
-}
-
-static std::string string_opAdd_ch(const std::string& lhs, std::uint32_t ch)
-{
-    std::string tmp = lhs;
-    string_append_ch(tmp, ch);
-    return tmp;
-}
-
-static asUINT string_size(const std::string& this_)
+static asUINT string_size_bytes(const std::string& this_)
 {
     return static_cast<asUINT>(this_.size());
 }
 
-static asUINT string_length(const std::string& this_)
+static asUINT string_size(const std::string& this_)
 {
     return static_cast<asUINT>(u8_strlen(this_));
 }
@@ -314,6 +299,92 @@ void string_append_ch(std::string& this_, std::uint32_t ch)
     this_.append(std::string_view(buf, size_bytes));
 }
 
+static void string_prepend(std::string& this_, const std::string& str)
+{
+    this_.insert(0, str);
+}
+
+void string_prepend_ch(std::string& this_, std::uint32_t ch)
+{
+    char buf[4];
+    unsigned int size_bytes = u8_int_to_bytes(ch, buf);
+    this_.insert(0, std::string_view(buf, size_bytes));
+}
+
+static std::string string_opAdd_ch(const std::string& lhs, std::uint32_t rhs)
+{
+    std::string tmp = lhs;
+    string_append_ch(tmp, rhs);
+    return tmp;
+}
+
+static std::string string_opAdd_r_ch(std::uint32_t lhs, const std::string& rhs)
+{
+    std::string tmp = rhs;
+    string_prepend_ch(tmp, lhs);
+    return tmp;
+}
+
+void u8_replace(std::string& target, std::size_t idx, std::size_t n, std::string_view str)
+{
+    std::string_view view(target);
+
+    std::size_t target_start = u8_index(view, idx);
+    if(target_start == -1)
+    {
+        throw std::out_of_range("out of range");
+    }
+    if(n == 0)
+        return;
+    std::size_t target_stop = u8_index(view.substr(target_start), n);
+
+    target.replace(
+        target_start,
+        target_stop - target_start,
+        str
+    );
+}
+
+static void string_replace(std::string& this_, asINT32 idx, asUINT n, const std::string& str, asUINT len)
+{
+    try
+    {
+        u8_replace(this_, idx, n, u8_substr(str, 0, len));
+    }
+    catch(const std::out_of_range& e)
+    {
+        set_script_exception(e.what());
+    }
+}
+
+static void string_insert(std::string& this_, asINT32 idx, const std::string& str, asUINT len)
+{
+    std::size_t offset = u8_index(this_, idx);
+    if(offset == -1)
+    {
+        set_script_exception("out of range");
+        return;
+    }
+
+    this_.insert(offset, u8_substr(str, 0, len));
+}
+
+static void string_erase(std::string& this_, asINT32 idx, asUINT n)
+{
+    std::size_t start = u8_index(this_, idx);
+    if(start == -1)
+    {
+        set_script_exception("out of range");
+    }
+    if(n == 0)
+        return;
+
+    std::size_t bytes_to_erase = u8_index(
+        std::string_view(this_).substr(start), n
+    );
+    this_.erase(start, bytes_to_erase);
+}
+
 void register_std_string(asIScriptEngine* engine, bool as_default)
 {
     using std::string;
@@ -322,34 +393,31 @@ void register_std_string(asIScriptEngine* engine, bool as_default)
     c
         .common_behaviours()
         .opEquals()
-        .method(
-            "int opCmp(const string &in) const",
-            &string_opCmp
-        )
-        .method(
-            "void append(const string &in)",
-            &string_append
-        )
-        .method(
-            "string opAdd(const string &in) const",
-            &string_opAdd
-        )
+        .opCmp()
+        .opAdd()
+        .method("void append(const string &in)", &string_append)
         .opAddAssign()
+        .method("void prepend(const string&in)", &string_prepend)
         .method("string substr(int pos, uint len=-1) const", &string_substr)
         .method("bool empty() const", &string::empty)
-        .method("uint size() const", &string_size)
-        .method("uint length() const", &string_length)
+        .method("uint get_size_bytes() const property", &string_size_bytes)
+        .method("uint get_size() const property", &string_size)
         .method("void clear()", &string::clear)
-        .method("bool starts_with(const string &in str) const", &string_starts_with)
-        .method("bool ends_with(const string &in str) const", &string_ends_with)
+        .method("bool starts_with(const string&in str) const", &string_starts_with)
+        .method("bool ends_with(const string&in str) const", &string_ends_with)
         .method("string remove_prefix(uint n) const", &string_remove_prefix)
-        .method("string remove_suffix(uint n) const", &string_remove_suffix);
+        .method("string remove_suffix(uint n) const", &string_remove_suffix)
+        .method("void replace(int idx, uint n, const string&in str, uint len=-1)", &string_replace)
+        .method("void insert(int idx, const string&in str, uint len=-1)", &string_insert)
+        .method("void erase(int idx, uint n=1)", &string_erase);
 
     if(engine->GetEngineProperty(asEP_USE_CHARACTER_LITERALS))
     {
         c
             .method("void append(uint ch)", &string_append_ch)
             .method("string opAdd(uint ch) const", &string_opAdd_ch)
+            .method("void prepend(uint ch)", &string_prepend_ch)
+            .method("string opAdd_r(uint ch) const", &string_opAdd_r_ch)
             .method("bool starts_with(uint ch) const", &string_starts_with_ch)
             .method("bool ends_with(uint ch) const", &string_ends_with_ch)
             .method("uint get_opIndex(int idx) const property", &string_get_opIndex)

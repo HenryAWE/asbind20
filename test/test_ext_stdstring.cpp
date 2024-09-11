@@ -12,6 +12,8 @@ TEST(ext_string, unicode_support)
 
     EXPECT_EQ(ext::u8_remove_prefix("hello world!", 6), "world!"sv);
     EXPECT_EQ(ext::u8_remove_suffix("hello world!", 1), "hello world"sv);
+
+    EXPECT_EQ(ext::u8_substr("hello world", 7, 2), "or");
 }
 
 TEST_F(asbind_test_suite, ext_stdstring)

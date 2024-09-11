@@ -4,11 +4,29 @@ void check_unicode_str()
 
     string hello_cn = "你好世界";
 
-    assert(hello_cn.length() == 4);
-    assert(hello_cn.size() == 4 * 3);
+    assert(hello_cn.size == 4);
+    assert(hello_cn.size_bytes == 4 * 3);
     assert(hello_cn.starts_with('你'));
     assert(hello_cn.ends_with('界'));
     assert(hello_cn.substr(2) == "世界");
+
+    hello_cn.replace(0, 2, "向你问好！", 4);
+    print(hello_cn);
+    print(to_string(hello_cn.size));
+    assert(hello_cn.size == 6);
+    assert(hello_cn == "向你问好世界");
+    hello_cn.insert(4, "，");
+    print(hello_cn);
+    assert(hello_cn == "向你问好，世界");
+    hello_cn.erase(4);
+    print(hello_cn);
+    assert(hello_cn == "向你问好世界");
+    hello_cn.erase(4, 2);
+    print(hello_cn);
+    assert(hello_cn == "向你问好");
+    hello_cn.prepend('我');
+    print(hello_cn);
+    assert(hello_cn == "我向你问好");
 }
 
 void check_utils()
@@ -16,6 +34,15 @@ void check_utils()
     assert(to_string(-1) == "-1");
     assert(to_string(uint(42)) == "42");
     assert(to_string(3.14) == "3.14");
+}
+
+void check_opCmp()
+{
+    print("check opCmp()");
+    assert("aaa" < "aba");
+    assert("aaa" <= "aaa");
+    assert("aba" > "aaa");
+    assert("aba" >= "aaa");
 }
 
 void main()
@@ -50,4 +77,5 @@ void main()
 
     check_unicode_str();
     check_utils();
+    check_opCmp();
 }

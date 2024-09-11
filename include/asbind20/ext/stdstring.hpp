@@ -141,7 +141,11 @@ std::string_view u8_remove_prefix(std::string_view str, std::size_t n);
 
 std::string_view u8_remove_suffix(std::string_view str, std::size_t n);
 
+void u8_replace(std::string& target, std::size_t idx, std::size_t n, std::string_view str);
+
 void string_append_ch(std::string& this_, std::uint32_t ch);
+
+void string_prepend_ch(std::string& this_, std::uint32_t ch);
 
 void register_std_string(asIScriptEngine* engine, bool as_default = true);
 

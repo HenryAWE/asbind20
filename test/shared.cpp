@@ -89,12 +89,21 @@ void asbind_test_suite::run_file(
         FAIL() << "Entry not found, decl = " << entry_decl;
 
     asIScriptContext* ctx = m_engine->CreateContext();
-    auto result = asbind20::script_invoke<void>(ctx, entry);
+    auto run_file_result = asbind20::script_invoke<void>(ctx, entry);
+
+    if(!run_file_result.has_value() && run_file_result.error() == asEXECUTION_EXCEPTION)
+    {
+        int column;
+        const char* section;
+        int line = ctx->GetExceptionLineNumber(&column, &section);
+        FAIL()
+            << "Script exception at " << section << " (" << line << ':' << column << "): "
+            << ctx->GetExceptionString();
+    }
+    else
+        EXPECT_TRUE(result_has_value(run_file_result));
+
     ctx->Release();
-
     m->Discard();
-
-    if(!result.has_value())
-        FAIL() << "Bad result " << result.error();
 }
 } // namespace asbind_test

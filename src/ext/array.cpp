@@ -565,19 +565,27 @@ void script_array::copy_assign_at(void* ptr, void* value)
         if(tmp)
             m_ti->GetEngine()->ReleaseScriptObject(tmp, m_ti->GetSubType());
     }
-    else if(m_subtype_id == asTYPEID_BOOL || m_subtype_id == asTYPEID_INT8 || m_subtype_id == asTYPEID_UINT8)
+    else if(m_subtype_id == asTYPEID_BOOL ||
+            m_subtype_id == asTYPEID_INT8 ||
+            m_subtype_id == asTYPEID_UINT8)
     {
         *(char*)ptr = *(char*)value;
     }
-    else if(m_subtype_id == asTYPEID_INT16 || m_subtype_id == asTYPEID_UINT16)
+    else if(m_subtype_id == asTYPEID_INT16 ||
+            m_subtype_id == asTYPEID_UINT16)
     {
         *(short*)ptr = *(short*)value;
     }
-    else if(m_subtype_id == asTYPEID_INT32 || m_subtype_id == asTYPEID_UINT32 || m_subtype_id == asTYPEID_FLOAT || m_subtype_id > asTYPEID_DOUBLE) // enums
+    else if(m_subtype_id == asTYPEID_INT32 ||
+            m_subtype_id == asTYPEID_UINT32 ||
+            m_subtype_id == asTYPEID_FLOAT ||
+            m_subtype_id > asTYPEID_DOUBLE) // enums
     {
         *(int*)ptr = *(int*)value;
     }
-    else if(m_subtype_id == asTYPEID_INT64 || m_subtype_id == asTYPEID_UINT64 || m_subtype_id == asTYPEID_DOUBLE)
+    else if(m_subtype_id == asTYPEID_INT64 ||
+            m_subtype_id == asTYPEID_UINT64 ||
+            m_subtype_id == asTYPEID_DOUBLE)
     {
         *(double*)ptr = *(double*)value;
     }
@@ -605,7 +613,7 @@ void script_array::destroy_n(void* start, size_type n)
     );
 }
 
-bool script_array::operator_eq_impl(const void* lhs, const void* rhs, asIScriptContext* ctx, const array_cache* cache) const
+bool script_array::elem_opEquals(const void* lhs, const void* rhs, asIScriptContext* ctx, const array_cache* cache) const
 {
     if(!(m_subtype_id & ~asTYPEID_MASK_SEQNBR))
     {
@@ -635,10 +643,11 @@ bool script_array::operator_eq_impl(const void* lhs, const void* rhs, asIScriptC
                 return true;
         }
 
-        if(!cache)
+        if(!cache) [[unlikely]]
             return false;
 
-        if(cache->subtype_opEquals)
+        assert(ctx != nullptr);
+        if(cache->subtype_opEquals) [[likely]]
         {
             auto result = script_invoke<bool>(
                 ctx,
@@ -884,45 +893,29 @@ bool script_array::operator==(const script_array& other) const
 
     assert(m_elem_size == other.m_elem_size);
 
-    asIScriptContext* ctx = nullptr;
-    bool ctx_is_nested = false;
-    if(m_subtype_id & ~asTYPEID_MASK_SEQNBR)
-    {
-        ctx = asGetActiveContext();
-        if(ctx->GetEngine() == m_ti->GetEngine() && ctx->PushState() >= 0)
-            ctx_is_nested = true;
-        else
-            ctx = nullptr;
-
-        if(!ctx)
-            ctx = m_ti->GetEngine()->CreateContext();
-    }
 
     bool result = true;
-    array_cache* cache = reinterpret_cast<array_cache*>(m_ti->GetUserData(script_array_cache_id()));
-    for(size_type i = 0; i < size(); ++i)
+    if(m_subtype_id & ~asTYPEID_MASK_SEQNBR)
     {
-        if(!operator_eq_impl((*this)[i], other[i], ctx, cache))
+        array_cache* cache = reinterpret_cast<array_cache*>(m_ti->GetUserData(script_array_cache_id()));
+
+        reuse_active_context ctx(m_ti->GetEngine());
+        for(size_type i = 0; i < size(); ++i)
         {
-            result = false;
-            break;
+            if(!elem_opEquals((*this)[i], other[i], ctx, cache))
+                return false;
+        }
+    }
+    else // Primitive types
+    {
+        for(size_type i = 0; i < size(); ++i)
+        {
+            if(!elem_opEquals((*this)[i], other[i], nullptr, nullptr))
+                return false;
         }
     }
 
-    if(ctx)
-    {
-        if(ctx_is_nested)
-        {
-            asEContextState state = ctx->GetState();
-            ctx->PopState();
-            if(state == asEXECUTION_ABORTED)
-                ctx->Abort();
-        }
-        else
-            ctx->Release();
-    }
-
-    return result;
+    return true;
 }
 
 void* script_array::get_front()
@@ -1168,6 +1161,61 @@ static bool check_array_template(asITypeInfo* ti, bool& no_gc)
     return true;
 }
 
+template <bool AsConst>
+static void array_for_each(void* pp_fn, int fn_type_id, script_array& this_)
+{
+    const char* err_msg = "bad for_each callback";
+    asIScriptEngine* engine = this_.script_type_info()->GetEngine();
+    asIScriptFunction* fn = static_cast<asIScriptFunction*>(*(void**)pp_fn);
+
+    int subtype_id = this_.script_type_info()->GetSubTypeId();
+    asITypeInfo* fn_ti = engine->GetTypeInfoById(fn_type_id);
+    asIScriptFunction* func_sig = fn_ti->GetFuncdefSignature();
+    if(func_sig)
+    {
+        if(func_sig->GetParamCount() != 1)
+        {
+            err_msg = "for_each: Unmatched parameter count";
+            goto bad_callback;
+        }
+
+        bool must_be_const = AsConst || (subtype_id & asTYPEID_HANDLETOCONST);
+
+        int param_type_id;
+        asDWORD flags;
+        func_sig->GetParam(0, &param_type_id, &flags);
+        if(param_type_id != subtype_id)
+        {
+            err_msg = "for_each: Unmatched parameter type";
+            goto bad_callback;
+        }
+
+        bool use_ref = flags & asTM_INOUTREF;
+        if(!use_ref || !(!must_be_const || (flags & asTM_CONST)))
+        {
+            err_msg = "for_each: Invalid type modifier";
+            goto bad_callback;
+        }
+
+        reuse_active_context ctx(engine);
+        this_.for_each(
+            [&](void* ptr) -> void
+            {
+                asEContextState prev_state = ctx.get()->GetState();
+                if(prev_state == asEXECUTION_EXCEPTION ||
+                   prev_state == asEXECUTION_ABORTED) [[unlikely]]
+                    return;
+                script_invoke<void>(ctx, fn, ptr);
+            }
+        );
+
+        return;
+    }
+
+bad_callback:
+    set_script_exception(err_msg);
+}
+
 void register_script_array(asIScriptEngine* engine, bool as_default)
 {
     ref_class<script_array>(engine, "array<T>", asOBJ_TEMPLATE | asOBJ_GC)
@@ -1177,6 +1225,7 @@ void register_script_array(asIScriptEngine* engine, bool as_default)
         .factory<asITypeInfo*, asUINT, const void*>("array<T>@ f(int&in, uint, const T&in)")
         .list_factory("T")
         .opAssign()
+        .opEquals()
         .addref(&script_array::addref)
         .release(&script_array::release)
         .get_refcount(&script_array::get_refcount)
@@ -1184,7 +1233,6 @@ void register_script_array(asIScriptEngine* engine, bool as_default)
         .get_flag(&script_array::get_gc_flag)
         .enum_refs(&script_array::enum_refs)
         .release_refs(&script_array::release_refs)
-        .method("bool opEquals(const array<T>&in) const", &script_array::operator==)
         .method("T& opIndex(uint idx)", &script_array::opIndex)
         .method("const T& opIndex(uint idx) const", &script_array::opIndex)
         .method("T& get_front() property", &script_array::get_front)
@@ -1204,6 +1252,7 @@ void register_script_array(asIScriptEngine* engine, bool as_default)
         .method("void insert_range(uint idx, const array<T>&in rng, uint n=-1)", &script_array::insert_range)
         .method("void pop_back()", &script_array::pop_back)
         .method("void erase(uint idx, uint n=1)", &script_array::erase)
+        .method("void for_each(?&in)", &array_for_each<false>, call_conv<asCALL_CDECL_OBJLAST>)
         .method("void clear()", &script_array::clear);
 
     engine->SetTypeInfoUserDataCleanupCallback(

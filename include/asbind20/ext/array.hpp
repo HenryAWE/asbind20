@@ -68,10 +68,10 @@ public:
     }
 
     template <typename F>
-    void foreach(F&& f)
+    void for_each(F&& f)
     {
         for(size_type i = 0; i < size(); ++i)
-            std::invoke(std::forward<F>(f), (*this)[i]);
+            std::invoke(std::forward<F>(f), pointer_to(i));
     }
 
     void reserve(size_type new_cap);
@@ -96,6 +96,8 @@ public:
     {
         return m_ti;
     }
+
+    asQWORD subtype_flags() const;
 
     void lock()
     {
@@ -134,7 +136,7 @@ private:
         int opEquals_status;
     };
 
-    bool operator_eq_impl(const void* lhs, const void* rhs, asIScriptContext* ctx, const array_cache* cache) const;
+    bool elem_opEquals(const void* lhs, const void* rhs, asIScriptContext* ctx, const array_cache* cache) const;
 
     void cache_data();
     static void cache_cleanup_callback(asITypeInfo* ti);
@@ -160,8 +162,6 @@ private:
     size_type m_elem_size = 0;
     array_data m_data = array_data();
     std::mutex m_mx;
-
-    asQWORD subtype_flags() const;
 
     static void* allocate(std::size_t bytes);
     static void deallocate(void* mem) noexcept;

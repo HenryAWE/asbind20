@@ -169,6 +169,86 @@ namespace detail
             assert(r >= 0);
         }
 
+        template <typename Class>
+        requires std::equality_comparable<Class>
+        void opEquals_impl()
+        {
+            constexpr bool has_member_op_eq = requires() {
+                static_cast<bool (Class::*)(const Class&) const>(&Class::operator==);
+            };
+
+            if constexpr(has_member_op_eq)
+            {
+                method_impl(
+                    detail::concat("bool opEquals(const ", m_name, " &in) const").c_str(),
+                    static_cast<bool (Class::*)(const Class&) const>(&Class::operator==),
+                    call_conv<asCALL_THISCALL>
+                );
+            }
+            else
+            {
+                // Reverse parameter order for asCALL_CDECL_OBJLAST
+                auto wrapper_obj_last = +[](const Class& rhs, const Class& lhs)
+                    -> bool
+                {
+                    return lhs == rhs;
+                };
+                method_impl(
+                    detail::concat("bool opEquals(const ", m_name, " &in) const").c_str(),
+                    wrapper_obj_last,
+                    call_conv<asCALL_CDECL_OBJLAST>
+                );
+            }
+        }
+
+        template <typename Class>
+        requires std::three_way_comparable<Class, std::weak_ordering>
+        void opCmp_impl()
+        {
+            // Reverse parameter order for asCALL_CDECL_OBJLAST
+            auto wrapper_obj_last = +[](const Class& rhs, const Class& lhs)
+                -> int
+            {
+                return translate_three_way(lhs <=> rhs);
+            };
+            method_impl(
+                detail::concat("int opCmp(const ", m_name, " &in) const").c_str(),
+                wrapper_obj_last,
+                call_conv<asCALL_CDECL_OBJLAST>
+            );
+        }
+
+        template <typename Class>
+        void opAdd_impl()
+        {
+            constexpr bool has_member_op_add = requires() {
+                static_cast<Class (Class::*)(const Class&) const>(&Class::operator+);
+            };
+
+            if constexpr(has_member_op_add)
+            {
+                method_impl(
+                    detail::concat(m_name, " opAdd(const ", m_name, " &in) const").c_str(),
+                    static_cast<Class (Class::*)(const Class&) const>(&Class::operator+),
+                    call_conv<asCALL_THISCALL>
+                );
+            }
+            else
+            {
+                // Reverse parameter order for asCALL_CDECL_OBJLAST
+                auto wrapper_obj_last = +[](const Class& rhs, const Class& lhs)
+                    -> Class
+                {
+                    return lhs + rhs;
+                };
+                method_impl(
+                    detail::concat(m_name, " opAdd(const ", m_name, " &in) const").c_str(),
+                    wrapper_obj_last,
+                    call_conv<asCALL_CDECL_OBJLAST>
+                );
+            }
+        }
+
     private:
         bool m_force_generic;
     };
@@ -454,30 +534,21 @@ public:
 
     value_class& opEquals()
     {
-        constexpr bool has_member_op_eq = requires() {
-            static_cast<bool (T::*)(const T&) const>(&T::operator==);
-        };
+        opEquals_impl<T>();
 
-        if constexpr(has_member_op_eq)
-        {
-            method(
-                detail::concat("bool opEquals(const ", m_name, " &in) const").c_str(),
-                static_cast<bool (T::*)(const T&) const>(&T::operator==)
-            );
-        }
-        else
-        {
-            auto wrapper_obj_last = +[](const T& rhs, const T& lhs) // Reversed order for asCALL_CDECL_OBJLAST
-                -> bool
-            {
-                return lhs == rhs;
-            };
-            method(
-                detail::concat("bool opEquals(const ", m_name, " &in) const").c_str(),
-                wrapper_obj_last,
-                call_conv<asCALL_CDECL_OBJLAST>
-            );
-        }
+        return *this;
+    }
+
+    value_class& opCmp()
+    {
+        opCmp_impl<T>();
+
+        return *this;
+    }
+
+    value_class& opAdd()
+    {
+        opAdd_impl<T>();
 
         return *this;
     }
@@ -690,6 +761,13 @@ public:
                 return new T(ti, list_buf);
             }
         );
+
+        return *this;
+    }
+
+    ref_class& opEquals()
+    {
+        opEquals_impl<T>();
 
         return *this;
     }

@@ -7,6 +7,7 @@
 #include <string>
 #include <utility>
 #include <mutex>
+#include <compare>
 #include <angelscript.h>
 
 namespace asbind20
@@ -174,6 +175,68 @@ private:
     asIScriptObject* m_obj = nullptr;
 };
 
+class [[nodiscard]] reuse_active_context
+{
+public:
+    reuse_active_context() = delete;
+    reuse_active_context(const reuse_active_context&) = delete;
+
+    reuse_active_context& operator=(const reuse_active_context&) = delete;
+
+    explicit reuse_active_context(asIScriptEngine* engine)
+        : m_ctx(asGetActiveContext()), m_is_nested(false)
+    {
+        assert(engine != nullptr);
+        if(m_ctx)
+        {
+            if(m_ctx->GetEngine() == engine && m_ctx->PushState() >= 0)
+                m_is_nested = true;
+            else
+                m_ctx = nullptr;
+        }
+
+        if(!m_ctx)
+        {
+            m_ctx = engine->CreateContext();
+        }
+    }
+
+    ~reuse_active_context()
+    {
+        if(m_ctx)
+        {
+            if(m_is_nested)
+            {
+                asEContextState state = m_ctx->GetState();
+                m_ctx->PopState();
+                if(state == asEXECUTION_ABORTED)
+                    m_ctx->Abort();
+            }
+            else
+                m_ctx->Release();
+        }
+    }
+
+    asIScriptContext* get() const noexcept
+    {
+        return m_ctx;
+    }
+
+    operator asIScriptContext*() const noexcept
+    {
+        return get();
+    }
+
+    bool is_nested() const noexcept
+    {
+        return m_is_nested;
+    }
+
+private:
+    asIScriptContext* m_ctx;
+    bool m_is_nested;
+};
+
 /**
  * @brief Get offset from a member pointer
  *
@@ -189,6 +252,9 @@ std::size_t member_offset(T Class::*mp) noexcept
 asIScriptFunction* get_default_factory(asITypeInfo* ti);
 
 asIScriptFunction* get_default_constructor(asITypeInfo* ti);
+
+int translate_three_way(std::weak_ordering ord) noexcept;
+std::strong_ordering translate_opCmp(int cmp) noexcept;
 
 void set_script_exception(asIScriptContext* ctx, const char* info);
 void set_script_exception(asIScriptContext* ctx, const std::string& info);

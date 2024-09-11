@@ -33,6 +33,25 @@ asIScriptFunction* get_default_constructor(asITypeInfo* ti)
     return nullptr;
 }
 
+int translate_three_way(std::weak_ordering ord) noexcept
+{
+    if(ord < 0)
+        return -1;
+    else if(ord > 0)
+        return 1;
+    else
+        return 0;
+}
+std::strong_ordering translate_opCmp(int cmp) noexcept
+{
+    if(cmp < 0)
+        return std::strong_ordering::less;
+    else if(cmp > 0)
+        return std::strong_ordering::greater;
+    else
+        return std::strong_ordering::equivalent;
+}
+
 void set_script_exception(asIScriptContext* ctx, const char* info)
 {
     ctx->SetException(info);

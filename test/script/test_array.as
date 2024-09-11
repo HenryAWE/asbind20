@@ -123,6 +123,11 @@ void string_array()
     assert(strs2.back == "yes");
 }
 
+void my_callback(const int&in val)
+{
+    print("callback: " + to_string(val));
+    assert(val == -1);
+}
 void check_int_array()
 {
     array<int> ia = {1, 2, 3, 4};
@@ -176,6 +181,8 @@ void check_int_array()
         print("ia[" + to_string(i) + "] = " + to_string(ia[i]));
         assert(ia[i] == -1);
     }
+
+    ia.for_each(my_callback);
 }
 
 void main()
