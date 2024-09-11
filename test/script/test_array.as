@@ -121,6 +121,12 @@ void string_array()
     assert(strs2.size == 2);
     assert(strs2.front == "no");
     assert(strs2.back == "yes");
+
+    array<string> strs3 = {"aaa", "ccc", "bbb"};
+    strs3.sort();
+    assert(strs3 == {"aaa", "bbb", "ccc"});
+    strs3.sort(0, -1, false);
+    assert(strs3 == {"ccc", "bbb", "aaa"});
 }
 
 funcdef void my_callback_t(const int&in);
@@ -200,6 +206,12 @@ void check_int_array()
     my_delegate d;
     my_callback_t@ f = my_callback_t(d.call);
     ia.for_each(f);
+
+    ia = {1, 3, 4, 6, 7, 9, 8, 5, 2};
+    ia.sort();
+    assert(ia == {1, 2, 3, 4, 5, 6, 7, 8, 9});
+    ia.sort(0, -1, false);
+    assert(ia == {9, 8, 7, 6, 5, 4, 3, 2, 1});
 }
 
 void main()

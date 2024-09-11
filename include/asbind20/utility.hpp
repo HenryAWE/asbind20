@@ -237,6 +237,39 @@ private:
     bool m_is_nested;
 };
 
+template <typename T>
+class as_allocator
+{
+public:
+    using size_type = std::size_t;
+    using difference_type = std::ptrdiff_t;
+    using value_type = T;
+    using pointer = T*;
+    using const_pointer = const T*;
+
+    using propagate_on_container_move_assignment = std::true_type;
+    using is_always_equal = std::true_type;
+
+    as_allocator() noexcept = default;
+    template <typename U>
+    as_allocator(const as_allocator<U>&) noexcept {};
+
+    as_allocator& operator=(const as_allocator&) = default;
+
+    ~as_allocator() = default;
+
+    static pointer allocate(size_type n)
+    {
+        return (pointer)asAllocMem(n * sizeof(value_type));
+    }
+
+    static void deallocate(pointer mem, size_type n) noexcept
+    {
+        (void)n; // unused
+        asFreeMem(mem);
+    }
+};
+
 /**
  * @brief Get offset from a member pointer
  *

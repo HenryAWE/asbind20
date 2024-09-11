@@ -397,6 +397,16 @@ namespace detail
         ctx->SetArgAddress(idx, const_cast<void*>(obj));
     }
 
+    inline void set_arg(asIScriptContext* ctx, asUINT idx, asIScriptObject* obj)
+    {
+        ctx->SetArgObject(idx, obj);
+    }
+
+    inline void set_arg(asIScriptContext* ctx, asUINT idx, const asIScriptObject* obj)
+    {
+        ctx->SetArgObject(idx, const_cast<asIScriptObject*>(obj));
+    }
+
     template <typename Class>
     requires std::is_class_v<std::remove_cvref_t<Class>>
     void set_arg(asIScriptContext* ctx, asUINT idx, Class&& obj)

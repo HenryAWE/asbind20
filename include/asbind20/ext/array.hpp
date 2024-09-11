@@ -4,6 +4,7 @@
 #pragma once
 
 #include <mutex>
+#include <cstddef>
 #include "../asbind.hpp"
 
 namespace asbind20::ext
@@ -37,6 +38,9 @@ public:
 
     script_array& operator=(const script_array& other);
 
+    void* operator new(std::size_t bytes);
+    void operator delete(void* p);
+
     void swap(script_array& other) noexcept;
 
     bool operator==(const script_array& other) const;
@@ -44,7 +48,17 @@ public:
     void* operator[](size_type idx);
     const void* operator[](size_type idx) const;
 
-    bool member_indirect() const;
+    void* data() noexcept
+    {
+        return m_data.ptr;
+    }
+
+    const void* data() const noexcept
+    {
+        return m_data.ptr;
+    }
+
+    bool element_indirect() const;
 
     void* pointer_to(size_type idx);
     const void* pointer_to(size_type idx) const;
@@ -90,6 +104,8 @@ public:
     void insert_range(size_type idx, const script_array& rng, size_type n = -1);
 
     void erase(size_type idx, size_type n = 1);
+
+    void sort(size_type idx = 0, size_type n = -1, bool asc = true);
 
     [[nodiscard]]
     asITypeInfo* script_type_info() const noexcept

@@ -36,7 +36,8 @@ public:
         std::string,
         std::size_t,
         string_hash,
-        std::equal_to<>>;
+        std::equal_to<>,
+        as_allocator<std::pair<const std::string, std::size_t>>>;
 
     const void* GetStringConstant(const char* data, asUINT length) override
     {

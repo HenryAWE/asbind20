@@ -1,6 +1,5 @@
 #include <asbind20/ext/array.hpp>
 #include <cassert>
-#include <cstddef>
 #include <cstring>
 #include <algorithm>
 #include <asbind20/invoke.hpp>
@@ -191,6 +190,17 @@ script_array& script_array::operator=(const script_array& other)
     return *this;
 }
 
+void* script_array::operator new(std::size_t bytes)
+{
+    std::basic_string<char, std::char_traits<char>, as_allocator<char>> str;
+    return allocate(bytes);
+}
+
+void script_array::operator delete(void* p)
+{
+    deallocate(p);
+}
+
 void script_array::swap(script_array& other) noexcept
 {
     using std::swap;
@@ -347,6 +357,104 @@ void script_array::erase(size_type idx, size_type n)
     }
 
     m_data.size -= n;
+}
+
+void script_array::sort(size_type idx, size_type n, bool asc)
+{
+    array_cache* cache = reinterpret_cast<array_cache*>(m_ti->GetUserData(script_array_cache_id()));
+    if(m_subtype_id & ~asTYPEID_MASK_SEQNBR)
+    {
+        if(!cache || cache->opCmp_status == asMULTIPLE_FUNCTIONS)
+        {
+            asITypeInfo* subtype_ti = m_ti->GetEngine()->GetTypeInfoById(m_subtype_id);
+            set_script_exception(detail::concat(
+                "Type \"",
+                subtype_ti->GetName(),
+                "\" has multiple matching opCmp method"
+            ));
+            return;
+        }
+    }
+
+    if(idx >= size())
+    {
+        set_script_exception("out of range");
+        return;
+    }
+
+    n = std::min(size() - idx, n);
+    if(n < 2)
+        return;
+
+    if(m_subtype_id & ~asTYPEID_MASK_SEQNBR)
+    {
+        reuse_active_context ctx(m_ti->GetEngine());
+        auto cmp = [=, &ctx](void* lhs, void* rhs) -> bool
+        {
+            if(!asc)
+                std::swap(lhs, rhs);
+
+            if(lhs == nullptr)
+                return true;
+            if(rhs == nullptr)
+                return false;
+
+            auto result = script_invoke<int>(
+                ctx,
+                static_cast<asIScriptObject*>(lhs),
+                cache->subtype_opCmp,
+                static_cast<asIScriptObject*>(rhs)
+            );
+
+            if(!result.has_value())
+                return false;
+            return *result < 0;
+        };
+        std::sort((void**)(*this)[idx], (void**)(*this)[idx + n], cmp);
+    }
+    else
+    {
+        void* start = (*this)[idx];
+        void* sentinel = (*this)[idx + n];
+
+#define ASBIND20_EXT_ARRAY_SORT_SWITCH_IMPL()                           \
+    switch(m_subtype_id)                                                \
+    {                                                                   \
+    case asTYPEID_BOOL: ASBIND20_EXT_ARRAY_SORT_IMPL(bool); break;      \
+    case asTYPEID_INT8: ASBIND20_EXT_ARRAY_SORT_IMPL(asINT8); break;    \
+    case asTYPEID_INT16: ASBIND20_EXT_ARRAY_SORT_IMPL(asINT16); break;  \
+    case asTYPEID_INT32: ASBIND20_EXT_ARRAY_SORT_IMPL(asINT32); break;  \
+    case asTYPEID_INT64: ASBIND20_EXT_ARRAY_SORT_IMPL(asINT64); break;  \
+    case asTYPEID_UINT8: ASBIND20_EXT_ARRAY_SORT_IMPL(asBYTE); break;   \
+    case asTYPEID_UINT16: ASBIND20_EXT_ARRAY_SORT_IMPL(asWORD); break;  \
+    case asTYPEID_UINT32: ASBIND20_EXT_ARRAY_SORT_IMPL(asDWORD); break; \
+    case asTYPEID_UINT64: ASBIND20_EXT_ARRAY_SORT_IMPL(asQWORD); break; \
+    case asTYPEID_FLOAT: ASBIND20_EXT_ARRAY_SORT_IMPL(float); break;    \
+    case asTYPEID_DOUBLE: ASBIND20_EXT_ARRAY_SORT_IMPL(double); break;  \
+    default:                                                            \
+        ASBIND20_EXT_ARRAY_SORT_IMPL(int); /* enums */                  \
+        break;                                                          \
+    }
+
+        if(asc)
+        {
+#define ASBIND20_EXT_ARRAY_SORT_IMPL(type) std::sort((type*)start, (type*)sentinel)
+
+            ASBIND20_EXT_ARRAY_SORT_SWITCH_IMPL();
+
+#undef ASBIND20_EXT_ARRAY_SORT_IMPL
+        }
+        else
+        {
+#define ASBIND20_EXT_ARRAY_SORT_IMPL(type) std::sort((type*)start, (type*)sentinel, std::greater<type>())
+
+            ASBIND20_EXT_ARRAY_SORT_SWITCH_IMPL();
+
+#undef ASBIND20_EXT_ARRAY_SORT_IMPL
+        }
+
+#undef ASBIND20_EXT_ARRAY_SORT_SWITCH_IMPL
+    }
 }
 
 void script_array::copy_construct_range(void* start, const void* input_start, size_type n)
@@ -852,14 +960,15 @@ const void* script_array::operator[](size_type idx) const
     return m_data.ptr + offset;
 }
 
-bool script_array::member_indirect() const
+bool script_array::element_indirect() const
 {
-    return ((m_subtype_id & asTYPEID_MASK_OBJECT) && !(m_subtype_id & asTYPEID_OBJHANDLE));
+    return (m_subtype_id & asTYPEID_MASK_OBJECT) &&
+           !(m_subtype_id & asTYPEID_OBJHANDLE);
 }
 
 void* script_array::pointer_to(size_type idx)
 {
-    if(member_indirect())
+    if(element_indirect())
         return *(void**)(*this)[idx];
     else
         return (*this)[idx];
@@ -867,7 +976,7 @@ void* script_array::pointer_to(size_type idx)
 
 const void* script_array::pointer_to(size_type idx) const
 {
-    if(member_indirect())
+    if(element_indirect())
         return *(void**)(*this)[idx];
     else
         return (*this)[idx];
@@ -1255,6 +1364,7 @@ void register_script_array(asIScriptEngine* engine, bool as_default)
         .method("void pop_back()", &script_array::pop_back)
         .method("void erase(uint idx, uint n=1)", &script_array::erase)
         .method("void for_each(?&in)", &array_for_each<false>, call_conv<asCALL_CDECL_OBJLAST>)
+        .method("void sort(uint idx=0, uint n=-1, bool asc=true)", &script_array::sort)
         .method("void clear()", &script_array::clear);
 
     engine->SetTypeInfoUserDataCleanupCallback(
