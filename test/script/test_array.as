@@ -123,11 +123,24 @@ void string_array()
     assert(strs2.back == "yes");
 }
 
+funcdef void my_callback_t(const int&in);
 void my_callback(const int&in val)
 {
     print("callback: " + to_string(val));
     assert(val == -1);
 }
+
+class my_delegate
+{
+    int value = 2;
+    void call(const int&in v)
+    {
+        int new_v = v + this.value;
+        print("new_v = " + to_string(new_v));
+        assert(new_v == 1);
+    }
+}
+
 void check_int_array()
 {
     array<int> ia = {1, 2, 3, 4};
@@ -183,6 +196,10 @@ void check_int_array()
     }
 
     ia.for_each(my_callback);
+
+    my_delegate d;
+    my_callback_t@ f = my_callback_t(d.call);
+    ia.for_each(f);
 }
 
 void main()

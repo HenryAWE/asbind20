@@ -1162,11 +1162,13 @@ static bool check_array_template(asITypeInfo* ti, bool& no_gc)
 }
 
 template <bool AsConst>
-static void array_for_each(void* pp_fn, int fn_type_id, script_array& this_)
+static void array_for_each(void* pfn, int fn_type_id, script_array& this_)
 {
     const char* err_msg = "bad for_each callback";
     asIScriptEngine* engine = this_.script_type_info()->GetEngine();
-    asIScriptFunction* fn = static_cast<asIScriptFunction*>(*(void**)pp_fn);
+    asIScriptFunction* fn = fn_type_id & asTYPEID_OBJHANDLE ?
+                                static_cast<asIScriptFunction*>(*(void**)pfn) :
+                                static_cast<asIScriptFunction*>(pfn);
 
     int subtype_id = this_.script_type_info()->GetSubTypeId();
     asITypeInfo* fn_ti = engine->GetTypeInfoById(fn_type_id);
