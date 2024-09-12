@@ -63,3 +63,8 @@ if(${asbind_build_test})
     enable_testing()
     add_subdirectory(test)
 endif()
+
+option(asbind_build_example "Build examples" OFF)
+if(${asbind_build_example})
+    add_subdirectory(example)
+endif()
