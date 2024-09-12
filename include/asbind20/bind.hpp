@@ -7,6 +7,7 @@
 #include <type_traits>
 #include <string>
 #include <tuple>
+#include <algorithm>
 #include <angelscript.h>
 #include "utility.hpp"
 
@@ -249,8 +250,51 @@ namespace detail
             }
         }
 
+        void member_funcdef_impl(std::string_view decl)
+        {
+            // Firstly, find the begin of parameters
+            auto param_being = std::find(decl.rbegin(), decl.rend(), '(');
+            if(param_being != decl.rend())
+            {
+                ++param_being;
+                param_being = std::find_if_not(
+                    param_being,
+                    decl.rend(),
+                    [](char ch)
+                    { return ch != ' '; }
+                );
+            }
+            auto name_begin = std::find_if_not(
+                param_being,
+                decl.rend(),
+                [](char ch)
+                {
+                    return '0' <= ch && ch <= '9' ||
+                           'a' <= ch && ch <= 'z' ||
+                           'A' <= ch && ch <= 'Z' ||
+                           ch == '_' ||
+                           ch > 127;
+                }
+            );
+
+            std::string full_decl = detail::concat(
+                std::string_view(decl.begin(), name_begin.base()),
+                ' ',
+                m_name,
+                "::",
+                std::string_view(name_begin.base(), decl.end())
+            );
+            full_funcdef(full_decl.c_str());
+        }
+
     private:
         bool m_force_generic;
+
+        void full_funcdef(const char* decl)
+        {
+            int r = m_engine->RegisterFuncdef(decl);
+            assert(r >= 0);
+        }
     };
 } // namespace detail
 
@@ -870,6 +914,13 @@ public:
     ref_class& property(const char* decl, U T::*mp)
     {
         property_impl<U, T>(decl, mp);
+
+        return *this;
+    }
+
+    ref_class& funcdef(std::string_view decl)
+    {
+        member_funcdef_impl(decl);
 
         return *this;
     }

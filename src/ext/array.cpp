@@ -129,7 +129,7 @@ script_array::script_array(asITypeInfo* ti, void* list_buf)
             );
         }
     }
-    else if((m_subtype_id & asTYPEID_OBJHANDLE) || (m_subtype_id & asOBJ_REF))
+    else if((m_subtype_id & asTYPEID_OBJHANDLE) || (subtype_flags() & asOBJ_REF))
     {
         m_data.size = buf_sz;
         if(buf_sz > 0)
@@ -1270,61 +1270,21 @@ static bool check_array_template(asITypeInfo* ti, bool& no_gc)
     return true;
 }
 
-template <bool AsConst>
-static void array_for_each(void* pfn, int fn_type_id, script_array& this_)
+static void const_array_for_each(asIScriptFunction* cb, const script_array& this_)
 {
-    const char* err_msg = "bad for_each callback";
     asIScriptEngine* engine = this_.script_type_info()->GetEngine();
-    asIScriptFunction* fn = fn_type_id & asTYPEID_OBJHANDLE ?
-                                static_cast<asIScriptFunction*>(*(void**)pfn) :
-                                static_cast<asIScriptFunction*>(pfn);
 
-    int subtype_id = this_.script_type_info()->GetSubTypeId();
-    asITypeInfo* fn_ti = engine->GetTypeInfoById(fn_type_id);
-    asIScriptFunction* func_sig = fn_ti->GetFuncdefSignature();
-    if(func_sig)
-    {
-        if(func_sig->GetParamCount() != 1)
+    reuse_active_context ctx(engine);
+    this_.for_each(
+        [=, &ctx](const void* ptr) -> void
         {
-            err_msg = "for_each: Unmatched parameter count";
-            goto bad_callback;
+            asEContextState prev_state = ctx.get()->GetState();
+            if(prev_state == asEXECUTION_EXCEPTION ||
+               prev_state == asEXECUTION_ABORTED) [[unlikely]]
+                return;
+            script_invoke<void>(ctx, cb, ptr);
         }
-
-        bool must_be_const = AsConst || (subtype_id & asTYPEID_HANDLETOCONST);
-
-        int param_type_id;
-        asDWORD flags;
-        func_sig->GetParam(0, &param_type_id, &flags);
-        if(param_type_id != subtype_id)
-        {
-            err_msg = "for_each: Unmatched parameter type";
-            goto bad_callback;
-        }
-
-        bool use_ref = flags & asTM_INOUTREF;
-        if(!use_ref || !(!must_be_const || (flags & asTM_CONST)))
-        {
-            err_msg = "for_each: Invalid type modifier";
-            goto bad_callback;
-        }
-
-        reuse_active_context ctx(engine);
-        this_.for_each(
-            [&](void* ptr) -> void
-            {
-                asEContextState prev_state = ctx.get()->GetState();
-                if(prev_state == asEXECUTION_EXCEPTION ||
-                   prev_state == asEXECUTION_ABORTED) [[unlikely]]
-                    return;
-                script_invoke<void>(ctx, fn, ptr);
-            }
-        );
-
-        return;
-    }
-
-bad_callback:
-    set_script_exception(err_msg);
+    );
 }
 
 void register_script_array(asIScriptEngine* engine, bool as_default)
@@ -1363,7 +1323,8 @@ void register_script_array(asIScriptEngine* engine, bool as_default)
         .method("void insert_range(uint idx, const array<T>&in rng, uint n=-1)", &script_array::insert_range)
         .method("void pop_back()", &script_array::pop_back)
         .method("void erase(uint idx, uint n=1)", &script_array::erase)
-        .method("void for_each(?&in)", &array_for_each<false>, call_conv<asCALL_CDECL_OBJLAST>)
+        .funcdef("void const_for_each_callback(const T&in if_handle_then_const)")
+        .method("void for_each(const const_for_each_callback&in cb) const", &const_array_for_each)
         .method("void sort(uint idx=0, uint n=-1, bool asc=true)", &script_array::sort)
         .method("void clear()", &script_array::clear);
 

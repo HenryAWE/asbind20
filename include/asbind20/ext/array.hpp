@@ -82,7 +82,7 @@ public:
     }
 
     template <typename F>
-    void for_each(F&& f)
+    void for_each(F&& f) const
     {
         for(size_type i = 0; i < size(); ++i)
             std::invoke(std::forward<F>(f), pointer_to(i));
