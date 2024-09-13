@@ -58,7 +58,7 @@ jobs:
       - name: Install Dependencies
         run: |
             sudo apt-get update
-            sudo apt-get install -y cmake ninja-build gcc-12
+            sudo apt-get install -y cmake ninja-build gcc-12 g++-12
 
       - name: Setup vcpkg
         working-directory: /usr/local/share/vcpkg
@@ -78,6 +78,8 @@ jobs:
           -B build
           -G Ninja
           -DCMAKE_CXX_STANDARD=20
+          -DCMAKE_C_COMPILER=gcc-12
+          -DCMAKE_CXX_COMPILER=g++-12
           -DCMAKE_BUILD_TYPE=Release
           -DCMAKE_TOOLCHAIN_FILE="${VCPKG_INSTALLATION_ROOT}/scripts/buildsystems/vcpkg.cmake"
           -Dasbind_build_ext=1
@@ -92,7 +94,7 @@ jobs:
 
       - name: Test Installation
         run: |
-          cmake -GNinja -S test/test_install/ -B build/asbind20_test_install -DCMAKE_TOOLCHAIN_FILE="${VCPKG_INSTALLATION_ROOT}/scripts/buildsystems/vcpkg.cmake"
+          cmake -GNinja -S test/test_install/ -B build/asbind20_test_install -DCMAKE_CXX_COMPILER=g++-12 -DCMAKE_TOOLCHAIN_FILE="${VCPKG_INSTALLATION_ROOT}/scripts/buildsystems/vcpkg.cmake"
           cmake --build build/asbind20_test_install
           build/asbind20_test_install/asbind20_test_install
 
