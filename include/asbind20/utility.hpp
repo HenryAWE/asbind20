@@ -4,6 +4,7 @@
 #pragma once
 
 #include <cassert>
+#include <cstddef>
 #include <string>
 #include <utility>
 #include <mutex>
@@ -268,6 +269,54 @@ public:
         (void)n; // unused
         asFreeMem(mem);
     }
+};
+
+/**
+ * @brief Wrapper for the initialization list of AngelScript
+ */
+class script_init_list
+{
+public:
+    using size_type = asUINT;
+
+    script_init_list() = delete;
+    script_init_list(const script_init_list&) noexcept = default;
+
+    explicit script_init_list(void* list_buf) noexcept
+    {
+        assert(list_buf);
+        m_size = *static_cast<size_type*>(list_buf);
+        m_data = static_cast<std::byte*>(list_buf) + sizeof(size_type);
+    }
+
+    script_init_list& operator=(const script_init_list&) noexcept = default;
+
+    bool operator==(const script_init_list& rhs) const noexcept
+    {
+        return m_data == rhs.data();
+    }
+
+    size_type size() const noexcept
+    {
+        return m_size;
+    }
+
+    void* data() const noexcept
+    {
+        return m_data;
+    }
+
+    /**
+     * @brief Revert to raw pointer for forwarding list to a script function
+     */
+    void* forward() const noexcept
+    {
+        return static_cast<std::byte*>(m_data) - sizeof(size_type);
+    }
+
+private:
+    size_type m_size;
+    void* m_data;
 };
 
 /**

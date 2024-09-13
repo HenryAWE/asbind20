@@ -111,40 +111,39 @@ script_array::script_array(asITypeInfo* ti, void* list_buf)
     m_ti->AddRef();
     m_elem_size = get_elem_size(engine, m_subtype_id);
 
-    asUINT buf_sz = *static_cast<asUINT*>(list_buf);
-    list_buf = static_cast<asUINT*>(list_buf) + 1;
+    script_init_list init_list(list_buf);
 
     cache_data();
 
-    mem_resize_to(buf_sz);
+    mem_resize_to(init_list.size());
     if(!(m_subtype_id & asTYPEID_MASK_OBJECT))
     {
-        m_data.size = buf_sz;
-        if(buf_sz > 0)
+        if(init_list.size() > 0)
         {
             std::memcpy(
                 m_data.ptr,
-                list_buf,
-                static_cast<std::size_t>(buf_sz) * m_elem_size
+                init_list.data(),
+                static_cast<std::size_t>(init_list.size()) * m_elem_size
             );
         }
+        m_data.size = init_list.size();
     }
     else if((m_subtype_id & asTYPEID_OBJHANDLE) || (subtype_flags() & asOBJ_REF))
     {
-        m_data.size = buf_sz;
-        if(buf_sz > 0)
+        if(init_list.size() > 0)
         {
             std::memcpy(
                 m_data.ptr,
-                list_buf,
-                static_cast<std::size_t>(buf_sz) * m_elem_size
+                init_list.data(),
+                static_cast<std::size_t>(init_list.size()) * m_elem_size
             );
             std::memset(
-                list_buf,
+                init_list.data(),
                 0,
-                static_cast<std::size_t>(buf_sz) * m_elem_size
+                static_cast<std::size_t>(init_list.size()) * m_elem_size
             );
         }
+        m_data.size = init_list.size();
     }
     else
     {
@@ -153,22 +152,17 @@ script_array::script_array(asITypeInfo* ti, void* list_buf)
         asITypeInfo* subtype_ti = engine->GetTypeInfoById(m_subtype_id);
         assert(subtype_ti == m_ti->GetSubType());
 
-        bool is_script_obj = subtype_ti->GetFlags() & asOBJ_SCRIPT_OBJECT;
-        size_type list_elem_size = is_script_obj ?
-                                       sizeof(void*) :
-                                       subtype_ti->GetSize();
-        for(size_type i = 0; i < buf_sz; ++i)
+        size_type list_elem_size = subtype_ti->GetSize();
+        for(size_type i = 0; i < init_list.size(); ++i)
         {
             assert(m_elem_size == sizeof(void*));
             void** dst = (void**)(m_data.ptr + i * m_elem_size);
-            void* src = is_script_obj ?
-                            *(void**)(static_cast<std::byte*>(list_buf) + i * list_elem_size) :
-                            static_cast<std::byte*>(list_buf) + i * list_elem_size;
+            void* src = static_cast<std::byte*>(init_list.data()) + i * list_elem_size;
 
             *dst = engine->CreateScriptObjectCopy(src, subtype_ti);
         }
 
-        m_data.size = buf_sz;
+        m_data.size = init_list.size();
     }
 
     notify_gc_for_this();
