@@ -47,12 +47,18 @@ int main(int argc, char* argv[])
             << "asGetLibraryVersion: " << asGetLibraryVersion()
             << '\n'
             << "asGetLibraryOptions: " << asGetLibraryOptions()
+            << '\n'
+            << "asbind20::library_version: " << asbind20::library_version()
+            << '\n'
+            << "asbind20::library_options: " << asbind20::library_options()
             << std::endl;
         return 0;
     }
 
     asIScriptEngine* engine = asCreateScriptEngine();
     engine->SetMessageCallback(asFUNCTION(message_callback), nullptr, asCALL_CDECL);
+
+    engine->SetEngineProperty(asEP_USE_CHARACTER_LITERALS, true);
 
     asbind20::ext::register_script_array(engine);
     asbind20::ext::register_math_function(engine);

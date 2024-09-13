@@ -67,6 +67,10 @@ jobs:
           git reset --hard HEAD
           git merge 8cffd44a0fef633597c4f79d93a8b16b875ac6f9
 
+      - name: Install AngelScript
+        working-directory: /usr/local/share/vcpkg
+        run: ./vcpkg install angelscript
+
       - name: Configure
         run: >
           cmake
@@ -81,6 +85,16 @@ jobs:
 
       - name: Build
         run: cmake --build ${{github.workspace}}/build
+
+      - name: Install
+        working-directory: ${{github.workspace}}/build
+        run: sudo cmake --install .
+
+      - name: Test Installation
+        run: |
+          cmake -GNinja -S test/test_install/ -B build/asbind20_test_install -DCMAKE_TOOLCHAIN_FILE="${VCPKG_INSTALLATION_ROOT}/scripts/buildsystems/vcpkg.cmake"
+          cmake --build build/asbind20_test_install
+          build/asbind20_test_install/asbind20_test_install
 
       - name: Test
         working-directory: ${{github.workspace}}/build

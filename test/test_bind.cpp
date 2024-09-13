@@ -405,5 +405,7 @@ int main(int argc, char* argv[])
     ::testing::InitGoogleTest(&argc, argv);
     std::cerr << "asGetLibraryVersion(): " << asGetLibraryVersion() << std::endl;
     std::cerr << "asGetLibraryOptions(): " << asGetLibraryOptions() << std::endl;
+    std::cerr << "asbind20::library_version(): " << asbind20::library_version() << std::endl;
+    std::cerr << "asbind20::library_options(): " << asbind20::library_options() << std::endl;
     return RUN_ALL_TESTS();
 }
