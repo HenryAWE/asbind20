@@ -75,7 +75,7 @@ std::function<assert_handler_t> register_script_assert(
 
             global(engine)
                 .function(
-                    asbind20::detail::concat("void assert(bool pred, const ", string_t_decl, " &in msg)").c_str(),
+                    string_concat("void assert(bool pred, const ", string_t_decl, " &in msg)").c_str(),
                     &script_assert_impl::assert_msg_wrapper,
                     &impl
                 );

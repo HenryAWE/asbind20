@@ -1,13 +1,13 @@
 #include <gtest/gtest.h>
 #include <asbind20/asbind.hpp>
 
-TEST(detail, concat)
+TEST(utility, string_concat)
 {
-    using asbind20::detail::concat;
+    using asbind20::string_concat;
 
     {
         const char* name = "my_name";
-        EXPECT_EQ(concat("void f(", name, ')'), "void f(my_name)");
+        EXPECT_EQ(string_concat("void f(", name, ')'), "void f(my_name)");
     }
 }
 

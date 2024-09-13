@@ -51,49 +51,43 @@ TEST_F(asbind_test_suite, invoke)
         asIScriptFunction* fp = m->GetFunctionByName("add_1");
         ASSERT_NE(fp, nullptr);
 
-        asIScriptContext* ctx = engine->CreateContext();
+        asbind20::request_context ctx(engine);
 
         EXPECT_EQ(asbind20::script_invoke<int>(ctx, fp, 0).value(), 1);
         EXPECT_EQ(asbind20::script_invoke<int>(ctx, fp, 1).value(), 2);
-
-        ctx->Release();
     }
 
     {
         asIScriptFunction* fp = m->GetFunctionByName("add_ref_1");
         ASSERT_NE(fp, nullptr);
 
-        asIScriptContext* ctx = engine->CreateContext();
+        asbind20::request_context ctx(engine);
 
         int val = 0;
         asbind20::script_invoke<void>(ctx, fp, 1, std::ref(val));
         EXPECT_EQ(val, 2);
-
-        ctx->Release();
     }
 
     {
         asIScriptFunction* fp = m->GetFunctionByName("flt_identity");
         ASSERT_NE(fp, nullptr);
 
-        asIScriptContext* ctx = engine->CreateContext();
+        asbind20::request_context ctx(engine);
+
         auto result = asbind20::script_invoke<float>(ctx, fp, 3.14f);
         ASSERT_TRUE(result_has_value(result));
         EXPECT_FLOAT_EQ(result.value(), 3.14f);
-
-        ctx->Release();
     }
 
     {
         asIScriptFunction* fp = m->GetFunctionByName("dbl_identity");
         ASSERT_NE(fp, nullptr);
 
-        asIScriptContext* ctx = engine->CreateContext();
+        asbind20::request_context ctx(engine);
+
         auto result = asbind20::script_invoke<double>(ctx, fp, 3.14);
         ASSERT_TRUE(result_has_value(result));
         EXPECT_DOUBLE_EQ(result.value(), 3.14);
-
-        ctx->Release();
     }
 }
 

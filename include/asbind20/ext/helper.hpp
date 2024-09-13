@@ -63,6 +63,11 @@ int exec(
     std::string_view code,
     asIScriptContext* ctx = nullptr
 );
+
+/**
+ * @brief Register hash support for primitive types
+ */
+void register_script_hash(asIScriptEngine* engine);
 } // namespace asbind20::ext
 
 #endif

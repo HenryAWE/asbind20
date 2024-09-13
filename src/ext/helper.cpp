@@ -1,4 +1,5 @@
 #include <asbind20/ext/helper.hpp>
+#include <functional>
 
 namespace asbind20::ext
 {
@@ -209,7 +210,7 @@ namespace detail
         int r = 0;
 
         std::string func_code;
-        func_code = asbind20::detail::concat(
+        func_code = string_concat(
             ret_decl,
             ' ',
             module_name,
@@ -253,5 +254,27 @@ int exec(
     if(!ctx)
         engine->ReturnContext(exec_ctx);
     return r;
+}
+
+template <typename T>
+std::uint64_t script_hash_impl(T val)
+{
+    return std::hash<T>{}(val);
+}
+
+void register_script_hash(asIScriptEngine* engine)
+{
+    global(engine)
+        .typedef_("uint64", "hash_result_t")
+        .function("uint64 hash(int8)", &script_hash_impl<std::int8_t>)
+        .function("uint64 hash(int16)", &script_hash_impl<std::int16_t>)
+        .function("uint64 hash(int)", &script_hash_impl<std::int32_t>)
+        .function("uint64 hash(int64)", &script_hash_impl<std::int64_t>)
+        .function("uint64 hash(uint8)", &script_hash_impl<std::uint8_t>)
+        .function("uint64 hash(uint16)", &script_hash_impl<std::uint16_t>)
+        .function("uint64 hash(uint)", &script_hash_impl<std::uint32_t>)
+        .function("uint64 hash(uint64)", &script_hash_impl<std::uint64_t>)
+        .function("uint64 hash(float)", &script_hash_impl<float>)
+        .function("uint64 hash(double)", &script_hash_impl<double>);
 }
 } // namespace asbind20::ext

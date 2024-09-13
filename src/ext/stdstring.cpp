@@ -5,6 +5,10 @@
 #include <charconv>
 #include <string>
 #include <string_view>
+#ifdef ASBIND20_EXT_ARRAY
+#    include <ranges>
+#    include <asbind20/ext/array.hpp>
+#endif
 
 namespace asbind20::ext
 {
@@ -385,6 +389,83 @@ static void string_erase(std::string& this_, asINT32 idx, asUINT n)
     this_.erase(start, bytes_to_erase);
 }
 
+std::uint64_t string_hash(const std::string& this_)
+{
+    return std::hash<std::string>{}(this_);
+}
+
+bool string_contains(const std::string& this_, const std::string& str)
+{
+    return this_.find(str) != this_.npos;
+}
+
+bool string_contains_ch(const std::string& this_, std::uint32_t ch)
+{
+    char buf[4];
+    unsigned int size_bytes = u8_int_to_bytes(ch, buf);
+    return this_.find(std::string_view(buf, size_bytes)) != this_.npos;
+}
+
+#ifdef ASBIND20_EXT_ARRAY
+
+static script_array* new_string_array()
+{
+    asIScriptContext* ctx = asGetActiveContext();
+    if(!ctx) [[unlikely]]
+        return nullptr;
+
+    asIScriptEngine* engine = ctx->GetEngine();
+    asITypeInfo* ti = engine->GetTypeInfoByDecl("array<string>");
+
+    return new script_array(ti);
+}
+
+static void string_split_impl(script_array& out, std::string_view str, std::string_view delimiter, bool skip_empty)
+{
+    auto result = str | std::views::split(delimiter);
+
+    for(auto&& i : result)
+    {
+        if(skip_empty && i.empty())
+            continue;
+        std::string s(i.begin(), i.end());
+        out.push_back(&s);
+    }
+}
+
+static script_array* string_split(const std::string& this_, const std::string& delimiter, bool skip_empty)
+{
+    script_array* arr = new_string_array();
+    if(!arr)
+        return nullptr;
+    string_split_impl(*arr, this_, delimiter, skip_empty);
+    return arr;
+}
+
+static script_array* string_split_ch(const std::string& this_, std::uint32_t ch, bool skip_empty)
+{
+    script_array* arr = new_string_array();
+    if(!arr)
+        return nullptr;
+
+    char buf[4];
+    unsigned int size_bytes = u8_int_to_bytes(ch, buf);
+
+    string_split_impl(*arr, this_, std::string_view(buf, size_bytes), skip_empty);
+    return arr;
+}
+
+static script_array* string_split_simple(const std::string& this_, bool skip_empty)
+{
+    script_array* arr = new_string_array();
+    if(!arr)
+        return nullptr;
+    string_split_impl(*arr, this_, " ", skip_empty);
+    return arr;
+}
+
+#endif
+
 void register_std_string(asIScriptEngine* engine, bool as_default)
 {
     using std::string;
@@ -399,7 +480,7 @@ void register_std_string(asIScriptEngine* engine, bool as_default)
         .opAddAssign()
         .method("void prepend(const string&in)", &string_prepend)
         .method("string substr(int pos, uint len=-1) const", &string_substr)
-        .method("bool empty() const", &string::empty)
+        .method("bool get_empty() const property", &string::empty)
         .method("uint get_size_bytes() const property", &string_size_bytes)
         .method("uint get_size() const property", &string_size)
         .method("void clear()", &string::clear)
@@ -409,7 +490,9 @@ void register_std_string(asIScriptEngine* engine, bool as_default)
         .method("string remove_suffix(uint n) const", &string_remove_suffix)
         .method("void replace(int idx, uint n, const string&in str, uint len=-1)", &string_replace)
         .method("void insert(int idx, const string&in str, uint len=-1)", &string_insert)
-        .method("void erase(int idx, uint n=1)", &string_erase);
+        .method("void erase(int idx, uint n=1)", &string_erase)
+        .method("uint64 get_hash() const property", &string_hash)
+        .method("bool contains(const string&in) const", &string_contains);
 
     if(engine->GetEngineProperty(asEP_USE_CHARACTER_LITERALS))
     {
@@ -421,14 +504,36 @@ void register_std_string(asIScriptEngine* engine, bool as_default)
             .method("bool starts_with(uint ch) const", &string_starts_with_ch)
             .method("bool ends_with(uint ch) const", &string_ends_with_ch)
             .method("uint get_opIndex(int idx) const property", &string_get_opIndex)
-            .method("void set_opIndex(int idx, uint ch) property", &string_set_opIndex);
+            .method("void set_opIndex(int idx, uint ch) property", &string_set_opIndex)
+            .method("bool contains(uint ch) const", &string_contains_ch);
     }
+
+
+#ifdef ASBIND20_EXT_ARRAY
+
+    if(engine->GetDefaultArrayTypeId() >= 0)
+    {
+        c
+            .method("array<string>@ split(bool skip_empty=true) const", &string_split_simple)
+            .method("array<string>@ split(const string&in delimiter, bool skip_empty=true) const", &string_split);
+        if(engine->GetEngineProperty(asEP_USE_CHARACTER_LITERALS))
+        {
+            c.method("array<string>@ split(uint delimiter, bool skip_empty=true) const", &string_split_ch);
+        }
+    }
+
+#endif
 
     if(as_default)
     {
         int r = engine->RegisterStringFactory("string", &string_factory::get());
         assert(r >= 0);
     }
+}
+
+static std::string as_bool_to_string(bool val)
+{
+    return val ? "true" : "false";
 }
 
 template <std::integral T>
@@ -470,8 +575,11 @@ static std::string as_chr(std::uint32_t ch)
 void register_string_utils(asIScriptEngine* engine)
 {
     global(engine)
+        .function("string to_string(bool val)", &as_bool_to_string)
         .function("string to_string(int val, int base=10)", &as_int_to_string<int>)
         .function("string to_string(uint val, int base=10)", &as_int_to_string<asUINT>)
+        .function("string to_string(int64 val, int base=10)", &as_int_to_string<std::int64_t>)
+        .function("string to_string(uint64 val, int base=10)", &as_int_to_string<std::uint64_t>)
         .enum_type("float_format")
         .enum_value("float_format", std::chars_format::scientific, "scientific")
         .enum_value("float_format", std::chars_format::hex, "hex")

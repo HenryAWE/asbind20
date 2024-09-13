@@ -36,6 +36,14 @@ void check_utils()
     assert(to_string(3.14) == "3.14");
 }
 
+void check_split()
+{
+    assert("a b c ".split() == {"a", "b", "c"});
+    assert("a b c ".split(skip_empty:false) == {"a", "b", "c", ""});
+    assert("a,b,c,".split(',') == {"a", "b", "c"});
+    assert("a,b,c,".split(',', skip_empty:false) == {"a", "b", "c", ""});
+}
+
 void check_opCmp()
 {
     print("check opCmp()");
@@ -73,9 +81,10 @@ void main()
     assert(hello == "world");
 
     hello.clear();
-    assert(hello.empty());
+    assert(hello.empty);
 
     check_unicode_str();
     check_utils();
+    check_split();
     check_opCmp();
 }

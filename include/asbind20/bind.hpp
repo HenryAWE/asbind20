@@ -170,6 +170,11 @@ namespace detail
             assert(r >= 0);
         }
 
+        std::string opEquals_decl() const
+        {
+            return string_concat("bool opEquals(const ", m_name, " &in) const");
+        }
+
         template <typename Class>
         requires std::equality_comparable<Class>
         void opEquals_impl()
@@ -181,7 +186,7 @@ namespace detail
             if constexpr(has_member_op_eq)
             {
                 method_impl(
-                    detail::concat("bool opEquals(const ", m_name, " &in) const").c_str(),
+                    opEquals_decl().c_str(),
                     static_cast<bool (Class::*)(const Class&) const>(&Class::operator==),
                     call_conv<asCALL_THISCALL>
                 );
@@ -195,11 +200,16 @@ namespace detail
                     return lhs == rhs;
                 };
                 method_impl(
-                    detail::concat("bool opEquals(const ", m_name, " &in) const").c_str(),
+                    opEquals_decl().c_str(),
                     wrapper_obj_last,
                     call_conv<asCALL_CDECL_OBJLAST>
                 );
             }
+        }
+
+        std::string opCmp_decl() const
+        {
+            return string_concat("int opCmp(const ", m_name, " &in) const");
         }
 
         template <typename Class>
@@ -213,7 +223,7 @@ namespace detail
                 return translate_three_way(lhs <=> rhs);
             };
             method_impl(
-                detail::concat("int opCmp(const ", m_name, " &in) const").c_str(),
+                opCmp_decl().c_str(),
                 wrapper_obj_last,
                 call_conv<asCALL_CDECL_OBJLAST>
             );
@@ -229,7 +239,7 @@ namespace detail
             if constexpr(has_member_op_add)
             {
                 method_impl(
-                    detail::concat(m_name, " opAdd(const ", m_name, " &in) const").c_str(),
+                    string_concat(m_name, " opAdd(const ", m_name, " &in) const").c_str(),
                     static_cast<Class (Class::*)(const Class&) const>(&Class::operator+),
                     call_conv<asCALL_THISCALL>
                 );
@@ -243,7 +253,7 @@ namespace detail
                     return lhs + rhs;
                 };
                 method_impl(
-                    detail::concat(m_name, " opAdd(const ", m_name, " &in) const").c_str(),
+                    string_concat(m_name, " opAdd(const ", m_name, " &in) const").c_str(),
                     wrapper_obj_last,
                     call_conv<asCALL_CDECL_OBJLAST>
                 );
@@ -277,7 +287,7 @@ namespace detail
                 }
             );
 
-            std::string full_decl = detail::concat(
+            std::string full_decl = string_concat(
                 std::string_view(decl.begin(), name_begin.base()),
                 ' ',
                 m_name,
@@ -518,13 +528,13 @@ public:
         if constexpr(std::is_constructible_v<T, const T&>)
         {
             constructor<const T&>(
-                detail::concat("void f(const ", m_name, " &in)").c_str()
+                string_concat("void f(const ", m_name, " &in)").c_str()
             );
         }
         else
         {
             constructor<T&>(
-                detail::concat("void f(", m_name, " &in)").c_str()
+                string_concat("void f(", m_name, " &in)").c_str()
             );
         }
 
@@ -559,7 +569,7 @@ public:
             return *this;
 
         method(
-            detail::concat(m_name, "& opAssign(const ", m_name, " &in)").c_str(),
+            string_concat(m_name, "& opAssign(const ", m_name, " &in)").c_str(),
             static_cast<T& (T::*)(const T&)>(&T::operator=)
         );
 
@@ -569,7 +579,7 @@ public:
     value_class& opAddAssign()
     {
         method(
-            detail::concat(m_name, "& opAddAssign(const ", m_name, " &in)").c_str(),
+            string_concat(m_name, "& opAddAssign(const ", m_name, " &in)").c_str(),
             static_cast<T& (T::*)(const T&)>(&T::operator+=)
         );
 
@@ -724,7 +734,7 @@ public:
         {
             assert(!(m_flags & asOBJ_TEMPLATE));
             factory(
-                detail::concat(m_name, "@ f()").c_str(),
+                string_concat(m_name, "@ f()").c_str(),
                 +[]()
                 {
                     return new T();
@@ -735,7 +745,7 @@ public:
         {
             assert(m_flags & asOBJ_TEMPLATE);
             factory(
-                detail::concat(m_name, "@ f(int&in)").c_str(),
+                string_concat(m_name, "@ f(int&in)").c_str(),
                 +[](asITypeInfo* ti)
                 {
                     return new T(ti);
@@ -799,7 +809,7 @@ public:
     ref_class& list_factory(std::string_view repeated_type_name)
     {
         list_factory(
-            detail::concat(m_name, "@ f(int&in,int&in) {repeat ", repeated_type_name, "}").c_str(),
+            string_concat(m_name, "@ f(int&in,int&in) {repeat ", repeated_type_name, "}").c_str(),
             +[](asITypeInfo* ti, void* list_buf)
             {
                 return new T(ti, list_buf);
@@ -819,7 +829,7 @@ public:
     ref_class& opAssign() requires std::is_copy_assignable_v<T>
     {
         method(
-            detail::concat(m_name, "& opAssign(const ", m_name, " &in)").c_str(),
+            string_concat(m_name, "& opAssign(const ", m_name, " &in)").c_str(),
             static_cast<T& (T::*)(const T&)>(&T::operator=)
         );
 

@@ -54,19 +54,21 @@ std::strong_ordering translate_opCmp(int cmp) noexcept
 
 void set_script_exception(asIScriptContext* ctx, const char* info)
 {
+    assert(ctx != nullptr);
     ctx->SetException(info);
 }
 
 void set_script_exception(asIScriptContext* ctx, const std::string& info)
 {
+    assert(ctx != nullptr);
     ctx->SetException(info.c_str());
 }
 
 void set_script_exception(const char* info)
 {
     asIScriptContext* ctx = asGetActiveContext();
-    assert(ctx != nullptr);
-    set_script_exception(ctx, info);
+    if(ctx)
+        set_script_exception(ctx, info);
 }
 
 void set_script_exception(const std::string& info)

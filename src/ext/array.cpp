@@ -361,7 +361,7 @@ void script_array::sort(size_type idx, size_type n, bool asc)
         if(!cache || cache->opCmp_status == asMULTIPLE_FUNCTIONS)
         {
             asITypeInfo* subtype_ti = m_ti->GetEngine()->GetTypeInfoById(m_subtype_id);
-            set_script_exception(detail::concat(
+            set_script_exception(string_concat(
                 "Type \"",
                 subtype_ti->GetName(),
                 "\" has multiple matching opCmp method"
@@ -411,28 +411,33 @@ void script_array::sort(size_type idx, size_type n, bool asc)
         void* start = (*this)[idx];
         void* sentinel = (*this)[idx + n];
 
-#define ASBIND20_EXT_ARRAY_SORT_SWITCH_IMPL()                           \
-    switch(m_subtype_id)                                                \
-    {                                                                   \
-    case asTYPEID_BOOL: ASBIND20_EXT_ARRAY_SORT_IMPL(bool); break;      \
-    case asTYPEID_INT8: ASBIND20_EXT_ARRAY_SORT_IMPL(asINT8); break;    \
-    case asTYPEID_INT16: ASBIND20_EXT_ARRAY_SORT_IMPL(asINT16); break;  \
-    case asTYPEID_INT32: ASBIND20_EXT_ARRAY_SORT_IMPL(asINT32); break;  \
-    case asTYPEID_INT64: ASBIND20_EXT_ARRAY_SORT_IMPL(asINT64); break;  \
-    case asTYPEID_UINT8: ASBIND20_EXT_ARRAY_SORT_IMPL(asBYTE); break;   \
-    case asTYPEID_UINT16: ASBIND20_EXT_ARRAY_SORT_IMPL(asWORD); break;  \
-    case asTYPEID_UINT32: ASBIND20_EXT_ARRAY_SORT_IMPL(asDWORD); break; \
-    case asTYPEID_UINT64: ASBIND20_EXT_ARRAY_SORT_IMPL(asQWORD); break; \
-    case asTYPEID_FLOAT: ASBIND20_EXT_ARRAY_SORT_IMPL(float); break;    \
-    case asTYPEID_DOUBLE: ASBIND20_EXT_ARRAY_SORT_IMPL(double); break;  \
-    default:                                                            \
-        ASBIND20_EXT_ARRAY_SORT_IMPL(int); /* enums */                  \
-        break;                                                          \
+
+#define ASBIND20_EXT_ARRAY_SORT_CASE_IMPL(as_type_id) \
+    case as_type_id: ASBIND20_EXT_ARRAY_SORT_IMPL(primitive_type_of_t<as_type_id>); break
+
+#define ASBIND20_EXT_ARRAY_SORT_SWITCH_IMPL()               \
+    switch(m_subtype_id)                                    \
+    {                                                       \
+        ASBIND20_EXT_ARRAY_SORT_CASE_IMPL(asTYPEID_BOOL);   \
+        ASBIND20_EXT_ARRAY_SORT_CASE_IMPL(asTYPEID_INT8);   \
+        ASBIND20_EXT_ARRAY_SORT_CASE_IMPL(asTYPEID_INT16);  \
+        ASBIND20_EXT_ARRAY_SORT_CASE_IMPL(asTYPEID_INT32);  \
+        ASBIND20_EXT_ARRAY_SORT_CASE_IMPL(asTYPEID_INT64);  \
+        ASBIND20_EXT_ARRAY_SORT_CASE_IMPL(asTYPEID_UINT8);  \
+        ASBIND20_EXT_ARRAY_SORT_CASE_IMPL(asTYPEID_UINT16); \
+        ASBIND20_EXT_ARRAY_SORT_CASE_IMPL(asTYPEID_UINT32); \
+        ASBIND20_EXT_ARRAY_SORT_CASE_IMPL(asTYPEID_UINT64); \
+        ASBIND20_EXT_ARRAY_SORT_CASE_IMPL(asTYPEID_FLOAT);  \
+        ASBIND20_EXT_ARRAY_SORT_CASE_IMPL(asTYPEID_DOUBLE); \
+    default:                                                \
+        ASBIND20_EXT_ARRAY_SORT_IMPL(int); /* enums */      \
+        break;                                              \
     }
 
         if(asc)
         {
-#define ASBIND20_EXT_ARRAY_SORT_IMPL(type) std::sort((type*)start, (type*)sentinel)
+#define ASBIND20_EXT_ARRAY_SORT_IMPL(type) \
+    std::sort((type*)start, (type*)sentinel)
 
             ASBIND20_EXT_ARRAY_SORT_SWITCH_IMPL();
 
@@ -440,7 +445,8 @@ void script_array::sort(size_type idx, size_type n, bool asc)
         }
         else
         {
-#define ASBIND20_EXT_ARRAY_SORT_IMPL(type) std::sort((type*)start, (type*)sentinel, std::greater<type>())
+#define ASBIND20_EXT_ARRAY_SORT_IMPL(type) \
+    std::sort((type*)start, (type*)sentinel, std::greater<>{})
 
             ASBIND20_EXT_ARRAY_SORT_SWITCH_IMPL();
 
@@ -448,6 +454,7 @@ void script_array::sort(size_type idx, size_type n, bool asc)
         }
 
 #undef ASBIND20_EXT_ARRAY_SORT_SWITCH_IMPL
+#undef ASBIND20_EXT_ARRAY_SORT_CASE_IMPL
     }
 }
 
@@ -721,19 +728,27 @@ bool script_array::elem_opEquals(const void* lhs, const void* rhs, asIScriptCont
     {
         switch(m_subtype_id)
         {
-#define ASBIND20_EXT_ARRAY_EQUALS_IMPL(type) *((const type*)lhs) == *((const type*)rhs)
-        case asTYPEID_BOOL: return ASBIND20_EXT_ARRAY_EQUALS_IMPL(bool);
-        case asTYPEID_INT8: return ASBIND20_EXT_ARRAY_EQUALS_IMPL(asINT8);
-        case asTYPEID_INT16: return ASBIND20_EXT_ARRAY_EQUALS_IMPL(asINT16);
-        case asTYPEID_INT32: return ASBIND20_EXT_ARRAY_EQUALS_IMPL(asINT32);
-        case asTYPEID_INT64: return ASBIND20_EXT_ARRAY_EQUALS_IMPL(asINT64);
-        case asTYPEID_UINT8: return ASBIND20_EXT_ARRAY_EQUALS_IMPL(asBYTE);
-        case asTYPEID_UINT16: return ASBIND20_EXT_ARRAY_EQUALS_IMPL(asWORD);
-        case asTYPEID_UINT32: return ASBIND20_EXT_ARRAY_EQUALS_IMPL(asDWORD);
-        case asTYPEID_UINT64: return ASBIND20_EXT_ARRAY_EQUALS_IMPL(asQWORD);
-        case asTYPEID_FLOAT: return ASBIND20_EXT_ARRAY_EQUALS_IMPL(float);
-        case asTYPEID_DOUBLE: return ASBIND20_EXT_ARRAY_EQUALS_IMPL(double);
-        default: return ASBIND20_EXT_ARRAY_EQUALS_IMPL(int); // enums
+#define ASBIND20_EXT_ARRAY_EQUALS_IMPL(type) \
+    *((const type*)lhs) == *((const type*)rhs)
+
+#define ASBIND20_EXT_ARRAY_EQUALS_CASE_IMPL(as_type_id) \
+    case as_type_id: return ASBIND20_EXT_ARRAY_EQUALS_IMPL(primitive_type_of_t<as_type_id>)
+
+            ASBIND20_EXT_ARRAY_EQUALS_CASE_IMPL(asTYPEID_BOOL);
+            ASBIND20_EXT_ARRAY_EQUALS_CASE_IMPL(asTYPEID_INT8);
+            ASBIND20_EXT_ARRAY_EQUALS_CASE_IMPL(asTYPEID_INT16);
+            ASBIND20_EXT_ARRAY_EQUALS_CASE_IMPL(asTYPEID_INT32);
+            ASBIND20_EXT_ARRAY_EQUALS_CASE_IMPL(asTYPEID_INT64);
+            ASBIND20_EXT_ARRAY_EQUALS_CASE_IMPL(asTYPEID_UINT8);
+            ASBIND20_EXT_ARRAY_EQUALS_CASE_IMPL(asTYPEID_UINT16);
+            ASBIND20_EXT_ARRAY_EQUALS_CASE_IMPL(asTYPEID_UINT32);
+            ASBIND20_EXT_ARRAY_EQUALS_CASE_IMPL(asTYPEID_UINT64);
+            ASBIND20_EXT_ARRAY_EQUALS_CASE_IMPL(asTYPEID_FLOAT);
+            ASBIND20_EXT_ARRAY_EQUALS_CASE_IMPL(asTYPEID_DOUBLE);
+
+        default:
+            return ASBIND20_EXT_ARRAY_EQUALS_IMPL(int); // enums
+
 #undef ASBIND20_EXT_ARRAY_EQUALS_IMPL
         }
     }

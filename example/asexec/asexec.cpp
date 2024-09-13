@@ -5,6 +5,7 @@
 #include <asbind20/ext/array.hpp>
 #include <asbind20/ext/stdstring.hpp>
 #include <asbind20/ext/math.hpp>
+#include <asbind20/ext/helper.hpp>
 #include <iostream>
 
 void script_print(const std::string& str, bool newline)
@@ -62,6 +63,7 @@ int main(int argc, char* argv[])
 
     asbind20::ext::register_script_array(engine);
     asbind20::ext::register_math_function(engine);
+    asbind20::ext::register_script_hash(engine);
     asbind20::ext::register_std_string(engine);
     asbind20::ext::register_string_utils(engine);
     asbind20::global(engine)
@@ -87,9 +89,9 @@ int main(int argc, char* argv[])
     int ret_val = EXIT_SUCCESS;
     asIScriptFunction* entry_i = m->GetFunctionByDecl("int main()");
     asIScriptFunction* entry_v = m->GetFunctionByDecl("void main()");
-    asIScriptContext* ctx = engine->RequestContext();
     if(entry_i)
     {
+        asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, entry_i);
         if(!result.has_value())
         {
@@ -101,6 +103,7 @@ int main(int argc, char* argv[])
     }
     else if(entry_v)
     {
+        asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<void>(ctx, entry_v);
         if(!result.has_value())
         {
@@ -116,7 +119,6 @@ int main(int argc, char* argv[])
         ret_val = EXIT_FAILURE;
     }
 
-    engine->ReturnContext(ctx);
     m->Discard();
     engine->ShutDownAndRelease();
     return ret_val;

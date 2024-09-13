@@ -13,6 +13,39 @@
 
 namespace asbind20
 {
+template <int TypeId>
+requires(!(TypeId & ~asTYPEID_MASK_SEQNBR))
+struct primitive_type_of
+{
+    static_assert(TypeId > asTYPEID_DOUBLE);
+    using type = int; // enums
+};
+
+#define ASBIND20_UTILITY_DEFINE_PRIMITIVE_TYPE_OF(as_type_id, cpp_type) \
+    template <>                                                         \
+    struct primitive_type_of<as_type_id>                                \
+    {                                                                   \
+        using type = cpp_type;                                          \
+    };
+
+ASBIND20_UTILITY_DEFINE_PRIMITIVE_TYPE_OF(asTYPEID_VOID, void);
+ASBIND20_UTILITY_DEFINE_PRIMITIVE_TYPE_OF(asTYPEID_BOOL, bool);
+ASBIND20_UTILITY_DEFINE_PRIMITIVE_TYPE_OF(asTYPEID_INT8, std::int8_t);
+ASBIND20_UTILITY_DEFINE_PRIMITIVE_TYPE_OF(asTYPEID_INT16, std::int16_t);
+ASBIND20_UTILITY_DEFINE_PRIMITIVE_TYPE_OF(asTYPEID_INT32, std::int32_t);
+ASBIND20_UTILITY_DEFINE_PRIMITIVE_TYPE_OF(asTYPEID_INT64, std::int64_t);
+ASBIND20_UTILITY_DEFINE_PRIMITIVE_TYPE_OF(asTYPEID_UINT8, std::uint8_t);
+ASBIND20_UTILITY_DEFINE_PRIMITIVE_TYPE_OF(asTYPEID_UINT16, std::uint16_t);
+ASBIND20_UTILITY_DEFINE_PRIMITIVE_TYPE_OF(asTYPEID_UINT32, std::uint32_t);
+ASBIND20_UTILITY_DEFINE_PRIMITIVE_TYPE_OF(asTYPEID_UINT64, std::uint64_t);
+ASBIND20_UTILITY_DEFINE_PRIMITIVE_TYPE_OF(asTYPEID_FLOAT, float);
+ASBIND20_UTILITY_DEFINE_PRIMITIVE_TYPE_OF(asTYPEID_DOUBLE, double);
+
+#undef ASBIND20_UTILITY_DEFINE_PRIMITIVE_TYPE_OF
+
+template <int TypeId>
+using primitive_type_of_t = typename primitive_type_of<TypeId>::type;
+
 class as_exclusive_lock_t
 {
 public:
@@ -52,42 +85,42 @@ inline constexpr as_shared_lock_t as_shared_lock = {};
 
 namespace detail
 {
-    inline void concat_impl(std::string& out, const std::string& str)
+    constexpr void concat_impl(std::string& out, const std::string& str)
     {
         out += str;
     }
 
-    inline void concat_impl(std::string& out, std::string_view sv)
+    constexpr void concat_impl(std::string& out, std::string_view sv)
     {
         out.append(sv);
     }
 
-    inline void concat_impl(std::string& out, const char* cstr)
+    constexpr void concat_impl(std::string& out, const char* cstr)
     {
         out.append(cstr);
     }
 
-    inline void concat_impl(std::string& out, char ch)
+    constexpr void concat_impl(std::string& out, char ch)
     {
         out.append(1, ch);
     }
 
-    inline std::size_t concat_size(const std::string& str)
+    constexpr std::size_t concat_size(const std::string& str)
     {
         return str.size();
     }
 
-    inline std::size_t concat_size(std::string_view sv)
+    constexpr std::size_t concat_size(std::string_view sv)
     {
         return sv.size();
     }
 
-    inline std::size_t concat_size(const char* cstr)
+    constexpr std::size_t concat_size(const char* cstr)
     {
         return std::char_traits<char>::length(cstr);
     }
 
-    inline std::size_t concat_size(char ch)
+    constexpr std::size_t concat_size(char ch)
     {
         return 1;
     }
@@ -98,27 +131,28 @@ namespace detail
         std::is_same_v<std::remove_cvref_t<T>, std::string_view> ||
         std::is_convertible_v<std::decay_t<T>, const char*> ||
         std::is_same_v<std::remove_cvref_t<T>, char>;
-
-    template <concat_accepted... Args>
-    std::string& concat_inplace(std::string& out, Args&&... args)
-    {
-        assert(out.empty());
-        std::size_t sz = 0 + (concat_size(args) + ...);
-        out.reserve(sz);
-
-        (concat_impl(out, std::forward<Args>(args)), ...);
-
-        return out;
-    }
-
-    template <concat_accepted... Args>
-    std::string concat(Args&&... args)
-    {
-        std::string out;
-        concat_inplace(out, std::forward<Args>(args)...);
-        return out;
-    }
 } // namespace detail
+
+template <detail::concat_accepted... Args>
+constexpr std::string& string_concat_inplace(std::string& out, Args&&... args)
+{
+    assert(out.empty());
+    std::size_t sz = 0 + (detail::concat_size(args) + ...);
+    out.reserve(sz);
+
+    (detail::concat_impl(out, std::forward<Args>(args)), ...);
+
+    return out;
+}
+
+template <detail::concat_accepted... Args>
+constexpr std::string string_concat(Args&&... args)
+{
+    std::string out;
+    string_concat_inplace(out, std::forward<Args>(args)...);
+    return out;
+}
+
 
 /**
  * @brief Wrapper for script object, similar to a `std::unique_ptr`
@@ -176,6 +210,11 @@ private:
     asIScriptObject* m_obj = nullptr;
 };
 
+/**
+ * @brief RAII helper for reusing active script context.
+ *
+ * It will fallback to request context from the engine.
+ */
 class [[nodiscard]] reuse_active_context
 {
 public:
@@ -185,9 +224,11 @@ public:
     reuse_active_context& operator=(const reuse_active_context&) = delete;
 
     explicit reuse_active_context(asIScriptEngine* engine)
-        : m_ctx(asGetActiveContext()), m_is_nested(false)
+        : m_engine(engine)
     {
-        assert(engine != nullptr);
+        assert(m_engine != nullptr);
+
+        m_ctx = asGetActiveContext();
         if(m_ctx)
         {
             if(m_ctx->GetEngine() == engine && m_ctx->PushState() >= 0)
@@ -198,7 +239,7 @@ public:
 
         if(!m_ctx)
         {
-            m_ctx = engine->CreateContext();
+            m_ctx = engine->RequestContext();
         }
     }
 
@@ -214,7 +255,7 @@ public:
                     m_ctx->Abort();
             }
             else
-                m_ctx->Release();
+                m_engine->ReturnContext(m_ctx);
         }
     }
 
@@ -228,16 +269,62 @@ public:
         return get();
     }
 
+    /**
+     * @brief Returns true if current context is reused.
+     */
     bool is_nested() const noexcept
     {
         return m_is_nested;
     }
 
 private:
-    asIScriptContext* m_ctx;
-    bool m_is_nested;
+    asIScriptEngine* m_engine = nullptr;
+    asIScriptContext* m_ctx = nullptr;
+    bool m_is_nested = false;
 };
 
+/**
+ * @brief RAII helper for requesting script context from the engine
+ */
+class [[nodiscard]] request_context
+{
+public:
+    request_context() = delete;
+    request_context(const request_context&) = delete;
+
+    request_context& operator=(const request_context&) = delete;
+
+    request_context(asIScriptEngine* engine)
+        : m_engine(engine)
+    {
+        assert(m_engine != nullptr);
+        m_ctx = m_engine->RequestContext();
+    }
+
+    ~request_context()
+    {
+        if(m_ctx)
+            m_engine->ReturnContext(m_ctx);
+    }
+
+    asIScriptContext* get() const noexcept
+    {
+        return m_ctx;
+    }
+
+    operator asIScriptContext*() const noexcept
+    {
+        return get();
+    }
+
+private:
+    asIScriptEngine* m_engine = nullptr;
+    asIScriptContext* m_ctx = nullptr;
+};
+
+/**
+ * @brief Wrap `asAllocMem()` and `asFreeMem()` as a C++ allocator
+ */
 template <typename T>
 class as_allocator
 {
