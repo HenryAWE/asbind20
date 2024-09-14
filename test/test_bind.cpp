@@ -18,6 +18,16 @@ public:
 
     my_value_class& operator=(const my_value_class&) = default;
 
+    friend bool operator==(const my_value_class& lhs, const my_value_class& rhs)
+    {
+        return lhs.value == rhs.value;
+    }
+
+    friend std::strong_ordering operator<=>(const my_value_class& lhs, const my_value_class& rhs)
+    {
+        return lhs.value <=> rhs.value;
+    }
+
     int get_val() const
     {
         return value;
@@ -106,6 +116,8 @@ TEST_F(asbind_test_suite, value_class)
     asbind20::value_class<my_value_class>(engine, "my_value_class", asOBJ_APP_CLASS_CDAK)
         .common_behaviours()
         .constructor<int>("void f(int val)")
+        .opEquals()
+        .opCmp()
         .method("void set_val(int)", &my_value_class::set_val)
         .method("int get_val() const", &my_value_class::get_val)
         .method("void add(int val)", test_bind::add_obj_last)
@@ -123,6 +135,7 @@ TEST_F(asbind_test_suite, value_class)
         "my_value_class val;"
         "val.set_val(42);"
         "assert(val.value == 42);"
+        "assert(val == my_value_class(42));"
         "return val.get_val();"
         "}"
         "int test_2()"
@@ -130,6 +143,7 @@ TEST_F(asbind_test_suite, value_class)
         "my_value_class val;"
         "val.set_val(182375);"
         "assert(val.value < 182376);"
+        "assert(val < my_value_class(182376));"
         "val.add(1);"
         "return val.get_val();"
         "}"

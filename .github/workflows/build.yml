@@ -98,6 +98,12 @@ jobs:
           cmake --build build/asbind20_test_install
           build/asbind20_test_install/asbind20_test_install
 
+      - name: Test add_subdirectory
+        run: |
+          cmake -GNinja -S test/test_subdir/ -B build/asbind20_test_subdir -DCMAKE_CXX_COMPILER=g++-12 -DCMAKE_TOOLCHAIN_FILE="${VCPKG_INSTALLATION_ROOT}/scripts/buildsystems/vcpkg.cmake"
+          cmake --build build/asbind20_test_subdir
+          build/asbind20_test_subdir/asbind20_test_subdir
+
       - name: Test
         working-directory: ${{github.workspace}}/build
         run: ctest

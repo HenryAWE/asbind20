@@ -1,5 +1,9 @@
 # asbind20
-C++ 20 AngelScript binding library.
+[![Build](https://github.com/HenryAWE/asbind20/actions/workflows/build.yml/badge.svg)](https://github.com/HenryAWE/asbind20/actions/workflows/build.yml)
+
+C++20 AngelScript binding library powered by templates. It also provides tools for easy interoperability between the AngelScript and C++.
+
+The name and API design are inspired by the famous [pybind11 library](https://github.com/pybind/pybind11).
 
 # Brief Examples
 ## 1. Binding Application Interfaces
@@ -16,6 +20,16 @@ public:
     ~my_value_class() = default;
 
     my_value_class& operator=(const my_value_class&) = default;
+
+    friend bool operator==(const my_value_class& lhs, const my_value_class& rhs)
+    {
+        return lhs.value == rhs.value;
+    }
+
+    friend std::strong_ordering operator<=>(const my_value_class& lhs, const my_value_class& rhs)
+    {
+        return lhs.value <=> rhs.value;
+    }
 
     int get_val() const
     {
@@ -42,42 +56,65 @@ void mul_obj_first(my_value_class* this_, int val)
 ```
 Binding code
 ```c++
-asIScriptEngine* engine = /* ... */;
+asIScriptEngine* engine = /* Get a script engine */;
 asbind20::value_class<my_value_class>(engine, "my_value_class")
+    // Default & copy constructor, destructor,
+    // and assignment operator (operator=/opAssign)
     .common_behaviours()
+    // The constructor my_value_class::my_value_class(int val)
     .constructor<int>("void f(int val)")
+    // Generate opEquals for AngelScript using operator== in C++
+    .opEquals()
+    // Generate opCmp for AngelScript using operator<=> in C++
+    .opCmp()
+    // Ordinary member functions
     .method("void set_val(int)", &my_value_class::set_val)
     .method("int get_val() const", &my_value_class::get_val)
+    // Automatically deducing calling convention
     .method("void add(int val)", add_obj_last)
     .method("void mul(int val)", mul_obj_first)
+    // Convert member pointer to property
     .property("int value", &my_value_class::value);
 ```
+The binding helpers also support registering a reference type, an interface, or global functions, etc. to the AngelScript engine.  
+You can find more examples in `src/ext/array.cpp` and `src/ext/stdstring.cpp`.
 
 ## 2. Invoking a Script Function
-AngelScript side
+The library can automatically convert arguments in C++ for invoking an AngelScript function. Besides, the library provides RAII classes for easily managing lifetime of AngelScript object like `asIScriptContext`.
+
+- AngelScript side
 ```angelscript
-void add_ref(int i, int &out o)
+string test(int a, int&out b)
 {
-    o = i + 1;
+    b = a + 1;
+    return "test";
 }
 ```
-C++ side
+- C++ side
 ```c++
+asIScriptEngine* engine = /* Get a script engine */;
 asIScriptModule* m = /* Build the above script */;
-asIScriptFunction* add_ref = m->GetFunctionByName("add_ref");
+asIScriptFunction* add_ref = m->GetFunctionByName("test");
 if(!add_ref)
     /* Error */
 
-asIScriptContext* ctx = /* Get a script context */;
+// Manage script context using RAII
+asbind20::request_context ctx(engine);
 
 int val = 0;
-asbind20::script_invoke<void>(ctx, add_ref, 1, std::ref(val));
+auto result = asbind20::script_invoke<std::string>(
+    ctx, add_ref, 1, std::ref(val)
+);
 
+assert(result.value() == "test");
 assert(val == 2);
 ```
+You can find more examples in `test/test_invoke.cpp`.
 
-## 3. Instantiating a Script Class
-Script class
+## 3. Using a Script Class
+The library provides tools for instantiating a script class. The `script_invoke` also supports invoking a method, a.k.a., member function.
+
+Script class in AngelScript
 ```angelscript
 class my_class
 {
@@ -89,10 +126,11 @@ class my_class
 ```
 C++ code
 ```c++
+asIScriptEngine* engine = /* Get a script engine */;
 asIScriptModule* m = /* Build the above script */;
 asITypeInfo* my_class_t = m->GetTypeInfoByName("my_class");
 
-asIScriptContext* ctx = /* Get a script context */;
+asbind20::request_context ctx(engine);
 
 auto my_class = asbind20::instantiate_class(ctx, my_class_t);
 
@@ -114,6 +152,43 @@ assert(val_ref.value() == 182375);
 val = asbind20::script_invoke<int>(ctx, my_class, get_val);
 assert(val.value() == 182376);
 ```
+
+# Supported Platforms
+- CMake >= 3.20
+- AngelScript >= 2.37.0
+- Any C++ compiler that supports C++20.  
+  Currently, this library has been tested by MSVC 19.41 on Windows and GCC 12 on Linux.
+
+# How to Use
+Follow the tutorial of AngelScript to build and install it at first, or use a package manager like [vcpkg](https://github.com/microsoft/vcpkg).
+## A. Build and Install
+Build and install the library.
+```sh
+
+cmake -GNinja -DCMAKE_BUILD_TYPE=Release -S. -B build
+cmake --build build
+cmake --install build
+```
+Use the library in a `CMakeLists.txt`.
+```cmake
+find_package(asbind20 REQUIRED)
+
+target_link_libraries(main PRIVATE asbind20::asbind20)
+```
+You can find a detailed example in `test/test_install/`.
+
+## B. As Submodule
+Clone the library into your project.
+```sh
+git clone https://github.com/HenryAWE/asbind20.git
+```
+Use the library in a `CMakeLists.txt`.
+```cmake
+add_subdirectory(asbind20)
+
+target_link_libraries(main PRIVATE asbind20::asbind20)
+```
+You can find a detailed example in `test/test_subdir/`.
 
 # License
 [MIT License](./LICENSE)

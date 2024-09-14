@@ -43,7 +43,8 @@ TEST_F(asbind_test_suite, invoke)
         "int add_1(int i) { return i + 1; }\n"
         "void add_ref_1(int i, int& out o) { o = i + 1; }\n"
         "float flt_identity(float val) { return val; }\n"
-        "double dbl_identity(double val) { return val; }"
+        "double dbl_identity(double val) { return val; }\n"
+        "string test(int a, int&out b) { b = a + 1; return \"test\"; }"
     );
     ASSERT_GE(m->Build(), 0);
 
@@ -88,6 +89,19 @@ TEST_F(asbind_test_suite, invoke)
         auto result = asbind20::script_invoke<double>(ctx, fp, 3.14);
         ASSERT_TRUE(result_has_value(result));
         EXPECT_DOUBLE_EQ(result.value(), 3.14);
+    }
+
+    {
+        asIScriptFunction* fp = m->GetFunctionByName("test");
+        ASSERT_NE(fp, nullptr);
+
+        asbind20::request_context ctx(engine);
+
+        int val = 0;
+        auto result = asbind20::script_invoke<std::string>(ctx, fp, 1, std::ref(val));
+        ASSERT_TRUE(result_has_value(result));
+        EXPECT_EQ(result.value(), "test");
+        EXPECT_EQ(val, 2);
     }
 }
 

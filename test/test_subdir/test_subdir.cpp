@@ -4,7 +4,7 @@
 int main()
 {
     std::cout
-        << "test_install\n"
+        << "test_subdir\n"
         << asbind20::library_version()
         << '\n'
         << asbind20::library_options()
