@@ -4,25 +4,18 @@
 #pragma once
 
 #include <cassert>
+#include <concepts>
 #include <type_traits>
 #include <string>
 #include <tuple>
 #include <algorithm>
+#include <functional>
 #include <angelscript.h>
 #include "utility.hpp"
+#include "function_traits.hpp"
 
 namespace asbind20
 {
-namespace detail
-{
-    template <typename T, typename Class>
-    concept is_this_arg =
-        std::is_same_v<T, Class*> ||
-        std::is_same_v<T, const Class*> ||
-        std::is_same_v<T, Class&> ||
-        std::is_same_v<T, const Class&>;
-} // namespace detail
-
 template <asECallConvTypes CallConv>
 struct call_conv_t
 {};
@@ -30,24 +23,271 @@ struct call_conv_t
 template <asECallConvTypes CallConv>
 constexpr inline call_conv_t<CallConv> call_conv;
 
+/**
+ * @brief Check if `asGetLibraryOptions()` returns "AS_MAX_PORTABILITY"
+ */
+[[nodiscard]]
+bool has_max_portability();
+
+template <typename T>
+T get_generic_arg(asIScriptGeneric* gen, asUINT idx)
+{
+    if constexpr(
+        std::is_same_v<std::remove_cv_t<T>, asIScriptObject*> ||
+        std::is_same_v<std::remove_cv_t<T>, const asIScriptObject*>
+    )
+    {
+        return static_cast<asIScriptObject*>(gen->GetArgObject(idx));
+    }
+    else if constexpr(std::is_pointer_v<T>)
+    {
+        using value_t = std::remove_pointer_t<T>;
+
+        void* ptr = nullptr;
+        if constexpr(std::is_class_v<value_t>)
+            ptr = gen->GetArgAddress(idx);
+        else
+            ptr = gen->GetAddressOfArg(idx);
+        assert(ptr != nullptr);
+        return static_cast<T*>(ptr);
+    }
+    else if constexpr(std::is_reference_v<T>)
+    {
+        using pointer_t = std::remove_reference_t<T>*;
+        return *get_generic_arg<pointer_t>(gen, idx);
+    }
+    else if constexpr(std::is_class_v<T>)
+    {
+        return get_generic_arg<T&>(gen, idx);
+    }
+    else if constexpr(std::is_same_v<std::remove_cv_t<T>, std::byte>)
+    {
+        return static_cast<std::byte>(gen->GetArgByte(idx));
+    }
+    else if constexpr(std::is_enum_v<T>)
+    {
+        return static_cast<T>(get_generic_arg<int>(gen, idx));
+    }
+    else if constexpr(std::integral<T>)
+    {
+        if constexpr(sizeof(T) == sizeof(asBYTE))
+            return static_cast<T>(gen->GetArgByte(idx));
+        else if constexpr(sizeof(T) == sizeof(asWORD))
+            return static_cast<T>(gen->GetArgWord(idx));
+        else if constexpr(sizeof(T) == sizeof(asDWORD))
+            return static_cast<T>(gen->GetArgDWord(idx));
+        else if constexpr(sizeof(T) == sizeof(asQWORD))
+            return static_cast<T>(gen->GetArgQWord(idx));
+        else
+            static_assert(!sizeof(T), "Integer size too large");
+    }
+    else if constexpr(std::floating_point<T>)
+    {
+        if constexpr(std::is_same_v<std::remove_cv_t<T>, float>)
+            return gen->GetArgFloat(idx);
+        else if constexpr(std::is_same_v<std::remove_cv_t<T>, double>)
+            return gen->GetArgDouble(idx);
+        else
+            static_assert(!sizeof(T), "Unsupported floating point type");
+    }
+    else
+    {
+        static_assert(!sizeof(T), "Unsupported type");
+    }
+}
+
+template <typename T>
+void set_generic_return(asIScriptGeneric* gen, std::type_identity_t<T>&& ret)
+{
+    if constexpr(std::is_reference_v<T>)
+    {
+        using pointer_t = std::remove_reference_t<T>*;
+        set_generic_return<pointer_t>(gen, std::addressof(ret));
+    }
+    else if constexpr(std::is_pointer_v<T>)
+    {
+        void* ptr = (void*)ret;
+
+        if constexpr(
+            std::is_same_v<std::remove_cv_t<T>, asIScriptObject*> ||
+            std::is_same_v<std::remove_cv_t<T>, const asIScriptObject*>
+        )
+            gen->SetReturnObject(ptr);
+        else
+        {
+            using value_t = std::remove_pointer_t<T>;
+
+            if(std::is_class_v<T>)
+                gen->SetReturnObject(ptr);
+            else
+                gen->SetReturnAddress(ptr);
+        }
+    }
+    else if constexpr(std::is_class_v<T>)
+    {
+        using pointer_t = T*;
+        set_generic_return<pointer_t>(gen, std::addressof(ret));
+    }
+    else if constexpr(std::is_same_v<std::remove_cv_t<T>, std::byte>)
+    {
+        gen->SetReturnByte(static_cast<asBYTE>(ret));
+    }
+    else if constexpr(std::is_enum_v<T>)
+    {
+        set_generic_return<int>(gen, static_cast<int>(ret));
+    }
+    else if constexpr(std::integral<T>)
+    {
+        if constexpr(sizeof(T) == sizeof(asBYTE))
+            gen->SetReturnByte(ret);
+        else if constexpr(sizeof(T) == sizeof(asWORD))
+            gen->SetReturnWord(ret);
+        else if constexpr(sizeof(T) == sizeof(asDWORD))
+            gen->SetReturnDWord(ret);
+        else if constexpr(sizeof(T) == sizeof(asQWORD))
+            gen->SetReturnQWord(ret);
+        else
+            static_assert(!sizeof(T), "Integer size too large");
+    }
+    else if constexpr(std::floating_point<T>)
+    {
+        if constexpr(std::is_same_v<std::remove_cv_t<T>, float>)
+            gen->SetReturnFloat(ret);
+        else if constexpr(std::is_same_v<std::remove_cv_t<T>, double>)
+            gen->SetReturnDouble(ret);
+        else
+            static_assert(!sizeof(T), "Unsupported floating point type");
+    }
+    else
+    {
+        static_assert(!sizeof(T), "Unsupported type");
+    }
+}
+
+class register_helper_base
+{
+public:
+    register_helper_base() = delete;
+    register_helper_base(const register_helper_base&) noexcept = default;
+
+    register_helper_base(asIScriptEngine* engine)
+        : m_engine(engine)
+    {
+        assert(engine != nullptr);
+    }
+
+    asIScriptEngine* get_engine() const noexcept
+    {
+        return m_engine;
+    }
+
+protected:
+    asIScriptEngine* const m_engine;
+};
+
+template <typename T>
+concept native_function =
+    std::is_function_v<T> ||
+    std::is_function_v<std::remove_pointer_t<T>> ||
+    std::is_member_function_pointer_v<T>;
+
+using generic_function_t = void(asIScriptGeneric* gen);
+
+template <native_function auto Function, asECallConvTypes OriginalConv>
+requires(OriginalConv != asCALL_GENERIC)
+class generic_wrapper
+{
+public:
+    using function_type = decltype(Function);
+
+    static_assert(
+        !std::is_member_function_pointer_v<function_type> || OriginalConv == asCALL_THISCALL,
+        "Invalid calling convention"
+    );
+
+    static constexpr generic_function_t* generate()
+    {
+        return &wrapper_impl;
+    }
+
+    constexpr operator generic_function_t*() const
+    {
+        return generate();
+    }
+
+private:
+    static void wrapper_impl(asIScriptGeneric* gen)
+    {
+        using traits = function_traits<decltype(Function)>;
+
+        if constexpr(traits::is_method::value)
+        {
+            [gen]<std::size_t... Is>(std::index_sequence<Is...>)
+            {
+                auto* this_ = (typename traits::class_type*)gen->GetObject();
+                if constexpr(std::is_void_v<typename traits::return_type>)
+                {
+                    std::invoke(
+                        Function,
+                        this_,
+                        get_generic_arg<typename traits::template arg_type<Is>>(
+                            gen, static_cast<asUINT>(Is)
+                        )...
+                    );
+                }
+                else
+                {
+                    set_generic_return<typename traits::return_type>(
+                        gen,
+                        std::invoke(
+                            Function,
+                            this_,
+                            get_generic_arg<typename traits::template arg_type<Is>>(
+                                gen, static_cast<asUINT>(Is)
+                            )...
+                        )
+                    );
+                }
+            }(std::make_index_sequence<traits::arg_count::value>());
+        }
+        else
+        {
+            [gen]<std::size_t... Is>(std::index_sequence<Is...>)
+            {
+                if constexpr(std::is_void_v<typename traits::return_type>)
+                {
+                    std::invoke(
+                        Function,
+
+                        get_generic_arg<typename traits::template arg_type<Is>>(gen, static_cast<asUINT>(Is))...
+                    );
+                }
+                else
+                {
+                    set_generic_return<typename traits::return_type>(
+                        gen,
+                        std::invoke(
+                            Function,
+                            get_generic_arg<typename traits::template arg_type<Is>>(gen, static_cast<asUINT>(Is))...
+                        )
+                    );
+                }
+            }(std::make_index_sequence<traits::arg_count::value>());
+        }
+    }
+};
+
 namespace detail
 {
-    class class_register_base
+    class class_register_helper_base : public register_helper_base
     {
-    public:
-        class_register_base() = delete;
-        class_register_base(const class_register_base&) = default;
-
-        class_register_base(asIScriptEngine* engine, const char* name);
-
     protected:
-        asIScriptEngine* m_engine;
         const char* m_name;
 
-        bool force_generic() const noexcept
-        {
-            return m_force_generic;
-        }
+        class_register_helper_base() = delete;
+        class_register_helper_base(const class_register_helper_base&) = default;
+
+        class_register_helper_base(asIScriptEngine* engine, const char* name);
 
         template <typename Fn>
         void method_impl(const char* decl, Fn&& fn, call_conv_t<asCALL_THISCALL>)
@@ -81,6 +321,17 @@ namespace detail
                 decl,
                 asFunctionPtr(fn),
                 asCALL_CDECL_OBJLAST
+            );
+            assert(r >= 0);
+        }
+
+        void method_impl(const char* decl, void (*fn)(asIScriptGeneric*), call_conv_t<asCALL_GENERIC>)
+        {
+            int r = m_engine->RegisterObjectMethod(
+                m_name,
+                decl,
+                asFunctionPtr(fn),
+                asCALL_GENERIC
             );
             assert(r >= 0);
         }
@@ -124,6 +375,13 @@ namespace detail
             assert(r >= 0);
         }
 
+        template <typename T, typename Class>
+        static constexpr bool is_this_arg_v =
+            std::is_same_v<T, Class*> ||
+            std::is_same_v<T, const Class*> ||
+            std::is_same_v<T, Class&> ||
+            std::is_same_v<T, const Class&>;
+
         template <typename Class, typename... Args>
         static consteval asECallConvTypes call_conv_from_args() noexcept
         {
@@ -132,15 +390,20 @@ namespace detail
             using first_arg_t = std::tuple_element_t<0, args_t>;
             using last_arg_t = std::tuple_element_t<sizeof...(Args) - 1, args_t>;
 
-            constexpr bool obj_first = is_this_arg<std::remove_cv_t<first_arg_t>, Class>;
-            constexpr bool obj_last = is_this_arg<std::remove_cv_t<last_arg_t>, Class> && arg_count != 1;
-
-            static_assert(obj_last || obj_first, "Missing object parameter");
-
-            if(obj_first)
-                return asCALL_CDECL_OBJFIRST;
+            if constexpr(arg_count == 1 && std::is_same_v<first_arg_t, asIScriptGeneric*>)
+                return asCALL_GENERIC;
             else
-                return asCALL_CDECL_OBJLAST;
+            {
+                constexpr bool obj_first = is_this_arg_v<std::remove_cv_t<first_arg_t>, Class>;
+                constexpr bool obj_last = is_this_arg_v<std::remove_cv_t<last_arg_t>, Class> && arg_count != 1;
+
+                static_assert(obj_last || obj_first, "Missing object parameter");
+
+                if(obj_first)
+                    return asCALL_CDECL_OBJFIRST;
+                else
+                    return asCALL_CDECL_OBJLAST;
+            }
         }
 
         template <typename Class, typename R, typename... Args>
@@ -168,6 +431,26 @@ namespace detail
                 static_cast<int>(member_offset(mp))
             );
             assert(r >= 0);
+        }
+
+        template <typename Class>
+        void opPreInc_impl()
+        {
+            method_impl(
+                string_concat(m_name, "& opPreInc()").c_str(),
+                static_cast<Class& (Class::*)()>(&Class::operator++),
+                call_conv<asCALL_THISCALL>
+            );
+        }
+
+        template <typename Class>
+        void opPreDec_impl()
+        {
+            method_impl(
+                string_concat(m_name, "& opPreDec()").c_str(),
+                static_cast<Class& (Class::*)()>(&Class::operator--),
+                call_conv<asCALL_THISCALL>
+            );
         }
 
         std::string opEquals_decl() const
@@ -229,6 +512,11 @@ namespace detail
             );
         }
 
+        std::string opAdd_decl() const
+        {
+            return string_concat(m_name, " opAdd(const ", m_name, " &in) const");
+        }
+
         template <typename Class>
         void opAdd_impl()
         {
@@ -239,7 +527,7 @@ namespace detail
             if constexpr(has_member_op_add)
             {
                 method_impl(
-                    string_concat(m_name, " opAdd(const ", m_name, " &in) const").c_str(),
+                    opAdd_decl().c_str(),
                     static_cast<Class (Class::*)(const Class&) const>(&Class::operator+),
                     call_conv<asCALL_THISCALL>
                 );
@@ -253,7 +541,7 @@ namespace detail
                     return lhs + rhs;
                 };
                 method_impl(
-                    string_concat(m_name, " opAdd(const ", m_name, " &in) const").c_str(),
+                    opAdd_decl().c_str(),
                     wrapper_obj_last,
                     call_conv<asCALL_CDECL_OBJLAST>
                 );
@@ -298,8 +586,6 @@ namespace detail
         }
 
     private:
-        bool m_force_generic;
-
         void full_funcdef(const char* decl)
         {
             int r = m_engine->RegisterFuncdef(decl);
@@ -308,11 +594,13 @@ namespace detail
     };
 } // namespace detail
 
-class global
+class global : public register_helper_base
 {
 public:
+    global() = delete;
+    global(const global&) = default;
+
     global(asIScriptEngine* engine);
-    global(const global&) = delete;
 
     template <typename Return, typename... Args>
     global& function(
@@ -364,13 +652,13 @@ public:
 
     global& function(
         const char* decl,
-        void (*gen)(asIScriptGeneric*),
+        generic_function_t gfn,
         void* auxiliary = nullptr
     )
     {
         int r = m_engine->RegisterGlobalFunction(
             decl,
-            asFunctionPtr(gen),
+            asFunctionPtr(gfn),
             asCALL_GENERIC,
             auxiliary
         );
@@ -396,6 +684,17 @@ public:
     {
         int r = m_engine->RegisterTypedef(new_name, type_decl);
         assert(r >= 0);
+
+        return *this;
+    }
+
+    // For those who feel more comfortable with the C++11 style `using alias = type`
+    global& using_(
+        const char* new_name,
+        const char* type_decl
+    )
+    {
+        typedef_(type_decl, new_name);
 
         return *this;
     }
@@ -436,28 +735,40 @@ public:
 
         return *this;
     }
-
-private:
-    asIScriptEngine* m_engine;
-    bool m_force_generic;
 };
 
-template <typename T>
-class value_class : private detail::class_register_base
+template <typename Class>
+class value_class : private detail::class_register_helper_base
 {
-    static constexpr bool use_pod_v = std::is_trivial_v<T> && std::is_standard_layout_v<T>;
+    static constexpr bool use_pod_v = std::is_trivial_v<Class> && std::is_standard_layout_v<Class>;
 
-    using my_base = detail::class_register_base;
+    using my_base = detail::class_register_helper_base;
+
+    template <typename... Args>
+    void constructor_impl(const char* decl)
+    {
+        behaviour_impl(
+            asBEHAVE_CONSTRUCT,
+            decl,
+            +[](Args... args, void* mem)
+            {
+                new(mem) Class(std::forward<Args>(args)...);
+            },
+            call_conv<asCALL_CDECL_OBJLAST>
+        );
+    }
 
 public:
-    value_class(asIScriptEngine* engine, const char* name, asQWORD flags = asGetTypeTraits<T>())
-        : my_base(engine, name), m_flags(asOBJ_VALUE | flags)
+    using class_type = Class;
+
+    value_class(asIScriptEngine* engine, const char* name, asQWORD flags = 0)
+        : my_base(engine, name), m_flags(asOBJ_VALUE | flags | asGetTypeTraits<Class>())
     {
         assert(!(m_flags & asOBJ_REF));
 
         int r = m_engine->RegisterObjectType(
             m_name,
-            sizeof(T),
+            sizeof(Class),
             m_flags
         );
         assert(r >= 0);
@@ -471,19 +782,19 @@ public:
      */
     value_class& common_behaviours()
     {
-        if constexpr(std::is_default_constructible_v<T>)
+        if constexpr(std::is_default_constructible_v<Class>)
         {
             if(m_flags & asOBJ_APP_CLASS_CONSTRUCTOR)
                 default_constructor();
         }
 
-        if constexpr(std::is_copy_constructible_v<T>)
+        if constexpr(std::is_copy_constructible_v<Class>)
         {
             if(m_flags & asOBJ_APP_CLASS_COPY_CONSTRUCTOR)
                 copy_constructor();
         }
 
-        if constexpr(std::is_copy_assignable_v<T>)
+        if constexpr(std::is_copy_assignable_v<Class>)
         {
             if(m_flags & asOBJ_APP_CLASS_ASSIGNMENT)
                 opAssign();
@@ -496,25 +807,24 @@ public:
     }
 
     template <typename... Args>
-    value_class& constructor(const char* decl) requires(std::is_constructible_v<T, Args...>)
+    value_class& constructor(const char* decl) requires(std::is_constructible_v<Class, Args...>)
     {
-        behaviour(
-            asBEHAVE_CONSTRUCT,
-            decl,
-            +[](void* mem, Args... args)
+        if constexpr(sizeof...(Args) != 0)
+        {
+            using first_arg_t = std::tuple_element_t<0, std::tuple<Args...>>;
+            if constexpr(!(std::is_same_v<first_arg_t, const Class&> || std::is_same_v<first_arg_t, Class&>))
             {
-                new(mem) T(std::forward<Args>(args)...);
-            },
-            call_conv<asCALL_CDECL_OBJFIRST>
-        );
+                assert(m_flags & asOBJ_APP_CLASS_MORE_CONSTRUCTORS);
+            }
+        }
+
+        constructor_impl<Args...>(decl);
 
         return *this;
     }
 
-    value_class& default_constructor() requires(std::is_default_constructible_v<T>)
+    value_class& default_constructor() requires(std::is_default_constructible_v<Class>)
     {
-        if constexpr(use_pod_v)
-            return *this;
         if(m_flags & asOBJ_POD)
             return *this;
 
@@ -523,17 +833,20 @@ public:
         return *this;
     }
 
-    value_class& copy_constructor() requires(std::is_copy_constructible_v<T>)
+    value_class& copy_constructor() requires(std::is_copy_constructible_v<Class>)
     {
-        if constexpr(std::is_constructible_v<T, const T&>)
+        if(m_flags & asOBJ_POD)
+            return *this;
+
+        if constexpr(std::is_constructible_v<Class, const Class&>)
         {
-            constructor<const T&>(
+            constructor<const Class&>(
                 string_concat("void f(const ", m_name, " &in)").c_str()
             );
         }
         else
         {
-            constructor<T&>(
+            constructor<Class&>(
                 string_concat("void f(", m_name, " &in)").c_str()
             );
         }
@@ -543,8 +856,6 @@ public:
 
     value_class& destructor()
     {
-        if constexpr(use_pod_v)
-            return *this;
         if(m_flags & asOBJ_POD)
             return *this;
 
@@ -553,7 +864,7 @@ public:
             "void f()",
             +[](void* ptr)
             {
-                reinterpret_cast<T*>(ptr)->~T();
+                reinterpret_cast<Class*>(ptr)->~Class();
             },
             call_conv<asCALL_CDECL_OBJLAST>
         );
@@ -561,7 +872,57 @@ public:
         return *this;
     }
 
-    value_class& opAssign() requires(std::is_copy_assignable_v<T>)
+    value_class& opPreInc()
+    {
+        opPreInc_impl<Class>();
+
+        return *this;
+    }
+
+    value_class& opPreDec()
+    {
+        opPreDec_impl<Class>();
+
+        return *this;
+    }
+
+    // Returning type by value in native calling convention
+    // is NOT supported on all common platforms, e.g. x64 Linux.
+    // Use generic calling convention as fallback.
+
+    value_class& opPostInc()
+    {
+        auto wrapper = +[](asIScriptGeneric* gen) -> void
+        {
+            Class* this_ = static_cast<Class*>(gen->GetObject());
+            set_generic_return<Class>(gen, (*this_)++);
+        };
+        method_impl(
+            string_concat(m_name, " opPostInc()").c_str(),
+            wrapper,
+            call_conv<asCALL_GENERIC>
+        );
+
+        return *this;
+    }
+
+    value_class& opPostDec()
+    {
+        auto wrapper = +[](asIScriptGeneric* gen) -> void
+        {
+            Class* this_ = static_cast<Class*>(gen->GetObject());
+            set_generic_return<Class>(gen, (*this_)--);
+        };
+        method_impl(
+            string_concat(m_name, " opPostDec()").c_str(),
+            wrapper,
+            call_conv<asCALL_GENERIC>
+        );
+
+        return *this;
+    }
+
+    value_class& opAssign() requires(std::is_copy_assignable_v<Class>)
     {
         if(use_pod_v)
             return *this;
@@ -570,7 +931,7 @@ public:
 
         method(
             string_concat(m_name, "& opAssign(const ", m_name, " &in)").c_str(),
-            static_cast<T& (T::*)(const T&)>(&T::operator=)
+            static_cast<Class& (Class::*)(const Class&)>(&Class::operator=)
         );
 
         return *this;
@@ -580,7 +941,7 @@ public:
     {
         method(
             string_concat(m_name, "& opAddAssign(const ", m_name, " &in)").c_str(),
-            static_cast<T& (T::*)(const T&)>(&T::operator+=)
+            static_cast<Class& (Class::*)(const Class&)>(&Class::operator+=)
         );
 
         return *this;
@@ -588,21 +949,21 @@ public:
 
     value_class& opEquals()
     {
-        opEquals_impl<T>();
+        opEquals_impl<Class>();
 
         return *this;
     }
 
     value_class& opCmp()
     {
-        opCmp_impl<T>();
+        opCmp_impl<Class>();
 
         return *this;
     }
 
     value_class& opAdd()
     {
-        opAdd_impl<T>();
+        opAdd_impl<Class>();
 
         return *this;
     }
@@ -644,15 +1005,15 @@ public:
     template <typename R, typename... Args>
     value_class& method(const char* decl, R (*fn)(Args...))
     {
-        method_wrapper_impl<T>(decl, fn);
+        method_wrapper_impl<Class>(decl, fn);
 
         return *this;
     }
 
     template <typename U>
-    value_class& property(const char* decl, U T::*mp)
+    value_class& property(const char* decl, U Class::*mp)
     {
-        property_impl<U, T>(decl, mp);
+        property_impl<U, Class>(decl, mp);
 
         return *this;
     }
@@ -661,12 +1022,14 @@ private:
     asQWORD m_flags;
 };
 
-template <typename T>
-class ref_class : private detail::class_register_base
+template <typename Class>
+class ref_class : private detail::class_register_helper_base
 {
-    using my_base = detail::class_register_base;
+    using my_base = detail::class_register_helper_base;
 
 public:
+    using class_type = Class;
+
     ref_class(asIScriptEngine* engine, const char* name, asQWORD flags = 0)
         : my_base(engine, name), m_flags(asOBJ_REF | flags)
     {
@@ -674,7 +1037,7 @@ public:
 
         int r = m_engine->RegisterObjectType(
             m_name,
-            sizeof(T),
+            sizeof(Class),
             m_flags
         );
         assert(r >= 0);
@@ -689,7 +1052,7 @@ public:
     }
 
     template <typename Fn>
-    ref_class& template_(Fn&& fn)
+    ref_class& template_callback(Fn&& fn)
     {
         int r = m_engine->RegisterObjectBehaviour(
             m_name,
@@ -723,45 +1086,43 @@ public:
     template <typename R, typename... Args>
     ref_class& method(const char* decl, R (*fn)(Args...))
     {
-        method_wrapper_impl<T>(decl, fn);
+        method_wrapper_impl<Class>(decl, fn);
 
         return *this;
     }
 
     ref_class& default_factory()
+        requires std::is_default_constructible_v<Class>
     {
-        if constexpr(std::is_default_constructible_v<T>)
-        {
-            assert(!(m_flags & asOBJ_TEMPLATE));
-            factory(
-                string_concat(m_name, "@ f()").c_str(),
-                +[]()
-                {
-                    return new T();
-                }
-            );
-        }
-        else if constexpr(std::is_constructible_v<T, asITypeInfo*>)
-        {
-            assert(m_flags & asOBJ_TEMPLATE);
-            factory(
-                string_concat(m_name, "@ f(int&in)").c_str(),
-                +[](asITypeInfo* ti)
-                {
-                    return new T(ti);
-                }
-            );
-        }
-        else
-        {
-            static_assert(!sizeof(T), "T is not default constructible");
-        }
+        assert(!(m_flags & asOBJ_TEMPLATE));
+        factory(
+            string_concat(m_name, "@ f()").c_str(),
+            +[]()
+            {
+                return new Class();
+            }
+        );
+
+        return *this;
+    }
+
+    ref_class& template_default_factory()
+        requires std::is_constructible_v<Class, asITypeInfo*>
+    {
+        assert(m_flags & asOBJ_TEMPLATE);
+        factory(
+            string_concat(m_name, "@ f(int&in)").c_str(),
+            +[](asITypeInfo* ti)
+            {
+                return new Class(ti);
+            }
+        );
 
         return *this;
     }
 
     template <typename... Args>
-    ref_class& factory(const char* decl, T* (*fn)(Args...))
+    ref_class& factory(const char* decl, Class* (*fn)(Args...))
     {
         int r = m_engine->RegisterObjectBehaviour(
             m_name,
@@ -776,14 +1137,14 @@ public:
     }
 
     template <typename... Args>
-    requires std::is_constructible_v<T, Args...>
+    requires std::is_constructible_v<Class, Args...>
     ref_class& factory(const char* decl)
     {
         factory(
             decl,
-            +[](Args... args) -> T*
+            +[](Args... args) -> Class*
             {
-                return new T(args...);
+                return new Class(args...);
             }
         );
 
@@ -791,7 +1152,7 @@ public:
     }
 
     template <typename... Args>
-    ref_class& list_factory(const char* decl, T* (*fn)(Args...))
+    ref_class& list_factory(const char* decl, Class* (*fn)(Args...))
     {
         int r = m_engine->RegisterObjectBehaviour(
             m_name,
@@ -805,38 +1166,52 @@ public:
         return *this;
     }
 
-    template <typename... Args>
-    ref_class& list_factory(std::string_view repeated_type_name)
+    ref_class& template_list_factory(std::string_view repeated_type_name)
+        requires std::is_constructible_v<Class, asITypeInfo*, void*>
     {
         list_factory(
             string_concat(m_name, "@ f(int&in,int&in) {repeat ", repeated_type_name, "}").c_str(),
             +[](asITypeInfo* ti, void* list_buf)
             {
-                return new T(ti, list_buf);
+                return new Class(ti, list_buf);
             }
         );
 
         return *this;
     }
 
-    ref_class& opEquals()
+    ref_class& opPreInc()
     {
-        opEquals_impl<T>();
+        opPreInc_impl<Class>();
 
         return *this;
     }
 
-    ref_class& opAssign() requires std::is_copy_assignable_v<T>
+    ref_class& opPreDec()
+    {
+        opPreDec_impl<Class>();
+
+        return *this;
+    }
+
+    ref_class& opEquals()
+    {
+        opEquals_impl<Class>();
+
+        return *this;
+    }
+
+    ref_class& opAssign() requires std::is_copy_assignable_v<Class>
     {
         method(
             string_concat(m_name, "& opAssign(const ", m_name, " &in)").c_str(),
-            static_cast<T& (T::*)(const T&)>(&T::operator=)
+            static_cast<Class& (Class::*)(const Class&)>(&Class::operator=)
         );
 
         return *this;
     }
 
-    ref_class& addref(void (T::*fn)())
+    ref_class& addref(void (Class::*fn)())
     {
         behaviour(
             asBEHAVE_ADDREF,
@@ -848,7 +1223,7 @@ public:
         return *this;
     }
 
-    ref_class& release(void (T::*fn)())
+    ref_class& release(void (Class::*fn)())
     {
         behaviour(
             asBEHAVE_RELEASE,
@@ -860,7 +1235,7 @@ public:
         return *this;
     }
 
-    ref_class& get_refcount(int (T::*fn)() const)
+    ref_class& get_refcount(int (Class::*fn)() const)
     {
         behaviour(
             asBEHAVE_GETREFCOUNT,
@@ -872,7 +1247,7 @@ public:
         return *this;
     }
 
-    ref_class& set_flag(void (T::*fn)())
+    ref_class& set_flag(void (Class::*fn)())
     {
         behaviour(
             asBEHAVE_SETGCFLAG,
@@ -884,7 +1259,7 @@ public:
         return *this;
     }
 
-    ref_class& get_flag(bool (T::*fn)() const)
+    ref_class& get_flag(bool (Class::*fn)() const)
     {
         behaviour(
             asBEHAVE_GETGCFLAG,
@@ -896,7 +1271,7 @@ public:
         return *this;
     }
 
-    ref_class& enum_refs(void (T::*fn)(asIScriptEngine*))
+    ref_class& enum_refs(void (Class::*fn)(asIScriptEngine*))
     {
         behaviour(
             asBEHAVE_ENUMREFS,
@@ -908,7 +1283,7 @@ public:
         return *this;
     }
 
-    ref_class& release_refs(void (T::*fn)(asIScriptEngine*))
+    ref_class& release_refs(void (Class::*fn)(asIScriptEngine*))
     {
         behaviour(
             asBEHAVE_RELEASEREFS,
@@ -921,9 +1296,9 @@ public:
     }
 
     template <typename U>
-    ref_class& property(const char* decl, U T::*mp)
+    ref_class& property(const char* decl, U Class::*mp)
     {
-        property_impl<U, T>(decl, mp);
+        property_impl<U, Class>(decl, mp);
 
         return *this;
     }

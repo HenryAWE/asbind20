@@ -53,11 +53,20 @@ void mul_obj_first(my_value_class* this_, int val)
 {
     this_->value *= val;
 }
+
+void set_val_gen(asIScriptGeneric* gen)
+{
+    my_value_class* this_ = (my_value_class*)gen->GetObject();
+    int val = static_cast<int>(gen->GetArgDWord(0));
+    this_->set_val(val);
+}
 ```
 Binding code
 ```c++
 asIScriptEngine* engine = /* Get a script engine */;
-asbind20::value_class<my_value_class>(engine, "my_value_class")
+asbind20::value_class<my_value_class>(
+    engine, "my_value_class", asOBJ_APP_CLASS_CDAK | asOBJ_APP_CLASS_ALLINTS | asOBJ_APP_CLASS_MORE_CONSTRUCTORS
+)
     // Default & copy constructor, destructor,
     // and assignment operator (operator=/opAssign)
     .common_behaviours()
@@ -68,11 +77,11 @@ asbind20::value_class<my_value_class>(engine, "my_value_class")
     // Generate opCmp for AngelScript using operator<=> in C++
     .opCmp()
     // Ordinary member functions
-    .method("void set_val(int)", &my_value_class::set_val)
     .method("int get_val() const", &my_value_class::get_val)
     // Automatically deducing calling convention
-    .method("void add(int val)", add_obj_last)
-    .method("void mul(int val)", mul_obj_first)
+    .method("void add(int val)", &add_obj_last)
+    .method("void mul(int val)", &mul_obj_first)
+    .method("void set_val(int)", &set_val_gen)
     // Convert member pointer to property
     .property("int value", &my_value_class::value);
 ```
@@ -94,16 +103,16 @@ string test(int a, int&out b)
 ```c++
 asIScriptEngine* engine = /* Get a script engine */;
 asIScriptModule* m = /* Build the above script */;
-asIScriptFunction* add_ref = m->GetFunctionByName("test");
-if(!add_ref)
-    /* Error */
+asIScriptFunction* func = m->GetFunctionByName("test");
+if(!func)
+    /* Error handling */
 
 // Manage script context using RAII
 asbind20::request_context ctx(engine);
 
 int val = 0;
 auto result = asbind20::script_invoke<std::string>(
-    ctx, add_ref, 1, std::ref(val)
+    ctx, func, 1, std::ref(val)
 );
 
 assert(result.value() == "test");

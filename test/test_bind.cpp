@@ -38,6 +38,32 @@ public:
         value = new_val;
     }
 
+    my_value_class& operator++()
+    {
+        ++value;
+        return *this;
+    }
+
+    my_value_class operator++(int)
+    {
+        my_value_class tmp(*this);
+        ++*this;
+        return tmp;
+    }
+
+    my_value_class& operator--()
+    {
+        --value;
+        return *this;
+    }
+
+    my_value_class operator--(int)
+    {
+        my_value_class tmp(*this);
+        --*this;
+        return tmp;
+    }
+
     int value = 0;
 };
 
@@ -59,6 +85,14 @@ void add_obj_last_ref(int val, my_value_class& this_)
 void mul_obj_first_ref(my_value_class& this_, int val)
 {
     this_.value *= val;
+}
+
+void set_val_gen(asIScriptGeneric* gen)
+{
+    my_value_class* this_ = (my_value_class*)gen->GetObject();
+    int new_val = asbind20::get_generic_arg<int>(gen, 0);
+
+    this_->set_val(new_val);
 }
 
 class my_ref_class
@@ -113,17 +147,26 @@ TEST_F(asbind_test_suite, value_class)
 
     using test_bind::my_value_class;
 
-    asbind20::value_class<my_value_class>(engine, "my_value_class", asOBJ_APP_CLASS_CDAK)
+    asbind20::value_class<my_value_class>(
+        engine,
+        "my_value_class",
+        asOBJ_APP_CLASS_CDAK | asOBJ_APP_CLASS_ALLINTS | asOBJ_APP_CLASS_MORE_CONSTRUCTORS
+    )
         .common_behaviours()
         .constructor<int>("void f(int val)")
         .opEquals()
         .opCmp()
+        .opPreInc()
+        .opPreDec()
+        .opPostInc()
+        .opPostDec()
         .method("void set_val(int)", &my_value_class::set_val)
+        .method("void set_val2(int)", &test_bind::set_val_gen)
         .method("int get_val() const", &my_value_class::get_val)
-        .method("void add(int val)", test_bind::add_obj_last)
-        .method("void mul(int val)", test_bind::mul_obj_first)
-        .method("void add2(int val)", test_bind::add_obj_last_ref)
-        .method("void mul2(int val)", test_bind::mul_obj_first_ref)
+        .method("void add(int val)", &test_bind::add_obj_last)
+        .method("void mul(int val)", &test_bind::mul_obj_first)
+        .method("void add2(int val)", &test_bind::add_obj_last_ref)
+        .method("void mul2(int val)", &test_bind::mul_obj_first_ref)
         .property("int value", &my_value_class::value);
 
     asIScriptModule* m = engine->GetModule("test_value_class", asGM_ALWAYS_CREATE);
@@ -141,7 +184,7 @@ TEST_F(asbind_test_suite, value_class)
         "int test_2()"
         "{"
         "my_value_class val;"
-        "val.set_val(182375);"
+        "val.set_val2(182375);"
         "assert(val.value < 182376);"
         "assert(val < my_value_class(182376));"
         "val.add(1);"
@@ -168,27 +211,48 @@ TEST_F(asbind_test_suite, value_class)
         "val.value += 1;"
         "return val.value;"
         "}"
+        "my_value_class test_6()"
+        "{"
+        "my_value_class val(0);"
+        "assert(++val == my_value_class(1));"
+        "my_value_class tmp = val++;"
+        "assert(tmp.value == 1);"
+        "return val;"
+        "}"
+        "my_value_class test_7()"
+        "{"
+        "my_value_class val(2);"
+        "assert(--val == my_value_class(1));"
+        "print(to_string(val.value));"
+        "my_value_class tmp = val--;"
+        "assert(tmp.value == 1);"
+        "return val;"
+        "}"
     );
     ASSERT_GE(m->Build(), 0);
 
-    asIScriptContext* ctx = engine->CreateContext();
-    {
-        auto test_1 = asbind20::script_function<int()>(m->GetFunctionByName("test_1"));
-        EXPECT_EQ(test_1(ctx), 42);
+    asbind20::request_context ctx(engine);
 
-        auto test_2 = asbind20::script_function<int()>(m->GetFunctionByName("test_2"));
-        EXPECT_EQ(test_2(ctx), 182376);
+    auto test_1 = asbind20::script_function<int()>(m->GetFunctionByName("test_1"));
+    EXPECT_EQ(test_1(ctx), 42);
 
-        auto test_3 = asbind20::script_function<int()>(m->GetFunctionByName("test_3"));
-        EXPECT_EQ(test_3(ctx), 6);
+    auto test_2 = asbind20::script_function<int()>(m->GetFunctionByName("test_2"));
+    EXPECT_EQ(test_2(ctx), 182376);
 
-        auto test_4 = asbind20::script_function<int()>(m->GetFunctionByName("test_4"));
-        EXPECT_EQ(test_4(ctx), 9);
+    auto test_3 = asbind20::script_function<int()>(m->GetFunctionByName("test_3"));
+    EXPECT_EQ(test_3(ctx), 6);
 
-        auto test_5 = asbind20::script_function<int()>(m->GetFunctionByName("test_5"));
-        EXPECT_EQ(test_5(ctx), 5);
-    }
-    ctx->Release();
+    auto test_4 = asbind20::script_function<int()>(m->GetFunctionByName("test_4"));
+    EXPECT_EQ(test_4(ctx), 9);
+
+    auto test_5 = asbind20::script_function<int()>(m->GetFunctionByName("test_5"));
+    EXPECT_EQ(test_5(ctx), 5);
+
+    auto test_6 = asbind20::script_function<my_value_class()>(m->GetFunctionByName("test_6"));
+    EXPECT_EQ(test_6(ctx).get_val(), 2);
+
+    auto test_7 = asbind20::script_function<my_value_class()>(m->GetFunctionByName("test_7"));
+    EXPECT_EQ(test_7(ctx).get_val(), 0);
 }
 
 TEST_F(asbind_test_suite, ref_class)
@@ -358,6 +422,44 @@ TEST_F(asbind_test_suite, funcdef_and_typedef)
         EXPECT_FLOAT_EQ(result.value(), 3.14f);
     }
     ctx->Release();
+
+    m->Discard();
+}
+
+namespace test_bind
+{
+int my_div(int a, int b)
+{
+    return a / b;
+}
+} // namespace test_bind
+
+TEST_F(asbind_test_suite, generic)
+{
+    using namespace asbind20;
+
+    asIScriptEngine* engine = get_engine();
+
+    global(engine)
+        .function("int my_div(int a, int b)", generic_wrapper<&test_bind::my_div, asCALL_CDECL>());
+
+    asIScriptModule* m = engine->GetModule("test_generic", asGM_ALWAYS_CREATE);
+
+    m->AddScriptSection(
+        "test_def.as",
+        "void main()"
+        "{"
+        "assert(my_div(6, 2) == 3);"
+        "}"
+    );
+    ASSERT_GE(m->Build(), 0);
+
+    {
+        request_context ctx(engine);
+        asIScriptFunction* func = m->GetFunctionByDecl("void main()");
+        auto result = script_invoke<void>(ctx, func);
+        EXPECT_TRUE(result_has_value(result));
+    }
 
     m->Discard();
 }

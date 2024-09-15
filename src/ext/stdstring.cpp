@@ -470,7 +470,7 @@ void register_std_string(asIScriptEngine* engine, bool as_default)
 {
     using std::string;
 
-    value_class<string> c(engine, "string", asOBJ_APP_CLASS_CDAK);
+    value_class<string> c(engine, "string");
     c
         .common_behaviours()
         .opEquals()

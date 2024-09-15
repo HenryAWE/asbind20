@@ -2,21 +2,19 @@
 
 namespace asbind20
 {
+bool has_max_portability()
+{
+    std::string_view options = asGetLibraryOptions();
+
+    return options.find("AS_MAX_PORTABILITY") != options.npos;
+}
+
 namespace detail
 {
-    static bool max_portability_req()
-    {
-        std::string_view options = asGetLibraryOptions();
-
-        return options.find("AS_MAX_PORTABILITY") != options.npos;
-    }
-
-    class_register_base::class_register_base(asIScriptEngine* engine, const char* name)
-        : m_engine(engine), m_name(name), m_force_generic(max_portability_req())
-    {}
+    class_register_helper_base::class_register_helper_base(asIScriptEngine* engine, const char* name)
+        : register_helper_base(engine), m_name(name) {}
 } // namespace detail
 
 global::global(asIScriptEngine* engine)
-    : m_engine(engine), m_force_generic(detail::max_portability_req())
-{}
+    : register_helper_base(engine) {}
 } // namespace asbind20
