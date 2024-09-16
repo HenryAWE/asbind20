@@ -185,17 +185,54 @@ protected:
     asIScriptEngine* const m_engine;
 };
 
-template <typename T>
-concept native_function =
-    std::is_function_v<T> ||
-    std::is_function_v<std::remove_pointer_t<T>> ||
-    std::is_member_function_pointer_v<T>;
+namespace detail
+{
+    template <typename T, typename Class>
+    static constexpr bool is_this_arg_v =
+        std::is_same_v<T, Class*> ||
+        std::is_same_v<T, const Class*> ||
+        std::is_same_v<T, Class&> ||
+        std::is_same_v<T, const Class&>;
+
+    template <typename Class, typename... Args>
+    static consteval asECallConvTypes deduce_method_callconv() noexcept
+    {
+        using args_t = std::tuple<Args...>;
+        constexpr std::size_t arg_count = sizeof...(Args);
+        using first_arg_t = std::tuple_element_t<0, args_t>;
+        using last_arg_t = std::tuple_element_t<sizeof...(Args) - 1, args_t>;
+
+        if constexpr(arg_count == 1 && std::is_same_v<first_arg_t, asIScriptGeneric*>)
+            return asCALL_GENERIC;
+        else
+        {
+            constexpr bool obj_first = is_this_arg_v<std::remove_cv_t<first_arg_t>, Class>;
+            constexpr bool obj_last = is_this_arg_v<std::remove_cv_t<last_arg_t>, Class> && arg_count != 1;
+
+            static_assert(obj_last || obj_first, "Missing object parameter");
+
+            if(obj_first)
+                return arg_count == 1 ? asCALL_CDECL_OBJLAST : asCALL_CDECL_OBJFIRST;
+            else
+                return asCALL_CDECL_OBJLAST;
+        }
+    }
+} // namespace detail
 
 using generic_function_t = void(asIScriptGeneric* gen);
 
-template <native_function auto Function, asECallConvTypes OriginalConv>
+template <typename T>
+concept native_function =
+    !std::is_convertible_v<T, generic_function_t*> &&
+    (std::is_function_v<T> ||
+     std::is_function_v<std::remove_pointer_t<T>> ||
+     std::is_member_function_pointer_v<T>);
+
+template <
+    native_function auto Function,
+    asECallConvTypes OriginalConv>
 requires(OriginalConv != asCALL_GENERIC)
-class generic_wrapper
+class generic_wrapper_t
 {
 public:
     using function_type = decltype(Function);
@@ -204,6 +241,20 @@ public:
         !std::is_member_function_pointer_v<function_type> || OriginalConv == asCALL_THISCALL,
         "Invalid calling convention"
     );
+
+    constexpr generic_wrapper_t() noexcept = default;
+
+    constexpr generic_wrapper_t(const generic_wrapper_t&) noexcept = default;
+
+    static constexpr function_type underlying_function() noexcept
+    {
+        return Function;
+    }
+
+    static constexpr asECallConvTypes underlying_convention() noexcept
+    {
+        return OriginalConv;
+    }
 
     static constexpr generic_function_t* generate()
     {
@@ -216,20 +267,50 @@ public:
     }
 
 private:
+    static decltype(auto) get_this_arg(asIScriptGeneric* gen)
+    {
+        using traits = function_traits<function_type>;
+
+        void* ptr = gen->GetObject();
+
+        if constexpr(OriginalConv == asCALL_THISCALL)
+        {
+            using pointer_t = typename traits::class_type*;
+            return static_cast<pointer_t>(ptr);
+        }
+        else if constexpr(OriginalConv == asCALL_CDECL_OBJFIRST)
+        {
+            using this_arg_t = typename traits::first_arg_type;
+            if constexpr(std::is_pointer_v<this_arg_t>)
+                return static_cast<this_arg_t>(ptr);
+            else
+                return *static_cast<std::remove_reference_t<this_arg_t>*>(ptr);
+        }
+        else if constexpr(OriginalConv == asCALL_CDECL_OBJLAST)
+        {
+            using this_arg_t = typename traits::last_arg_type;
+            if constexpr(std::is_pointer_v<this_arg_t>)
+                return static_cast<this_arg_t>(ptr);
+            else
+                return *static_cast<std::remove_reference_t<this_arg_t>*>(ptr);
+        }
+        else
+            static_assert(!OriginalConv, "Invalid type");
+    }
+
     static void wrapper_impl(asIScriptGeneric* gen)
     {
-        using traits = function_traits<decltype(Function)>;
+        using traits = function_traits<function_type>;
 
-        if constexpr(traits::is_method::value)
+        if constexpr(OriginalConv == asCALL_THISCALL)
         {
             [gen]<std::size_t... Is>(std::index_sequence<Is...>)
             {
-                auto* this_ = (typename traits::class_type*)gen->GetObject();
                 if constexpr(std::is_void_v<typename traits::return_type>)
                 {
                     std::invoke(
                         Function,
-                        this_,
+                        get_this_arg(gen),
                         get_generic_arg<typename traits::template arg_type<Is>>(
                             gen, static_cast<asUINT>(Is)
                         )...
@@ -241,7 +322,7 @@ private:
                         gen,
                         std::invoke(
                             Function,
-                            this_,
+                            get_this_arg(gen),
                             get_generic_arg<typename traits::template arg_type<Is>>(
                                 gen, static_cast<asUINT>(Is)
                             )...
@@ -249,6 +330,68 @@ private:
                     );
                 }
             }(std::make_index_sequence<traits::arg_count::value>());
+        }
+        else if constexpr(OriginalConv == asCALL_CDECL_OBJFIRST)
+        {
+            static_assert(traits::arg_count::value >= 1);
+
+            [gen]<std::size_t... Is>(std::index_sequence<Is...>)
+            {
+                if constexpr(std::is_void_v<typename traits::return_type>)
+                {
+                    std::invoke(
+                        Function,
+                        get_this_arg(gen),
+                        get_generic_arg<typename traits::template arg_type<Is + 1>>(
+                            gen, static_cast<asUINT>(Is)
+                        )...
+                    );
+                }
+                else
+                {
+                    set_generic_return<typename traits::return_type>(
+                        gen,
+                        std::invoke(
+                            Function,
+                            get_this_arg(gen),
+                            get_generic_arg<typename traits::template arg_type<Is + 1>>(
+                                gen, static_cast<asUINT>(Is)
+                            )...
+                        )
+                    );
+                }
+            }(std::make_index_sequence<traits::arg_count::value - 1>());
+        }
+        else if constexpr(OriginalConv == asCALL_CDECL_OBJLAST)
+        {
+            static_assert(traits::arg_count::value >= 1);
+
+            [gen]<std::size_t... Is>(std::index_sequence<Is...>)
+            {
+                if constexpr(std::is_void_v<typename traits::return_type>)
+                {
+                    std::invoke(
+                        Function,
+                        get_generic_arg<typename traits::template arg_type<Is>>(
+                            gen, static_cast<asUINT>(Is)
+                        )...,
+                        get_this_arg(gen)
+                    );
+                }
+                else
+                {
+                    set_generic_return<typename traits::return_type>(
+                        gen,
+                        std::invoke(
+                            Function,
+                            get_generic_arg<typename traits::template arg_type<Is>>(
+                                gen, static_cast<asUINT>(Is)
+                            )...,
+                            get_this_arg(gen)
+                        )
+                    );
+                }
+            }(std::make_index_sequence<traits::arg_count::value - 1>());
         }
         else
         {
@@ -258,8 +401,9 @@ private:
                 {
                     std::invoke(
                         Function,
-
-                        get_generic_arg<typename traits::template arg_type<Is>>(gen, static_cast<asUINT>(Is))...
+                        get_generic_arg<typename traits::template arg_type<Is>>(
+                            gen, static_cast<asUINT>(Is)
+                        )...
                     );
                 }
                 else
@@ -268,7 +412,9 @@ private:
                         gen,
                         std::invoke(
                             Function,
-                            get_generic_arg<typename traits::template arg_type<Is>>(gen, static_cast<asUINT>(Is))...
+                            get_generic_arg<typename traits::template arg_type<Is>>(
+                                gen, static_cast<asUINT>(Is)
+                            )...
                         )
                     );
                 }
@@ -276,6 +422,11 @@ private:
         }
     }
 };
+
+template <
+    native_function auto Function,
+    asECallConvTypes OriginalConv>
+constexpr inline generic_wrapper_t<Function, OriginalConv> generic_wrapper{};
 
 namespace detail
 {
@@ -375,42 +526,11 @@ namespace detail
             assert(r >= 0);
         }
 
-        template <typename T, typename Class>
-        static constexpr bool is_this_arg_v =
-            std::is_same_v<T, Class*> ||
-            std::is_same_v<T, const Class*> ||
-            std::is_same_v<T, Class&> ||
-            std::is_same_v<T, const Class&>;
-
-        template <typename Class, typename... Args>
-        static consteval asECallConvTypes call_conv_from_args() noexcept
-        {
-            using args_t = std::tuple<Args...>;
-            constexpr std::size_t arg_count = sizeof...(Args);
-            using first_arg_t = std::tuple_element_t<0, args_t>;
-            using last_arg_t = std::tuple_element_t<sizeof...(Args) - 1, args_t>;
-
-            if constexpr(arg_count == 1 && std::is_same_v<first_arg_t, asIScriptGeneric*>)
-                return asCALL_GENERIC;
-            else
-            {
-                constexpr bool obj_first = is_this_arg_v<std::remove_cv_t<first_arg_t>, Class>;
-                constexpr bool obj_last = is_this_arg_v<std::remove_cv_t<last_arg_t>, Class> && arg_count != 1;
-
-                static_assert(obj_last || obj_first, "Missing object parameter");
-
-                if(obj_first)
-                    return asCALL_CDECL_OBJFIRST;
-                else
-                    return asCALL_CDECL_OBJLAST;
-            }
-        }
-
         template <typename Class, typename R, typename... Args>
         void method_wrapper_impl(const char* decl, R (*fn)(Args...))
         {
             method_impl(
-                decl, fn, call_conv<call_conv_from_args<Class, Args...>()>
+                decl, fn, call_conv<deduce_method_callconv<Class, Args...>()>
             );
         }
 
@@ -418,7 +538,7 @@ namespace detail
         void behaviour_wrapper_impl(asEBehaviours beh, const char* decl, R (*fn)(Args...))
         {
             behaviour_impl(
-                beh, decl, fn, call_conv<call_conv_from_args<Class, Args...>()>
+                beh, decl, fn, call_conv<deduce_method_callconv<Class, Args...>()>
             );
         }
 
@@ -985,7 +1105,7 @@ public:
         return *this;
     }
 
-    template <typename Fn>
+    template <native_function Fn>
     requires(std::is_member_function_pointer_v<Fn>)
     value_class& method(const char* decl, Fn&& fn)
     {
@@ -994,10 +1114,18 @@ public:
         return *this;
     }
 
-    template <typename Fn, asECallConvTypes CallConv>
+    template <native_function Fn, asECallConvTypes CallConv>
+    requires(CallConv != asCALL_GENERIC)
     value_class& method(const char* decl, Fn&& fn, call_conv_t<CallConv>)
     {
         method_impl(decl, std::forward<Fn>(fn), call_conv<CallConv>);
+
+        return *this;
+    }
+
+    value_class& method(const char* decl, generic_function_t* gfn)
+    {
+        method_impl(decl, gfn, call_conv<asCALL_GENERIC>);
 
         return *this;
     }

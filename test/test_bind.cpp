@@ -87,14 +87,6 @@ void mul_obj_first_ref(my_value_class& this_, int val)
     this_.value *= val;
 }
 
-void set_val_gen(asIScriptGeneric* gen)
-{
-    my_value_class* this_ = (my_value_class*)gen->GetObject();
-    int new_val = asbind20::get_generic_arg<int>(gen, 0);
-
-    this_->set_val(new_val);
-}
-
 class my_ref_class
 {
 public:
@@ -145,9 +137,10 @@ TEST_F(asbind_test_suite, value_class)
 {
     asIScriptEngine* engine = get_engine();
 
+    using namespace asbind20;
     using test_bind::my_value_class;
 
-    asbind20::value_class<my_value_class>(
+    value_class<my_value_class>(
         engine,
         "my_value_class",
         asOBJ_APP_CLASS_CDAK | asOBJ_APP_CLASS_ALLINTS | asOBJ_APP_CLASS_MORE_CONSTRUCTORS
@@ -161,12 +154,14 @@ TEST_F(asbind_test_suite, value_class)
         .opPostInc()
         .opPostDec()
         .method("void set_val(int)", &my_value_class::set_val)
-        .method("void set_val2(int)", &test_bind::set_val_gen)
+        .method("void set_val2(int)", generic_wrapper<&my_value_class::set_val, asCALL_THISCALL>)
         .method("int get_val() const", &my_value_class::get_val)
         .method("void add(int val)", &test_bind::add_obj_last)
         .method("void mul(int val)", &test_bind::mul_obj_first)
         .method("void add2(int val)", &test_bind::add_obj_last_ref)
         .method("void mul2(int val)", &test_bind::mul_obj_first_ref)
+        .method("void add3(int val)", generic_wrapper<&test_bind::add_obj_last, asCALL_CDECL_OBJLAST>)
+        .method("void mul3(int val)", generic_wrapper<&test_bind::mul_obj_first_ref, asCALL_CDECL_OBJFIRST>)
         .property("int value", &my_value_class::value);
 
     asIScriptModule* m = engine->GetModule("test_value_class", asGM_ALWAYS_CREATE);
@@ -208,6 +203,8 @@ TEST_F(asbind_test_suite, value_class)
         "int test_5()"
         "{"
         "my_value_class val(4);"
+        "val.add3(1);"
+        "val.mul3(2);"
         "val.value += 1;"
         "return val.value;"
         "}"
@@ -246,7 +243,7 @@ TEST_F(asbind_test_suite, value_class)
     EXPECT_EQ(test_4(ctx), 9);
 
     auto test_5 = asbind20::script_function<int()>(m->GetFunctionByName("test_5"));
-    EXPECT_EQ(test_5(ctx), 5);
+    EXPECT_EQ(test_5(ctx), 11);
 
     auto test_6 = asbind20::script_function<my_value_class()>(m->GetFunctionByName("test_6"));
     EXPECT_EQ(test_6(ctx).get_val(), 2);
@@ -441,7 +438,7 @@ TEST_F(asbind_test_suite, generic)
     asIScriptEngine* engine = get_engine();
 
     global(engine)
-        .function("int my_div(int a, int b)", generic_wrapper<&test_bind::my_div, asCALL_CDECL>());
+        .function("int my_div(int a, int b)", generic_wrapper<&test_bind::my_div, asCALL_CDECL>);
 
     asIScriptModule* m = engine->GetModule("test_generic", asGM_ALWAYS_CREATE);
 
