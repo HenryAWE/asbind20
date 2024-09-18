@@ -9,6 +9,7 @@
 #include <utility>
 #include <mutex>
 #include <compare>
+#include <functional>
 #include <angelscript.h>
 
 namespace asbind20
@@ -47,6 +48,45 @@ ASBIND20_UTILITY_DEFINE_PRIMITIVE_TYPE_OF(asTYPEID_DOUBLE, double, "double");
 
 template <int TypeId>
 using primitive_type_of_t = typename primitive_type_of<TypeId>::type;
+
+template <typename Visitor, typename... Args>
+requires(sizeof...(Args) > 0 && (std::is_void_v<Args> && ...))
+decltype(auto) visit_primitive_type(Visitor&& vis, int type_id, Args*... args)
+{
+    assert(!(type_id & ~asTYPEID_MASK_SEQNBR));
+    assert(type_id != asTYPEID_VOID);
+
+    auto wrapper = [&]<typename T>() -> decltype(auto)
+    {
+        return std::invoke(
+            std::forward<Visitor>(vis),
+            ((typename std::pointer_traits<Args*>::template rebind<T>)args)...
+        );
+    };
+
+#define ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(as_type_id) \
+case as_type_id: return wrapper.template operator()<primitive_type_of_t<as_type_id>>();
+
+    switch(type_id)
+    {
+        ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(asTYPEID_BOOL);
+        ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(asTYPEID_INT8);
+        ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(asTYPEID_INT16);
+        ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(asTYPEID_INT32);
+        ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(asTYPEID_INT64);
+        ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(asTYPEID_UINT8);
+        ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(asTYPEID_UINT16);
+        ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(asTYPEID_UINT32);
+        ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(asTYPEID_UINT64);
+        ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(asTYPEID_FLOAT);
+        ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(asTYPEID_DOUBLE);
+
+    default: /* enums */
+        return wrapper.template operator()<int>();
+    }
+
+#undef ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE
+}
 
 class as_exclusive_lock_t
 {

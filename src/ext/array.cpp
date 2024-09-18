@@ -180,31 +180,23 @@ script_array& script_array::operator=(const script_array& other)
 {
     if(this == &other)
         return *this;
-    script_array(other).swap(*this);
+
+    assert(m_ti == other.m_ti);
+
+    clear();
+    append_range(other, other.size());
+
     return *this;
 }
 
 void* script_array::operator new(std::size_t bytes)
 {
-    std::basic_string<char, std::char_traits<char>, as_allocator<char>> str;
     return allocate(bytes);
 }
 
 void script_array::operator delete(void* p)
 {
     deallocate(p);
-}
-
-void script_array::swap(script_array& other) noexcept
-{
-    using std::swap;
-
-    swap(m_refcount, other.m_refcount);
-    swap(m_gc_flag, other.m_gc_flag);
-    swap(m_ti, other.m_ti);
-    swap(m_subtype_id, other.m_subtype_id);
-    swap(m_elem_size, other.m_elem_size);
-    swap(m_data, other.m_data);
 }
 
 void script_array::addref()
@@ -411,52 +403,88 @@ void script_array::sort(size_type idx, size_type n, bool asc)
         void* start = (*this)[idx];
         void* sentinel = (*this)[idx + n];
 
-
-#define ASBIND20_EXT_ARRAY_SORT_CASE_IMPL(as_type_id) \
-    case as_type_id: ASBIND20_EXT_ARRAY_SORT_IMPL(primitive_type_of_t<as_type_id>); break
-
-#define ASBIND20_EXT_ARRAY_SORT_SWITCH_IMPL()               \
-    switch(m_subtype_id)                                    \
-    {                                                       \
-        ASBIND20_EXT_ARRAY_SORT_CASE_IMPL(asTYPEID_BOOL);   \
-        ASBIND20_EXT_ARRAY_SORT_CASE_IMPL(asTYPEID_INT8);   \
-        ASBIND20_EXT_ARRAY_SORT_CASE_IMPL(asTYPEID_INT16);  \
-        ASBIND20_EXT_ARRAY_SORT_CASE_IMPL(asTYPEID_INT32);  \
-        ASBIND20_EXT_ARRAY_SORT_CASE_IMPL(asTYPEID_INT64);  \
-        ASBIND20_EXT_ARRAY_SORT_CASE_IMPL(asTYPEID_UINT8);  \
-        ASBIND20_EXT_ARRAY_SORT_CASE_IMPL(asTYPEID_UINT16); \
-        ASBIND20_EXT_ARRAY_SORT_CASE_IMPL(asTYPEID_UINT32); \
-        ASBIND20_EXT_ARRAY_SORT_CASE_IMPL(asTYPEID_UINT64); \
-        ASBIND20_EXT_ARRAY_SORT_CASE_IMPL(asTYPEID_FLOAT);  \
-        ASBIND20_EXT_ARRAY_SORT_CASE_IMPL(asTYPEID_DOUBLE); \
-    default:                                                \
-        ASBIND20_EXT_ARRAY_SORT_IMPL(int); /* enums */      \
-        break;                                              \
-    }
-
         if(asc)
         {
-#define ASBIND20_EXT_ARRAY_SORT_IMPL(type) \
-    std::sort((type*)start, (type*)sentinel)
-
-            ASBIND20_EXT_ARRAY_SORT_SWITCH_IMPL();
-
-#undef ASBIND20_EXT_ARRAY_SORT_IMPL
+            visit_primitive_type(
+                [](auto* start, auto* sentinel)
+                {
+                    std::sort(start, sentinel);
+                },
+                m_subtype_id,
+                start,
+                sentinel
+            );
         }
         else
         {
-#define ASBIND20_EXT_ARRAY_SORT_IMPL(type) \
-    std::sort((type*)start, (type*)sentinel, std::greater<>{})
-
-            ASBIND20_EXT_ARRAY_SORT_SWITCH_IMPL();
-
-#undef ASBIND20_EXT_ARRAY_SORT_IMPL
+            visit_primitive_type(
+                [](auto* start, auto* sentinel)
+                {
+                    std::sort(start, sentinel, std::greater<>{});
+                },
+                m_subtype_id,
+                start,
+                sentinel
+            );
         }
-
-#undef ASBIND20_EXT_ARRAY_SORT_SWITCH_IMPL
-#undef ASBIND20_EXT_ARRAY_SORT_CASE_IMPL
     }
 }
+
+script_array::size_type script_array::find(const void* value, size_type pos) const
+{
+    if(pos >= size())
+        return -1;
+
+    if(m_subtype_id & ~asTYPEID_MASK_SEQNBR)
+    {
+        array_cache* cache = reinterpret_cast<array_cache*>(m_ti->GetUserData(script_array_cache_id()));
+
+        reuse_active_context ctx(m_ti->GetEngine());
+        for(size_type i = pos; i < size(); ++i)
+        {
+            if(elem_opEquals((*this)[i], &value, ctx, cache))
+                return i;
+        }
+    }
+    else // Primitive types
+    {
+        for(size_type i = pos; i < size(); ++i)
+        {
+            if(elem_opEquals((*this)[i], value, nullptr, nullptr))
+                return i;
+        }
+    }
+
+    return -1;
+}
+
+bool script_array::contains(const void* value, size_type pos) const
+{
+    return find(value, pos) != -1;
+}
+
+#ifdef ASBIND20_EXT_VOCABULARY
+
+script_optional* script_array::find_optional(const void* val, size_type pos)
+{
+    asIScriptEngine* engine = m_ti->GetEngine();
+
+    size_type result = find(val, pos);
+
+    asITypeInfo* ret_ti = engine->GetTypeInfoByDecl("optional<uint>");
+    script_optional* opt = (script_optional*)engine->CreateScriptObject(ret_ti);
+    if(!opt) [[unlikely]]
+        return nullptr;
+    if(result == -1)
+        return opt;
+
+    assert(opt->get_type_info()->GetSubTypeId() == asTYPEID_UINT32);
+    opt->assign(&result);
+
+    return opt;
+}
+
+#endif
 
 void script_array::copy_construct_range(void* start, const void* input_start, size_type n)
 {
@@ -726,31 +754,15 @@ bool script_array::elem_opEquals(const void* lhs, const void* rhs, asIScriptCont
 {
     if(!(m_subtype_id & ~asTYPEID_MASK_SEQNBR))
     {
-        switch(m_subtype_id)
-        {
-#define ASBIND20_EXT_ARRAY_EQUALS_IMPL(type) \
-    *((const type*)lhs) == *((const type*)rhs)
-
-#define ASBIND20_EXT_ARRAY_EQUALS_CASE_IMPL(as_type_id) \
-    case as_type_id: return ASBIND20_EXT_ARRAY_EQUALS_IMPL(primitive_type_of_t<as_type_id>)
-
-            ASBIND20_EXT_ARRAY_EQUALS_CASE_IMPL(asTYPEID_BOOL);
-            ASBIND20_EXT_ARRAY_EQUALS_CASE_IMPL(asTYPEID_INT8);
-            ASBIND20_EXT_ARRAY_EQUALS_CASE_IMPL(asTYPEID_INT16);
-            ASBIND20_EXT_ARRAY_EQUALS_CASE_IMPL(asTYPEID_INT32);
-            ASBIND20_EXT_ARRAY_EQUALS_CASE_IMPL(asTYPEID_INT64);
-            ASBIND20_EXT_ARRAY_EQUALS_CASE_IMPL(asTYPEID_UINT8);
-            ASBIND20_EXT_ARRAY_EQUALS_CASE_IMPL(asTYPEID_UINT16);
-            ASBIND20_EXT_ARRAY_EQUALS_CASE_IMPL(asTYPEID_UINT32);
-            ASBIND20_EXT_ARRAY_EQUALS_CASE_IMPL(asTYPEID_UINT64);
-            ASBIND20_EXT_ARRAY_EQUALS_CASE_IMPL(asTYPEID_FLOAT);
-            ASBIND20_EXT_ARRAY_EQUALS_CASE_IMPL(asTYPEID_DOUBLE);
-
-        default:
-            return ASBIND20_EXT_ARRAY_EQUALS_IMPL(int); // enums
-
-#undef ASBIND20_EXT_ARRAY_EQUALS_IMPL
-        }
+        return visit_primitive_type(
+            [](const auto* lhs, const auto* rhs) -> bool
+            {
+                return *lhs == *rhs;
+            },
+            m_subtype_id,
+            lhs,
+            rhs
+        );
     }
     else
     {
@@ -1011,8 +1023,6 @@ bool script_array::operator==(const script_array& other) const
 
     assert(m_elem_size == other.m_elem_size);
 
-
-    bool result = true;
     if(m_subtype_id & ~asTYPEID_MASK_SEQNBR)
     {
         array_cache* cache = reinterpret_cast<array_cache*>(m_ti->GetUserData(script_array_cache_id()));
@@ -1298,7 +1308,8 @@ static void const_array_for_each(asIScriptFunction* cb, const script_array& this
 
 void register_script_array(asIScriptEngine* engine, bool as_default)
 {
-    ref_class<script_array>(engine, "array<T>", asOBJ_TEMPLATE | asOBJ_GC)
+    ref_class<script_array> c(engine, "array<T>", asOBJ_TEMPLATE | asOBJ_GC);
+    c
         .template_callback(&check_array_template)
         .template_default_factory()
         .factory<asITypeInfo*, asUINT>("array<T>@ f(int&in, uint)")
@@ -1335,7 +1346,19 @@ void register_script_array(asIScriptEngine* engine, bool as_default)
         .funcdef("void const_for_each_callback(const T&in if_handle_then_const)")
         .method("void for_each(const const_for_each_callback&in cb) const", &const_array_for_each)
         .method("void sort(uint idx=0, uint n=-1, bool asc=true)", &script_array::sort)
+        .method("uint find(const T&in, uint pos=0) const", &script_array::find)
+        .method("bool contains(const T&in, uint pos=0) const", &script_array::contains)
         .method("void clear()", &script_array::clear);
+
+#ifdef ASBIND20_EXT_VOCABULARY
+
+    if(engine->GetTypeIdByDecl("optional<uint>") >= 0)
+    {
+        c
+            .method("optional<uint>@ find_optional(const T&in, uint pos=0) const", &script_array::find_optional);
+    }
+
+#endif
 
     engine->SetTypeInfoUserDataCleanupCallback(
         &script_array::cache_cleanup_callback,

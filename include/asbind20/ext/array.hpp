@@ -6,6 +6,7 @@
 #include <mutex>
 #include <cstddef>
 #include "../asbind.hpp"
+#include "vocabulary.hpp"
 
 namespace asbind20::ext
 {
@@ -40,8 +41,6 @@ public:
 
     void* operator new(std::size_t bytes);
     void operator delete(void* p);
-
-    void swap(script_array& other) noexcept;
 
     bool operator==(const script_array& other) const;
 
@@ -106,6 +105,12 @@ public:
     void erase(size_type idx, size_type n = 1);
 
     void sort(size_type idx = 0, size_type n = -1, bool asc = true);
+
+    size_type find(const void* value, size_type pos = 0) const;
+
+    bool contains(const void* value, size_type pos = 0) const;
+
+    script_optional* find_optional(const void* val, size_type pos = 0);
 
     [[nodiscard]]
     asITypeInfo* script_type_info() const noexcept

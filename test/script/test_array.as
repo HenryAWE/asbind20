@@ -40,6 +40,12 @@ void my_pair_array()
     print("pairs[0].x = " + to_string(pairs[0].x));
     print("pairs[0].y = " + to_string(pairs[0].y));
     assert(pairs[0] == my_pair(-1, -2));
+
+    print("Finding element");
+    uint idx = pairs.find(my_pair(3, 3));
+    print("Index = " + to_string(idx));
+    assert(idx == 2);
+    assert(!pairs.find_optional(my_pair(4, 5)).has_value);
 }
 
 void my_pair_ref_array()
@@ -127,6 +133,10 @@ void string_array()
     assert(strs3 == {"aaa", "bbb", "ccc"});
     strs3.sort(0, -1, false);
     assert(strs3 == {"ccc", "bbb", "aaa"});
+
+    print("Check contains()");
+    assert(strs3.contains("ccc"));
+    assert(!strs3.contains("ccc", 1));
 }
 
 funcdef void my_callback_t(const int&in);
@@ -155,6 +165,8 @@ void check_int_array()
     ia[0] = 0;
     assert(ia.front == 0);
     assert(ia == {0, 2, 3, 4});
+    assert(ia.contains(0));
+    assert(!ia.contains(1));
     assert(ia.size == 4);
     print(to_string(ia[1]));
 

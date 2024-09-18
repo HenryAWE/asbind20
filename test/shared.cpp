@@ -1,4 +1,5 @@
 #include "shared.hpp"
+#include <asbind20/ext/vocabulary.hpp>
 #include <asbind20/ext/array.hpp>
 #include <asbind20/ext/stdstring.hpp>
 #include <asbind20/ext/assert.hpp>
@@ -43,6 +44,7 @@ void asbind_test_suite::SetUp()
 
     using namespace asbind20;
 
+    ext::register_script_optional(m_engine);
     ext::register_script_array(m_engine);
     ext::register_std_string(m_engine, true);
     ext::register_string_utils(m_engine);

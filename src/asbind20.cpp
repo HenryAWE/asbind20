@@ -17,6 +17,9 @@ const char* library_options() noexcept
     const char* str = " "
 
     // Extensions
+#ifdef ASBIND20_EXT_VOCABULARY
+                      "ASBIND20_EXT_VOCABULARY "
+#endif
 #ifdef ASBIND20_EXT_ARRAY
                       "ASBIND20_EXT_ARRAY "
 #endif

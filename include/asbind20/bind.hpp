@@ -1235,7 +1235,6 @@ public:
     }
 
     ref_class& template_default_factory()
-        requires std::is_constructible_v<Class, asITypeInfo*>
     {
         assert(m_flags & asOBJ_TEMPLATE);
         factory(
@@ -1264,8 +1263,20 @@ public:
         return *this;
     }
 
+    ref_class& factory(const char* decl, generic_function_t* gfn)
+    {
+        int r = m_engine->RegisterObjectBehaviour(
+            m_name,
+            asBEHAVE_FACTORY,
+            decl,
+            asFunctionPtr(gfn),
+            asCALL_GENERIC
+        );
+
+        return *this;
+    }
+
     template <typename... Args>
-    requires std::is_constructible_v<Class, Args...>
     ref_class& factory(const char* decl)
     {
         factory(

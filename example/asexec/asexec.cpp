@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <angelscript.h>
 #include <asbind20/asbind.hpp>
+#include <asbind20/ext/vocabulary.hpp>
 #include <asbind20/ext/array.hpp>
 #include <asbind20/ext/stdstring.hpp>
 #include <asbind20/ext/math.hpp>
@@ -29,6 +30,16 @@ void message_callback(const asSMessageInfo* msg, void*)
         << msg->section
         << "(" << msg->row << ':' << msg->col << "): "
         << msg->message
+        << std::endl;
+}
+
+void print_exception(asIScriptContext* ctx)
+{
+    assert(ctx);
+
+    std::cerr
+        << "Exception: "
+        << ctx->GetExceptionString()
         << std::endl;
 }
 
@@ -61,6 +72,7 @@ int main(int argc, char* argv[])
 
     engine->SetEngineProperty(asEP_USE_CHARACTER_LITERALS, true);
 
+    asbind20::ext::register_script_optional(engine);
     asbind20::ext::register_script_array(engine);
     asbind20::ext::register_math_function(engine);
     asbind20::ext::register_script_hash(engine);
@@ -96,6 +108,8 @@ int main(int argc, char* argv[])
         if(!result.has_value())
         {
             std::cerr << "Script execution error: " << result.error() << std::endl;
+            if(result.error() == asEXECUTION_EXCEPTION)
+                print_exception(ctx);
             ret_val = EXIT_FAILURE;
         }
         else
@@ -108,6 +122,8 @@ int main(int argc, char* argv[])
         if(!result.has_value())
         {
             std::cerr << "Script execution error: " << result.error() << std::endl;
+            if(result.error() == asEXECUTION_EXCEPTION)
+                print_exception(ctx);
             ret_val = EXIT_FAILURE;
         }
     }
