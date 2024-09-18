@@ -150,7 +150,7 @@ bool script_optional::data_t::copy_construct(asITypeInfo* ti, const void* val)
         visit_primitive_type(
             [this]<typename T>(const T* val)
             {
-                static_assert(sizeof(T) <= sizeof(m_data.storage));
+                static_assert(sizeof(T) <= sizeof(data_t::storage));
                 *(T*)storage = *val;
             },
             subtype_id,
