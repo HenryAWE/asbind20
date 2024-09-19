@@ -1,9 +1,9 @@
 #ifndef ASBIND20_FUNCTION_TRAITS_HPP
 #define ASBIND20_FUNCTION_TRAITS_HPP
 
-#include <angelscript.h>
 #include <type_traits>
 #include <tuple>
+#include "detail/include_as.hpp"
 
 namespace asbind20
 {

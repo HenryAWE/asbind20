@@ -3,10 +3,9 @@
 
 #pragma once
 
-#include <variant>
 #include <tuple>
 #include <functional>
-#include <angelscript.h>
+#include "detail/include_as.hpp"
 #include "utility.hpp"
 
 namespace asbind20

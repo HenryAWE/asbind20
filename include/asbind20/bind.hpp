@@ -10,7 +10,7 @@
 #include <tuple>
 #include <algorithm>
 #include <functional>
-#include <angelscript.h>
+#include "detail/include_as.hpp"
 #include "utility.hpp"
 #include "function_traits.hpp"
 

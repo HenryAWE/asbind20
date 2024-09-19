@@ -98,6 +98,7 @@ void string_array()
     assert(strs[1] == "world");
     assert(strs[2] == "array");
     assert(strs == {"hello", "world", "array"});
+    assert(strs.find_if(function(v) { return v.starts_with("w"); }) == 1);
 
     strs.front = "Hello";
     assert(strs[0] == "Hello");

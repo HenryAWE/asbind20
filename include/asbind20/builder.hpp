@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include <angelscript.h>
 #include <filesystem>
 #include <string>
+#include "detail/include_as.hpp"
 
 namespace asbind20
 {

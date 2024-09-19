@@ -80,13 +80,6 @@ public:
         return size() == 0;
     }
 
-    template <typename F>
-    void for_each(F&& f) const
-    {
-        for(size_type i = 0; i < size(); ++i)
-            std::invoke(std::forward<F>(f), pointer_to(i));
-    }
-
     void reserve(size_type new_cap);
     void shrink_to_fit();
 
@@ -106,11 +99,11 @@ public:
 
     void sort(size_type idx = 0, size_type n = -1, bool asc = true);
 
-    size_type find(const void* value, size_type pos = 0) const;
+    size_type find(const void* value, size_type idx = 0) const;
 
-    bool contains(const void* value, size_type pos = 0) const;
+    bool contains(const void* value, size_type idx = 0) const;
 
-    script_optional* find_optional(const void* val, size_type pos = 0);
+    script_optional* find_optional(const void* val, size_type idx = 0);
 
     [[nodiscard]]
     asITypeInfo* script_type_info() const noexcept
@@ -176,13 +169,25 @@ private:
     void set_front(void* value);
     void set_back(void* value);
 
-    mutable int m_refcount = 1;
-    mutable bool m_gc_flag = false;
+    array_data m_data = array_data();
     asITypeInfo* m_ti = nullptr;
+    int m_refcount = 1;
     int m_subtype_id = 0;
     size_type m_elem_size = 0;
-    array_data m_data = array_data();
+    bool m_gc_flag = false;
+    mutable bool m_within_callback = false;
     std::mutex m_mx;
+
+    class callback_guard
+    {
+    public:
+        callback_guard(const script_array& this_) noexcept;
+
+        ~callback_guard();
+
+    private:
+        const script_array& m_this;
+    };
 
     static void* allocate(std::size_t bytes);
     static void deallocate(void* mem) noexcept;
@@ -191,6 +196,12 @@ private:
     void value_construct_n(void* start, const void* value, size_type n);
 
     bool mem_resize_to(size_type new_cap);
+
+    size_type script_find_if(asIScriptFunction* fn, size_type idx = 0) const;
+
+    void script_for_each(asIScriptFunction* fn, size_type idx = 0, size_type n = -1) const;
+
+    void script_sort_by(asIScriptFunction* fn, size_type idx = 0, size_type n = -1, bool stable = true);
 };
 } // namespace asbind20::ext
 

@@ -10,7 +10,7 @@
 #include <mutex>
 #include <compare>
 #include <functional>
-#include <angelscript.h>
+#include "detail/include_as.hpp"
 
 namespace asbind20
 {
@@ -265,8 +265,8 @@ public:
 
     reuse_active_context& operator=(const reuse_active_context&) = delete;
 
-    explicit reuse_active_context(asIScriptEngine* engine)
-        : m_engine(engine)
+    explicit reuse_active_context(asIScriptEngine* engine, bool propagate_error = true)
+        : m_engine(engine), m_propagate_error(propagate_error)
     {
         assert(m_engine != nullptr);
 
@@ -291,10 +291,31 @@ public:
         {
             if(m_is_nested)
             {
-                asEContextState state = m_ctx->GetState();
-                m_ctx->PopState();
-                if(state == asEXECUTION_ABORTED)
-                    m_ctx->Abort();
+                if(m_propagate_error)
+                {
+                    std::string ex;
+                    asEContextState state = m_ctx->GetState();
+                    if(state == asEXECUTION_EXCEPTION)
+                        ex = m_ctx->GetExceptionString();
+
+                    m_ctx->PopState();
+
+                    switch(state)
+                    {
+                    case asEXECUTION_EXCEPTION:
+                        m_ctx->SetException(ex.c_str());
+                        break;
+
+                    case asEXECUTION_ABORTED:
+                        m_ctx->Abort();
+                        break;
+
+                    default:
+                        break;
+                    }
+                }
+                else
+                    m_ctx->PopState();
             }
             else
                 m_engine->ReturnContext(m_ctx);
@@ -319,10 +340,16 @@ public:
         return m_is_nested;
     }
 
+    bool will_propagate_error() const noexcept
+    {
+        return m_propagate_error;
+    }
+
 private:
     asIScriptEngine* m_engine = nullptr;
     asIScriptContext* m_ctx = nullptr;
     bool m_is_nested = false;
+    bool m_propagate_error = true;
 };
 
 /**

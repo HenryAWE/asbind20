@@ -1,13 +1,11 @@
 #include <iostream>
 #include <cstdlib>
-#include <angelscript.h>
 #include <asbind20/asbind.hpp>
 #include <asbind20/ext/vocabulary.hpp>
 #include <asbind20/ext/array.hpp>
 #include <asbind20/ext/stdstring.hpp>
 #include <asbind20/ext/math.hpp>
 #include <asbind20/ext/helper.hpp>
-#include <iostream>
 
 void script_print(const std::string& str, bool newline)
 {
