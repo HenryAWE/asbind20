@@ -72,6 +72,7 @@ int main(int argc, char* argv[])
 
     asbind20::ext::register_script_optional(engine);
     asbind20::ext::register_script_array(engine);
+    asbind20::ext::register_math_constants(engine);
     asbind20::ext::register_math_function(engine);
     asbind20::ext::register_script_hash(engine);
     asbind20::ext::register_std_string(engine);

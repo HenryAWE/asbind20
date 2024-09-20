@@ -387,22 +387,108 @@ void script_array::erase(size_type idx, size_type n)
         set_script_exception("out of range");
         return;
     }
-    if(n == 0)
-        return;
 
     n = std::min(size() - idx, n);
-    size_type elems_to_move = size() - idx - n;
-    destroy_n((*this)[idx], n);
-    if(elems_to_move != 0)
+
+    erase_impl(idx, n);
+}
+
+namespace detail
+{
+    // std::remove_if() is not guaranteed to preserve "removed" values at the end of the range,
+    // which need to release later.
+    template <typename Pred>
+    static void** stable_remove_if(void** start, void** sentinel, Pred&& pred)
     {
-        move_construct_range(
-            (*this)[idx],
-            (*this)[idx + n],
-            elems_to_move
-        );
+        void** last = sentinel;
+
+        void** it = start;
+        while(it != last)
+        {
+            assert(it < last);
+            if(std::invoke(std::forward<Pred>(pred), *it))
+            {
+                void* tmp = *it;
+                std::copy(it + 1, last, it);
+                --last;
+                *last = tmp;
+            }
+            else
+                ++it;
+        }
+
+        return last;
+    }
+} // namespace detail
+
+script_array::size_type script_array::erase_value(const void* val, size_type idx, size_type n)
+{
+    if(m_within_callback) [[unlikely]]
+    {
+        set_script_exception("Cannot modify array within callback");
+        return 0;
+    }
+    if(idx >= size())
+    {
+        set_script_exception("out of range");
+        return 0;
     }
 
-    m_data.size -= n;
+    n = std::min(size() - idx, n);
+    if(n == 0)
+        return 0;
+
+    callback_guard guard(*this);
+
+    if(m_subtype_id & ~asTYPEID_MASK_SEQNBR)
+    {
+        reuse_active_context ctx(m_ti->GetEngine());
+        array_cache* cache = reinterpret_cast<array_cache*>(m_ti->GetUserData(script_array_cache_id()));
+
+        void** start = (void**)(*this)[idx];
+        void** sentinel = (void**)(*this)[idx + n];
+
+        void** last = detail::stable_remove_if(
+            start,
+            sentinel,
+            [=, this, &ctx](void* pv) -> bool
+            {
+                return elem_opEquals(&pv, &val, ctx, cache);
+            }
+        );
+
+        size_type idx_to_erase = idx + std::distance(start, last);
+        if(idx_to_erase == size())
+            return 0;
+        size_type n_to_erase = std::distance(last, sentinel);
+        erase_impl(idx_to_erase, n_to_erase);
+
+        return n_to_erase;
+    }
+    else
+    {
+        void* start = (*this)[idx];
+        void* sentinel = (*this)[idx + n];
+
+        reuse_active_context ctx(m_ti->GetEngine());
+        return visit_primitive_type(
+            [=, this, &ctx]<typename T>(T* start, T* sentinel) -> size_type
+            {
+                auto it = std::remove(start, sentinel, *(const T*)val);
+
+                size_type idx_to_erase = idx + (size_type)std::distance(start, it);
+                if(idx_to_erase == size())
+                    return 0;
+                size_type n_to_erase = std::distance(it, sentinel);
+                erase_impl(idx_to_erase, n_to_erase);
+
+                return n_to_erase;
+            },
+            m_subtype_id,
+            start,
+            sentinel
+        );
+    }
 }
 
 void script_array::sort(size_type idx, size_type n, bool asc)
@@ -484,6 +570,45 @@ void script_array::sort(size_type idx, size_type n, bool asc)
     }
 }
 
+void script_array::reverse(size_type idx, size_type n)
+{
+    if(m_within_callback) [[unlikely]]
+    {
+        set_script_exception("Cannot modify array within callback");
+        return;
+    }
+
+    if(idx >= size())
+    {
+        set_script_exception("out of range");
+        return;
+    }
+
+    n = std::min(size() - idx, n);
+    if(n < 2)
+        return;
+
+    if(m_subtype_id & ~asTYPEID_MASK_SEQNBR)
+    {
+        std::reverse((void**)(*this)[idx], (void**)(*this)[idx + n]);
+    }
+    else
+    {
+        void* start = (*this)[idx];
+        void* sentinel = (*this)[idx + n];
+
+        visit_primitive_type(
+            []<typename T>(T* start, T* sentinel) -> void
+            {
+                std::reverse(start, sentinel);
+            },
+            m_subtype_id,
+            start,
+            sentinel
+        );
+    }
+}
+
 script_array::size_type script_array::find(const void* value, size_type idx) const
 {
     if(idx >= size())
@@ -515,6 +640,40 @@ script_array::size_type script_array::find(const void* value, size_type idx) con
 bool script_array::contains(const void* value, size_type idx) const
 {
     return find(value, idx) != -1;
+}
+
+script_array::size_type script_array::count(const void* value, size_type idx, size_type n) const
+{
+    if(idx >= size())
+        return 0;
+
+    n = std::min(n, size() - idx);
+    if(n == 0)
+        return 0;
+
+    size_type counter = 0;
+
+    if(m_subtype_id & ~asTYPEID_MASK_SEQNBR)
+    {
+        array_cache* cache = reinterpret_cast<array_cache*>(m_ti->GetUserData(script_array_cache_id()));
+
+        reuse_active_context ctx(m_ti->GetEngine());
+        for(size_type i = idx; i < size(); ++i)
+        {
+            if(elem_opEquals((*this)[i], &value, ctx, cache))
+                ++counter;
+        }
+    }
+    else // Primitive types
+    {
+        for(size_type i = idx; i < size(); ++i)
+        {
+            if(elem_opEquals((*this)[i], value, nullptr, nullptr))
+                ++counter;
+        }
+    }
+
+    return counter;
 }
 
 #ifdef ASBIND20_EXT_VOCABULARY
@@ -1282,6 +1441,28 @@ bool script_array::mem_resize_to(size_type new_cap)
     return true;
 }
 
+void script_array::erase_impl(size_type idx, size_type n)
+{
+    assert(idx < size());
+    assert(idx + n <= size());
+
+    if(n == 0)
+        return;
+
+    size_type elems_to_move = size() - idx - n;
+    destroy_n((*this)[idx], n);
+    if(elems_to_move != 0)
+    {
+        move_construct_range(
+            (*this)[idx],
+            (*this)[idx + n],
+            elems_to_move
+        );
+    }
+
+    m_data.size -= n;
+}
+
 script_array::size_type script_array::script_find_if(asIScriptFunction* fn, size_type idx) const
 {
     if(!fn) [[unlikely]]
@@ -1308,6 +1489,112 @@ script_array::size_type script_array::script_find_if(asIScriptFunction* fn, size
 
     // Not found
     return -1;
+}
+
+script_array::size_type script_array::script_erase_if(asIScriptFunction* fn, size_type idx, size_type n)
+{
+    if(m_within_callback) [[unlikely]]
+    {
+        set_script_exception("Cannot modify array within callback");
+        return 0;
+    }
+    if(idx >= size())
+    {
+        set_script_exception("out of range");
+        return 0;
+    }
+
+    n = std::min(size() - idx, n);
+    if(n == 0)
+        return 0;
+
+    callback_guard guard(*this);
+
+    if(m_subtype_id & ~asTYPEID_MASK_SEQNBR)
+    {
+        reuse_active_context ctx(m_ti->GetEngine());
+        auto pred = [=, &ctx](void* pv) -> bool
+        {
+            if(pv == nullptr)
+                return false;
+
+            auto result = script_invoke<bool>(
+                ctx,
+                fn,
+                static_cast<asIScriptObject*>(pv)
+            );
+
+            if(!result.has_value()) [[unlikely]]
+                return false;
+            return *result;
+        };
+
+        void** start = (void**)(*this)[idx];
+        void** sentinel = (void**)(*this)[idx + n];
+
+        void** last = detail::stable_remove_if(
+            start,
+            sentinel,
+            pred
+        );
+
+        void** it = start;
+        while(it != last)
+        {
+            assert(it < last);
+            if(pred(*it))
+            {
+                void* tmp = *it;
+                std::copy(it + 1, last, it);
+                --last;
+                *last = tmp;
+            }
+            else
+                ++it;
+        }
+
+        size_type idx_to_erase = idx + std::distance(start, last);
+        if(idx_to_erase == size())
+            return 0;
+        size_type n_to_erase = std::distance(last, sentinel);
+        erase_impl(idx_to_erase, n_to_erase);
+
+        return n_to_erase;
+    }
+    else
+    {
+        void* start = (*this)[idx];
+        void* sentinel = (*this)[idx + n];
+
+        reuse_active_context ctx(m_ti->GetEngine());
+        return visit_primitive_type(
+            [=, this, &ctx]<typename T>(T* start, T* sentinel) -> size_type
+            {
+                auto pred = [=, &ctx](const T& v) -> bool
+                {
+                    auto result = script_invoke<bool>(ctx, fn, &v);
+
+                    if(!result.has_value()) [[unlikely]]
+                        return false;
+                    else
+                        return *result;
+                };
+
+                auto it = std::remove_if(start, sentinel, pred);
+
+                size_type idx_to_erase = idx + (size_type)std::distance(start, it);
+                if(idx_to_erase == size())
+                    return 0;
+                size_type n_to_erase = std::distance(it, sentinel);
+                erase_impl(idx_to_erase, n_to_erase);
+
+                return n_to_erase;
+            },
+            m_subtype_id,
+            start,
+            sentinel
+        );
+    }
 }
 
 void script_array::script_for_each(asIScriptFunction* fn, size_type idx, size_type n) const
@@ -1409,6 +1696,78 @@ void script_array::script_sort_by(asIScriptFunction* fn, size_type idx, size_typ
             sentinel
         );
     }
+}
+
+script_array::size_type script_array::script_count_if(asIScriptFunction* fn, size_type idx, size_type n) const
+{
+    if(m_within_callback) [[unlikely]]
+    {
+        set_script_exception("Cannot modify array within callback");
+        return 0;
+    }
+
+    if(idx >= size())
+        return 0;
+
+    n = std::min(size() - idx, n);
+    if(n == 0)
+        return 0;
+
+    callback_guard guard(*this);
+
+    size_type counter = 0;
+
+    if(m_subtype_id & ~asTYPEID_MASK_SEQNBR)
+    {
+        reuse_active_context ctx(m_ti->GetEngine());
+        auto pred = [=, &ctx](const void* val) -> bool
+        {
+            if(!val)
+                return false;
+
+            auto result = script_invoke<bool>(
+                ctx,
+                fn,
+                static_cast<const asIScriptObject*>(val)
+            );
+
+            if(!result.has_value())
+                return false;
+            return *result;
+        };
+
+        for(const void** it = (const void**)(*this)[idx]; it != (const void**)(*this)[idx + n]; ++it)
+        {
+            if(pred(*it))
+                ++counter;
+        }
+    }
+    else
+    {
+        const void* start = (*this)[idx];
+        const void* sentinel = (*this)[idx + n];
+
+        reuse_active_context ctx(m_ti->GetEngine());
+        visit_primitive_type(
+            [=, &ctx, &counter]<typename T>(const T* start, const T* sentinel)
+            {
+                for(const T* it = start; it != sentinel; ++it)
+                {
+                    auto result = script_invoke<bool>(ctx, fn, it);
+
+                    if(!result.has_value()) [[unlikely]]
+                        return;
+                    else if(*result)
+                        ++counter;
+                };
+            },
+            m_subtype_id,
+            start,
+            sentinel
+        );
+    }
+
+    return counter;
 }
 
 static bool array_template_callback(asITypeInfo* ti, bool& no_gc)
@@ -1521,15 +1880,22 @@ void register_script_array(asIScriptEngine* engine, bool as_default)
         .method("void insert_range(uint idx, const array<T>&in rng, uint n=-1)", &script_array::insert_range)
         .method("void pop_back()", &script_array::pop_back)
         .method("void erase(uint idx, uint n=1)", &script_array::erase)
+        .method("uint erase_value(const T&in value, uint idx=0, uint n=-1)", &script_array::erase_value)
+        .funcdef("bool erase_if_callback(const T&in if_handle_then_const)")
+        .method("void erase_if(const erase_if_callback&in fn, uint idx=0, uint n=-1)", &script_array::script_erase_if)
         .funcdef("void for_each_callback(const T&in if_handle_then_const)")
         .method("void for_each(const for_each_callback&in fn, uint idx=0, uint n=-1) const", &script_array::script_for_each)
         .method("void sort(uint idx=0, uint n=-1, bool asc=true)", &script_array::sort)
+        .method("void reverse(uint idx=0, uint n=-1)", &script_array::reverse)
         .funcdef("bool sort_by_callback(const T&in if_handle_then_const, const T&in if_handle_then_const)")
         .method("void sort_by(const sort_by_callback&in fn, uint idx=0, uint n=-1, bool stable=true)", &script_array::script_sort_by)
         .method("uint find(const T&in, uint idx=0) const", &script_array::find)
         .funcdef("bool find_if_callback(const T&in)")
         .method("uint find_if(const find_if_callback&in fn, uint idx=0) const", &script_array::script_find_if)
         .method("bool contains(const T&in, uint idx=0) const", &script_array::contains)
+        .method("uint count(const T&in, uint idx=0, uint n=-1) const", &script_array::count)
+        .funcdef("bool count_if_callback(const T&in if_handle_then_const)")
+        .method("uint count_if(const count_if_callback&in fn, uint idx=0, uint n=-1) const", &script_array::script_count_if)
         .method("void clear()", &script_array::clear);
 
 #ifdef ASBIND20_EXT_VOCABULARY

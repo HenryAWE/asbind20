@@ -8,7 +8,7 @@
 
 namespace asbind_test
 {
-static void msg_callback(const asSMessageInfo* msg, void*)
+void msg_callback(const asSMessageInfo* msg, void*)
 {
     if(msg->type == asEMsgType::asMSGTYPE_ERROR)
     {
@@ -48,6 +48,7 @@ void asbind_test_suite::SetUp()
     ext::register_script_array(m_engine);
     ext::register_std_string(m_engine, true);
     ext::register_string_utils(m_engine);
+    ext::register_math_constants(m_engine);
     ext::register_math_function(m_engine);
     ext::register_script_assert(
         m_engine,

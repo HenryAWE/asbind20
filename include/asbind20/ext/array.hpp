@@ -35,8 +35,10 @@ public:
 
     script_array(asITypeInfo* ti, void* list_buf);
 
+private:
     ~script_array();
 
+public:
     script_array& operator=(const script_array& other);
 
     void* operator new(std::size_t bytes);
@@ -97,11 +99,17 @@ public:
 
     void erase(size_type idx, size_type n = 1);
 
+    size_type erase_value(const void* val, size_type idx = 0, size_type n = -1);
+
     void sort(size_type idx = 0, size_type n = -1, bool asc = true);
+
+    void reverse(size_type idx = 0, size_type n = -1);
 
     size_type find(const void* value, size_type idx = 0) const;
 
     bool contains(const void* value, size_type idx = 0) const;
+
+    size_type count(const void* value, size_type idx = 0, size_type n = -1) const;
 
     script_optional* find_optional(const void* val, size_type idx = 0);
 
@@ -197,11 +205,17 @@ private:
 
     bool mem_resize_to(size_type new_cap);
 
+    void erase_impl(size_type idx, size_type n);
+
     size_type script_find_if(asIScriptFunction* fn, size_type idx = 0) const;
+
+    size_type script_erase_if(asIScriptFunction* fn, size_type idx, size_type n);
 
     void script_for_each(asIScriptFunction* fn, size_type idx = 0, size_type n = -1) const;
 
     void script_sort_by(asIScriptFunction* fn, size_type idx = 0, size_type n = -1, bool stable = true);
+
+    size_type script_count_if(asIScriptFunction* fn, size_type idx = 0, size_type n = -1) const;
 };
 } // namespace asbind20::ext
 

@@ -10,10 +10,17 @@
 #include <mutex>
 #include <compare>
 #include <functional>
+#include <type_traits>
+#include <concepts>
 #include "detail/include_as.hpp"
 
 namespace asbind20
 {
+template <typename Class, typename... Args>
+concept newable = requires(Args... args) {
+    new Class(args...);
+};
+
 template <int TypeId>
 requires(!(TypeId & ~asTYPEID_MASK_SEQNBR))
 struct primitive_type_of

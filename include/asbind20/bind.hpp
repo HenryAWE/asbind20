@@ -16,6 +16,49 @@
 
 namespace asbind20
 {
+class [[nodiscard]] namespace_
+{
+public:
+    namespace_() = delete;
+    namespace_(const namespace_&) = delete;
+
+    namespace_& operator=(const namespace_&) = delete;
+
+    namespace_(asIScriptEngine* engine)
+        : m_engine(engine), m_prev(engine->GetDefaultNamespace())
+    {
+        m_engine->SetDefaultNamespace("");
+    }
+
+    namespace_(asIScriptEngine* engine, const char* ns, bool nested = true)
+        : m_engine(engine), m_prev(engine->GetDefaultNamespace())
+    {
+        if(nested)
+        {
+            if(ns[0] != '\0') [[likely]]
+            {
+                if(m_prev.empty())
+                    m_engine->SetDefaultNamespace(ns);
+                else
+                    m_engine->SetDefaultNamespace(string_concat(m_prev, "::", ns).c_str());
+            }
+        }
+        else
+        {
+            m_engine->SetDefaultNamespace(ns);
+        }
+    }
+
+    ~namespace_()
+    {
+        m_engine->SetDefaultNamespace(m_prev.c_str());
+    }
+
+private:
+    asIScriptEngine* m_engine;
+    std::string m_prev;
+};
+
 template <asECallConvTypes CallConv>
 struct call_conv_t
 {};
@@ -1220,7 +1263,7 @@ public:
     }
 
     ref_class& default_factory()
-        requires std::is_default_constructible_v<Class>
+        requires newable<Class>
     {
         assert(!(m_flags & asOBJ_TEMPLATE));
         factory(
@@ -1235,6 +1278,7 @@ public:
     }
 
     ref_class& template_default_factory()
+        requires newable<Class, asITypeInfo*>
     {
         assert(m_flags & asOBJ_TEMPLATE);
         factory(
@@ -1278,6 +1322,7 @@ public:
 
     template <typename... Args>
     ref_class& factory(const char* decl)
+        requires newable<Class, Args...>
     {
         factory(
             decl,
@@ -1306,7 +1351,7 @@ public:
     }
 
     ref_class& template_list_factory(std::string_view repeated_type_name)
-        requires std::is_constructible_v<Class, asITypeInfo*, void*>
+        requires newable<Class, asITypeInfo*, void*>
     {
         list_factory(
             string_concat(m_name, "@ f(int&in,int&in) {repeat ", repeated_type_name, "}").c_str(),

@@ -32,6 +32,8 @@ template <typename T>
     }
 }
 
+void msg_callback(const asSMessageInfo* msg, void*);
+
 class asbind_test_suite : public ::testing::Test
 {
 public:
