@@ -73,10 +73,10 @@ void main()
     hello = hello + '!';
     print(hello);
     assert(hello == "Hello world!");
-    hello = hello.remove_suffix(1);
+    hello.remove_suffix(1);
     print(hello);
     assert(hello == "Hello world");
-    hello = hello.remove_prefix(6);
+    hello.remove_prefix(6);
     print(hello);
     assert(hello == "world");
 

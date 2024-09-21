@@ -924,8 +924,8 @@ class value_class : private detail::class_register_helper_base
 public:
     using class_type = Class;
 
-    value_class(asIScriptEngine* engine, const char* name, asQWORD flags = 0)
-        : my_base(engine, name), m_flags(asOBJ_VALUE | flags | asGetTypeTraits<Class>())
+    value_class(asIScriptEngine* engine, const char* name, asQWORD flags = AS_NAMESPACE_QUALIFIER asGetTypeTraits<Class>())
+        : my_base(engine, name), m_flags(asOBJ_VALUE | flags)
     {
         assert(!(m_flags & asOBJ_REF));
 
@@ -965,6 +965,19 @@ public:
 
         if(m_flags & asOBJ_APP_CLASS_DESTRUCTOR)
             destructor();
+
+        return *this;
+    }
+
+    template <typename R, typename... Args, asECallConvTypes CallConv>
+    value_class& constructor(const char* decl, R (*fn)(Args...), call_conv_t<CallConv>)
+    {
+        behaviour(
+            asBEHAVE_CONSTRUCT,
+            decl,
+            fn,
+            call_conv<CallConv>
+        );
 
         return *this;
     }
@@ -1185,6 +1198,13 @@ public:
     value_class& property(const char* decl, U Class::*mp)
     {
         property_impl<U, Class>(decl, mp);
+
+        return *this;
+    }
+
+    value_class& funcdef(std::string_view decl)
+    {
+        member_funcdef_impl(decl);
 
         return *this;
     }

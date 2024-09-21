@@ -5,15 +5,37 @@
 
 using namespace asbind_test;
 
-TEST(ext_string, unicode_support)
+TEST(unicode_support, remove_prefix_and_suffix)
 {
     using namespace std::literals;
     using namespace asbind20;
 
     EXPECT_EQ(ext::u8_remove_prefix("hello world!", 6), "world!"sv);
     EXPECT_EQ(ext::u8_remove_suffix("hello world!", 1), "hello world"sv);
+}
+
+TEST(unicode_support, substr)
+{
+    using namespace std::literals;
+    using namespace asbind20;
 
     EXPECT_EQ(ext::u8_substr("hello world", 7, 2), "or");
+}
+
+TEST(unicode_support, const_string_iterator)
+{
+    using asbind20::ext::string_cbegin;
+    using asbind20::ext::string_cend;
+
+    std::string_view str = "1234";
+
+    std::vector<char32_t> out;
+    for(auto it = string_cbegin(str); it != string_cend(str); ++it)
+    {
+        out.push_back(*it);
+    }
+
+    EXPECT_EQ(out, (std::vector<char32_t>{ '1', '2', '3', '4' }));
 }
 
 TEST_F(asbind_test_suite, ext_stdstring)

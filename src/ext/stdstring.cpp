@@ -43,6 +43,8 @@ std::size_t u8_index_r(std::string_view str, std::size_t n) noexcept
 {
     if(str.empty())
         return -1;
+    if(n == 0)
+        return str.size();
 
     std::size_t count = 0;
 
@@ -102,8 +104,10 @@ std::size_t u8_strlen(std::string_view str) noexcept
     return result;
 }
 
-char32_t u8_bytes_to_int(const char* str)
+char32_t u8_bytes_to_int(const char* str) noexcept
 {
+    assert(str != nullptr);
+
     const std::uint8_t* bytes = reinterpret_cast<const std::uint8_t*>(str);
 
     // ASCII (single byte)
@@ -181,6 +185,24 @@ unsigned int u8_int_to_bytes(char32_t ch, char* buf)
     }
 
     return 0;
+}
+
+static void string_constructor_ch(asUINT count, std::uint32_t ch, void* mem)
+{
+    if(count == 0)
+    {
+        new(mem) std::string();
+        return;
+    }
+
+    char buf[4];
+    unsigned int size_bytes = u8_int_to_bytes(ch, buf);
+    std::string tmp;
+    tmp.reserve(count * size_bytes);
+    for(asUINT i = 0; i < count; ++i)
+        tmp += std::string_view(buf, size_bytes);
+
+    new(mem) std::string(std::move(tmp));
 }
 
 static asUINT string_size_bytes(const std::string& this_)
@@ -281,14 +303,18 @@ std::string_view u8_remove_suffix(std::string_view str, std::size_t n)
     return str.substr(0, idx);
 }
 
-static std::string string_remove_prefix(const std::string& this_, asUINT n)
+static void string_remove_prefix(std::string& this_, asUINT n)
 {
-    return std::string(u8_remove_prefix(this_, n));
+    if(n == 0)
+        return;
+    this_ = u8_remove_prefix(this_, n);
 }
 
-static std::string string_remove_suffix(const std::string& this_, asUINT n)
+static void string_remove_suffix(std::string& this_, asUINT n)
 {
-    return std::string(u8_remove_suffix(this_, n));
+    if(n == 0)
+        return;
+    this_ = u8_remove_suffix(this_, n);
 }
 
 static void string_append(std::string& this_, const std::string& str)
@@ -466,11 +492,28 @@ static script_array* string_split_simple(const std::string& this_, bool skip_emp
 
 #endif
 
+void string_for_each(asIScriptFunction* fn, const std::string& this_)
+{
+    reuse_active_context ctx(fn->GetEngine());
+    for(auto it = string_cbegin(this_); it != string_cend(this_); ++it)
+    {
+        auto result = script_invoke<void>(ctx, fn, *it);
+        if(!result.has_value())
+            break;
+    }
+}
+
 void register_std_string(asIScriptEngine* engine, bool as_default)
 {
     using std::string;
 
-    value_class<string> c(engine, "string");
+    bool use_ch_api = engine->GetEngineProperty(asEP_USE_CHARACTER_LITERALS);
+
+    asQWORD flags = asOBJ_APP_CLASS_CDAK;
+    if(use_ch_api)
+        flags |= asOBJ_APP_CLASS_MORE_CONSTRUCTORS;
+
+    value_class<string> c(engine, "string", flags);
     c
         .common_behaviours()
         .opEquals()
@@ -481,22 +524,24 @@ void register_std_string(asIScriptEngine* engine, bool as_default)
         .method("void prepend(const string&in)", &string_prepend)
         .method("string substr(int pos, uint len=-1) const", &string_substr)
         .method("bool get_empty() const property", &string::empty)
+        .method("bool opConv() const", &string::empty)
         .method("uint get_size_bytes() const property", &string_size_bytes)
         .method("uint get_size() const property", &string_size)
         .method("void clear()", &string::clear)
         .method("bool starts_with(const string&in str) const", &string_starts_with)
         .method("bool ends_with(const string&in str) const", &string_ends_with)
-        .method("string remove_prefix(uint n) const", &string_remove_prefix)
-        .method("string remove_suffix(uint n) const", &string_remove_suffix)
+        .method("void remove_prefix(uint n)", &string_remove_prefix)
+        .method("void remove_suffix(uint n)", &string_remove_suffix)
         .method("void replace(int idx, uint n, const string&in str, uint len=-1)", &string_replace)
         .method("void insert(int idx, const string&in str, uint len=-1)", &string_insert)
         .method("void erase(int idx, uint n=1)", &string_erase)
         .method("uint64 get_hash() const property", &string_hash)
         .method("bool contains(const string&in) const", &string_contains);
 
-    if(engine->GetEngineProperty(asEP_USE_CHARACTER_LITERALS))
+    if(use_ch_api)
     {
         c
+            .constructor("void f(uint count, uint ch)", &string_constructor_ch, call_conv<asCALL_CDECL_OBJLAST>)
             .method("void append(uint ch)", &string_append_ch)
             .method("string opAdd(uint ch) const", &string_opAdd_ch)
             .method("void prepend(uint ch)", &string_prepend_ch)
@@ -505,9 +550,10 @@ void register_std_string(asIScriptEngine* engine, bool as_default)
             .method("bool ends_with(uint ch) const", &string_ends_with_ch)
             .method("uint get_opIndex(int idx) const property", &string_get_opIndex)
             .method("void set_opIndex(int idx, uint ch) property", &string_set_opIndex)
-            .method("bool contains(uint ch) const", &string_contains_ch);
+            .method("bool contains(uint ch) const", &string_contains_ch)
+            .funcdef("void for_each_callback(uint ch)")
+            .method("void for_each(const for_each_callback&in fn)", &string_for_each);
     }
-
 
 #ifdef ASBIND20_EXT_ARRAY
 
@@ -516,7 +562,7 @@ void register_std_string(asIScriptEngine* engine, bool as_default)
         c
             .method("array<string>@ split(bool skip_empty=true) const", &string_split_simple)
             .method("array<string>@ split(const string&in delimiter, bool skip_empty=true) const", &string_split);
-        if(engine->GetEngineProperty(asEP_USE_CHARACTER_LITERALS))
+        if(use_ch_api)
         {
             c.method("array<string>@ split(uint delimiter, bool skip_empty=true) const", &string_split_ch);
         }
