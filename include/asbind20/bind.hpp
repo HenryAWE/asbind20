@@ -260,6 +260,24 @@ namespace detail
                 return asCALL_CDECL_OBJLAST;
         }
     }
+
+    template <auto Function, typename Class>
+    consteval asECallConvTypes deduce_method_callconv()
+    {
+        if constexpr(std::is_member_function_pointer_v<std::decay_t<decltype(Function)>>)
+        {
+            return asCALL_THISCALL;
+        }
+        else
+        {
+            using traits = function_traits<std::decay_t<decltype(Function)>>;
+
+            return []<std::size_t... Is>(std::index_sequence<Is...>)
+            {
+                return deduce_method_callconv<Class, typename traits::template arg_type<Is>...>();
+            }(std::make_index_sequence<traits::arg_count_v>());
+        }
+    }
 } // namespace detail
 
 using generic_function_t = void(asIScriptGeneric* gen);
@@ -1182,6 +1200,24 @@ public:
     value_class& method(const char* decl, generic_function_t* gfn)
     {
         method_impl(decl, gfn, call_conv<asCALL_GENERIC>);
+
+        return *this;
+    }
+
+    template <
+        native_function auto Function,
+        asECallConvTypes CallConv = detail::deduce_method_callconv<Function, Class>()>
+    value_class& method(const char* decl)
+    {
+        if(has_max_portability())
+        {
+            auto wrapped = generic_wrapper_t<Function, CallConv>{};
+            method(decl, wrapped.generate());
+        }
+        else
+        {
+            method(decl, Function, call_conv<CallConv>);
+        }
 
         return *this;
     }
