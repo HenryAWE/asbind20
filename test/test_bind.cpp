@@ -161,7 +161,7 @@ TEST_F(asbind_test_suite, value_class)
         .method("void add2(int val)", &test_bind::add_obj_last_ref)
         .method("void mul2(int val)", &test_bind::mul_obj_first_ref)
         .method<&test_bind::add_obj_last>("void add3(int val)")
-        .method("void mul3(int val)", generic_wrapper<&test_bind::mul_obj_first_ref, asCALL_CDECL_OBJFIRST>)
+        .method("void mul3(int val)", generic_wrapper<&test_bind::mul_obj_first_ref, asCALL_CDECL_OBJFIRST>())
         .property("int value", &my_value_class::value);
 
     asIScriptModule* m = engine->GetModule("test_value_class", asGM_ALWAYS_CREATE);
@@ -438,7 +438,7 @@ TEST_F(asbind_test_suite, generic)
     asIScriptEngine* engine = get_engine();
 
     global(engine)
-        .function("int my_div(int a, int b)", generic_wrapper<&test_bind::my_div, asCALL_CDECL>);
+        .function<&test_bind::my_div>("int my_div(int a, int b)");
 
     asIScriptModule* m = engine->GetModule("test_generic", asGM_ALWAYS_CREATE);
 

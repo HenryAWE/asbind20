@@ -317,12 +317,17 @@ public:
         return OriginalConv;
     }
 
-    static constexpr generic_function_t* generate()
+    static constexpr generic_function_t* generate() noexcept
     {
         return &wrapper_impl;
     }
 
-    constexpr operator generic_function_t*() const
+    constexpr explicit operator generic_function_t*() const noexcept
+    {
+        return generate();
+    }
+
+    constexpr generic_function_t* operator()() const noexcept
     {
         return generate();
     }
@@ -799,12 +804,53 @@ public:
         return *this;
     }
 
+    template <
+        native_function auto Function,
+        asECallConvTypes CallConv = asCALL_CDECL>
+    global& function(const char* decl)
+    {
+        if(has_max_portability())
+        {
+            function(
+                decl,
+                generic_wrapper<Function, CallConv>()
+            );
+        }
+        else
+        {
+            function(
+                decl,
+                Function
+            );
+        }
+
+        return *this;
+    }
+
     template <typename T, typename Return, typename Class, typename... Args>
     global& function(
         const char* decl,
         Return (Class::*fn)(Args...),
-        T&& instance
-    ) requires(std::is_convertible_v<T, Class>)
+        T& instance
+    )
+    {
+        int r = m_engine->RegisterGlobalFunction(
+            decl,
+            asSMethodPtr<sizeof(fn)>::Convert(fn),
+            asCALL_THISCALL_ASGLOBAL,
+            std::addressof(instance)
+        );
+        assert(r >= 0);
+
+        return *this;
+    }
+
+    template <typename T, typename Return, typename Class, typename... Args>
+    global& function(
+        const char* decl,
+        Return (Class::*fn)(Args...),
+        const T& instance
+    )
     {
         int r = m_engine->RegisterGlobalFunction(
             decl,
@@ -820,7 +866,21 @@ public:
     template <typename T>
     global& property(
         const char* decl,
-        T&& val
+        T& val
+    )
+    {
+        int r = m_engine->RegisterGlobalProperty(
+            decl, (void*)std::addressof(val)
+        );
+        assert(r >= 0);
+
+        return *this;
+    }
+
+    template <typename T>
+    global& property(
+        const char* decl,
+        const T& val
     )
     {
         int r = m_engine->RegisterGlobalProperty(
@@ -1211,8 +1271,7 @@ public:
     {
         if(has_max_portability())
         {
-            auto wrapped = generic_wrapper_t<Function, CallConv>{};
-            method(decl, wrapped.generate());
+            method(decl, generic_wrapper<Function, CallConv>());
         }
         else
         {
