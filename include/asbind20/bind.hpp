@@ -1497,7 +1497,7 @@ public:
     requires(std::is_member_function_pointer_v<Fn>)
     ref_class_t& method(const char* decl, Fn&& fn)
     {
-        this->template method_impl(decl, std::forward<Fn>(fn), call_conv<asCALL_THISCALL>);
+        this->method_impl(decl, std::forward<Fn>(fn), call_conv<asCALL_THISCALL>);
 
         return *this;
     }
