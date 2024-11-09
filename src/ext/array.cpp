@@ -1845,13 +1845,13 @@ static bool array_template_callback(asITypeInfo* ti, bool& no_gc)
 
 void register_script_array(asIScriptEngine* engine, bool as_default)
 {
-    ref_class<script_array> c(engine, "array<T>", asOBJ_TEMPLATE | asOBJ_GC);
+    template_class<script_array> c(engine, "array<T>", asOBJ_GC);
     c
-        .template_callback(&array_template_callback)
-        .template_default_factory()
+        .template_callback<&array_template_callback>()
+        .default_factory()
         .factory<asITypeInfo*, asUINT>("array<T>@ f(int&in, uint)")
         .factory<asITypeInfo*, asUINT, const void*>("array<T>@ f(int&in, uint, const T&in)")
-        .template_list_factory("T")
+        .list_factory("T")
         .opAssign()
         .opEquals()
         .addref(&script_array::addref)

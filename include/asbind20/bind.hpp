@@ -66,6 +66,11 @@ struct call_conv_t
 template <asECallConvTypes CallConv>
 constexpr inline call_conv_t<CallConv> call_conv;
 
+struct use_generic_t
+{};
+
+constexpr inline use_generic_t use_generic{};
+
 /**
  * @brief Check if `asGetLibraryOptions()` returns "AS_MAX_PORTABILITY"
  */
@@ -207,6 +212,7 @@ void set_generic_return(asIScriptGeneric* gen, std::type_identity_t<T>&& ret)
     }
 }
 
+template <bool ForceGeneric>
 class register_helper_base
 {
 public:
@@ -222,6 +228,11 @@ public:
     asIScriptEngine* get_engine() const noexcept
     {
         return m_engine;
+    }
+
+    static constexpr bool force_generic() noexcept
+    {
+        return ForceGeneric;
     }
 
 protected:
@@ -282,12 +293,18 @@ namespace detail
 
 using generic_function_t = void(asIScriptGeneric* gen);
 
+namespace detail
+{
+    template <typename T>
+    concept is_native_function_helper = std::is_function_v<T> ||
+                                        std::is_function_v<std::remove_pointer_t<T>> ||
+                                        std::is_member_function_pointer_v<T>;
+}
+
 template <typename T>
 concept native_function =
     !std::is_convertible_v<T, generic_function_t*> &&
-    (std::is_function_v<T> ||
-     std::is_function_v<std::remove_pointer_t<T>> ||
-     std::is_member_function_pointer_v<T>);
+    detail::is_native_function_helper<std::decay_t<T>>;
 
 template <
     native_function auto Function,
@@ -494,302 +511,22 @@ template <
     asECallConvTypes OriginalConv>
 constexpr inline generic_wrapper_t<Function, OriginalConv> generic_wrapper{};
 
-namespace detail
+template <bool ForceGeneric>
+class global_t final : public register_helper_base<ForceGeneric>
 {
-    class class_register_helper_base : public register_helper_base
-    {
-    protected:
-        const char* m_name;
+    using my_base = register_helper_base<ForceGeneric>;
 
-        class_register_helper_base() = delete;
-        class_register_helper_base(const class_register_helper_base&) = default;
+    using my_base::m_engine;
 
-        class_register_helper_base(asIScriptEngine* engine, const char* name);
-
-        template <typename Fn>
-        void method_impl(const char* decl, Fn&& fn, call_conv_t<asCALL_THISCALL>)
-        {
-            int r = m_engine->RegisterObjectMethod(
-                m_name,
-                decl,
-                asSMethodPtr<sizeof(Fn)>::Convert(fn),
-                asCALL_THISCALL
-            );
-            assert(r >= 0);
-        }
-
-        template <typename Fn>
-        void method_impl(const char* decl, Fn&& fn, call_conv_t<asCALL_CDECL_OBJFIRST>)
-        {
-            int r = m_engine->RegisterObjectMethod(
-                m_name,
-                decl,
-                asFunctionPtr(fn),
-                asCALL_CDECL_OBJFIRST
-            );
-            assert(r >= 0);
-        }
-
-        template <typename Fn>
-        void method_impl(const char* decl, Fn&& fn, call_conv_t<asCALL_CDECL_OBJLAST>)
-        {
-            int r = m_engine->RegisterObjectMethod(
-                m_name,
-                decl,
-                asFunctionPtr(fn),
-                asCALL_CDECL_OBJLAST
-            );
-            assert(r >= 0);
-        }
-
-        void method_impl(const char* decl, void (*fn)(asIScriptGeneric*), call_conv_t<asCALL_GENERIC>)
-        {
-            int r = m_engine->RegisterObjectMethod(
-                m_name,
-                decl,
-                asFunctionPtr(fn),
-                asCALL_GENERIC
-            );
-            assert(r >= 0);
-        }
-
-        template <typename Fn>
-        void behaviour_impl(asEBehaviours beh, const char* decl, Fn&& fn, call_conv_t<asCALL_THISCALL>)
-        {
-            int r = m_engine->RegisterObjectBehaviour(
-                m_name,
-                beh,
-                decl,
-                asSMethodPtr<sizeof(Fn)>::Convert(fn),
-                asCALL_THISCALL
-            );
-            assert(r >= 0);
-        }
-
-        template <typename Fn>
-        void behaviour_impl(asEBehaviours beh, const char* decl, Fn&& fn, call_conv_t<asCALL_CDECL_OBJFIRST>)
-        {
-            int r = m_engine->RegisterObjectBehaviour(
-                m_name,
-                beh,
-                decl,
-                asFunctionPtr(fn),
-                asCALL_CDECL_OBJFIRST
-            );
-            assert(r >= 0);
-        }
-
-        template <typename Fn>
-        void behaviour_impl(asEBehaviours beh, const char* decl, Fn&& fn, call_conv_t<asCALL_CDECL_OBJLAST>)
-        {
-            int r = m_engine->RegisterObjectBehaviour(
-                m_name,
-                beh,
-                decl,
-                asFunctionPtr(fn),
-                asCALL_CDECL_OBJLAST
-            );
-            assert(r >= 0);
-        }
-
-        template <typename Class, typename R, typename... Args>
-        void method_wrapper_impl(const char* decl, R (*fn)(Args...))
-        {
-            method_impl(
-                decl, fn, call_conv<deduce_method_callconv<Class, Args...>()>
-            );
-        }
-
-        template <typename Class, typename R, typename... Args>
-        void behaviour_wrapper_impl(asEBehaviours beh, const char* decl, R (*fn)(Args...))
-        {
-            behaviour_impl(
-                beh, decl, fn, call_conv<deduce_method_callconv<Class, Args...>()>
-            );
-        }
-
-        template <typename T, typename Class>
-        void property_impl(const char* decl, T Class::*mp)
-        {
-            int r = m_engine->RegisterObjectProperty(
-                m_name,
-                decl,
-                static_cast<int>(member_offset(mp))
-            );
-            assert(r >= 0);
-        }
-
-        template <typename Class>
-        void opPreInc_impl()
-        {
-            method_impl(
-                string_concat(m_name, "& opPreInc()").c_str(),
-                static_cast<Class& (Class::*)()>(&Class::operator++),
-                call_conv<asCALL_THISCALL>
-            );
-        }
-
-        template <typename Class>
-        void opPreDec_impl()
-        {
-            method_impl(
-                string_concat(m_name, "& opPreDec()").c_str(),
-                static_cast<Class& (Class::*)()>(&Class::operator--),
-                call_conv<asCALL_THISCALL>
-            );
-        }
-
-        std::string opEquals_decl() const
-        {
-            return string_concat("bool opEquals(const ", m_name, " &in) const");
-        }
-
-        template <typename Class>
-        requires std::equality_comparable<Class>
-        void opEquals_impl()
-        {
-            constexpr bool has_member_op_eq = requires() {
-                static_cast<bool (Class::*)(const Class&) const>(&Class::operator==);
-            };
-
-            if constexpr(has_member_op_eq)
-            {
-                method_impl(
-                    opEquals_decl().c_str(),
-                    static_cast<bool (Class::*)(const Class&) const>(&Class::operator==),
-                    call_conv<asCALL_THISCALL>
-                );
-            }
-            else
-            {
-                // Reverse parameter order for asCALL_CDECL_OBJLAST
-                auto wrapper_obj_last = +[](const Class& rhs, const Class& lhs)
-                    -> bool
-                {
-                    return lhs == rhs;
-                };
-                method_impl(
-                    opEquals_decl().c_str(),
-                    wrapper_obj_last,
-                    call_conv<asCALL_CDECL_OBJLAST>
-                );
-            }
-        }
-
-        std::string opCmp_decl() const
-        {
-            return string_concat("int opCmp(const ", m_name, " &in) const");
-        }
-
-        template <typename Class>
-        requires std::three_way_comparable<Class, std::weak_ordering>
-        void opCmp_impl()
-        {
-            // Reverse parameter order for asCALL_CDECL_OBJLAST
-            auto wrapper_obj_last = +[](const Class& rhs, const Class& lhs)
-                -> int
-            {
-                return translate_three_way(lhs <=> rhs);
-            };
-            method_impl(
-                opCmp_decl().c_str(),
-                wrapper_obj_last,
-                call_conv<asCALL_CDECL_OBJLAST>
-            );
-        }
-
-        std::string opAdd_decl() const
-        {
-            return string_concat(m_name, " opAdd(const ", m_name, " &in) const");
-        }
-
-        template <typename Class>
-        void opAdd_impl()
-        {
-            constexpr bool has_member_op_add = requires() {
-                static_cast<Class (Class::*)(const Class&) const>(&Class::operator+);
-            };
-
-            if constexpr(has_member_op_add)
-            {
-                method_impl(
-                    opAdd_decl().c_str(),
-                    static_cast<Class (Class::*)(const Class&) const>(&Class::operator+),
-                    call_conv<asCALL_THISCALL>
-                );
-            }
-            else
-            {
-                // Reverse parameter order for asCALL_CDECL_OBJLAST
-                auto wrapper_obj_last = +[](const Class& rhs, const Class& lhs)
-                    -> Class
-                {
-                    return lhs + rhs;
-                };
-                method_impl(
-                    opAdd_decl().c_str(),
-                    wrapper_obj_last,
-                    call_conv<asCALL_CDECL_OBJLAST>
-                );
-            }
-        }
-
-        void member_funcdef_impl(std::string_view decl)
-        {
-            // Firstly, find the begin of parameters
-            auto param_being = std::find(decl.rbegin(), decl.rend(), '(');
-            if(param_being != decl.rend())
-            {
-                ++param_being;
-                param_being = std::find_if_not(
-                    param_being,
-                    decl.rend(),
-                    [](char ch)
-                    { return ch != ' '; }
-                );
-            }
-            auto name_begin = std::find_if_not(
-                param_being,
-                decl.rend(),
-                [](char ch)
-                {
-                    return '0' <= ch && ch <= '9' ||
-                           'a' <= ch && ch <= 'z' ||
-                           'A' <= ch && ch <= 'Z' ||
-                           ch == '_' ||
-                           ch > 127;
-                }
-            );
-
-            std::string full_decl = string_concat(
-                std::string_view(decl.begin(), name_begin.base()),
-                ' ',
-                m_name,
-                "::",
-                std::string_view(name_begin.base(), decl.end())
-            );
-            full_funcdef(full_decl.c_str());
-        }
-
-    private:
-        void full_funcdef(const char* decl)
-        {
-            int r = m_engine->RegisterFuncdef(decl);
-            assert(r >= 0);
-        }
-    };
-} // namespace detail
-
-class global : public register_helper_base
-{
 public:
-    global() = delete;
-    global(const global&) = default;
+    global_t() = delete;
+    global_t(const global_t&) = default;
 
-    global(asIScriptEngine* engine);
+    global_t(asIScriptEngine* engine)
+        : my_base(engine) {}
 
     template <typename Return, typename... Args>
-    global& function(
+    global_t& function(
         const char* decl,
         Return (*fn)(Args...)
     )
@@ -807,7 +544,7 @@ public:
     template <
         native_function auto Function,
         asECallConvTypes CallConv = asCALL_CDECL>
-    global& function(const char* decl)
+    global_t& function(const char* decl)
     {
         if(has_max_portability())
         {
@@ -828,7 +565,7 @@ public:
     }
 
     template <typename T, typename Return, typename Class, typename... Args>
-    global& function(
+    global_t& function(
         const char* decl,
         Return (Class::*fn)(Args...),
         T& instance
@@ -846,7 +583,7 @@ public:
     }
 
     template <typename T, typename Return, typename Class, typename... Args>
-    global& function(
+    global_t& function(
         const char* decl,
         Return (Class::*fn)(Args...),
         const T& instance
@@ -864,7 +601,7 @@ public:
     }
 
     template <typename T>
-    global& property(
+    global_t& property(
         const char* decl,
         T& val
     )
@@ -878,7 +615,7 @@ public:
     }
 
     template <typename T>
-    global& property(
+    global_t& property(
         const char* decl,
         const T& val
     )
@@ -891,7 +628,7 @@ public:
         return *this;
     }
 
-    global& function(
+    global_t& function(
         const char* decl,
         generic_function_t gfn,
         void* auxiliary = nullptr
@@ -908,7 +645,7 @@ public:
         return *this;
     }
 
-    global& funcdef(
+    global_t& funcdef(
         const char* decl
     )
     {
@@ -918,7 +655,7 @@ public:
         return *this;
     }
 
-    global& typedef_(
+    global_t& typedef_(
         const char* type_decl,
         const char* new_name
     )
@@ -930,7 +667,7 @@ public:
     }
 
     // For those who feel more comfortable with the C++11 style `using alias = type`
-    global& using_(
+    global_t& using_(
         const char* new_name,
         const char* type_decl
     )
@@ -944,7 +681,7 @@ public:
     requires std::is_enum_v<Enum>
     using enum_value_name_pair = std::pair<Enum, const char*>;
 
-    global& enum_type(
+    global_t& enum_type(
         const char* type
     )
     {
@@ -956,7 +693,7 @@ public:
 
     template <typename Enum>
     requires std::is_enum_v<Enum>
-    global& enum_value(
+    global_t& enum_value(
         const char* type,
         Enum val,
         const char* name
@@ -978,17 +715,339 @@ public:
     }
 };
 
-template <typename Class>
-class value_class : private detail::class_register_helper_base
+using global = global_t<false>;
+
+template <bool ForceGeneric>
+class class_register_helper_base : public register_helper_base<ForceGeneric>
+{
+    using my_base = register_helper_base<ForceGeneric>;
+
+protected:
+    using my_base::m_engine;
+    const char* m_name;
+
+    class_register_helper_base() = delete;
+    class_register_helper_base(const class_register_helper_base&) = default;
+
+    class_register_helper_base(asIScriptEngine* engine, const char* name)
+        : my_base(engine), m_name(name) {}
+
+    template <typename Fn>
+    void method_impl(const char* decl, Fn&& fn, call_conv_t<asCALL_THISCALL>)
+    {
+        int r = m_engine->RegisterObjectMethod(
+            m_name,
+            decl,
+            asSMethodPtr<sizeof(Fn)>::Convert(fn),
+            asCALL_THISCALL
+        );
+        assert(r >= 0);
+    }
+
+    template <typename Fn>
+    void method_impl(const char* decl, Fn&& fn, call_conv_t<asCALL_CDECL_OBJFIRST>)
+    {
+        int r = m_engine->RegisterObjectMethod(
+            m_name,
+            decl,
+            asFunctionPtr(fn),
+            asCALL_CDECL_OBJFIRST
+        );
+        assert(r >= 0);
+    }
+
+    template <typename Fn>
+    void method_impl(const char* decl, Fn&& fn, call_conv_t<asCALL_CDECL_OBJLAST>)
+    {
+        int r = m_engine->RegisterObjectMethod(
+            m_name,
+            decl,
+            asFunctionPtr(fn),
+            asCALL_CDECL_OBJLAST
+        );
+        assert(r >= 0);
+    }
+
+    void method_impl(const char* decl, void (*fn)(asIScriptGeneric*), call_conv_t<asCALL_GENERIC>)
+    {
+        int r = m_engine->RegisterObjectMethod(
+            m_name,
+            decl,
+            asFunctionPtr(fn),
+            asCALL_GENERIC
+        );
+        assert(r >= 0);
+    }
+
+    void behaviour_impl(asEBehaviours beh, const char* decl, generic_function_t* gfn, call_conv_t<asCALL_GENERIC>)
+    {
+        int r = m_engine->RegisterObjectBehaviour(
+            m_name,
+            beh,
+            decl,
+            asFunctionPtr(gfn),
+            asCALL_GENERIC
+        );
+        assert(r >= 0);
+    }
+
+    template <typename Fn, asECallConvTypes CallConv>
+    requires(CallConv != asCALL_GENERIC)
+    void behaviour_impl(asEBehaviours beh, const char* decl, Fn&& fn, call_conv_t<CallConv>) requires(!ForceGeneric)
+    {
+        [[maybe_unused]]
+        int r = 0;
+        if constexpr(std::is_member_function_pointer_v<std::decay_t<Fn>>)
+        {
+            r = m_engine->RegisterObjectBehaviour(
+                m_name,
+                beh,
+                decl,
+                asSMethodPtr<sizeof(Fn)>::Convert(fn),
+                CallConv
+            );
+        }
+        else
+        {
+            r = m_engine->RegisterObjectBehaviour(
+                m_name,
+                beh,
+                decl,
+                asFunctionPtr(fn),
+                CallConv
+            );
+        }
+        assert(r >= 0);
+    }
+
+    template <native_function auto Behaviour, asECallConvTypes CallConv>
+    void wrapped_behaviour_impl(asEBehaviours beh, const char* decl)
+    {
+        int r = 0;
+        if constexpr(ForceGeneric)
+        {
+            r = m_engine->RegisterObjectBehaviour(
+                m_name,
+                beh,
+                decl,
+                asFunctionPtr(generic_wrapper<Behaviour, CallConv>()),
+                asCALL_GENERIC
+            );
+        }
+        else
+        {
+            r = m_engine->RegisterObjectBehaviour(
+                m_name,
+                beh,
+                decl,
+                asFunctionPtr(Behaviour),
+                CallConv
+            );
+        }
+        assert(r >= 0);
+    }
+
+    template <typename Class, typename R, typename... Args>
+    void method_auto_callconv(const char* decl, R (*fn)(Args...))
+    {
+        method_impl(
+            decl, fn, call_conv<detail::deduce_method_callconv<Class, Args...>()>
+        );
+    }
+
+    template <typename Class, typename R, typename... Args>
+    void behaviour_wrapper_impl(asEBehaviours beh, const char* decl, R (*fn)(Args...))
+    {
+        behaviour_impl(
+            beh, decl, fn, call_conv<detail::deduce_method_callconv<Class, Args...>()>
+        );
+    }
+
+    template <typename T, typename Class>
+    void property_impl(const char* decl, T Class::*mp)
+    {
+        int r = m_engine->RegisterObjectProperty(
+            m_name,
+            decl,
+            static_cast<int>(member_offset(mp))
+        );
+        assert(r >= 0);
+    }
+
+    template <typename Class>
+    void opPreInc_impl()
+    {
+        method_impl(
+            string_concat(m_name, "& opPreInc()").c_str(),
+            static_cast<Class& (Class::*)()>(&Class::operator++),
+            call_conv<asCALL_THISCALL>
+        );
+    }
+
+    template <typename Class>
+    void opPreDec_impl()
+    {
+        method_impl(
+            string_concat(m_name, "& opPreDec()").c_str(),
+            static_cast<Class& (Class::*)()>(&Class::operator--),
+            call_conv<asCALL_THISCALL>
+        );
+    }
+
+    std::string opEquals_decl() const
+    {
+        return string_concat("bool opEquals(const ", m_name, " &in) const");
+    }
+
+    template <typename Class>
+    requires std::equality_comparable<Class>
+    void opEquals_impl()
+    {
+        constexpr bool has_member_op_eq = requires() {
+            static_cast<bool (Class::*)(const Class&) const>(&Class::operator==);
+        };
+
+        if constexpr(has_member_op_eq)
+        {
+            method_impl(
+                opEquals_decl().c_str(),
+                static_cast<bool (Class::*)(const Class&) const>(&Class::operator==),
+                call_conv<asCALL_THISCALL>
+            );
+        }
+        else
+        {
+            // Reverse parameter order for asCALL_CDECL_OBJLAST
+            auto wrapper_obj_last = +[](const Class& rhs, const Class& lhs)
+                -> bool
+            {
+                return lhs == rhs;
+            };
+            method_impl(
+                opEquals_decl().c_str(),
+                wrapper_obj_last,
+                call_conv<asCALL_CDECL_OBJLAST>
+            );
+        }
+    }
+
+    std::string opCmp_decl() const
+    {
+        return string_concat("int opCmp(const ", m_name, " &in) const");
+    }
+
+    template <typename Class>
+    requires std::three_way_comparable<Class, std::weak_ordering>
+    void opCmp_impl()
+    {
+        // Reverse parameter order for asCALL_CDECL_OBJLAST
+        auto wrapper_obj_last = +[](const Class& rhs, const Class& lhs)
+            -> int
+        {
+            return translate_three_way(lhs <=> rhs);
+        };
+        method_impl(
+            opCmp_decl().c_str(),
+            wrapper_obj_last,
+            call_conv<asCALL_CDECL_OBJLAST>
+        );
+    }
+
+    std::string opAdd_decl() const
+    {
+        return string_concat(m_name, " opAdd(const ", m_name, " &in) const");
+    }
+
+    template <typename Class>
+    void opAdd_impl()
+    {
+        constexpr bool has_member_op_add = requires() {
+            static_cast<Class (Class::*)(const Class&) const>(&Class::operator+);
+        };
+
+        if constexpr(has_member_op_add)
+        {
+            method_impl(
+                opAdd_decl().c_str(),
+                static_cast<Class (Class::*)(const Class&) const>(&Class::operator+),
+                call_conv<asCALL_THISCALL>
+            );
+        }
+        else
+        {
+            // Reverse parameter order for asCALL_CDECL_OBJLAST
+            auto wrapper_obj_last = +[](const Class& rhs, const Class& lhs)
+                -> Class
+            {
+                return lhs + rhs;
+            };
+            method_impl(
+                opAdd_decl().c_str(),
+                wrapper_obj_last,
+                call_conv<asCALL_CDECL_OBJLAST>
+            );
+        }
+    }
+
+    void member_funcdef_impl(std::string_view decl)
+    {
+        // Firstly, find the begin of parameters
+        auto param_being = std::find(decl.rbegin(), decl.rend(), '(');
+        if(param_being != decl.rend())
+        {
+            ++param_being;
+            param_being = std::find_if_not(
+                param_being,
+                decl.rend(),
+                [](char ch)
+                { return ch != ' '; }
+            );
+        }
+        auto name_begin = std::find_if_not(
+            param_being,
+            decl.rend(),
+            [](char ch)
+            {
+                return '0' <= ch && ch <= '9' ||
+                       'a' <= ch && ch <= 'z' ||
+                       'A' <= ch && ch <= 'Z' ||
+                       ch == '_' ||
+                       ch > 127;
+            }
+        );
+
+        std::string full_decl = string_concat(
+            std::string_view(decl.begin(), name_begin.base()),
+            ' ',
+            m_name,
+            "::",
+            std::string_view(name_begin.base(), decl.end())
+        );
+        full_funcdef(full_decl.c_str());
+    }
+
+private:
+    void full_funcdef(const char* decl)
+    {
+        int r = m_engine->RegisterFuncdef(decl);
+        assert(r >= 0);
+    }
+};
+
+template <typename Class, bool ForceGeneric = false>
+class value_class final : public class_register_helper_base<ForceGeneric>
 {
     static constexpr bool use_pod_v = std::is_trivial_v<Class> && std::is_standard_layout_v<Class>;
 
-    using my_base = detail::class_register_helper_base;
+    using my_base = class_register_helper_base<ForceGeneric>;
+
+    using my_base::m_engine;
+    using my_base::m_name;
 
     template <typename... Args>
     void constructor_impl(const char* decl)
     {
-        behaviour_impl(
+        this->behaviour_impl(
             asBEHAVE_CONSTRUCT,
             decl,
             +[](Args... args, void* mem)
@@ -1128,14 +1187,14 @@ public:
 
     value_class& opPreInc()
     {
-        opPreInc_impl<Class>();
+        this->template opPreInc_impl<Class>();
 
         return *this;
     }
 
     value_class& opPreDec()
     {
-        opPreDec_impl<Class>();
+        this->template opPreDec_impl<Class>();
 
         return *this;
     }
@@ -1151,7 +1210,7 @@ public:
             Class* this_ = static_cast<Class*>(gen->GetObject());
             set_generic_return<Class>(gen, (*this_)++);
         };
-        method_impl(
+        this->method_impl(
             string_concat(m_name, " opPostInc()").c_str(),
             wrapper,
             call_conv<asCALL_GENERIC>
@@ -1167,7 +1226,7 @@ public:
             Class* this_ = static_cast<Class*>(gen->GetObject());
             set_generic_return<Class>(gen, (*this_)--);
         };
-        method_impl(
+        this->method_impl(
             string_concat(m_name, " opPostDec()").c_str(),
             wrapper,
             call_conv<asCALL_GENERIC>
@@ -1203,21 +1262,21 @@ public:
 
     value_class& opEquals()
     {
-        opEquals_impl<Class>();
+        this->template opEquals_impl<Class>();
 
         return *this;
     }
 
     value_class& opCmp()
     {
-        opCmp_impl<Class>();
+        this->template opCmp_impl<Class>();
 
         return *this;
     }
 
     value_class& opAdd()
     {
-        opAdd_impl<Class>();
+        this->template opAdd_impl<Class>();
 
         return *this;
     }
@@ -1234,7 +1293,7 @@ public:
     template <typename R, typename... Args, asECallConvTypes CallConv>
     value_class& behaviour(asEBehaviours beh, const char* decl, R (*fn)(Args...), call_conv_t<CallConv>)
     {
-        behaviour_impl(beh, decl, fn, call_conv<CallConv>);
+        this->behaviour_impl(beh, decl, fn, call_conv<CallConv>);
 
         return *this;
     }
@@ -1243,7 +1302,7 @@ public:
     requires(std::is_member_function_pointer_v<Fn>)
     value_class& method(const char* decl, Fn&& fn)
     {
-        method_impl(decl, std::forward<Fn>(fn), call_conv<asCALL_THISCALL>);
+        this->method_impl(decl, std::forward<Fn>(fn), call_conv<asCALL_THISCALL>);
 
         return *this;
     }
@@ -1252,14 +1311,24 @@ public:
     requires(CallConv != asCALL_GENERIC)
     value_class& method(const char* decl, Fn&& fn, call_conv_t<CallConv>)
     {
-        method_impl(decl, std::forward<Fn>(fn), call_conv<CallConv>);
+        this->method_impl(decl, std::forward<Fn>(fn), call_conv<CallConv>);
 
         return *this;
     }
 
     value_class& method(const char* decl, generic_function_t* gfn)
     {
-        method_impl(decl, gfn, call_conv<asCALL_GENERIC>);
+        this->method_impl(decl, gfn, call_conv<asCALL_GENERIC>);
+
+        return *this;
+    }
+
+    template <
+        native_function auto Function,
+        asECallConvTypes CallConv = detail::deduce_method_callconv<Function, Class>()>
+    value_class& method(use_generic_t, const char* decl)
+    {
+        method(decl, generic_wrapper<Function, CallConv>(), call_conv<asCALL_GENERIC>);
 
         return *this;
     }
@@ -1269,9 +1338,9 @@ public:
         asECallConvTypes CallConv = detail::deduce_method_callconv<Function, Class>()>
     value_class& method(const char* decl)
     {
-        if(has_max_portability())
+        if constexpr(ForceGeneric)
         {
-            method(decl, generic_wrapper<Function, CallConv>());
+            method<Function, CallConv>(use_generic, decl);
         }
         else
         {
@@ -1284,22 +1353,22 @@ public:
     template <typename R, typename... Args>
     value_class& method(const char* decl, R (*fn)(Args...))
     {
-        method_wrapper_impl<Class>(decl, fn);
+        this->template method_auto_callconv<Class>(decl, fn);
 
         return *this;
     }
 
-    template <typename U>
-    value_class& property(const char* decl, U Class::*mp)
+    template <typename T>
+    value_class& property(const char* decl, T Class::*mp)
     {
-        property_impl<U, Class>(decl, mp);
+        this->template property_impl<T, Class>(decl, mp);
 
         return *this;
     }
 
     value_class& funcdef(std::string_view decl)
     {
-        member_funcdef_impl(decl);
+        this->member_funcdef_impl(decl);
 
         return *this;
     }
@@ -1308,18 +1377,30 @@ private:
     asQWORD m_flags;
 };
 
-template <typename Class>
-class ref_class : private detail::class_register_helper_base
+template <typename Class, bool Template = false, bool ForceGeneric = false>
+class ref_class_t : public class_register_helper_base<ForceGeneric>
 {
-    using my_base = detail::class_register_helper_base;
+    using my_base = class_register_helper_base<ForceGeneric>;
+
+    using my_base::m_engine;
+    using my_base::m_name;
 
 public:
     using class_type = Class;
 
-    ref_class(asIScriptEngine* engine, const char* name, asQWORD flags = 0)
+    ref_class_t(asIScriptEngine* engine, const char* name, asQWORD flags = 0)
         : my_base(engine, name), m_flags(asOBJ_REF | flags)
     {
         assert(!(m_flags & asOBJ_VALUE));
+
+        if constexpr(!Template)
+        {
+            assert(!(m_flags & asOBJ_TEMPLATE));
+        }
+        else
+        {
+            m_flags |= asOBJ_TEMPLATE;
+        }
 
         int r = m_engine->RegisterObjectType(
             m_name,
@@ -1329,86 +1410,143 @@ public:
         assert(r >= 0);
     }
 
-    template <typename Fn>
-    ref_class& behaviour(asEBehaviours beh, const char* decl, Fn&& fn, call_conv_t<asCALL_THISCALL>)
+    ref_class_t& behaviour(asEBehaviours beh, const char* decl, generic_function_t* gfn, call_conv_t<asCALL_GENERIC>)
     {
-        behaviour_impl(beh, decl, std::forward<Fn>(fn), call_conv<asCALL_THISCALL>);
+        this->behaviour_impl(beh, decl, gfn, call_conv<asCALL_GENERIC>);
 
         return *this;
     }
 
-    template <typename Fn>
-    ref_class& template_callback(Fn&& fn)
+    ref_class_t& behaviour(asEBehaviours beh, const char* decl, generic_function_t* gfn)
     {
-        int r = m_engine->RegisterObjectBehaviour(
-            m_name,
+        behaviour(beh, decl, gfn, call_conv<asCALL_GENERIC>);
+
+        return *this;
+    }
+
+    template <native_function Fn, asECallConvTypes CallConv>
+    requires(CallConv != asCALL_GENERIC)
+    ref_class_t& behaviour(asEBehaviours beh, const char* decl, Fn&& fn, call_conv_t<CallConv>) requires(!ForceGeneric)
+    {
+        this->behaviour_impl(beh, decl, std::forward<Fn>(fn), call_conv<CallConv>);
+
+        return *this;
+    }
+
+    static constexpr char decl_template_callback[] = "bool f(int&in,bool&out)";
+
+    ref_class_t& template_callback(generic_function_t* gfn) requires(Template)
+    {
+        this->behaviour_impl(
             asBEHAVE_TEMPLATE_CALLBACK,
-            "bool f(int&in,bool&out)",
-            asFunctionPtr(fn),
-            asCALL_CDECL
+            decl_template_callback,
+            gfn,
+            call_conv<asCALL_GENERIC>
         );
+
+        return *this;
+    }
+
+    template <native_function Fn>
+    ref_class_t& template_callback(Fn&& fn) requires(Template && !ForceGeneric)
+    {
+        this->behaviour_impl(
+            asBEHAVE_TEMPLATE_CALLBACK,
+            decl_template_callback,
+            fn,
+            call_conv<asCALL_CDECL>
+        );
+
+        return *this;
+    }
+
+    template <native_function auto Callback>
+    ref_class_t& template_callback(use_generic_t) requires(Template)
+    {
+        generic_function_t* gfn = +[](asIScriptGeneric* gen)
+        {
+            asITypeInfo* ti = *(asITypeInfo**)gen->GetAddressOfArg(0);
+            bool* no_gc = *(bool**)gen->GetAddressOfArg(1);
+
+            bool result = std::invoke(Callback, ti, std::ref(*no_gc));
+            gen->SetReturnByte(result);
+        };
+        template_callback(gfn);
+
+        return *this;
+    }
+
+    template <native_function auto Callback>
+    ref_class_t& template_callback() requires(Template)
+    {
+        int r = 0;
+        if constexpr(ForceGeneric)
+        {
+            template_callback<Callback>(use_generic);
+        }
+        else
+        {
+            template_callback(Callback);
+        }
         assert(r >= 0);
 
         return *this;
     }
 
-    template <typename Fn>
+    template <native_function Fn>
     requires(std::is_member_function_pointer_v<Fn>)
-    ref_class& method(const char* decl, Fn&& fn)
+    ref_class_t& method(const char* decl, Fn&& fn)
     {
-        method_impl(decl, std::forward<Fn>(fn), call_conv<asCALL_THISCALL>);
+        this->template method_impl(decl, std::forward<Fn>(fn), call_conv<asCALL_THISCALL>);
 
         return *this;
     }
 
     template <typename Fn, asECallConvTypes CallConv>
-    ref_class& method(const char* decl, Fn&& fn, call_conv_t<CallConv>)
+    ref_class_t& method(const char* decl, Fn&& fn, call_conv_t<CallConv>)
     {
-        method_impl(decl, std::forward<Fn>(fn), call_conv<CallConv>);
+        this->method_impl(decl, std::forward<Fn>(fn), call_conv<CallConv>);
 
         return *this;
     }
 
     template <typename R, typename... Args>
-    ref_class& method(const char* decl, R (*fn)(Args...))
+    ref_class_t& method(const char* decl, R (*fn)(Args...))
     {
-        method_wrapper_impl<Class>(decl, fn);
+        this->template method_auto_callconv<Class>(decl, fn);
 
         return *this;
     }
 
-    ref_class& default_factory()
-        requires newable<Class>
+    template <
+        native_function auto Function,
+        asECallConvTypes CallConv = detail::deduce_method_callconv<Function, Class>()>
+    ref_class_t& method(use_generic_t, const char* decl)
     {
-        assert(!(m_flags & asOBJ_TEMPLATE));
-        factory(
-            string_concat(m_name, "@ f()").c_str(),
-            +[]()
-            {
-                return new Class();
-            }
-        );
+        method(decl, generic_wrapper<Function, CallConv>(), call_conv<asCALL_GENERIC>);
 
         return *this;
     }
 
-    ref_class& template_default_factory()
-        requires newable<Class, asITypeInfo*>
+    template <
+        native_function auto Function,
+        asECallConvTypes CallConv = detail::deduce_method_callconv<Function, Class>()>
+    ref_class_t& method(const char* decl)
     {
-        assert(m_flags & asOBJ_TEMPLATE);
-        factory(
-            string_concat(m_name, "@ f(int&in)").c_str(),
-            +[](asITypeInfo* ti)
-            {
-                return new Class(ti);
-            }
-        );
+        if constexpr(ForceGeneric)
+        {
+            method<Function, CallConv>(use_generic, decl);
+        }
+        else
+        {
+            method(decl, Function, call_conv<CallConv>);
+        }
 
         return *this;
     }
 
     template <typename... Args>
-    ref_class& factory(const char* decl, Class* (*fn)(Args...))
+    ref_class_t& factory_function(const char* decl, Class* (*fn)(Args...)) requires(!ForceGeneric)
     {
         int r = m_engine->RegisterObjectBehaviour(
             m_name,
@@ -1422,7 +1560,7 @@ public:
         return *this;
     }
 
-    ref_class& factory(const char* decl, generic_function_t* gfn)
+    ref_class_t& factory_function(const char* decl, generic_function_t* gfn)
     {
         int r = m_engine->RegisterObjectBehaviour(
             m_name,
@@ -1435,11 +1573,95 @@ public:
         return *this;
     }
 
+    template <native_function auto Function>
+    ref_class_t& factory_function(use_generic_t, const char* decl)
+    {
+        behaviour(
+            asBEHAVE_FACTORY,
+            decl,
+            generic_wrapper<Function, asCALL_CDECL>()
+        );
+
+        return *this;
+    }
+
+    template <native_function auto Function>
+    ref_class_t& factory_function(const char* decl)
+    {
+        if constexpr(ForceGeneric)
+            factory_function<Function>(use_generic, decl);
+        else
+            factory_function(decl, Function);
+
+        return *this;
+    }
+
+    ref_class_t& default_factory(use_generic_t)
+    {
+        if constexpr(Template)
+        {
+            factory_function(
+                string_concat(m_name, "@ f(int&in)").c_str(),
+                +[](asIScriptGeneric* gen) -> void
+                {
+                    Class* ptr = new Class(*(asITypeInfo**)gen->GetAddressOfArg(0));
+                    gen->SetReturnAddress(ptr);
+                }
+            );
+        }
+        else
+        {
+            factory_function(
+                string_concat(m_name, "@ f()").c_str(),
+                +[](asIScriptGeneric* gen) -> void
+                {
+                    Class* ptr = new Class();
+                    gen->SetReturnAddress(ptr);
+                }
+            );
+        }
+
+        return *this;
+    }
+
+    ref_class_t& default_factory()
+    {
+        if constexpr(ForceGeneric)
+        {
+            default_factory(use_generic);
+        }
+        else
+        {
+            if constexpr(Template)
+            {
+                factory_function(
+                    string_concat(m_name, "@ f(int&in)").c_str(),
+                    +[](asITypeInfo* ti) -> Class*
+                    {
+                        return new Class(ti);
+                    }
+                );
+            }
+            else
+            {
+                factory_function(
+                    string_concat(m_name, "@ f()").c_str(),
+                    +[]() -> Class*
+                    {
+                        return new Class();
+                    }
+                );
+            }
+        }
+
+        return *this;
+    }
+
     template <typename... Args>
-    ref_class& factory(const char* decl)
+    ref_class_t& factory(const char* decl)
         requires newable<Class, Args...>
     {
-        factory(
+        factory_function(
             decl,
             +[](Args... args) -> Class*
             {
@@ -1451,56 +1673,83 @@ public:
     }
 
     template <typename... Args>
-    ref_class& list_factory(const char* decl, Class* (*fn)(Args...))
+    ref_class_t& list_factory_function(const char* decl, Class* (*fn)(Args...))
     {
-        int r = m_engine->RegisterObjectBehaviour(
-            m_name,
+        behaviour(
             asBEHAVE_LIST_FACTORY,
             decl,
-            asFunctionPtr(fn),
-            asCALL_CDECL
-        );
-        assert(r >= 0);
-
-        return *this;
-    }
-
-    ref_class& template_list_factory(std::string_view repeated_type_name)
-        requires newable<Class, asITypeInfo*, void*>
-    {
-        list_factory(
-            string_concat(m_name, "@ f(int&in,int&in) {repeat ", repeated_type_name, "}").c_str(),
-            +[](asITypeInfo* ti, void* list_buf)
-            {
-                return new Class(ti, list_buf);
-            }
+            fn,
+            call_conv<asCALL_CDECL>
         );
 
         return *this;
     }
 
-    ref_class& opPreInc()
+    ref_class_t& list_factory_function(const char* decl, generic_function_t* gfn)
     {
-        opPreInc_impl<Class>();
+        behaviour(
+            asBEHAVE_LIST_FACTORY,
+            decl,
+            gfn,
+            call_conv<asCALL_GENERIC>
+        );
 
         return *this;
     }
 
-    ref_class& opPreDec()
+    ref_class_t& list_factory(std::string_view repeated_type_name) requires(Template)
     {
-        opPreDec_impl<Class>();
+        std::string decl = string_concat(m_name, "@ f(int&in,int&in) {repeat ", repeated_type_name, "}");
+        if constexpr(ForceGeneric)
+        {
+            list_factory_function(
+                decl.c_str(),
+                +[](asIScriptGeneric* gen) -> void
+                {
+                    Class* ptr = new Class(
+                        /* ti = */ *(asITypeInfo**)gen->GetAddressOfArg(0),
+                        /* list_buf = */ gen->GetArgAddress(1)
+                    );
+                    gen->SetReturnAddress(ptr);
+                }
+            );
+        }
+        else
+        {
+            list_factory_function(
+                decl.c_str(),
+                +[](asITypeInfo* ti, void* list_buf) -> Class*
+                {
+                    return new Class(ti, list_buf);
+                }
+            );
+        }
 
         return *this;
     }
 
-    ref_class& opEquals()
+    ref_class_t& opPreInc()
     {
-        opEquals_impl<Class>();
+        this->template opPreInc_impl<Class>();
 
         return *this;
     }
 
-    ref_class& opAssign() requires std::is_copy_assignable_v<Class>
+    ref_class_t& opPreDec()
+    {
+        this->template opPreDec_impl<Class>();
+
+        return *this;
+    }
+
+    ref_class_t& opEquals()
+    {
+        this->template opEquals_impl<Class>();
+
+        return *this;
+    }
+
+    ref_class_t& opAssign() requires std::is_copy_assignable_v<Class>
     {
         method(
             string_concat(m_name, "& opAssign(const ", m_name, " &in)").c_str(),
@@ -1510,7 +1759,7 @@ public:
         return *this;
     }
 
-    ref_class& addref(void (Class::*fn)())
+    ref_class_t& addref(void (Class::*fn)())
     {
         behaviour(
             asBEHAVE_ADDREF,
@@ -1522,7 +1771,7 @@ public:
         return *this;
     }
 
-    ref_class& release(void (Class::*fn)())
+    ref_class_t& release(void (Class::*fn)())
     {
         behaviour(
             asBEHAVE_RELEASE,
@@ -1534,7 +1783,7 @@ public:
         return *this;
     }
 
-    ref_class& get_refcount(int (Class::*fn)() const)
+    ref_class_t& get_refcount(int (Class::*fn)() const)
     {
         behaviour(
             asBEHAVE_GETREFCOUNT,
@@ -1546,7 +1795,7 @@ public:
         return *this;
     }
 
-    ref_class& set_flag(void (Class::*fn)())
+    ref_class_t& set_flag(void (Class::*fn)())
     {
         behaviour(
             asBEHAVE_SETGCFLAG,
@@ -1558,7 +1807,7 @@ public:
         return *this;
     }
 
-    ref_class& get_flag(bool (Class::*fn)() const)
+    ref_class_t& get_flag(bool (Class::*fn)() const)
     {
         behaviour(
             asBEHAVE_GETGCFLAG,
@@ -1570,7 +1819,7 @@ public:
         return *this;
     }
 
-    ref_class& enum_refs(void (Class::*fn)(asIScriptEngine*))
+    ref_class_t& enum_refs(void (Class::*fn)(asIScriptEngine*))
     {
         behaviour(
             asBEHAVE_ENUMREFS,
@@ -1582,7 +1831,7 @@ public:
         return *this;
     }
 
-    ref_class& release_refs(void (Class::*fn)(asIScriptEngine*))
+    ref_class_t& release_refs(void (Class::*fn)(asIScriptEngine*))
     {
         behaviour(
             asBEHAVE_RELEASEREFS,
@@ -1594,17 +1843,17 @@ public:
         return *this;
     }
 
-    template <typename U>
-    ref_class& property(const char* decl, U Class::*mp)
+    template <typename T>
+    ref_class_t& property(const char* decl, T Class::*mp)
     {
-        property_impl<U, Class>(decl, mp);
+        this->template property_impl<T, Class>(decl, mp);
 
         return *this;
     }
 
-    ref_class& funcdef(std::string_view decl)
+    ref_class_t& funcdef(std::string_view decl)
     {
-        member_funcdef_impl(decl);
+        this->member_funcdef_impl(decl);
 
         return *this;
     }
@@ -1612,6 +1861,12 @@ public:
 private:
     asQWORD m_flags;
 };
+
+template <typename Class>
+using ref_class = ref_class_t<Class, false, false>;
+
+template <typename Class, bool ForceGeneric = false>
+using template_class = ref_class_t<Class, true, ForceGeneric>;
 
 class interface
 {

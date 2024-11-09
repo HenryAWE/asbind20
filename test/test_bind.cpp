@@ -260,7 +260,7 @@ TEST_F(asbind_test_suite, ref_class)
 
     asbind20::ref_class<my_ref_class>(engine, "my_ref_class")
         .default_factory()
-        .factory("my_ref_class@ f(int)", &my_ref_class::create_by_val)
+        .factory_function("my_ref_class@ f(int)", &my_ref_class::create_by_val)
         .addref(&my_ref_class::addref)
         .release(&my_ref_class::release)
         .method("uint use_count() const", &my_ref_class::use_count)
@@ -437,7 +437,7 @@ TEST_F(asbind_test_suite, generic)
 
     asIScriptEngine* engine = get_engine();
 
-    global(engine)
+    global_t<true>(engine)
         .function<&test_bind::my_div>("int my_div(int a, int b)");
 
     asIScriptModule* m = engine->GetModule("test_generic", asGM_ALWAYS_CREATE);
