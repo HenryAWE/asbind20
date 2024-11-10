@@ -42,23 +42,7 @@ void asbind_test_suite::SetUp()
 
     m_engine->SetEngineProperty(asEP_USE_CHARACTER_LITERALS, true);
 
-    using namespace asbind20;
-
-    ext::register_script_optional(m_engine);
-    ext::register_script_array(m_engine);
-    ext::register_std_string(m_engine, true);
-    ext::register_string_utils(m_engine);
-    ext::register_math_constants(m_engine);
-    ext::register_math_function(m_engine);
-    ext::register_script_assert(
-        m_engine,
-        &assert_callback,
-        false, // The exception will be set by GTEST_FAIL_AT() in the callback
-        &ext::string_factory::get()
-    );
-
-    global(m_engine)
-        .function("void print(const string &in msg)", test_print);
+    register_all();
 }
 
 void asbind_test_suite::TearDown()
@@ -108,5 +92,49 @@ void asbind_test_suite::run_file(
 
     ctx->Release();
     m->Discard();
+}
+
+void asbind_test_suite::register_all()
+{
+    using namespace asbind20;
+
+    ext::register_script_optional(m_engine);
+    ext::register_script_array(m_engine);
+    ext::register_std_string(m_engine, true);
+    ext::register_string_utils(m_engine);
+    ext::register_math_constants(m_engine);
+    ext::register_math_function(m_engine);
+    ext::register_script_assert(
+        m_engine,
+        &assert_callback,
+        false, // The exception will be set by GTEST_FAIL_AT() in the callback
+        &ext::string_factory::get()
+    );
+
+    global(m_engine)
+        .function<&test_print>("void print(const string &in msg)");
+}
+
+void asbind_test_suite_generic::register_all()
+{
+    using namespace asbind20;
+
+    asIScriptEngine* engine = get_engine();
+
+    ext::register_script_optional(engine);
+    ext::register_script_array(engine);
+    ext::register_std_string(engine, true, true);
+    ext::register_string_utils(engine);
+    ext::register_math_constants(engine);
+    ext::register_math_function(engine);
+    ext::register_script_assert(
+        engine,
+        &assert_callback,
+        false, // The exception will be set by GTEST_FAIL_AT() in the callback
+        &ext::string_factory::get()
+    );
+
+    global(engine)
+        .function<&test_print>(use_generic, "void print(const string &in msg)");
 }
 } // namespace asbind_test

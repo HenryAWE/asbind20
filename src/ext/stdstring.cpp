@@ -503,56 +503,56 @@ void string_for_each(asIScriptFunction* fn, const std::string& this_)
     }
 }
 
-void register_std_string(asIScriptEngine* engine, bool as_default)
+template <bool UseGeneric>
+static void register_string_impl(asIScriptEngine* engine)
 {
     using std::string;
-
     bool use_ch_api = engine->GetEngineProperty(asEP_USE_CHARACTER_LITERALS);
 
     asQWORD flags = asOBJ_APP_CLASS_CDAK;
     if(use_ch_api)
         flags |= asOBJ_APP_CLASS_MORE_CONSTRUCTORS;
 
-    value_class<string> c(engine, "string", flags);
+    value_class<string, UseGeneric> c(engine, "string", flags);
     c
         .common_behaviours()
         .opEquals()
         .opCmp()
         .opAdd()
-        .method("void append(const string &in)", &string_append)
+        .template method<&string_append>("void append(const string &in)")
         .opAddAssign()
-        .method("void prepend(const string&in)", &string_prepend)
-        .method("string substr(int pos, uint len=-1) const", &string_substr)
-        .method("bool get_empty() const property", &string::empty)
-        .method("bool opConv() const", &string::empty)
-        .method("uint get_size_bytes() const property", &string_size_bytes)
-        .method("uint get_size() const property", &string_size)
-        .method("void clear()", &string::clear)
-        .method("bool starts_with(const string&in str) const", &string_starts_with)
-        .method("bool ends_with(const string&in str) const", &string_ends_with)
-        .method("void remove_prefix(uint n)", &string_remove_prefix)
-        .method("void remove_suffix(uint n)", &string_remove_suffix)
-        .method("void replace(int idx, uint n, const string&in str, uint len=-1)", &string_replace)
-        .method("void insert(int idx, const string&in str, uint len=-1)", &string_insert)
-        .method("void erase(int idx, uint n=1)", &string_erase)
-        .method("uint64 get_hash() const property", &string_hash)
-        .method("bool contains(const string&in) const", &string_contains);
+        .template method<&string_prepend>("void prepend(const string&in)")
+        .template method<&string_substr>("string substr(int pos, uint len=-1) const")
+        .template method<&string::empty>("bool get_empty() const property")
+        .template method<&string::empty>("bool opConv() const")
+        .template method<&string_size_bytes>("uint get_size_bytes() const property")
+        .template method<&string_size>("uint get_size() const property")
+        .template method<&string::clear>("void clear()")
+        .template method<&string_starts_with>("bool starts_with(const string&in str) const")
+        .template method<&string_ends_with>("bool ends_with(const string&in str) const")
+        .template method<&string_remove_prefix>("void remove_prefix(uint n)")
+        .template method<&string_remove_suffix>("void remove_suffix(uint n)")
+        .template method<&string_replace>("void replace(int idx, uint n, const string&in str, uint len=-1)")
+        .template method<&string_insert>("void insert(int idx, const string&in str, uint len=-1)")
+        .template method<&string_erase>("void erase(int idx, uint n=1)")
+        .template method<&string_hash>("uint64 get_hash() const property")
+        .template method<&string_contains>("bool contains(const string&in) const");
 
     if(use_ch_api)
     {
         c
-            .constructor("void f(uint count, uint ch)", &string_constructor_ch, call_conv<asCALL_CDECL_OBJLAST>)
-            .method("void append(uint ch)", &string_append_ch)
-            .method("string opAdd(uint ch) const", &string_opAdd_ch)
-            .method("void prepend(uint ch)", &string_prepend_ch)
-            .method("string opAdd_r(uint ch) const", &string_opAdd_r_ch)
-            .method("bool starts_with(uint ch) const", &string_starts_with_ch)
-            .method("bool ends_with(uint ch) const", &string_ends_with_ch)
-            .method("uint get_opIndex(int idx) const property", &string_get_opIndex)
-            .method("void set_opIndex(int idx, uint ch) property", &string_set_opIndex)
-            .method("bool contains(uint ch) const", &string_contains_ch)
+            .template constructor_function<&string_constructor_ch, asCALL_CDECL_OBJLAST>("void f(uint count, uint ch)")
+            .template method<&string_append_ch>("void append(uint ch)")
+            .template method<&string_opAdd_ch>("string opAdd(uint ch) const")
+            .template method<&string_prepend_ch>("void prepend(uint ch)")
+            .template method<&string_opAdd_r_ch>("string opAdd_r(uint ch) const")
+            .template method<&string_starts_with_ch>("bool starts_with(uint ch) const")
+            .template method<&string_ends_with_ch>("bool ends_with(uint ch) const")
+            .template method<&string_get_opIndex>("uint get_opIndex(int idx) const property")
+            .template method<&string_set_opIndex>("void set_opIndex(int idx, uint ch) property")
+            .template method<&string_contains_ch>("bool contains(uint ch) const")
             .funcdef("void for_each_callback(uint ch)")
-            .method("void for_each(const for_each_callback&in fn)", &string_for_each);
+            .template method<&string_for_each>("void for_each(const for_each_callback&in fn)");
     }
 
 #ifdef ASBIND20_EXT_ARRAY
@@ -560,15 +560,23 @@ void register_std_string(asIScriptEngine* engine, bool as_default)
     if(engine->GetDefaultArrayTypeId() >= 0)
     {
         c
-            .method("array<string>@ split(bool skip_empty=true) const", &string_split_simple)
-            .method("array<string>@ split(const string&in delimiter, bool skip_empty=true) const", &string_split);
+            .template method<&string_split_simple>("array<string>@ split(bool skip_empty=true) const")
+            .template method<&string_split>("array<string>@ split(const string&in delimiter, bool skip_empty=true) const");
         if(use_ch_api)
         {
-            c.method("array<string>@ split(uint delimiter, bool skip_empty=true) const", &string_split_ch);
+            c.template method<&string_split_ch>("array<string>@ split(uint delimiter, bool skip_empty=true) const");
         }
     }
 
 #endif
+}
+
+void register_std_string(asIScriptEngine* engine, bool as_default, bool generic)
+{
+    if(generic)
+        register_string_impl<true>(engine);
+    else
+        register_string_impl<false>(engine);
 
     if(as_default)
     {

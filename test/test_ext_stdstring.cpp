@@ -40,6 +40,14 @@ TEST(unicode_support, const_string_iterator)
 
 TEST_F(asbind_test_suite, ext_stdstring)
 {
+    if(asbind20::has_max_portability())
+        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+
+    run_file("script/test_string.as");
+}
+
+TEST_F(asbind_test_suite_generic, ext_stdstring)
+{
     run_file("script/test_string.as");
 }
 

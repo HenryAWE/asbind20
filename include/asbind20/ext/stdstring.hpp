@@ -238,7 +238,7 @@ inline detail::const_string_iterator string_cend(std::string_view str)
     return detail::const_string_iterator(str, str.size());
 }
 
-void register_std_string(asIScriptEngine* engine, bool as_default = true);
+void register_std_string(asIScriptEngine* engine, bool as_default = true, bool generic = has_max_portability());
 
 void register_string_utils(asIScriptEngine* engine);
 } // namespace asbind20::ext

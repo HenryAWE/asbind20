@@ -51,7 +51,16 @@ public:
         const char* entry_decl = "void main()"
     );
 
+protected:
+    virtual void register_all();
+
 private:
     asIScriptEngine* m_engine = nullptr;
+};
+
+class asbind_test_suite_generic : public asbind_test_suite
+{
+protected:
+    void register_all() override;
 };
 } // namespace asbind_test

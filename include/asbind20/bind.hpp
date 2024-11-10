@@ -97,7 +97,7 @@ T get_generic_arg(asIScriptGeneric* gen, asUINT idx)
         else
             ptr = gen->GetAddressOfArg(idx);
         assert(ptr != nullptr);
-        return static_cast<T*>(ptr);
+        return (T)ptr;
     }
     else if constexpr(std::is_reference_v<T>)
     {
@@ -173,8 +173,8 @@ void set_generic_return(asIScriptGeneric* gen, std::type_identity_t<T>&& ret)
     }
     else if constexpr(std::is_class_v<T>)
     {
-        using pointer_t = T*;
-        set_generic_return<pointer_t>(gen, std::addressof(ret));
+        void* mem = gen->GetAddressOfReturnLocation();
+        new(mem) T(std::forward<T>(ret));
     }
     else if constexpr(std::is_same_v<std::remove_cv_t<T>, std::byte>)
     {
@@ -544,21 +544,28 @@ public:
     template <
         native_function auto Function,
         asECallConvTypes CallConv = asCALL_CDECL>
+    global_t& function(use_generic_t, const char* decl)
+    {
+        function(
+            decl,
+            generic_wrapper<Function, CallConv>()
+        );
+
+        return *this;
+    }
+
+    template <
+        native_function auto Function,
+        asECallConvTypes CallConv = asCALL_CDECL>
     global_t& function(const char* decl)
     {
-        if(has_max_portability())
+        if constexpr(ForceGeneric)
         {
-            function(
-                decl,
-                generic_wrapper<Function, CallConv>()
-            );
+            function<Function, CallConv>(use_generic, decl);
         }
         else
         {
-            function(
-                decl,
-                Function
-            );
+            function(decl, Function);
         }
 
         return *this;
@@ -733,6 +740,7 @@ protected:
         : my_base(engine), m_name(name) {}
 
     template <typename Fn>
+    requires(std::is_member_function_pointer_v<Fn>)
     void method_impl(const char* decl, Fn&& fn, call_conv_t<asCALL_THISCALL>)
     {
         int r = m_engine->RegisterObjectMethod(
@@ -777,6 +785,27 @@ protected:
             asCALL_GENERIC
         );
         assert(r >= 0);
+    }
+
+    template <native_function auto Method, asECallConvTypes CallConv>
+    void wrapped_method_impl(const char* decl)
+    {
+        if constexpr(ForceGeneric)
+        {
+            method_impl(
+                decl,
+                generic_wrapper<Method, CallConv>(),
+                call_conv<asCALL_GENERIC>
+            );
+        }
+        else
+        {
+            method_impl(
+                decl,
+                Method,
+                call_conv<CallConv>
+            );
+        }
     }
 
     void behaviour_impl(asEBehaviours beh, const char* decl, generic_function_t* gfn, call_conv_t<asCALL_GENERIC>)
@@ -874,21 +903,59 @@ protected:
         assert(r >= 0);
     }
 
+    std::string decl_opPreInc() const
+    {
+        return string_concat(m_name, "& opPreInc()");
+    }
+
     template <typename Class>
-    void opPreInc_impl()
+    void opPreInc_impl_generic()
     {
         method_impl(
-            string_concat(m_name, "& opPreInc()").c_str(),
+            decl_opPreInc().c_str(),
+            +[](asIScriptGeneric* gen) -> void
+            {
+                Class& this_ = *(Class*)gen->GetObject();
+                gen->SetReturnAddress(std::addressof(++this_));
+            },
+            call_conv<asCALL_GENERIC>
+        );
+    }
+
+    template <typename Class>
+    void opPreInc_impl_native()
+    {
+        method_impl(
+            decl_opPreInc().c_str(),
             static_cast<Class& (Class::*)()>(&Class::operator++),
             call_conv<asCALL_THISCALL>
         );
     }
 
+    std::string decl_opPreDec() const
+    {
+        return string_concat(m_name, "& opPreDec()");
+    }
+
     template <typename Class>
-    void opPreDec_impl()
+    void opPreDec_impl_generic()
     {
         method_impl(
-            string_concat(m_name, "& opPreDec()").c_str(),
+            decl_opPreDec().c_str(),
+            +[](asIScriptGeneric* gen) -> void
+            {
+                Class& this_ = *(Class*)gen->GetObject();
+                gen->SetReturnAddress(std::addressof(--this_));
+            },
+            call_conv<asCALL_GENERIC>
+        );
+    }
+
+    template <typename Class>
+    void opPreDec_impl_native()
+    {
+        method_impl(
+            decl_opPreDec().c_str(),
             static_cast<Class& (Class::*)()>(&Class::operator--),
             call_conv<asCALL_THISCALL>
         );
@@ -900,14 +967,43 @@ protected:
     }
 
     template <typename Class>
-    requires std::equality_comparable<Class>
-    void opEquals_impl()
-    {
-        constexpr bool has_member_op_eq = requires() {
-            static_cast<bool (Class::*)(const Class&) const>(&Class::operator==);
-        };
+    static constexpr bool has_member_op_eq = requires() {
+        static_cast<bool (Class::*)(const Class&) const>(&Class::operator==);
+    };
 
-        if constexpr(has_member_op_eq)
+    template <typename Class>
+    void opEquals_impl_generic()
+    {
+        if constexpr(has_member_op_eq<Class>)
+        {
+            method_impl(
+                opEquals_decl().c_str(),
+                generic_wrapper<static_cast<bool (Class::*)(const Class&) const>(&Class::operator==), asCALL_THISCALL>(),
+                call_conv<asCALL_GENERIC>
+            );
+        }
+        else
+        {
+            // Reverse parameter order for asCALL_CDECL_OBJLAST
+            auto wrapper = +[](asIScriptGeneric* gen) -> void
+            {
+                const Class& lhs = *(const Class*)gen->GetObject();
+                const Class& rhs = *(const Class*)gen->GetArgAddress(0);
+                bool result = static_cast<bool>(lhs == rhs);
+                gen->SetReturnByte(result);
+            };
+            method_impl(
+                opEquals_decl().c_str(),
+                wrapper,
+                call_conv<asCALL_GENERIC>
+            );
+        }
+    }
+
+    template <typename Class>
+    void opEquals_impl_native()
+    {
+        if constexpr(has_member_op_eq<Class>)
         {
             method_impl(
                 opEquals_decl().c_str(),
@@ -933,12 +1029,28 @@ protected:
 
     std::string opCmp_decl() const
     {
-        return string_concat("int opCmp(const ", m_name, " &in) const");
+        return string_concat("int opCmp(const ", m_name, "&in) const");
     }
 
     template <typename Class>
-    requires std::three_way_comparable<Class, std::weak_ordering>
-    void opCmp_impl()
+    void opCmp_impl_generic()
+    {
+        auto wrapper = +[](asIScriptGeneric* gen) -> void
+        {
+            const Class& lhs = *(const Class*)gen->GetObject();
+            const Class& rhs = *(const Class*)gen->GetArgAddress(0);
+            int result = translate_three_way(lhs <=> rhs);
+            gen->SetReturnDWord(result);
+        };
+        method_impl(
+            opCmp_decl().c_str(),
+            wrapper,
+            call_conv<asCALL_GENERIC>
+        );
+    }
+
+    template <typename Class>
+    void opCmp_impl_native()
     {
         // Reverse parameter order for asCALL_CDECL_OBJLAST
         auto wrapper_obj_last = +[](const Class& rhs, const Class& lhs)
@@ -959,13 +1071,43 @@ protected:
     }
 
     template <typename Class>
-    void opAdd_impl()
-    {
-        constexpr bool has_member_op_add = requires() {
-            static_cast<Class (Class::*)(const Class&) const>(&Class::operator+);
-        };
+    static constexpr bool has_member_op_add = requires() {
+        static_cast<Class (Class::*)(const Class&) const>(&Class::operator+);
+    };
 
-        if constexpr(has_member_op_add)
+    template <typename Class>
+    void opAdd_impl_generic()
+    {
+        if constexpr(has_member_op_add<Class>)
+        {
+            method_impl(
+                opAdd_decl().c_str(),
+                generic_wrapper<static_cast<Class (Class::*)(const Class&) const>(&Class::operator+), asCALL_THISCALL>(),
+                call_conv<asCALL_GENERIC>
+            );
+        }
+        else
+        {
+            generic_function_t* wrapper = +[](asIScriptGeneric* gen) -> void
+            {
+                const Class& lhs = *(const Class*)gen->GetObject();
+                const Class& rhs = *(const Class*)gen->GetArgAddress(0);
+
+                void* ret = gen->GetAddressOfReturnLocation();
+                new(ret) Class(lhs + rhs);
+            };
+            method_impl(
+                opAdd_decl().c_str(),
+                wrapper,
+                call_conv<asCALL_GENERIC>
+            );
+        }
+    }
+
+    template <typename Class>
+    void opAdd_impl_native()
+    {
+        if constexpr(has_member_op_add<Class>)
         {
             method_impl(
                 opAdd_decl().c_str(),
@@ -1044,20 +1186,6 @@ class value_class final : public class_register_helper_base<ForceGeneric>
     using my_base::m_engine;
     using my_base::m_name;
 
-    template <typename... Args>
-    void constructor_impl(const char* decl)
-    {
-        this->behaviour_impl(
-            asBEHAVE_CONSTRUCT,
-            decl,
-            +[](Args... args, void* mem)
-            {
-                new(mem) Class(std::forward<Args>(args)...);
-            },
-            call_conv<asCALL_CDECL_OBJLAST>
-        );
-    }
-
 public:
     using class_type = Class;
 
@@ -1106,8 +1234,47 @@ public:
         return *this;
     }
 
+    value_class& common_behaviours(use_generic_t)
+    {
+        if constexpr(std::is_default_constructible_v<Class>)
+        {
+            if(m_flags & asOBJ_APP_CLASS_CONSTRUCTOR)
+                default_constructor(use_generic);
+        }
+
+        if constexpr(std::is_copy_constructible_v<Class>)
+        {
+            if(m_flags & asOBJ_APP_CLASS_COPY_CONSTRUCTOR)
+                copy_constructor(use_generic);
+        }
+
+        if constexpr(std::is_copy_assignable_v<Class>)
+        {
+            if(m_flags & asOBJ_APP_CLASS_ASSIGNMENT)
+                opAssign(use_generic);
+        }
+
+        if(m_flags & asOBJ_APP_CLASS_DESTRUCTOR)
+            destructor(use_generic);
+
+        return *this;
+    }
+
+    value_class& constructor_function(const char* decl, generic_function_t* gfn, call_conv_t<asCALL_GENERIC>)
+    {
+        this->behaviour_impl(
+            asBEHAVE_CONSTRUCT,
+            decl,
+            gfn,
+            call_conv<asCALL_GENERIC>
+        );
+
+        return *this;
+    }
+
     template <typename R, typename... Args, asECallConvTypes CallConv>
-    value_class& constructor(const char* decl, R (*fn)(Args...), call_conv_t<CallConv>)
+    requires(CallConv != asCALL_GENERIC)
+    value_class& constructor_function(const char* decl, R (*fn)(Args...), call_conv_t<CallConv>) requires(!ForceGeneric)
     {
         behaviour(
             asBEHAVE_CONSTRUCT,
@@ -1115,6 +1282,123 @@ public:
             fn,
             call_conv<CallConv>
         );
+
+        return *this;
+    }
+
+    template <native_function auto Function, asECallConvTypes CallConv>
+    requires(CallConv == asCALL_CDECL_OBJFIRST || CallConv == asCALL_CDECL_OBJLAST)
+    value_class& constructor_function(use_generic_t, const char* decl)
+    {
+        if constexpr(CallConv == asCALL_CDECL_OBJFIRST)
+        {
+            constructor_function(
+                decl,
+                +[](asIScriptGeneric* gen) -> void
+                {
+                    using traits = function_traits<decltype(Function)>;
+                    using args_tuple = typename traits::args_tuple;
+                    [gen]<std::size_t... Is>(std::index_sequence<Is...>)
+                    {
+                        Class* mem = (Class*)gen->GetObject();
+                        std::invoke(
+                            Function,
+                            mem,
+                            get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(gen, (asUINT)Is + 1)...
+                        );
+                    }(std::make_index_sequence<traits::arg_count_v - 1>());
+                },
+                call_conv<asCALL_GENERIC>
+            );
+        }
+        else // asCALL_CDECL_OBJLAST
+        {
+            constructor_function(
+                decl,
+                +[](asIScriptGeneric* gen) -> void
+                {
+                    using traits = function_traits<decltype(Function)>;
+                    using args_tuple = typename traits::args_tuple;
+                    [gen]<std::size_t... Is>(std::index_sequence<Is...>)
+                    {
+                        Class* mem = (Class*)gen->GetObject();
+                        std::invoke(
+                            Function,
+                            get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (asUINT)Is)...,
+                            mem
+                        );
+                    }(std::make_index_sequence<traits::arg_count_v - 1>());
+                },
+                call_conv<asCALL_GENERIC>
+            );
+        }
+
+        return *this;
+    }
+
+    template <
+        native_function auto Function,
+        asECallConvTypes CallConv = detail::deduce_method_callconv<Function, Class>()>
+    value_class& constructor_function(const char* decl)
+    {
+        if constexpr(ForceGeneric)
+        {
+            constructor_function<Function, CallConv>(use_generic, decl);
+        }
+        else
+        {
+            constructor_function(decl, Function, call_conv<CallConv>);
+        }
+
+        return *this;
+    }
+
+private:
+    template <typename... Args>
+    void constructor_impl_generic(const char* decl)
+    {
+        constructor_function(
+            decl,
+            +[](asIScriptGeneric* gen) -> void
+            {
+                using args_tuple = std::tuple<Args...>;
+                [gen]<std::size_t... Is>(std::index_sequence<Is...>)
+                {
+                    void* mem = gen->GetObject();
+                    new(mem) Class(get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (asUINT)Is)...);
+                }(std::make_index_sequence<sizeof...(Args)>());
+            },
+            call_conv<asCALL_GENERIC>
+        );
+    }
+
+    template <typename... Args>
+    void constructor_impl_native(const char* decl)
+    {
+        constructor_function(
+            decl,
+            +[](Args... args, void* mem)
+            {
+                new(mem) Class(std::forward<Args>(args)...);
+            },
+            call_conv<asCALL_CDECL_OBJLAST>
+        );
+    }
+
+public:
+    template <typename... Args>
+    value_class& constructor(use_generic_t, const char* decl) requires(std::is_constructible_v<Class, Args...>)
+    {
+        if constexpr(sizeof...(Args) != 0)
+        {
+            using first_arg_t = std::tuple_element_t<0, std::tuple<Args...>>;
+            if constexpr(!(std::is_same_v<first_arg_t, const Class&> || std::is_same_v<first_arg_t, Class&>))
+            {
+                assert(m_flags & asOBJ_APP_CLASS_MORE_CONSTRUCTORS);
+            }
+        }
+
+        constructor_impl_generic<Args...>(decl);
 
         return *this;
     }
@@ -1131,12 +1415,25 @@ public:
             }
         }
 
-        constructor_impl<Args...>(decl);
+        if constexpr(ForceGeneric)
+            constructor<Args...>(use_generic, decl);
+        else
+            constructor_impl_native<Args...>(decl);
 
         return *this;
     }
 
-    value_class& default_constructor() requires(std::is_default_constructible_v<Class>)
+    value_class& default_constructor(use_generic_t)
+    {
+        if(m_flags & asOBJ_POD)
+            return *this;
+
+        constructor<>(use_generic, "void f()");
+
+        return *this;
+    }
+
+    value_class& default_constructor()
     {
         if(m_flags & asOBJ_POD)
             return *this;
@@ -1146,7 +1443,30 @@ public:
         return *this;
     }
 
-    value_class& copy_constructor() requires(std::is_copy_constructible_v<Class>)
+    value_class& copy_constructor(use_generic_t)
+    {
+        if(m_flags & asOBJ_POD)
+            return *this;
+
+        if constexpr(std::is_constructible_v<Class, const Class&>)
+        {
+            constructor<const Class&>(
+                use_generic,
+                string_concat("void f(const ", m_name, " &in)").c_str()
+            );
+        }
+        else
+        {
+            constructor<Class&>(
+                use_generic,
+                string_concat("void f(", m_name, " &in)").c_str()
+            );
+        }
+
+        return *this;
+    }
+
+    value_class& copy_constructor()
     {
         if(m_flags & asOBJ_POD)
             return *this;
@@ -1167,7 +1487,7 @@ public:
         return *this;
     }
 
-    value_class& destructor()
+    value_class& destructor(use_generic_t)
     {
         if(m_flags & asOBJ_POD)
             return *this;
@@ -1175,26 +1495,71 @@ public:
         behaviour(
             asBEHAVE_DESTRUCT,
             "void f()",
-            +[](void* ptr)
+            +[](asIScriptGeneric* gen) -> void
             {
-                reinterpret_cast<Class*>(ptr)->~Class();
+                reinterpret_cast<Class*>(gen->GetObject())->~Class();
             },
-            call_conv<asCALL_CDECL_OBJLAST>
+            call_conv<asCALL_GENERIC>
         );
+
+        return *this;
+    }
+
+    value_class& destructor()
+    {
+        if constexpr(ForceGeneric)
+        {
+            destructor(use_generic);
+        }
+        else
+        {
+            if(m_flags & asOBJ_POD)
+                return *this;
+
+            behaviour(
+                asBEHAVE_DESTRUCT,
+                "void f()",
+                +[](Class* ptr) -> void
+                {
+                    ptr->~Class();
+                },
+                call_conv<asCALL_CDECL_OBJLAST>
+            );
+        }
+
+        return *this;
+    }
+
+    value_class& opPreInc(use_generic_t)
+    {
+        this->template opPreInc_impl_generic<Class>();
 
         return *this;
     }
 
     value_class& opPreInc()
     {
-        this->template opPreInc_impl<Class>();
+        if constexpr(ForceGeneric)
+            opPreInc(use_generic);
+        else
+            this->template opPreInc_impl_native<Class>();
+
+        return *this;
+    }
+
+    value_class& opPreDec(use_generic_t)
+    {
+        this->template opPreDec_impl_generic<Class>();
 
         return *this;
     }
 
     value_class& opPreDec()
     {
-        this->template opPreDec_impl<Class>();
+        if constexpr(ForceGeneric)
+            opPreDec(use_generic);
+        else
+            this->template opPreDec_impl_native<Class>();
 
         return *this;
     }
@@ -1203,7 +1568,7 @@ public:
     // is NOT supported on all common platforms, e.g. x64 Linux.
     // Use generic calling convention as fallback.
 
-    value_class& opPostInc()
+    value_class& opPostInc(use_generic_t)
     {
         auto wrapper = +[](asIScriptGeneric* gen) -> void
         {
@@ -1219,7 +1584,14 @@ public:
         return *this;
     }
 
-    value_class& opPostDec()
+    value_class& opPostInc()
+    {
+        opPostInc(use_generic);
+
+        return *this;
+    }
+
+    value_class& opPostDec(use_generic_t)
     {
         auto wrapper = +[](asIScriptGeneric* gen) -> void
         {
@@ -1235,6 +1607,34 @@ public:
         return *this;
     }
 
+    value_class& opPostDec()
+    {
+        opPostDec(use_generic);
+
+        return *this;
+    }
+
+    std::string decl_opAssign() const
+    {
+        return string_concat(m_name, "& opAssign(const ", m_name, " &in)");
+    }
+
+    value_class& opAssign(use_generic_t) requires(std::is_copy_assignable_v<Class>)
+    {
+        if(use_pod_v)
+            return *this;
+        if(m_flags & asOBJ_POD)
+            return *this;
+
+        this->method_impl(
+            decl_opAssign().c_str(),
+            generic_wrapper<static_cast<Class& (Class::*)(const Class&)>(&Class::operator=), asCALL_THISCALL>(),
+            call_conv<asCALL_GENERIC>
+        );
+
+        return *this;
+    }
+
     value_class& opAssign() requires(std::is_copy_assignable_v<Class>)
     {
         if(use_pod_v)
@@ -1242,9 +1642,33 @@ public:
         if(m_flags & asOBJ_POD)
             return *this;
 
-        method(
-            string_concat(m_name, "& opAssign(const ", m_name, " &in)").c_str(),
-            static_cast<Class& (Class::*)(const Class&)>(&Class::operator=)
+        if constexpr(ForceGeneric)
+        {
+            opAssign(use_generic);
+        }
+        else
+        {
+            this->method_impl(
+                decl_opAssign().c_str(),
+                static_cast<Class& (Class::*)(const Class&)>(&Class::operator=),
+                call_conv<asCALL_THISCALL>
+            );
+        }
+
+        return *this;
+    }
+
+    std::string decl_opAddAssign() const
+    {
+        return string_concat(m_name, "& opAddAssign(const ", m_name, " &in)");
+    }
+
+    value_class& opAddAssign(use_generic_t)
+    {
+        this->method_impl(
+            decl_opAddAssign().c_str(),
+            generic_wrapper<static_cast<Class& (Class::*)(const Class&)>(&Class::operator+=), asCALL_THISCALL>(),
+            call_conv<asCALL_GENERIC>
         );
 
         return *this;
@@ -1252,38 +1676,76 @@ public:
 
     value_class& opAddAssign()
     {
-        method(
-            string_concat(m_name, "& opAddAssign(const ", m_name, " &in)").c_str(),
-            static_cast<Class& (Class::*)(const Class&)>(&Class::operator+=)
-        );
+        if constexpr(ForceGeneric)
+        {
+            opAddAssign(use_generic);
+        }
+        else
+        {
+            this->method_impl(
+                decl_opAddAssign().c_str(),
+                static_cast<Class& (Class::*)(const Class&)>(&Class::operator+=),
+                call_conv<asCALL_THISCALL>
+            );
+        }
+
+        return *this;
+    }
+
+    value_class& opEquals(use_generic_t)
+    {
+        this->template opEquals_impl_generic<Class>();
 
         return *this;
     }
 
     value_class& opEquals()
     {
-        this->template opEquals_impl<Class>();
+        if constexpr(ForceGeneric)
+            opEquals(use_generic);
+        else
+            this->template opEquals_impl_native<Class>();
+
+        return *this;
+    }
+
+    value_class& opCmp(use_generic_t)
+    {
+        this->template opCmp_impl_generic<Class>();
 
         return *this;
     }
 
     value_class& opCmp()
     {
-        this->template opCmp_impl<Class>();
+        if constexpr(ForceGeneric)
+            opCmp(use_generic);
+        else
+            this->template opCmp_impl_native<Class>();
+
+        return *this;
+    }
+
+    value_class& opAdd(use_generic_t)
+    {
+        this->template opAdd_impl_generic<Class>();
 
         return *this;
     }
 
     value_class& opAdd()
     {
-        this->template opAdd_impl<Class>();
+        if constexpr(ForceGeneric)
+            opAdd(use_generic);
+        else
+            this->template opAdd_impl_native<Class>();
 
         return *this;
     }
 
     template <typename Fn>
     requires(std::is_member_function_pointer_v<Fn>)
-    value_class& behaviour(asEBehaviours beh, const char* decl, Fn&& fn, call_conv_t<asCALL_THISCALL>)
+    value_class& behaviour(asEBehaviours beh, const char* decl, Fn&& fn, call_conv_t<asCALL_THISCALL>) requires(!ForceGeneric)
     {
         behaviour_impl(beh, decl, std::forward<Fn>(fn), call_conv<asCALL_THISCALL>);
 
@@ -1291,16 +1753,24 @@ public:
     }
 
     template <typename R, typename... Args, asECallConvTypes CallConv>
-    value_class& behaviour(asEBehaviours beh, const char* decl, R (*fn)(Args...), call_conv_t<CallConv>)
+    requires(CallConv != asCALL_GENERIC)
+    value_class& behaviour(asEBehaviours beh, const char* decl, R (*fn)(Args...), call_conv_t<CallConv>) requires(!ForceGeneric)
     {
         this->behaviour_impl(beh, decl, fn, call_conv<CallConv>);
 
         return *this;
     }
 
+    value_class& behaviour(asEBehaviours beh, const char* decl, generic_function_t* gfn, call_conv_t<asCALL_GENERIC>)
+    {
+        this->behaviour_impl(beh, decl, gfn, call_conv<asCALL_GENERIC>);
+
+        return *this;
+    }
+
     template <native_function Fn>
     requires(std::is_member_function_pointer_v<Fn>)
-    value_class& method(const char* decl, Fn&& fn)
+    value_class& method(const char* decl, Fn&& fn) requires(!ForceGeneric)
     {
         this->method_impl(decl, std::forward<Fn>(fn), call_conv<asCALL_THISCALL>);
 
@@ -1309,7 +1779,7 @@ public:
 
     template <native_function Fn, asECallConvTypes CallConv>
     requires(CallConv != asCALL_GENERIC)
-    value_class& method(const char* decl, Fn&& fn, call_conv_t<CallConv>)
+    value_class& method(const char* decl, Fn&& fn, call_conv_t<CallConv>) requires(!ForceGeneric)
     {
         this->method_impl(decl, std::forward<Fn>(fn), call_conv<CallConv>);
 
@@ -1323,35 +1793,42 @@ public:
         return *this;
     }
 
-    template <
-        native_function auto Function,
-        asECallConvTypes CallConv = detail::deduce_method_callconv<Function, Class>()>
-    value_class& method(use_generic_t, const char* decl)
+    value_class& method(const char* decl, generic_function_t* gfn, call_conv_t<asCALL_GENERIC>)
     {
-        method(decl, generic_wrapper<Function, CallConv>(), call_conv<asCALL_GENERIC>);
+        this->method_impl(decl, gfn, call_conv<asCALL_GENERIC>);
 
         return *this;
     }
 
     template <
-        native_function auto Function,
-        asECallConvTypes CallConv = detail::deduce_method_callconv<Function, Class>()>
+        native_function auto Method,
+        asECallConvTypes CallConv = detail::deduce_method_callconv<Method, Class>()>
+    value_class& method(use_generic_t, const char* decl)
+    {
+        method(decl, generic_wrapper<Method, CallConv>(), call_conv<asCALL_GENERIC>);
+
+        return *this;
+    }
+
+    template <
+        native_function auto Method,
+        asECallConvTypes CallConv = detail::deduce_method_callconv<Method, Class>()>
     value_class& method(const char* decl)
     {
         if constexpr(ForceGeneric)
         {
-            method<Function, CallConv>(use_generic, decl);
+            method<Method, CallConv>(use_generic, decl);
         }
         else
         {
-            method(decl, Function, call_conv<CallConv>);
+            method(decl, Method, call_conv<CallConv>);
         }
 
         return *this;
     }
 
     template <typename R, typename... Args>
-    value_class& method(const char* decl, R (*fn)(Args...))
+    value_class& method(const char* decl, R (*fn)(Args...)) requires(!ForceGeneric)
     {
         this->template method_auto_callconv<Class>(decl, fn);
 
@@ -1742,9 +2219,19 @@ public:
         return *this;
     }
 
+    ref_class_t& opEquals(use_generic_t)
+    {
+        this->template opEquals_impl_generic<Class>();
+
+        return *this;
+    }
+
     ref_class_t& opEquals()
     {
-        this->template opEquals_impl<Class>();
+        if constexpr(ForceGeneric)
+            opEquals(use_generic);
+        else
+            this->template opEquals_impl_native<Class>();
 
         return *this;
     }
@@ -1771,7 +2258,7 @@ public:
         return *this;
     }
 
-    ref_class_t& release(void (Class::*fn)())
+    ref_class_t& release(void (Class::*fn)()) requires(!ForceGeneric)
     {
         behaviour(
             asBEHAVE_RELEASE,
@@ -1779,6 +2266,37 @@ public:
             fn,
             call_conv<asCALL_THISCALL>
         );
+
+        return *this;
+    }
+
+    ref_class_t& release(generic_function_t* gfn)
+    {
+        behaviour(
+            asBEHAVE_RELEASE,
+            "void f()",
+            gfn,
+            call_conv<asCALL_GENERIC>
+        );
+
+        return *this;
+    }
+
+    template <native_function auto Release>
+    ref_class_t& release(use_generic_t)
+    {
+        release(generic_wrapper<Release, asCALL_CDECL>());
+
+        return *this;
+    }
+
+    template <native_function auto Release>
+    ref_class_t& release()
+    {
+        if constexpr(ForceGeneric)
+            release<Release>(use_generic);
+        else
+            release(Release);
 
         return *this;
     }
