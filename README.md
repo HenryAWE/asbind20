@@ -78,10 +78,10 @@ asbind20::value_class<my_value_class>(
     .opCmp()
     // Ordinary member functions
     .method("int get_val() const", &my_value_class::get_val)
-    // Automatically deducing calling convention
-    .method("void add(int val)", &add_obj_last)
-    .method("void mul(int val)", &mul_obj_first)
-    .method("void set_val(int)", &set_val_gen)
+    // Automatically deducing calling conventions
+    .method("void add(int val)", &add_obj_last)  // asCALL_CDECL_OBJLAST
+    .method("void mul(int val)", &mul_obj_first) // asCALL_CDECL_OBFIRST
+    .method("void set_val(int)", &set_val_gen)   // asCALL_GENERIC
     // Convert member pointer to property
     .property("int value", &my_value_class::value);
 ```
@@ -161,6 +161,50 @@ assert(val_ref.value() == 182375);
 val = asbind20::script_invoke<int>(ctx, my_class, get_val);
 assert(val.value() == 182376);
 ```
+
+# Advanced Features
+The asbind20 library also provides tools for advanced users. You can find detailed examples in extensions and unit tests.
+
+## 1. Automatically Generating Generic Wrapper at Compile-Time
+Generating generic wrapper by macro-free utilities.
+```c++
+// generic_wrapper<MyFunction, OriginalCallConv>();
+asGENFUNC_t f1 = asbind20::generic_wrapper<&global_func, asCALL_CDECL>();
+asGENFUNC_T f2 = asbind20::generic_wrapper<&my_class::method, asCALL_THISCALL>();
+
+// Use `use_generic` tag to force generated proxies to use asCALL_GENERIC
+asbind20::value_class<my_value_class>(...)
+    .constructor<int>(asbind20::use_generic, "void f(int)")
+    .opEquals(asbind20::use_generic);
+```
+
+## 2. Dispatching Function Calls Based on Type Ids
+This feature is similar to how `std::visit` and `std::variant` works. It can be used for developing templated container for AngelScript.
+
+```c++
+asbind20::visit_primitive_type(
+    [](auto val)
+    {
+        using type = decltype(val);
+
+        if constexpr(std::is_same_v<type, int>)
+        {
+            // play with int
+        }
+        else if constexpr(std::is_same_v<type, float>)
+        {
+            // play with float
+        }
+        else
+        {
+            // ...
+        }
+    },
+    as_type_id, // asTYPEID_BOOL, asTYPEID_INT32, etc.
+    ptr_to_val // void* to value
+);
+```
+You can find example usage in `src/ext/array.cpp`.
 
 # Supported Platforms
 - CMake >= 3.20

@@ -135,16 +135,20 @@ using namespace asbind_test;
 
 TEST_F(asbind_test_suite, value_class)
 {
+    if(asbind20::has_max_portability())
+        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+
     asIScriptEngine* engine = get_engine();
 
     using namespace asbind20;
     using test_bind::my_value_class;
 
-    value_class<my_value_class>(
+    value_class<my_value_class> c(
         engine,
         "my_value_class",
         asOBJ_APP_CLASS_CDAK | asOBJ_APP_CLASS_ALLINTS | asOBJ_APP_CLASS_MORE_CONSTRUCTORS
-    )
+    );
+    c
         .common_behaviours()
         .constructor<int>("void f(int val)")
         .opEquals()
@@ -160,8 +164,12 @@ TEST_F(asbind_test_suite, value_class)
         .method("void mul(int val)", &test_bind::mul_obj_first)
         .method("void add2(int val)", &test_bind::add_obj_last_ref)
         .method("void mul2(int val)", &test_bind::mul_obj_first_ref)
-        .method<&test_bind::add_obj_last>("void add3(int val)")
-        .method("void mul3(int val)", generic_wrapper<&test_bind::mul_obj_first_ref, asCALL_CDECL_OBJFIRST>())
+        .method<&test_bind::add_obj_last>("void add3(int val)");
+
+    asGENFUNC_t mul3 = generic_wrapper<&test_bind::mul_obj_first_ref, asCALL_CDECL_OBJFIRST>();
+    c
+        .method("void mul3(int val)", mul3);
+    c
         .property("int value", &my_value_class::value);
 
     asIScriptModule* m = engine->GetModule("test_value_class", asGM_ALWAYS_CREATE);
