@@ -64,6 +64,22 @@ static bool script_close_to_simple(float a, float b)
     return close_to<T>(a, b, std::numeric_limits<T>::epsilon());
 }
 
+// Using following wrappers to avoid ICE on MSVC
+static bool script_isfinite(float x)
+{
+    return std::isfinite(x);
+}
+
+static bool script_isnan(float x)
+{
+    return std::isnan(x);
+}
+
+static bool script_isinf(float x)
+{
+    return std::isinf(x);
+}
+
 template <bool UseGeneric>
 void register_math_function_impl(asIScriptEngine* engine)
 {
@@ -81,43 +97,43 @@ void register_math_function_impl(asIScriptEngine* engine)
 #define ASBIND20_EXT_MATH_BINARY_FUNC(name, float_t) \
     template function<static_cast<float_t (*)(float_t, float_t)>(&(std::name))>(#float_t " " #name "(" #float_t " x, " #float_t " y)")
 
-#define ASBIND20_EXT_MATH_REGISTER_FUNCS(register_class, float_t)                                                        \
-    register_class                                                                                                       \
-        .template function<&script_close_to_simple<float_t>>("bool close_to(" #float_t " a, " #float_t " b)")            \
-        .template function<&close_to<float_t>>("bool close_to(" #float_t " a, " #float_t " b, " #float_t " epsilon)")    \
-        .template function<&script_math_min<float_t>>("float min(" #float_t " a, " #float_t " b)")                       \
-        .template function<&script_math_max<float_t>>("float max(" #float_t " a, " #float_t " b)")                       \
-        .template function<&script_math_clamp<float_t>>("float clamp(" #float_t " val, " #float_t " a, " #float_t " b)") \
-        .template function<&script_math_lerp<float_t>>("float lerp(" #float_t " a, " #float_t " b, " #float_t " t)")     \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(ceil, float_t)                                                                     \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(floor, float_t)                                                                    \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(round, float_t)                                                                    \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(trunc, float_t)                                                                    \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(abs, float_t)                                                                      \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(sqrt, float_t)                                                                     \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(cbrt, float_t)                                                                     \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(exp, float_t)                                                                      \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(exp2, float_t)                                                                     \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(log, float_t)                                                                      \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(log2, float_t)                                                                     \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(log10, float_t)                                                                    \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(cos, float_t)                                                                      \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(sin, float_t)                                                                      \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(tan, float_t)                                                                      \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(acos, float_t)                                                                     \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(asin, float_t)                                                                     \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(atan, float_t)                                                                     \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(cosh, float_t)                                                                     \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(sinh, float_t)                                                                     \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(tanh, float_t)                                                                     \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(acosh, float_t)                                                                    \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(asinh, float_t)                                                                    \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(atanh, float_t)                                                                    \
-        .template function<static_cast<bool (*)(float_t)>(&std::isfinite)>("bool isfinite(" #float_t " x)")              \
-        .template function<static_cast<bool (*)(float_t)>(&std::isnan)>("bool isnan(" #float_t " x)")                    \
-        .template function<static_cast<bool (*)(float_t)>(&std::isinf)>("bool isinf(" #float_t " x)")                    \
-        .ASBIND20_EXT_MATH_BINARY_FUNC(pow, float_t)                                                                     \
-        .ASBIND20_EXT_MATH_BINARY_FUNC(atan2, float_t)                                                                   \
+#define ASBIND20_EXT_MATH_REGISTER_FUNCS(register_class, float_t)                                                            \
+    register_class                                                                                                           \
+        .template function<&script_close_to_simple<float_t>>("bool close_to(" #float_t " a, " #float_t " b)")                \
+        .template function<&close_to<float_t>>("bool close_to(" #float_t " a, " #float_t " b, " #float_t " epsilon)")        \
+        .template function<&script_math_min<float_t>>(#float_t " min(" #float_t " a, " #float_t " b)")                       \
+        .template function<&script_math_max<float_t>>(#float_t " max(" #float_t " a, " #float_t " b)")                       \
+        .template function<&script_math_clamp<float_t>>(#float_t " clamp(" #float_t " val, " #float_t " a, " #float_t " b)") \
+        .template function<&script_math_lerp<float_t>>(#float_t " lerp(" #float_t " a, " #float_t " b, " #float_t " t)")     \
+        .ASBIND20_EXT_MATH_UNARY_FUNC(ceil, float_t)                                                                         \
+        .ASBIND20_EXT_MATH_UNARY_FUNC(floor, float_t)                                                                        \
+        .ASBIND20_EXT_MATH_UNARY_FUNC(round, float_t)                                                                        \
+        .ASBIND20_EXT_MATH_UNARY_FUNC(trunc, float_t)                                                                        \
+        .ASBIND20_EXT_MATH_UNARY_FUNC(abs, float_t)                                                                          \
+        .ASBIND20_EXT_MATH_UNARY_FUNC(sqrt, float_t)                                                                         \
+        .ASBIND20_EXT_MATH_UNARY_FUNC(cbrt, float_t)                                                                         \
+        .ASBIND20_EXT_MATH_UNARY_FUNC(exp, float_t)                                                                          \
+        .ASBIND20_EXT_MATH_UNARY_FUNC(exp2, float_t)                                                                         \
+        .ASBIND20_EXT_MATH_UNARY_FUNC(log, float_t)                                                                          \
+        .ASBIND20_EXT_MATH_UNARY_FUNC(log2, float_t)                                                                         \
+        .ASBIND20_EXT_MATH_UNARY_FUNC(log10, float_t)                                                                        \
+        .ASBIND20_EXT_MATH_UNARY_FUNC(cos, float_t)                                                                          \
+        .ASBIND20_EXT_MATH_UNARY_FUNC(sin, float_t)                                                                          \
+        .ASBIND20_EXT_MATH_UNARY_FUNC(tan, float_t)                                                                          \
+        .ASBIND20_EXT_MATH_UNARY_FUNC(acos, float_t)                                                                         \
+        .ASBIND20_EXT_MATH_UNARY_FUNC(asin, float_t)                                                                         \
+        .ASBIND20_EXT_MATH_UNARY_FUNC(atan, float_t)                                                                         \
+        .ASBIND20_EXT_MATH_UNARY_FUNC(cosh, float_t)                                                                         \
+        .ASBIND20_EXT_MATH_UNARY_FUNC(sinh, float_t)                                                                         \
+        .ASBIND20_EXT_MATH_UNARY_FUNC(tanh, float_t)                                                                         \
+        .ASBIND20_EXT_MATH_UNARY_FUNC(acosh, float_t)                                                                        \
+        .ASBIND20_EXT_MATH_UNARY_FUNC(asinh, float_t)                                                                        \
+        .ASBIND20_EXT_MATH_UNARY_FUNC(atanh, float_t)                                                                        \
+        .template function<&script_isfinite>("bool isfinite(" #float_t " x)")                                                         \
+        .template function<&script_isnan>("bool isnan(" #float_t " x)")                                                               \
+        .template function<&script_isinf>("bool isinf(" #float_t " x)")                                                               \
+        .ASBIND20_EXT_MATH_BINARY_FUNC(pow, float_t)                                                                         \
+        .ASBIND20_EXT_MATH_BINARY_FUNC(atan2, float_t)                                                                       \
         .ASBIND20_EXT_MATH_BINARY_FUNC(hypot, float_t)
 
     ASBIND20_EXT_MATH_REGISTER_FUNCS(g, float);

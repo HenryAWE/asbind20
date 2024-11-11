@@ -574,7 +574,12 @@ public:
         }
         else
         {
-            function(decl, Function);
+            int r = m_engine->RegisterGlobalFunction(
+                decl,
+                asFunctionPtr(Function),
+                CallConv
+            );
+            assert(r >= 0);
         }
 
         return *this;
