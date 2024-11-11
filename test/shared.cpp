@@ -124,9 +124,9 @@ void asbind_test_suite_generic::register_all()
     ext::register_script_optional(engine);
     ext::register_script_array(engine);
     ext::register_std_string(engine, true, true);
-    ext::register_string_utils(engine);
+    ext::register_string_utils(engine, true);
     ext::register_math_constants(engine);
-    ext::register_math_function(engine);
+    ext::register_math_function(engine, true);
     ext::register_script_assert(
         engine,
         &assert_callback,

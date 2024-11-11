@@ -557,6 +557,7 @@ public:
     template <
         native_function auto Function,
         asECallConvTypes CallConv = asCALL_CDECL>
+    requires(!std::is_member_function_pointer_v<std::decay_t<decltype(Function)>>)
     global_t& function(const char* decl)
     {
         if constexpr(ForceGeneric)
@@ -571,18 +572,18 @@ public:
         return *this;
     }
 
-    template <typename T, typename Return, typename Class, typename... Args>
+    template <typename T>
     global_t& function(
         const char* decl,
-        Return (Class::*fn)(Args...),
+        generic_function_t* gfn,
         T& instance
     )
     {
         int r = m_engine->RegisterGlobalFunction(
             decl,
-            asSMethodPtr<sizeof(fn)>::Convert(fn),
-            asCALL_THISCALL_ASGLOBAL,
-            std::addressof(instance)
+            asFunctionPtr(gfn),
+            asCALL_GENERIC,
+            (void*)std::addressof(instance)
         );
         assert(r >= 0);
 
@@ -593,16 +594,73 @@ public:
     global_t& function(
         const char* decl,
         Return (Class::*fn)(Args...),
-        const T& instance
-    )
+        T& instance
+    ) requires(!ForceGeneric)
     {
         int r = m_engine->RegisterGlobalFunction(
             decl,
             asSMethodPtr<sizeof(fn)>::Convert(fn),
             asCALL_THISCALL_ASGLOBAL,
-            std::addressof(instance)
+            (void*)std::addressof(instance)
         );
         assert(r >= 0);
+
+        return *this;
+    }
+
+    template <
+        native_function auto Function,
+        typename T>
+    requires(std::is_member_function_pointer_v<std::decay_t<decltype(Function)>>)
+    global_t& function(use_generic_t, const char* decl, T& instance)
+    {
+        function(
+            decl,
+            +[](asIScriptGeneric* gen) -> void
+            {
+                using traits = function_traits<std::decay_t<decltype(Function)>>;
+
+                [gen]<std::size_t... Is>(std::index_sequence<Is...>)
+                {
+                    using return_t = typename traits::return_type;
+                    using class_t = typename traits::class_type;
+                    using args_tuple = typename traits::args_tuple;
+
+                    class_t* this_ = (class_t*)gen->GetAuxiliary();
+
+                    if constexpr(std::is_void_v<return_t>)
+                    {
+                        std::invoke(
+                            Function, this_, get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (asUINT)Is)...
+                        );
+                    }
+                    else
+                    {
+                        set_generic_return<return_t>(
+                            gen,
+                            std::invoke(
+                                Function, this_, get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (asUINT)Is)...
+                            )
+                        );
+                    }
+                }(std::make_index_sequence<traits::arg_count_v>());
+            },
+            instance
+        );
+
+        return *this;
+    }
+
+    template <
+        native_function auto Function,
+        typename T>
+    requires(std::is_member_function_pointer_v<std::decay_t<decltype(Function)>>)
+    global_t& function(const char* decl, T& instance)
+    {
+        if constexpr(ForceGeneric)
+            function<Function>(use_generic, decl, instance);
+        else
+            function(decl, Function, instance);
 
         return *this;
     }
@@ -611,20 +669,6 @@ public:
     global_t& property(
         const char* decl,
         T& val
-    )
-    {
-        int r = m_engine->RegisterGlobalProperty(
-            decl, (void*)std::addressof(val)
-        );
-        assert(r >= 0);
-
-        return *this;
-    }
-
-    template <typename T>
-    global_t& property(
-        const char* decl,
-        const T& val
     )
     {
         int r = m_engine->RegisterGlobalProperty(

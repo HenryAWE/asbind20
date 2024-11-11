@@ -240,7 +240,7 @@ inline detail::const_string_iterator string_cend(std::string_view str)
 
 void register_std_string(asIScriptEngine* engine, bool as_default = true, bool generic = has_max_portability());
 
-void register_string_utils(asIScriptEngine* engine);
+void register_string_utils(asIScriptEngine* engine, bool generic = has_max_portability());
 } // namespace asbind20::ext
 
 #endif

@@ -8,12 +8,12 @@
 
 namespace asbind20::ext
 {
-void register_math_constants(asIScriptEngine* engine, const char* namespace_ = "numbers");
+void register_math_constants(asIScriptEngine* engine, const char* ns = "numbers");
 
-void register_math_function(asIScriptEngine* engine, bool disable_double = true);
+void register_math_function(asIScriptEngine* engine, bool generic = has_max_portability());
 
 template <std::floating_point T>
-bool close_to(T a, T b, T epsilon)
+constexpr bool close_to(T a, T b, T epsilon)
 {
     return std::abs(a - b) < epsilon;
 }

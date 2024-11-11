@@ -605,7 +605,8 @@ static std::string as_int_to_string(T val, int base)
     return std::string(buf, result.ptr);
 }
 
-static std::string as_float_to_string(float val, std::chars_format fmt)
+template <typename Float>
+static std::string as_float_to_string(Float val, std::chars_format fmt)
 {
     char buf[80];
     auto result = std::to_chars(buf, buf + 80, val, fmt);
@@ -626,25 +627,37 @@ static std::string as_chr(std::uint32_t ch)
     return std::string(buf, size_bytes);
 }
 
-void register_string_utils(asIScriptEngine* engine)
+template <bool UseGeneric>
+void register_string_utils_impl(asIScriptEngine* engine)
 {
-    global(engine)
-        .function("string to_string(bool val)", &as_bool_to_string)
-        .function("string to_string(int val, int base=10)", &as_int_to_string<int>)
-        .function("string to_string(uint val, int base=10)", &as_int_to_string<asUINT>)
-        .function("string to_string(int64 val, int base=10)", &as_int_to_string<std::int64_t>)
-        .function("string to_string(uint64 val, int base=10)", &as_int_to_string<std::uint64_t>)
+    global_t<UseGeneric> g(engine);
+
+    g
+        .template function<&as_bool_to_string>("string to_string(bool val)")
+        .template function<&as_int_to_string<int>>("string to_string(int val, int base=10)")
+        .template function<&as_int_to_string<asUINT>>("string to_string(uint val, int base=10)")
+        .template function<&as_int_to_string<std::int64_t>>("string to_string(int64 val, int base=10)")
+        .template function<&as_int_to_string<std::uint64_t>>("string to_string(uint64 val, int base=10)")
         .enum_type("float_format")
         .enum_value("float_format", std::chars_format::scientific, "scientific")
         .enum_value("float_format", std::chars_format::hex, "hex")
         .enum_value("float_format", std::chars_format::general, "general")
         .enum_value("float_format", std::chars_format::fixed, "fixed")
-        .function("string to_string(float val, float_format fmt=float_format::general)", &as_float_to_string);
+        .template function<&as_float_to_string<float>>("string to_string(float val, float_format fmt=float_format::general)")
+        .template function<&as_float_to_string<double>>("string to_string(double val, float_format fmt=float_format::general)");
 
     if(engine->GetEngineProperty(asEP_USE_CHARACTER_LITERALS))
     {
-        global(engine)
-            .function("string chr(uint ch)", &as_chr);
+        g
+            .template function<&as_chr>("string chr(uint ch)");
     }
+}
+
+void register_string_utils(asIScriptEngine* engine, bool generic)
+{
+    if(generic)
+        register_string_utils_impl<true>(engine);
+    else
+        register_string_utils_impl<false>(engine);
 }
 } // namespace asbind20::ext

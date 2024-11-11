@@ -51,14 +51,17 @@ std::function<assert_handler_t> register_script_assert(
     asIStringFactory* str_factory
 )
 {
+    global_t<true> g(engine);
+
     static script_assert_impl impl;
 
+    impl.set_ex = set_ex;
     auto old = std::exchange(impl.callback, std::move(callback));
 
-    global(engine)
-        .function(
+    g
+        .function<&script_assert_impl::assert_simple>(
+            use_generic,
             "void assert(bool pred)",
-            &script_assert_impl::assert_simple,
             impl
         );
 
@@ -69,15 +72,15 @@ std::function<assert_handler_t> register_script_assert(
         {
             assert(string_t_id >= 0);
 
-            const char* string_t_decl = engine->GetTypeDeclaration(string_t_id);
+            const char* string_t_decl = engine->GetTypeDeclaration(string_t_id, true);
 
             impl.str_factory = str_factory;
 
-            global(engine)
+            g
                 .function(
                     string_concat("void assert(bool pred, const ", string_t_decl, " &in msg)").c_str(),
                     &script_assert_impl::assert_msg_wrapper,
-                    &impl
+                    impl
                 );
         }
     }
