@@ -349,7 +349,7 @@ namespace detail
     template <typename T>
     void set_arg(asIScriptContext* ctx, asUINT idx, std::reference_wrapper<T> ref)
     {
-        ctx->SetArgAddress(idx, std::addressof(ref.get()));
+        ctx->SetArgAddress(idx, (void*)std::addressof(ref.get()));
     }
 
     template <std::integral T>
@@ -369,11 +369,24 @@ namespace detail
     }
 
     template <typename Enum>
-    requires std::is_enum_v<Enum>
+    requires std::is_enum_v<std::decay_t<Enum>>
     void set_arg(asIScriptContext* ctx, asUINT idx, Enum val)
     {
-        static_assert(sizeof(Enum) <= sizeof(int), "Value out of range");
-        set_arg(ctx, idx, static_cast<int>(val));
+        using T = std::remove_cvref_t<Enum>;
+
+        constexpr bool is_customized = requires() {
+            { type_traits<T>::set_arg(ctx, idx, val) } -> std::same_as<int>;
+        };
+
+        if constexpr(is_customized)
+        {
+            type_traits<T>::set_arg(ctx, idx, val);
+        }
+        else
+        {
+            static_assert(sizeof(T) <= sizeof(int), "Value out of range");
+            set_arg(ctx, idx, static_cast<int>(val));
+        }
     }
 
     inline void set_arg(asIScriptContext* ctx, asUINT idx, float val)
@@ -410,7 +423,17 @@ namespace detail
     requires std::is_class_v<std::remove_cvref_t<Class>>
     void set_arg(asIScriptContext* ctx, asUINT idx, Class&& obj)
     {
-        ctx->SetArgAddress(idx, std::addressof(obj));
+        using T = std::remove_cvref_t<Class>;
+
+        constexpr bool is_customized = requires() {
+            { type_traits<T>::set_arg(ctx, idx, obj) } -> std::same_as<int>;
+        };
+
+        if constexpr(is_customized)
+        {
+            type_traits<T>::set_arg(ctx, idx, obj);
+        }
+        ctx->SetArgAddress(idx, (void*)std::addressof(obj));
     }
 
     template <typename Tuple>
@@ -431,7 +454,15 @@ namespace detail
     requires(!std::is_const_v<T>)
     T get_ret(asIScriptContext* ctx)
     {
-        if constexpr(is_script_obj<std::remove_cvref_t<T>>)
+        constexpr bool is_customized = requires() {
+            { type_traits<T>::get_return(ctx) } -> std::convertible_to<T>;
+        };
+
+        if constexpr(is_customized)
+        {
+            return type_traits<T>::get_return(ctx);
+        }
+        else if constexpr(is_script_obj<std::remove_cvref_t<T>>)
         {
             asIScriptObject* ptr = *reinterpret_cast<asIScriptObject**>(ctx->GetAddressOfReturnValue());
             return T(ptr);

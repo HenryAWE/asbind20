@@ -505,6 +505,33 @@ void set_script_exception(asIScriptContext* ctx, const char* info);
 void set_script_exception(asIScriptContext* ctx, const std::string& info);
 void set_script_exception(const char* info);
 void set_script_exception(const std::string& info);
+
+template <typename T>
+struct type_traits;
+
+template <>
+struct type_traits<std::byte>
+{
+    static int set_arg(asIScriptContext* ctx, asUINT arg, std::byte val)
+    {
+        return ctx->SetArgByte(arg, static_cast<asBYTE>(val));
+    }
+
+    static std::byte get_arg(asIScriptGeneric* gen, asUINT arg)
+    {
+        return static_cast<std::byte>(gen->GetArgByte(arg));
+    }
+
+    static int set_return(asIScriptGeneric* gen, std::byte val)
+    {
+        return gen->SetReturnByte(static_cast<asBYTE>(val));
+    }
+
+    static std::byte get_return(asIScriptContext* ctx)
+    {
+        return static_cast<std::byte>(ctx->GetReturnByte());
+    }
+};
 } // namespace asbind20
 
 #endif

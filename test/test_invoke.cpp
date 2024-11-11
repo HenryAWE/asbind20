@@ -105,6 +105,28 @@ TEST_F(asbind_test_suite, invoke)
     }
 }
 
+TEST_F(asbind_test_suite, custom_rule)
+{
+    asIScriptEngine* engine = get_engine();
+    asIScriptModule* m = engine->GetModule("test_custom_rule", asGM_ALWAYS_CREATE);
+
+    m->AddScriptSection(
+        "test_custom_rule.as",
+        "uint8 add_1(uint8 i) { return i + 1; }"
+    );
+    ASSERT_GE(m->Build(), 0);
+
+    {
+        asIScriptFunction* add_1 = m->GetFunctionByName("add_1");
+
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<std::byte>(ctx, add_1, std::byte(0x1));
+
+        ASSERT_TRUE(result_has_value(result));
+        EXPECT_EQ(result.value(), std::byte(0x2));
+    }
+}
+
 TEST_F(asbind_test_suite, script_class)
 {
     asIScriptEngine* engine = get_engine();

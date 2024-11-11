@@ -80,7 +80,15 @@ bool has_max_portability();
 template <typename T>
 T get_generic_arg(asIScriptGeneric* gen, asUINT idx)
 {
-    if constexpr(
+    constexpr bool is_customized = requires() {
+        { type_traits<T>::get_arg(gen, idx) } -> std::convertible_to<T>;
+    };
+
+    if constexpr(is_customized)
+    {
+        return type_traits<T>::get_arg(gen, idx);
+    }
+    else if constexpr(
         std::is_same_v<std::remove_cv_t<T>, asIScriptObject*> ||
         std::is_same_v<std::remove_cv_t<T>, const asIScriptObject*>
     )
@@ -107,10 +115,6 @@ T get_generic_arg(asIScriptGeneric* gen, asUINT idx)
     else if constexpr(std::is_class_v<T>)
     {
         return get_generic_arg<T&>(gen, idx);
-    }
-    else if constexpr(std::is_same_v<std::remove_cv_t<T>, std::byte>)
-    {
-        return static_cast<std::byte>(gen->GetArgByte(idx));
     }
     else if constexpr(std::is_enum_v<T>)
     {
@@ -145,9 +149,17 @@ T get_generic_arg(asIScriptGeneric* gen, asUINT idx)
 }
 
 template <typename T>
-void set_generic_return(asIScriptGeneric* gen, std::type_identity_t<T>&& ret)
+void set_generic_return(asIScriptGeneric* gen, T&& ret)
 {
-    if constexpr(std::is_reference_v<T>)
+    constexpr bool is_customized = requires(T val) {
+        { type_traits<T>::set_return(gen, val) } -> std::same_as<int>;
+    };
+
+    if constexpr(is_customized)
+    {
+        type_traits<T>::set_return(gen, ret);
+    }
+    else if constexpr(std::is_reference_v<T>)
     {
         using pointer_t = std::remove_reference_t<T>*;
         set_generic_return<pointer_t>(gen, std::addressof(ret));
@@ -175,10 +187,6 @@ void set_generic_return(asIScriptGeneric* gen, std::type_identity_t<T>&& ret)
     {
         void* mem = gen->GetAddressOfReturnLocation();
         new(mem) T(std::forward<T>(ret));
-    }
-    else if constexpr(std::is_same_v<std::remove_cv_t<T>, std::byte>)
-    {
-        gen->SetReturnByte(static_cast<asBYTE>(ret));
     }
     else if constexpr(std::is_enum_v<T>)
     {
