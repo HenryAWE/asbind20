@@ -100,7 +100,7 @@ T get_generic_arg(asIScriptGeneric* gen, asUINT idx)
         using value_t = std::remove_pointer_t<T>;
 
         void* ptr = nullptr;
-        if constexpr(std::is_class_v<value_t>)
+        if constexpr(std::is_class_v<value_t> || std::is_void_v<value_t>)
             ptr = gen->GetArgAddress(idx);
         else
             ptr = gen->GetAddressOfArg(idx);
@@ -2192,16 +2192,65 @@ public:
     }
 
     template <typename... Args>
-    ref_class_t& factory(const char* decl)
-        requires newable<Class, Args...>
+    ref_class_t& factory(use_generic_t, const char* decl)
     {
-        factory_function(
-            decl,
-            +[](Args... args) -> Class*
-            {
-                return new Class(args...);
-            }
-        );
+        if constexpr(Template)
+        {
+            static_assert(sizeof...(Args) >= 1);
+
+            factory_function(
+                decl,
+                +[](asIScriptGeneric* gen) -> void
+                {
+                    using args_tuple = std::tuple<Args...>;
+                    static_assert(std::is_same_v<asITypeInfo*, std::tuple_element_t<0, args_tuple>>, "Invalid parameters");
+
+                    [gen]<std::size_t... Is>(std::index_sequence<Is...>)
+                    {
+                        asITypeInfo* ti = *(asITypeInfo**)gen->GetAddressOfArg(0);
+                        Class* ptr = new Class(ti, get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(gen, (asUINT)Is + 1)...);
+                        gen->SetReturnAddress(ptr);
+                    }(std::make_index_sequence<sizeof...(Args) - 1>());
+                }
+            );
+        }
+        else
+        {
+            factory_function(
+                decl,
+                +[](asIScriptGeneric* gen) -> void
+                {
+                    using args_tuple = std::tuple<Args...>;
+
+                    [gen]<std::size_t... Is>(std::index_sequence<Is...>)
+                    {
+                        Class* ptr = new Class(get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (asUINT)Is)...);
+                        gen->SetReturnAddress(ptr);
+                    }(std::make_index_sequence<sizeof...(Args)>());
+                }
+            );
+        }
+
+        return *this;
+    }
+
+    template <typename... Args>
+    ref_class_t& factory(const char* decl)
+    {
+        if constexpr(ForceGeneric)
+        {
+            factory<Args...>(use_generic, decl);
+        }
+        else
+        {
+            factory_function(
+                decl,
+                +[](Args... args) -> Class*
+                {
+                    return new Class(args...);
+                }
+            );
+        }
 
         return *this;
     }
@@ -2262,16 +2311,36 @@ public:
         return *this;
     }
 
+    ref_class_t& opPreInc(use_generic_t)
+    {
+        this->template opPreInc_impl_generic<Class>();
+
+        return *this;
+    }
+
     ref_class_t& opPreInc()
     {
-        this->template opPreInc_impl<Class>();
+        if constexpr(ForceGeneric)
+            opPreInc(use_generic);
+        else
+            this->template opPreInc_impl_native<Class>();
+
+        return *this;
+    }
+
+    ref_class_t& opPreDec(use_generic_t)
+    {
+        this->template opPreDec_impl_generic<Class>();
 
         return *this;
     }
 
     ref_class_t& opPreDec()
     {
-        this->template opPreDec_impl<Class>();
+        if constexpr(ForceGeneric)
+            opPreDec(use_generic);
+        else
+            this->template opPreDec_impl_native<Class>();
 
         return *this;
     }
@@ -2293,17 +2362,43 @@ public:
         return *this;
     }
 
-    ref_class_t& opAssign() requires std::is_copy_assignable_v<Class>
+    std::string decl_opAssign() const
     {
-        method(
-            string_concat(m_name, "& opAssign(const ", m_name, " &in)").c_str(),
-            static_cast<Class& (Class::*)(const Class&)>(&Class::operator=)
+        return string_concat(m_name, "& opAssign(const ", m_name, " &in)");
+    }
+
+    ref_class_t& opAssign(use_generic_t)
+    {
+        this->method_impl(
+            decl_opAssign().c_str(),
+            generic_wrapper<static_cast<Class& (Class::*)(const Class&)>(&Class::operator=), asCALL_THISCALL>(),
+            call_conv<asCALL_GENERIC>
         );
 
         return *this;
     }
 
-    ref_class_t& addref(void (Class::*fn)())
+    ref_class_t& opAssign()
+    {
+        if constexpr(ForceGeneric)
+        {
+            opAssign(use_generic);
+        }
+        else
+        {
+            this->method_impl(
+                string_concat(m_name, "& opAssign(const ", m_name, " &in)").c_str(),
+                static_cast<Class& (Class::*)(const Class&)>(&Class::operator=),
+                call_conv<asCALL_THISCALL>
+            );
+        }
+
+        return *this;
+    }
+
+    using addref_t = void (Class::*)();
+
+    ref_class_t& addref(addref_t fn) requires(!ForceGeneric)
     {
         behaviour(
             asBEHAVE_ADDREF,
@@ -2315,7 +2410,40 @@ public:
         return *this;
     }
 
-    ref_class_t& release(void (Class::*fn)()) requires(!ForceGeneric)
+    ref_class_t& addref(generic_function_t* gfn)
+    {
+        behaviour(
+            asBEHAVE_ADDREF,
+            "void f()",
+            gfn,
+            call_conv<asCALL_GENERIC>
+        );
+
+        return *this;
+    }
+
+    template <addref_t AddRef>
+    ref_class_t& addref(use_generic_t)
+    {
+        addref(generic_wrapper<AddRef, asCALL_THISCALL>());
+
+        return *this;
+    }
+
+    template <native_function auto AddRef>
+    ref_class_t& addref()
+    {
+        if constexpr(ForceGeneric)
+            addref<AddRef>(use_generic);
+        else
+            addref(AddRef);
+
+        return *this;
+    }
+
+    using release_t = void (Class::*)();
+
+    ref_class_t& release(release_t fn) requires(!ForceGeneric)
     {
         behaviour(
             asBEHAVE_RELEASE,
@@ -2339,10 +2467,10 @@ public:
         return *this;
     }
 
-    template <native_function auto Release>
+    template <release_t Release>
     ref_class_t& release(use_generic_t)
     {
-        release(generic_wrapper<Release, asCALL_CDECL>());
+        release(generic_wrapper<Release, asCALL_THISCALL>());
 
         return *this;
     }
@@ -2358,7 +2486,9 @@ public:
         return *this;
     }
 
-    ref_class_t& get_refcount(int (Class::*fn)() const)
+    using get_refcount_t = int (Class::*)() const;
+
+    ref_class_t& get_refcount(get_refcount_t fn) requires(!ForceGeneric)
     {
         behaviour(
             asBEHAVE_GETREFCOUNT,
@@ -2370,7 +2500,40 @@ public:
         return *this;
     }
 
-    ref_class_t& set_flag(void (Class::*fn)())
+    ref_class_t& get_refcount(generic_function_t* gfn)
+    {
+        behaviour(
+            asBEHAVE_GETREFCOUNT,
+            "int f()",
+            gfn,
+            call_conv<asCALL_GENERIC>
+        );
+
+        return *this;
+    }
+
+    template <get_refcount_t GetRefCount>
+    ref_class_t& get_refcount(use_generic_t)
+    {
+        get_refcount(generic_wrapper<GetRefCount, asCALL_THISCALL>());
+
+        return *this;
+    }
+
+    template <get_refcount_t GetRefCount>
+    ref_class_t& get_refcount()
+    {
+        if constexpr(ForceGeneric)
+            get_refcount<GetRefCount>(use_generic);
+        else
+            get_refcount(GetRefCount);
+
+        return *this;
+    }
+
+    using set_gc_flag_t = void (Class::*)();
+
+    ref_class_t& set_gc_flag(set_gc_flag_t fn) requires(!ForceGeneric)
     {
         behaviour(
             asBEHAVE_SETGCFLAG,
@@ -2382,7 +2545,40 @@ public:
         return *this;
     }
 
-    ref_class_t& get_flag(bool (Class::*fn)() const)
+    ref_class_t& set_gc_flag(generic_function_t* gfn)
+    {
+        behaviour(
+            asBEHAVE_SETGCFLAG,
+            "void f()",
+            gfn,
+            call_conv<asCALL_GENERIC>
+        );
+
+        return *this;
+    }
+
+    template <set_gc_flag_t SetGCFlag>
+    ref_class_t& set_gc_flag(use_generic_t)
+    {
+        set_gc_flag(generic_wrapper<SetGCFlag, asCALL_THISCALL>());
+
+        return *this;
+    }
+
+    template <set_gc_flag_t SetGCFlag>
+    ref_class_t& set_gc_flag()
+    {
+        if constexpr(ForceGeneric)
+            set_gc_flag<SetGCFlag>(use_generic);
+        else
+            set_gc_flag(SetGCFlag);
+
+        return *this;
+    }
+
+    using get_gc_flag_t = bool (Class::*)() const;
+
+    ref_class_t& get_gc_flag(get_gc_flag_t fn) requires(!ForceGeneric)
     {
         behaviour(
             asBEHAVE_GETGCFLAG,
@@ -2394,7 +2590,40 @@ public:
         return *this;
     }
 
-    ref_class_t& enum_refs(void (Class::*fn)(asIScriptEngine*))
+    ref_class_t& get_gc_flag(generic_function_t* gfn)
+    {
+        behaviour(
+            asBEHAVE_GETGCFLAG,
+            "bool f()",
+            gfn,
+            call_conv<asCALL_GENERIC>
+        );
+
+        return *this;
+    }
+
+    template <get_gc_flag_t GetGCFlag>
+    ref_class_t& get_gc_flag(use_generic_t)
+    {
+        get_gc_flag(generic_wrapper<GetGCFlag, asCALL_THISCALL>());
+
+        return *this;
+    }
+
+    template <get_gc_flag_t GetGCFlag>
+    ref_class_t& get_gc_flag()
+    {
+        if constexpr(ForceGeneric)
+            get_gc_flag<GetGCFlag>(use_generic);
+        else
+            get_gc_flag(GetGCFlag);
+
+        return *this;
+    }
+
+    using enum_refs_t = void (Class::*)(asIScriptEngine*);
+
+    ref_class_t& enum_refs(enum_refs_t fn) requires(!ForceGeneric)
     {
         behaviour(
             asBEHAVE_ENUMREFS,
@@ -2406,7 +2635,48 @@ public:
         return *this;
     }
 
-    ref_class_t& release_refs(void (Class::*fn)(asIScriptEngine*))
+    ref_class_t& enum_refs(generic_function_t* gfn)
+    {
+        behaviour(
+            asBEHAVE_ENUMREFS,
+            "void f(int&in)",
+            gfn,
+            call_conv<asCALL_GENERIC>
+        );
+
+        return *this;
+    }
+
+    template <enum_refs_t EnumRefs>
+    ref_class_t& enum_refs(use_generic_t)
+    {
+        enum_refs(
+            +[](asIScriptGeneric* gen) -> void
+            {
+                Class* this_ = (Class*)gen->GetObject();
+                asIScriptEngine* engine = *(asIScriptEngine**)gen->GetAddressOfArg(0);
+
+                std::invoke(EnumRefs, this_, engine);
+            }
+        );
+
+        return *this;
+    }
+
+    template <enum_refs_t EnumRefs>
+    ref_class_t& enum_refs()
+    {
+        if constexpr(ForceGeneric)
+            enum_refs<EnumRefs>(use_generic);
+        else
+            enum_refs(EnumRefs);
+
+        return *this;
+    }
+
+    using release_refs_t = void (Class::*)(asIScriptEngine*);
+
+    ref_class_t& release_refs(release_refs_t fn) requires(!ForceGeneric)
     {
         behaviour(
             asBEHAVE_RELEASEREFS,
@@ -2414,6 +2684,45 @@ public:
             fn,
             call_conv<asCALL_THISCALL>
         );
+
+        return *this;
+    }
+
+    ref_class_t& release_refs(generic_function_t* gfn)
+    {
+        behaviour(
+            asBEHAVE_RELEASEREFS,
+            "void f(int&in)",
+            gfn,
+            call_conv<asCALL_GENERIC>
+        );
+
+        return *this;
+    }
+
+    template <release_refs_t ReleaseRefs>
+    ref_class_t& release_refs(use_generic_t)
+    {
+        release_refs(
+            +[](asIScriptGeneric* gen) -> void
+            {
+                Class* this_ = (Class*)gen->GetObject();
+                asIScriptEngine* engine = *(asIScriptEngine**)gen->GetAddressOfArg(0);
+
+                std::invoke(ReleaseRefs, this_, engine);
+            }
+        );
+
+        return *this;
+    }
+
+    template <release_refs_t ReleaseRefs>
+    ref_class_t& release_refs()
+    {
+        if constexpr(ForceGeneric)
+            release_refs<ReleaseRefs>(use_generic);
+        else
+            release_refs(ReleaseRefs);
 
         return *this;
     }

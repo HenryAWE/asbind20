@@ -266,28 +266,41 @@ static script_optional& optional_opAssign_value(const void* val, script_optional
     return this_;
 }
 
-void register_script_optional(asIScriptEngine* engine)
+namespace detail
 {
-    template_class<script_optional>(engine, "optional<T>", asOBJ_GC)
-        .template_callback<&optional_template_callback>()
-        .default_factory()
-        .factory<asITypeInfo*, const void*>("optional<T>@ f(int&in, const T&in) explicit")
-        .addref(&script_optional::addref)
-        .get_refcount(&script_optional::get_refcount)
-        .release(&script_optional::release)
-        .get_flag(&script_optional::get_flag)
-        .set_flag(&script_optional::set_flag)
-        .enum_refs(&script_optional::enum_refs)
-        .release_refs(&script_optional::release_refs)
-        .opAssign()
-        .method<&optional_opAssign_value>("optional<T>& opAssign(const T&in)")
-        .method<&script_optional::has_value>("bool get_has_value() const property")
-        .method<&script_optional::has_value>("bool opConv() const")
-        .method("void reset()", &script_optional::reset)
-        .method("T& get_value() property", &optional_value)
-        .method("const T& get_value() const property", &optional_value)
-        .method<&script_optional::assign>("void set_value(const T&in) property")
-        .method("T& value_or(T&in val)", &optional_value_or)
-        .method("const T& value_or(const T&in val) const", &optional_value_or);
+    template <bool UseGeneric>
+    void register_script_optional_impl(asIScriptEngine* engine)
+    {
+        template_class<script_optional> c(engine, "optional<T>", asOBJ_GC);
+        c
+            .template template_callback<&optional_template_callback>()
+            .default_factory()
+            .template factory<asITypeInfo*, const void*>("optional<T>@ f(int&in, const T&in) explicit")
+            .template addref<&script_optional::addref>()
+            .template get_refcount<&script_optional::get_refcount>()
+            .template release<&script_optional::release>()
+            .template get_gc_flag<&script_optional::get_flag>()
+            .template set_gc_flag<&script_optional::set_flag>()
+            .template enum_refs<&script_optional::enum_refs>()
+            .template release_refs<&script_optional::release_refs>()
+            .opAssign()
+            .template method<&optional_opAssign_value>("optional<T>& opAssign(const T&in)")
+            .template method<&script_optional::has_value>("bool get_has_value() const property")
+            .template method<&script_optional::has_value>("bool opConv() const")
+            .template method<&script_optional::reset>("void reset()")
+            .template method<&optional_value>("T& get_value() property")
+            .template method<&optional_value>("const T& get_value() const property")
+            .template method<&script_optional::assign>("void set_value(const T&in) property")
+            .template method<&optional_value_or>("T& value_or(T&in val)")
+            .template method<&optional_value_or>("const T& value_or(const T&in val) const");
+    }
+} // namespace detail
+
+void register_script_optional(asIScriptEngine* engine, bool generic)
+{
+    if(generic)
+        detail::register_script_optional_impl<true>(engine);
+    else
+        detail::register_script_optional_impl<false>(engine);
 }
 } // namespace asbind20::ext

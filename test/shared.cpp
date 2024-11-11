@@ -121,8 +121,8 @@ void asbind_test_suite_generic::register_all()
 
     asIScriptEngine* engine = get_engine();
 
-    ext::register_script_optional(engine);
-    ext::register_script_array(engine);
+    ext::register_script_optional(engine, true);
+    ext::register_script_array(engine, true, true);
     ext::register_std_string(engine, true, true);
     ext::register_string_utils(engine, true);
     ext::register_math_constants(engine);

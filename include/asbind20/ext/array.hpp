@@ -12,11 +12,18 @@ namespace asbind20::ext
 {
 asPWORD script_array_cache_id();
 
-void register_script_array(asIScriptEngine* engine, bool as_default = true);
+namespace detail
+{
+    template <bool UseGeneric>
+    void register_script_array_impl(asIScriptEngine* engine);
+} // namespace detail
+
+void register_script_array(asIScriptEngine* engine, bool as_default = true, bool generic = has_max_portability());
 
 class script_array
 {
-    friend void register_script_array(asIScriptEngine* engine, bool as_default);
+    template <bool UseGeneric>
+    friend void detail::register_script_array_impl(asIScriptEngine* engine);
 
     void notify_gc_for_this();
 

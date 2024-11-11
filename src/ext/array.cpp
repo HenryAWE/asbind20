@@ -1843,75 +1843,87 @@ static bool array_template_callback(asITypeInfo* ti, bool& no_gc)
     return true;
 }
 
-void register_script_array(asIScriptEngine* engine, bool as_default)
+namespace detail
 {
-    template_class<script_array> c(engine, "array<T>", asOBJ_GC);
-    c
-        .template_callback<&array_template_callback>()
-        .default_factory()
-        .factory<asITypeInfo*, asUINT>("array<T>@ f(int&in, uint)")
-        .factory<asITypeInfo*, asUINT, const void*>("array<T>@ f(int&in, uint, const T&in)")
-        .list_factory("T")
-        .opAssign()
-        .opEquals()
-        .addref(&script_array::addref)
-        .release(&script_array::release)
-        .get_refcount(&script_array::get_refcount)
-        .set_flag(&script_array::set_gc_flag)
-        .get_flag(&script_array::get_gc_flag)
-        .enum_refs(&script_array::enum_refs)
-        .release_refs(&script_array::release_refs)
-        .method("T& opIndex(uint idx)", &script_array::opIndex)
-        .method("const T& opIndex(uint idx) const", &script_array::opIndex)
-        .method("T& get_front() property", &script_array::get_front)
-        .method("const T& get_front() const property", &script_array::get_front)
-        .method("void set_front(const T&in) property", &script_array::set_front)
-        .method("T& get_back() property", &script_array::get_back)
-        .method("const T& get_back() const property", &script_array::get_back)
-        .method("void set_back(const T&in) property", &script_array::set_back)
-        .method("uint get_size() const property", &script_array::size)
-        .method("uint get_capacity() const property", &script_array::capacity)
-        .method("bool get_empty() const property", &script_array::empty)
-        .method("void reserve(uint)", &script_array::reserve)
-        .method("void shrink_to_fit()", &script_array::shrink_to_fit)
-        .method("void push_back(const T&in value)", &script_array::push_back)
-        .method("void append_range(const array<T>&in rng, uint n=-1)", &script_array::append_range)
-        .method("void insert(uint idx, const T&in value)", &script_array::insert)
-        .method("void insert_range(uint idx, const array<T>&in rng, uint n=-1)", &script_array::insert_range)
-        .method("void pop_back()", &script_array::pop_back)
-        .method("void erase(uint idx, uint n=1)", &script_array::erase)
-        .method("uint erase_value(const T&in value, uint idx=0, uint n=-1)", &script_array::erase_value)
-        .funcdef("bool erase_if_callback(const T&in if_handle_then_const)")
-        .method("void erase_if(const erase_if_callback&in fn, uint idx=0, uint n=-1)", &script_array::script_erase_if)
-        .funcdef("void for_each_callback(const T&in if_handle_then_const)")
-        .method("void for_each(const for_each_callback&in fn, uint idx=0, uint n=-1) const", &script_array::script_for_each)
-        .method("void sort(uint idx=0, uint n=-1, bool asc=true)", &script_array::sort)
-        .method("void reverse(uint idx=0, uint n=-1)", &script_array::reverse)
-        .funcdef("bool sort_by_callback(const T&in if_handle_then_const, const T&in if_handle_then_const)")
-        .method("void sort_by(const sort_by_callback&in fn, uint idx=0, uint n=-1, bool stable=true)", &script_array::script_sort_by)
-        .method("uint find(const T&in, uint idx=0) const", &script_array::find)
-        .funcdef("bool find_if_callback(const T&in)")
-        .method("uint find_if(const find_if_callback&in fn, uint idx=0) const", &script_array::script_find_if)
-        .method("bool contains(const T&in, uint idx=0) const", &script_array::contains)
-        .method("uint count(const T&in, uint idx=0, uint n=-1) const", &script_array::count)
-        .funcdef("bool count_if_callback(const T&in if_handle_then_const)")
-        .method("uint count_if(const count_if_callback&in fn, uint idx=0, uint n=-1) const", &script_array::script_count_if)
-        .method("void clear()", &script_array::clear);
+    template <bool UseGeneric>
+    void register_script_array_impl(asIScriptEngine* engine)
+    {
+        template_class<script_array, UseGeneric> c(engine, "array<T>", asOBJ_GC);
+        c
+            .template template_callback<&array_template_callback>()
+            .default_factory()
+            .template factory<asITypeInfo*, asUINT>("array<T>@ f(int&in, uint)")
+            .template factory<asITypeInfo*, asUINT, const void*>("array<T>@ f(int&in, uint, const T&in)")
+            .list_factory("T")
+            .opAssign()
+            .opEquals()
+            .template addref<&script_array::addref>()
+            .template release<&script_array::release>()
+            .template get_refcount<&script_array::get_refcount>()
+            .template set_gc_flag<&script_array::set_gc_flag>()
+            .template get_gc_flag<&script_array::get_gc_flag>()
+            .template enum_refs<&script_array::enum_refs>()
+            .template release_refs<&script_array::release_refs>()
+            .template method<&script_array::opIndex>("T& opIndex(uint idx)")
+            .template method<&script_array::opIndex>("const T& opIndex(uint idx) const")
+            .template method<&script_array::get_front>("T& get_front() property")
+            .template method<&script_array::get_front>("const T& get_front() const property")
+            .template method<&script_array::set_front>("void set_front(const T&in) property")
+            .template method<&script_array::get_back>("T& get_back() property")
+            .template method<&script_array::get_back>("const T& get_back() const property")
+            .template method<&script_array::set_back>("void set_back(const T&in) property")
+            .template method<&script_array::size>("uint get_size() const property")
+            .template method<&script_array::capacity>("uint get_capacity() const property")
+            .template method<&script_array::empty>("bool get_empty() const property")
+            .template method<&script_array::reserve>("void reserve(uint)")
+            .template method<&script_array::shrink_to_fit>("void shrink_to_fit()")
+            .template method<&script_array::push_back>("void push_back(const T&in value)")
+            .template method<&script_array::append_range>("void append_range(const array<T>&in rng, uint n=-1)")
+            .template method<&script_array::insert>("void insert(uint idx, const T&in value)")
+            .template method<&script_array::insert_range>("void insert_range(uint idx, const array<T>&in rng, uint n=-1)")
+            .template method<&script_array::pop_back>("void pop_back()")
+            .template method<&script_array::erase>("void erase(uint idx, uint n=1)")
+            .template method<&script_array::erase_value>("uint erase_value(const T&in value, uint idx=0, uint n=-1)")
+            .funcdef("bool erase_if_callback(const T&in if_handle_then_const)")
+            .template method<&script_array::script_erase_if>("void erase_if(const erase_if_callback&in fn, uint idx=0, uint n=-1)")
+            .funcdef("void for_each_callback(const T&in if_handle_then_const)")
+            .template method<&script_array::script_for_each>("void for_each(const for_each_callback&in fn, uint idx=0, uint n=-1) const")
+            .template method<&script_array::sort>("void sort(uint idx=0, uint n=-1, bool asc=true)")
+            .template method<&script_array::reverse>("void reverse(uint idx=0, uint n=-1)")
+            .funcdef("bool sort_by_callback(const T&in if_handle_then_const, const T&in if_handle_then_const)")
+            .template method<&script_array::script_sort_by>("void sort_by(const sort_by_callback&in fn, uint idx=0, uint n=-1, bool stable=true)")
+            .template method<&script_array::find>("uint find(const T&in, uint idx=0) const")
+            .funcdef("bool find_if_callback(const T&in)")
+            .template method<&script_array::script_find_if>("uint find_if(const find_if_callback&in fn, uint idx=0) const")
+            .template method<&script_array::contains>("bool contains(const T&in, uint idx=0) const")
+            .template method<&script_array::count>("uint count(const T&in, uint idx=0, uint n=-1) const")
+            .funcdef("bool count_if_callback(const T&in if_handle_then_const)")
+            .template method<&script_array::script_count_if>("uint count_if(const count_if_callback&in fn, uint idx=0, uint n=-1) const")
+            .template method<&script_array::clear>("void clear()");
 
 #ifdef ASBIND20_EXT_VOCABULARY
 
-    if(engine->GetTypeIdByDecl("optional<uint>") >= 0)
-    {
-        c
-            .method("optional<uint>@ find_optional(const T&in, uint idx=0) const", &script_array::find_optional);
-    }
+        if(engine->GetTypeIdByDecl("optional<uint>") >= 0)
+        {
+            c
+                .template method<&script_array::find_optional>("optional<uint>@ find_optional(const T&in, uint idx=0) const");
+        }
 
 #endif
 
-    engine->SetTypeInfoUserDataCleanupCallback(
-        &script_array::cache_cleanup_callback,
-        script_array_cache_id()
-    );
+        engine->SetTypeInfoUserDataCleanupCallback(
+            &script_array::cache_cleanup_callback,
+            script_array_cache_id()
+        );
+    }
+} // namespace detail
+
+void register_script_array(asIScriptEngine* engine, bool as_default, bool generic)
+{
+    if(generic)
+        detail::register_script_array_impl<true>(engine);
+    else
+        detail::register_script_array_impl<false>(engine);
 
     if(as_default)
     {

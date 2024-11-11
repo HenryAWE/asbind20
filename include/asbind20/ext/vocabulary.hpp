@@ -7,11 +7,18 @@
 
 namespace asbind20::ext
 {
-void register_script_optional(asIScriptEngine* engine);
+namespace detail
+{
+    template <bool UseGeneric>
+    void register_script_optional_impl(asIScriptEngine* engine);
+}
+
+void register_script_optional(asIScriptEngine* engine, bool generic = has_max_portability());
 
 class script_optional
 {
-    friend void register_script_optional(asIScriptEngine* engine);
+    template <bool UseGeneric>
+    friend void detail::register_script_optional_impl(asIScriptEngine* engine);
 
     void notify_gc_for_this();
 

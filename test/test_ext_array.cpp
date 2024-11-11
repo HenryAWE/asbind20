@@ -124,6 +124,14 @@ TEST_F(ext_array_suite, count)
 
 TEST_F(asbind_test_suite, ext_array)
 {
+    if(asbind20::has_max_portability())
+        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+
+    run_file("script/test_array.as");
+}
+
+TEST_F(asbind_test_suite_generic, ext_array)
+{
     run_file("script/test_array.as");
 }
 
