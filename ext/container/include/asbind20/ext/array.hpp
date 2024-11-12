@@ -5,8 +5,8 @@
 
 #include <mutex>
 #include <cstddef>
-#include "../asbind.hpp"
-#include "vocabulary.hpp"
+#include <asbind20/asbind.hpp>
+#include <asbind20/ext/vocabulary.hpp>
 
 namespace asbind20::ext
 {

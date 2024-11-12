@@ -5,7 +5,7 @@
 #include <asbind20/ext/array.hpp>
 #include <asbind20/ext/stdstring.hpp>
 #include <asbind20/ext/math.hpp>
-#include <asbind20/ext/helper.hpp>
+#include <asbind20/ext/hash.hpp>
 
 void script_print(const std::string& str, bool newline)
 {
@@ -59,8 +59,6 @@ int main(int argc, char* argv[])
             << "asGetLibraryOptions: " << asGetLibraryOptions()
             << '\n'
             << "asbind20::library_version: " << asbind20::library_version()
-            << '\n'
-            << "asbind20::library_options: " << asbind20::library_options()
             << std::endl;
         return 0;
     }
@@ -78,7 +76,7 @@ int main(int argc, char* argv[])
     asbind20::ext::register_std_string(engine);
     asbind20::ext::register_string_utils(engine);
     asbind20::global(engine)
-        .function("void print(const string&in str, bool newline=true)", &script_print);
+        .function<&script_print>(asbind20::use_generic, "void print(const string&in str, bool newline=true)");
 
     asIScriptModule* m = engine->GetModule("asexec", asGM_ALWAYS_CREATE);
     int r = asbind20::load_file(

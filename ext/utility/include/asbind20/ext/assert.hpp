@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "../asbind.hpp"
 #include <functional>
+#include <asbind20/asbind.hpp>
 
 namespace asbind20::ext
 {

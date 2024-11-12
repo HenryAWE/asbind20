@@ -1,4 +1,4 @@
-#include "shared.hpp"
+#include <shared_test_lib.hpp>
 #include <asbind20/ext/vocabulary.hpp>
 #include <asbind20/ext/array.hpp>
 #include <asbind20/ext/stdstring.hpp>

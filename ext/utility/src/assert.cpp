@@ -1,5 +1,4 @@
 #include <asbind20/ext/assert.hpp>
-#include <asbind20/ext/helper.hpp>
 
 namespace asbind20::ext
 {

@@ -9,3 +9,4 @@ find_package(asbind20 REQUIRED)
 
 add_executable(asbind20_test_install "test_install.cpp")
 target_link_libraries(asbind20_test_install PRIVATE asbind20::asbind20)
+target_link_libraries(asbind20_test_install PRIVATE asbind20::asbind20_ext_utility asbind20::asbind20_ext_container)

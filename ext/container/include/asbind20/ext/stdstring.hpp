@@ -5,7 +5,7 @@
 
 #include <string>
 #include <unordered_map>
-#include "../bind.hpp"
+#include <asbind20/asbind.hpp>
 
 namespace asbind20::ext
 {

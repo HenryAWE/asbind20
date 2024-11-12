@@ -33,41 +33,32 @@ add_library(asbind20::asbind20 ALIAS asbind20)
 
 file(GLOB asbind20_src "include/*.hpp" "src/*.cpp")
 option(asbind_build_ext "Build extensions" ON)
-option(asbind_build_ext_vocabulary "Build vocabulary types extension" ON)
-option(asbind_build_ext_array "Build array extension" ON)
-option(asbind_build_ext_math "Build math extension" ON)
-option(asbind_build_ext_helper "Build helper extension" ON)
-option(asbind_build_ext_stdstring "Build std::string extension" ON)
-option(asbind_build_ext_assert "Build assert extension" ON)
-
-if(${asbind_build_ext})
-    if(${asbind_build_ext_vocabulary})
-        list(APPEND asbind20_src "src/ext/vocabulary.cpp")
-        target_compile_definitions(asbind20 PUBLIC ASBIND20_EXT_VOCABULARY=1)
-    endif()
-    if(${asbind_build_ext_array})
-        list(APPEND asbind20_src "src/ext/array.cpp")
-        target_compile_definitions(asbind20 PUBLIC ASBIND20_EXT_ARRAY=1)
-    endif()
-    if(${asbind_build_ext_math})
-        list(APPEND asbind20_src "src/ext/math.cpp")
-        target_compile_definitions(asbind20 PUBLIC ASBIND20_EXT_MATH=1)
-    endif()
-    if(${asbind_build_ext_helper})
-        list(APPEND asbind20_src "src/ext/helper.cpp")
-        target_compile_definitions(asbind20 PUBLIC ASBIND20_EXT_HELPER=1)
-    endif()
-    if(${asbind_build_ext_stdstring})
-        list(APPEND asbind20_src "src/ext/stdstring.cpp")
-        target_compile_definitions(asbind20 PUBLIC ASBIND20_EXT_STDSTRING=1)
-    endif()
-    if(${asbind_build_ext_assert})
-        list(APPEND asbind20_src "src/ext/assert.cpp")
-        target_compile_definitions(asbind20 PUBLIC ASBIND20_EXT_ASSERT=1)
-    endif()
-endif()
 
 include(GNUInstallDirs)
+
+option(asbind_build_test "Build tests" OFF)
+mark_as_advanced(asbind_build_test)
+
+if(${asbind_build_test})
+    message(STATUS "Fetching GoogleTest v1.14.0 from GitHub")
+
+    include(FetchContent)
+
+    FetchContent_Declare(
+        googletest
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG v1.14.0
+    )
+    set(BUILD_GMOCK OFF)
+    set(INSTALL_GTEST OFF)
+    FetchContent_MakeAvailable(googletest)
+
+    enable_testing()
+endif()
+
+if(${asbind_build_ext})
+    add_subdirectory(ext)
+endif()
 
 target_sources(asbind20 PRIVATE ${asbind20_src})
 target_include_directories(asbind20 PUBLIC
@@ -115,24 +106,7 @@ install(
     DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/cmake/asbind20
 )
 
-option(asbind_build_test "Build tests" OFF)
-mark_as_advanced(asbind_build_test)
-
 if(${asbind_build_test})
-    message(STATUS "Fetching GoogleTest v1.14.0 from GitHub")
-
-    include(FetchContent)
-
-    FetchContent_Declare(
-        googletest
-        GIT_REPOSITORY https://github.com/google/googletest.git
-        GIT_TAG v1.14.0
-    )
-    set(BUILD_GMOCK OFF)
-    set(INSTALL_GTEST OFF)
-    FetchContent_MakeAvailable(googletest)
-
-    enable_testing()
     add_subdirectory(test)
 endif()
 

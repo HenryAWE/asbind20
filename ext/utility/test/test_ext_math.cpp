@@ -1,7 +1,7 @@
 #include <cmath>
 #include <gtest/gtest.h>
 #include "asbind20/ext/math.hpp"
-#include "shared.hpp"
+#include <shared_test_lib.hpp>
 #include <numbers>
 #include <asbind20/asbind.hpp>
 #include <asbind20/ext/stdstring.hpp>

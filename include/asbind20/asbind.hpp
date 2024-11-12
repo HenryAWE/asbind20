@@ -22,9 +22,6 @@ namespace asbind20
 {
 [[nodiscard]]
 const char* library_version() noexcept;
-
-[[nodiscard]]
-const char* library_options() noexcept;
 } // namespace asbind20
 
 #endif

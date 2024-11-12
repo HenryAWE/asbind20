@@ -13,3 +13,4 @@ add_subdirectory(
 
 add_executable(asbind20_test_subdir "test_subdir.cpp")
 target_link_libraries(asbind20_test_subdir PRIVATE asbind20::asbind20)
+target_link_libraries(asbind20_test_subdir PRIVATE asbind20::asbind20_ext_utility asbind20::asbind20_ext_container)

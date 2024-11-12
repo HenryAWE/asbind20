@@ -5,10 +5,8 @@
 #include <charconv>
 #include <string>
 #include <string_view>
-#ifdef ASBIND20_EXT_ARRAY
-#    include <ranges>
-#    include <asbind20/ext/array.hpp>
-#endif
+#include <ranges>
+#include <asbind20/ext/array.hpp>
 
 namespace asbind20::ext
 {
@@ -432,8 +430,6 @@ bool string_contains_ch(const std::string& this_, std::uint32_t ch)
     return this_.find(std::string_view(buf, size_bytes)) != this_.npos;
 }
 
-#ifdef ASBIND20_EXT_ARRAY
-
 static script_array* new_string_array()
 {
     asIScriptContext* ctx = asGetActiveContext();
@@ -489,8 +485,6 @@ static script_array* string_split_simple(const std::string& this_, bool skip_emp
     string_split_impl(*arr, this_, " ", skip_empty);
     return arr;
 }
-
-#endif
 
 void string_for_each(asIScriptFunction* fn, const std::string& this_)
 {
@@ -555,8 +549,6 @@ static void register_string_impl(asIScriptEngine* engine)
             .template method<&string_for_each>("void for_each(const for_each_callback&in fn)");
     }
 
-#ifdef ASBIND20_EXT_ARRAY
-
     if(engine->GetDefaultArrayTypeId() >= 0)
     {
         c
@@ -567,8 +559,6 @@ static void register_string_impl(asIScriptEngine* engine)
             c.template method<&string_split_ch>("array<string>@ split(uint delimiter, bool skip_empty=true) const");
         }
     }
-
-#endif
 }
 
 void register_std_string(asIScriptEngine* engine, bool as_default, bool generic)

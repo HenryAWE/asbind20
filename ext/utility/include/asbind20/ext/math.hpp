@@ -4,7 +4,8 @@
 #pragma once
 
 #include <cmath>
-#include "../asbind.hpp"
+#include <concepts>
+#include <asbind20/asbind.hpp>
 
 namespace asbind20::ext
 {

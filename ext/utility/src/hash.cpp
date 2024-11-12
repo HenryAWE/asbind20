@@ -1,4 +1,4 @@
-#include <asbind20/ext/helper.hpp>
+#include <asbind20/ext/hash.hpp>
 #include <functional>
 
 namespace asbind20::ext
@@ -10,7 +10,7 @@ static std::uint64_t std_hash_wrapper(T val)
 }
 
 template <bool UseGeneric>
-static bool register_script_hash_impl(asIScriptEngine* engine)
+static void register_script_hash_impl(asIScriptEngine* engine)
 {
     global_t<UseGeneric> g(engine);
     g

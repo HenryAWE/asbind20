@@ -80,13 +80,13 @@ asbind20::value_class<my_value_class>(
     .method("int get_val() const", &my_value_class::get_val)
     // Automatically deducing calling conventions
     .method("void add(int val)", &add_obj_last)  // asCALL_CDECL_OBJLAST
-    .method("void mul(int val)", &mul_obj_first) // asCALL_CDECL_OBFIRST
+    .method("void mul(int val)", &mul_obj_first) // asCALL_CDECL_OBJFIRST
     .method("void set_val(int)", &set_val_gen)   // asCALL_GENERIC
     // Convert member pointer to property
     .property("int value", &my_value_class::value);
 ```
 The binding helpers also support registering a reference type, an interface, or global functions, etc. to the AngelScript engine.  
-You can find more examples in `src/ext/array.cpp` and `src/ext/stdstring.cpp`.
+You can find more examples in `ext/container/src/array.cpp` and `ext/container/src/stdstring.cpp`.
 
 ## 2. Invoking a Script Function
 The library can automatically convert arguments in C++ for invoking an AngelScript function. Besides, the library provides RAII classes for easily managing lifetime of AngelScript object like `asIScriptContext`.
@@ -170,7 +170,7 @@ Generating generic wrapper by macro-free utilities.
 ```c++
 // generic_wrapper<MyFunction, OriginalCallConv>();
 asGENFUNC_t f1 = asbind20::generic_wrapper<&global_func, asCALL_CDECL>();
-asGENFUNC_T f2 = asbind20::generic_wrapper<&my_class::method, asCALL_THISCALL>();
+asGENFUNC_t f2 = asbind20::generic_wrapper<&my_class::method, asCALL_THISCALL>();
 
 // Use `use_generic` tag to force generated proxies to use asCALL_GENERIC
 asbind20::value_class<my_value_class>(...)
@@ -204,7 +204,7 @@ asbind20::visit_primitive_type(
     ptr_to_val // void* to value
 );
 ```
-You can find example usage in `src/ext/array.cpp`.
+You can find example usage in `ext/container/src/array.cpp`.
 
 # Supported Platforms
 - CMake >= 3.20

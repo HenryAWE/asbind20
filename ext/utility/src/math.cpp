@@ -129,9 +129,9 @@ void register_math_function_impl(asIScriptEngine* engine)
         .ASBIND20_EXT_MATH_UNARY_FUNC(acosh, float_t)                                                                        \
         .ASBIND20_EXT_MATH_UNARY_FUNC(asinh, float_t)                                                                        \
         .ASBIND20_EXT_MATH_UNARY_FUNC(atanh, float_t)                                                                        \
-        .template function<&script_isfinite>("bool isfinite(" #float_t " x)")                                                         \
-        .template function<&script_isnan>("bool isnan(" #float_t " x)")                                                               \
-        .template function<&script_isinf>("bool isinf(" #float_t " x)")                                                               \
+        .template function<&script_isfinite>("bool isfinite(" #float_t " x)")                                                \
+        .template function<&script_isnan>("bool isnan(" #float_t " x)")                                                      \
+        .template function<&script_isinf>("bool isinf(" #float_t " x)")                                                      \
         .ASBIND20_EXT_MATH_BINARY_FUNC(pow, float_t)                                                                         \
         .ASBIND20_EXT_MATH_BINARY_FUNC(atan2, float_t)                                                                       \
         .ASBIND20_EXT_MATH_BINARY_FUNC(hypot, float_t)

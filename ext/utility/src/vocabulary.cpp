@@ -11,7 +11,6 @@ static bool optional_template_callback(asITypeInfo* ti, bool&)
     return true;
 }
 
-
 script_optional::script_optional(asITypeInfo* ti)
     : m_ti(ti)
 {
@@ -203,7 +202,7 @@ const void* script_optional::data_t::get(asITypeInfo* ti) const
 
 void script_optional::release()
 {
-        delete this;
+    delete this;
 }
 
 static void* optional_value(script_optional& this_)

@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
-#include "shared.hpp"
+#include <shared_test_lib.hpp>
 #include <asbind20/asbind.hpp>
-#include <asbind20/ext/helper.hpp>
 
 namespace test_bind
 {
@@ -530,6 +529,5 @@ int main(int argc, char* argv[])
     std::cerr << "asGetLibraryVersion(): " << asGetLibraryVersion() << std::endl;
     std::cerr << "asGetLibraryOptions(): " << asGetLibraryOptions() << std::endl;
     std::cerr << "asbind20::library_version(): " << asbind20::library_version() << std::endl;
-    std::cerr << "asbind20::library_options(): " << asbind20::library_options() << std::endl;
     return RUN_ALL_TESTS();
 }

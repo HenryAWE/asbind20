@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "shared.hpp"
+#include <shared_test_lib.hpp>
 #include <asbind20/asbind.hpp>
 
 using namespace asbind_test;

@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "shared.hpp"
+#include <shared_test_lib.hpp>
 #include <asbind20/asbind.hpp>
 #include <asbind20/ext/stdstring.hpp>
 
@@ -35,7 +35,7 @@ TEST(unicode_support, const_string_iterator)
         out.push_back(*it);
     }
 
-    EXPECT_EQ(out, (std::vector<char32_t>{ '1', '2', '3', '4' }));
+    EXPECT_EQ(out, (std::vector<char32_t>{'1', '2', '3', '4'}));
 }
 
 TEST_F(asbind_test_suite, ext_stdstring)
