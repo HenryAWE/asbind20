@@ -83,7 +83,7 @@ static bool script_isinf(float x)
 template <bool UseGeneric>
 void register_math_function_impl(asIScriptEngine* engine)
 {
-    global_t<UseGeneric> g(engine);
+    global<UseGeneric> g(engine);
 
     g
         .template function<&script_math_min<int>>("int min(int a, int b)")

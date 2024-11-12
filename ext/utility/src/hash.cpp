@@ -12,7 +12,7 @@ static std::uint64_t std_hash_wrapper(T val)
 template <bool UseGeneric>
 static void register_script_hash_impl(asIScriptEngine* engine)
 {
-    global_t<UseGeneric> g(engine);
+    global<UseGeneric> g(engine);
     g
         .typedef_("uint64", "hash_result_t")
         .template function<&std_hash_wrapper<std::int8_t>>("uint64 hash(int8)")

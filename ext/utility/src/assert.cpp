@@ -50,7 +50,7 @@ std::function<assert_handler_t> register_script_assert(
     asIStringFactory* str_factory
 )
 {
-    global_t<true> g(engine);
+    global<true> g(engine);
 
     static script_assert_impl impl;
 

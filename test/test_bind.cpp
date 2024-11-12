@@ -447,7 +447,7 @@ TEST_F(asbind_test_suite, generic)
 
     asIScriptEngine* engine = get_engine();
 
-    global_t<true>(engine)
+    global<true>(engine)
         .function<&test_bind::my_div>("int my_div(int a, int b)");
 
     asIScriptModule* m = engine->GetModule("test_generic", asGM_ALWAYS_CREATE);

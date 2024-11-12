@@ -620,7 +620,7 @@ static std::string as_chr(std::uint32_t ch)
 template <bool UseGeneric>
 void register_string_utils_impl(asIScriptEngine* engine)
 {
-    global_t<UseGeneric> g(engine);
+    global<UseGeneric> g(engine);
 
     g
         .template function<&as_bool_to_string>("string to_string(bool val)")

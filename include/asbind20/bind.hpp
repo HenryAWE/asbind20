@@ -520,21 +520,21 @@ template <
 constexpr inline generic_wrapper_t<Function, OriginalConv> generic_wrapper{};
 
 template <bool ForceGeneric>
-class global_t final : public register_helper_base<ForceGeneric>
+class global final : public register_helper_base<ForceGeneric>
 {
     using my_base = register_helper_base<ForceGeneric>;
 
     using my_base::m_engine;
 
 public:
-    global_t() = delete;
-    global_t(const global_t&) = default;
+    global() = delete;
+    global(const global&) = default;
 
-    global_t(asIScriptEngine* engine)
+    global(asIScriptEngine* engine)
         : my_base(engine) {}
 
     template <typename Return, typename... Args>
-    global_t& function(
+    global& function(
         const char* decl,
         Return (*fn)(Args...)
     )
@@ -552,7 +552,7 @@ public:
     template <
         native_function auto Function,
         asECallConvTypes CallConv = asCALL_CDECL>
-    global_t& function(use_generic_t, const char* decl)
+    global& function(use_generic_t, const char* decl)
     {
         function(
             decl,
@@ -566,7 +566,7 @@ public:
         native_function auto Function,
         asECallConvTypes CallConv = asCALL_CDECL>
     requires(!std::is_member_function_pointer_v<std::decay_t<decltype(Function)>>)
-    global_t& function(const char* decl)
+    global& function(const char* decl)
     {
         if constexpr(ForceGeneric)
         {
@@ -586,7 +586,7 @@ public:
     }
 
     template <typename T>
-    global_t& function(
+    global& function(
         const char* decl,
         generic_function_t* gfn,
         T& instance
@@ -604,7 +604,7 @@ public:
     }
 
     template <typename T, typename Return, typename Class, typename... Args>
-    global_t& function(
+    global& function(
         const char* decl,
         Return (Class::*fn)(Args...),
         T& instance
@@ -625,7 +625,7 @@ public:
         native_function auto Function,
         typename T>
     requires(std::is_member_function_pointer_v<std::decay_t<decltype(Function)>>)
-    global_t& function(use_generic_t, const char* decl, T& instance)
+    global& function(use_generic_t, const char* decl, T& instance)
     {
         function(
             decl,
@@ -668,7 +668,7 @@ public:
         native_function auto Function,
         typename T>
     requires(std::is_member_function_pointer_v<std::decay_t<decltype(Function)>>)
-    global_t& function(const char* decl, T& instance)
+    global& function(const char* decl, T& instance)
     {
         if constexpr(ForceGeneric)
             function<Function>(use_generic, decl, instance);
@@ -679,7 +679,7 @@ public:
     }
 
     template <typename T>
-    global_t& property(
+    global& property(
         const char* decl,
         T& val
     )
@@ -692,7 +692,7 @@ public:
         return *this;
     }
 
-    global_t& function(
+    global& function(
         const char* decl,
         generic_function_t gfn,
         void* auxiliary = nullptr
@@ -709,7 +709,7 @@ public:
         return *this;
     }
 
-    global_t& funcdef(
+    global& funcdef(
         const char* decl
     )
     {
@@ -719,7 +719,7 @@ public:
         return *this;
     }
 
-    global_t& typedef_(
+    global& typedef_(
         const char* type_decl,
         const char* new_name
     )
@@ -731,7 +731,7 @@ public:
     }
 
     // For those who feel more comfortable with the C++11 style `using alias = type`
-    global_t& using_(
+    global& using_(
         const char* new_name,
         const char* type_decl
     )
@@ -745,7 +745,7 @@ public:
     requires std::is_enum_v<Enum>
     using enum_value_name_pair = std::pair<Enum, const char*>;
 
-    global_t& enum_type(
+    global& enum_type(
         const char* type
     )
     {
@@ -757,7 +757,7 @@ public:
 
     template <typename Enum>
     requires std::is_enum_v<Enum>
-    global_t& enum_value(
+    global& enum_value(
         const char* type,
         Enum val,
         const char* name
@@ -779,7 +779,7 @@ public:
     }
 };
 
-using global = global_t<false>;
+global(asIScriptEngine*) -> global<false>;
 
 template <bool ForceGeneric>
 class class_register_helper_base : public register_helper_base<ForceGeneric>
@@ -1912,7 +1912,7 @@ private:
 };
 
 template <typename Class, bool Template = false, bool ForceGeneric = false>
-class ref_class_t : public class_register_helper_base<ForceGeneric>
+class ref_class_register : public class_register_helper_base<ForceGeneric>
 {
     using my_base = class_register_helper_base<ForceGeneric>;
 
@@ -1922,7 +1922,7 @@ class ref_class_t : public class_register_helper_base<ForceGeneric>
 public:
     using class_type = Class;
 
-    ref_class_t(asIScriptEngine* engine, const char* name, asQWORD flags = 0)
+    ref_class_register(asIScriptEngine* engine, const char* name, asQWORD flags = 0)
         : my_base(engine, name), m_flags(asOBJ_REF | flags)
     {
         assert(!(m_flags & asOBJ_VALUE));
@@ -1944,14 +1944,14 @@ public:
         assert(r >= 0);
     }
 
-    ref_class_t& behaviour(asEBehaviours beh, const char* decl, generic_function_t* gfn, call_conv_t<asCALL_GENERIC>)
+    ref_class_register& behaviour(asEBehaviours beh, const char* decl, generic_function_t* gfn, call_conv_t<asCALL_GENERIC>)
     {
         this->behaviour_impl(beh, decl, gfn, call_conv<asCALL_GENERIC>);
 
         return *this;
     }
 
-    ref_class_t& behaviour(asEBehaviours beh, const char* decl, generic_function_t* gfn)
+    ref_class_register& behaviour(asEBehaviours beh, const char* decl, generic_function_t* gfn)
     {
         behaviour(beh, decl, gfn, call_conv<asCALL_GENERIC>);
 
@@ -1960,7 +1960,7 @@ public:
 
     template <native_function Fn, asECallConvTypes CallConv>
     requires(CallConv != asCALL_GENERIC)
-    ref_class_t& behaviour(asEBehaviours beh, const char* decl, Fn&& fn, call_conv_t<CallConv>) requires(!ForceGeneric)
+    ref_class_register& behaviour(asEBehaviours beh, const char* decl, Fn&& fn, call_conv_t<CallConv>) requires(!ForceGeneric)
     {
         this->behaviour_impl(beh, decl, std::forward<Fn>(fn), call_conv<CallConv>);
 
@@ -1969,7 +1969,7 @@ public:
 
     static constexpr char decl_template_callback[] = "bool f(int&in,bool&out)";
 
-    ref_class_t& template_callback(generic_function_t* gfn) requires(Template)
+    ref_class_register& template_callback(generic_function_t* gfn) requires(Template)
     {
         this->behaviour_impl(
             asBEHAVE_TEMPLATE_CALLBACK,
@@ -1982,7 +1982,7 @@ public:
     }
 
     template <native_function Fn>
-    ref_class_t& template_callback(Fn&& fn) requires(Template && !ForceGeneric)
+    ref_class_register& template_callback(Fn&& fn) requires(Template && !ForceGeneric)
     {
         this->behaviour_impl(
             asBEHAVE_TEMPLATE_CALLBACK,
@@ -1995,7 +1995,7 @@ public:
     }
 
     template <native_function auto Callback>
-    ref_class_t& template_callback(use_generic_t) requires(Template)
+    ref_class_register& template_callback(use_generic_t) requires(Template)
     {
         generic_function_t* gfn = +[](asIScriptGeneric* gen)
         {
@@ -2011,7 +2011,7 @@ public:
     }
 
     template <native_function auto Callback>
-    ref_class_t& template_callback() requires(Template)
+    ref_class_register& template_callback() requires(Template)
     {
         int r = 0;
         if constexpr(ForceGeneric)
@@ -2029,7 +2029,7 @@ public:
 
     template <native_function Fn>
     requires(std::is_member_function_pointer_v<Fn>)
-    ref_class_t& method(const char* decl, Fn&& fn)
+    ref_class_register& method(const char* decl, Fn&& fn)
     {
         this->method_impl(decl, std::forward<Fn>(fn), call_conv<asCALL_THISCALL>);
 
@@ -2037,7 +2037,7 @@ public:
     }
 
     template <typename Fn, asECallConvTypes CallConv>
-    ref_class_t& method(const char* decl, Fn&& fn, call_conv_t<CallConv>)
+    ref_class_register& method(const char* decl, Fn&& fn, call_conv_t<CallConv>)
     {
         this->method_impl(decl, std::forward<Fn>(fn), call_conv<CallConv>);
 
@@ -2045,7 +2045,7 @@ public:
     }
 
     template <typename R, typename... Args>
-    ref_class_t& method(const char* decl, R (*fn)(Args...))
+    ref_class_register& method(const char* decl, R (*fn)(Args...))
     {
         this->template method_auto_callconv<Class>(decl, fn);
 
@@ -2055,7 +2055,7 @@ public:
     template <
         native_function auto Function,
         asECallConvTypes CallConv = detail::deduce_method_callconv<Function, Class>()>
-    ref_class_t& method(use_generic_t, const char* decl)
+    ref_class_register& method(use_generic_t, const char* decl)
     {
         method(decl, generic_wrapper<Function, CallConv>(), call_conv<asCALL_GENERIC>);
 
@@ -2065,7 +2065,7 @@ public:
     template <
         native_function auto Function,
         asECallConvTypes CallConv = detail::deduce_method_callconv<Function, Class>()>
-    ref_class_t& method(const char* decl)
+    ref_class_register& method(const char* decl)
     {
         if constexpr(ForceGeneric)
         {
@@ -2080,7 +2080,7 @@ public:
     }
 
     template <typename... Args>
-    ref_class_t& factory_function(const char* decl, Class* (*fn)(Args...)) requires(!ForceGeneric)
+    ref_class_register& factory_function(const char* decl, Class* (*fn)(Args...)) requires(!ForceGeneric)
     {
         int r = m_engine->RegisterObjectBehaviour(
             m_name,
@@ -2094,7 +2094,7 @@ public:
         return *this;
     }
 
-    ref_class_t& factory_function(const char* decl, generic_function_t* gfn)
+    ref_class_register& factory_function(const char* decl, generic_function_t* gfn)
     {
         int r = m_engine->RegisterObjectBehaviour(
             m_name,
@@ -2108,7 +2108,7 @@ public:
     }
 
     template <native_function auto Function>
-    ref_class_t& factory_function(use_generic_t, const char* decl)
+    ref_class_register& factory_function(use_generic_t, const char* decl)
     {
         behaviour(
             asBEHAVE_FACTORY,
@@ -2120,7 +2120,7 @@ public:
     }
 
     template <native_function auto Function>
-    ref_class_t& factory_function(const char* decl)
+    ref_class_register& factory_function(const char* decl)
     {
         if constexpr(ForceGeneric)
             factory_function<Function>(use_generic, decl);
@@ -2130,7 +2130,7 @@ public:
         return *this;
     }
 
-    ref_class_t& default_factory(use_generic_t)
+    ref_class_register& default_factory(use_generic_t)
     {
         if constexpr(Template)
         {
@@ -2158,7 +2158,7 @@ public:
         return *this;
     }
 
-    ref_class_t& default_factory()
+    ref_class_register& default_factory()
     {
         if constexpr(ForceGeneric)
         {
@@ -2192,7 +2192,7 @@ public:
     }
 
     template <typename... Args>
-    ref_class_t& factory(use_generic_t, const char* decl)
+    ref_class_register& factory(use_generic_t, const char* decl)
     {
         if constexpr(Template)
         {
@@ -2235,7 +2235,7 @@ public:
     }
 
     template <typename... Args>
-    ref_class_t& factory(const char* decl)
+    ref_class_register& factory(const char* decl)
     {
         if constexpr(ForceGeneric)
         {
@@ -2256,7 +2256,7 @@ public:
     }
 
     template <typename... Args>
-    ref_class_t& list_factory_function(const char* decl, Class* (*fn)(Args...))
+    ref_class_register& list_factory_function(const char* decl, Class* (*fn)(Args...))
     {
         behaviour(
             asBEHAVE_LIST_FACTORY,
@@ -2268,7 +2268,7 @@ public:
         return *this;
     }
 
-    ref_class_t& list_factory_function(const char* decl, generic_function_t* gfn)
+    ref_class_register& list_factory_function(const char* decl, generic_function_t* gfn)
     {
         behaviour(
             asBEHAVE_LIST_FACTORY,
@@ -2280,7 +2280,7 @@ public:
         return *this;
     }
 
-    ref_class_t& list_factory(std::string_view repeated_type_name) requires(Template)
+    ref_class_register& list_factory(std::string_view repeated_type_name) requires(Template)
     {
         std::string decl = string_concat(m_name, "@ f(int&in,int&in) {repeat ", repeated_type_name, "}");
         if constexpr(ForceGeneric)
@@ -2311,14 +2311,14 @@ public:
         return *this;
     }
 
-    ref_class_t& opPreInc(use_generic_t)
+    ref_class_register& opPreInc(use_generic_t)
     {
         this->template opPreInc_impl_generic<Class>();
 
         return *this;
     }
 
-    ref_class_t& opPreInc()
+    ref_class_register& opPreInc()
     {
         if constexpr(ForceGeneric)
             opPreInc(use_generic);
@@ -2328,14 +2328,14 @@ public:
         return *this;
     }
 
-    ref_class_t& opPreDec(use_generic_t)
+    ref_class_register& opPreDec(use_generic_t)
     {
         this->template opPreDec_impl_generic<Class>();
 
         return *this;
     }
 
-    ref_class_t& opPreDec()
+    ref_class_register& opPreDec()
     {
         if constexpr(ForceGeneric)
             opPreDec(use_generic);
@@ -2345,14 +2345,14 @@ public:
         return *this;
     }
 
-    ref_class_t& opEquals(use_generic_t)
+    ref_class_register& opEquals(use_generic_t)
     {
         this->template opEquals_impl_generic<Class>();
 
         return *this;
     }
 
-    ref_class_t& opEquals()
+    ref_class_register& opEquals()
     {
         if constexpr(ForceGeneric)
             opEquals(use_generic);
@@ -2367,7 +2367,7 @@ public:
         return string_concat(m_name, "& opAssign(const ", m_name, " &in)");
     }
 
-    ref_class_t& opAssign(use_generic_t)
+    ref_class_register& opAssign(use_generic_t)
     {
         this->method_impl(
             decl_opAssign().c_str(),
@@ -2378,7 +2378,7 @@ public:
         return *this;
     }
 
-    ref_class_t& opAssign()
+    ref_class_register& opAssign()
     {
         if constexpr(ForceGeneric)
         {
@@ -2398,7 +2398,7 @@ public:
 
     using addref_t = void (Class::*)();
 
-    ref_class_t& addref(addref_t fn) requires(!ForceGeneric)
+    ref_class_register& addref(addref_t fn) requires(!ForceGeneric)
     {
         behaviour(
             asBEHAVE_ADDREF,
@@ -2410,7 +2410,7 @@ public:
         return *this;
     }
 
-    ref_class_t& addref(generic_function_t* gfn)
+    ref_class_register& addref(generic_function_t* gfn)
     {
         behaviour(
             asBEHAVE_ADDREF,
@@ -2423,7 +2423,7 @@ public:
     }
 
     template <addref_t AddRef>
-    ref_class_t& addref(use_generic_t)
+    ref_class_register& addref(use_generic_t)
     {
         addref(generic_wrapper<AddRef, asCALL_THISCALL>());
 
@@ -2431,7 +2431,7 @@ public:
     }
 
     template <native_function auto AddRef>
-    ref_class_t& addref()
+    ref_class_register& addref()
     {
         if constexpr(ForceGeneric)
             addref<AddRef>(use_generic);
@@ -2443,7 +2443,7 @@ public:
 
     using release_t = void (Class::*)();
 
-    ref_class_t& release(release_t fn) requires(!ForceGeneric)
+    ref_class_register& release(release_t fn) requires(!ForceGeneric)
     {
         behaviour(
             asBEHAVE_RELEASE,
@@ -2455,7 +2455,7 @@ public:
         return *this;
     }
 
-    ref_class_t& release(generic_function_t* gfn)
+    ref_class_register& release(generic_function_t* gfn)
     {
         behaviour(
             asBEHAVE_RELEASE,
@@ -2468,7 +2468,7 @@ public:
     }
 
     template <release_t Release>
-    ref_class_t& release(use_generic_t)
+    ref_class_register& release(use_generic_t)
     {
         release(generic_wrapper<Release, asCALL_THISCALL>());
 
@@ -2476,7 +2476,7 @@ public:
     }
 
     template <native_function auto Release>
-    ref_class_t& release()
+    ref_class_register& release()
     {
         if constexpr(ForceGeneric)
             release<Release>(use_generic);
@@ -2488,7 +2488,7 @@ public:
 
     using get_refcount_t = int (Class::*)() const;
 
-    ref_class_t& get_refcount(get_refcount_t fn) requires(!ForceGeneric)
+    ref_class_register& get_refcount(get_refcount_t fn) requires(!ForceGeneric)
     {
         behaviour(
             asBEHAVE_GETREFCOUNT,
@@ -2500,7 +2500,7 @@ public:
         return *this;
     }
 
-    ref_class_t& get_refcount(generic_function_t* gfn)
+    ref_class_register& get_refcount(generic_function_t* gfn)
     {
         behaviour(
             asBEHAVE_GETREFCOUNT,
@@ -2513,7 +2513,7 @@ public:
     }
 
     template <get_refcount_t GetRefCount>
-    ref_class_t& get_refcount(use_generic_t)
+    ref_class_register& get_refcount(use_generic_t)
     {
         get_refcount(generic_wrapper<GetRefCount, asCALL_THISCALL>());
 
@@ -2521,7 +2521,7 @@ public:
     }
 
     template <get_refcount_t GetRefCount>
-    ref_class_t& get_refcount()
+    ref_class_register& get_refcount()
     {
         if constexpr(ForceGeneric)
             get_refcount<GetRefCount>(use_generic);
@@ -2533,7 +2533,7 @@ public:
 
     using set_gc_flag_t = void (Class::*)();
 
-    ref_class_t& set_gc_flag(set_gc_flag_t fn) requires(!ForceGeneric)
+    ref_class_register& set_gc_flag(set_gc_flag_t fn) requires(!ForceGeneric)
     {
         behaviour(
             asBEHAVE_SETGCFLAG,
@@ -2545,7 +2545,7 @@ public:
         return *this;
     }
 
-    ref_class_t& set_gc_flag(generic_function_t* gfn)
+    ref_class_register& set_gc_flag(generic_function_t* gfn)
     {
         behaviour(
             asBEHAVE_SETGCFLAG,
@@ -2558,7 +2558,7 @@ public:
     }
 
     template <set_gc_flag_t SetGCFlag>
-    ref_class_t& set_gc_flag(use_generic_t)
+    ref_class_register& set_gc_flag(use_generic_t)
     {
         set_gc_flag(generic_wrapper<SetGCFlag, asCALL_THISCALL>());
 
@@ -2566,7 +2566,7 @@ public:
     }
 
     template <set_gc_flag_t SetGCFlag>
-    ref_class_t& set_gc_flag()
+    ref_class_register& set_gc_flag()
     {
         if constexpr(ForceGeneric)
             set_gc_flag<SetGCFlag>(use_generic);
@@ -2578,7 +2578,7 @@ public:
 
     using get_gc_flag_t = bool (Class::*)() const;
 
-    ref_class_t& get_gc_flag(get_gc_flag_t fn) requires(!ForceGeneric)
+    ref_class_register& get_gc_flag(get_gc_flag_t fn) requires(!ForceGeneric)
     {
         behaviour(
             asBEHAVE_GETGCFLAG,
@@ -2590,7 +2590,7 @@ public:
         return *this;
     }
 
-    ref_class_t& get_gc_flag(generic_function_t* gfn)
+    ref_class_register& get_gc_flag(generic_function_t* gfn)
     {
         behaviour(
             asBEHAVE_GETGCFLAG,
@@ -2603,7 +2603,7 @@ public:
     }
 
     template <get_gc_flag_t GetGCFlag>
-    ref_class_t& get_gc_flag(use_generic_t)
+    ref_class_register& get_gc_flag(use_generic_t)
     {
         get_gc_flag(generic_wrapper<GetGCFlag, asCALL_THISCALL>());
 
@@ -2611,7 +2611,7 @@ public:
     }
 
     template <get_gc_flag_t GetGCFlag>
-    ref_class_t& get_gc_flag()
+    ref_class_register& get_gc_flag()
     {
         if constexpr(ForceGeneric)
             get_gc_flag<GetGCFlag>(use_generic);
@@ -2623,7 +2623,7 @@ public:
 
     using enum_refs_t = void (Class::*)(asIScriptEngine*);
 
-    ref_class_t& enum_refs(enum_refs_t fn) requires(!ForceGeneric)
+    ref_class_register& enum_refs(enum_refs_t fn) requires(!ForceGeneric)
     {
         behaviour(
             asBEHAVE_ENUMREFS,
@@ -2635,7 +2635,7 @@ public:
         return *this;
     }
 
-    ref_class_t& enum_refs(generic_function_t* gfn)
+    ref_class_register& enum_refs(generic_function_t* gfn)
     {
         behaviour(
             asBEHAVE_ENUMREFS,
@@ -2648,7 +2648,7 @@ public:
     }
 
     template <enum_refs_t EnumRefs>
-    ref_class_t& enum_refs(use_generic_t)
+    ref_class_register& enum_refs(use_generic_t)
     {
         enum_refs(
             +[](asIScriptGeneric* gen) -> void
@@ -2664,7 +2664,7 @@ public:
     }
 
     template <enum_refs_t EnumRefs>
-    ref_class_t& enum_refs()
+    ref_class_register& enum_refs()
     {
         if constexpr(ForceGeneric)
             enum_refs<EnumRefs>(use_generic);
@@ -2676,7 +2676,7 @@ public:
 
     using release_refs_t = void (Class::*)(asIScriptEngine*);
 
-    ref_class_t& release_refs(release_refs_t fn) requires(!ForceGeneric)
+    ref_class_register& release_refs(release_refs_t fn) requires(!ForceGeneric)
     {
         behaviour(
             asBEHAVE_RELEASEREFS,
@@ -2688,7 +2688,7 @@ public:
         return *this;
     }
 
-    ref_class_t& release_refs(generic_function_t* gfn)
+    ref_class_register& release_refs(generic_function_t* gfn)
     {
         behaviour(
             asBEHAVE_RELEASEREFS,
@@ -2701,7 +2701,7 @@ public:
     }
 
     template <release_refs_t ReleaseRefs>
-    ref_class_t& release_refs(use_generic_t)
+    ref_class_register& release_refs(use_generic_t)
     {
         release_refs(
             +[](asIScriptGeneric* gen) -> void
@@ -2717,7 +2717,7 @@ public:
     }
 
     template <release_refs_t ReleaseRefs>
-    ref_class_t& release_refs()
+    ref_class_register& release_refs()
     {
         if constexpr(ForceGeneric)
             release_refs<ReleaseRefs>(use_generic);
@@ -2728,14 +2728,14 @@ public:
     }
 
     template <typename T>
-    ref_class_t& property(const char* decl, T Class::*mp)
+    ref_class_register& property(const char* decl, T Class::*mp)
     {
         this->template property_impl<T, Class>(decl, mp);
 
         return *this;
     }
 
-    ref_class_t& funcdef(std::string_view decl)
+    ref_class_register& funcdef(std::string_view decl)
     {
         this->member_funcdef_impl(decl);
 
@@ -2746,11 +2746,11 @@ private:
     asQWORD m_flags;
 };
 
-template <typename Class>
-using ref_class = ref_class_t<Class, false, false>;
+template <typename Class, bool UseGeneric = false>
+using ref_class = ref_class_register<Class, false, UseGeneric>;
 
 template <typename Class, bool ForceGeneric = false>
-using template_class = ref_class_t<Class, true, ForceGeneric>;
+using template_class = ref_class_register<Class, true, ForceGeneric>;
 
 class interface
 {
