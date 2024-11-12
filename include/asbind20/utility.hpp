@@ -56,6 +56,23 @@ ASBIND20_UTILITY_DEFINE_PRIMITIVE_TYPE_OF(asTYPEID_DOUBLE, double, "double");
 template <int TypeId>
 using primitive_type_of_t = typename primitive_type_of<TypeId>::type;
 
+inline bool is_primitive_type(int type_id) noexcept
+{
+    return !(type_id & ~asTYPEID_MASK_SEQNBR);
+}
+
+asUINT sizeof_script_type(asIScriptEngine* engine, int type_id);
+
+/**
+ * @brief Extracts the contents from a script string
+ *
+ * @param factory The string factory
+ * @param str The script string
+ *
+ * @return std::string Result string
+ */
+std::string extract_string(asIStringFactory* factory, void* str);
+
 template <typename Visitor, typename... Args>
 requires(sizeof...(Args) > 0 && (std::is_void_v<Args> && ...))
 decltype(auto) visit_primitive_type(Visitor&& vis, int type_id, Args*... args)
@@ -532,6 +549,12 @@ struct type_traits<std::byte>
         return static_cast<std::byte>(ctx->GetReturnByte());
     }
 };
+
+int exec(
+    asIScriptEngine* engine,
+    std::string_view code,
+    asIScriptContext* ctx = nullptr
+);
 } // namespace asbind20
 
 #endif

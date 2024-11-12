@@ -315,6 +315,9 @@ TEST_F(asbind_test_suite, ref_class)
 
 TEST_F(asbind_test_suite, global)
 {
+    if(asbind20::has_max_portability())
+        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+
     std::string val = "val";
 
     struct class_wrapper
@@ -343,11 +346,11 @@ TEST_F(asbind_test_suite, global)
         .property("string val", val);
 
     EXPECT_EQ(val, "val");
-    asbind20::ext::exec(get_engine(), "val = \"new string\"");
+    asbind20::exec(get_engine(), "val = \"new string\"");
     EXPECT_EQ(val, "new string");
 
     EXPECT_EQ(wrapper.value, 0);
-    asbind20::ext::exec(get_engine(), "set_val(gen_int())");
+    asbind20::exec(get_engine(), "set_val(gen_int())");
     EXPECT_EQ(wrapper.value, 42);
 
     asIScriptContext* ctx = get_engine()->CreateContext();

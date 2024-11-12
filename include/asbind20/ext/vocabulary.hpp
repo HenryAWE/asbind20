@@ -20,8 +20,6 @@ class script_optional
     template <bool UseGeneric>
     friend void detail::register_script_optional_impl(asIScriptEngine* engine);
 
-    void notify_gc_for_this();
-
 public:
     script_optional(asITypeInfo* ti);
 
@@ -63,11 +61,6 @@ public:
         return m_ti;
     }
 
-    int get_refcount() const
-    {
-        return m_refcount;
-    }
-
 private:
     asITypeInfo* m_ti = nullptr;
 
@@ -88,30 +81,9 @@ private:
     };
 
     alignas(alignof(double)) data_t m_data;
-
-    int m_refcount = 1;
     bool m_has_value = false;
-    bool m_gc_flag = false;
 
-    void addref();
     void release();
-
-    void release_refs(asIScriptEngine*)
-    {
-        reset();
-    }
-
-    void set_flag()
-    {
-        m_gc_flag = true;
-    }
-
-    bool get_flag() const
-    {
-        return m_gc_flag;
-    }
-
-    void enum_refs(asIScriptEngine* engine);
 };
 } // namespace asbind20::ext
 

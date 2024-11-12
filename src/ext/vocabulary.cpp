@@ -2,42 +2,27 @@
 
 namespace asbind20::ext
 {
-static bool optional_template_callback(asITypeInfo* ti, bool& no_gc)
+static bool optional_template_callback(asITypeInfo* ti, bool&)
 {
     int subtype_id = ti->GetSubTypeId();
     if(subtype_id == asTYPEID_VOID)
         return false;
 
-    if(!(subtype_id & ~asTYPEID_MASK_SEQNBR))
-        no_gc = true;
-    if(subtype_id & asTYPEID_OBJHANDLE)
-        no_gc = false;
-    else
-        no_gc = false;
-
     return true;
 }
 
-void script_optional::notify_gc_for_this()
-{
-    if(m_ti->GetFlags() & asOBJ_GC)
-        m_ti->GetEngine()->NotifyGarbageCollectorOfNewObject(this, m_ti);
-}
 
 script_optional::script_optional(asITypeInfo* ti)
     : m_ti(ti)
 {
     m_ti->AddRef();
-
-    notify_gc_for_this();
+    assert(m_has_value == false);
 }
 
 script_optional::script_optional(asITypeInfo* ti, const void* val)
     : m_ti(ti)
 {
     m_ti->AddRef();
-    notify_gc_for_this();
-
     assign(val);
 }
 
@@ -216,38 +201,9 @@ const void* script_optional::data_t::get(asITypeInfo* ti) const
         return ptr;
 }
 
-void script_optional::addref()
-{
-    asAtomicInc(m_refcount);
-}
-
 void script_optional::release()
 {
-    if(asAtomicDec(m_refcount) == 0)
-    {
         delete this;
-    }
-}
-
-void script_optional::enum_refs(asIScriptEngine* engine)
-{
-    if(!has_value())
-        return;
-
-    int subtype_id = m_ti->GetSubTypeId();
-    if(subtype_id & asTYPEID_MASK_OBJECT)
-    {
-        asITypeInfo* subtype_ti = engine->GetTypeInfoById(subtype_id);
-        asQWORD subtype_flags = subtype_ti->GetFlags();
-        if(subtype_flags & asOBJ_REF)
-        {
-            engine->GCEnumCallback(m_data.get(m_ti));
-        }
-        else if((subtype_flags & asOBJ_VALUE) && (subtype_flags & asOBJ_GC))
-        {
-            engine->ForwardGCEnumReferences(m_data.get(m_ti), subtype_ti);
-        }
-    }
 }
 
 static void* optional_value(script_optional& this_)
@@ -271,18 +227,12 @@ namespace detail
     template <bool UseGeneric>
     void register_script_optional_impl(asIScriptEngine* engine)
     {
-        template_class<script_optional> c(engine, "optional<T>", asOBJ_GC);
+        template_class<script_optional> c(engine, "optional<T>", asOBJ_SCOPED);
         c
             .template template_callback<&optional_template_callback>()
             .default_factory()
             .template factory<asITypeInfo*, const void*>("optional<T>@ f(int&in, const T&in) explicit")
-            .template addref<&script_optional::addref>()
-            .template get_refcount<&script_optional::get_refcount>()
             .template release<&script_optional::release>()
-            .template get_gc_flag<&script_optional::get_flag>()
-            .template set_gc_flag<&script_optional::set_flag>()
-            .template enum_refs<&script_optional::enum_refs>()
-            .template release_refs<&script_optional::release_refs>()
             .opAssign()
             .template method<&optional_opAssign_value>("optional<T>& opAssign(const T&in)")
             .template method<&script_optional::has_value>("bool get_has_value() const property")
