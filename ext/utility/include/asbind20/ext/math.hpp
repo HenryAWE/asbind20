@@ -18,6 +18,8 @@ constexpr bool close_to(T a, T b, T epsilon)
 {
     return std::abs(a - b) < epsilon;
 }
+
+void register_math_complex(asIScriptEngine* engine, bool generic = has_max_portability());
 } // namespace asbind20::ext
 
 #endif

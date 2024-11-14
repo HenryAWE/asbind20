@@ -2,6 +2,7 @@
 #include <cmath>
 #include <limits>
 #include <numbers>
+#include <complex>
 #include <type_traits>
 
 namespace asbind20::ext
@@ -151,5 +152,71 @@ void register_math_function(asIScriptEngine* engine, bool generic)
         register_math_function_impl<true>(engine);
     else
         register_math_function_impl<false>(engine);
+}
+
+template <typename Float>
+static void complex_default_constructor(void* mem)
+{
+    new(mem) std::complex<Float>();
+}
+
+template <typename Float>
+static Float complex_squared_length(const std::complex<Float>& c)
+{
+    return c.real() * c.real() + c.imag() * c.imag();
+}
+
+template <typename Float>
+static Float complex_length(const std::complex<Float>& c)
+{
+    return std::sqrt(complex_squared_length<Float>(c));
+}
+
+template <typename Float>
+static Float complex_abs(const std::complex<Float>& c)
+{
+    return std::abs(c);
+}
+
+template <bool UseGeneric>
+void register_math_complex_impl(asIScriptEngine* engine)
+{
+    using complex_t = std::complex<float>;
+
+    value_class<std::complex<float>, UseGeneric> c(
+        engine,
+        "complex",
+        asOBJ_POD | asOBJ_APP_CLASS_MORE_CONSTRUCTORS | asOBJ_APP_CLASS_ALLFLOATS | asOBJ_APP_CLASS_CAK
+    );
+    c
+        .common_behaviours()
+        .template constructor_function<&complex_default_constructor<float>, asCALL_CDECL_OBJLAST>("void f()")
+        .template constructor<float>("void f(float r)")
+        .template constructor<float, float>("void f(float r, float i)")
+        .opEquals()
+        .opAddAssign()
+        .opSubAssign()
+        .opMulAssign()
+        .opDivAssign()
+        .opAdd()
+        .opSub()
+        .opMul()
+        .opDiv()
+        .template method<&complex_squared_length<float>>("float get_squared_length() const property")
+        .template method<&complex_length<float>>("float get_length() const property")
+        .property("float real", 0)
+        .property("float imag", sizeof(float));
+
+    global<UseGeneric> g(engine);
+    g
+        .template function<&complex_abs<float>>("float abs(const complex&in)");
+}
+
+void register_math_complex(asIScriptEngine* engine, bool generic)
+{
+    if(generic)
+        register_math_complex_impl<true>(engine);
+    else
+        register_math_complex_impl<false>(engine);
 }
 } // namespace asbind20::ext
