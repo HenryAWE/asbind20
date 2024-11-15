@@ -8,7 +8,7 @@
 
 namespace asbind_test
 {
-void msg_callback(const asSMessageInfo* msg, void*)
+void asbind_test_suite::msg_callback(const asSMessageInfo* msg)
 {
     if(msg->type == asEMsgType::asMSGTYPE_ERROR)
     {
@@ -16,6 +16,30 @@ void msg_callback(const asSMessageInfo* msg, void*)
             << msg->section
             << "(" << msg->row << ':' << msg->col << "): "
             << msg->message;
+    }
+    else if(msg->type == asEMsgType::asMSGTYPE_WARNING)
+    {
+        std::cerr
+            << msg->section
+            << "(" << msg->row << ':' << msg->col << "): "
+            << msg->message
+            << std::endl;
+    }
+}
+
+void asbind_test_suite::ex_translator(asIScriptContext* ctx)
+{
+    try
+    {
+        throw;
+    }
+    catch(const std::exception& e)
+    {
+        ctx->SetException(e.what());
+    }
+    catch(...)
+    {
+        ctx->SetException("Unknown exception");
     }
 }
 
@@ -38,7 +62,10 @@ static void test_print(const std::string& msg)
 void asbind_test_suite::SetUp()
 {
     m_engine = asCreateScriptEngine();
-    m_engine->SetMessageCallback(asFUNCTION(msg_callback), this, asCALL_CDECL);
+    asbind20::global g(m_engine);
+    g
+        .message_callback<&asbind_test_suite::msg_callback>(*this)
+        .exception_translator<&asbind_test_suite::ex_translator>(*this);
 
     m_engine->SetEngineProperty(asEP_USE_CHARACTER_LITERALS, true);
 

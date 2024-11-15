@@ -798,6 +798,116 @@ public:
 
         return *this;
     }
+
+    /**
+     * Generic calling convention for message callback is not supported.
+     */
+    global& message_callback(asGENFUNC_t gfn, void* obj = nullptr) = delete;
+
+    template <native_function Callback>
+    requires(!std::is_member_function_pointer_v<std::decay_t<Callback>>)
+    global& message_callback(Callback fn, void* obj = nullptr)
+    {
+        int r = m_engine->SetMessageCallback(
+            asFunctionPtr(fn), obj, asCALL_CDECL
+        );
+        assert(r >= 0);
+
+        return *this;
+    }
+
+    template <native_function Callback, typename T>
+    requires(std::is_member_function_pointer_v<std::decay_t<Callback>>)
+    global& message_callback(Callback fn, T& obj)
+    {
+        int r = m_engine->SetMessageCallback(
+            asSMethodPtr<sizeof(fn)>::Convert(fn), (void*)std::addressof(obj), asCALL_THISCALL
+        );
+        assert(r >= 0);
+
+        return *this;
+    }
+
+    /**
+     * Generic calling convention for message callback is not supported
+     */
+    template <native_function auto Callback>
+    global& message_callback(use_generic_t, void* obj = nullptr) = delete;
+    template <native_function auto Callback, typename T>
+    global& message_callback(use_generic_t, T& obj) = delete;
+
+    template <native_function auto Callback>
+    requires(!std::is_member_function_pointer_v<std::decay_t<decltype(Callback)>>)
+    global& message_callback(void* obj = nullptr)
+    {
+        message_callback(Callback, obj);
+
+        return *this;
+    }
+
+    template <native_function auto Callback, typename T>
+    requires(std::is_member_function_pointer_v<std::decay_t<decltype(Callback)>>)
+    global& message_callback(T& obj)
+    {
+        message_callback(Callback, obj);
+
+        return *this;
+    }
+
+    /**
+     * Generic calling convention for exception translator is not supported.
+     */
+    global& exception_translator(asGENFUNC_t gfn, void* obj = nullptr) = delete;
+
+    template <native_function Callback>
+    requires(!std::is_member_function_pointer_v<std::decay_t<Callback>>)
+    global& exception_translator(Callback fn, void* obj = nullptr)
+    {
+        int r = m_engine->SetTranslateAppExceptionCallback(
+            asFunctionPtr(fn), obj, asCALL_CDECL
+        );
+        assert(r >= 0);
+
+        return *this;
+    }
+
+    template <native_function Callback, typename T>
+    requires(std::is_member_function_pointer_v<std::decay_t<Callback>>)
+    global& exception_translator(Callback fn, T& obj)
+    {
+        int r = m_engine->SetTranslateAppExceptionCallback(
+            asSMethodPtr<sizeof(fn)>::Convert(fn), (void*)std::addressof(obj), asCALL_THISCALL
+        );
+        assert(r >= 0);
+
+        return *this;
+    }
+
+    /**
+     * Generic calling convention for exception translator is not supported
+     */
+    template <native_function auto Callback>
+    global& exception_translator(use_generic_t, void* obj = nullptr) = delete;
+    template <native_function auto Callback, typename T>
+    global& exception_translator(use_generic_t, T& obj) = delete;
+
+    template <native_function auto Callback>
+    requires(!std::is_member_function_pointer_v<std::decay_t<decltype(Callback)>>)
+    global& exception_translator(void* obj = nullptr)
+    {
+        exception_translator(Callback, obj);
+
+        return *this;
+    }
+
+    template <native_function auto Callback, typename T>
+    requires(std::is_member_function_pointer_v<std::decay_t<decltype(Callback)>>)
+    global& exception_translator(T& obj)
+    {
+        exception_translator(Callback, obj);
+
+        return *this;
+    }
 };
 
 global(asIScriptEngine*) -> global<false>;
@@ -1870,6 +1980,7 @@ public:
     }
 
     template <native_function Fn>
+    requires(!std::is_member_function_pointer_v<std::decay_t<Fn>>)
     reference_class& template_callback(Fn&& fn) requires(Template && !ForceGeneric)
     {
         this->behaviour_impl(
@@ -1885,15 +1996,15 @@ public:
     template <native_function auto Callback>
     reference_class& template_callback(use_generic_t) requires(Template)
     {
-        asGENFUNC_t gfn = +[](asIScriptGeneric* gen)
-        {
-            asITypeInfo* ti = *(asITypeInfo**)gen->GetAddressOfArg(0);
-            bool* no_gc = *(bool**)gen->GetAddressOfArg(1);
-
-            bool result = std::invoke(Callback, ti, std::ref(*no_gc));
-            gen->SetReturnByte(result);
-        };
-        template_callback(gfn);
+        template_callback(
+            +[](asIScriptGeneric* gen) -> void
+            {
+                set_generic_return<bool>(
+                    gen,
+                    Callback(get_generic_arg<asITypeInfo*>(gen, 0), get_generic_arg<bool&>(gen, 1))
+                );
+            }
+        );
 
         return *this;
     }
@@ -1950,13 +2061,9 @@ public:
     reference_class& method(const char* decl)
     {
         if constexpr(ForceGeneric)
-        {
-            method<Function, CallConv>(use_generic, decl);
-        }
+            this->template method<Function, CallConv>(use_generic, decl);
         else
-        {
-            method(decl, Function, call_conv<CallConv>);
-        }
+            this->method_impl(decl, Function, call_conv<CallConv>);
 
         return *this;
     }

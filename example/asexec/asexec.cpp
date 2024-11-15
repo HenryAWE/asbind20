@@ -31,6 +31,22 @@ void message_callback(const asSMessageInfo* msg, void*)
         << std::endl;
 }
 
+void ex_translator(asIScriptContext* ctx, void*)
+{
+    try
+    {
+        throw;
+    }
+    catch(const std::exception& e)
+    {
+        ctx->SetException(e.what());
+    }
+    catch(...)
+    {
+        ctx->SetException("Unknown exception");
+    }
+}
+
 void print_exception(asIScriptContext* ctx)
 {
     assert(ctx);
@@ -64,7 +80,10 @@ int main(int argc, char* argv[])
     }
 
     asIScriptEngine* engine = asCreateScriptEngine();
-    engine->SetMessageCallback(asFUNCTION(message_callback), nullptr, asCALL_CDECL);
+    asbind20::global g(engine);
+    g
+        .message_callback<&message_callback>()
+        .exception_translator<&ex_translator>();
 
     engine->SetEngineProperty(asEP_USE_CHARACTER_LITERALS, true);
 
@@ -75,7 +94,7 @@ int main(int argc, char* argv[])
     asbind20::ext::register_script_hash(engine);
     asbind20::ext::register_std_string(engine);
     asbind20::ext::register_string_utils(engine);
-    asbind20::global(engine)
+    g
         .function<&script_print>(asbind20::use_generic, "void print(const string&in str, bool newline=true)");
 
     asIScriptModule* m = engine->GetModule("asexec", asGM_ALWAYS_CREATE);
