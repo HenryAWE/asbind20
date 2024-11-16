@@ -79,7 +79,7 @@ bool has_max_portability();
 
 template <typename T>
 auto get_generic_object(asIScriptGeneric* gen)
-    -> std::conditional_t<std::is_pointer_v<T>, T, std::add_rvalue_reference_t<T>>
+    -> std::conditional_t<std::is_pointer_v<T>, T, std::add_lvalue_reference_t<T>>
 {
     void* obj = gen->GetObject();
     if constexpr(std::is_pointer_v<T>)
@@ -88,7 +88,7 @@ auto get_generic_object(asIScriptGeneric* gen)
     }
     else
     {
-        using pointer_t = std::add_pointer_t<T>;
+        using pointer_t = std::add_pointer_t<std::remove_reference_t<T>>;
         return *(pointer_t)obj;
     }
 }
