@@ -1,3 +1,6 @@
+#ifndef ASBIND20_EXT_CONTAINER_DICTIONARY_HPP
+#define ASBIND20_EXT_CONTAINER_DICTIONARY_HPP
+
 #pragma once
 
 #include <map>
@@ -68,11 +71,7 @@ public:
         {
             if(!(type_id & ~asTYPEID_MASK_SEQNBR))
             {
-                std::memcpy(
-                    out,
-                    storage.local,
-                    engine->GetSizeOfPrimitiveType(type_id)
-                );
+                copy_primitive_value(out, storage.local, type_id);
                 return;
             }
 
@@ -282,3 +281,5 @@ private:
 
 void register_script_dictionary(asIScriptEngine* engine, bool generic = has_max_portability());
 } // namespace asbind20::ext
+
+#endif

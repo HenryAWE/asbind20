@@ -261,6 +261,9 @@ TEST_F(asbind_test_suite, value_class)
 
 TEST_F(asbind_test_suite, ref_class)
 {
+    if(asbind20::has_max_portability())
+        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+
     asIScriptEngine* engine = get_engine();
 
     using test_bind::my_ref_class;

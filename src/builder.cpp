@@ -12,6 +12,8 @@ int load_string(
     int line_offset
 )
 {
+    assert(m != nullptr);
+
     return m->AddScriptSection(
         section_name,
         code.data(),

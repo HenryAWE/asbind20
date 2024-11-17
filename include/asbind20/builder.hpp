@@ -9,6 +9,11 @@
 
 namespace asbind20
 {
+/**
+ * @brief Load a string as script section
+ *
+ * @return int AngelScript error code
+ */
 int load_string(
     asIScriptModule* m,
     const char* section_name,
@@ -16,6 +21,11 @@ int load_string(
     int line_offset = 0
 );
 
+/**
+ * @brief Load a file as script section
+ *
+ * @return int AngelScript error code
+ */
 int load_file(
     asIScriptModule* m,
     const std::filesystem::path& filename,

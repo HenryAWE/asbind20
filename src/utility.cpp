@@ -39,9 +39,46 @@ std::string extract_string(asIStringFactory* factory, void* str)
     return result;
 }
 
+std::size_t copy_primitive_value(void* dst, const void* src, int type_id)
+{
+    assert(!(type_id & ~asTYPEID_MASK_SEQNBR));
+
+    switch(type_id)
+    {
+    [[unlikely]] case asTYPEID_VOID:
+        return 0;
+
+    case asTYPEID_BOOL:
+    case asTYPEID_INT8:
+    case asTYPEID_UINT8:
+        *(std::uint8_t*)dst = *(std::uint8_t*)src;
+        return sizeof(std::uint8_t);
+
+    case asTYPEID_INT16:
+    case asTYPEID_UINT16:
+        *(std::uint16_t*)dst = *(std::uint16_t*)src;
+        return sizeof(std::uint16_t);
+
+    default: // enums
+    case asTYPEID_FLOAT:
+    case asTYPEID_INT32:
+    case asTYPEID_UINT32:
+        *(std::uint32_t*)dst = *(std::uint32_t*)src;
+        return sizeof(std::uint32_t);
+
+    case asTYPEID_DOUBLE:
+    case asTYPEID_INT64:
+    case asTYPEID_UINT64:
+        *(std::uint64_t*)dst = *(std::uint64_t*)src;
+        return sizeof(std::uint64_t);
+    }
+}
+
 asIScriptFunction* get_default_factory(asITypeInfo* ti)
 {
+    assert(ti != nullptr);
     assert(ti->GetFlags() & asOBJ_REF);
+
     for(asUINT i = 0; i < ti->GetFactoryCount(); ++i)
     {
         asIScriptFunction* func = ti->GetFactoryByIndex(i);
@@ -78,6 +115,7 @@ int translate_three_way(std::weak_ordering ord) noexcept
     else
         return 0;
 }
+
 std::strong_ordering translate_opCmp(int cmp) noexcept
 {
     if(cmp < 0)

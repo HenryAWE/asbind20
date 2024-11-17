@@ -927,6 +927,17 @@ protected:
     class_register_helper_base(asIScriptEngine* engine, const char* name)
         : my_base(engine), m_name(name) {}
 
+    template <typename Class>
+    void register_object_type(asQWORD flags)
+    {
+        int r = m_engine->RegisterObjectType(
+            m_name,
+            static_cast<int>(sizeof(Class)),
+            flags
+        );
+        assert(r >= 0);
+    }
+
     template <typename Fn>
     requires(std::is_member_function_pointer_v<Fn>)
     void method_impl(const char* decl, Fn&& fn, call_conv_t<asCALL_THISCALL>)
@@ -1347,12 +1358,7 @@ public:
     {
         assert(!(m_flags & asOBJ_REF));
 
-        int r = m_engine->RegisterObjectType(
-            m_name,
-            sizeof(Class),
-            m_flags
-        );
-        assert(r >= 0);
+        this->template register_object_type<Class>(m_flags);
     }
 
     /**
@@ -1834,6 +1840,9 @@ public:
         return *this;
     }
 
+    /**
+     * @brief Register a generic function.
+     */
     value_class& method(const char* decl, asGENFUNC_t gfn)
     {
         this->method_impl(decl, gfn, call_conv<asCALL_GENERIC>);
@@ -1841,6 +1850,9 @@ public:
         return *this;
     }
 
+    /**
+     * @brief Register a generic function.
+     */
     value_class& method(const char* decl, asGENFUNC_t gfn, call_conv_t<asCALL_GENERIC>)
     {
         this->method_impl(decl, gfn, call_conv<asCALL_GENERIC>);
@@ -1848,6 +1860,9 @@ public:
         return *this;
     }
 
+    /**
+     * @brief Register a function with generated generic wrapper.
+     */
     template <
         native_function auto Method,
         asECallConvTypes CallConv = detail::deduce_method_callconv<Method, Class>()>
@@ -1864,13 +1879,9 @@ public:
     value_class& method(const char* decl)
     {
         if constexpr(ForceGeneric)
-        {
-            method<Method, CallConv>(use_generic, decl);
-        }
+            this->template method<Method, CallConv>(use_generic, decl);
         else
-        {
-            method(decl, Method, call_conv<CallConv>);
-        }
+            this->method(decl, Method, call_conv<CallConv>);
 
         return *this;
     }
@@ -1934,12 +1945,7 @@ public:
             m_flags |= asOBJ_TEMPLATE;
         }
 
-        int r = m_engine->RegisterObjectType(
-            m_name,
-            sizeof(Class),
-            m_flags
-        );
-        assert(r >= 0);
+        this->template register_object_type<Class>(m_flags);
     }
 
     reference_class& behaviour(asEBehaviours beh, const char* decl, asGENFUNC_t gfn, call_conv_t<asCALL_GENERIC>)

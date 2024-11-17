@@ -1,6 +1,8 @@
 #ifndef ASBIND20_FUNCTION_TRAITS_HPP
 #define ASBIND20_FUNCTION_TRAITS_HPP
 
+#pragma once
+
 #include <type_traits>
 #include <tuple>
 #include "detail/include_as.hpp"
@@ -136,12 +138,6 @@ public:
     using first_arg_type = arg_type_optional<0>;
 
     using last_arg_type = arg_type_optional<arg_count_v - 1>;
-
-private:
-    static constexpr asECallConvTypes default_call_conv() noexcept
-    {
-        return is_method_v ? asCALL_THISCALL : asCALL_CDECL;
-    }
 };
 } // namespace asbind20
 

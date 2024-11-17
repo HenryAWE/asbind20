@@ -1380,29 +1380,9 @@ void script_array::value_construct_n(void* start, const void* value, size_type n
             if(tmp)
                 m_ti->GetEngine()->ReleaseScriptObject(tmp, m_ti->GetSubType());
         }
-        else if(m_subtype_id == asTYPEID_BOOL ||
-                m_subtype_id == asTYPEID_INT8 ||
-                m_subtype_id == asTYPEID_UINT8)
+        else // primitive types
         {
-            *(char*)ptr = *(char*)value;
-        }
-        else if(m_subtype_id == asTYPEID_INT16 ||
-                m_subtype_id == asTYPEID_UINT16)
-        {
-            *(short*)ptr = *(short*)value;
-        }
-        else if(m_subtype_id == asTYPEID_INT32 ||
-                m_subtype_id == asTYPEID_UINT32 ||
-                m_subtype_id == asTYPEID_FLOAT ||
-                m_subtype_id > asTYPEID_DOUBLE) // enums
-        {
-            *(int*)ptr = *(int*)value;
-        }
-        else if(m_subtype_id == asTYPEID_INT64 ||
-                m_subtype_id == asTYPEID_UINT64 ||
-                m_subtype_id == asTYPEID_DOUBLE)
-        {
-            *(double*)ptr = *(double*)value;
+            copy_primitive_value(ptr, value, m_subtype_id);
         }
     }
 }

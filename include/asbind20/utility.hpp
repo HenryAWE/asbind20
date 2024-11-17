@@ -73,6 +73,16 @@ asUINT sizeof_script_type(asIScriptEngine* engine, int type_id);
  */
 std::string extract_string(asIStringFactory* factory, void* str);
 
+/**
+ * @brief Copy a single primitive value
+ *
+ * @param dst Destination pointer
+ * @param src Source pointer
+ * @param type_id AngelScript TypeId
+ * @return std::size_t Bytes copied
+ */
+std::size_t copy_primitive_value(void* dst, const void* src, int type_id);
+
 template <typename Visitor, typename... Args>
 requires(sizeof...(Args) > 0 && (std::is_void_v<Args> && ...))
 decltype(auto) visit_primitive_type(Visitor&& vis, int type_id, Args*... args)
@@ -218,7 +228,6 @@ constexpr std::string string_concat(Args&&... args)
     string_concat_inplace(out, std::forward<Args>(args)...);
     return out;
 }
-
 
 /**
  * @brief Wrapper for script object, similar to a `std::unique_ptr`
