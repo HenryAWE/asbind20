@@ -460,27 +460,30 @@ public:
     }
 };
 
+// Tools for initialization list
+// Ref: https://www.angelcode.com/angelscript/sdk/docs/manual/doc_reg_basicref.html#doc_reg_basicref_4
+
 /**
- * @brief Wrapper for the initialization list of AngelScript
+ * @brief Wrapper for the initialization list of AngelScript with repeated values
  */
-class script_init_list
+class script_init_list_repeat
 {
 public:
     using size_type = asUINT;
 
-    script_init_list() = delete;
-    script_init_list(const script_init_list&) noexcept = default;
+    script_init_list_repeat() = delete;
+    script_init_list_repeat(const script_init_list_repeat&) noexcept = default;
 
-    explicit script_init_list(void* list_buf) noexcept
+    explicit script_init_list_repeat(void* list_buf) noexcept
     {
         assert(list_buf);
         m_size = *static_cast<size_type*>(list_buf);
         m_data = static_cast<std::byte*>(list_buf) + sizeof(size_type);
     }
 
-    script_init_list& operator=(const script_init_list&) noexcept = default;
+    script_init_list_repeat& operator=(const script_init_list_repeat&) noexcept = default;
 
-    bool operator==(const script_init_list& rhs) const noexcept
+    bool operator==(const script_init_list_repeat& rhs) const noexcept
     {
         return m_data == rhs.data();
     }

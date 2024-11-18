@@ -2274,10 +2274,18 @@ public:
         return *this;
     }
 
-    reference_class& list_factory(std::string_view repeated_type_name) requires(Template)
+    std::string list_factory_decl(std::string_view repeat_pattern) const
     {
-        std::string decl = string_concat(m_name, "@ f(int&in,int&in) {repeat ", repeated_type_name, "}");
-        if constexpr(ForceGeneric)
+        if constexpr(Template)
+            return string_concat(m_name, "@ f(int&in,int&in) {repeat ", repeat_pattern, "}");
+        else
+            string_concat(m_name, "@ f(int&in) {repeat ", repeat_pattern, "}");
+    }
+
+    reference_class& list_factory(use_generic_t, std::string_view repeat_pattern)
+    {
+        std::string decl = list_factory_decl(repeat_pattern);
+        if constexpr(Template)
         {
             list_factory_function(
                 decl.c_str(),
@@ -2295,11 +2303,48 @@ public:
         {
             list_factory_function(
                 decl.c_str(),
-                +[](asITypeInfo* ti, void* list_buf) -> Class*
+                +[](asIScriptGeneric* gen) -> void
                 {
-                    return new Class(ti, list_buf);
+                    Class* ptr = new Class(
+                        gen->GetArgAddress(0)
+                    );
+                    gen->SetReturnAddress(ptr);
                 }
             );
+        }
+
+        return *this;
+    }
+
+    reference_class& list_factory(std::string_view repeat_pattern) requires(Template)
+    {
+        if constexpr(ForceGeneric)
+        {
+            list_factory(use_generic, repeat_pattern);
+        }
+        else
+        {
+            std::string decl = list_factory_decl(repeat_pattern);
+            if constexpr(Template)
+            {
+                list_factory_function(
+                    decl.c_str(),
+                    +[](asITypeInfo* ti, void* list_buf) -> Class*
+                    {
+                        return new Class(ti, list_buf);
+                    }
+                );
+            }
+            else
+            {
+                list_factory_function(
+                    decl.c_str(),
+                    +[](void* list_buf) -> Class*
+                    {
+                        return new Class(list_buf);
+                    }
+                );
+            }
         }
 
         return *this;

@@ -111,7 +111,7 @@ script_array::script_array(asITypeInfo* ti, void* list_buf)
     m_ti->AddRef();
     m_elem_size = get_elem_size(engine, m_subtype_id);
 
-    script_init_list init_list(list_buf);
+    script_init_list_repeat init_list(list_buf);
 
     cache_data();
 
