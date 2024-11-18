@@ -5,14 +5,14 @@
 #include <asbind20/invoke.hpp>
 
 #ifndef ASBIND20_EXT_ARRAY_CACHE_ID
-#    define ASBIND20_EXT_ARRAY_CACHE_ID (asPWORD(2000))
+#    define ASBIND20_EXT_ARRAY_CACHE_ID 2000
 #endif
 
 namespace asbind20::ext
 {
 asPWORD script_array_cache_id()
 {
-    return ASBIND20_EXT_ARRAY_CACHE_ID;
+    return static_cast<asPWORD>(ASBIND20_EXT_ARRAY_CACHE_ID);
 }
 
 static asUINT get_elem_size(asIScriptEngine* engine, int subtype_id)

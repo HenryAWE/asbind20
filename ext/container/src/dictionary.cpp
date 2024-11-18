@@ -52,9 +52,17 @@ void dictionary::release_refs(asIScriptEngine* engine)
 
 static void dictionary_factory_default(asIScriptGeneric* gen)
 {
-    gen->SetReturnAddress(
-        new dictionary(gen->GetEngine())
-    );
+    dictionary* ptr = new dictionary(gen->GetEngine());
+    if(ptr)
+    {
+        asIScriptEngine* engine = gen->GetEngine();
+        int tid = gen->GetReturnTypeId();
+        assert(tid != 0);
+        asITypeInfo* ti = engine->GetTypeInfoById(tid);
+        int r = gen->GetEngine()->NotifyGarbageCollectorOfNewObject(ptr, ti);
+        assert(r >= 0);
+    }
+    gen->SetReturnAddress(ptr);
 }
 
 template <bool UseGeneric>
