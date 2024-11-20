@@ -230,23 +230,28 @@ constexpr std::string string_concat(Args&&... args)
 }
 
 /**
- * @brief Wrapper for script object, similar to a `std::unique_ptr`
+ * @brief Smart pointer for script object
  */
-class object
+class script_object
 {
 public:
-    object() noexcept = default;
+    script_object() noexcept = default;
 
-    object(object&& other) noexcept
+    script_object(script_object&& other) noexcept
         : m_obj(std::exchange(other.m_obj, nullptr)) {}
 
-    object(const object&) = delete;
+    script_object(const script_object&) = delete;
 
-    object(asIScriptObject* obj, bool addref = true)
+    explicit script_object(asIScriptObject* obj)
         : m_obj(obj)
     {
-        if(m_obj && addref)
+        if(m_obj)
             m_obj->AddRef();
+    }
+
+    ~script_object()
+    {
+        reset(nullptr);
     }
 
     asIScriptObject* get() const noexcept
@@ -254,31 +259,58 @@ public:
         return m_obj;
     }
 
-    operator asIScriptObject*() const noexcept
+    explicit operator asIScriptObject*() const noexcept
     {
         return get();
     }
 
+    /**
+     * @brief Release without decreasing reference count
+     *
+     * @warning USE WITH CAUTION!
+     *
+     * @return asIScriptObject* Previously stored object
+     */
     asIScriptObject* release() noexcept
     {
         return std::exchange(m_obj, nullptr);
     }
 
-    void reset(std::nullptr_t) noexcept
+    /**
+     * @brief Reset object the null pointer
+     *
+     * @return int Reference count after releasing the object
+     */
+    int reset(std::nullptr_t = nullptr) noexcept
     {
+        int prev_refcount = 0;
         if(m_obj)
-            m_obj->Release();
-        release();
+        {
+            prev_refcount = m_obj->Release();
+            m_obj = nullptr;
+        }
+
+        return prev_refcount;
     }
 
-    void reset(asIScriptObject* obj) noexcept
+    /**
+     * @brief Reset object
+     *
+     * @param obj New object to store
+     *
+     * @return int Reference count after releasing the object
+     */
+    int reset(asIScriptObject* obj)
     {
-        reset(nullptr);
+        int prev_refcount = reset(nullptr);
+
         if(obj)
         {
             obj->AddRef();
             m_obj = obj;
         }
+
+        return prev_refcount;
     }
 
 private:
@@ -396,7 +428,7 @@ public:
 
     request_context& operator=(const request_context&) = delete;
 
-    request_context(asIScriptEngine* engine)
+    explicit request_context(asIScriptEngine* engine)
         : m_engine(engine)
     {
         assert(m_engine != nullptr);
@@ -561,6 +593,34 @@ struct type_traits<std::byte>
         return static_cast<std::byte>(ctx->GetReturnByte());
     }
 };
+
+template <>
+struct type_traits<script_object>
+{
+    static int set_arg(asIScriptContext* ctx, asUINT arg, const script_object& val)
+    {
+        return ctx->SetArgObject(arg, val.get());
+    }
+
+    static script_object get_arg(asIScriptGeneric* gen, asUINT arg)
+    {
+        return script_object(static_cast<asIScriptObject*>(gen->GetArgObject(arg)));
+    }
+
+    static int set_return(asIScriptGeneric* gen, const script_object& val)
+    {
+        return gen->SetReturnObject(val.get());
+    }
+
+    static script_object get_return(asIScriptContext* ctx)
+    {
+        return script_object(static_cast<asIScriptObject*>(ctx->GetReturnObject()));
+    }
+};
+
+template <>
+struct type_traits<const script_object> : public type_traits<script_object>
+{};
 
 int exec(
     asIScriptEngine* engine,

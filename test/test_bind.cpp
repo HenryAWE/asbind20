@@ -238,25 +238,25 @@ TEST_F(asbind_test_suite, value_class)
     asbind20::request_context ctx(engine);
 
     auto test_1 = asbind20::script_function<int()>(m->GetFunctionByName("test_1"));
-    EXPECT_EQ(test_1(ctx), 42);
+    EXPECT_EQ(test_1(ctx).value(), 42);
 
     auto test_2 = asbind20::script_function<int()>(m->GetFunctionByName("test_2"));
-    EXPECT_EQ(test_2(ctx), 182376);
+    EXPECT_EQ(test_2(ctx).value(), 182376);
 
     auto test_3 = asbind20::script_function<int()>(m->GetFunctionByName("test_3"));
-    EXPECT_EQ(test_3(ctx), 6);
+    EXPECT_EQ(test_3(ctx).value(), 6);
 
     auto test_4 = asbind20::script_function<int()>(m->GetFunctionByName("test_4"));
-    EXPECT_EQ(test_4(ctx), 9);
+    EXPECT_EQ(test_4(ctx).value(), 9);
 
     auto test_5 = asbind20::script_function<int()>(m->GetFunctionByName("test_5"));
-    EXPECT_EQ(test_5(ctx), 11);
+    EXPECT_EQ(test_5(ctx).value(), 11);
 
     auto test_6 = asbind20::script_function<my_value_class()>(m->GetFunctionByName("test_6"));
-    EXPECT_EQ(test_6(ctx).get_val(), 2);
+    EXPECT_EQ(test_6(ctx).value().get_val(), 2);
 
     auto test_7 = asbind20::script_function<my_value_class()>(m->GetFunctionByName("test_7"));
-    EXPECT_EQ(test_7(ctx).get_val(), 0);
+    EXPECT_EQ(test_7(ctx).value().get_val(), 0);
 }
 
 TEST_F(asbind_test_suite, ref_class)
@@ -304,13 +304,13 @@ TEST_F(asbind_test_suite, ref_class)
     asIScriptContext* ctx = engine->CreateContext();
     {
         auto test_1 = asbind20::script_function<int()>(m->GetFunctionByName("test_1"));
-        EXPECT_EQ(test_1(ctx), 1);
+        EXPECT_EQ(test_1(ctx).value(), 1);
 
         auto test_2 = asbind20::script_function<int()>(m->GetFunctionByName("test_2"));
-        EXPECT_EQ(test_2(ctx), 2);
+        EXPECT_EQ(test_2(ctx).value(), 2);
 
         auto test_3 = asbind20::script_function<int()>(m->GetFunctionByName("test_3"));
-        EXPECT_EQ(test_3(ctx), 5);
+        EXPECT_EQ(test_3(ctx).value(), 5);
     }
     ctx->Release();
 }

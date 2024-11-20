@@ -24,7 +24,7 @@ TEST_F(asbind_test_suite, load_file)
 
     asIScriptContext* ctx = engine->CreateContext();
 
-    EXPECT_EQ(ma(ctx, 1, 2, 3), 1 * 2 + 3);
+    EXPECT_EQ(ma(ctx, 1, 2, 3).value(), 1 * 2 + 3);
 
     ctx->Release();
 }

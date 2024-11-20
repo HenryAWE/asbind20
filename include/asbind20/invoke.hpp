@@ -353,19 +353,20 @@ namespace detail
     }
 
     template <std::integral T>
-    requires(sizeof(T) <= sizeof(asQWORD))
     void set_arg(asIScriptContext* ctx, asUINT idx, T val)
     {
-        using arg_t = std::remove_cvref_t<T>;
+        constexpr std::size_t int_size = sizeof(std::decay_t<T>);
 
-        if constexpr(sizeof(arg_t) == sizeof(asBYTE))
+        if constexpr(int_size == sizeof(asBYTE))
             ctx->SetArgByte(idx, val);
-        else if constexpr(sizeof(arg_t) == sizeof(asWORD))
+        else if constexpr(int_size == sizeof(asWORD))
             ctx->SetArgWord(idx, val);
-        else if constexpr(sizeof(arg_t) == sizeof(asDWORD))
+        else if constexpr(int_size == sizeof(asDWORD))
             ctx->SetArgDWord(idx, val);
-        else if constexpr(sizeof(arg_t) == sizeof(asQWORD))
+        else if constexpr(int_size == sizeof(asQWORD))
             ctx->SetArgQWord(idx, val);
+        else
+            static_assert(!sizeof(T), "size of integral type is too large");
     }
 
     template <typename Enum>
@@ -384,7 +385,7 @@ namespace detail
         }
         else
         {
-            static_assert(sizeof(T) <= sizeof(int), "Value out of range");
+            static_assert(sizeof(T) <= sizeof(int), "underlying type of enum is too large");
             set_arg(ctx, idx, static_cast<int>(val));
         }
     }
@@ -433,7 +434,10 @@ namespace detail
         {
             type_traits<T>::set_arg(ctx, idx, obj);
         }
-        ctx->SetArgAddress(idx, (void*)std::addressof(obj));
+        else
+        {
+            ctx->SetArgAddress(idx, (void*)std::addressof(obj));
+        }
     }
 
     template <typename Tuple>
@@ -448,7 +452,7 @@ namespace detail
     template <typename T>
     concept is_script_obj =
         std::is_same_v<T, asIScriptObject*> ||
-        std::is_same_v<T, object>;
+        std::is_same_v<T, const asIScriptObject*>;
 
     template <typename T>
     requires(!std::is_const_v<T>)
@@ -479,29 +483,31 @@ namespace detail
         }
         else
         {
-            using ret_t = typename std::conditional_t<
-                std::is_enum_v<T>,
-                std::underlying_type<T>,
-                std::remove_cvref<T>>::type;
-            if constexpr(std::integral<ret_t>)
+            using primitive_t = typename std::conditional_t<
+                std::is_enum_v<std::remove_cvref_t<T>>,
+                int,
+                std::remove_cvref_t<T>>;
+            if constexpr(std::integral<primitive_t>)
             {
-                if constexpr(sizeof(ret_t) == 1)
+                if constexpr(sizeof(primitive_t) == 1)
                     return static_cast<T>(ctx->GetReturnByte());
-                else if constexpr(sizeof(ret_t) == 2)
+                else if constexpr(sizeof(primitive_t) == 2)
                     return static_cast<T>(ctx->GetReturnWord());
-                else if constexpr(sizeof(ret_t) == 4)
+                else if constexpr(sizeof(primitive_t) == 4)
                     return static_cast<T>(ctx->GetReturnDWord());
-                else if constexpr(sizeof(ret_t) == 8)
+                else if constexpr(sizeof(primitive_t) == 8)
                     return static_cast<T>(ctx->GetReturnQWord());
             }
-            else if constexpr(std::is_same_v<ret_t, float>)
+            else if constexpr(std::is_same_v<primitive_t, float>)
             {
                 return ctx->GetReturnFloat();
             }
-            else if constexpr(std::is_same_v<ret_t, double>)
+            else if constexpr(std::is_same_v<primitive_t, double>)
             {
                 return ctx->GetReturnDouble();
             }
+            else
+                static_assert(!sizeof(T), "Invalid type");
         }
     }
 
@@ -531,146 +537,136 @@ script_invoke_result<R> script_invoke(asIScriptContext* ctx, asIScriptFunction* 
     assert(func != nullptr);
     assert(ctx != nullptr);
 
-    ctx->Prepare(func);
-    detail::set_args(ctx, std::forward_as_tuple(args...));
-
-    return detail::execute_impl<R>(func, ctx);
-}
-
-/**
- * @brief Calling a method on script class
- */
-template <typename R, typename... Args>
-script_invoke_result<R> script_invoke(asIScriptContext* ctx, asIScriptObject* obj, asIScriptFunction* func, Args&&... args)
-{
-    assert(func != nullptr);
-    assert(ctx != nullptr);
-    //assert(obj->GetTypeId() == func->GetObjectType()->GetTypeId());
-
-    ctx->Prepare(func);
-    ctx->SetObject(obj);
+    int r = 0;
+    r = ctx->Prepare(func);
+    assert(r >= 0);
 
     detail::set_args(ctx, std::forward_as_tuple(args...));
 
     return detail::execute_impl<R>(func, ctx);
 }
 
+template <typename T>
+concept script_object_handle =
+    std::is_same_v<std::remove_cvref_t<T>, asIScriptObject*> ||
+    std::is_same_v<std::remove_cvref_t<T>, const asIScriptObject*> ||
+    requires(T&& obj) {
+        (const asIScriptObject*)obj;
+    };
+
 /**
  * @brief Calling a method on script class
  */
-template <typename R, typename... Args>
-script_invoke_result<R> script_invoke(asIScriptContext* ctx, const asIScriptObject* obj, asIScriptFunction* func, Args&&... args)
+template <typename R, script_object_handle Object, typename... Args>
+script_invoke_result<R> script_invoke(asIScriptContext* ctx, Object&& obj, asIScriptFunction* func, Args&&... args)
 {
     assert(func != nullptr);
     assert(ctx != nullptr);
 
-    ctx->Prepare(func);
-    ctx->SetObject(const_cast<asIScriptObject*>(obj));
+    int r = 0;
+    r = ctx->Prepare(func);
+    assert(r >= 0);
+    r = ctx->SetObject(const_cast<asIScriptObject*>((const asIScriptObject*)obj));
+    assert(r >= 0);
 
-    detail::set_args(ctx, std::forward_as_tuple(args...));
+    detail::set_args(ctx, std::forward_as_tuple(std::forward<Args>(args)...));
 
     return detail::execute_impl<R>(func, ctx);
 }
 
-/**
- * @brief Calling a method on script class
- */
-template <typename R, typename... Args>
-script_invoke_result<R> script_invoke(asIScriptContext* ctx, const object& obj, asIScriptFunction* func, Args&&... args)
+class script_function_base
 {
-    return script_invoke<R>(ctx, obj.get(), func, std::forward<Args>(args)...);
-}
+protected:
+    script_function_base() noexcept
+        : m_fp(nullptr) {}
 
-namespace detail
-{
-    class script_function_base
+    script_function_base(const script_function_base& other)
+        : script_function_base(other.target()) {}
+
+    script_function_base(script_function_base&& other)
+        : m_fp(std::exchange(other.m_fp, nullptr)) {}
+
+    script_function_base(asIScriptFunction* fp)
+        : m_fp(fp)
     {
-    public:
-        script_function_base() noexcept
-            : m_fp(nullptr) {}
+        if(m_fp)
+            m_fp->AddRef();
+    }
 
-        script_function_base(const script_function_base&) noexcept = default;
-
-        script_function_base(asIScriptFunction* fp)
-            : m_fp(fp) {}
-
-        script_function_base& operator=(const script_function_base&) noexcept = default;
-
-        asIScriptFunction* target() const noexcept
-        {
-            return m_fp;
-        }
-
-        explicit operator bool() const noexcept
-        {
-            return static_cast<bool>(m_fp);
-        }
-
-    protected:
-        [[noreturn]]
-        static void throw_bad_call()
-        {
-            throw std::bad_function_call();
-        }
-
-        void set_target(asIScriptFunction* fp) noexcept
-        {
-            m_fp = fp;
-        }
-
-    private:
-        asIScriptFunction* m_fp;
-    };
-
-    template <bool IsMethod, typename R, typename... Args>
-    class script_function_impl;
-
-    template <typename R, typename... Args>
-    class script_function_impl<false, R, Args...> : public script_function_base
+public:
+    ~script_function_base()
     {
-        using my_base = script_function_base;
+        reset();
+    }
 
-    public:
-        using my_base::my_base;
-
-        auto operator()(asIScriptContext* ctx, Args&&... args) const
-        {
-            asIScriptFunction* fp = target();
-            if(!fp)
-                throw_bad_call();
-
-            auto result = script_invoke<R>(ctx, target(), std::forward<Args>(args)...);
-
-            return std::move(result).value();
-        }
-    };
-
-    template <typename R, typename... Args>
-    class script_function_impl<true, R, Args...> : public script_function_base
+    script_function_base& operator=(const script_function_base& other)
     {
-        using my_base = script_function_base;
+        if(this == &other)
+            return *this;
 
-    public:
-        using my_base::my_base;
+        reset(other.target());
 
-        auto operator()(asIScriptContext* ctx, asIScriptObject* obj, Args&&... args) const
+        return *this;
+    }
+
+    script_function_base& operator=(script_function_base&& other) noexcept
+    {
+        script_function_base(std::move(other)).swap(*this);
+        return *this;
+    }
+
+    asIScriptFunction* target() const noexcept
+    {
+        return m_fp;
+    }
+
+    explicit operator bool() const noexcept
+    {
+        return static_cast<bool>(target());
+    }
+
+    explicit operator asIScriptFunction*() const noexcept
+    {
+        return target();
+    }
+
+    int reset(std::nullptr_t = nullptr) noexcept
+    {
+        int prev_refcount = 0;
+        if(m_fp)
         {
-            asIScriptFunction* fp = target();
-            if(!fp)
-                throw_bad_call();
-
-            auto result = script_invoke<R>(ctx, obj, target(), std::forward<Args>(args)...);
-
-            return std::move(result).value();
+            prev_refcount = m_fp->Release();
+            m_fp = nullptr;
         }
 
-        auto operator()(asIScriptContext* ctx, const object& obj, Args&&... args) const
-        {
-            return (*this)(ctx, obj.get(), std::forward<Args>(args)...);
-        }
-    };
-} // namespace detail
+        return prev_refcount;
+    }
 
+    int reset(asIScriptFunction* fp)
+    {
+        int prev_refcount = reset(nullptr);
+        m_fp = fp;
+        if(m_fp)
+            m_fp->AddRef();
+
+        return prev_refcount;
+    }
+
+protected:
+    [[noreturn]]
+    static void throw_bad_call()
+    {
+        throw std::bad_function_call();
+    }
+
+    void swap(script_function_base& other) noexcept
+    {
+        std::swap(m_fp, other.m_fp);
+    }
+
+private:
+    asIScriptFunction* m_fp;
+};
 
 template <typename... Ts>
 class script_function;
@@ -679,19 +675,33 @@ class script_function;
  * @brief Wrapper of script function
  */
 template <typename R, typename... Args>
-class script_function<R(Args...)> : public detail::script_function_impl<false, R, Args...>
+class script_function<R(Args...)> : public script_function_base
 {
-    using my_base = detail::script_function_impl<false, R, Args...>;
-
 public:
-    using my_base::my_base;
+    using result_type = script_invoke_result<R>;
 
-    script_function& operator=(const script_function&) noexcept = default;
+    script_function() noexcept = default;
+    script_function(const script_function&) = default;
+    script_function(script_function&&) noexcept = default;
 
-    script_function& operator=(asIScriptFunction* fp) noexcept
+    explicit script_function(asIScriptFunction* fp)
+        : script_function_base(fp) {}
+
+    script_function& operator=(const script_function&) = default;
+    script_function& operator=(script_function&&) noexcept = default;
+
+    result_type operator()(asIScriptContext* ctx, Args&&... args) const
     {
-        this->set_target(fp);
-        return *this;
+        asIScriptFunction* fp = target();
+        if(!fp)
+            throw_bad_call();
+
+        return script_invoke<R>(ctx, fp, std::forward<Args>(args)...);
+    }
+
+    void swap(script_function& other) noexcept
+    {
+        script_function_base::swap(other);
     }
 };
 
@@ -702,19 +712,34 @@ class script_method;
  * @brief Wrapper of script method, a.k.a member function
  */
 template <typename R, typename... Args>
-class script_method<R(Args...)> : public detail::script_function_impl<true, R, Args...>
+class script_method<R(Args...)> : public script_function_base
 {
-    using my_base = detail::script_function_impl<true, R, Args...>;
-
 public:
-    using my_base::my_base;
+    using result_type = script_invoke_result<R>;
 
-    script_method& operator=(const script_method&) noexcept = default;
+    script_method() noexcept = default;
+    script_method(const script_method&) = default;
+    script_method(script_method&&) noexcept = default;
 
-    script_method& operator=(asIScriptFunction* fp) noexcept
+    explicit script_method(asIScriptFunction* fp)
+        : script_function_base(fp) {}
+
+    script_method& operator=(const script_method&) = default;
+    script_method& operator=(script_method&&) noexcept = default;
+
+    template <script_object_handle Object>
+    result_type operator()(asIScriptContext* ctx, Object&& obj, Args&&... args) const
     {
-        this->set_target(fp);
-        return *this;
+        asIScriptFunction* fp = target();
+        if(!fp)
+            throw_bad_call();
+
+        return script_invoke<R>(ctx, std::forward<Object>(obj), fp, std::forward<Args>(args)...);
+    }
+
+    void swap(script_method& other) noexcept
+    {
+        script_function_base::swap(other);
     }
 };
 
@@ -729,10 +754,10 @@ public:
  * @note This function requires the class to be default constructible
  */
 [[nodiscard]]
-inline object instantiate_class(asIScriptContext* ctx, asITypeInfo* class_info)
+inline script_object instantiate_class(asIScriptContext* ctx, asITypeInfo* class_info)
 {
     if(!class_info) [[unlikely]]
-        return object();
+        return script_object();
 
     asIScriptFunction* factory = nullptr;
     if(int flags = class_info->GetFlags(); flags & asOBJ_REF)
@@ -741,10 +766,10 @@ inline object instantiate_class(asIScriptContext* ctx, asITypeInfo* class_info)
     }
 
     if(!factory) [[unlikely]]
-        return object();
+        return script_object();
 
-    auto result = script_invoke<object>(ctx, factory);
-    return result.has_value() ? std::move(*result) : object();
+    auto result = script_invoke<script_object>(ctx, factory);
+    return result.has_value() ? std::move(*result) : script_object();
 }
 
 } // namespace asbind20
