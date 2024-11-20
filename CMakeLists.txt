@@ -28,6 +28,12 @@ find_package(Angelscript 2.37.0 CONFIG REQUIRED)
 
 add_library(asbind20 STATIC)
 
+ # Enable warnings for development
+target_compile_options(asbind20 PRIVATE
+    $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
+    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic -Werror>
+)
+
 # Add an ALIAS target for using the library by add_subdirectory()
 add_library(asbind20::asbind20 ALIAS asbind20)
 

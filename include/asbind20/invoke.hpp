@@ -305,7 +305,7 @@ public:
 
     void operator*() noexcept {}
 
-    const void operator*() const noexcept {}
+    void operator*() const noexcept {}
 
     bool has_value() const noexcept
     {
@@ -323,7 +323,7 @@ public:
             throw_bad_access();
     }
 
-    const void value() const noexcept
+    void value() const noexcept
     {
         if(!has_value())
             throw_bad_access();
@@ -511,8 +511,8 @@ namespace detail
         }
     }
 
-    template <typename R, typename... Args>
-    auto execute_impl(asIScriptFunction* func, asIScriptContext* ctx)
+    template <typename R>
+    auto get_invoke_result(asIScriptContext* ctx)
     {
         int r = ctx->Execute();
 
@@ -537,13 +537,14 @@ script_invoke_result<R> script_invoke(asIScriptContext* ctx, asIScriptFunction* 
     assert(func != nullptr);
     assert(ctx != nullptr);
 
+    [[maybe_unused]]
     int r = 0;
     r = ctx->Prepare(func);
     assert(r >= 0);
 
     detail::set_args(ctx, std::forward_as_tuple(args...));
 
-    return detail::execute_impl<R>(func, ctx);
+    return detail::get_invoke_result<R>(ctx);
 }
 
 template <typename T>
@@ -571,7 +572,7 @@ script_invoke_result<R> script_invoke(asIScriptContext* ctx, Object&& obj, asISc
 
     detail::set_args(ctx, std::forward_as_tuple(std::forward<Args>(args)...));
 
-    return detail::execute_impl<R>(func, ctx);
+    return detail::get_invoke_result<R>(ctx);
 }
 
 class script_function_base
@@ -760,7 +761,7 @@ inline script_object instantiate_class(asIScriptContext* ctx, asITypeInfo* class
         return script_object();
 
     asIScriptFunction* factory = nullptr;
-    if(int flags = class_info->GetFlags(); flags & asOBJ_REF)
+    if(asQWORD flags = class_info->GetFlags(); flags & asOBJ_REF)
     {
         factory = get_default_factory(class_info);
     }

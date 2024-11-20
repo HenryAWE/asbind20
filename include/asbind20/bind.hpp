@@ -198,12 +198,7 @@ void set_generic_return(asIScriptGeneric* gen, T&& ret)
             gen->SetReturnObject(ptr);
         else
         {
-            using value_t = std::remove_pointer_t<T>;
-
-            if(std::is_class_v<T>)
-                gen->SetReturnObject(ptr);
-            else
-                gen->SetReturnAddress(ptr);
+            gen->SetReturnAddress(ptr);
         }
     }
     else if constexpr(std::is_class_v<T>)
@@ -1051,6 +1046,7 @@ protected:
     template <native_function auto Behaviour, asECallConvTypes CallConv>
     void wrapped_behaviour_impl(asEBehaviours beh, const char* decl)
     {
+        [[maybe_unused]]
         int r = 0;
         if constexpr(ForceGeneric)
         {
@@ -1139,14 +1135,14 @@ protected:
 
     ASBIND20_CLASS_UNARY_PREFIX_OP(
         opNeg, -, (m_name, " opNeg() const"), Class, const
-    );
+    )
 
     ASBIND20_CLASS_UNARY_PREFIX_OP(
         opPreInc, ++, (m_name, "& opPreInc()"), Class&,
-    );
+    )
     ASBIND20_CLASS_UNARY_PREFIX_OP(
         opPreDec, --, (m_name, "& opPreDec()"), Class&,
-    );
+    )
 
 #undef ASBIND20_CLASS_REGISTER_UNARY_PREFIX_OP
 
@@ -1220,25 +1216,25 @@ protected:
 
     ASBIND20_CLASS_BINARY_OP_IMPL(
         opAssign, =, (m_name, "& opAssign(const ", m_name, " &in)"), Class&, , const Class&
-    );
+    )
     ASBIND20_CLASS_BINARY_OP_IMPL(
         opAddAssign, +=, (m_name, "& opAddAssign(const ", m_name, " &in)"), Class&, , const Class&
-    );
+    )
     ASBIND20_CLASS_BINARY_OP_IMPL(
         opSubAssign, -=, (m_name, "& opSubAssign(const ", m_name, " &in)"), Class&, , const Class&
-    );
+    )
     ASBIND20_CLASS_BINARY_OP_IMPL(
         opMulAssign, *=, (m_name, "& opMulAssign(const ", m_name, " &in)"), Class&, , const Class&
-    );
+    )
     ASBIND20_CLASS_BINARY_OP_IMPL(
         opDivAssign, /=, (m_name, "& opDivAssign(const ", m_name, " &in)"), Class&, , const Class&
-    );
+    )
 
     // Comparison operators
 
     ASBIND20_CLASS_BINARY_OP_IMPL(
         opEquals, ==, ("bool opEquals(const ", m_name, " &in) const"), bool, const, const Class&
-    );
+    )
 
     // opCmp needs special logic to translate the result of operator<=> from C++
 
@@ -1280,16 +1276,16 @@ protected:
 
     ASBIND20_CLASS_BINARY_OP_IMPL(
         opAdd, +, (m_name, " opAdd(const ", m_name, " &in) const"), Class, const, const Class&
-    );
+    )
     ASBIND20_CLASS_BINARY_OP_IMPL(
         opSub, -, (m_name, " opSub(const ", m_name, " &in) const"), Class, const, const Class&
-    );
+    )
     ASBIND20_CLASS_BINARY_OP_IMPL(
         opMul, *, (m_name, " opMul(const ", m_name, " &in) const"), Class, const, const Class&
-    );
+    )
     ASBIND20_CLASS_BINARY_OP_IMPL(
         opDiv, /, (m_name, " opDiv(const ", m_name, " &in) const"), Class, const, const Class&
-    );
+    )
 
 #undef ASBIND20_CLASS_BINARY_OP_GENERIC
 #undef ASBIND20_CLASS_BINARY_OP_NATIVE
@@ -1314,9 +1310,9 @@ protected:
             decl.rend(),
             [](char ch)
             {
-                return '0' <= ch && ch <= '9' ||
-                       'a' <= ch && ch <= 'z' ||
-                       'A' <= ch && ch <= 'Z' ||
+                return ('0' <= ch && ch <= '9') ||
+                       ('a' <= ch && ch <= 'z') ||
+                       ('A' <= ch && ch <= 'Z') ||
                        ch == '_' ||
                        ch > 127;
             }
@@ -2102,6 +2098,7 @@ public:
             asFunctionPtr(gfn),
             asCALL_GENERIC
         );
+        assert(r >= 0);
 
         return *this;
     }
@@ -2751,13 +2748,17 @@ public:
     interface(asIScriptEngine* engine, const char* name)
         : m_engine(engine), m_name(name)
     {
-        int r = m_engine->RegisterInterface(m_name);
+        [[maybe_unused]]
+        int r = 0;
+        r = m_engine->RegisterInterface(m_name);
         assert(r >= 0);
     }
 
     interface& method(const char* decl)
     {
-        int r = m_engine->RegisterInterfaceMethod(
+        [[maybe_unused]]
+        int r = 0;
+        r = m_engine->RegisterInterfaceMethod(
             m_name,
             decl
         );

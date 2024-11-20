@@ -279,6 +279,7 @@ namespace detail
 
     constexpr std::size_t concat_size(char ch)
     {
+        (void)ch;
         return 1;
     }
 
@@ -567,8 +568,10 @@ public:
     using is_always_equal = std::true_type;
 
     as_allocator() noexcept = default;
+
     template <typename U>
-    as_allocator(const as_allocator<U>&) noexcept {};
+    as_allocator(const as_allocator<U>&) noexcept
+    {}
 
     as_allocator& operator=(const as_allocator&) = default;
 
