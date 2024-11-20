@@ -2007,7 +2007,11 @@ public:
             {
                 set_generic_return<bool>(
                     gen,
-                    Callback(get_generic_arg<asITypeInfo*>(gen, 0), get_generic_arg<bool&>(gen, 1))
+                    std::invoke(
+                        Callback,
+                        get_generic_arg<asITypeInfo*>(gen, 0),
+                        refptr_wrapper<bool>(get_generic_arg<bool*>(gen, 1))
+                    )
                 );
             }
         );

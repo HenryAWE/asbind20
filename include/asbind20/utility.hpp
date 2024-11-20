@@ -16,19 +16,78 @@
 
 namespace asbind20
 {
-template <typename Class, typename... Args>
-concept newable = requires(Args... args) {
-    new Class(args...);
+namespace detail
+{
+    template <typename T>
+    constexpr T& refptr_helper_ref(T& ref) noexcept
+    {
+        return ref;
+    }
+
+    template <typename T>
+    constexpr void refptr_helper_ref(T&&) = delete;
+
+    template <typename T, typename U>
+    concept refptr_check_helper_ref = requires() {
+        refptr_helper_ref<T>(std::declval<U>());
+    };
+} // namespace detail
+
+/**
+ * @brief Wrapper for interchanging between reference and pointer. Similar to the `std::reference_wrapper<T>`
+ */
+template <typename T>
+class refptr_wrapper
+{
+public:
+    using type = T;
+
+    template <typename U>
+    requires(detail::refptr_check_helper_ref<T, U> && !std::is_same_v<refptr_wrapper, std::remove_cvref_t<U>>)
+    constexpr refptr_wrapper(U&& ref) noexcept(noexcept(detail::refptr_helper_ref<T>(std::forward<U>(ref))))
+        : m_ptr(std::addressof(detail::refptr_helper_ref<T>(std::forward<U>(ref))))
+    {}
+
+    constexpr refptr_wrapper(T* ptr) noexcept
+        : m_ptr(ptr) {}
+
+    constexpr refptr_wrapper(const refptr_wrapper&) noexcept = default;
+
+    constexpr refptr_wrapper& operator=(const refptr_wrapper&) noexcept = default;
+
+    constexpr operator T&() const noexcept
+    {
+        return *m_ptr;
+    }
+
+    constexpr operator T*() const noexcept
+    {
+        return m_ptr;
+    }
+
+    constexpr T& get() const noexcept
+    {
+        return *m_ptr;
+    }
+
+    constexpr T* get_ptr() const noexcept
+    {
+        return m_ptr;
+    }
+
+private:
+    T* m_ptr;
 };
+
+template <typename T>
+refptr_wrapper(T&) -> refptr_wrapper<T>;
+
+template <typename T>
+refptr_wrapper(T*) -> refptr_wrapper<T>;
 
 template <int TypeId>
 requires(!(TypeId & ~asTYPEID_MASK_SEQNBR))
-struct primitive_type_of
-{
-    static_assert(TypeId > asTYPEID_DOUBLE);
-    using type = int; // enums
-    static constexpr char decl[] = "int"; // placeholder
-};
+struct primitive_type_of;
 
 #define ASBIND20_UTILITY_DEFINE_PRIMITIVE_TYPE_OF(as_type_id, cpp_type, script_decl) \
     template <>                                                                      \
@@ -56,18 +115,27 @@ ASBIND20_UTILITY_DEFINE_PRIMITIVE_TYPE_OF(asTYPEID_DOUBLE, double, "double");
 template <int TypeId>
 using primitive_type_of_t = typename primitive_type_of<TypeId>::type;
 
+/**
+ * @brief Check if a type id refers to a primitive type
+ */
 inline bool is_primitive_type(int type_id) noexcept
 {
     return !(type_id & ~asTYPEID_MASK_SEQNBR);
 }
 
+/**
+ * @brief Get the size of a script type
+ *
+ * @param type_id AngelScript type id
+ * @return asUINT
+ */
 asUINT sizeof_script_type(asIScriptEngine* engine, int type_id);
 
 /**
- * @brief Extracts the contents from a script string
+ * @brief Extracts the contents from a script string without knowing the underlying type
  *
  * @param factory The string factory
- * @param str The script string
+ * @param str The pointer to script string
  *
  * @return std::string Result string
  */
@@ -78,34 +146,49 @@ std::string extract_string(asIStringFactory* factory, void* str);
  *
  * @param dst Destination pointer
  * @param src Source pointer
- * @param type_id AngelScript TypeId
+ * @param type_id AngelScript type id
  * @return std::size_t Bytes copied
+ *
+ * @warning Please make sure the destination has enough space for the value
  */
 std::size_t copy_primitive_value(void* dst, const void* src, int type_id);
 
-template <typename Visitor, typename... Args>
-requires(sizeof...(Args) > 0 && (std::is_void_v<Args> && ...))
-decltype(auto) visit_primitive_type(Visitor&& vis, int type_id, Args*... args)
-{
-    assert(!(type_id & ~asTYPEID_MASK_SEQNBR));
-    assert(type_id != asTYPEID_VOID);
+template <typename T>
+concept void_ptr = std::is_pointer_v<std::decay_t<T>> &&
+                   std::is_void_v<std::remove_pointer_t<std::decay_t<T>>>;
 
-    auto wrapper = [&]<typename T>() -> decltype(auto)
+/**
+ * @brief Dispatches pointer of primitive values to corresponding type. Similar to the `std::visit`.
+ *
+ * @param Visitor Callable object that can accept all kind of pointer to primitive types
+ * @param type_id AngelScript TypeId
+ * @param args Pointers to primitive values
+ */
+template <typename Visitor, void_ptr... VoidPtrs>
+requires(sizeof...(VoidPtrs) > 0)
+decltype(auto) visit_primitive_type(Visitor&& vis, int type_id, VoidPtrs... args)
+{
+    assert(!(type_id & ~asTYPEID_MASK_SEQNBR) && "Must be a primitive type");
+    assert(type_id != asTYPEID_VOID && "Must not be void");
+
+    auto wrapper = [&]<typename T>(std::in_place_type_t<T>) -> decltype(auto)
     {
         return std::invoke(
             std::forward<Visitor>(vis),
-            ((typename std::pointer_traits<Args*>::template rebind<T>)args)...
+            ((typename std::pointer_traits<VoidPtrs>::template rebind<T>)args)...
         );
     };
 
 #define ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(as_type_id) \
-case as_type_id: return wrapper.template operator()<primitive_type_of_t<as_type_id>>();
+case as_type_id:                                               \
+    return wrapper(std::in_place_type<primitive_type_of_t<as_type_id>>)
 
     switch(type_id)
     {
         ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(asTYPEID_BOOL);
         ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(asTYPEID_INT8);
         ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(asTYPEID_INT16);
+    default: /* enums */
         ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(asTYPEID_INT32);
         ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(asTYPEID_INT64);
         ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(asTYPEID_UINT8);
@@ -114,9 +197,6 @@ case as_type_id: return wrapper.template operator()<primitive_type_of_t<as_type_
         ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(asTYPEID_UINT64);
         ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(asTYPEID_FLOAT);
         ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(asTYPEID_DOUBLE);
-
-    default: /* enums */
-        return wrapper.template operator()<int>();
     }
 
 #undef ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE
@@ -138,8 +218,6 @@ public:
 
 /**
  * @brief Wrapper for `asAcquireExclusiveLock()` and `asReleaseExclusiveLock()`
- *
- * @see as_exclusive_lock_t
  */
 inline constexpr as_exclusive_lock_t as_exclusive_lock = {};
 
@@ -157,6 +235,9 @@ public:
     }
 };
 
+/**
+ * @brief Wrapper for `asAcquireSharedLock()` and `asReleaseSharedLock()`
+ */
 inline constexpr as_shared_lock_t as_shared_lock = {};
 
 namespace detail
@@ -209,6 +290,13 @@ namespace detail
         std::is_same_v<std::remove_cvref_t<T>, char>;
 } // namespace detail
 
+/**
+ * @brief Concatenate strings
+ *
+ * @param out Output string, must be empty
+ * @param args String-like inputs
+ * @return std::string& Reference to the output
+ */
 template <detail::concat_accepted... Args>
 constexpr std::string& string_concat_inplace(std::string& out, Args&&... args)
 {
@@ -221,6 +309,12 @@ constexpr std::string& string_concat_inplace(std::string& out, Args&&... args)
     return out;
 }
 
+/**
+ * @brief Concatenate strings
+ *
+ * @param args String-like inputs
+ * @return std::string Result
+ */
 template <detail::concat_accepted... Args>
 constexpr std::string string_concat(Args&&... args)
 {
@@ -622,6 +716,9 @@ template <>
 struct type_traits<const script_object> : public type_traits<script_object>
 {};
 
+/**
+ * @brief Execute a piece of AngelScript code
+ */
 int exec(
     asIScriptEngine* engine,
     std::string_view code,
