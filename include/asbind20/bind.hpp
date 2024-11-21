@@ -1117,6 +1117,7 @@ protected:
             {                                                                                      \
                 using this_arg_t = std::conditional_t<(#const_[0] != '\0'), const Class&, Class&>; \
                 set_generic_return<return_type>(                                                   \
+                    gen,                                                                           \
                     cpp_op get_generic_object<this_arg_t>(gen)                                     \
                 );                                                                                 \
             },                                                                                     \
@@ -2028,7 +2029,7 @@ public:
 
     template <native_function Fn>
     requires(std::is_member_function_pointer_v<Fn>)
-    reference_class& method(const char* decl, Fn&& fn)
+    reference_class& method(const char* decl, Fn&& fn) requires(!ForceGeneric)
     {
         this->method_impl(decl, std::forward<Fn>(fn), call_conv<asCALL_THISCALL>);
 
@@ -2036,9 +2037,24 @@ public:
     }
 
     template <typename Fn, asECallConvTypes CallConv>
-    reference_class& method(const char* decl, Fn&& fn, call_conv_t<CallConv>)
+    requires(CallConv != asCALL_GENERIC)
+    reference_class& method(const char* decl, Fn&& fn, call_conv_t<CallConv>) requires(!ForceGeneric)
     {
         this->method_impl(decl, std::forward<Fn>(fn), call_conv<CallConv>);
+
+        return *this;
+    }
+
+    reference_class& method(const char* decl, asGENFUNC_t gfn)
+    {
+        this->method(decl, gfn, call_conv<asCALL_GENERIC>);
+
+        return *this;
+    }
+
+    reference_class& method(const char* decl, asGENFUNC_t gfn, call_conv_t<asCALL_GENERIC>)
+    {
+        this->method_impl(decl, gfn, call_conv<asCALL_GENERIC>);
 
         return *this;
     }
