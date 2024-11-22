@@ -503,13 +503,16 @@ static void register_string_impl(asIScriptEngine* engine)
     using std::string;
     bool use_ch_api = engine->GetEngineProperty(asEP_USE_CHARACTER_LITERALS);
 
-    asQWORD flags = asOBJ_APP_CLASS_CDAK;
+    asQWORD flags = 0;
     if(use_ch_api)
         flags |= asOBJ_APP_CLASS_MORE_CONSTRUCTORS;
 
     value_class<string, UseGeneric> c(engine, "string", flags);
     c
-        .common_behaviours()
+        .default_constructor()
+        .copy_constructor()
+        .opAssign()
+        .destructor()
         .opEquals()
         .opCmp()
         .opAdd()

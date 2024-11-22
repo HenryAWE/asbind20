@@ -186,10 +186,12 @@ void register_math_complex_impl(asIScriptEngine* engine)
     value_class<std::complex<float>, UseGeneric> c(
         engine,
         "complex",
-        asOBJ_POD | asOBJ_APP_CLASS_MORE_CONSTRUCTORS | asOBJ_APP_CLASS_ALLFLOATS | asOBJ_APP_CLASS_CAK
+        asOBJ_POD | asOBJ_APP_CLASS_MORE_CONSTRUCTORS | asOBJ_APP_CLASS_ALLFLOATS
     );
     c
-        .common_behaviours()
+        .default_constructor()
+        .copy_constructor()
+        .opAssign()
         .template constructor_function<&complex_default_constructor<float>, asCALL_CDECL_OBJLAST>("void f()")
         .template constructor<float>("void f(float r)")
         .template constructor<float, float>("void f(float r, float i)")

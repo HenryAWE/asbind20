@@ -1147,6 +1147,44 @@ protected:
 
 #undef ASBIND20_CLASS_REGISTER_UNARY_PREFIX_OP
 
+    // Only for operator++/--(int)
+#define ASBIND20_CLASS_UNARY_SUFFIX_OP(as_op_sig, cpp_op)                   \
+    std::string as_op_sig##_decl() const                                    \
+    {                                                                       \
+        return string_concat(m_name, " " #as_op_sig "()");                  \
+    }                                                                       \
+    template <typename Class>                                               \
+    void as_op_sig##_impl_generic()                                         \
+    {                                                                       \
+        method_impl(                                                        \
+            as_op_sig##_decl().c_str(),                                     \
+            +[](asIScriptGeneric* gen) -> void                              \
+            {                                                               \
+                set_generic_return<Class>(                                  \
+                    gen,                                                    \
+                    get_generic_object<Class&>(gen) cpp_op                  \
+                );                                                          \
+            },                                                              \
+            call_conv<asCALL_GENERIC>                                       \
+        );                                                                  \
+    }                                                                       \
+    template <typename Class>                                               \
+    void as_op_sig##_impl_native()                                          \
+    {                                                                       \
+        /* Use a wrapper to deal with the hidden int of postfix operator */ \
+        method_impl(                                                        \
+            as_op_sig##_decl().c_str(),                                     \
+            +[](Class& this_) -> Class                                      \
+            { return this_ cpp_op; },                                       \
+            call_conv<asCALL_CDECL_OBJLAST>                                 \
+        );                                                                  \
+    }
+
+    ASBIND20_CLASS_UNARY_SUFFIX_OP(opPostInc, ++)
+    ASBIND20_CLASS_UNARY_SUFFIX_OP(opPostDec, --)
+
+#undef ASBIND20_CLASS_UNARY_SUFFIX_OP
+
 #define ASBIND20_CLASS_BINARY_OP_GENERIC(as_decl, cpp_op, return_type, const_, rhs_type)           \
     do {                                                                                           \
         this->method_impl(                                                                         \
@@ -1350,70 +1388,12 @@ class value_class final : public class_register_helper_base<ForceGeneric>
 public:
     using class_type = Class;
 
-    value_class(asIScriptEngine* engine, const char* name, asQWORD flags = AS_NAMESPACE_QUALIFIER asGetTypeTraits<Class>())
-        : my_base(engine, name), m_flags(asOBJ_VALUE | flags)
+    value_class(asIScriptEngine* engine, const char* name, asQWORD flags = 0)
+        : my_base(engine, name), m_flags(asOBJ_VALUE | flags | AS_NAMESPACE_QUALIFIER asGetTypeTraits<Class>())
     {
         assert(!(m_flags & asOBJ_REF));
 
         this->template register_object_type<Class>(m_flags);
-    }
-
-    /**
-     * @brief Registering common behaviours based on flags.
-     *
-     * Registering default constructor, copy constructor,
-     * copy assignment operator (opAssign/operator=), and destructor based on flags of the type.
-     */
-    value_class& common_behaviours()
-    {
-        if constexpr(std::is_default_constructible_v<Class>)
-        {
-            if(m_flags & asOBJ_APP_CLASS_CONSTRUCTOR)
-                default_constructor();
-        }
-
-        if constexpr(std::is_copy_constructible_v<Class>)
-        {
-            if(m_flags & asOBJ_APP_CLASS_COPY_CONSTRUCTOR)
-                copy_constructor();
-        }
-
-        if constexpr(std::is_copy_assignable_v<Class>)
-        {
-            if(m_flags & asOBJ_APP_CLASS_ASSIGNMENT)
-                opAssign();
-        }
-
-        if(m_flags & asOBJ_APP_CLASS_DESTRUCTOR)
-            destructor();
-
-        return *this;
-    }
-
-    value_class& common_behaviours(use_generic_t)
-    {
-        if constexpr(std::is_default_constructible_v<Class>)
-        {
-            if(m_flags & asOBJ_APP_CLASS_CONSTRUCTOR)
-                default_constructor(use_generic);
-        }
-
-        if constexpr(std::is_copy_constructible_v<Class>)
-        {
-            if(m_flags & asOBJ_APP_CLASS_COPY_CONSTRUCTOR)
-                copy_constructor(use_generic);
-        }
-
-        if constexpr(std::is_copy_assignable_v<Class>)
-        {
-            if(m_flags & asOBJ_APP_CLASS_ASSIGNMENT)
-                opAssign(use_generic);
-        }
-
-        if(m_flags & asOBJ_APP_CLASS_DESTRUCTOR)
-            destructor(use_generic);
-
-        return *this;
     }
 
     value_class& constructor_function(const char* decl, asGENFUNC_t gfn, call_conv_t<asCALL_GENERIC>)
@@ -1703,57 +1683,8 @@ public:
 
     ASBIND20_VALUE_CLASS_OP(opPreInc);
     ASBIND20_VALUE_CLASS_OP(opPreDec);
-
-    // Returning type by value in native calling convention
-    // is NOT supported on all common platforms, e.g. x64 Linux.
-    // Use generic calling convention as fallback.
-
-    value_class& opPostInc(use_generic_t)
-    {
-        this->method_impl(
-            string_concat(m_name, " opPostInc()").c_str(),
-            +[](asIScriptGeneric* gen) -> void
-            {
-                set_generic_return<Class>(
-                    gen,
-                    get_generic_object<Class&>(gen)++
-                );
-            },
-            call_conv<asCALL_GENERIC>
-        );
-
-        return *this;
-    }
-
-    value_class& opPostInc()
-    {
-        opPostInc(use_generic);
-        return *this;
-    }
-
-    value_class& opPostDec(use_generic_t)
-    {
-        this->method_impl(
-            string_concat(m_name, " opPostDec()").c_str(),
-            +[](asIScriptGeneric* gen) -> void
-            {
-                set_generic_return<Class>(
-                    gen,
-                    get_generic_object<Class&>(gen)--
-                );
-            },
-            call_conv<asCALL_GENERIC>
-        );
-
-        return *this;
-    }
-
-    value_class& opPostDec()
-    {
-        opPostDec(use_generic);
-
-        return *this;
-    }
+    ASBIND20_VALUE_CLASS_OP(opPostInc);
+    ASBIND20_VALUE_CLASS_OP(opPostDec);
 
     value_class& opAssign(use_generic_t) requires(std::is_copy_assignable_v<Class>)
     {

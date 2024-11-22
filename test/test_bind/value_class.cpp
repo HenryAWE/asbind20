@@ -105,11 +105,14 @@ void register_trivial_value_class(asIScriptEngine* engine)
     value_class<trivial_value_class> c(
         engine,
         "trivia_val_class",
-        asOBJ_APP_CLASS_CDAK | asOBJ_APP_CLASS_ALLINTS | asOBJ_APP_CLASS_MORE_CONSTRUCTORS
+        asGetTypeTraits<trivial_value_class>() | asOBJ_APP_CLASS_ALLINTS | asOBJ_APP_CLASS_MORE_CONSTRUCTORS
     );
     c
-        .common_behaviours()
-        .template constructor<int>("void f(int val)")
+        .default_constructor()
+        .copy_constructor()
+        .opAssign()
+        .destructor()
+        .constructor<int>("void f(int val)")
         .opEquals()
         .opCmp()
         .opPreInc()
@@ -117,7 +120,7 @@ void register_trivial_value_class(asIScriptEngine* engine)
         .opPostInc()
         .opPostDec()
         .opAddAssign()
-        .opAdd(use_generic) // TODO: Check why this wrapper has bug in native mode for some classes
+        .opAdd()
         .method("void set_val(int)", &trivial_value_class::set_val)
         .method<&trivial_value_class::set_val>(use_generic, "void set_val2(int)")
         .method("int get_val() const", &trivial_value_class::get_val)
@@ -126,8 +129,7 @@ void register_trivial_value_class(asIScriptEngine* engine)
         .method("void add2(int val)", &test_bind::add_obj_last_ref)
         .method("void mul2(int val)", &test_bind::mul_obj_first_ref)
         .method<&test_bind::add_obj_last>("void add3(int val)")
-        .method<&test_bind::mul_obj_first_ref>(use_generic, "void mul3(int val)"); // Test mixing native and generic calling convention
-    c
+        .method<&test_bind::mul_obj_first_ref>(use_generic, "void mul3(int val)") // Test mixing native and generic calling convention
         .property("int value", &trivial_value_class::value);
 }
 
@@ -138,11 +140,14 @@ void register_trivial_value_class(asbind20::use_generic_t, asIScriptEngine* engi
     value_class<trivial_value_class, true> c(
         engine,
         "trivia_val_class",
-        asOBJ_APP_CLASS_CDAK | asOBJ_APP_CLASS_ALLINTS | asOBJ_APP_CLASS_MORE_CONSTRUCTORS
+        asGetTypeTraits<trivial_value_class>() | asOBJ_APP_CLASS_ALLINTS | asOBJ_APP_CLASS_MORE_CONSTRUCTORS
     );
     c
-        .common_behaviours()
-        .template constructor<int>("void f(int val)")
+        .default_constructor()
+        .copy_constructor()
+        .opAssign()
+        .destructor()
+        .constructor<int>("void f(int val)")
         .opEquals()
         .opCmp()
         .opPreInc()
@@ -159,8 +164,7 @@ void register_trivial_value_class(asbind20::use_generic_t, asIScriptEngine* engi
         .method<&test_bind::add_obj_last_ref>("void add2(int val)")
         .method<&test_bind::mul_obj_first_ref>("void mul2(int val)")
         .method<&test_bind::add_obj_last>("void add3(int val)")
-        .method<&test_bind::mul_obj_first_ref>("void mul3(int val)");
-    c
+        .method<&test_bind::mul_obj_first_ref>("void mul3(int val)")
         .property("int value", &trivial_value_class::value);
 }
 } // namespace test_bind

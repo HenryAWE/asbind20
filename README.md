@@ -65,11 +65,17 @@ Binding code
 ```c++
 asIScriptEngine* engine = /* Get a script engine */;
 asbind20::value_class<my_value_class>(
-    engine, "my_value_class", asOBJ_APP_CLASS_CDAK | asOBJ_APP_CLASS_ALLINTS | asOBJ_APP_CLASS_MORE_CONSTRUCTORS
+    engine,
+    "my_value_class",
+    // Other flags will be automatically set
+    asOBJ_APP_CLASS_ALLINTS | asOBJ_APP_CLASS_MORE_CONSTRUCTORS
 )
     // Default & copy constructor, destructor,
     // and assignment operator (operator=/opAssign)
-    .common_behaviours()
+    .default_constructor()
+    .copy_constructor()
+    .destructor()
+    .opAssign()
     // The constructor my_value_class::my_value_class(int val)
     .constructor<int>("void f(int val)")
     // Generate opEquals for AngelScript using operator== in C++
