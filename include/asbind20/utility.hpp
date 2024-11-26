@@ -124,6 +124,14 @@ inline bool is_primitive_type(int type_id) noexcept
 }
 
 /**
+ * @brief Check if a type id refers to an object handle
+ */
+inline bool is_objhandle(int type_id) noexcept
+{
+    return type_id & asTYPEID_OBJHANDLE;
+}
+
+/**
  * @brief Get the size of a script type
  *
  * @param type_id AngelScript type id
@@ -157,6 +165,16 @@ template <typename T>
 concept void_ptr = std::is_pointer_v<std::decay_t<T>> &&
                    std::is_void_v<std::remove_pointer_t<std::decay_t<T>>>;
 
+template <typename... Ts>
+class overloaded : public Ts...
+{
+public:
+    using Ts::operator()...;
+};
+
+template <typename... Ts>
+overloaded(Ts&&...) -> overloaded<Ts...>;
+
 /**
  * @brief Dispatches pointer of primitive values to corresponding type. Similar to the `std::visit`.
  *
@@ -168,7 +186,7 @@ template <typename Visitor, void_ptr... VoidPtrs>
 requires(sizeof...(VoidPtrs) > 0)
 decltype(auto) visit_primitive_type(Visitor&& vis, int type_id, VoidPtrs... args)
 {
-    assert(!(type_id & ~asTYPEID_MASK_SEQNBR) && "Must be a primitive type");
+    assert(is_primitive_type(type_id) && "Must be a primitive type");
     assert(type_id != asTYPEID_VOID && "Must not be void");
 
     auto wrapper = [&]<typename T>(std::in_place_type_t<T>) -> decltype(auto)
@@ -200,6 +218,28 @@ case as_type_id:                                               \
     }
 
 #undef ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE
+}
+
+template <typename Visitor, void_ptr... VoidPtrs>
+requires(sizeof...(VoidPtrs) > 0)
+decltype(auto) visit_script_type(Visitor&& vis, int type_id, VoidPtrs... args)
+{
+    if(is_primitive_type(type_id))
+        return visit_primitive_type(std::forward<Visitor>(vis), type_id, args...);
+    else if(type_id & asTYPEID_OBJHANDLE)
+    {
+        return std::invoke(
+            std::forward<Visitor>(vis),
+            ((typename std::pointer_traits<VoidPtrs>::template rebind<void*>)args)...
+        );
+    }
+    else
+    {
+        return std::invoke(
+            std::forward<Visitor>(vis),
+            args...
+        );
+    }
 }
 
 class as_exclusive_lock_t

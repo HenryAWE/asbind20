@@ -161,6 +161,12 @@ static void complex_default_constructor(void* mem)
 }
 
 template <typename Float>
+void complex_list_constructor(void* mem, Float* list_buf)
+{
+    new(mem) std::complex<Float>{list_buf[0], list_buf[1]};
+}
+
+template <typename Float>
 static Float complex_squared_length(const std::complex<Float>& c)
 {
     return c.real() * c.real() + c.imag() * c.imag();
@@ -189,12 +195,10 @@ void register_math_complex_impl(asIScriptEngine* engine)
         asOBJ_POD | asOBJ_APP_CLASS_MORE_CONSTRUCTORS | asOBJ_APP_CLASS_ALLFLOATS
     );
     c
-        .default_constructor()
-        .copy_constructor()
-        .opAssign()
         .template constructor_function<&complex_default_constructor<float>, asCALL_CDECL_OBJLAST>("void f()")
         .template constructor<float>("void f(float r)")
         .template constructor<float, float>("void f(float r, float i)")
+        .template list_constructor_function<&complex_list_constructor<float>, asCALL_CDECL_OBJFIRST>("void f(int&in){float,float}")
         .opEquals()
         .opAddAssign()
         .opSubAssign()

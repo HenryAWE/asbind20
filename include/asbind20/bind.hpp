@@ -238,6 +238,159 @@ void set_generic_return(asIScriptGeneric* gen, T&& ret)
     }
 }
 
+/**
+ * @brief Wrappers for special functions like constructor
+ *
+ */
+namespace wrappers
+{
+    template <typename Class, typename... Args>
+    class constructor
+    {
+        template <asECallConvTypes CallConv>
+        using native_function_type_helper = std::conditional<
+            CallConv == asCALL_CDECL_OBJFIRST,
+            void (*)(void*, Args...),
+            void (*)(Args..., void*)>;
+
+    public:
+        static constexpr bool is_acceptable_native_call_conv(asECallConvTypes conv) noexcept
+        {
+            return conv == asCALL_CDECL_OBJFIRST || conv == asCALL_CDECL_OBJLAST;
+        }
+
+        static constexpr bool is_acceptable_call_conv(asECallConvTypes conv) noexcept
+        {
+            return conv == asCALL_GENERIC || is_acceptable_native_call_conv(conv);
+        }
+
+        template <asECallConvTypes CallConv>
+        requires(is_acceptable_native_call_conv(CallConv))
+        using native_function_type = native_function_type_helper<CallConv>::type;
+
+        template <asECallConvTypes CallConv>
+        requires(is_acceptable_native_call_conv(CallConv) || CallConv == asCALL_GENERIC)
+        using wrapper_type = std::conditional_t<
+            CallConv == asCALL_GENERIC,
+            asGENFUNC_t,
+            typename native_function_type_helper<CallConv>::type>;
+
+        template <asECallConvTypes CallConv>
+        static auto generate() noexcept -> wrapper_type<CallConv>
+        {
+            if constexpr(CallConv == asCALL_GENERIC)
+            {
+                return +[](asIScriptGeneric* gen) -> void
+                {
+                    using args_tuple = std::tuple<Args...>;
+                    [gen]<std::size_t... Is>(std::index_sequence<Is...>)
+                    {
+                        void* mem = gen->GetObject();
+                        new(mem) Class(get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (asUINT)Is)...);
+                    }(std::index_sequence_for<Args...>());
+                };
+            }
+            else if constexpr(CallConv == asCALL_CDECL_OBJFIRST)
+            {
+                return +[](void* mem, Args... args) -> void
+                {
+                    new(mem) Class(std::forward<Args>(args)...);
+                };
+            }
+            else // CallConv == asCALL_CDECL_OBJLAST
+            {
+                return +[](Args... args, void* mem) -> void
+                {
+                    new(mem) Class(std::forward<Args>(args)...);
+                };
+            }
+        }
+
+        asGENFUNC_t operator()(use_generic_t) const
+        {
+            return this->template generate<asCALL_GENERIC>();
+        }
+
+        template <asECallConvTypes CallConv>
+        requires(is_acceptable_call_conv(CallConv))
+        auto operator()(call_conv_t<CallConv>) const -> wrapper_type<CallConv>
+        {
+            return this->template generate<CallConv>();
+        }
+    };
+
+    template <typename Class, typename ListElementType = void>
+    class list_constructor
+    {
+        template <asECallConvTypes CallConv>
+        using native_function_type_helper = std::conditional<
+            CallConv == asCALL_CDECL_OBJFIRST,
+            void (*)(void*, ListElementType*),
+            void (*)(ListElementType*, void*)>;
+
+    public:
+        static constexpr bool is_acceptable_native_call_conv(asECallConvTypes conv) noexcept
+        {
+            return conv == asCALL_CDECL_OBJFIRST || conv == asCALL_CDECL_OBJLAST;
+        }
+
+        static constexpr bool is_acceptable_call_conv(asECallConvTypes conv) noexcept
+        {
+            return conv == asCALL_GENERIC || is_acceptable_native_call_conv(conv);
+        }
+
+        template <asECallConvTypes CallConv>
+        requires(is_acceptable_native_call_conv(CallConv))
+        using native_function_type = native_function_type_helper<CallConv>::type;
+
+        template <asECallConvTypes CallConv>
+        requires(is_acceptable_native_call_conv(CallConv) || CallConv == asCALL_GENERIC)
+        using wrapper_type = std::conditional_t<
+            CallConv == asCALL_GENERIC,
+            asGENFUNC_t,
+            typename native_function_type_helper<CallConv>::type>;
+
+        template <asECallConvTypes CallConv>
+        static auto generate() noexcept -> wrapper_type<CallConv>
+        {
+            if constexpr(CallConv == asCALL_GENERIC)
+            {
+                return +[](asIScriptGeneric* gen) -> void
+                {
+                    void* mem = gen->GetObject();
+                    new(mem) Class(*(ListElementType**)gen->GetAddressOfArg(0));
+                };
+            }
+            else if constexpr(CallConv == asCALL_CDECL_OBJFIRST)
+            {
+                return +[](void* mem, ListElementType* list_buf) -> void
+                {
+                    new(mem) Class(list_buf);
+                };
+            }
+            else // CallConv == asCALL_CDECL_OBJLAST
+            {
+                return +[](ListElementType* list_buf, void* mem) -> void
+                {
+                    new(mem) Class(list_buf);
+                };
+            }
+        }
+
+        asGENFUNC_t operator()(use_generic_t) const
+        {
+            return this->template generate<asCALL_GENERIC>();
+        }
+
+        template <asECallConvTypes CallConv>
+        requires(is_acceptable_call_conv(CallConv))
+        auto operator()(call_conv_t<CallConv>) const -> wrapper_type<CallConv>
+        {
+            return this->template generate<CallConv>();
+        }
+    };
+} // namespace wrappers
+
 template <bool ForceGeneric>
 class register_helper_base
 {
@@ -337,7 +490,7 @@ requires(OriginalConv != asCALL_GENERIC)
 class generic_wrapper_t
 {
 public:
-    using function_type = decltype(Function);
+    using function_type = std::decay_t<decltype(Function)>;
 
     static_assert(
         !std::is_member_function_pointer_v<function_type> || OriginalConv == asCALL_THISCALL,
@@ -1493,17 +1646,10 @@ private:
     template <typename... Args>
     void constructor_impl_generic(const char* decl)
     {
+        wrappers::constructor<Class, Args...> wrapper;
         constructor_function(
             decl,
-            +[](asIScriptGeneric* gen) -> void
-            {
-                using args_tuple = std::tuple<Args...>;
-                [gen]<std::size_t... Is>(std::index_sequence<Is...>)
-                {
-                    void* mem = gen->GetObject();
-                    new(mem) Class(get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (asUINT)Is)...);
-                }(std::make_index_sequence<sizeof...(Args)>());
-            },
+            wrapper(use_generic),
             call_conv<asCALL_GENERIC>
         );
     }
@@ -1511,20 +1657,24 @@ private:
     template <typename... Args>
     void constructor_impl_native(const char* decl)
     {
+        wrappers::constructor<Class, Args...> wrapper;
         constructor_function(
             decl,
-            +[](Args... args, void* mem)
-            {
-                new(mem) Class(std::forward<Args>(args)...);
-            },
+            wrapper(call_conv<asCALL_CDECL_OBJLAST>),
             call_conv<asCALL_CDECL_OBJLAST>
         );
     }
 
 public:
     template <typename... Args>
-    value_class& constructor(use_generic_t, const char* decl) requires(std::is_constructible_v<Class, Args...>)
+    static constexpr bool constructible_v = requires(void* mem, Args... args) {
+        new(mem) Class(std::forward<Args>(args)...);
+    };
+
+    template <typename... Args>
+    value_class& constructor(use_generic_t, const char* decl) requires(constructible_v<Args...>)
     {
+#ifndef NDEBUG
         if constexpr(sizeof...(Args) != 0)
         {
             using first_arg_t = std::tuple_element_t<0, std::tuple<Args...>>;
@@ -1533,6 +1683,7 @@ public:
                 assert(m_flags & asOBJ_APP_CLASS_MORE_CONSTRUCTORS);
             }
         }
+#endif
 
         constructor_impl_generic<Args...>(decl);
 
@@ -1540,7 +1691,7 @@ public:
     }
 
     template <typename... Args>
-    value_class& constructor(const char* decl) requires(std::is_constructible_v<Class, Args...>)
+    value_class& constructor(const char* decl) requires(constructible_v<Args...>)
     {
         if constexpr(sizeof...(Args) != 0)
         {
@@ -1561,9 +1712,6 @@ public:
 
     value_class& default_constructor(use_generic_t)
     {
-        if(m_flags & asOBJ_POD)
-            return *this;
-
         constructor<>(use_generic, "void f()");
 
         return *this;
@@ -1571,9 +1719,6 @@ public:
 
     value_class& default_constructor()
     {
-        if(m_flags & asOBJ_POD)
-            return *this;
-
         constructor<>("void f()");
 
         return *this;
@@ -1581,59 +1726,31 @@ public:
 
     value_class& copy_constructor(use_generic_t)
     {
-        if(m_flags & asOBJ_POD)
-            return *this;
-
-        if constexpr(std::is_constructible_v<Class, const Class&>)
-        {
-            constructor<const Class&>(
-                use_generic,
-                string_concat("void f(const ", m_name, " &in)").c_str()
-            );
-        }
-        else
-        {
-            constructor<Class&>(
-                use_generic,
-                string_concat("void f(", m_name, " &in)").c_str()
-            );
-        }
+        constructor<const Class&>(
+            use_generic,
+            string_concat("void f(const ", m_name, " &in)").c_str()
+        );
 
         return *this;
     }
 
     value_class& copy_constructor()
     {
-        if(m_flags & asOBJ_POD)
-            return *this;
-
-        if constexpr(std::is_constructible_v<Class, const Class&>)
-        {
-            constructor<const Class&>(
-                string_concat("void f(const ", m_name, " &in)").c_str()
-            );
-        }
-        else
-        {
-            constructor<Class&>(
-                string_concat("void f(", m_name, " &in)").c_str()
-            );
-        }
+        constructor<const Class&>(
+            string_concat("void f(const ", m_name, " &in)").c_str()
+        );
 
         return *this;
     }
 
     value_class& destructor(use_generic_t)
     {
-        if(m_flags & asOBJ_POD)
-            return *this;
-
         behaviour(
             asBEHAVE_DESTRUCT,
             "void f()",
             +[](asIScriptGeneric* gen) -> void
             {
-                reinterpret_cast<Class*>(gen->GetObject())->~Class();
+                std::destroy_at(get_generic_object<Class*>(gen));
             },
             call_conv<asCALL_GENERIC>
         );
@@ -1647,16 +1764,140 @@ public:
             destructor(use_generic);
         else
         {
-            if(m_flags & asOBJ_POD)
-                return *this;
-
             behaviour(
                 asBEHAVE_DESTRUCT,
                 "void f()",
                 +[](Class* ptr) -> void
                 {
-                    ptr->~Class();
+                    std::destroy_at(ptr);
                 },
+                call_conv<asCALL_CDECL_OBJLAST>
+            );
+        }
+
+        return *this;
+    }
+
+    value_class& list_constructor_function(const char* decl, asGENFUNC_t gfn, call_conv_t<asCALL_GENERIC> = {})
+    {
+        behaviour(
+            asBEHAVE_LIST_CONSTRUCT,
+            decl,
+            gfn,
+            call_conv<asCALL_GENERIC>
+        );
+
+        return *this;
+    }
+
+    template <asECallConvTypes CallConv, typename... Args>
+    requires(CallConv == asCALL_CDECL_OBJFIRST || CallConv == asCALL_CDECL_OBJLAST)
+    value_class& list_constructor_function(const char* decl, void (*fn)(Args...), call_conv_t<CallConv>) requires(!ForceGeneric)
+    {
+        behaviour(
+            asBEHAVE_LIST_CONSTRUCT,
+            decl,
+            fn,
+            call_conv<CallConv>
+        );
+
+        return *this;
+    }
+
+    template <native_function auto ListConstructor, asECallConvTypes CallConv>
+    requires(CallConv == asCALL_CDECL_OBJFIRST || CallConv == asCALL_CDECL_OBJLAST)
+    value_class& list_constructor_function(use_generic_t, const char* decl)
+    {
+        using traits = function_traits<std::decay_t<decltype(ListConstructor)>>;
+        static_assert(traits::arg_count_v == 2);
+        static_assert(std::is_void_v<typename traits::return_type>);
+
+        if constexpr(CallConv == asCALL_CDECL_OBJFIRST)
+        {
+            using list_buf_t = typename traits::last_arg_type;
+            static_assert(std::is_pointer_v<list_buf_t>);
+            list_constructor_function(
+                decl,
+                +[](asIScriptGeneric* gen) -> void
+                {
+                    ListConstructor(get_generic_object<Class*>(gen), *(list_buf_t*)gen->GetAddressOfArg(0));
+                },
+                call_conv<asCALL_GENERIC>
+            );
+        }
+        else // CallConv == asCALL_CDECL_OBJLAST
+        {
+            using list_buf_t = typename traits::first_arg_type;
+            static_assert(std::is_pointer_v<list_buf_t>);
+            list_constructor_function(
+                decl,
+                +[](asIScriptGeneric* gen) -> void
+                {
+                    ListConstructor(*(list_buf_t*)gen->GetAddressOfArg(0), get_generic_object<Class*>(gen));
+                },
+                call_conv<asCALL_GENERIC>
+            );
+        }
+
+        return *this;
+    }
+
+    template <native_function auto ListConstructor, asECallConvTypes CallConv>
+    requires(CallConv == asCALL_CDECL_OBJFIRST || CallConv == asCALL_CDECL_OBJLAST)
+    value_class& list_constructor_function(const char* decl)
+    {
+        if constexpr(ForceGeneric)
+        {
+            list_constructor_function<ListConstructor, CallConv>(use_generic, decl);
+        }
+        else
+        {
+            list_constructor_function(decl, ListConstructor, call_conv<CallConv>);
+        }
+
+        return *this;
+    }
+
+    constexpr std::string list_constructor_decl(std::string_view pattern) const
+    {
+        assert(!pattern.starts_with("repeat"));
+        return string_concat("void f(int&in) {", pattern, "}");
+    }
+
+    /**
+     * @brief Register a list constructor with limited list size
+     *
+     * @tparam ListElementType Element type
+     * @param pattern List pattern
+     */
+    template <typename ListElementType = void>
+    value_class& list_constructor(use_generic_t, std::string_view pattern)
+    {
+        list_constructor_function(
+            list_constructor_decl(pattern).c_str(),
+            wrappers::list_constructor<Class, ListElementType>{}(use_generic),
+            call_conv<asCALL_GENERIC>
+        );
+
+        return *this;
+    }
+
+    /**
+     * @brief Register a list constructor with limited list size
+     *
+     * @tparam ListElementType Element type
+     * @param pattern List pattern
+     */
+    template <typename ListElementType>
+    value_class& list_constructor(std::string_view pattern)
+    {
+        if constexpr(ForceGeneric)
+            list_constructor<ListElementType>(use_generic, pattern);
+        else
+        {
+            list_constructor_function(
+                list_constructor_decl(pattern).c_str(),
+                wrappers::list_constructor<Class, ListElementType>{}(call_conv<asCALL_CDECL_OBJLAST>),
                 call_conv<asCALL_CDECL_OBJLAST>
             );
         }
@@ -1686,30 +1927,7 @@ public:
     ASBIND20_VALUE_CLASS_OP(opPostInc);
     ASBIND20_VALUE_CLASS_OP(opPostDec);
 
-    value_class& opAssign(use_generic_t) requires(std::is_copy_assignable_v<Class>)
-    {
-        if(m_flags & asOBJ_POD)
-            return *this;
-
-        this->template opAssign_impl_generic<Class>();
-
-        return *this;
-    }
-
-    value_class& opAssign() requires(std::is_copy_assignable_v<Class>)
-    {
-        if constexpr(ForceGeneric)
-            opAssign(use_generic);
-        else
-        {
-            if(m_flags & asOBJ_POD)
-                return *this;
-
-            this->template opAssign_impl_native<Class>();
-        }
-        return *this;
-    }
-
+    ASBIND20_VALUE_CLASS_OP(opAssign);
     ASBIND20_VALUE_CLASS_OP(opAddAssign);
     ASBIND20_VALUE_CLASS_OP(opSubAssign);
     ASBIND20_VALUE_CLASS_OP(opMulAssign);
@@ -1991,7 +2209,7 @@ public:
     }
 
     template <typename R, typename... Args>
-    reference_class& method(const char* decl, R (*fn)(Args...))
+    reference_class& method(const char* decl, R (*fn)(Args...)) requires(!ForceGeneric)
     {
         this->template method_auto_callconv<Class>(decl, fn);
 
@@ -2198,7 +2416,7 @@ public:
     }
 
     template <typename... Args>
-    reference_class& list_factory_function(const char* decl, Class* (*fn)(Args...))
+    reference_class& list_factory_function(const char* decl, Class* (*fn)(Args...)) requires(!ForceGeneric)
     {
         behaviour(
             asBEHAVE_LIST_FACTORY,
@@ -2222,7 +2440,7 @@ public:
         return *this;
     }
 
-    std::string list_factory_decl(std::string_view repeat_pattern) const
+    std::string list_factory_repeat_decl(std::string_view repeat_pattern) const
     {
         if constexpr(Template)
             return string_concat(m_name, "@ f(int&in,int&in) {repeat ", repeat_pattern, "}");
@@ -2230,9 +2448,9 @@ public:
             string_concat(m_name, "@ f(int&in) {repeat ", repeat_pattern, "}");
     }
 
-    reference_class& list_factory(use_generic_t, std::string_view repeat_pattern)
+    reference_class& list_factory_repeat(use_generic_t, std::string_view repeat_pattern)
     {
-        std::string decl = list_factory_decl(repeat_pattern);
+        std::string decl = list_factory_repeat_decl(repeat_pattern);
         if constexpr(Template)
         {
             list_factory_function(
@@ -2264,15 +2482,15 @@ public:
         return *this;
     }
 
-    reference_class& list_factory(std::string_view repeat_pattern) requires(Template)
+    reference_class& list_factory_repeat(std::string_view repeat_pattern) requires(Template)
     {
         if constexpr(ForceGeneric)
         {
-            list_factory(use_generic, repeat_pattern);
+            list_factory_repeat(use_generic, repeat_pattern);
         }
         else
         {
-            std::string decl = list_factory_decl(repeat_pattern);
+            std::string decl = list_factory_repeat_decl(repeat_pattern);
             if constexpr(Template)
             {
                 list_factory_function(

@@ -899,42 +899,34 @@ void script_array::insert_range_impl(size_type idx, const void* src, size_type n
 
 void script_array::copy_assign_at(void* ptr, void* value)
 {
-    if((m_subtype_id & ~asTYPEID_MASK_SEQNBR) && !(m_subtype_id & asTYPEID_OBJHANDLE))
-    {
-        m_ti->GetEngine()->AssignScriptObject(ptr, value, m_ti->GetSubType());
-    }
-    else if(m_subtype_id & asTYPEID_OBJHANDLE)
-    {
-        void* tmp = *(void**)ptr;
-        *(void**)ptr = *(void**)value;
-        m_ti->GetEngine()->AddRefScriptObject(*(void**)value, m_ti->GetSubType());
-        if(tmp)
-            m_ti->GetEngine()->ReleaseScriptObject(tmp, m_ti->GetSubType());
-    }
-    else if(m_subtype_id == asTYPEID_BOOL ||
-            m_subtype_id == asTYPEID_INT8 ||
-            m_subtype_id == asTYPEID_UINT8)
-    {
-        *(char*)ptr = *(char*)value;
-    }
-    else if(m_subtype_id == asTYPEID_INT16 ||
-            m_subtype_id == asTYPEID_UINT16)
-    {
-        *(short*)ptr = *(short*)value;
-    }
-    else if(m_subtype_id == asTYPEID_INT32 ||
-            m_subtype_id == asTYPEID_UINT32 ||
-            m_subtype_id == asTYPEID_FLOAT ||
-            m_subtype_id > asTYPEID_DOUBLE) // enums
-    {
-        *(int*)ptr = *(int*)value;
-    }
-    else if(m_subtype_id == asTYPEID_INT64 ||
-            m_subtype_id == asTYPEID_UINT64 ||
-            m_subtype_id == asTYPEID_DOUBLE)
-    {
-        *(double*)ptr = *(double*)value;
-    }
+    visit_script_type(
+        overloaded{
+            // objhandle
+            [this](void** ptr, void** value)
+            {
+                void* old = *ptr;
+                *ptr = *value;
+                asIScriptEngine* engine = m_ti->GetEngine();
+                asITypeInfo* subtype_ti = m_ti->GetSubType();
+                engine->AddRefScriptObject(*value, subtype_ti);
+                if(old)
+                    engine->ReleaseScriptObject(old, subtype_ti);
+            },
+            // classes
+            [this](void* ptr, void* value)
+            {
+                m_ti->GetEngine()->AssignScriptObject(ptr, value, m_ti->GetSubType());
+            },
+            // primitives
+            [this]<typename T>(T* ptr, T* value) requires(std::is_fundamental_v<T>)
+            {
+                *ptr = *value;
+            }
+            },
+            m_subtype_id,
+            ptr,
+            value
+    );
 }
 
 void script_array::destroy_n(void* start, size_type n)
@@ -961,7 +953,7 @@ void script_array::destroy_n(void* start, size_type n)
 
 bool script_array::elem_opEquals(const void* lhs, const void* rhs, asIScriptContext* ctx, const array_cache* cache) const
 {
-    if(!(m_subtype_id & ~asTYPEID_MASK_SEQNBR))
+    if(is_primitive_type(m_subtype_id))
     {
         return visit_primitive_type(
             [](const auto* lhs, const auto* rhs) -> bool
@@ -975,7 +967,7 @@ bool script_array::elem_opEquals(const void* lhs, const void* rhs, asIScriptCont
     }
     else
     {
-        if(m_subtype_id & asTYPEID_OBJHANDLE)
+        if(is_objhandle(m_subtype_id))
         {
             if(*(const void* const*)lhs == *(const void* const*)rhs)
                 return true;
@@ -1374,11 +1366,9 @@ void script_array::value_construct_n(void* start, const void* value, size_type n
         }
         else if(m_subtype_id & asTYPEID_OBJHANDLE)
         {
-            void* tmp = *(void**)ptr;
+            assert(*(void**)ptr == nullptr);
             *(void**)ptr = *(void**)value;
             m_ti->GetEngine()->AddRefScriptObject(*(void**)value, m_ti->GetSubType());
-            if(tmp)
-                m_ti->GetEngine()->ReleaseScriptObject(tmp, m_ti->GetSubType());
         }
         else // primitive types
         {
@@ -1830,7 +1820,7 @@ namespace detail
             .default_factory()
             .template factory<asITypeInfo*, asUINT>("array<T>@ f(int&in, uint)")
             .template factory<asITypeInfo*, asUINT, const void*>("array<T>@ f(int&in, uint, const T&in)")
-            .list_factory("T")
+            .list_factory_repeat("T")
             .opAssign()
             .opEquals()
             .template addref<&script_array::addref>()

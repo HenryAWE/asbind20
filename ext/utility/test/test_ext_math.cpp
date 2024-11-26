@@ -47,6 +47,12 @@ static void test_math_complex(asIScriptEngine* engine)
         "assert(close_to(c.real, 1.0f));\n"
         "assert(c.imag == 0);\n"
         "}\n"
+        "void check3()\n"
+        "{\n"
+        "complex c = {1.0f, 2.0f};"
+        "assert(close_to(c.real, 1.0f));\n"
+        "assert(close_to(c.imag, 2.0f));\n"
+        "}"
     );
     ASSERT_GE(m->Build(), 0);
 

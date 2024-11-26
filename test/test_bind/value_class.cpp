@@ -13,6 +13,11 @@ public:
     trivial_value_class(int val)
         : value(val) {}
 
+    trivial_value_class(int* list_buf)
+    {
+        value = list_buf[0] + list_buf[1];
+    }
+
     ~trivial_value_class() = default;
 
     trivial_value_class& operator=(const trivial_value_class&) = default;
@@ -113,6 +118,7 @@ void register_trivial_value_class(asIScriptEngine* engine)
         .opAssign()
         .destructor()
         .constructor<int>("void f(int val)")
+        .list_constructor<int>("int,int")
         .opEquals()
         .opCmp()
         .opPreInc()
@@ -148,6 +154,7 @@ void register_trivial_value_class(asbind20::use_generic_t, asIScriptEngine* engi
         .opAssign()
         .destructor()
         .constructor<int>("void f(int val)")
+        .list_constructor<int>("int,int")
         .opEquals()
         .opCmp()
         .opPreInc()
@@ -218,7 +225,12 @@ int test_5()
     val.value += 1;
     return val.value;
 }
-trivia_val_class test_6()
+int test_6()
+{
+    trivia_val_class val = {2, 3};
+    return val.value;
+}
+trivia_val_class test_7()
 {
     trivia_val_class val(0);
     assert(++val == trivia_val_class(1));
@@ -226,7 +238,7 @@ trivia_val_class test_6()
     assert(tmp.value == 1);
     return val;
 }
-trivia_val_class test_7()
+trivia_val_class test_8()
 {
     trivia_val_class val(2);
     assert(--val == trivia_val_class(1));
@@ -235,13 +247,13 @@ trivia_val_class test_7()
     assert(tmp.value == 1);
     return val;
 }
-trivia_val_class test_8()
+trivia_val_class test_9()
 {
     trivia_val_class val1(2);
     trivia_val_class val2(3);
     return val1 + val2;
 }
-trivia_val_class test_9()
+trivia_val_class test_10()
 {
     trivia_val_class val1(2);
     trivia_val_class val2(3);
@@ -280,6 +292,7 @@ static void check_trivial_class(asIScriptEngine* engine)
     check_int_result(3, 6);
     check_int_result(4, 9);
     check_int_result(5, 11);
+    check_int_result(6, 5);
 
     auto check_class_result = [&](int idx, int expected_val) -> void
     {
@@ -293,10 +306,10 @@ static void check_trivial_class(asIScriptEngine* engine)
             << test_name;
     };
 
-    check_class_result(6, 2);
-    check_class_result(7, 0);
-    check_class_result(8, 5);
+    check_class_result(7, 2);
+    check_class_result(8, 0);
     check_class_result(9, 5);
+    check_class_result(10, 5);
 }
 
 TEST_F(asbind_test_suite, trivial_value_class)
