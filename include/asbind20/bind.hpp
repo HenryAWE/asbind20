@@ -1280,11 +1280,29 @@ protected:
     template <typename Class>                                                                      \
     void as_op_sig##_impl_native()                                                                 \
     {                                                                                              \
-        method_impl(                                                                               \
-            as_op_sig##_decl().c_str(),                                                            \
-            static_cast<return_type (Class::*)() const_>(&Class::operator cpp_op),                 \
-            call_conv<asCALL_THISCALL>                                                             \
-        );                                                                                         \
+        static constexpr bool has_member_func = requires() {                                       \
+            static_cast<return_type (Class::*)() const_>(&Class::operator cpp_op);                 \
+        };                                                                                         \
+        if constexpr(has_member_func)                                                              \
+        {                                                                                          \
+            method_impl(                                                                           \
+                as_op_sig##_decl().c_str(),                                                        \
+                static_cast<return_type (Class::*)() const_>(&Class::operator cpp_op),             \
+                call_conv<asCALL_THISCALL>                                                         \
+            );                                                                                     \
+        }                                                                                          \
+        else                                                                                       \
+        {                                                                                          \
+            using this_arg_t = std::conditional_t<(#const_[0] != '\0'), const Class&, Class&>;     \
+            this->method_impl(                                                                     \
+                as_op_sig##_decl().c_str(),                                                        \
+                +[](this_arg_t this_) -> return_type                                               \
+                {                                                                                  \
+                    return cpp_op this_;                                                           \
+                },                                                                                 \
+                call_conv<asCALL_CDECL_OBJFIRST>                                                   \
+            );                                                                                     \
+        }                                                                                          \
     }
 
     ASBIND20_CLASS_UNARY_PREFIX_OP(

@@ -22,9 +22,9 @@ public:
 
     trivial_value_class& operator=(const trivial_value_class&) = default;
 
-    friend bool operator==(const trivial_value_class& lhs, const trivial_value_class& rhs)
+    bool operator==(const trivial_value_class& rhs) const
     {
-        return lhs.value == rhs.value;
+        return value == rhs.value;
     }
 
     friend std::strong_ordering operator<=>(const trivial_value_class& lhs, const trivial_value_class& rhs)
@@ -80,6 +80,11 @@ public:
         return tmp;
     }
 
+    trivial_value_class operator-() const
+    {
+        return -value;
+    }
+
     int value = 0;
 };
 
@@ -127,6 +132,7 @@ void register_trivial_value_class(asIScriptEngine* engine)
         .opPostDec()
         .opAddAssign()
         .opAdd()
+        .opNeg()
         .method("void set_val(int)", &trivial_value_class::set_val)
         .method<&trivial_value_class::set_val>(use_generic, "void set_val2(int)")
         .method("int get_val() const", &trivial_value_class::get_val)
@@ -163,6 +169,7 @@ void register_trivial_value_class(asbind20::use_generic_t, asIScriptEngine* engi
         .opPostDec()
         .opAdd()
         .opAddAssign()
+        .opNeg()
         .method<&trivial_value_class::set_val>("void set_val(int)")
         .method<&trivial_value_class::set_val>(use_generic, "void set_val2(int)")
         .method<&trivial_value_class::get_val>("int get_val() const")
@@ -261,6 +268,13 @@ trivia_val_class test_10()
     assert(val2.value == 3);
     return val1;
 }
+trivia_val_class test_11()
+{
+    trivia_val_class val1(2);
+    trivia_val_class val2 = -val1;
+    assert(val2.value == -2);
+    return val2;
+}
 )";
 
 static void check_trivial_class(asIScriptEngine* engine)
@@ -310,6 +324,7 @@ static void check_trivial_class(asIScriptEngine* engine)
     check_class_result(8, 0);
     check_class_result(9, 5);
     check_class_result(10, 5);
+    check_class_result(11, -2);
 }
 
 TEST_F(asbind_test_suite, trivial_value_class)
@@ -329,4 +344,138 @@ TEST_F(asbind_test_suite_generic, trivial_value_class)
     register_trivial_value_class(asbind20::use_generic, engine);
 
     check_trivial_class(engine);
+}
+
+namespace test_bind
+{
+class friend_ops
+{
+public:
+    friend_ops() = default;
+    friend_ops(const friend_ops&) = default;
+
+    friend_ops(int val) noexcept
+        : value(val) {}
+
+    friend_ops& operator=(const friend_ops&) = default;
+
+    friend bool operator==(const friend_ops& lhs, const friend_ops& rhs)
+    {
+        return lhs.value == rhs.value;
+    }
+
+    friend friend_ops operator-(const friend_ops& val)
+    {
+        return -val.value;
+    }
+
+    friend friend_ops operator+(const friend_ops& lhs, const friend_ops& rhs)
+    {
+        return lhs.value + rhs.value;
+    }
+
+    friend friend_ops operator-(const friend_ops& lhs, const friend_ops& rhs)
+    {
+        return lhs.value - rhs.value;
+    }
+
+    int value;
+};
+
+template <bool UseGeneric>
+void register_friend_ops(asIScriptEngine* engine)
+{
+    using namespace asbind20;
+
+    value_class<friend_ops, UseGeneric> c(
+        engine,
+        "friend_ops",
+        asOBJ_APP_CLASS_MORE_CONSTRUCTORS | asOBJ_APP_CLASS_ALLINTS
+    );
+
+    c
+        .default_constructor()
+        .copy_constructor()
+        .template constructor<int>("void f(int)")
+        .destructor()
+        .opEquals()
+        .opAssign()
+        .opNeg()
+        .opAdd()
+        .opSub()
+        .property("int value", offsetof(friend_ops, value));
+}
+} // namespace test_bind
+
+const char* friend_ops_test_script = R"(
+int test_0()
+{
+    friend_ops val1(2);
+    friend_ops result = -val1;
+    assert(result == friend_ops(-2));
+    return result.value;
+}
+int test_1()
+{
+    friend_ops val1(2);
+    friend_ops val2(3);
+    friend_ops result = val1 + val2;
+    assert(result == friend_ops(5));
+    return result.value;
+}
+int test_2()
+{
+    friend_ops val1(2);
+    friend_ops val2(3);
+    friend_ops result = val1 - val2;
+    assert(result == friend_ops(-1));
+    return result.value;
+}
+)";
+
+static void check_friend_ops(asIScriptEngine* engine)
+{
+    asIScriptModule* m = engine->GetModule("test_value_class", asGM_ALWAYS_CREATE);
+    ASSERT_TRUE(m);
+
+    m->AddScriptSection(
+        "test_friend_ops.as",
+        friend_ops_test_script
+    );
+    ASSERT_GE(m->Build(), 0);
+
+    auto check_int_result = [&](int idx, int expected_val) -> void
+    {
+        std::string test_name = asbind20::string_concat("test_", std::to_string(idx));
+        auto test_case = asbind20::script_function<int()>(m->GetFunctionByName(test_name.c_str()));
+
+        asbind20::request_context ctx(engine);
+        auto result = test_case(ctx);
+        ASSERT_TRUE(result_has_value(result));
+        EXPECT_EQ(*result, expected_val)
+            << test_name;
+    };
+
+    check_int_result(0, -2);
+    check_int_result(1, 5);
+    check_int_result(2, -1);
+}
+
+TEST_F(asbind_test_suite, friend_ops)
+{
+    if(asbind20::has_max_portability())
+        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+
+    asIScriptEngine* engine = get_engine();
+    register_friend_ops<false>(engine);
+
+    check_friend_ops(engine);
+}
+
+TEST_F(asbind_test_suite_generic, friend_ops)
+{
+    asIScriptEngine* engine = get_engine();
+    register_friend_ops<true>(engine);
+
+    check_friend_ops(engine);
 }
