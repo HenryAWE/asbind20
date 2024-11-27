@@ -195,9 +195,9 @@ void register_math_complex_impl(asIScriptEngine* engine)
         asOBJ_POD | asOBJ_APP_CLASS_MORE_CONSTRUCTORS | asOBJ_APP_CLASS_ALLFLOATS
     );
     c
-        .template constructor_function<&complex_default_constructor<float>, asCALL_CDECL_OBJLAST>("void f()")
-        .template constructor<float>("void f(float r)")
-        .template constructor<float, float>("void f(float r, float i)")
+        .template constructor_function<&complex_default_constructor<float>, asCALL_CDECL_OBJLAST>("")
+        .template constructor<float>("float r")
+        .template constructor<float, float>("float r, float i")
         .template list_constructor_function<&complex_list_constructor<float>, asCALL_CDECL_OBJFIRST>("void f(int&in){float,float}")
         .opEquals()
         .opAddAssign()

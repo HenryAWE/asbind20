@@ -230,7 +230,7 @@ namespace detail
         c
             .template template_callback<&optional_template_callback>()
             .default_factory()
-            .template factory<asITypeInfo*, const void*>("optional<T>@ f(int&in, const T&in) explicit")
+            .template factory<const void*>("const T&in")
             .template release<&script_optional::release>()
             .opAssign()
             .template method<&optional_opAssign_value>("optional<T>& opAssign(const T&in)")

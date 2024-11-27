@@ -1818,8 +1818,8 @@ namespace detail
         c
             .template template_callback<&array_template_callback>()
             .default_factory()
-            .template factory<asITypeInfo*, asUINT>("array<T>@ f(int&in, uint)")
-            .template factory<asITypeInfo*, asUINT, const void*>("array<T>@ f(int&in, uint, const T&in)")
+            .template factory<asUINT>("uint")
+            .template factory<asUINT, const void*>("uint, const T&in")
             .list_factory_repeat("T")
             .opAssign()
             .opEquals()

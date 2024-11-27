@@ -118,11 +118,8 @@ void register_trivial_value_class(asIScriptEngine* engine)
         asGetTypeTraits<trivial_value_class>() | asOBJ_APP_CLASS_ALLINTS | asOBJ_APP_CLASS_MORE_CONSTRUCTORS
     );
     c
-        .default_constructor()
-        .copy_constructor()
-        .opAssign()
-        .destructor()
-        .constructor<int>("void f(int val)")
+        .behaviours_by_traits()
+        .constructor<int>("int val")
         .list_constructor<int>("int,int")
         .opEquals()
         .opCmp()
@@ -155,11 +152,8 @@ void register_trivial_value_class(asbind20::use_generic_t, asIScriptEngine* engi
         asGetTypeTraits<trivial_value_class>() | asOBJ_APP_CLASS_ALLINTS | asOBJ_APP_CLASS_MORE_CONSTRUCTORS
     );
     c
-        .default_constructor()
-        .copy_constructor()
-        .opAssign()
-        .destructor()
-        .constructor<int>("void f(int val)")
+        .behaviours_by_traits()
+        .constructor<int>("int val")
         .list_constructor<int>("int,int")
         .opEquals()
         .opCmp()
@@ -394,12 +388,9 @@ void register_friend_ops(asIScriptEngine* engine)
     );
 
     c
-        .default_constructor()
-        .copy_constructor()
-        .template constructor<int>("void f(int)")
-        .destructor()
+        .behaviours_by_traits()
+        .template constructor<int>("int")
         .opEquals()
-        .opAssign()
         .opNeg()
         .opAdd()
         .opSub()

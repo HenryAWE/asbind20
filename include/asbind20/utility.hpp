@@ -18,6 +18,28 @@ namespace asbind20
 {
 namespace detail
 {
+    // std::is_constructible implicitly requires T to be destructible,
+    // which is not necessary for generating a constructor/factory.
+    // See: https://stackoverflow.com/questions/28085847/stdis-constructible-on-type-with-non-public-destructor
+    template <typename T, typename... Args>
+    concept check_placement_new = requires(void* mem) {
+        new(mem) T(std::declval<Args>()...);
+    };
+} // namespace detail
+
+/**
+ * @brief Check if a type is constructible without requiring it to be destructible
+ */
+template <typename T, typename... Args>
+struct is_only_constructible :
+    public std::bool_constant<detail::check_placement_new<T, Args...>>
+{};
+
+template <typename T, typename... Args>
+constexpr inline bool is_only_constructible_v = is_only_constructible<T, Args...>::value;
+
+namespace detail
+{
     template <typename T>
     constexpr T& refptr_helper_ref(T& ref) noexcept
     {

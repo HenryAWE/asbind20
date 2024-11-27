@@ -72,7 +72,7 @@ static void register_script_dictionary_impl(asIScriptEngine* engine)
 
     ref_class<dictionary, UseGeneric> c(engine, "dictionary", asOBJ_GC);
     c
-        .factory_function("dictionary@ f()", &dictionary_factory_default)
+        .factory_function("", &dictionary_factory_default)
         .template addref<&dictionary::addref>()
         .template release<&dictionary::release>()
         .template get_refcount<&dictionary::get_refcount>()

@@ -509,10 +509,7 @@ static void register_string_impl(asIScriptEngine* engine)
 
     value_class<string, UseGeneric> c(engine, "string", flags);
     c
-        .default_constructor()
-        .copy_constructor()
-        .opAssign()
-        .destructor()
+        .behaviours_by_traits()
         .opEquals()
         .opCmp()
         .opAdd()
@@ -538,7 +535,7 @@ static void register_string_impl(asIScriptEngine* engine)
     if(use_ch_api)
     {
         c
-            .template constructor_function<&string_constructor_ch, asCALL_CDECL_OBJLAST>("void f(uint count, uint ch)")
+            .template constructor_function<&string_constructor_ch, asCALL_CDECL_OBJLAST>("uint count, uint ch")
             .template method<&string_append_ch>("void append(uint ch)")
             .template method<&string_opAdd_ch>("string opAdd(uint ch) const")
             .template method<&string_prepend_ch>("void prepend(uint ch)")

@@ -62,7 +62,7 @@ void register_ref_class(asIScriptEngine* engine)
     ref_class<my_ref_class> c(engine, "my_ref_class");
     c
         .default_factory()
-        .factory_function("my_ref_class@ f(int)", &my_ref_class::create_by_val)
+        .factory_function("int", &my_ref_class::create_by_val)
         .addref(&my_ref_class::addref)
         .release(&my_ref_class::release)
         .method("uint use_count() const", &my_ref_class::use_count)
@@ -78,7 +78,7 @@ void register_ref_class(asbind20::use_generic_t, asIScriptEngine* engine)
     ref_class<my_ref_class, true> c(engine, "my_ref_class");
     c
         .default_factory()
-        .factory_function<&my_ref_class::create_by_val>("my_ref_class@ f(int)")
+        .factory_function<&my_ref_class::create_by_val>("int")
         .addref<&my_ref_class::addref>()
         .release<&my_ref_class::release>()
         .method<&my_ref_class::use_count>("uint use_count() const")

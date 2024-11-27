@@ -42,6 +42,7 @@ public:
     }
 
     int value = 0;
+    int another_value = 0;
 };
 
 void add_obj_last(int val, my_value_class* this_)
@@ -56,8 +57,8 @@ void mul_obj_first(my_value_class* this_, int val)
 
 void set_val_gen(asIScriptGeneric* gen)
 {
-    my_value_class* this_ = (my_value_class*)gen->GetObject();
-    int val = static_cast<int>(gen->GetArgDWord(0));
+    my_value_class* this_ = asbind20::get_generic_object<my_value_class*>(gen);
+    int val = asbind20::get_generic_arg<int>(gen, 0);
     this_->set_val(val);
 }
 ```
@@ -70,17 +71,15 @@ asbind20::value_class<my_value_class>(
     // Other flags will be automatically set
     asOBJ_APP_CLASS_ALLINTS | asOBJ_APP_CLASS_MORE_CONSTRUCTORS
 )
-    // Default & copy constructor, destructor,
-    // and assignment operator (operator=/opAssign)
-    .default_constructor()
-    .copy_constructor()
-    .destructor()
-    .opAssign()
+    // Generate & register the default constructor, copy constructor, destructor,
+    // and assignment operator (operator=/opAssign) based on type traits
+    .behaviours_by_traits()
     // The constructor my_value_class::my_value_class(int val)
-    .constructor<int>("void f(int val)")
+    .constructor<int>("int val")
     // Generate opEquals for AngelScript using operator== in C++
     .opEquals()
-    // Generate opCmp for AngelScript using operator<=> in C++
+    // Generate opCmp for AngelScript using operator<=> in C++,
+    // translating comparison result from the C++ enum to int value for AS
     .opCmp()
     // Ordinary member functions
     .method("int get_val() const", &my_value_class::get_val)
@@ -88,8 +87,10 @@ asbind20::value_class<my_value_class>(
     .method("void add(int val)", &add_obj_last)  // asCALL_CDECL_OBJLAST
     .method("void mul(int val)", &mul_obj_first) // asCALL_CDECL_OBJFIRST
     .method("void set_val(int)", &set_val_gen)   // asCALL_GENERIC
-    // Convert member pointer to property
-    .property("int value", &my_value_class::value);
+    // Register property by member pointer
+    .property("int value", &my_value_class::value)
+    // Register property by offset
+    .property("int another_value", offsetof(my_value_class, another_value));
 ```
 The binding helpers also support registering a reference type, an interface, or global functions, etc. to the AngelScript engine.  
 You can find more examples in `ext/container/src/array.cpp` and `ext/container/src/stdstring.cpp`.
@@ -189,9 +190,9 @@ This feature is similar to how `std::visit` and `std::variant` works. It can be 
 
 ```c++
 asbind20::visit_primitive_type(
-    [](auto val)
+    []<typename T>(T* val)
     {
-        using type = decltype(val);
+        using type = std::remove_const_t<T>;
 
         if constexpr(std::is_same_v<type, int>)
         {
@@ -207,7 +208,7 @@ asbind20::visit_primitive_type(
         }
     },
     as_type_id, // asTYPEID_BOOL, asTYPEID_INT32, etc.
-    ptr_to_val // void* to value
+    ptr_to_val // (const) void* to value
 );
 ```
 You can find example usage in `ext/container/src/array.cpp`.
@@ -217,13 +218,13 @@ You can find example usage in `ext/container/src/array.cpp`.
 - AngelScript >= 2.37.0
 - Any C++ compiler that supports C++20.  
   Currently, this library has been tested by MSVC 19.41 on Windows and GCC 12 on Linux.
+  You can find build and test status in the GitHub Actions.
 
 # How to Use
 Follow the tutorial of AngelScript to build and install it at first, or use a package manager like [vcpkg](https://github.com/microsoft/vcpkg).
 ## A. Build and Install
 Build and install the library.
 ```sh
-
 cmake -GNinja -DCMAKE_BUILD_TYPE=Release -S. -B build
 cmake --build build
 cmake --install build
