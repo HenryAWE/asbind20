@@ -250,5 +250,10 @@ target_link_libraries(main PRIVATE asbind20::asbind20)
 ```
 You can find a detailed example in `test/test_subdir/`.
 
+# Documentation
+Detailed explanation of asbind20.
+
+1. [Registering Object Types](./doc/object_type.md)
+
 # License
 [MIT License](./LICENSE)
