@@ -351,6 +351,13 @@ public:
     friend_ops(int val) noexcept
         : value(val) {}
 
+    // Value will be size of the list.
+    friend_ops(void* list_buf) noexcept
+    {
+        asbind20::script_init_list_repeat init_list(list_buf);
+        value = static_cast<int>(init_list.size());
+    }
+
     friend_ops& operator=(const friend_ops&) = default;
 
     friend bool operator==(const friend_ops& lhs, const friend_ops& rhs)
@@ -390,6 +397,7 @@ void register_friend_ops(asIScriptEngine* engine)
     c
         .behaviours_by_traits()
         .template constructor<int>("int")
+        .list_constructor("repeat int")
         .opEquals()
         .opNeg()
         .opAdd()
@@ -422,6 +430,11 @@ int test_2()
     assert(result == friend_ops(-1));
     return result.value;
 }
+int test_3()
+{
+    friend_ops arg_count = {1, 2, 3, 4, 5, 6};
+    return arg_count.value;
+}
 )";
 
 static void check_friend_ops(asIScriptEngine* engine)
@@ -450,6 +463,7 @@ static void check_friend_ops(asIScriptEngine* engine)
     check_int_result(0, -2);
     check_int_result(1, 5);
     check_int_result(2, -1);
+    check_int_result(3, 6);
 }
 
 TEST_F(asbind_test_suite, friend_ops)

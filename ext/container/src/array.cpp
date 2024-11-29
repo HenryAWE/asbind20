@@ -1820,7 +1820,7 @@ namespace detail
             .default_factory()
             .template factory<asUINT>("uint")
             .template factory<asUINT, const void*>("uint, const T&in")
-            .list_factory_repeat("T")
+            .list_factory("repeat T")
             .opAssign()
             .opEquals()
             .template addref<&script_array::addref>()

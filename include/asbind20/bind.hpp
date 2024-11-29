@@ -1875,11 +1875,16 @@ public:
         return *this;
     }
 
-    value_class& list_constructor_function(const char* decl, asGENFUNC_t gfn, call_conv_t<asCALL_GENERIC> = {})
+    constexpr std::string decl_list_constructor(std::string_view pattern) const
     {
-        behaviour(
+        return string_concat("void f(int&in){", pattern, "}");
+    }
+
+    value_class& list_constructor_function(std::string_view pattern, asGENFUNC_t gfn, call_conv_t<asCALL_GENERIC> = {})
+    {
+        this->behaviour_impl(
             asBEHAVE_LIST_CONSTRUCT,
-            decl,
+            decl_list_constructor(pattern).c_str(),
             gfn,
             call_conv<asCALL_GENERIC>
         );
@@ -1889,11 +1894,11 @@ public:
 
     template <asECallConvTypes CallConv, typename... Args>
     requires(CallConv == asCALL_CDECL_OBJFIRST || CallConv == asCALL_CDECL_OBJLAST)
-    value_class& list_constructor_function(const char* decl, void (*fn)(Args...), call_conv_t<CallConv>) requires(!ForceGeneric)
+    value_class& list_constructor_function(std::string_view pattern, void (*fn)(Args...), call_conv_t<CallConv>) requires(!ForceGeneric)
     {
-        behaviour(
+        this->behaviour_impl(
             asBEHAVE_LIST_CONSTRUCT,
-            decl,
+            decl_list_constructor(pattern).c_str(),
             fn,
             call_conv<CallConv>
         );
@@ -1903,7 +1908,7 @@ public:
 
     template <native_function auto ListConstructor, asECallConvTypes CallConv>
     requires(CallConv == asCALL_CDECL_OBJFIRST || CallConv == asCALL_CDECL_OBJLAST)
-    value_class& list_constructor_function(use_generic_t, const char* decl)
+    value_class& list_constructor_function(use_generic_t, std::string_view pattern)
     {
         using traits = function_traits<std::decay_t<decltype(ListConstructor)>>;
         static_assert(traits::arg_count_v == 2);
@@ -1914,7 +1919,7 @@ public:
             using list_buf_t = typename traits::last_arg_type;
             static_assert(std::is_pointer_v<list_buf_t>);
             list_constructor_function(
-                decl,
+                pattern,
                 +[](asIScriptGeneric* gen) -> void
                 {
                     ListConstructor(get_generic_object<Class*>(gen), *(list_buf_t*)gen->GetAddressOfArg(0));
@@ -1927,7 +1932,7 @@ public:
             using list_buf_t = typename traits::first_arg_type;
             static_assert(std::is_pointer_v<list_buf_t>);
             list_constructor_function(
-                decl,
+                pattern,
                 +[](asIScriptGeneric* gen) -> void
                 {
                     ListConstructor(*(list_buf_t*)gen->GetAddressOfArg(0), get_generic_object<Class*>(gen));
@@ -1941,24 +1946,18 @@ public:
 
     template <native_function auto ListConstructor, asECallConvTypes CallConv>
     requires(CallConv == asCALL_CDECL_OBJFIRST || CallConv == asCALL_CDECL_OBJLAST)
-    value_class& list_constructor_function(const char* decl)
+    value_class& list_constructor_function(std::string_view pattern)
     {
         if constexpr(ForceGeneric)
         {
-            list_constructor_function<ListConstructor, CallConv>(use_generic, decl);
+            list_constructor_function<ListConstructor, CallConv>(use_generic, pattern);
         }
         else
         {
-            list_constructor_function(decl, ListConstructor, call_conv<CallConv>);
+            list_constructor_function(pattern, ListConstructor, call_conv<CallConv>);
         }
 
         return *this;
-    }
-
-    constexpr std::string decl_list_constructor(std::string_view pattern) const
-    {
-        assert(!pattern.starts_with("repeat"));
-        return string_concat("void f(int&in) {", pattern, "}");
     }
 
     /**
@@ -1971,7 +1970,7 @@ public:
     value_class& list_constructor(use_generic_t, std::string_view pattern)
     {
         list_constructor_function(
-            decl_list_constructor(pattern).c_str(),
+            pattern,
             wrappers::list_constructor<Class, ListElementType>{}(use_generic),
             call_conv<asCALL_GENERIC>
         );
@@ -1985,7 +1984,7 @@ public:
      * @tparam ListElementType Element type
      * @param pattern List pattern
      */
-    template <typename ListElementType>
+    template <typename ListElementType = void>
     value_class& list_constructor(std::string_view pattern)
     {
         if constexpr(ForceGeneric)
@@ -1993,7 +1992,7 @@ public:
         else
         {
             list_constructor_function(
-                decl_list_constructor(pattern).c_str(),
+                pattern,
                 wrappers::list_constructor<Class, ListElementType>{}(call_conv<asCALL_CDECL_OBJLAST>),
                 call_conv<asCALL_CDECL_OBJLAST>
             );
@@ -2535,12 +2534,25 @@ public:
         return *this;
     }
 
-    template <typename... Args>
-    reference_class& list_factory_function(const char* decl, Class* (*fn)(Args...)) requires(!ForceGeneric)
+    std::string decl_list_factory(std::string_view pattern) const
     {
-        behaviour(
+        if constexpr(Template)
+            return string_concat(m_name, "@f(int&in,int&in){", pattern, "}");
+        else
+            return string_concat(m_name, "@f(int&in){", pattern, "}");
+    }
+
+    template <typename... Args, asECallConvTypes CallConv = asCALL_CDECL>
+    requires(CallConv == asCALL_CDECL)
+    reference_class& list_factory_function(
+        std::string_view pattern,
+        Class* (*fn)(Args...),
+        call_conv_t<CallConv> = {}
+    ) requires(!ForceGeneric)
+    {
+        this->behaviour_impl(
             asBEHAVE_LIST_FACTORY,
-            decl,
+            decl_list_factory(pattern).c_str(),
             fn,
             call_conv<asCALL_CDECL>
         );
@@ -2548,11 +2560,15 @@ public:
         return *this;
     }
 
-    reference_class& list_factory_function(const char* decl, asGENFUNC_t gfn)
+    reference_class& list_factory_function(
+        std::string_view pattern,
+        asGENFUNC_t gfn,
+        call_conv_t<asCALL_GENERIC> = {}
+    )
     {
-        behaviour(
+        this->behaviour_impl(
             asBEHAVE_LIST_FACTORY,
-            decl,
+            decl_list_factory(pattern).c_str(),
             gfn,
             call_conv<asCALL_GENERIC>
         );
@@ -2560,26 +2576,18 @@ public:
         return *this;
     }
 
-    std::string decl_list_factory_repeat(std::string_view repeat_pattern) const
+    template <typename ListElementType = void>
+    reference_class& list_factory(use_generic_t, std::string_view pattern)
     {
-        if constexpr(Template)
-            return string_concat(m_name, "@ f(int&in,int&in) {repeat ", repeat_pattern, "}");
-        else
-            string_concat(m_name, "@ f(int&in) {repeat ", repeat_pattern, "}");
-    }
-
-    reference_class& list_factory_repeat(use_generic_t, std::string_view repeat_pattern)
-    {
-        std::string decl = decl_list_factory_repeat(repeat_pattern);
         if constexpr(Template)
         {
             list_factory_function(
-                decl.c_str(),
+                pattern,
                 +[](asIScriptGeneric* gen) -> void
                 {
                     Class* ptr = new Class(
                         get_generic_arg<asITypeInfo*>(gen, 0),
-                        gen->GetArgAddress(1)
+                        *(ListElementType**)gen->GetAddressOfArg(1)
                     );
                     gen->SetReturnAddress(ptr);
                 }
@@ -2588,11 +2596,11 @@ public:
         else
         {
             list_factory_function(
-                decl.c_str(),
+                pattern,
                 +[](asIScriptGeneric* gen) -> void
                 {
                     Class* ptr = new Class(
-                        gen->GetArgAddress(0)
+                        *(ListElementType**)gen->GetAddressOfArg(0)
                     );
                     gen->SetReturnAddress(ptr);
                 }
@@ -2602,20 +2610,20 @@ public:
         return *this;
     }
 
-    reference_class& list_factory_repeat(std::string_view repeat_pattern)
+    template <typename ListElementType = void>
+    reference_class& list_factory(std::string_view pattern)
     {
         if constexpr(ForceGeneric)
         {
-            list_factory_repeat(use_generic, repeat_pattern);
+            list_factory<ListElementType>(use_generic, pattern);
         }
         else
         {
-            std::string decl = decl_list_factory_repeat(repeat_pattern);
             if constexpr(Template)
             {
                 list_factory_function(
-                    decl.c_str(),
-                    +[](asITypeInfo* ti, void* list_buf) -> Class*
+                    pattern,
+                    +[](asITypeInfo* ti, ListElementType* list_buf) -> Class*
                     {
                         return new Class(ti, list_buf);
                     }
@@ -2624,8 +2632,8 @@ public:
             else
             {
                 list_factory_function(
-                    decl.c_str(),
-                    +[](void* list_buf) -> Class*
+                    pattern,
+                    +[](ListElementType* list_buf) -> Class*
                     {
                         return new Class(list_buf);
                     }
@@ -2652,6 +2660,10 @@ public:
     }
 
     ASBIND20_REFERENCE_CLASS_OP(opAssign);
+    ASBIND20_REFERENCE_CLASS_OP(opAddAssign);
+    ASBIND20_REFERENCE_CLASS_OP(opSubAssign);
+    ASBIND20_REFERENCE_CLASS_OP(opMulAssign);
+    ASBIND20_REFERENCE_CLASS_OP(opDivAssign);
 
     ASBIND20_REFERENCE_CLASS_OP(opEquals);
     ASBIND20_REFERENCE_CLASS_OP(opCmp);

@@ -60,7 +60,8 @@ If you already have a wrapper for constructor, you can register it with `constru
 Registered by `destructor()`
 
 ### List Constructor
-Registered by `list_constructor<ListElementType>("pattern")`. This helper expects the registered type is constructible with `ListElementType*`. If your pattern contains variable type (`?`), you can set the `ListElementType` to `void`.
+Registered by `list_constructor<ListElementType>("pattern")`. This helper expects the registered type is constructible with `ListElementType*`.
+If your pattern is repeated or contains variable type (`?`) which cannot have a consistent element type, you can ignore this template argument. The `ListElementType` will be set to `void` by default.
 
 If you already have a wrapper, you can register it with `list_constructor_function()`. The supported calling convention of this helper are `GENERIC`, `CDECL_OBJLAST`, and `CDECL_OBJFIRST`.
 

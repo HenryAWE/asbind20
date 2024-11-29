@@ -17,6 +17,10 @@ public:
     my_ref_class(int val)
         : data(val) {}
 
+    // Expects the size of `arr` is 2
+    my_ref_class(int* arr)
+        : data(arr[0] + arr[1]) {}
+
     void addref()
     {
         m_use_count += 1;
@@ -63,6 +67,7 @@ void register_ref_class(asIScriptEngine* engine)
     c
         .default_factory()
         .factory_function("int", &my_ref_class::create_by_val)
+        .list_factory<int>("int,int")
         .addref(&my_ref_class::addref)
         .release(&my_ref_class::release)
         .method("uint use_count() const", &my_ref_class::use_count)
@@ -79,6 +84,7 @@ void register_ref_class(asbind20::use_generic_t, asIScriptEngine* engine)
     c
         .default_factory()
         .factory_function<&my_ref_class::create_by_val>("int")
+        .list_factory<int>("int,int")
         .addref<&my_ref_class::addref>()
         .release<&my_ref_class::release>()
         .method<&my_ref_class::use_count>("uint use_count() const")
@@ -114,6 +120,11 @@ int test_3()
     int old = val.exchange_data(3);
     return old + val.data;
 }
+int test_4()
+{
+    my_ref_class val = {3, 4};
+    return val.data;
+}
 )";
 
 static void check_ref_class(asIScriptEngine* engine)
@@ -144,6 +155,7 @@ static void check_ref_class(asIScriptEngine* engine)
     check_int_result(1, 1);
     check_int_result(2, 2);
     check_int_result(3, 5);
+    check_int_result(4, 7);
 }
 
 TEST_F(asbind_test_suite, ref_class)
