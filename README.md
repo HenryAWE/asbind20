@@ -254,6 +254,7 @@ You can find a detailed example in `test/test_subdir/`.
 Detailed explanation of asbind20.
 
 1. [Registering Object Types](./doc/object_type.md)
+2. [Customize Type Conversion Rules](./doc/custom_conv_rule.md)
 
 # License
 [MIT License](./LICENSE)

@@ -242,6 +242,15 @@ case as_type_id:                                               \
 #undef ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE
 }
 
+/**
+ * @brief Dispatches pointer of values to corresponding type. Similar to the `std::visit`.
+ *
+ * @note The object handle will be converted to `void**`, while script class and registered type will retain as `void*`
+ *
+ * @param Visitor Callable object that can accept all kind of pointer
+ * @param type_id AngelScript TypeId
+ * @param args Pointers to values
+ */
 template <typename Visitor, void_ptr... VoidPtrs>
 requires(sizeof...(VoidPtrs) > 0)
 decltype(auto) visit_script_type(Visitor&& vis, int type_id, VoidPtrs... args)
@@ -690,7 +699,7 @@ public:
     }
 
     /**
-     * @brief Revert to raw pointer for forwarding list to a script function
+     * @brief Revert to raw pointer for forwarding list to another function
      */
     void* forward() const noexcept
     {
@@ -723,6 +732,14 @@ std::strong_ordering translate_opCmp(int cmp) noexcept;
 
 void set_script_exception(asIScriptContext* ctx, const char* info);
 void set_script_exception(asIScriptContext* ctx, const std::string& info);
+
+/**
+ * @brief Set the script exception to currently active context.
+ *
+ * This function has no effect when calling outside an active AngelScript context.
+ *
+ * @param info Exception information
+ */
 void set_script_exception(const char* info);
 void set_script_exception(const std::string& info);
 
