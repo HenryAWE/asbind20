@@ -256,5 +256,9 @@ Detailed explanation of asbind20.
 1. [Registering Object Types](./doc/object_type.md)
 2. [Customize Type Conversion Rules](./doc/custom_conv_rule.md)
 
+# Known Limitations
+1. Some version of Clang (<= 15) may fail to compile extension and test due to compiler bug.
+2. Some utilities are implemented by non-standard C++, but they are guaranteed to have correct result on common platforms, which are tested by CI.
+
 # License
 [MIT License](./LICENSE)

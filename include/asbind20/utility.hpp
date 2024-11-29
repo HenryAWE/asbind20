@@ -142,9 +142,9 @@ class function_traits : public detail::func_traits_impl<std::remove_cvref_t<T>>
 
 public:
     using type = T;
-    using return_type = my_base::return_type;
-    using args_tuple = my_base::args_tuple;
-    using class_type = my_base::class_type;
+    using return_type = typename my_base::return_type;
+    using args_tuple = typename my_base::args_tuple;
+    using class_type = typename my_base::class_type;
 
     static constexpr bool is_method_v = !std::is_void_v<class_type>;
     using is_method = std::bool_constant<is_method_v>;

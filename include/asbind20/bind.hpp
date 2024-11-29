@@ -265,7 +265,7 @@ namespace wrappers
 
         template <asECallConvTypes CallConv>
         requires(is_acceptable_native_call_conv(CallConv))
-        using native_function_type = native_function_type_helper<CallConv>::type;
+        using native_function_type = typename native_function_type_helper<CallConv>::type;
 
         template <asECallConvTypes CallConv>
         requires(is_acceptable_native_call_conv(CallConv) || CallConv == asCALL_GENERIC)
@@ -340,7 +340,7 @@ namespace wrappers
 
         template <asECallConvTypes CallConv>
         requires(is_acceptable_native_call_conv(CallConv))
-        using native_function_type = native_function_type_helper<CallConv>::type;
+        using native_function_type = typename native_function_type_helper<CallConv>::type;
 
         template <asECallConvTypes CallConv>
         requires(is_acceptable_native_call_conv(CallConv) || CallConv == asCALL_GENERIC)
