@@ -12,7 +12,6 @@
 #include <functional>
 #include "detail/include_as.hpp"
 #include "utility.hpp"
-#include "function_traits.hpp"
 
 namespace asbind20
 {
