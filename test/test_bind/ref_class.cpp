@@ -21,6 +21,12 @@ public:
     my_ref_class(int* arr)
         : data(arr[0] + arr[1]) {}
 
+    my_ref_class& operator+=(const my_ref_class& rhs)
+    {
+        data += rhs.data;
+        return *this;
+    }
+
     void addref()
     {
         m_use_count += 1;
@@ -70,6 +76,7 @@ void register_ref_class(asIScriptEngine* engine)
         .list_factory<int>("int,int")
         .addref(&my_ref_class::addref)
         .release(&my_ref_class::release)
+        .opAddAssign()
         .method("uint use_count() const", &my_ref_class::use_count)
         .method("int exchange_data(int new_data)", &test_bind::exchange_data)
         .method("int get_data() const", &get_ref_class_data)
@@ -87,6 +94,7 @@ void register_ref_class(asbind20::use_generic_t, asIScriptEngine* engine)
         .list_factory<int>("int,int")
         .addref<&my_ref_class::addref>()
         .release<&my_ref_class::release>()
+        .opAddAssign()
         .method<&my_ref_class::use_count>("uint use_count() const")
         .method<&test_bind::exchange_data>("int exchange_data(int new_data)")
         .method("int get_data() const", &get_ref_class_data)
@@ -125,6 +133,14 @@ int test_4()
     my_ref_class val = {3, 4};
     return val.data;
 }
+int test_5()
+{
+    my_ref_class val1(1);
+    my_ref_class val2(2);
+    my_ref_class@ ref = val2 += val1;
+    assert(ref is @val2);
+    return val2.data;
+}
 )";
 
 static void check_ref_class(asIScriptEngine* engine)
@@ -156,6 +172,7 @@ static void check_ref_class(asIScriptEngine* engine)
     check_int_result(2, 2);
     check_int_result(3, 5);
     check_int_result(4, 7);
+    check_int_result(5, 3);
 }
 
 TEST_F(asbind_test_suite, ref_class)

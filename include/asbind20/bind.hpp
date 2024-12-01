@@ -2040,7 +2040,7 @@ public:
 
     template <typename Fn>
     requires(std::is_member_function_pointer_v<Fn>)
-    value_class& behaviour(asEBehaviours beh, const char* decl, Fn&& fn, call_conv_t<asCALL_THISCALL>) requires(!ForceGeneric)
+    value_class& behaviour(asEBehaviours beh, const char* decl, Fn&& fn, call_conv_t<asCALL_THISCALL> = {}) requires(!ForceGeneric)
     {
         behaviour_impl(beh, decl, std::forward<Fn>(fn), call_conv<asCALL_THISCALL>);
 
@@ -2048,7 +2048,7 @@ public:
     }
 
     template <typename R, typename... Args, asECallConvTypes CallConv>
-    requires(CallConv != asCALL_GENERIC)
+    requires(native_function<R (*)(Args...)> && CallConv != asCALL_GENERIC)
     value_class& behaviour(asEBehaviours beh, const char* decl, R (*fn)(Args...), call_conv_t<CallConv>) requires(!ForceGeneric)
     {
         this->behaviour_impl(beh, decl, fn, call_conv<CallConv>);
@@ -2056,7 +2056,7 @@ public:
         return *this;
     }
 
-    value_class& behaviour(asEBehaviours beh, const char* decl, asGENFUNC_t gfn, call_conv_t<asCALL_GENERIC>)
+    value_class& behaviour(asEBehaviours beh, const char* decl, asGENFUNC_t gfn, call_conv_t<asCALL_GENERIC> = {})
     {
         this->behaviour_impl(beh, decl, gfn, call_conv<asCALL_GENERIC>);
 
@@ -2065,7 +2065,7 @@ public:
 
     template <native_function Fn>
     requires(std::is_member_function_pointer_v<Fn>)
-    value_class& method(const char* decl, Fn&& fn) requires(!ForceGeneric)
+    value_class& method(const char* decl, Fn&& fn, call_conv_t<asCALL_THISCALL> = {}) requires(!ForceGeneric)
     {
         this->method_impl(decl, std::forward<Fn>(fn), call_conv<asCALL_THISCALL>);
 
@@ -2084,17 +2084,7 @@ public:
     /**
      * @brief Register a generic function.
      */
-    value_class& method(const char* decl, asGENFUNC_t gfn)
-    {
-        this->method_impl(decl, gfn, call_conv<asCALL_GENERIC>);
-
-        return *this;
-    }
-
-    /**
-     * @brief Register a generic function.
-     */
-    value_class& method(const char* decl, asGENFUNC_t gfn, call_conv_t<asCALL_GENERIC>)
+    value_class& method(const char* decl, asGENFUNC_t gfn, call_conv_t<asCALL_GENERIC> = {})
     {
         this->method_impl(decl, gfn, call_conv<asCALL_GENERIC>);
 
@@ -2272,16 +2262,16 @@ public:
     }
 
     template <native_function Fn>
-    requires(std::is_member_function_pointer_v<Fn>)
-    reference_class& method(const char* decl, Fn&& fn) requires(!ForceGeneric)
+    requires(std::is_member_function_pointer_v<std::decay_t<Fn>>)
+    reference_class& method(const char* decl, Fn&& fn, call_conv_t<asCALL_THISCALL> = {}) requires(!ForceGeneric)
     {
         this->method_impl(decl, std::forward<Fn>(fn), call_conv<asCALL_THISCALL>);
 
         return *this;
     }
 
-    template <typename Fn, asECallConvTypes CallConv>
-    requires(CallConv != asCALL_GENERIC)
+    template <native_function Fn, asECallConvTypes CallConv>
+    requires(!std::is_member_function_pointer_v<std::decay_t<Fn>> && CallConv != asCALL_GENERIC)
     reference_class& method(const char* decl, Fn&& fn, call_conv_t<CallConv>) requires(!ForceGeneric)
     {
         this->method_impl(decl, std::forward<Fn>(fn), call_conv<CallConv>);
@@ -2297,6 +2287,7 @@ public:
     }
 
     template <typename R, typename... Args>
+    requires(native_function<R (*)(Args...)>)
     reference_class& method(const char* decl, R (*fn)(Args...)) requires(!ForceGeneric)
     {
         this->template method_auto_callconv<Class>(decl, fn);
