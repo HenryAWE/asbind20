@@ -60,7 +60,8 @@ TEST_F(asbind_test_suite, host_script_string_interop)
         "test_script_string.as",
         "string create_str() { return \"hello\"; }"
         "void output_ref(string &out str) { str = \"hello\" + \" from ref\"; }"
-        "void check_str(string &in str) { assert(str == \"world\"); }"
+        "void check_str(const string &in str) { assert(str == \"world\"); }"
+        "void check_str_val(string str) { assert(str == \"world\"); }"
     );
     ASSERT_GE(m->Build(), 0);
 
@@ -80,8 +81,15 @@ TEST_F(asbind_test_suite, host_script_string_interop)
 
     {
         std::string str = "world";
-        auto result = asbind20::script_invoke<void>(ctx, m->GetFunctionByName("check_str"), str);
+        auto result = asbind20::script_invoke<void>(ctx, m->GetFunctionByName("check_str"), std::cref(str));
         ASSERT_TRUE(result_has_value(result));
+    }
+
+
+    {
+        std::string str = "world";
+        auto result = asbind20::script_invoke<void>(ctx, m->GetFunctionByName("check_str"), str);
+        EXPECT_TRUE(result_has_value(result));
     }
 
     ctx->Release();

@@ -436,7 +436,7 @@ namespace detail
         }
         else
         {
-            ctx->SetArgAddress(idx, (void*)std::addressof(obj));
+            ctx->SetArgObject(idx, (void*)std::addressof(obj));
         }
     }
 

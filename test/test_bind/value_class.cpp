@@ -114,7 +114,7 @@ void register_trivial_value_class(asIScriptEngine* engine)
 
     value_class<trivial_value_class> c(
         engine,
-        "trivia_val_class",
+        "trivial_value_class",
         asGetTypeTraits<trivial_value_class>() | asOBJ_APP_CLASS_ALLINTS | asOBJ_APP_CLASS_MORE_CONSTRUCTORS
     );
     c
@@ -148,7 +148,7 @@ void register_trivial_value_class(asbind20::use_generic_t, asIScriptEngine* engi
 
     value_class<trivial_value_class, true> c(
         engine,
-        "trivia_val_class",
+        "trivial_value_class",
         asGetTypeTraits<trivial_value_class>() | asOBJ_APP_CLASS_ALLINTS | asOBJ_APP_CLASS_MORE_CONSTRUCTORS
     );
     c
@@ -183,36 +183,36 @@ using namespace asbind_test;
 const char* trivial_value_class_test_script = R"(
 int test_0()
 {
-    trivia_val_class val;
+    trivial_value_class val;
     return val.get_val();
 }
 int test_1()
 {
-    trivia_val_class val;
+    trivial_value_class val;
     val.set_val(42);
     assert(val.value == 42);
-    assert(val == trivia_val_class(42));
+    assert(val == trivial_value_class(42));
     return val.get_val();
 }
 int test_2()
 {
-    trivia_val_class val;
+    trivial_value_class val;
     val.set_val2(182375);
     assert(val.value < 182376);
-    assert(val < trivia_val_class(182376));
+    assert(val < trivial_value_class(182376));
     val.add(1);
     return val.get_val();
 }
 int test_3()
 {
-    trivia_val_class val;
+    trivial_value_class val;
     val.set_val(2);
     val.mul(3);
     return val.get_val();
 }
 int test_4()
 {
-    trivia_val_class val;
+    trivial_value_class val;
     val.set_val(2);
     val.add2(1);
     val.mul2(3);
@@ -220,7 +220,7 @@ int test_4()
 }
 int test_5()
 {
-    trivia_val_class val(4);
+    trivial_value_class val(4);
     val.add3(1);
     val.mul3(2);
     val.value += 1;
@@ -228,46 +228,52 @@ int test_5()
 }
 int test_6()
 {
-    trivia_val_class val = {2, 3};
+    trivial_value_class val = {2, 3};
     return val.value;
 }
-trivia_val_class test_7()
+trivial_value_class test_7()
 {
-    trivia_val_class val(0);
-    assert(++val == trivia_val_class(1));
-    trivia_val_class tmp = val++;
+    trivial_value_class val(0);
+    assert(++val == trivial_value_class(1));
+    trivial_value_class tmp = val++;
     assert(tmp.value == 1);
     return val;
 }
-trivia_val_class test_8()
+trivial_value_class test_8()
 {
-    trivia_val_class val(2);
-    assert(--val == trivia_val_class(1));
+    trivial_value_class val(2);
+    assert(--val == trivial_value_class(1));
     print(to_string(val.value));
-    trivia_val_class tmp = val--;
+    trivial_value_class tmp = val--;
     assert(tmp.value == 1);
     return val;
 }
-trivia_val_class test_9()
+trivial_value_class test_9()
 {
-    trivia_val_class val1(2);
-    trivia_val_class val2(3);
+    trivial_value_class val1(2);
+    trivial_value_class val2(3);
     return val1 + val2;
 }
-trivia_val_class test_10()
+trivial_value_class test_10()
 {
-    trivia_val_class val1(2);
-    trivia_val_class val2(3);
+    trivial_value_class val1(2);
+    trivial_value_class val2(3);
     val1 += val2;
     assert(val2.value == 3);
     return val1;
 }
-trivia_val_class test_11()
+trivial_value_class test_11()
 {
-    trivia_val_class val1(2);
-    trivia_val_class val2 = -val1;
+    trivial_value_class val1(2);
+    trivial_value_class val2 = -val1;
     assert(val2.value == -2);
     return val2;
+}
+bool test_12(trivial_value_class val)
+{
+    assert(val.value == 2);
+    val += 1;
+    return val.value == 3;
 }
 )";
 
@@ -319,6 +325,20 @@ static void check_trivial_class(asIScriptEngine* engine)
     check_class_result(9, 5);
     check_class_result(10, 5);
     check_class_result(11, -2);
+
+    auto check_bool_result = [&]<typename... Args>(int idx, Args&&... args) -> void
+    {
+        std::string test_name = asbind20::string_concat("test_", std::to_string(idx));
+        auto test_case = asbind20::script_function<bool(Args...)>(m->GetFunctionByName(test_name.c_str()));
+
+        asbind20::request_context ctx(engine);
+        auto result = test_case(ctx, std::forward<Args>(args)...);
+        ASSERT_TRUE(result_has_value(result));
+        EXPECT_TRUE(*result)
+            << test_name;
+    };
+
+    check_bool_result(12, trivial_value_class(2));
 }
 
 TEST_F(asbind_test_suite, trivial_value_class)
