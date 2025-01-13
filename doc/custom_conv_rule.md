@@ -1,5 +1,5 @@
 # Customize Type Conversion Rules
-Sometimes the default auto-conversion tools provided by asbind20 is not enough for handling special use-defined types, it requires user to provide rules for translating them between C++ and AngelScript.
+Sometimes the default auto-conversion tools provided by asbind20 is not enough for handling special user-defined types, it requires user to provide rules for translating them between C++ and AngelScript.
 
 ## Example for `std::byte`
 The `std::byte` is defined using `enum class byte : unsigned char {};`. However, the default logic of type translator will converted enumerations to `DWord` (`int32`) because all underlying type of `enum` in AngelScript is `int`.

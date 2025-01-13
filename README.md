@@ -225,7 +225,7 @@ Follow the tutorial of AngelScript to build and install it at first, or use a pa
 ## A. Build and Install
 Build and install the library.
 ```sh
-cmake -GNinja -DCMAKE_BUILD_TYPE=Release -S. -B build
+cmake -GNinja -DCMAKE_BUILD_TYPE=Release -S . -B build
 cmake --build build
 cmake --install build
 ```
@@ -259,6 +259,8 @@ Detailed explanation of asbind20.
 # Known Limitations
 1. Some version of Clang (<= 15) may fail to compile extension and test due to compiler bug.
 2. Some utilities are implemented by non-standard C++, but they are guaranteed to have correct result on common platforms, which are tested by CI.
+
+3. If you bind an overloaded function using syntax like `static_cast<return_type(*)()>(&func)` on MSVC, it may crash the compiler. The workaround is to write a standalone wrapper function with no overloading, then bind this wrapper to AngelScript.
 
 # License
 [MIT License](./LICENSE)
