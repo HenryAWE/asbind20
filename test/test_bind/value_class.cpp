@@ -119,7 +119,7 @@ void register_trivial_value_class(asIScriptEngine* engine)
     );
     c
         .behaviours_by_traits()
-        .constructor<int>("int val")
+        .constructor<int>("int val", use_explicit)
         .list_constructor<int>("int,int")
         .opEquals()
         .opCmp()
@@ -153,7 +153,7 @@ void register_trivial_value_class(asbind20::use_generic_t, asIScriptEngine* engi
     );
     c
         .behaviours_by_traits()
-        .constructor<int>("int val")
+        .constructor<int>("int val", use_explicit)
         .list_constructor<int>("int,int")
         .opEquals()
         .opCmp()
@@ -272,7 +272,7 @@ trivial_value_class test_11()
 bool test_12(trivial_value_class val)
 {
     assert(val.value == 2);
-    val += 1;
+    val += trivial_value_class(1);
     return val.value == 3;
 }
 )";

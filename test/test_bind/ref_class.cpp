@@ -72,7 +72,7 @@ void register_ref_class(asIScriptEngine* engine)
     ref_class<my_ref_class> c(engine, "my_ref_class");
     c
         .default_factory()
-        .factory_function("int", &my_ref_class::create_by_val)
+        .factory_function<&my_ref_class::create_by_val>("int", use_explicit)
         .list_factory<int>("int,int")
         .addref(&my_ref_class::addref)
         .release(&my_ref_class::release)
@@ -90,7 +90,7 @@ void register_ref_class(asbind20::use_generic_t, asIScriptEngine* engine)
     ref_class<my_ref_class, true> c(engine, "my_ref_class");
     c
         .default_factory()
-        .factory_function<&my_ref_class::create_by_val>("int")
+        .factory_function<&my_ref_class::create_by_val>("int", use_explicit)
         .list_factory<int>("int,int")
         .addref<&my_ref_class::addref>()
         .release<&my_ref_class::release>()
