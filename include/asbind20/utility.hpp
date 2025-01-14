@@ -271,7 +271,7 @@ using primitive_type_of_t = typename primitive_type_of<TypeId>::type;
 /**
  * @brief Check if a type id refers to a primitive type
  */
-inline bool is_primitive_type(int type_id) noexcept
+constexpr bool is_primitive_type(int type_id) noexcept
 {
     return !(type_id & ~asTYPEID_MASK_SEQNBR);
 }
@@ -279,7 +279,7 @@ inline bool is_primitive_type(int type_id) noexcept
 /**
  * @brief Check if a type id refers to an object handle
  */
-inline bool is_objhandle(int type_id) noexcept
+constexpr bool is_objhandle(int type_id) noexcept
 {
     return type_id & asTYPEID_OBJHANDLE;
 }

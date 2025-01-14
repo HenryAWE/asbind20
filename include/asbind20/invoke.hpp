@@ -564,6 +564,7 @@ script_invoke_result<R> script_invoke(asIScriptContext* ctx, Object&& obj, asISc
     assert(func != nullptr);
     assert(ctx != nullptr);
 
+    [[maybe_unused]]
     int r = 0;
     r = ctx->Prepare(func);
     assert(r >= 0);

@@ -1,5 +1,6 @@
 #include <asbind20/utility.hpp>
 #include <cassert>
+#include <stdexcept>
 #include <asbind20/invoke.hpp>
 
 namespace asbind20

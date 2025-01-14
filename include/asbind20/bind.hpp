@@ -709,7 +709,9 @@ public:
         Return (*fn)(Args...)
     )
     {
-        int r = m_engine->RegisterGlobalFunction(
+        [[maybe_unused]]
+        int r = 0;
+        r = m_engine->RegisterGlobalFunction(
             decl,
             asFunctionPtr(fn),
             asCALL_CDECL
@@ -744,7 +746,9 @@ public:
         }
         else
         {
-            int r = m_engine->RegisterGlobalFunction(
+            [[maybe_unused]]
+            int r = 0;
+            r = m_engine->RegisterGlobalFunction(
                 decl,
                 asFunctionPtr(Function),
                 CallConv
@@ -762,7 +766,9 @@ public:
         T& instance
     )
     {
-        int r = m_engine->RegisterGlobalFunction(
+        [[maybe_unused]]
+        int r = 0;
+        r = m_engine->RegisterGlobalFunction(
             decl,
             asFunctionPtr(gfn),
             asCALL_GENERIC,
@@ -780,7 +786,9 @@ public:
         T& instance
     ) requires(!ForceGeneric)
     {
-        int r = m_engine->RegisterGlobalFunction(
+        [[maybe_unused]]
+        int r = 0;
+        r = m_engine->RegisterGlobalFunction(
             decl,
             asSMethodPtr<sizeof(fn)>::Convert(fn),
             asCALL_THISCALL_ASGLOBAL,
@@ -854,7 +862,9 @@ public:
         T& val
     )
     {
-        int r = m_engine->RegisterGlobalProperty(
+        [[maybe_unused]]
+        int r = 0;
+        r = m_engine->RegisterGlobalProperty(
             decl, (void*)std::addressof(val)
         );
         assert(r >= 0);
@@ -868,7 +878,9 @@ public:
         void* auxiliary = nullptr
     )
     {
-        int r = m_engine->RegisterGlobalFunction(
+        [[maybe_unused]]
+        int r = 0;
+        r = m_engine->RegisterGlobalFunction(
             decl,
             asFunctionPtr(gfn),
             asCALL_GENERIC,
@@ -883,7 +895,9 @@ public:
         const char* decl
     )
     {
-        int r = m_engine->RegisterFuncdef(decl);
+        [[maybe_unused]]
+        int r = 0;
+        r = m_engine->RegisterFuncdef(decl);
         assert(r >= 0);
 
         return *this;
@@ -894,7 +908,9 @@ public:
         const char* new_name
     )
     {
-        int r = m_engine->RegisterTypedef(new_name, type_decl);
+        [[maybe_unused]]
+        int r = 0;
+        r = m_engine->RegisterTypedef(new_name, type_decl);
         assert(r >= 0);
 
         return *this;
@@ -919,7 +935,9 @@ public:
         const char* type
     )
     {
-        int r = m_engine->RegisterEnum(type);
+        [[maybe_unused]]
+        int r = 0;
+        r = m_engine->RegisterEnum(type);
         assert(r >= 0);
 
         return *this;
@@ -938,7 +956,9 @@ public:
             "Enum size too large"
         );
 
-        int r = m_engine->RegisterEnumValue(
+        [[maybe_unused]]
+        int r = 0;
+        r = m_engine->RegisterEnumValue(
             type,
             name,
             static_cast<int>(val)
@@ -957,7 +977,9 @@ public:
     requires(!std::is_member_function_pointer_v<std::decay_t<Callback>>)
     global& message_callback(Callback fn, void* obj = nullptr)
     {
-        int r = m_engine->SetMessageCallback(
+        [[maybe_unused]]
+        int r = 0;
+        r = m_engine->SetMessageCallback(
             asFunctionPtr(fn), obj, asCALL_CDECL
         );
         assert(r >= 0);
@@ -969,7 +991,9 @@ public:
     requires(std::is_member_function_pointer_v<std::decay_t<Callback>>)
     global& message_callback(Callback fn, T& obj)
     {
-        int r = m_engine->SetMessageCallback(
+        [[maybe_unused]]
+        int r = 0;
+        r = m_engine->SetMessageCallback(
             asSMethodPtr<sizeof(fn)>::Convert(fn), (void*)std::addressof(obj), asCALL_THISCALL
         );
         assert(r >= 0);
@@ -1012,7 +1036,9 @@ public:
     requires(!std::is_member_function_pointer_v<std::decay_t<Callback>>)
     global& exception_translator(Callback fn, void* obj = nullptr)
     {
-        int r = m_engine->SetTranslateAppExceptionCallback(
+        [[maybe_unused]]
+        int r = 0;
+        r = m_engine->SetTranslateAppExceptionCallback(
             asFunctionPtr(fn), obj, asCALL_CDECL
         );
         assert(r >= 0);
@@ -1024,7 +1050,9 @@ public:
     requires(std::is_member_function_pointer_v<std::decay_t<Callback>>)
     global& exception_translator(Callback fn, T& obj)
     {
-        int r = m_engine->SetTranslateAppExceptionCallback(
+        [[maybe_unused]]
+        int r = 0;
+        r = m_engine->SetTranslateAppExceptionCallback(
             asSMethodPtr<sizeof(fn)>::Convert(fn), (void*)std::addressof(obj), asCALL_THISCALL
         );
         assert(r >= 0);
@@ -1079,7 +1107,9 @@ protected:
     template <typename Class>
     void register_object_type(asQWORD flags)
     {
-        int r = m_engine->RegisterObjectType(
+        [[maybe_unused]]
+        int r = 0;
+        r = m_engine->RegisterObjectType(
             m_name,
             static_cast<int>(sizeof(Class)),
             flags
@@ -1091,7 +1121,9 @@ protected:
     requires(std::is_member_function_pointer_v<Fn>)
     void method_impl(const char* decl, Fn&& fn, call_conv_t<asCALL_THISCALL>)
     {
-        int r = m_engine->RegisterObjectMethod(
+        [[maybe_unused]]
+        int r = 0;
+        r = m_engine->RegisterObjectMethod(
             m_name,
             decl,
             asSMethodPtr<sizeof(Fn)>::Convert(fn),
@@ -1103,7 +1135,9 @@ protected:
     template <typename Fn>
     void method_impl(const char* decl, Fn&& fn, call_conv_t<asCALL_CDECL_OBJFIRST>)
     {
-        int r = m_engine->RegisterObjectMethod(
+        [[maybe_unused]]
+        int r = 0;
+        r = m_engine->RegisterObjectMethod(
             m_name,
             decl,
             asFunctionPtr(fn),
@@ -1115,7 +1149,9 @@ protected:
     template <typename Fn>
     void method_impl(const char* decl, Fn&& fn, call_conv_t<asCALL_CDECL_OBJLAST>)
     {
-        int r = m_engine->RegisterObjectMethod(
+        [[maybe_unused]]
+        int r = 0;
+        r = m_engine->RegisterObjectMethod(
             m_name,
             decl,
             asFunctionPtr(fn),
@@ -1126,7 +1162,9 @@ protected:
 
     void method_impl(const char* decl, asGENFUNC_t gfn, call_conv_t<asCALL_GENERIC>)
     {
-        int r = m_engine->RegisterObjectMethod(
+        [[maybe_unused]]
+        int r = 0;
+        r = m_engine->RegisterObjectMethod(
             m_name,
             decl,
             asFunctionPtr(gfn),
@@ -1158,7 +1196,9 @@ protected:
 
     void behaviour_impl(asEBehaviours beh, const char* decl, asGENFUNC_t gfn, call_conv_t<asCALL_GENERIC>)
     {
-        int r = m_engine->RegisterObjectBehaviour(
+        [[maybe_unused]]
+        int r = 0;
+        r = m_engine->RegisterObjectBehaviour(
             m_name,
             beh,
             decl,
@@ -1243,7 +1283,9 @@ protected:
 
     void property_impl(const char* decl, std::size_t off)
     {
-        int r = m_engine->RegisterObjectProperty(
+        [[maybe_unused]]
+        int r = 0;
+        r = m_engine->RegisterObjectProperty(
             m_name,
             decl,
             static_cast<int>(off)
@@ -1542,7 +1584,9 @@ protected:
 private:
     void full_funcdef(const char* decl)
     {
-        int r = m_engine->RegisterFuncdef(decl);
+        [[maybe_unused]]
+        int r = 0;
+        r = m_engine->RegisterFuncdef(decl);
         assert(r >= 0);
     }
 };
@@ -2532,7 +2576,9 @@ public:
     template <typename... Args>
     reference_class& factory_function(std::string_view params, Class* (*fn)(Args...), call_conv_t<asCALL_CDECL> = {}) requires(!ForceGeneric)
     {
-        int r = m_engine->RegisterObjectBehaviour(
+        [[maybe_unused]]
+        int r = 0;
+        r = m_engine->RegisterObjectBehaviour(
             m_name,
             asBEHAVE_FACTORY,
             decl_factory(params).c_str(),
@@ -2547,7 +2593,9 @@ public:
     template <typename... Args>
     reference_class& factory_function(std::string_view params, use_explicit_t, Class* (*fn)(Args...), call_conv_t<asCALL_CDECL> = {}) requires(!ForceGeneric)
     {
-        int r = m_engine->RegisterObjectBehaviour(
+        [[maybe_unused]]
+        int r = 0;
+        r = m_engine->RegisterObjectBehaviour(
             m_name,
             asBEHAVE_FACTORY,
             decl_factory(params, use_explicit).c_str(),
@@ -2561,7 +2609,9 @@ public:
 
     reference_class& factory_function(std::string_view params, asGENFUNC_t gfn, call_conv_t<asCALL_GENERIC> = {})
     {
-        int r = m_engine->RegisterObjectBehaviour(
+        [[maybe_unused]]
+        int r = 0;
+        r = m_engine->RegisterObjectBehaviour(
             m_name,
             asBEHAVE_FACTORY,
             decl_factory(params).c_str(),
@@ -2575,7 +2625,9 @@ public:
 
     reference_class& factory_function(std::string_view params, use_explicit_t, asGENFUNC_t gfn, call_conv_t<asCALL_GENERIC> = {})
     {
-        int r = m_engine->RegisterObjectBehaviour(
+        [[maybe_unused]]
+        int r = 0;
+        r = m_engine->RegisterObjectBehaviour(
             m_name,
             asBEHAVE_FACTORY,
             decl_factory(params, use_explicit).c_str(),
