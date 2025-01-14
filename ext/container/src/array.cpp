@@ -1818,7 +1818,7 @@ namespace detail
         c
             .template template_callback<&array_template_callback>()
             .default_factory()
-            .template factory<asUINT>("uint")
+            .template factory<asUINT>("uint", use_explicit)
             .template factory<asUINT, const void*>("uint, const T&in")
             .list_factory("repeat T")
             .opAssign()

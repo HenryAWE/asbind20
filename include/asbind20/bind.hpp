@@ -2749,43 +2749,128 @@ public:
         return *this;
     }
 
+private:
     template <typename... Args>
-    reference_class& factory(use_generic_t, std::string_view params)
+    void factory_impl_generic(use_generic_t, std::string_view params, bool explicit_)
     {
+        asGENFUNC_t wrapper = nullptr;
         if constexpr(Template)
+        {
+            wrapper = +[](asIScriptGeneric* gen) -> void
+            {
+                using args_tuple = std::tuple<Args...>;
+
+                [gen]<std::size_t... Is>(std::index_sequence<Is...>)
+                {
+                    Class* ptr = new Class(
+                        *(asITypeInfo**)gen->GetAddressOfArg(0),
+                        get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (asUINT)Is + 1)...
+                    );
+                    gen->SetReturnAddress(ptr);
+                }(std::make_index_sequence<sizeof...(Args)>());
+            };
+        }
+        else
+        {
+            wrapper = +[](asIScriptGeneric* gen) -> void
+            {
+                using args_tuple = std::tuple<Args...>;
+
+                [gen]<std::size_t... Is>(std::index_sequence<Is...>)
+                {
+                    Class* ptr = new Class(get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (asUINT)Is)...);
+                    gen->SetReturnAddress(ptr);
+                }(std::make_index_sequence<sizeof...(Args)>());
+            };
+        }
+
+        if(explicit_)
         {
             factory_function(
                 params,
-                +[](asIScriptGeneric* gen) -> void
-                {
-                    using args_tuple = std::tuple<Args...>;
-                    [gen]<std::size_t... Is>(std::index_sequence<Is...>)
-                    {
-                        Class* ptr = new Class(
-                            *(asITypeInfo**)gen->GetAddressOfArg(0),
-                            get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (asUINT)Is + 1)...
-                        );
-                        gen->SetReturnAddress(ptr);
-                    }(std::make_index_sequence<sizeof...(Args)>());
-                }
+                use_explicit,
+                wrapper,
+                call_conv<asCALL_GENERIC>
             );
         }
         else
         {
             factory_function(
                 params,
-                +[](asIScriptGeneric* gen) -> void
-                {
-                    using args_tuple = std::tuple<Args...>;
-
-                    [gen]<std::size_t... Is>(std::index_sequence<Is...>)
-                    {
-                        Class* ptr = new Class(get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (asUINT)Is)...);
-                        gen->SetReturnAddress(ptr);
-                    }(std::make_index_sequence<sizeof...(Args)>());
-                }
+                wrapper,
+                call_conv<asCALL_GENERIC>
             );
         }
+    }
+
+    template <typename... Args>
+    void factory_impl_native(std::string_view params, bool explicit_) requires(!ForceGeneric)
+    {
+        if constexpr(Template)
+        {
+            auto wrapper = +[](asITypeInfo* ti, Args... args) -> Class*
+            {
+                return new Class(ti, args...);
+            };
+
+            if(explicit_)
+            {
+                factory_function(
+                    params,
+                    use_explicit,
+                    wrapper,
+                    call_conv<asCALL_CDECL>
+                );
+            }
+            else
+            {
+                factory_function(
+                    params,
+                    wrapper,
+                    call_conv<asCALL_CDECL>
+                );
+            }
+        }
+        else
+        {
+            auto wrapper = +[](Args... args) -> Class*
+            {
+                return new Class(args...);
+            };
+
+            if(explicit_)
+            {
+                factory_function(
+                    params,
+                    use_explicit,
+                    wrapper,
+                    call_conv<asCALL_CDECL>
+                );
+            }
+            else
+            {
+                factory_function(
+                    params,
+                    wrapper,
+                    call_conv<asCALL_CDECL>
+                );
+            }
+        }
+    }
+
+public:
+    template <typename... Args>
+    reference_class& factory(use_generic_t, std::string_view params)
+    {
+        this->factory_impl_generic<Args...>(use_generic, params, false);
+
+        return *this;
+    }
+
+    template <typename... Args>
+    reference_class& factory(use_generic_t, std::string_view params, use_explicit_t)
+    {
+        this->factory_impl_generic<Args...>(use_generic, params, true);
 
         return *this;
     }
@@ -2799,26 +2884,22 @@ public:
         }
         else
         {
-            if constexpr(Template)
-            {
-                factory_function(
-                    params,
-                    +[](asITypeInfo* ti, Args... args) -> Class*
-                    {
-                        return new Class(ti, args...);
-                    }
-                );
-            }
-            else
-            {
-                factory_function(
-                    params,
-                    +[](Args... args) -> Class*
-                    {
-                        return new Class(args...);
-                    }
-                );
-            }
+            this->factory_impl_native<Args...>(params, false);
+        }
+
+        return *this;
+    }
+
+    template <typename... Args>
+    reference_class& factory(std::string_view params, use_explicit_t)
+    {
+        if constexpr(ForceGeneric)
+        {
+            factory<Args...>(use_generic, params, use_explicit);
+        }
+        else
+        {
+            this->factory_impl_native<Args...>(params, true);
         }
 
         return *this;
