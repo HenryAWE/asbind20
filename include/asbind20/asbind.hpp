@@ -6,12 +6,12 @@
 // clang-format off: Used by CMakeLists.txt for parsing version
 
 #define ASBIND20_VERSION_MAJOR 1
-#define ASBIND20_VERSION_MINOR 0
+#define ASBIND20_VERSION_MINOR 1
 #define ASBIND20_VERSION_PATCH 0
 
 // clang-format on
 
-#define ASBIND20_VERSION_STRING "1.0.0"
+#define ASBIND20_VERSION_STRING "1.1.0"
 
 #include "utility.hpp"
 #include "bind.hpp"

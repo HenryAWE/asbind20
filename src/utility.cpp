@@ -75,6 +75,39 @@ std::size_t copy_primitive_value(void* dst, const void* src, int type_id)
     }
 }
 
+std::string to_string(asEContextState state)
+{
+    switch(state)
+    {
+    case asEXECUTION_FINISHED:
+        return "asEXECUTION_FINISHED";
+    case asEXECUTION_SUSPENDED:
+        return "asEXECUTION_SUSPENDED";
+    case asEXECUTION_ABORTED:
+        return "asEXECUTION_ABORTED";
+    case asEXECUTION_EXCEPTION:
+        return "asEXECUTION_EXCEPTION";
+    case asEXECUTION_PREPARED:
+        return "asEXECUTION_PREPARED";
+    case asEXECUTION_UNINITIALIZED:
+        return "asEXECUTION_UNINITIALIZED";
+    case asEXECUTION_ACTIVE:
+        return "asEXECUTION_ACTIVE";
+    case asEXECUTION_ERROR:
+        return "asEXECUTION_ERROR";
+    case asEXECUTION_DESERIALIZATION:
+        return "asEXECUTION_DESERIALIZATION";
+
+    [[unlikely]] default:
+        using namespace std::literals;
+        return string_concat(
+            "asEContextState("sv,
+            std::to_string(static_cast<int>(state)),
+            ')'
+        );
+    }
+}
+
 asIScriptFunction* get_default_factory(asITypeInfo* ti)
 {
     assert(ti != nullptr);

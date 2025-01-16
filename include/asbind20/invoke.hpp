@@ -23,7 +23,7 @@ public:
 
     const char* what() const noexcept override
     {
-        return "bad_script_invoke_result_access";
+        return "bad script invoke result access";
     }
 
     int error() const noexcept

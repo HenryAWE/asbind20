@@ -503,11 +503,13 @@ namespace detail
 template <detail::concat_accepted... Args>
 constexpr std::string& string_concat_inplace(std::string& out, Args&&... args)
 {
-    assert(out.empty());
-    std::size_t sz = 0 + (detail::concat_size(args) + ...);
-    out.reserve(sz);
+    if constexpr(sizeof...(Args) > 0)
+    {
+        std::size_t sz = out.size() + (detail::concat_size(args) + ...);
+        out.reserve(sz);
 
-    (detail::concat_impl(out, std::forward<Args>(args)), ...);
+        (detail::concat_impl(out, std::forward<Args>(args)), ...);
+    }
 
     return out;
 }
@@ -525,6 +527,16 @@ constexpr std::string string_concat(Args&&... args)
     string_concat_inplace(out, std::forward<Args>(args)...);
     return out;
 }
+
+/**
+ * @brief Convert context state enum to string
+ *
+ * @param state Context state
+ * @return std::string String representation of the state.
+ *                     If the state value is invalid, the result will be "asEContextState({state})",
+ *                     e.g. "asEContextState(-1)".
+ */
+std::string to_string(asEContextState state);
 
 /**
  * @brief Smart pointer for script object

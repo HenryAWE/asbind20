@@ -2,7 +2,6 @@
 
 namespace asbind20
 {
-[[nodiscard]]
 const char* library_version() noexcept
 {
 #ifdef ASBIND20_DEBUG
