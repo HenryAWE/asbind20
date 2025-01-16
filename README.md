@@ -14,7 +14,7 @@ public:
     my_value_class() = default;
     my_value_class(const my_value_class&) = default;
 
-    my_value_class(int val)
+    explicit my_value_class(int val)
         : value(val) {}
 
     ~my_value_class() = default;
@@ -74,22 +74,23 @@ asbind20::value_class<my_value_class>(
     // Generate & register the default constructor, copy constructor, destructor,
     // and assignment operator (operator=/opAssign) based on type traits
     .behaviours_by_traits()
-    // The constructor my_value_class::my_value_class(int val)
-    .constructor<int>("int val")
+    // The constructor `my_value_class::my_value_class(int val)`
+    // The tag `use_explicit` indicates an explicit constructor.
+    .constructor<int>("int val", asbind20::use_explicit)
     // Generate opEquals for AngelScript using operator== in C++
     .opEquals()
     // Generate opCmp for AngelScript using operator<=> in C++,
-    // translating comparison result from the C++ enum to int value for AS
+    // translating comparison result from the C++ enum to int value for AS.
     .opCmp()
     // Ordinary member functions
     .method("int get_val() const", &my_value_class::get_val)
-    // Automatically deducing calling conventions
+    // Automatically deducing calling conventions for wrapper functions.
     .method("void add(int val)", &add_obj_last)  // asCALL_CDECL_OBJLAST
     .method("void mul(int val)", &mul_obj_first) // asCALL_CDECL_OBJFIRST
     .method("void set_val(int)", &set_val_gen)   // asCALL_GENERIC
-    // Register property by member pointer
+    // Register property by member pointer.
     .property("int value", &my_value_class::value)
-    // Register property by offset
+    // Register property by offset.
     .property("int another_value", offsetof(my_value_class, another_value));
 ```
 The binding helpers also support registering a reference type, an interface, or global functions, etc. to the AngelScript engine.  
@@ -182,8 +183,30 @@ asGENFUNC_t f2 = asbind20::generic_wrapper<&my_class::method, asCALL_THISCALL>()
 // Use `use_generic` tag to force generated proxies to use asCALL_GENERIC
 asbind20::value_class<my_value_class>(...)
     .constructor<int>(asbind20::use_generic, "void f(int)")
-    .opEquals(asbind20::use_generic);
+    .opEquals(asbind20::use_generic)
+    // Due to limitation of C++,
+    // you can only pass the function pointer as template argument to the generic wrapper.
+    .method<&my_value_class::mem_func>(asbind20::use_generic,"int mem_func(int arg)");
 ```
+
+If you want to force all registered functions to be generic, you can set the `ForceGeneric` flag of binding generator to `true`.  
+Trying to register functions by native calling convention with `ForceGeneric` enabled will cause a compile-time error.
+```c++
+asbind20::value_class<my_value_class, true>(...);
+asbind20::ref_class<my_ref_class, true>(...);
+asbind20::global<true>(...);
+```
+
+Note: If you use an outer template argument to control the mode of generator, the generator can be a dependent name, thus you need an additional `template` keyword to call the binding generator.
+```c++
+template <bool UseGeneric>
+void register_my_class(asIScriptEngine* engine)
+{
+    asbind20::value_class<my_value_class, UseGeneric>(engine, "my_value_class")
+        .template method<&my_value_class::mem_func>("int mem_func(int arg)")
+}
+```
+
 
 ## 2. Dispatching Function Calls Based on Type Ids
 This feature is similar to how `std::visit` and `std::variant` works. It can be used for developing templated container for AngelScript.
@@ -217,7 +240,7 @@ You can find example usage in `ext/container/src/array.cpp`.
 - CMake >= 3.20
 - AngelScript >= 2.37.0
 - Any C++ compiler that supports C++20.  
-  Currently, this library has been tested by MSVC 19.41 on Windows and GCC 12 on Linux.
+  Currently, this library has been tested by MSVC 19.41 on Windows and GCC 12 / Clang 18 on Linux.
   You can find build and test status in the GitHub Actions.
 
 # How to Use
@@ -254,7 +277,8 @@ You can find a detailed example in `test/test_subdir/`.
 Detailed explanation of asbind20.
 
 1. [Registering Object Types](./doc/object_type.md)
-2. [Customize Type Conversion Rules](./doc/custom_conv_rule.md)
+2. [Registering Global Entities](./doc/global.md)
+3. [Customize Type Conversion Rules](./doc/custom_conv_rule.md)
 
 # Known Limitations
 1. Some version of Clang (<= 15) may fail to compile extension and test due to compiler bug.

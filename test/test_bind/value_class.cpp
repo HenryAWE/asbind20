@@ -10,7 +10,7 @@ public:
     trivial_value_class() = default;
     trivial_value_class(const trivial_value_class&) = default;
 
-    trivial_value_class(int val)
+    explicit trivial_value_class(int val)
         : value(val) {}
 
     trivial_value_class(int* list_buf)
@@ -35,7 +35,7 @@ public:
     trivial_value_class operator+(const trivial_value_class& rhs) const
     {
         int result = value + rhs.value;
-        return result;
+        return trivial_value_class(result);
     }
 
     trivial_value_class& operator+=(const trivial_value_class& rhs)
@@ -82,7 +82,7 @@ public:
 
     trivial_value_class operator-() const
     {
-        return -value;
+        return trivial_value_class(-value);
     }
 
     int value = 0;

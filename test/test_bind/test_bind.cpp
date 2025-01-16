@@ -42,7 +42,8 @@ TEST_F(asbind_test_suite, funcdef_and_typedef)
 
     asbind20::global(engine)
         .funcdef("bool callback(int, int)")
-        .typedef_("float", "real32");
+        .typedef_("float", "real32")
+        .using_("float32", "float");
 
     asIScriptModule* m = engine->GetModule("test_def", asGM_ALWAYS_CREATE);
 
@@ -51,6 +52,7 @@ TEST_F(asbind_test_suite, funcdef_and_typedef)
         "bool pred(int a, int b) { return a < b; }"
         "void main() { callback@ cb = @pred; assert(cb(1, 2)); }"
         "real32 get_pi() { return 3.14f; }"
+        "float32 get_pi_2() { return 3.14f; }"
     );
     ASSERT_GE(m->Build(), 0);
 
@@ -66,6 +68,16 @@ TEST_F(asbind_test_suite, funcdef_and_typedef)
     {
         asbind20::request_context ctx(engine);
         asIScriptFunction* func = m->GetFunctionByDecl("real32 get_pi()");
+        ASSERT_TRUE(func);
+
+        auto result = asbind20::script_invoke<float>(ctx, func);
+        ASSERT_TRUE(result_has_value(result));
+        EXPECT_FLOAT_EQ(result.value(), 3.14f);
+    }
+
+    {
+        asbind20::request_context ctx(engine);
+        asIScriptFunction* func = m->GetFunctionByDecl("float32 get_pi_2()");
         ASSERT_TRUE(func);
 
         auto result = asbind20::script_invoke<float>(ctx, func);
