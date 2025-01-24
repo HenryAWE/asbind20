@@ -4,12 +4,36 @@
 
 using namespace asbind_test;
 
+TEST(detail, generate_member_funcdef)
+{
+    using namespace asbind20;
+    using detail::generate_member_funcdef;
+
+    EXPECT_EQ(
+        generate_member_funcdef("my_type", "void f()"),
+        "void my_type::f()"
+    );
+    EXPECT_EQ(
+        generate_member_funcdef("my_type", "void& f()"),
+        "void& my_type::f()"
+    );
+    EXPECT_EQ(
+        generate_member_funcdef("my_type", "void&f()"),
+        "void& my_type::f()"
+    );
+    EXPECT_EQ(
+        generate_member_funcdef("my_type", "int[]f()"),
+        "int[] my_type::f()"
+    );
+}
+
 TEST_F(asbind_test_suite, interface)
 {
     asIScriptEngine* engine = get_engine();
 
     asbind20::interface(engine, "my_interface")
-        .method("int get() const");
+        .funcdef("int callback(int)")
+        .method("int get(callback@) const");
 
     asIScriptModule* m = engine->GetModule("test_interface", asGM_ALWAYS_CREATE);
 
@@ -17,9 +41,10 @@ TEST_F(asbind_test_suite, interface)
         "test_interface.as",
         "class my_impl : my_interface"
         "{"
-        "int get() const override { return 42; }"
+        "int get(my_interface::callback@ cb) const override { return cb(40); }"
         "};"
-        "int test() { my_impl val; return val.get(); }"
+        "int add2(int val) { return val + 2; }"
+        "int test() { my_impl val; return val.get(add2); }"
     );
     ASSERT_GE(m->Build(), 0);
 

@@ -708,6 +708,13 @@ public:
 
 global(asIScriptEngine*) -> global<false>;
 
+namespace detail
+{
+    std::string generate_member_funcdef(
+        const char* type, std::string_view funcdef
+    );
+} // namespace detail
+
 template <bool ForceGeneric>
 class class_register_helper_base : public register_helper_base<ForceGeneric>
 {
@@ -1165,39 +1172,9 @@ protected:
 
     void member_funcdef_impl(std::string_view decl)
     {
-        // Firstly, find the begin of parameters
-        auto param_being = std::find(decl.rbegin(), decl.rend(), '(');
-        if(param_being != decl.rend())
-        {
-            ++param_being;
-            param_being = std::find_if_not(
-                param_being,
-                decl.rend(),
-                [](char ch)
-                { return ch != ' '; }
-            );
-        }
-        auto name_begin = std::find_if_not(
-            param_being,
-            decl.rend(),
-            [](char ch)
-            {
-                return ('0' <= ch && ch <= '9') ||
-                       ('a' <= ch && ch <= 'z') ||
-                       ('A' <= ch && ch <= 'Z') ||
-                       ch == '_' ||
-                       ch > 127;
-            }
+        full_funcdef(
+            detail::generate_member_funcdef(m_name, decl).c_str()
         );
-
-        std::string full_decl = string_concat(
-            std::string_view(decl.begin(), name_begin.base()),
-            ' ',
-            m_name,
-            "::",
-            std::string_view(name_begin.base(), decl.end())
-        );
-        full_funcdef(full_decl.c_str());
     }
 
 private:
@@ -3049,6 +3026,20 @@ public:
             m_name,
             decl
         );
+        assert(r >= 0);
+
+        return *this;
+    }
+
+    interface& funcdef(std::string_view decl)
+    {
+        std::string full_decl = detail::generate_member_funcdef(
+            m_name, decl
+        );
+
+        [[maybe_unused]]
+        int r = 0;
+        r = m_engine->RegisterFuncdef(full_decl.data());
         assert(r >= 0);
 
         return *this;
