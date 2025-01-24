@@ -52,7 +52,7 @@ public:
         construct_impl(result);
     }
 
-    script_invoke_result(R&& result)
+    script_invoke_result(R&& result) noexcept
         : m_r(asEXECUTION_FINISHED)
     {
         construct_impl(std::move(result));
@@ -585,7 +585,7 @@ protected:
     script_function_base(const script_function_base& other)
         : script_function_base(other.target()) {}
 
-    script_function_base(script_function_base&& other)
+    script_function_base(script_function_base&& other) noexcept
         : m_fp(std::exchange(other.m_fp, nullptr)) {}
 
     script_function_base(asIScriptFunction* fp)

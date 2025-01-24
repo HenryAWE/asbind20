@@ -18,6 +18,21 @@ TEST(script_invoke_result, common)
     }
 }
 
+TEST(script_invoke_result, reference)
+{
+    using namespace asbind20;
+    {
+        int val = 1;
+
+        script_invoke_result<int&> result(val);
+        ASSERT_TRUE(result.has_value());
+        ASSERT_TRUE(result);
+        EXPECT_EQ(result.value(), 1);
+        EXPECT_EQ(&result.value(), &val);
+        EXPECT_EQ(result.error(), asEXECUTION_FINISHED);
+    }
+}
+
 TEST(script_invoke_result, void)
 {
     using namespace asbind20;
