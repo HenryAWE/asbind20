@@ -180,6 +180,53 @@ TEST_F(asbind_test_suite, enum)
     m->Discard();
 }
 
+TEST_F(asbind_test_suite, enum_helper)
+{
+#ifndef ASBIND20_HAS_STATIC_ENUM_NAME
+    GTEST_SKIP() << "ASBIND20_HAS_STATIC_ENUM_NAME not defined";
+
+#else
+    asIScriptEngine* engine = get_engine();
+
+    using test_bind::my_enum;
+
+    asbind20::enum_<my_enum>(engine, "my_enum")
+        .value(my_enum::A, "A")
+        .value<my_enum::B>();
+
+    asIScriptModule* m = engine->GetModule("test_enum", asGM_ALWAYS_CREATE);
+
+    m->AddScriptSection(
+        "test_enum.as",
+        "my_enum get_enum_val() { return my_enum::A; }"
+        "bool check_enum_val(my_enum val) { return val == my_enum::B; }"
+    );
+    ASSERT_GE(m->Build(), 0);
+
+    {
+        asbind20::request_context ctx(engine);
+        asIScriptFunction* func = m->GetFunctionByDecl("my_enum get_enum_val()");
+        ASSERT_TRUE(func);
+
+        auto result = asbind20::script_invoke<my_enum>(ctx, func);
+        ASSERT_TRUE(result_has_value(result));
+        EXPECT_EQ(result.value(), my_enum::A);
+    }
+
+    {
+        asbind20::request_context ctx(engine);
+        asIScriptFunction* func = m->GetFunctionByDecl("bool check_enum_val(my_enum val)");
+        ASSERT_TRUE(func);
+
+        auto result = asbind20::script_invoke<bool>(ctx, func, my_enum::B);
+        ASSERT_TRUE(result_has_value(result));
+        EXPECT_TRUE(result.value());
+    }
+
+    m->Discard();
+#endif
+}
+
 int main(int argc, char* argv[])
 {
     ::testing::InitGoogleTest(&argc, argv);

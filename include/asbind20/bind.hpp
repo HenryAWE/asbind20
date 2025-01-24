@@ -3058,6 +3058,49 @@ private:
     asIScriptEngine* m_engine;
     const char* m_name;
 };
+
+template <typename Enum>
+requires(std::is_enum_v<Enum>)
+class enum_
+{
+public:
+    enum_(asIScriptEngine* engine, const char* name)
+        : m_engine(engine), m_name(name)
+    {
+        [[maybe_unused]]
+        int r = 0;
+        r = m_engine->RegisterEnum(m_name);
+        assert(r >= 0);
+    }
+
+    enum_& value(Enum val, const char* decl)
+    {
+        [[maybe_unused]]
+        int r = 0;
+        r = m_engine->RegisterEnumValue(
+            m_name,
+            decl,
+            static_cast<int>(val)
+        );
+        assert(r >= 0);
+
+        return *this;
+    }
+
+    template <Enum Value>
+    enum_& value()
+    {
+        this->value(
+            Value,
+            std::string(static_enum_name<Value>()).c_str()
+        );
+        return *this;
+    }
+
+private:
+    asIScriptEngine* m_engine;
+    const char* m_name;
+};
 } // namespace asbind20
 
 #endif
