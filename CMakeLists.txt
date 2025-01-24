@@ -37,7 +37,7 @@ target_compile_options(asbind20 PRIVATE
 # Add an ALIAS target for using the library by add_subdirectory()
 add_library(asbind20::asbind20 ALIAS asbind20)
 
-file(GLOB asbind20_src "include/*.hpp" "src/*.cpp")
+file(GLOB_RECURSE asbind20_src "include/asbind20/*.hpp" "src/*.cpp")
 option(asbind_build_ext "Build extensions" ON)
 
 include(GNUInstallDirs)

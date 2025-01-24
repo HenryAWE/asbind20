@@ -7,6 +7,7 @@
 #include <functional>
 #include "detail/include_as.hpp"
 #include "utility.hpp"
+#include "generic.hpp"
 
 namespace asbind20
 {

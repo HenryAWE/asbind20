@@ -22,6 +22,12 @@ namespace asbind20
 {
 [[nodiscard]]
 const char* library_version() noexcept;
+
+/**
+ * @brief Check if `asGetLibraryOptions()` returns "AS_MAX_PORTABILITY"
+ */
+[[nodiscard]]
+bool has_max_portability();
 } // namespace asbind20
 
 #endif

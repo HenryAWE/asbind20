@@ -172,6 +172,19 @@ public:
 namespace detail
 {
     template <typename T>
+    concept is_native_function_helper = std::is_function_v<T> ||
+                                        std::is_function_v<std::remove_pointer_t<T>> ||
+                                        std::is_member_function_pointer_v<T>;
+} // namespace detail
+
+template <typename T>
+concept native_function =
+    !std::is_convertible_v<T, asGENFUNC_t> &&
+    detail::is_native_function_helper<std::decay_t<T>>;
+
+namespace detail
+{
+    template <typename T>
     constexpr T& refptr_helper_ref(T& ref) noexcept
     {
         return ref;

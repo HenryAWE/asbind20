@@ -10,4 +10,11 @@ const char* library_version() noexcept
     return ASBIND20_VERSION_STRING;
 #endif
 }
+
+bool has_max_portability()
+{
+    std::string_view options = asGetLibraryOptions();
+
+    return options.find("AS_MAX_PORTABILITY") != options.npos;
+}
 } // namespace asbind20
