@@ -81,6 +81,9 @@ void register_ref_class(asIScriptEngine* engine)
         .method("int exchange_data(int new_data)", &test_bind::exchange_data)
         .method("int get_data() const", &get_ref_class_data)
         .property("int data", &my_ref_class::data);
+
+    EXPECT_EQ(c.get_engine(), engine);
+    EXPECT_FALSE(c.force_generic());
 }
 
 void register_ref_class(asbind20::use_generic_t, asIScriptEngine* engine)
@@ -99,6 +102,9 @@ void register_ref_class(asbind20::use_generic_t, asIScriptEngine* engine)
         .method<&test_bind::exchange_data>("int exchange_data(int new_data)")
         .method("int get_data() const", &get_ref_class_data)
         .property("int data", &my_ref_class::data);
+
+    EXPECT_EQ(c.get_engine(), engine);
+    EXPECT_TRUE(c.force_generic());
 }
 } // namespace test_bind
 

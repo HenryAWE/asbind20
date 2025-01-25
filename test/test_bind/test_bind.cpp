@@ -31,9 +31,14 @@ TEST_F(asbind_test_suite, interface)
 {
     asIScriptEngine* engine = get_engine();
 
-    asbind20::interface(engine, "my_interface")
-        .funcdef("int callback(int)")
-        .method("int get(callback@) const");
+    {
+        asbind20::interface i(engine, "my_interface");
+        i
+            .funcdef("int callback(int)")
+            .method("int get(callback@) const");
+
+        EXPECT_EQ(i.get_engine(), engine);
+    }
 
     asIScriptModule* m = engine->GetModule("test_interface", asGM_ALWAYS_CREATE);
 
@@ -214,10 +219,14 @@ TEST_F(asbind_test_suite, enum_helper)
     asIScriptEngine* engine = get_engine();
 
     using test_bind::my_enum;
+    {
+        asbind20::enum_<my_enum> e(engine, "my_enum");
+        e
+            .value(my_enum::A, "A")
+            .value<my_enum::B>();
 
-    asbind20::enum_<my_enum>(engine, "my_enum")
-        .value(my_enum::A, "A")
-        .value<my_enum::B>();
+        EXPECT_EQ(e.get_engine(), engine);
+    }
 
     asIScriptModule* m = engine->GetModule("test_enum", asGM_ALWAYS_CREATE);
 

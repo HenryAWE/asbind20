@@ -182,6 +182,15 @@ concept native_function =
     !std::is_convertible_v<T, asGENFUNC_t> &&
     detail::is_native_function_helper<std::decay_t<T>>;
 
+template <typename Func>
+asSFuncPtr to_asSFuncPtr(Func f)
+{
+    if constexpr(std::is_member_function_pointer_v<Func>)
+        return asSMethodPtr<sizeof(f)>::Convert(f);
+    else
+        return asFunctionPtr(f);
+}
+
 namespace detail
 {
     template <typename T>

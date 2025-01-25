@@ -54,6 +54,11 @@ public:
         m_engine->SetDefaultNamespace(m_prev.c_str());
     }
 
+    asIScriptEngine* get_engine() const noexcept
+    {
+        return m_engine;
+    }
+
 private:
     asIScriptEngine* m_engine;
     std::string m_prev;
@@ -157,6 +162,91 @@ namespace wrappers
         }
     };
 
+    template <
+        native_function auto ConstructorFunc,
+        typename Class,
+        asECallConvTypes OriginalCallConv>
+    requires(OriginalCallConv == asCALL_CDECL_OBJFIRST || OriginalCallConv == asCALL_CDECL_OBJLAST)
+    class constrctor_function
+    {
+    public:
+        static constexpr bool is_acceptable_native_call_conv(asECallConvTypes conv) noexcept
+        {
+            return conv == OriginalCallConv;
+        }
+
+        static constexpr bool is_acceptable_call_conv(asECallConvTypes conv) noexcept
+        {
+            return conv == asCALL_GENERIC || is_acceptable_native_call_conv(conv);
+        }
+
+        using native_function_type = std::decay_t<decltype(ConstructorFunc)>;
+
+        template <asECallConvTypes CallConv>
+        using wrapper_type = std::conditional_t<
+            CallConv == asCALL_GENERIC,
+            asGENFUNC_t,
+            native_function_type>;
+
+        template <asECallConvTypes CallConv>
+        requires(is_acceptable_call_conv(CallConv))
+        static auto generate() noexcept
+        {
+            if constexpr(CallConv == asCALL_GENERIC)
+            {
+                using traits = function_traits<decltype(ConstructorFunc)>;
+                using args_tuple = typename traits::args_tuple;
+
+                if constexpr(OriginalCallConv == asCALL_CDECL_OBJFIRST)
+                {
+                    return +[](asIScriptGeneric* gen) -> void
+                    {
+                        [gen]<std::size_t... Is>(std::index_sequence<Is...>)
+                        {
+                            Class* mem = (Class*)gen->GetObject();
+                            std::invoke(
+                                ConstructorFunc,
+                                mem,
+                                get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(gen, (asUINT)Is + 1)...
+                            );
+                        }(std::make_index_sequence<traits::arg_count_v - 1>());
+                    };
+                }
+                else // OriginalCallConv == asCALL_CDECL_OBJLAST
+                {
+                    return +[](asIScriptGeneric* gen) -> void
+                    {
+                        [gen]<std::size_t... Is>(std::index_sequence<Is...>)
+                        {
+                            Class* mem = (Class*)gen->GetObject();
+                            std::invoke(
+                                ConstructorFunc,
+                                get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (asUINT)Is)...,
+                                mem
+                            );
+                        }(std::make_index_sequence<traits::arg_count_v - 1>());
+                    };
+                }
+            }
+            else // CallConv == OriginalCallConv
+            {
+                return ConstructorFunc;
+            }
+        }
+
+        asGENFUNC_t operator()(use_generic_t) const
+        {
+            return this->template generate<asCALL_GENERIC>();
+        }
+
+        template <asECallConvTypes CallConv>
+        requires(is_acceptable_call_conv(CallConv))
+        auto operator()(call_conv_t<CallConv>) const -> wrapper_type<CallConv>
+        {
+            return this->template generate<CallConv>();
+        }
+    };
+
     template <typename Class, typename ListElementType = void>
     class list_constructor
     {
@@ -212,6 +302,184 @@ namespace wrappers
                 {
                     new(mem) Class(list_buf);
                 };
+            }
+        }
+
+        asGENFUNC_t operator()(use_generic_t) const
+        {
+            return this->template generate<asCALL_GENERIC>();
+        }
+
+        template <asECallConvTypes CallConv>
+        requires(is_acceptable_call_conv(CallConv))
+        auto operator()(call_conv_t<CallConv>) const -> wrapper_type<CallConv>
+        {
+            return this->template generate<CallConv>();
+        }
+    };
+
+    template <typename Class, bool Template, typename... Args>
+    class factory
+    {
+    public:
+        static constexpr bool is_acceptable_native_call_conv(asECallConvTypes conv) noexcept
+        {
+            return conv == asCALL_CDECL;
+        }
+
+        static constexpr bool is_acceptable_call_conv(asECallConvTypes conv) noexcept
+        {
+            return conv == asCALL_GENERIC || is_acceptable_native_call_conv(conv);
+        }
+
+        using native_function_type = std::conditional_t<
+            Template,
+            Class* (*)(asITypeInfo*, Args...),
+            Class* (*)(Args...)>;
+
+        template <asECallConvTypes CallConv>
+        requires(is_acceptable_call_conv(CallConv))
+        using wrapper_type = std::conditional_t<
+            CallConv == asCALL_GENERIC,
+            asGENFUNC_t,
+            native_function_type>;
+
+        template <asECallConvTypes CallConv>
+        static auto generate() noexcept -> wrapper_type<CallConv>
+        {
+            if constexpr(CallConv == asCALL_GENERIC)
+            {
+                if constexpr(Template)
+                {
+                    return +[](asIScriptGeneric* gen) -> void
+                    {
+                        using args_tuple = std::tuple<Args...>;
+
+                        [gen]<std::size_t... Is>(std::index_sequence<Is...>)
+                        {
+                            Class* ptr = new Class(
+                                *(asITypeInfo**)gen->GetAddressOfArg(0),
+                                get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (asUINT)Is + 1)...
+                            );
+                            gen->SetReturnAddress(ptr);
+                        }(std::index_sequence_for<Args...>());
+                    };
+                }
+                else
+                {
+                    return +[](asIScriptGeneric* gen) -> void
+                    {
+                        using args_tuple = std::tuple<Args...>;
+
+                        [gen]<std::size_t... Is>(std::index_sequence<Is...>)
+                        {
+                            Class* ptr = new Class(get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (asUINT)Is)...);
+                            gen->SetReturnAddress(ptr);
+                        }(std::index_sequence_for<Args...>());
+                    };
+                }
+            }
+            else // CallConv == asCALL_CDECL
+            {
+                if constexpr(Template)
+                {
+                    return +[](asITypeInfo* type, Args... args) -> Class*
+                    {
+                        return new Class(type, std::forward<Args>(args)...);
+                    };
+                }
+                else
+                {
+                    return +[](Args... args) -> Class*
+                    {
+                        return new Class(std::forward<Args>(args)...);
+                    };
+                }
+            }
+        }
+
+        asGENFUNC_t operator()(use_generic_t) const
+        {
+            return this->template generate<asCALL_GENERIC>();
+        }
+
+        template <asECallConvTypes CallConv>
+        requires(is_acceptable_call_conv(CallConv))
+        auto operator()(call_conv_t<CallConv>) const -> wrapper_type<CallConv>
+        {
+            return this->template generate<CallConv>();
+        }
+    };
+
+    template <typename Class, bool Template, typename ListElementType = void>
+    class list_factory
+    {
+    public:
+        static constexpr bool is_acceptable_native_call_conv(asECallConvTypes conv) noexcept
+        {
+            return conv == asCALL_CDECL;
+        }
+
+        static constexpr bool is_acceptable_call_conv(asECallConvTypes conv) noexcept
+        {
+            return conv == asCALL_GENERIC || is_acceptable_native_call_conv(conv);
+        }
+
+        using native_function_type = std::conditional_t<
+            Template,
+            Class* (*)(asITypeInfo*, ListElementType*),
+            Class* (*)(ListElementType*)>;
+
+        template <asECallConvTypes CallConv>
+        requires(is_acceptable_call_conv(CallConv))
+        using wrapper_type = std::conditional_t<
+            CallConv == asCALL_GENERIC,
+            asGENFUNC_t,
+            native_function_type>;
+
+        template <asECallConvTypes CallConv>
+        static auto generate() noexcept -> wrapper_type<CallConv>
+        {
+            if constexpr(CallConv == asCALL_GENERIC)
+            {
+                if constexpr(Template)
+                {
+                    return +[](asIScriptGeneric* gen) -> void
+                    {
+                        Class* ptr = new Class(
+                            *(asITypeInfo**)gen->GetAddressOfArg(0),
+                            *(ListElementType**)gen->GetAddressOfArg(1)
+                        );
+                        gen->SetReturnAddress(ptr);
+                    };
+                }
+                else
+                {
+                    return +[](asIScriptGeneric* gen) -> void
+                    {
+                        Class* ptr = new Class(
+                            *(ListElementType**)gen->GetAddressOfArg(0)
+                        );
+                        gen->SetReturnAddress(ptr);
+                    };
+                }
+            }
+            else // CallConv == asCALL_CDECL
+            {
+                if constexpr(Template)
+                {
+                    return +[](asITypeInfo* type, ListElementType* list_buf) -> Class*
+                    {
+                        return new Class(type, list_buf);
+                    };
+                }
+                else
+                {
+                    return +[](ListElementType* list_buf) -> Class*
+                    {
+                        return new Class(list_buf);
+                    };
+                }
             }
         }
 
@@ -332,7 +600,7 @@ public:
         int r = 0;
         r = m_engine->RegisterGlobalFunction(
             decl,
-            asFunctionPtr(fn),
+            to_asSFuncPtr(fn),
             asCALL_CDECL
         );
         assert(r >= 0);
@@ -369,7 +637,7 @@ public:
             int r = 0;
             r = m_engine->RegisterGlobalFunction(
                 decl,
-                asFunctionPtr(Function),
+                to_asSFuncPtr(Function),
                 CallConv
             );
             assert(r >= 0);
@@ -389,7 +657,7 @@ public:
         int r = 0;
         r = m_engine->RegisterGlobalFunction(
             decl,
-            asFunctionPtr(gfn),
+            to_asSFuncPtr(gfn),
             asCALL_GENERIC,
             (void*)std::addressof(instance)
         );
@@ -409,7 +677,7 @@ public:
         int r = 0;
         r = m_engine->RegisterGlobalFunction(
             decl,
-            asSMethodPtr<sizeof(fn)>::Convert(fn),
+            to_asSFuncPtr(fn),
             asCALL_THISCALL_ASGLOBAL,
             (void*)std::addressof(instance)
         );
@@ -501,7 +769,7 @@ public:
         int r = 0;
         r = m_engine->RegisterGlobalFunction(
             decl,
-            asFunctionPtr(gfn),
+            to_asSFuncPtr(gfn),
             asCALL_GENERIC,
             auxiliary
         );
@@ -599,7 +867,7 @@ public:
         [[maybe_unused]]
         int r = 0;
         r = m_engine->SetMessageCallback(
-            asFunctionPtr(fn), obj, asCALL_CDECL
+            to_asSFuncPtr(fn), obj, asCALL_CDECL
         );
         assert(r >= 0);
 
@@ -613,7 +881,7 @@ public:
         [[maybe_unused]]
         int r = 0;
         r = m_engine->SetMessageCallback(
-            asSMethodPtr<sizeof(fn)>::Convert(fn), (void*)std::addressof(obj), asCALL_THISCALL
+            to_asSFuncPtr(fn), (void*)std::addressof(obj), asCALL_THISCALL
         );
         assert(r >= 0);
 
@@ -658,7 +926,7 @@ public:
         [[maybe_unused]]
         int r = 0;
         r = m_engine->SetTranslateAppExceptionCallback(
-            asFunctionPtr(fn), obj, asCALL_CDECL
+            to_asSFuncPtr(fn), obj, asCALL_CDECL
         );
         assert(r >= 0);
 
@@ -672,7 +940,7 @@ public:
         [[maybe_unused]]
         int r = 0;
         r = m_engine->SetTranslateAppExceptionCallback(
-            asSMethodPtr<sizeof(fn)>::Convert(fn), (void*)std::addressof(obj), asCALL_THISCALL
+            to_asSFuncPtr(fn), (void*)std::addressof(obj), asCALL_THISCALL
         );
         assert(r >= 0);
 
@@ -743,45 +1011,18 @@ protected:
         assert(r >= 0);
     }
 
-    template <typename Fn>
-    requires(std::is_member_function_pointer_v<Fn>)
-    void method_impl(const char* decl, Fn&& fn, call_conv_t<asCALL_THISCALL>)
+    template <typename Fn, asECallConvTypes CallConv>
+    // method -> this call
+    requires(!std::is_member_pointer_v<Fn> || CallConv == asCALL_THISCALL)
+    void method_impl(const char* decl, Fn&& fn, call_conv_t<CallConv>)
     {
         [[maybe_unused]]
         int r = 0;
         r = m_engine->RegisterObjectMethod(
             m_name,
             decl,
-            asSMethodPtr<sizeof(Fn)>::Convert(fn),
-            asCALL_THISCALL
-        );
-        assert(r >= 0);
-    }
-
-    template <typename Fn>
-    void method_impl(const char* decl, Fn&& fn, call_conv_t<asCALL_CDECL_OBJFIRST>)
-    {
-        [[maybe_unused]]
-        int r = 0;
-        r = m_engine->RegisterObjectMethod(
-            m_name,
-            decl,
-            asFunctionPtr(fn),
-            asCALL_CDECL_OBJFIRST
-        );
-        assert(r >= 0);
-    }
-
-    template <typename Fn>
-    void method_impl(const char* decl, Fn&& fn, call_conv_t<asCALL_CDECL_OBJLAST>)
-    {
-        [[maybe_unused]]
-        int r = 0;
-        r = m_engine->RegisterObjectMethod(
-            m_name,
-            decl,
-            asFunctionPtr(fn),
-            asCALL_CDECL_OBJLAST
+            to_asSFuncPtr(fn),
+            CallConv
         );
         assert(r >= 0);
     }
@@ -793,7 +1034,7 @@ protected:
         r = m_engine->RegisterObjectMethod(
             m_name,
             decl,
-            asFunctionPtr(gfn),
+            to_asSFuncPtr(gfn),
             asCALL_GENERIC
         );
         assert(r >= 0);
@@ -828,7 +1069,7 @@ protected:
             m_name,
             beh,
             decl,
-            asFunctionPtr(gfn),
+            to_asSFuncPtr(gfn),
             asCALL_GENERIC
         );
         assert(r >= 0);
@@ -840,26 +1081,13 @@ protected:
     {
         [[maybe_unused]]
         int r = 0;
-        if constexpr(std::is_member_function_pointer_v<std::decay_t<Fn>>)
-        {
-            r = m_engine->RegisterObjectBehaviour(
-                m_name,
-                beh,
-                decl,
-                asSMethodPtr<sizeof(Fn)>::Convert(fn),
-                CallConv
-            );
-        }
-        else
-        {
-            r = m_engine->RegisterObjectBehaviour(
-                m_name,
-                beh,
-                decl,
-                asFunctionPtr(fn),
-                CallConv
-            );
-        }
+        r = m_engine->RegisterObjectBehaviour(
+            m_name,
+            beh,
+            decl,
+            to_asSFuncPtr(fn),
+            CallConv
+        );
         assert(r >= 0);
     }
 
@@ -874,7 +1102,7 @@ protected:
                 m_name,
                 beh,
                 decl,
-                asFunctionPtr(generic_wrapper<Behaviour, CallConv>()),
+                to_asSFuncPtr(generic_wrapper<Behaviour, CallConv>()),
                 asCALL_GENERIC
             );
         }
@@ -884,7 +1112,7 @@ protected:
                 m_name,
                 beh,
                 decl,
-                asFunctionPtr(Behaviour),
+                to_asSFuncPtr(Behaviour),
                 CallConv
             );
         }
@@ -1306,40 +1534,8 @@ private:
     template <native_function auto Function, asECallConvTypes CallConv>
     value_class& constructor_function_wrapper_impl(use_generic_t, std::string_view params, bool explicit_)
     {
-        using traits = function_traits<decltype(Function)>;
-        using args_tuple = typename traits::args_tuple;
-
-        asGENFUNC_t wrapper = nullptr;
-        if constexpr(CallConv == asCALL_CDECL_OBJFIRST)
-        {
-            wrapper = +[](asIScriptGeneric* gen) -> void
-            {
-                [gen]<std::size_t... Is>(std::index_sequence<Is...>)
-                {
-                    Class* mem = (Class*)gen->GetObject();
-                    std::invoke(
-                        Function,
-                        mem,
-                        get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(gen, (asUINT)Is + 1)...
-                    );
-                }(std::make_index_sequence<traits::arg_count_v - 1>());
-            };
-        }
-        else // asCALL_CDECL_OBJLAST
-        {
-            wrapper = +[](asIScriptGeneric* gen) -> void
-            {
-                [gen]<std::size_t... Is>(std::index_sequence<Is...>)
-                {
-                    Class* mem = (Class*)gen->GetObject();
-                    std::invoke(
-                        Function,
-                        get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (asUINT)Is)...,
-                        mem
-                    );
-                }(std::make_index_sequence<traits::arg_count_v - 1>());
-            };
-        }
+        asGENFUNC_t wrapper =
+            wrappers::constrctor_function<Function, Class, CallConv>{}(use_generic);
 
         if(explicit_)
         {
@@ -1464,20 +1660,32 @@ private:
         }
     }
 
+    template <typename... Args>
+    void assert_constructor_flag()
+    {
+        // Only have effect in debug mode
+#ifndef NDEBUG
+        // Default constructor
+        if constexpr(sizeof...(Args) == 0)
+            return;
+        else
+        {
+            // Copy constructor
+            using first_arg_t = std::tuple_element_t<0, std::tuple<Args...>>;
+            if constexpr(!(std::same_as<first_arg_t, const Class&> ||
+                           std::same_as<first_arg_t, Class&>))
+                return;
+        }
+
+        assert(m_flags & asOBJ_APP_CLASS_MORE_CONSTRUCTORS);
+#endif
+    }
+
 public:
     template <typename... Args>
     value_class& constructor(use_generic_t, std::string_view params) requires(is_only_constructible_v<Class, Args...>)
     {
-#ifndef NDEBUG
-        if constexpr(sizeof...(Args) != 0)
-        {
-            using first_arg_t = std::tuple_element_t<0, std::tuple<Args...>>;
-            if constexpr(!(std::is_same_v<first_arg_t, const Class&> || std::is_same_v<first_arg_t, Class&>))
-            {
-                assert(m_flags & asOBJ_APP_CLASS_MORE_CONSTRUCTORS);
-            }
-        }
-#endif
+        assert_constructor_flag<Args...>();
 
         constructor_impl_generic<Args...>(params, false);
 
@@ -1487,16 +1695,7 @@ public:
     template <typename... Args>
     value_class& constructor(use_generic_t, std::string_view params, use_explicit_t) requires(is_only_constructible_v<Class, Args...>)
     {
-#ifndef NDEBUG
-        if constexpr(sizeof...(Args) != 0)
-        {
-            using first_arg_t = std::tuple_element_t<0, std::tuple<Args...>>;
-            if constexpr(!(std::is_same_v<first_arg_t, const Class&> || std::is_same_v<first_arg_t, Class&>))
-            {
-                assert(m_flags & asOBJ_APP_CLASS_MORE_CONSTRUCTORS);
-            }
-        }
-#endif
+        assert_constructor_flag<Args...>();
 
         constructor_impl_generic<Args...>(params, true);
 
@@ -1506,16 +1705,7 @@ public:
     template <typename... Args>
     value_class& constructor(std::string_view params) requires(is_only_constructible_v<Class, Args...>)
     {
-#ifndef NDEBUG
-        if constexpr(sizeof...(Args) != 0)
-        {
-            using first_arg_t = std::tuple_element_t<0, std::tuple<Args...>>;
-            if constexpr(!(std::is_same_v<first_arg_t, const Class&> || std::is_same_v<first_arg_t, Class&>))
-            {
-                assert(m_flags & asOBJ_APP_CLASS_MORE_CONSTRUCTORS);
-            }
-        }
-#endif
+        assert_constructor_flag<Args...>();
 
         if constexpr(ForceGeneric)
             constructor<Args...>(use_generic, params);
@@ -1528,16 +1718,7 @@ public:
     template <typename... Args>
     value_class& constructor(std::string_view params, use_explicit_t) requires(is_only_constructible_v<Class, Args...>)
     {
-#ifndef NDEBUG
-        if constexpr(sizeof...(Args) != 0)
-        {
-            using first_arg_t = std::tuple_element_t<0, std::tuple<Args...>>;
-            if constexpr(!(std::is_same_v<first_arg_t, const Class&> || std::is_same_v<first_arg_t, Class&>))
-            {
-                assert(m_flags & asOBJ_APP_CLASS_MORE_CONSTRUCTORS);
-            }
-        }
-#endif
+        assert_constructor_flag<Args...>();
 
         if constexpr(ForceGeneric)
             constructor<Args...>(use_generic, params, use_explicit);
@@ -2169,8 +2350,34 @@ public:
         }
     }
 
+private:
     template <typename... Args>
-    reference_class& factory_function(std::string_view params, Class* (*fn)(Args...), call_conv_t<asCALL_CDECL> = {}) requires(!ForceGeneric)
+    static consteval bool check_factory_args()
+    {
+        if constexpr(Template)
+        {
+            using args_tuple = std::tuple<Args...>;
+            if constexpr(std::tuple_size_v<args_tuple> >= 1)
+            {
+                return std::convertible_to<
+                    asITypeInfo*,
+                    std::tuple_element_t<0, args_tuple>>;
+            }
+            else
+                return false;
+        }
+        else
+            return true;
+    }
+
+public:
+    template <typename... Args>
+    requires(check_factory_args<Args...>())
+    reference_class& factory_function(
+        std::string_view params,
+        Class* (*fn)(Args...),
+        call_conv_t<asCALL_CDECL> = {}
+    ) requires(!ForceGeneric)
     {
         [[maybe_unused]]
         int r = 0;
@@ -2178,7 +2385,7 @@ public:
             m_name,
             asBEHAVE_FACTORY,
             decl_factory(params).c_str(),
-            asFunctionPtr(fn),
+            to_asSFuncPtr(fn),
             asCALL_CDECL
         );
         assert(r >= 0);
@@ -2187,7 +2394,13 @@ public:
     }
 
     template <typename... Args>
-    reference_class& factory_function(std::string_view params, use_explicit_t, Class* (*fn)(Args...), call_conv_t<asCALL_CDECL> = {}) requires(!ForceGeneric)
+    requires(check_factory_args<Args...>())
+    reference_class& factory_function(
+        std::string_view params,
+        use_explicit_t,
+        Class* (*fn)(Args...),
+        call_conv_t<asCALL_CDECL> = {}
+    ) requires(!ForceGeneric)
     {
         [[maybe_unused]]
         int r = 0;
@@ -2195,7 +2408,7 @@ public:
             m_name,
             asBEHAVE_FACTORY,
             decl_factory(params, use_explicit).c_str(),
-            asFunctionPtr(fn),
+            to_asSFuncPtr(fn),
             asCALL_CDECL
         );
         assert(r >= 0);
@@ -2203,7 +2416,11 @@ public:
         return *this;
     }
 
-    reference_class& factory_function(std::string_view params, asGENFUNC_t gfn, call_conv_t<asCALL_GENERIC> = {})
+    reference_class& factory_function(
+        std::string_view params,
+        asGENFUNC_t gfn,
+        call_conv_t<asCALL_GENERIC> = {}
+    )
     {
         [[maybe_unused]]
         int r = 0;
@@ -2211,7 +2428,7 @@ public:
             m_name,
             asBEHAVE_FACTORY,
             decl_factory(params).c_str(),
-            asFunctionPtr(gfn),
+            to_asSFuncPtr(gfn),
             asCALL_GENERIC
         );
         assert(r >= 0);
@@ -2219,7 +2436,12 @@ public:
         return *this;
     }
 
-    reference_class& factory_function(std::string_view params, use_explicit_t, asGENFUNC_t gfn, call_conv_t<asCALL_GENERIC> = {})
+    reference_class& factory_function(
+        std::string_view params,
+        use_explicit_t,
+        asGENFUNC_t gfn,
+        call_conv_t<asCALL_GENERIC> = {}
+    )
     {
         [[maybe_unused]]
         int r = 0;
@@ -2227,7 +2449,7 @@ public:
             m_name,
             asBEHAVE_FACTORY,
             decl_factory(params, use_explicit).c_str(),
-            asFunctionPtr(gfn),
+            to_asSFuncPtr(gfn),
             asCALL_GENERIC
         );
         assert(r >= 0);
@@ -2236,7 +2458,10 @@ public:
     }
 
     template <native_function auto Function>
-    reference_class& factory_function(use_generic_t, std::string_view params)
+    reference_class& factory_function(
+        use_generic_t,
+        std::string_view params
+    )
     {
         factory_function(
             params,
@@ -2248,7 +2473,11 @@ public:
     }
 
     template <native_function auto Function>
-    reference_class& factory_function(use_generic_t, std::string_view params, use_explicit_t)
+    reference_class& factory_function(
+        use_generic_t,
+        std::string_view params,
+        use_explicit_t
+    )
     {
         factory_function(
             params,
@@ -2261,7 +2490,9 @@ public:
     }
 
     template <native_function auto Function, asECallConvTypes CallConv = asCALL_CDECL>
-    reference_class& factory_function(std::string_view params)
+    reference_class& factory_function(
+        std::string_view params
+    )
     {
         if constexpr(ForceGeneric)
             factory_function<Function>(use_generic, params);
@@ -2272,7 +2503,10 @@ public:
     }
 
     template <native_function auto Function, asECallConvTypes CallConv = asCALL_CDECL>
-    reference_class& factory_function(std::string_view params, use_explicit_t)
+    reference_class& factory_function(
+        std::string_view params,
+        use_explicit_t
+    )
     {
         if constexpr(ForceGeneric)
             factory_function<Function>(use_generic, params, use_explicit);
@@ -2318,28 +2552,14 @@ public:
         }
         else
         {
-            if constexpr(Template)
-            {
-                factory_function(
-                    "",
-                    +[](asITypeInfo* ti) -> Class*
-                    {
-                        return new Class(ti);
-                    },
-                    call_conv<asCALL_CDECL>
-                );
-            }
-            else
-            {
-                factory_function(
-                    "",
-                    +[]() -> Class*
-                    {
-                        return new Class();
-                    },
-                    call_conv<asCALL_CDECL>
-                );
-            }
+            auto wrapper =
+                wrappers::factory<Class, Template>{}(call_conv<asCALL_CDECL>);
+
+            factory_function(
+                "",
+                wrapper,
+                call_conv<asCALL_CDECL>
+            );
         }
 
         return *this;
@@ -2349,36 +2569,8 @@ private:
     template <typename... Args>
     void factory_impl_generic(use_generic_t, std::string_view params, bool explicit_)
     {
-        asGENFUNC_t wrapper = nullptr;
-        if constexpr(Template)
-        {
-            wrapper = +[](asIScriptGeneric* gen) -> void
-            {
-                using args_tuple = std::tuple<Args...>;
-
-                [gen]<std::size_t... Is>(std::index_sequence<Is...>)
-                {
-                    Class* ptr = new Class(
-                        *(asITypeInfo**)gen->GetAddressOfArg(0),
-                        get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (asUINT)Is + 1)...
-                    );
-                    gen->SetReturnAddress(ptr);
-                }(std::make_index_sequence<sizeof...(Args)>());
-            };
-        }
-        else
-        {
-            wrapper = +[](asIScriptGeneric* gen) -> void
-            {
-                using args_tuple = std::tuple<Args...>;
-
-                [gen]<std::size_t... Is>(std::index_sequence<Is...>)
-                {
-                    Class* ptr = new Class(get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (asUINT)Is)...);
-                    gen->SetReturnAddress(ptr);
-                }(std::make_index_sequence<sizeof...(Args)>());
-            };
-        }
+        asGENFUNC_t wrapper =
+            wrappers::factory<Class, Template, Args...>{}(use_generic);
 
         if(explicit_)
         {
@@ -2402,55 +2594,25 @@ private:
     template <typename... Args>
     void factory_impl_native(std::string_view params, bool explicit_) requires(!ForceGeneric)
     {
-        if constexpr(Template)
-        {
-            auto wrapper = +[](asITypeInfo* ti, Args... args) -> Class*
-            {
-                return new Class(ti, args...);
-            };
+        auto wrapper =
+            wrappers::factory<Class, Template, Args...>{}(call_conv<asCALL_CDECL>);
 
-            if(explicit_)
-            {
-                factory_function(
-                    params,
-                    use_explicit,
-                    wrapper,
-                    call_conv<asCALL_CDECL>
-                );
-            }
-            else
-            {
-                factory_function(
-                    params,
-                    wrapper,
-                    call_conv<asCALL_CDECL>
-                );
-            }
+        if(explicit_)
+        {
+            factory_function(
+                params,
+                use_explicit,
+                wrapper,
+                call_conv<asCALL_CDECL>
+            );
         }
         else
         {
-            auto wrapper = +[](Args... args) -> Class*
-            {
-                return new Class(args...);
-            };
-
-            if(explicit_)
-            {
-                factory_function(
-                    params,
-                    use_explicit,
-                    wrapper,
-                    call_conv<asCALL_CDECL>
-                );
-            }
-            else
-            {
-                factory_function(
-                    params,
-                    wrapper,
-                    call_conv<asCALL_CDECL>
-                );
-            }
+            factory_function(
+                params,
+                wrapper,
+                call_conv<asCALL_CDECL>
+            );
         }
     }
 
@@ -2544,35 +2706,19 @@ public:
     }
 
     template <typename ListElementType = void>
-    reference_class& list_factory(use_generic_t, std::string_view pattern)
+    reference_class& list_factory(
+        use_generic_t,
+        std::string_view pattern
+    )
     {
-        if constexpr(Template)
-        {
-            list_factory_function(
-                pattern,
-                +[](asIScriptGeneric* gen) -> void
-                {
-                    Class* ptr = new Class(
-                        get_generic_arg<asITypeInfo*>(gen, 0),
-                        *(ListElementType**)gen->GetAddressOfArg(1)
-                    );
-                    gen->SetReturnAddress(ptr);
-                }
-            );
-        }
-        else
-        {
-            list_factory_function(
-                pattern,
-                +[](asIScriptGeneric* gen) -> void
-                {
-                    Class* ptr = new Class(
-                        *(ListElementType**)gen->GetAddressOfArg(0)
-                    );
-                    gen->SetReturnAddress(ptr);
-                }
-            );
-        }
+        asGENFUNC_t wrapper =
+            wrappers::list_factory<Class, Template, ListElementType>{}(use_generic);
+
+        list_factory_function(
+            pattern,
+            wrapper,
+            call_conv<asCALL_GENERIC>
+        );
 
         return *this;
     }
@@ -2586,26 +2732,14 @@ public:
         }
         else
         {
-            if constexpr(Template)
-            {
-                list_factory_function(
-                    pattern,
-                    +[](asITypeInfo* ti, ListElementType* list_buf) -> Class*
-                    {
-                        return new Class(ti, list_buf);
-                    }
-                );
-            }
-            else
-            {
-                list_factory_function(
-                    pattern,
-                    +[](ListElementType* list_buf) -> Class*
-                    {
-                        return new Class(list_buf);
-                    }
-                );
-            }
+            auto wrapper =
+                wrappers::list_factory<Class, Template, ListElementType>{}(call_conv<asCALL_CDECL>);
+
+            list_factory_function(
+                pattern,
+                wrapper,
+                call_conv<asCALL_CDECL>
+            );
         }
 
         return *this;
@@ -3045,6 +3179,11 @@ public:
         return *this;
     }
 
+    asIScriptEngine* get_engine() const noexcept
+    {
+        return m_engine;
+    }
+
 private:
     asIScriptEngine* m_engine;
     const char* m_name;
@@ -3086,6 +3225,11 @@ public:
             std::string(static_enum_name<Value>()).c_str()
         );
         return *this;
+    }
+
+    asIScriptEngine* get_engine() const noexcept
+    {
+        return m_engine;
     }
 
 private:

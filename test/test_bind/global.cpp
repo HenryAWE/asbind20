@@ -57,6 +57,12 @@ TEST_F(asbind_test_suite, global)
     std::string val = "val";
     class_wrapper wrapper{};
 
+    {
+        asbind20::global g(engine);
+        EXPECT_EQ(g.get_engine(), engine);
+        EXPECT_FALSE(g.force_generic());
+    }
+
     register_global_funcs(engine, wrapper, val);
 
     EXPECT_EQ(val, "val");
@@ -83,6 +89,12 @@ TEST_F(asbind_test_suite_generic, global)
 
     std::string val = "val";
     class_wrapper wrapper{};
+
+    {
+        asbind20::global<true> g(engine);
+        EXPECT_EQ(g.get_engine(), engine);
+        EXPECT_TRUE(g.force_generic());
+    }
 
     register_global_funcs(asbind20::use_generic, engine, wrapper, val);
 

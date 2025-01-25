@@ -140,6 +140,9 @@ void register_trivial_value_class(asIScriptEngine* engine)
         .method<&test_bind::add_obj_last>("void add3(int val)")
         .method<&test_bind::mul_obj_first_ref>(use_generic, "void mul3(int val)") // Test mixing native and generic calling convention
         .property("int value", &trivial_value_class::value);
+
+    EXPECT_EQ(c.get_engine(), engine);
+    EXPECT_FALSE(c.force_generic());
 }
 
 void register_trivial_value_class(asbind20::use_generic_t, asIScriptEngine* engine)
@@ -174,6 +177,9 @@ void register_trivial_value_class(asbind20::use_generic_t, asIScriptEngine* engi
         .method<&test_bind::add_obj_last>("void add3(int val)")
         .method<&test_bind::mul_obj_first_ref>("void mul3(int val)")
         .property("int value", &trivial_value_class::value);
+
+    EXPECT_EQ(c.get_engine(), engine);
+    EXPECT_TRUE(c.force_generic());
 }
 } // namespace test_bind
 
