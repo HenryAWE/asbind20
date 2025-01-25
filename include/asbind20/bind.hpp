@@ -495,6 +495,73 @@ namespace wrappers
             return this->template generate<CallConv>();
         }
     };
+
+    template <typename To>
+    concept opConv_acceptable_primitive =
+        !std::is_const_v<To> &&
+        !std::is_reference_v<To> &&
+        !std::is_pointer_v<To> &&
+        ((std::integral<To> && (sizeof(To) <= sizeof(asQWORD))) ||
+         std::same_as<To, float> ||
+         std::same_as<To, double>);
+
+    template <typename Class, typename To>
+    class opConv
+    {
+    public:
+        static constexpr bool is_acceptable_native_call_conv(asECallConvTypes conv) noexcept
+        {
+            return conv == asCALL_CDECL_OBJFIRST || conv == asCALL_CDECL_OBJLAST;
+        }
+
+        static constexpr bool is_acceptable_call_conv(asECallConvTypes conv) noexcept
+        {
+            return conv == asCALL_GENERIC || is_acceptable_native_call_conv(conv);
+        }
+
+        using native_function_type = To (*)(Class&);
+
+        template <asECallConvTypes CallConv>
+        requires(is_acceptable_call_conv(CallConv))
+        using wrapper_type = std::conditional_t<
+            CallConv == asCALL_GENERIC,
+            asGENFUNC_t,
+            native_function_type>;
+
+        template <asECallConvTypes CallConv>
+        static auto generate() noexcept -> wrapper_type<CallConv>
+        {
+            if constexpr(CallConv == asCALL_GENERIC)
+            {
+                return +[](asIScriptGeneric* gen) -> void
+                {
+                    set_generic_return<To>(
+                        gen,
+                        static_cast<To>(get_generic_object<Class&>(gen))
+                    );
+                };
+            }
+            else // CallConv == asCALL_CDECL_FISRT/LAST
+            {
+                return +[](Class& obj) -> To
+                {
+                    return static_cast<To>(obj);
+                };
+            }
+        }
+
+        asGENFUNC_t operator()(use_generic_t) const
+        {
+            return this->template generate<asCALL_GENERIC>();
+        }
+
+        template <asECallConvTypes CallConv>
+        requires(is_acceptable_call_conv(CallConv))
+        auto operator()(call_conv_t<CallConv>) const -> wrapper_type<CallConv>
+        {
+            return this->template generate<CallConv>();
+        }
+    };
 } // namespace wrappers
 
 template <bool ForceGeneric>
@@ -1401,6 +1468,40 @@ protected:
         );
     }
 
+    static std::string decl_opConv(std::string_view ret, bool implicit)
+    {
+        if(implicit)
+            return string_concat(ret, " opImplConv() const");
+        else
+            return string_concat(ret, " opConv() const");
+    }
+
+    template <typename Class, typename To>
+    void opConv_impl_native(std::string_view ret, bool implicit)
+    {
+        auto wrapper =
+            wrappers::opConv<Class, To>{}(call_conv<asCALL_CDECL_OBJLAST>);
+
+        method_impl(
+            decl_opConv(ret, implicit).c_str(),
+            wrapper,
+            call_conv<asCALL_CDECL_OBJLAST>
+        );
+    }
+
+    template <typename Class, typename To>
+    void opConv_impl_generic(std::string_view ret, bool implicit)
+    {
+        auto wrapper =
+            wrappers::opConv<Class, To>{}(use_generic);
+
+        method_impl(
+            decl_opConv(ret, implicit).c_str(),
+            wrapper,
+            call_conv<asCALL_GENERIC>
+        );
+    }
+
 private:
     void full_funcdef(const char* decl)
     {
@@ -2033,6 +2134,48 @@ public:
     ASBIND20_VALUE_CLASS_OP(opDiv);
 
 #undef ASBIND20_VALUE_CLASS_OP
+
+    template <typename To>
+    value_class& opConv(use_generic_t, std::string_view to_decl)
+    {
+        this->template opConv_impl_generic<Class, To>(to_decl, false);
+
+        return *this;
+    }
+
+    template <typename To>
+    value_class& opConv(std::string_view to_decl)
+    {
+        if constexpr(ForceGeneric)
+            opConv<To>(use_generic, to_decl);
+        else
+        {
+            this->template opConv_impl_native<Class, To>(to_decl, false);
+        }
+
+        return *this;
+    }
+
+    template <typename To>
+    value_class& opImplConv(use_generic_t, std::string_view to_decl)
+    {
+        this->template opConv_impl_native<Class, To>(to_decl, true);
+
+        return *this;
+    }
+
+    template <typename To>
+    value_class& opImplConv(std::string_view to_decl)
+    {
+        if constexpr(ForceGeneric)
+            opImplConv<To>(use_generic, to_decl);
+        else
+        {
+            this->template opConv_impl_native<Class, To>(to_decl, true);
+        }
+
+        return *this;
+    }
 
     template <typename Fn>
     requires(std::is_member_function_pointer_v<Fn>)
@@ -2769,6 +2912,48 @@ public:
     ASBIND20_REFERENCE_CLASS_OP(opPreDec);
 
 #undef ASBIND20_REFERENCE_CLASS_OP
+
+    template <typename To>
+    reference_class& opConv(use_generic_t, std::string_view to_decl)
+    {
+        this->template opConv_impl_generic<Class, To>(to_decl, false);
+
+        return *this;
+    }
+
+    template <typename To>
+    reference_class& opConv(std::string_view to_decl)
+    {
+        if constexpr(ForceGeneric)
+            opConv<To>(use_generic, to_decl);
+        else
+        {
+            this->template opConv_impl_native<Class, To>(to_decl, false);
+        }
+
+        return *this;
+    }
+
+    template <typename To>
+    reference_class& opImplConv(use_generic_t, std::string_view to_decl)
+    {
+        this->template opConv_impl_native<Class, To>(to_decl, true);
+
+        return *this;
+    }
+
+    template <typename To>
+    reference_class& opImplConv(std::string_view to_decl)
+    {
+        if constexpr(ForceGeneric)
+            opImplConv<To>(use_generic, to_decl);
+        else
+        {
+            this->template opConv_impl_native<Class, To>(to_decl, true);
+        }
+
+        return *this;
+    }
 
     using addref_t = void (Class::*)();
 

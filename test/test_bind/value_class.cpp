@@ -85,6 +85,16 @@ public:
         return trivial_value_class(-value);
     }
 
+    operator int() const
+    {
+        return value;
+    }
+
+    explicit operator bool() const
+    {
+        return value != 0;
+    }
+
     int value = 0;
 };
 
@@ -130,6 +140,8 @@ void register_trivial_value_class(asIScriptEngine* engine)
         .opAddAssign()
         .opAdd()
         .opNeg()
+        .opConv<bool>("bool")
+        .opImplConv<int>("int")
         .method("void set_val(int)", &trivial_value_class::set_val)
         .method<&trivial_value_class::set_val>(use_generic, "void set_val2(int)")
         .method("int get_val() const", &trivial_value_class::get_val)
@@ -167,6 +179,8 @@ void register_trivial_value_class(asbind20::use_generic_t, asIScriptEngine* engi
         .opAdd()
         .opAddAssign()
         .opNeg()
+        .opConv<bool>("bool")
+        .opImplConv<int>("int")
         .method<&trivial_value_class::set_val>("void set_val(int)")
         .method<&trivial_value_class::set_val>(use_generic, "void set_val2(int)")
         .method<&trivial_value_class::get_val>("int get_val() const")
@@ -235,6 +249,9 @@ int test_5()
 int test_6()
 {
     trivial_value_class val = {2, 3};
+    int result = val;
+    assert(result == 5);
+    assert(bool(val));
     return val.value;
 }
 trivial_value_class test_7()

@@ -27,6 +27,16 @@ public:
         return *this;
     }
 
+    operator int() const
+    {
+        return data;
+    }
+
+    explicit operator bool() const
+    {
+        return data != 0;
+    }
+
     void addref()
     {
         m_use_count += 1;
@@ -77,6 +87,8 @@ void register_ref_class(asIScriptEngine* engine)
         .addref(&my_ref_class::addref)
         .release(&my_ref_class::release)
         .opAddAssign()
+        .opConv<bool>("bool")
+        .opImplConv<int>("int")
         .method("uint use_count() const", &my_ref_class::use_count)
         .method("int exchange_data(int new_data)", &test_bind::exchange_data)
         .method("int get_data() const", &get_ref_class_data)
@@ -98,6 +110,8 @@ void register_ref_class(asbind20::use_generic_t, asIScriptEngine* engine)
         .addref<&my_ref_class::addref>()
         .release<&my_ref_class::release>()
         .opAddAssign()
+        .opConv<bool>("bool")
+        .opImplConv<int>("int")
         .method<&my_ref_class::use_count>("uint use_count() const")
         .method<&test_bind::exchange_data>("int exchange_data(int new_data)")
         .method("int get_data() const", &get_ref_class_data)
@@ -137,6 +151,9 @@ int test_3()
 int test_4()
 {
     my_ref_class val = {3, 4};
+    int internal = val;
+    assert(internal == 7);
+    assert(bool(val));
     return val.data;
 }
 int test_5()
