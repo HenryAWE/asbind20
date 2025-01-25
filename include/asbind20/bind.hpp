@@ -814,10 +814,6 @@ public:
         return *this;
     }
 
-    template <typename Enum>
-    requires std::is_enum_v<Enum>
-    using enum_value_name_pair = std::pair<Enum, const char*>;
-
     global& enum_type(
         const char* type
     )
@@ -1453,18 +1449,6 @@ private:
         }
     }
 
-public:
-    std::string decl_constructor(std::string_view params) const
-    {
-        return decl_constructor_impl(params, false);
-    }
-
-    std::string decl_constructor(std::string_view params, use_explicit_t) const
-    {
-        return decl_constructor_impl(params, true);
-    }
-
-private:
     value_class& constructor_function_impl(std::string_view params, asGENFUNC_t gfn, bool explicit_, call_conv_t<asCALL_GENERIC> = {})
     {
         this->behaviour_impl(
@@ -1518,7 +1502,12 @@ public:
 
     template <typename... Args, asECallConvTypes CallConv>
     requires(CallConv != asCALL_GENERIC)
-    value_class& constructor_function(std::string_view params, use_explicit_t, void (*fn)(Args...), call_conv_t<CallConv>) requires(!ForceGeneric)
+    value_class& constructor_function(
+        std::string_view params,
+        use_explicit_t,
+        void (*fn)(Args...),
+        call_conv_t<CallConv>
+    ) requires(!ForceGeneric)
     {
         this->behaviour_impl(
             asBEHAVE_CONSTRUCT,
@@ -1532,7 +1521,9 @@ public:
 
 private:
     template <native_function auto Function, asECallConvTypes CallConv>
-    value_class& constructor_function_wrapper_impl(use_generic_t, std::string_view params, bool explicit_)
+    value_class& constructor_function_wrapper_impl(
+        use_generic_t, std::string_view params, bool explicit_
+    )
     {
         asGENFUNC_t wrapper =
             wrappers::constrctor_function<Function, Class, CallConv>{}(use_generic);
@@ -1660,53 +1651,35 @@ private:
         }
     }
 
-    template <typename... Args>
-    void assert_constructor_flag()
-    {
-        // Only have effect in debug mode
-#ifndef NDEBUG
-        // Default constructor
-        if constexpr(sizeof...(Args) == 0)
-            return;
-        else
-        {
-            // Copy constructor
-            using first_arg_t = std::tuple_element_t<0, std::tuple<Args...>>;
-            if constexpr(!(std::same_as<first_arg_t, const Class&> ||
-                           std::same_as<first_arg_t, Class&>))
-                return;
-        }
-
-        assert(m_flags & asOBJ_APP_CLASS_MORE_CONSTRUCTORS);
-#endif
-    }
-
 public:
     template <typename... Args>
-    value_class& constructor(use_generic_t, std::string_view params) requires(is_only_constructible_v<Class, Args...>)
+    value_class& constructor(
+        use_generic_t,
+        std::string_view params
+    ) requires(is_only_constructible_v<Class, Args...>)
     {
-        assert_constructor_flag<Args...>();
-
         constructor_impl_generic<Args...>(params, false);
 
         return *this;
     }
 
     template <typename... Args>
-    value_class& constructor(use_generic_t, std::string_view params, use_explicit_t) requires(is_only_constructible_v<Class, Args...>)
+    value_class& constructor(
+        use_generic_t,
+        std::string_view params,
+        use_explicit_t
+    ) requires(is_only_constructible_v<Class, Args...>)
     {
-        assert_constructor_flag<Args...>();
-
         constructor_impl_generic<Args...>(params, true);
 
         return *this;
     }
 
     template <typename... Args>
-    value_class& constructor(std::string_view params) requires(is_only_constructible_v<Class, Args...>)
+    value_class& constructor(
+        std::string_view params
+    ) requires(is_only_constructible_v<Class, Args...>)
     {
-        assert_constructor_flag<Args...>();
-
         if constexpr(ForceGeneric)
             constructor<Args...>(use_generic, params);
         else
@@ -1716,10 +1689,11 @@ public:
     }
 
     template <typename... Args>
-    value_class& constructor(std::string_view params, use_explicit_t) requires(is_only_constructible_v<Class, Args...>)
+    value_class& constructor(
+        std::string_view params,
+        use_explicit_t
+    ) requires(is_only_constructible_v<Class, Args...>)
     {
-        assert_constructor_flag<Args...>();
-
         if constexpr(ForceGeneric)
             constructor<Args...>(use_generic, params, use_explicit);
         else
@@ -1801,7 +1775,10 @@ public:
      *
      * @param traits Type traits
      */
-    value_class& behaviours_by_traits(use_generic_t, asQWORD traits = AS_NAMESPACE_QUALIFIER asGetTypeTraits<Class>())
+    value_class& behaviours_by_traits(
+        use_generic_t,
+        asQWORD traits = AS_NAMESPACE_QUALIFIER asGetTypeTraits<Class>()
+    )
     {
         if(traits & asOBJ_APP_CLASS_C)
         {
@@ -1840,7 +1817,9 @@ public:
      *
      * @param traits Type traits
      */
-    value_class& behaviours_by_traits(asQWORD traits = AS_NAMESPACE_QUALIFIER asGetTypeTraits<Class>())
+    value_class& behaviours_by_traits(
+        asQWORD traits = AS_NAMESPACE_QUALIFIER asGetTypeTraits<Class>()
+    )
     {
         if(traits & asOBJ_APP_CLASS_C)
         {
@@ -1893,7 +1872,11 @@ public:
 
     template <asECallConvTypes CallConv, typename... Args>
     requires(CallConv == asCALL_CDECL_OBJFIRST || CallConv == asCALL_CDECL_OBJLAST)
-    value_class& list_constructor_function(std::string_view pattern, void (*fn)(Args...), call_conv_t<CallConv>) requires(!ForceGeneric)
+    value_class& list_constructor_function(
+        std::string_view pattern,
+        void (*fn)(Args...),
+        call_conv_t<CallConv>
+    ) requires(!ForceGeneric)
     {
         this->behaviour_impl(
             asBEHAVE_LIST_CONSTRUCT,
@@ -1907,7 +1890,10 @@ public:
 
     template <native_function auto ListConstructor, asECallConvTypes CallConv>
     requires(CallConv == asCALL_CDECL_OBJFIRST || CallConv == asCALL_CDECL_OBJLAST)
-    value_class& list_constructor_function(use_generic_t, std::string_view pattern)
+    value_class& list_constructor_function(
+        use_generic_t,
+        std::string_view pattern
+    )
     {
         using traits = function_traits<std::decay_t<decltype(ListConstructor)>>;
         static_assert(traits::arg_count_v == 2);
@@ -1921,7 +1907,10 @@ public:
                 pattern,
                 +[](asIScriptGeneric* gen) -> void
                 {
-                    ListConstructor(get_generic_object<Class*>(gen), *(list_buf_t*)gen->GetAddressOfArg(0));
+                    ListConstructor(
+                        get_generic_object<Class*>(gen),
+                        *(list_buf_t*)gen->GetAddressOfArg(0)
+                    );
                 },
                 call_conv<asCALL_GENERIC>
             );
@@ -1934,7 +1923,10 @@ public:
                 pattern,
                 +[](asIScriptGeneric* gen) -> void
                 {
-                    ListConstructor(*(list_buf_t*)gen->GetAddressOfArg(0), get_generic_object<Class*>(gen));
+                    ListConstructor(
+                        *(list_buf_t*)gen->GetAddressOfArg(0),
+                        get_generic_object<Class*>(gen)
+                    );
                 },
                 call_conv<asCALL_GENERIC>
             );
@@ -1966,7 +1958,9 @@ public:
      * @param pattern List pattern
      */
     template <typename ListElementType = void>
-    value_class& list_constructor(use_generic_t, std::string_view pattern)
+    value_class& list_constructor(
+        use_generic_t, std::string_view pattern
+    )
     {
         list_constructor_function(
             pattern,
@@ -1984,7 +1978,9 @@ public:
      * @param pattern List pattern
      */
     template <typename ListElementType = void>
-    value_class& list_constructor(std::string_view pattern)
+    value_class& list_constructor(
+        std::string_view pattern
+    )
     {
         if constexpr(ForceGeneric)
             list_constructor<ListElementType>(use_generic, pattern);
