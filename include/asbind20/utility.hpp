@@ -935,6 +935,61 @@ std::size_t member_offset(T Class::*mp) noexcept
     return std::size_t(std::addressof(p->*mp)) - std::size_t(p);
 }
 
+template <typename T>
+requires(std::is_arithmetic_v<T>)
+const char* name_of()
+{
+    if constexpr(std::same_as<T, bool>)
+        return "bool";
+    else if constexpr(std::integral<T>)
+    {
+        if constexpr(std::is_unsigned_v<T>)
+        {
+            if constexpr(sizeof(T) == 1)
+                return "uint8";
+            else if constexpr(sizeof(T) == 2)
+                return "uint16";
+            else if constexpr(sizeof(T) == 4)
+                return "uint";
+            else if constexpr(sizeof(T) == 8)
+                return "uint64";
+            else
+                static_assert(!sizeof(T), "Invalid integral");
+        }
+        else if constexpr(std::is_signed_v<T>)
+        {
+            if constexpr(sizeof(T) == 1)
+                return "int8";
+            else if constexpr(sizeof(T) == 2)
+                return "int16";
+            else if constexpr(sizeof(T) == 4)
+                return "int";
+            else if constexpr(sizeof(T) == 8)
+                return "int64";
+            else
+                static_assert(!sizeof(T), "Invalid integral");
+        }
+        else // Neither signed nor unsigned
+            static_assert(!sizeof(T), "Invalid integral");
+    }
+    else if constexpr(std::floating_point<T>)
+    {
+        if constexpr(std::same_as<T, float>)
+            return "float";
+        else if constexpr(std::same_as<T, double>)
+            return "double";
+        else
+            static_assert(!sizeof(T), "Invalid floating point");
+    }
+    else
+        static_assert(!sizeof(T), "Invalid arithmetic");
+}
+
+template <typename T>
+concept has_static_name =
+    std::is_arithmetic_v<T> &&
+    !std::same_as<T, char>;
+
 asIScriptFunction* get_default_factory(asITypeInfo* ti);
 
 asIScriptFunction* get_default_constructor(asITypeInfo* ti);

@@ -115,6 +115,27 @@ TEST(utility, version)
     }
 }
 
+TEST(name_of, arithmetic)
+{
+    using namespace asbind20;
+    using namespace std::literals;
+
+    EXPECT_EQ(name_of<bool>(), "bool"sv);
+
+    EXPECT_EQ(name_of<asINT8>(), "int8"sv);
+    EXPECT_EQ(name_of<asINT16>(), "int16"sv);
+    EXPECT_EQ(name_of<asINT32>(), "int"sv);
+    EXPECT_EQ(name_of<asINT64>(), "int64"sv);
+
+    EXPECT_EQ(name_of<asBYTE>(), "uint8"sv);
+    EXPECT_EQ(name_of<asWORD>(), "uint16"sv);
+    EXPECT_EQ(name_of<asDWORD>(), "uint"sv);
+    EXPECT_EQ(name_of<asQWORD>(), "uint64"sv);
+
+    EXPECT_EQ(name_of<float>(), "float"sv);
+    EXPECT_EQ(name_of<double>(), "double"sv);
+}
+
 int main(int argc, char* argv[])
 {
     ::testing::InitGoogleTest(&argc, argv);

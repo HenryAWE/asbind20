@@ -2177,6 +2177,38 @@ public:
         return *this;
     }
 
+    template <has_static_name To>
+    value_class& opConv(use_generic_t)
+    {
+        opConv<To>(use_generic, name_of<To>());
+
+        return *this;
+    }
+
+    template <has_static_name To>
+    value_class& opConv()
+    {
+        opConv<To>(name_of<To>());
+
+        return *this;
+    }
+
+    template <has_static_name To>
+    value_class& opImplConv(use_generic_t)
+    {
+        opImplConv<To>(use_generic, name_of<To>());
+
+        return *this;
+    }
+
+    template <has_static_name To>
+    value_class& opImplConv()
+    {
+        opImplConv<To>(name_of<To>());
+
+        return *this;
+    }
+
     template <typename Fn>
     requires(std::is_member_function_pointer_v<Fn>)
     value_class& behaviour(asEBehaviours beh, const char* decl, Fn&& fn, call_conv_t<asCALL_THISCALL> = {}) requires(!ForceGeneric)
@@ -2951,6 +2983,38 @@ public:
         {
             this->template opConv_impl_native<Class, To>(to_decl, true);
         }
+
+        return *this;
+    }
+
+    template <has_static_name To>
+    reference_class& opConv(use_generic_t)
+    {
+        opConv<To>(use_generic, name_of<To>());
+
+        return *this;
+    }
+
+    template <has_static_name To>
+    reference_class& opConv()
+    {
+        opConv<To>(name_of<To>());
+
+        return *this;
+    }
+
+    template <has_static_name To>
+    reference_class& opImplConv(use_generic_t)
+    {
+        opImplConv<To>(use_generic, name_of<To>());
+
+        return *this;
+    }
+
+    template <has_static_name To>
+    reference_class& opImplConv()
+    {
+        opImplConv<To>(name_of<To>());
 
         return *this;
     }
