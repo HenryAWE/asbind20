@@ -345,108 +345,108 @@ private:
     }
 };
 
+template <typename T>
+int set_script_arg(asIScriptContext* ctx, asUINT idx, std::reference_wrapper<T> ref)
+{
+    return ctx->SetArgAddress(idx, (void*)std::addressof(ref.get()));
+}
+
+template <std::integral T>
+int set_script_arg(asIScriptContext* ctx, asUINT idx, T val)
+{
+    constexpr std::size_t int_size = sizeof(std::decay_t<T>);
+
+    if constexpr(int_size == sizeof(asBYTE))
+        return ctx->SetArgByte(idx, val);
+    else if constexpr(int_size == sizeof(asWORD))
+        return ctx->SetArgWord(idx, val);
+    else if constexpr(int_size == sizeof(asDWORD))
+        return ctx->SetArgDWord(idx, val);
+    else if constexpr(int_size == sizeof(asQWORD))
+        return ctx->SetArgQWord(idx, val);
+    else
+        static_assert(!sizeof(T), "size of integral type is too large");
+}
+
+template <typename Enum>
+requires std::is_enum_v<std::decay_t<Enum>>
+int set_script_arg(asIScriptContext* ctx, asUINT idx, Enum val)
+{
+    using T = std::remove_cvref_t<Enum>;
+
+    constexpr bool is_customized = requires() {
+        { type_traits<T>::set_arg(ctx, idx, val) } -> std::same_as<int>;
+    };
+
+    if constexpr(is_customized)
+    {
+        return type_traits<T>::set_arg(ctx, idx, val);
+    }
+    else
+    {
+        static_assert(sizeof(T) <= sizeof(int), "underlying type of enum is too large");
+        return set_script_arg(ctx, idx, static_cast<int>(val));
+    }
+}
+
+inline int set_script_arg(asIScriptContext* ctx, asUINT idx, float val)
+{
+    return ctx->SetArgFloat(idx, val);
+}
+
+inline int set_script_arg(asIScriptContext* ctx, asUINT idx, double val)
+{
+    return ctx->SetArgDouble(idx, val);
+}
+
+inline int set_script_arg(asIScriptContext* ctx, asUINT idx, void* obj)
+{
+    return ctx->SetArgAddress(idx, obj);
+}
+
+inline int set_script_arg(asIScriptContext* ctx, asUINT idx, const void* obj)
+{
+    return ctx->SetArgAddress(idx, const_cast<void*>(obj));
+}
+
+inline int set_script_arg(asIScriptContext* ctx, asUINT idx, asIScriptObject* obj)
+{
+    return ctx->SetArgObject(idx, obj);
+}
+
+inline int set_script_arg(asIScriptContext* ctx, asUINT idx, const asIScriptObject* obj)
+{
+    return ctx->SetArgObject(idx, const_cast<asIScriptObject*>(obj));
+}
+
+template <typename Class>
+requires std::is_class_v<std::remove_cvref_t<Class>>
+void set_script_arg(asIScriptContext* ctx, asUINT idx, Class&& obj)
+{
+    using T = std::remove_cvref_t<Class>;
+
+    constexpr bool is_customized = requires() {
+        { type_traits<T>::set_script_arg(ctx, idx, obj) } -> std::same_as<int>;
+    };
+
+    if constexpr(is_customized)
+    {
+        type_traits<T>::set_script_arg(ctx, idx, obj);
+    }
+    else
+    {
+        ctx->SetArgObject(idx, (void*)std::addressof(obj));
+    }
+}
+
 namespace detail
 {
-    template <typename T>
-    void set_arg(asIScriptContext* ctx, asUINT idx, std::reference_wrapper<T> ref)
-    {
-        ctx->SetArgAddress(idx, (void*)std::addressof(ref.get()));
-    }
-
-    template <std::integral T>
-    void set_arg(asIScriptContext* ctx, asUINT idx, T val)
-    {
-        constexpr std::size_t int_size = sizeof(std::decay_t<T>);
-
-        if constexpr(int_size == sizeof(asBYTE))
-            ctx->SetArgByte(idx, val);
-        else if constexpr(int_size == sizeof(asWORD))
-            ctx->SetArgWord(idx, val);
-        else if constexpr(int_size == sizeof(asDWORD))
-            ctx->SetArgDWord(idx, val);
-        else if constexpr(int_size == sizeof(asQWORD))
-            ctx->SetArgQWord(idx, val);
-        else
-            static_assert(!sizeof(T), "size of integral type is too large");
-    }
-
-    template <typename Enum>
-    requires std::is_enum_v<std::decay_t<Enum>>
-    void set_arg(asIScriptContext* ctx, asUINT idx, Enum val)
-    {
-        using T = std::remove_cvref_t<Enum>;
-
-        constexpr bool is_customized = requires() {
-            { type_traits<T>::set_arg(ctx, idx, val) } -> std::same_as<int>;
-        };
-
-        if constexpr(is_customized)
-        {
-            type_traits<T>::set_arg(ctx, idx, val);
-        }
-        else
-        {
-            static_assert(sizeof(T) <= sizeof(int), "underlying type of enum is too large");
-            set_arg(ctx, idx, static_cast<int>(val));
-        }
-    }
-
-    inline void set_arg(asIScriptContext* ctx, asUINT idx, float val)
-    {
-        ctx->SetArgFloat(idx, val);
-    }
-
-    inline void set_arg(asIScriptContext* ctx, asUINT idx, double val)
-    {
-        ctx->SetArgDouble(idx, val);
-    }
-
-    inline void set_arg(asIScriptContext* ctx, asUINT idx, void* obj)
-    {
-        ctx->SetArgAddress(idx, obj);
-    }
-
-    inline void set_arg(asIScriptContext* ctx, asUINT idx, const void* obj)
-    {
-        ctx->SetArgAddress(idx, const_cast<void*>(obj));
-    }
-
-    inline void set_arg(asIScriptContext* ctx, asUINT idx, asIScriptObject* obj)
-    {
-        ctx->SetArgObject(idx, obj);
-    }
-
-    inline void set_arg(asIScriptContext* ctx, asUINT idx, const asIScriptObject* obj)
-    {
-        ctx->SetArgObject(idx, const_cast<asIScriptObject*>(obj));
-    }
-
-    template <typename Class>
-    requires std::is_class_v<std::remove_cvref_t<Class>>
-    void set_arg(asIScriptContext* ctx, asUINT idx, Class&& obj)
-    {
-        using T = std::remove_cvref_t<Class>;
-
-        constexpr bool is_customized = requires() {
-            { type_traits<T>::set_arg(ctx, idx, obj) } -> std::same_as<int>;
-        };
-
-        if constexpr(is_customized)
-        {
-            type_traits<T>::set_arg(ctx, idx, obj);
-        }
-        else
-        {
-            ctx->SetArgObject(idx, (void*)std::addressof(obj));
-        }
-    }
-
     template <typename Tuple>
     void set_args(asIScriptContext* ctx, Tuple&& tp)
     {
         [&]<asUINT... Idx>(std::integer_sequence<asUINT, Idx...>)
         {
-            (set_arg(ctx, Idx, std::get<Idx>(tp)), ...);
+            (set_script_arg(ctx, Idx, std::get<Idx>(tp)), ...);
         }(std::make_integer_sequence<asUINT, std::tuple_size_v<Tuple>>());
     }
 
@@ -454,66 +454,71 @@ namespace detail
     concept is_script_obj =
         std::is_same_v<T, asIScriptObject*> ||
         std::is_same_v<T, const asIScriptObject*>;
+} // namespace detail
 
-    template <typename T>
-    requires(!std::is_const_v<T>)
-    T get_ret(asIScriptContext* ctx)
+template <typename T>
+requires(!std::is_const_v<T>)
+T get_script_return(asIScriptContext* ctx)
+{
+    assert(ctx->GetState() == asEXECUTION_FINISHED);
+
+    constexpr bool is_customized = requires() {
+        { type_traits<T>::get_return(ctx) } -> std::convertible_to<T>;
+    };
+
+    if constexpr(is_customized)
     {
-        constexpr bool is_customized = requires() {
-            { type_traits<T>::get_return(ctx) } -> std::convertible_to<T>;
-        };
-
-        if constexpr(is_customized)
+        return type_traits<T>::get_return(ctx);
+    }
+    else if constexpr(detail::is_script_obj<std::remove_cvref_t<T>>)
+    {
+        asIScriptObject* ptr = *reinterpret_cast<asIScriptObject**>(ctx->GetAddressOfReturnValue());
+        return T(ptr);
+    }
+    else if constexpr(std::is_reference_v<T>)
+    {
+        using ptr_t = std::add_pointer_t<std::remove_reference_t<T>>;
+        return *reinterpret_cast<ptr_t>(ctx->GetReturnAddress());
+    }
+    else if constexpr(std::is_class_v<T>)
+    {
+        using ptr_t = std::add_pointer_t<std::remove_reference_t<T>>;
+        return *reinterpret_cast<ptr_t>(ctx->GetReturnObject());
+    }
+    else
+    {
+        using primitive_t = typename std::conditional_t<
+            std::is_enum_v<std::remove_cvref_t<T>>,
+            int,
+            std::remove_cvref_t<T>>;
+        if constexpr(std::integral<primitive_t>)
         {
-            return type_traits<T>::get_return(ctx);
+            if constexpr(sizeof(primitive_t) == 1)
+                return static_cast<T>(ctx->GetReturnByte());
+            else if constexpr(sizeof(primitive_t) == 2)
+                return static_cast<T>(ctx->GetReturnWord());
+            else if constexpr(sizeof(primitive_t) == 4)
+                return static_cast<T>(ctx->GetReturnDWord());
+            else if constexpr(sizeof(primitive_t) == 8)
+                return static_cast<T>(ctx->GetReturnQWord());
         }
-        else if constexpr(is_script_obj<std::remove_cvref_t<T>>)
+        else if constexpr(std::is_same_v<primitive_t, float>)
         {
-            asIScriptObject* ptr = *reinterpret_cast<asIScriptObject**>(ctx->GetAddressOfReturnValue());
-            return T(ptr);
+            return ctx->GetReturnFloat();
         }
-        else if constexpr(std::is_reference_v<T>)
+        else if constexpr(std::is_same_v<primitive_t, double>)
         {
-            using ptr_t = std::add_pointer_t<std::remove_reference_t<T>>;
-            return *reinterpret_cast<ptr_t>(ctx->GetReturnAddress());
-        }
-        else if constexpr(std::is_class_v<T>)
-        {
-            using ptr_t = std::add_pointer_t<std::remove_reference_t<T>>;
-            return *reinterpret_cast<ptr_t>(ctx->GetReturnObject());
+            return ctx->GetReturnDouble();
         }
         else
-        {
-            using primitive_t = typename std::conditional_t<
-                std::is_enum_v<std::remove_cvref_t<T>>,
-                int,
-                std::remove_cvref_t<T>>;
-            if constexpr(std::integral<primitive_t>)
-            {
-                if constexpr(sizeof(primitive_t) == 1)
-                    return static_cast<T>(ctx->GetReturnByte());
-                else if constexpr(sizeof(primitive_t) == 2)
-                    return static_cast<T>(ctx->GetReturnWord());
-                else if constexpr(sizeof(primitive_t) == 4)
-                    return static_cast<T>(ctx->GetReturnDWord());
-                else if constexpr(sizeof(primitive_t) == 8)
-                    return static_cast<T>(ctx->GetReturnQWord());
-            }
-            else if constexpr(std::is_same_v<primitive_t, float>)
-            {
-                return ctx->GetReturnFloat();
-            }
-            else if constexpr(std::is_same_v<primitive_t, double>)
-            {
-                return ctx->GetReturnDouble();
-            }
-            else
-                static_assert(!sizeof(T), "Invalid type");
-        }
+            static_assert(!sizeof(T), "Invalid type");
     }
+}
 
+namespace detail
+{
     template <typename R>
-    auto get_invoke_result(asIScriptContext* ctx)
+    auto execute_context(asIScriptContext* ctx)
     {
         int r = ctx->Execute();
 
@@ -522,7 +527,7 @@ namespace detail
             if constexpr(std::is_void_v<R>)
                 return script_invoke_result<void>();
             else
-                return script_invoke_result<R>(detail::get_ret<R>(ctx));
+                return script_invoke_result<R>(get_script_return<R>(ctx));
         }
         else
             return script_invoke_result<R>(bad_result, r);
@@ -545,7 +550,7 @@ script_invoke_result<R> script_invoke(asIScriptContext* ctx, asIScriptFunction* 
 
     detail::set_args(ctx, std::forward_as_tuple(args...));
 
-    return detail::get_invoke_result<R>(ctx);
+    return detail::execute_context<R>(ctx);
 }
 
 template <typename T>
@@ -555,6 +560,12 @@ concept script_object_handle =
     requires(T&& obj) {
         (const asIScriptObject*)obj;
     };
+
+template <script_object_handle Object>
+int set_script_object(asIScriptContext* ctx, Object&& obj)
+{
+    return ctx->SetObject(const_cast<asIScriptObject*>((const asIScriptObject*)obj));
+}
 
 /**
  * @brief Calling a method on script class
@@ -569,12 +580,12 @@ script_invoke_result<R> script_invoke(asIScriptContext* ctx, Object&& obj, asISc
     int r = 0;
     r = ctx->Prepare(func);
     assert(r >= 0);
-    r = ctx->SetObject(const_cast<asIScriptObject*>((const asIScriptObject*)obj));
+    r = set_script_object(ctx, std::forward<Object>(obj));
     assert(r >= 0);
 
     detail::set_args(ctx, std::forward_as_tuple(std::forward<Args>(args)...));
 
-    return detail::get_invoke_result<R>(ctx);
+    return detail::execute_context<R>(ctx);
 }
 
 class script_function_base
