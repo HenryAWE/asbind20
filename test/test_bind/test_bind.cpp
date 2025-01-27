@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <shared_test_lib.hpp>
 #include <asbind20/asbind.hpp>
+#include <sstream>
 
 using namespace asbind_test;
 
@@ -124,6 +125,48 @@ int my_div(int a, int b)
 {
     return a / b;
 }
+
+void out_str(std::string& out)
+{
+    out = "test";
+}
+
+std::string my_to_str(void* ref, int type_id)
+{
+    std::stringstream ss;
+    if(asbind20::is_primitive_type(type_id))
+    {
+        asbind20::visit_primitive_type(
+            [&ss]<typename T>(const T* ref)
+            {
+                if constexpr(std::same_as<T, bool>)
+                {
+                    ss << (*ref ? "true" : "false");
+                }
+                else
+                    ss << *ref;
+            },
+            type_id,
+            ref
+        );
+    }
+    else
+    {
+        ss << type_id << " at " << ref;
+    }
+
+    return std::move(ss).str();
+}
+
+void my_to_str2(int prefix_num, void* ref, int type_id, std::string& out)
+{
+    std::string result;
+    result = std::to_string(prefix_num);
+    result += ": ";
+    result += my_to_str(ref, type_id);
+
+    out = std::move(result);
+}
 } // namespace test_bind
 
 TEST_F(asbind_test_suite, generic_wrapper)
@@ -133,9 +176,41 @@ TEST_F(asbind_test_suite, generic_wrapper)
     asIScriptEngine* engine = get_engine();
 
     asGENFUNC_t my_div_gen = generic_wrapper<&test_bind::my_div, asCALL_CDECL>();
+    asGENFUNC_t out_str_gen = generic_wrapper<&test_bind::out_str, asCALL_CDECL>();
+    asGENFUNC_t my_to_str_gen = generic_wrapper<&test_bind::my_to_str, asCALL_CDECL>(var_type<0>);
+    asGENFUNC_t my_to_str2_gen = generic_wrapper<&test_bind::my_to_str2, asCALL_CDECL>(var_type<1>);
+
+    {
+        constexpr auto result = detail::gen_script_arg_idx<2>(var_type<0>);
+        static_assert(result.size() == 2);
+
+        static_assert(result[0] == 0);
+        static_assert(result[1] == 0);
+
+        static_assert(!detail::var_type_tag<var_type_t<0>, 0>{});
+        static_assert(detail::var_type_tag<var_type_t<0>, 1>{});
+    }
+
+    {
+        constexpr auto result = detail::gen_script_arg_idx<4>(var_type<1>);
+        static_assert(result.size() == 4);
+
+        static_assert(result[0] == 0);
+        static_assert(result[1] == 1);
+        static_assert(result[2] == 1);
+        static_assert(result[3] == 2);
+
+        static_assert(!detail::var_type_tag<var_type_t<1>, 0>{});
+        static_assert(!detail::var_type_tag<var_type_t<1>, 1>{});
+        static_assert(detail::var_type_tag<var_type_t<1>, 2>{});
+        static_assert(!detail::var_type_tag<var_type_t<1>, 3>{});
+    }
 
     global<true>(engine)
-        .function("int my_div(int a, int b)", my_div_gen);
+        .function("int my_div(int a, int b)", my_div_gen)
+        .function("void out_str(string&out)", out_str_gen)
+        .function("string my_to_str(const ?&in)", my_to_str_gen)
+        .function("void my_to_str2(int prefix_num, const ?&in, string&out)", my_to_str2_gen);
 
     asIScriptModule* m = engine->GetModule("test_generic", asGM_ALWAYS_CREATE);
 
@@ -144,6 +219,13 @@ TEST_F(asbind_test_suite, generic_wrapper)
         "void main()"
         "{"
         "assert(my_div(6, 2) == 3);"
+        "assert(my_to_str(true) == \"true\");"
+        "assert(my_to_str(6) == \"6\");"
+        "string result;"
+        "out_str(result);"
+        "assert(result == \"test\");"
+        "my_to_str2(1, false, result);"
+        "assert(result == \"1: false\");"
         "}"
     );
     ASSERT_GE(m->Build(), 0);
