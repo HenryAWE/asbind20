@@ -226,7 +226,7 @@ namespace detail
     template <bool UseGeneric>
     void register_script_optional_impl(asIScriptEngine* engine)
     {
-        template_class<script_optional> c(engine, "optional<T>", asOBJ_SCOPED);
+        template_class<script_optional, UseGeneric> c(engine, "optional<T>", asOBJ_SCOPED);
         c
             .template template_callback<&optional_template_callback>()
             .default_factory()

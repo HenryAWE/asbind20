@@ -80,20 +80,24 @@ int main(int argc, char* argv[])
     }
 
     asIScriptEngine* engine = asCreateScriptEngine();
+
+    engine->SetEngineProperty(asEP_USE_CHARACTER_LITERALS, true);
+
+    bool use_generic = asbind20::has_max_portability();
+    if(use_generic)
+        std::cout << "[asexec] use_generic = true" << std::endl;
+
     asbind20::global g(engine);
     g
         .message_callback<&message_callback>()
         .exception_translator<&ex_translator>();
-
-    engine->SetEngineProperty(asEP_USE_CHARACTER_LITERALS, true);
-
-    asbind20::ext::register_script_optional(engine);
-    asbind20::ext::register_script_array(engine);
+    asbind20::ext::register_script_optional(engine, use_generic);
+    asbind20::ext::register_script_array(engine, use_generic);
     asbind20::ext::register_math_constants(engine);
-    asbind20::ext::register_math_function(engine);
-    asbind20::ext::register_script_hash(engine);
-    asbind20::ext::register_std_string(engine);
-    asbind20::ext::register_string_utils(engine);
+    asbind20::ext::register_math_function(engine, use_generic);
+    asbind20::ext::register_script_hash(engine, use_generic);
+    asbind20::ext::register_std_string(engine, use_generic);
+    asbind20::ext::register_string_utils(engine, use_generic);
     g
         .function<&script_print>(asbind20::use_generic, "void print(const string&in str, bool newline=true)");
 
