@@ -26,7 +26,6 @@ public:
         {
             auto* this_ = static_cast<script_assert_impl*>(gen->GetAuxiliary());
             void* str = gen->GetArgAddress(1);
-            assert(gen->GetEngine()->GetStringFactoryReturnTypeId() == gen->GetArgTypeId(1));
 
             std::string msg = extract_string(this_->str_factory, str);
             this_->on_failure(msg.c_str());
@@ -66,7 +65,11 @@ std::function<assert_handler_t> register_script_assert(
 
     if(str_factory)
     {
+#if ANGELSCRIPT_VERSION >= 23800
+        int string_t_id = engine->GetStringFactory();
+#else
         int string_t_id = engine->GetStringFactoryReturnTypeId();
+#endif
         if(string_t_id != asNO_FUNCTION)
         {
             assert(string_t_id >= 0);
