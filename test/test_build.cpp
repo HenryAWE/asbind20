@@ -9,7 +9,8 @@ TEST_F(asbind_test_suite, load_file)
     asIScriptEngine* engine = get_engine();
     asIScriptModule* m = engine->GetModule("test_load_file", asGM_ALWAYS_CREATE);
 
-    ASSERT_TRUE(std::filesystem::exists("test_build_1.as"));
+    if(!std::filesystem::exists("test_build_1.as"))
+        GTEST_SKIP() << "\"test_build_1.as\" not found";
 
     ASSERT_GE(
         asbind20::load_file(m, "test_build_1.as", std::ios_base::binary),

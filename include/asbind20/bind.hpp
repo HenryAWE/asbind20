@@ -2159,7 +2159,7 @@ public:
     template <typename To>
     value_class& opImplConv(use_generic_t, std::string_view to_decl)
     {
-        this->template opConv_impl_native<Class, To>(to_decl, true);
+        this->template opConv_impl_generic<Class, To>(to_decl, true);
 
         return *this;
     }
@@ -2969,7 +2969,7 @@ public:
     template <typename To>
     reference_class& opImplConv(use_generic_t, std::string_view to_decl)
     {
-        this->template opConv_impl_native<Class, To>(to_decl, true);
+        this->template opConv_impl_generic<Class, To>(to_decl, true);
 
         return *this;
     }
