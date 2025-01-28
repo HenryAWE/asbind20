@@ -1039,6 +1039,8 @@ public:
 
 global(asIScriptEngine*) -> global<false>;
 
+global(const script_engine&) -> global<false>;
+
 namespace detail
 {
     std::string generate_member_funcdef(

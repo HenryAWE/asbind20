@@ -61,7 +61,7 @@ static void test_print(const std::string& msg)
 
 void asbind_test_suite::SetUp()
 {
-    m_engine = asCreateScriptEngine();
+    m_engine = asbind20::make_script_engine();
     asbind20::global g(m_engine);
     g
         .message_callback<&asbind_test_suite::msg_callback>(*this)
@@ -74,8 +74,7 @@ void asbind_test_suite::SetUp()
 
 void asbind_test_suite::TearDown()
 {
-    m_engine->ShutDownAndRelease();
-    m_engine = nullptr;
+    m_engine.reset();
 }
 
 void asbind_test_suite::run_file(

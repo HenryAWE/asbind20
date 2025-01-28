@@ -266,7 +266,7 @@ struct primitive_type_of;
 
 #define ASBIND20_UTILITY_DEFINE_PRIMITIVE_TYPE_OF(as_type_id, cpp_type, script_decl) \
     template <>                                                                      \
-    struct primitive_type_of<as_type_id>                                             \
+    struct primitive_type_of<AS_NAMESPACE_QUALIFIER as_type_id>                      \
     {                                                                                \
         using type = cpp_type;                                                       \
         static constexpr char decl[] = script_decl;                                  \
@@ -310,9 +310,50 @@ constexpr bool is_objhandle(int type_id) noexcept
  * @brief Get the size of a script type
  *
  * @param type_id AngelScript type id
- * @return asUINT
  */
-asUINT sizeof_script_type(asIScriptEngine* engine, int type_id);
+inline auto sizeof_script_type(asIScriptEngine* engine, int type_id)
+    -> AS_NAMESPACE_QUALIFIER asUINT
+{
+    assert(engine != nullptr);
+
+    if(is_primitive_type(type_id))
+    {
+        switch(type_id)
+        {
+        case AS_NAMESPACE_QUALIFIER asTYPEID_VOID:
+            return 0;
+
+        case AS_NAMESPACE_QUALIFIER asTYPEID_BOOL:
+        case AS_NAMESPACE_QUALIFIER asTYPEID_INT8:
+        case AS_NAMESPACE_QUALIFIER asTYPEID_UINT8:
+            return sizeof(std::int8_t);
+
+        case AS_NAMESPACE_QUALIFIER asTYPEID_INT16:
+        case AS_NAMESPACE_QUALIFIER asTYPEID_UINT16:
+            return sizeof(std::int16_t);
+
+        default: // enum
+        case AS_NAMESPACE_QUALIFIER asTYPEID_INT32:
+        case AS_NAMESPACE_QUALIFIER asTYPEID_UINT32:
+            return sizeof(std::int32_t);
+
+        case AS_NAMESPACE_QUALIFIER asTYPEID_INT64:
+        case AS_NAMESPACE_QUALIFIER asTYPEID_UINT64:
+            return sizeof(std::int64_t);
+
+        case AS_NAMESPACE_QUALIFIER asTYPEID_FLOAT:
+            return sizeof(float);
+        case AS_NAMESPACE_QUALIFIER asTYPEID_DOUBLE:
+            return sizeof(double);
+        }
+    }
+
+    asITypeInfo* ti = engine->GetTypeInfoById(type_id);
+    if(!ti)
+        return 0;
+
+    return ti->GetSize();
+}
 
 /**
  * @brief Extracts the contents from a script string without knowing the underlying type
@@ -334,7 +375,40 @@ std::string extract_string(asIStringFactory* factory, void* str);
  *
  * @warning Please make sure the destination has enough space for the value
  */
-std::size_t copy_primitive_value(void* dst, const void* src, int type_id);
+inline std::size_t copy_primitive_value(void* dst, const void* src, int type_id)
+{
+    assert(is_primitive_type(type_id));
+
+    switch(type_id)
+    {
+    [[unlikely]] case AS_NAMESPACE_QUALIFIER asTYPEID_VOID:
+        return 0;
+
+    case AS_NAMESPACE_QUALIFIER asTYPEID_BOOL:
+    case AS_NAMESPACE_QUALIFIER asTYPEID_INT8:
+    case AS_NAMESPACE_QUALIFIER asTYPEID_UINT8:
+        *(std::uint8_t*)dst = *(std::uint8_t*)src;
+        return sizeof(std::uint8_t);
+
+    case AS_NAMESPACE_QUALIFIER asTYPEID_INT16:
+    case AS_NAMESPACE_QUALIFIER asTYPEID_UINT16:
+        *(std::uint16_t*)dst = *(std::uint16_t*)src;
+        return sizeof(std::uint16_t);
+
+    default: // enums
+    case AS_NAMESPACE_QUALIFIER asTYPEID_FLOAT:
+    case AS_NAMESPACE_QUALIFIER asTYPEID_INT32:
+    case AS_NAMESPACE_QUALIFIER asTYPEID_UINT32:
+        *(std::uint32_t*)dst = *(std::uint32_t*)src;
+        return sizeof(std::uint32_t);
+
+    case AS_NAMESPACE_QUALIFIER asTYPEID_DOUBLE:
+    case AS_NAMESPACE_QUALIFIER asTYPEID_INT64:
+    case AS_NAMESPACE_QUALIFIER asTYPEID_UINT64:
+        *(std::uint64_t*)dst = *(std::uint64_t*)src;
+        return sizeof(std::uint64_t);
+    }
+}
 
 template <typename T>
 concept void_ptr = std::is_pointer_v<std::decay_t<T>> &&
@@ -431,12 +505,12 @@ class as_exclusive_lock_t
 public:
     static void lock()
     {
-        asAcquireExclusiveLock();
+        AS_NAMESPACE_QUALIFIER asAcquireExclusiveLock();
     }
 
     static void unlock()
     {
-        asReleaseExclusiveLock();
+        AS_NAMESPACE_QUALIFIER asReleaseExclusiveLock();
     }
 };
 
@@ -450,12 +524,12 @@ class as_shared_lock_t
 public:
     static void lock()
     {
-        asAcquireSharedLock();
+        AS_NAMESPACE_QUALIFIER asAcquireSharedLock();
     }
 
     static void unlock()
     {
-        asReleaseSharedLock();
+        AS_NAMESPACE_QUALIFIER asReleaseSharedLock();
     }
 };
 
@@ -558,7 +632,38 @@ constexpr std::string string_concat(Args&&... args)
  *                     If the state value is invalid, the result will be "asEContextState({state})",
  *                     e.g. "asEContextState(-1)".
  */
-std::string to_string(asEContextState state);
+inline std::string to_string(asEContextState state)
+{
+    switch(state)
+    {
+    case AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED:
+        return "asEXECUTION_FINISHED";
+    case AS_NAMESPACE_QUALIFIER asEXECUTION_SUSPENDED:
+        return "asEXECUTION_SUSPENDED";
+    case AS_NAMESPACE_QUALIFIER asEXECUTION_ABORTED:
+        return "asEXECUTION_ABORTED";
+    case AS_NAMESPACE_QUALIFIER asEXECUTION_EXCEPTION:
+        return "asEXECUTION_EXCEPTION";
+    case AS_NAMESPACE_QUALIFIER asEXECUTION_PREPARED:
+        return "asEXECUTION_PREPARED";
+    case AS_NAMESPACE_QUALIFIER asEXECUTION_UNINITIALIZED:
+        return "asEXECUTION_UNINITIALIZED";
+    case AS_NAMESPACE_QUALIFIER asEXECUTION_ACTIVE:
+        return "asEXECUTION_ACTIVE";
+    case AS_NAMESPACE_QUALIFIER asEXECUTION_ERROR:
+        return "asEXECUTION_ERROR";
+    case AS_NAMESPACE_QUALIFIER asEXECUTION_DESERIALIZATION:
+        return "asEXECUTION_DESERIALIZATION";
+
+    [[unlikely]] default:
+        using namespace std::literals;
+        return string_concat(
+            "asEContextState("sv,
+            std::to_string(static_cast<int>(state)),
+            ')'
+        );
+    }
+}
 
 /**
  * @brief Smart pointer for script object
@@ -649,6 +754,16 @@ private:
 };
 
 /**
+ * @brief Get current script context from a function called by script
+ *
+ * @return A pointer to the currently executing context, or null if no context is executing
+ */
+inline asIScriptContext* current_context()
+{
+    return AS_NAMESPACE_QUALIFIER asGetActiveContext();
+}
+
+/**
  * @brief RAII helper for reusing active script context.
  *
  * It will fallback to request context from the engine.
@@ -666,7 +781,7 @@ public:
     {
         assert(m_engine != nullptr);
 
-        m_ctx = asGetActiveContext();
+        m_ctx = current_context();
         if(m_ctx)
         {
             if(m_ctx->GetEngine() == engine && m_ctx->PushState() >= 0)
@@ -787,6 +902,75 @@ private:
     asIScriptContext* m_ctx = nullptr;
 };
 
+/*
+ * @brief RAII helper for managing script engine
+ */
+class script_engine
+{
+public:
+    script_engine() noexcept
+        : m_engine(nullptr) {}
+
+    script_engine(const script_engine&) = delete;
+
+    script_engine(script_engine&&) noexcept
+        : m_engine(std::exchange(m_engine, nullptr)) {}
+
+    explicit script_engine(asIScriptEngine* engine) noexcept
+        : m_engine(engine) {}
+
+    script_engine& operator=(const script_engine&) = delete;
+
+    script_engine& operator=(script_engine&& other) noexcept
+    {
+        if(this != &other)
+            reset(other.release());
+        return *this;
+    }
+
+    ~script_engine()
+    {
+        reset();
+    }
+
+    asIScriptEngine* get() const noexcept
+    {
+        return m_engine;
+    }
+
+    operator asIScriptEngine*() const noexcept
+    {
+        return get();
+    }
+
+    asIScriptEngine* operator->() const noexcept
+    {
+        return get();
+    }
+
+    asIScriptEngine* release() noexcept
+    {
+        return std::exchange(m_engine, nullptr);
+    }
+
+    void reset(asIScriptEngine* engine = nullptr) noexcept
+    {
+        if(m_engine)
+            m_engine->ShutDownAndRelease();
+        m_engine = engine;
+    }
+
+private:
+    asIScriptEngine* m_engine;
+};
+
+inline script_engine make_script_engine(asDWORD version = ANGELSCRIPT_VERSION)
+{
+    return script_engine(
+        AS_NAMESPACE_QUALIFIER asCreateScriptEngine(version)
+    );
+}
+
 /**
  * @brief Wrap `asAllocMem()` and `asFreeMem()` as a C++ allocator
  */
@@ -815,13 +999,14 @@ public:
 
     static pointer allocate(size_type n)
     {
-        return (pointer)asAllocMem(n * sizeof(value_type));
+        size_type size = n * sizeof(value_type);
+        return (pointer)(AS_NAMESPACE_QUALIFIER asAllocMem(size));
     }
 
     static void deallocate(pointer mem, size_type n) noexcept
     {
         (void)n; // unused
-        asFreeMem(mem);
+        AS_NAMESPACE_QUALIFIER asFreeMem(static_cast<void*>(mem));
     }
 };
 
@@ -990,15 +1175,57 @@ concept has_static_name =
     std::is_arithmetic_v<T> &&
     !std::same_as<T, char>;
 
-asIScriptFunction* get_default_factory(asITypeInfo* ti);
+inline asIScriptFunction* get_default_factory(asITypeInfo* ti)
+{
+    assert(ti != nullptr);
 
-asIScriptFunction* get_default_constructor(asITypeInfo* ti);
+    for(asUINT i = 0; i < ti->GetFactoryCount(); ++i)
+    {
+        asIScriptFunction* func = ti->GetFactoryByIndex(i);
+        if(func->GetParamCount() == 0)
+            return func;
+    }
 
-int translate_three_way(std::weak_ordering ord) noexcept;
-std::strong_ordering translate_opCmp(int cmp) noexcept;
+    return nullptr;
+}
 
-void set_script_exception(asIScriptContext* ctx, const char* info);
-void set_script_exception(asIScriptContext* ctx, const std::string& info);
+inline asIScriptFunction* get_default_constructor(asITypeInfo* ti)
+{
+    assert(ti != nullptr);
+
+    for(asUINT i = 0; i < ti->GetBehaviourCount(); ++i)
+    {
+        asEBehaviours beh;
+        asIScriptFunction* func = ti->GetBehaviourByIndex(i, &beh);
+        if(beh == asBEHAVE_CONSTRUCT)
+        {
+            if(func->GetParamCount() == 0)
+                return func;
+        }
+    }
+
+    return nullptr;
+}
+
+inline int translate_three_way(std::weak_ordering ord) noexcept
+{
+    if(ord < 0)
+        return -1;
+    else if(ord > 0)
+        return 1;
+    else
+        return 0;
+}
+
+inline std::strong_ordering translate_opCmp(int cmp) noexcept
+{
+    if(cmp < 0)
+        return std::strong_ordering::less;
+    else if(cmp > 0)
+        return std::strong_ordering::greater;
+    else
+        return std::strong_ordering::equivalent;
+}
 
 /**
  * @brief Set the script exception to currently active context.
@@ -1007,8 +1234,17 @@ void set_script_exception(asIScriptContext* ctx, const std::string& info);
  *
  * @param info Exception information
  */
-void set_script_exception(const char* info);
-void set_script_exception(const std::string& info);
+inline void set_script_exception(const char* info)
+{
+    asIScriptContext* ctx = current_context();
+    if(ctx)
+        ctx->SetException(info);
+}
+
+inline void set_script_exception(const std::string& info)
+{
+    set_script_exception(info.c_str());
+}
 
 template <typename T>
 struct type_traits;

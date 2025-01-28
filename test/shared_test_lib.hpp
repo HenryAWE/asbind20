@@ -44,7 +44,7 @@ public:
 
     asIScriptEngine* get_engine() const noexcept
     {
-        return m_engine;
+        return m_engine.get();
     }
 
     void run_file(
@@ -56,7 +56,7 @@ protected:
     virtual void register_all();
 
 private:
-    asIScriptEngine* m_engine = nullptr;
+    asbind20::script_engine m_engine;
 };
 
 class asbind_test_suite_generic : public asbind_test_suite

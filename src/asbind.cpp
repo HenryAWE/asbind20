@@ -1,4 +1,5 @@
 #include <asbind20/asbind.hpp>
+#include <cstring>
 
 namespace asbind20
 {
@@ -11,10 +12,13 @@ const char* library_version() noexcept
 #endif
 }
 
-bool has_max_portability()
+bool has_max_portability(const char* options)
 {
-    std::string_view options = asGetLibraryOptions();
+    return std::strstr(options, "AS_MAX_PORTABILITY") != nullptr;
+}
 
-    return options.find("AS_MAX_PORTABILITY") != options.npos;
+bool has_exceptions(const char* options)
+{
+    return std::strstr(options, "AS_NO_EXCEPTIONS") == nullptr;
 }
 } // namespace asbind20

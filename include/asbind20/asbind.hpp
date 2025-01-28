@@ -27,7 +27,17 @@ const char* library_version() noexcept;
  * @brief Check if `asGetLibraryOptions()` returns "AS_MAX_PORTABILITY"
  */
 [[nodiscard]]
-bool has_max_portability();
+bool has_max_portability(
+    const char* options = AS_NAMESPACE_QUALIFIER asGetLibraryOptions()
+);
+
+/**
+ * @brief Check if `asGetLibraryOptions()` doesn't return "AS_NO_EXCEPTION"
+ */
+[[nodiscard]]
+bool has_exceptions(
+    const char* options = AS_NAMESPACE_QUALIFIER asGetLibraryOptions()
+);
 } // namespace asbind20
 
 #endif

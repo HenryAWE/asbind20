@@ -89,8 +89,12 @@ int main(int argc, char* argv[])
 
     asbind20::global g(engine);
     g
-        .message_callback<&message_callback>()
-        .exception_translator<&ex_translator>();
+        .message_callback<&message_callback>();
+    if(asbind20::has_exceptions())
+        g.exception_translator<&ex_translator>();
+    else
+        std::cout << "[asexec] AS_NO_EXCEPTIONS is defined" << std::endl;
+
     asbind20::ext::register_script_optional(engine, use_generic);
     asbind20::ext::register_script_array(engine, use_generic);
     asbind20::ext::register_math_constants(engine);
