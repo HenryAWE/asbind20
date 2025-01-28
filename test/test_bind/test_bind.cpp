@@ -167,6 +167,52 @@ void my_to_str2(int prefix_num, void* ref, int type_id, std::string& out)
 
     out = std::move(result);
 }
+
+class member_var_type
+{
+public:
+    member_var_type() = default;
+    member_var_type(const member_var_type&) = default;
+
+    ~member_var_type() = default;
+
+    std::string mem_to_str1(void* ref, int type_id)
+    {
+        return my_to_str(ref, type_id);
+    }
+
+    void mem_to_str2(int prefix_num, void* ref, int type_id, std::string& out)
+    {
+        my_to_str2(prefix_num + m_prefix_offset, ref, type_id, out);
+    }
+
+private:
+    int m_prefix_offset = -1;
+};
+
+// objfirst
+std::string mem_to_str3(member_var_type& v, void* ref, int type_id)
+{
+    return v.mem_to_str1(ref, type_id);
+}
+
+// objfirst
+void mem_to_str4(member_var_type& v, int prefix_num, void* ref, int type_id, std::string& out)
+{
+    return v.mem_to_str2(prefix_num, ref, type_id, out);
+}
+
+// objlast
+std::string mem_to_str5(void* ref, int type_id, member_var_type& v)
+{
+    return v.mem_to_str1(ref, type_id);
+}
+
+// objlast
+void mem_to_str6(int prefix_num, void* ref, int type_id, std::string& out, member_var_type& v)
+{
+    v.mem_to_str2(prefix_num, ref, type_id, out);
+}
 } // namespace test_bind
 
 TEST_F(asbind_test_suite, generic_wrapper)
@@ -179,6 +225,14 @@ TEST_F(asbind_test_suite, generic_wrapper)
     asGENFUNC_t out_str_gen = generic_wrapper<&test_bind::out_str, asCALL_CDECL>();
     asGENFUNC_t my_to_str_gen = generic_wrapper<&test_bind::my_to_str, asCALL_CDECL>(var_type<0>);
     asGENFUNC_t my_to_str2_gen = generic_wrapper<&test_bind::my_to_str2, asCALL_CDECL>(var_type<1>);
+
+    using test_bind::member_var_type;
+    asGENFUNC_t mem_to_str1 = generic_wrapper<&member_var_type::mem_to_str1, asCALL_THISCALL>(var_type<0>);
+    asGENFUNC_t mem_to_str2 = generic_wrapper<&member_var_type::mem_to_str2, asCALL_THISCALL>(var_type<1>);
+    asGENFUNC_t mem_to_str3 = generic_wrapper<&test_bind::mem_to_str3, asCALL_CDECL_OBJFIRST>(var_type<0>);
+    asGENFUNC_t mem_to_str4 = generic_wrapper<&test_bind::mem_to_str4, asCALL_CDECL_OBJFIRST>(var_type<1>);
+    asGENFUNC_t mem_to_str5 = generic_wrapper<&test_bind::mem_to_str5, asCALL_CDECL_OBJLAST>(var_type<0>);
+    asGENFUNC_t mem_to_str6 = generic_wrapper<&test_bind::mem_to_str6, asCALL_CDECL_OBJLAST>(var_type<1>);
 
     {
         constexpr auto result = detail::gen_script_arg_idx<2>(var_type<0>);
@@ -212,6 +266,17 @@ TEST_F(asbind_test_suite, generic_wrapper)
         .function("string my_to_str(const ?&in)", my_to_str_gen)
         .function("void my_to_str2(int prefix_num, const ?&in, string&out)", my_to_str2_gen);
 
+    value_class<member_var_type, true>(
+        engine, "member_var_type", asOBJ_APP_CLASS_ALLINTS
+    )
+        .behaviours_by_traits()
+        .method("string to_str1(const ?&in)", mem_to_str1)
+        .method("void to_str2(int prefix_num, const ?&in, string&out)", mem_to_str2)
+        .method("string to_str3(const ?&in)", mem_to_str3)
+        .method("void to_str4(int prefix_num, const ?&in, string&out)", mem_to_str4)
+        .method("string to_str5(const ?&in)", mem_to_str5)
+        .method("void to_str6(int prefix_num, const ?&in, string&out)", mem_to_str6);
+
     asIScriptModule* m = engine->GetModule("test_generic", asGM_ALWAYS_CREATE);
 
     m->AddScriptSection(
@@ -227,12 +292,35 @@ TEST_F(asbind_test_suite, generic_wrapper)
         "my_to_str2(1, false, result);"
         "assert(result == \"1: false\");"
         "}"
+        "void test_member()\n"
+        "{\n"
+        "string result;\n"
+        "member_var_type v;\n"
+        "assert(v.to_str1(1013) == \"1013\");\n"
+        "assert(v.to_str3(1013) == \"1013\");\n"
+        "assert(v.to_str5(1013) == \"1013\");\n"
+        "v.to_str2(1, false, result);\n"
+        "assert(result == \"0: false\");\n"
+        "v.to_str4(1, false, result);\n"
+        "assert(result == \"0: false\");\n"
+        "v.to_str6(1, false, result);\n"
+        "assert(result == \"0: false\");\n"
+        "}"
     );
     ASSERT_GE(m->Build(), 0);
 
     {
         request_context ctx(engine);
         asIScriptFunction* func = m->GetFunctionByDecl("void main()");
+        ASSERT_TRUE(func);
+        auto result = script_invoke<void>(ctx, func);
+        EXPECT_TRUE(result_has_value(result));
+    }
+
+    {
+        request_context ctx(engine);
+        asIScriptFunction* func = m->GetFunctionByDecl("void test_member()");
+        ASSERT_TRUE(func);
         auto result = script_invoke<void>(ctx, func);
         EXPECT_TRUE(result_has_value(result));
     }
