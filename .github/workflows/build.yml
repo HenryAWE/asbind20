@@ -134,3 +134,48 @@ jobs:
       - name: Test
         working-directory: ${{github.workspace}}/build
         run: ctest
+
+    Emscripten:
+      runs-on: ubuntu-24.04
+
+      name: Emscripten
+
+      steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+            sudo apt-get update
+            sudo apt-get install -y cmake ninja-build
+
+      - name: Setup emsdk
+        uses: mymindstorm/setup-emsdk@v14
+
+      - name: Install AngelScript
+        working-directory: /tmp
+        run: |
+          git clone https://github.com/codecat/angelscript-mirror.git
+          cd angelscript-mirror
+          git reset --hard d259eab41fd08fbde83cf1a7b01f4def6a09e895 # 2.37.0
+          cd sdk/angelscript/projects/cmake
+          emcmake cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS=-fexceptions -S . -B build
+          cmake --build build
+          cmake --install build
+
+      - name: Configure
+        run: >
+          emcmake cmake
+          -S ${{github.workspace}}
+          -B build
+          -G Ninja
+          -DCMAKE_CXX_STANDARD=20
+          -DCMAKE_BUILD_TYPE=Release
+          -Dasbind_build_ext=1
+          -Dasbind_build_test=1
+
+      - name: Build
+        run: cmake --build ${{github.workspace}}/build
+
+      - name: Test
+        working-directory: ${{github.workspace}}/build
+        run: ctest
