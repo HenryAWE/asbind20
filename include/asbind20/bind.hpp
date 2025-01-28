@@ -10,7 +10,7 @@
 #include <tuple>
 #include <algorithm>
 #include <functional>
-#include "detail/include_as.hpp"
+#include "detail/include_as.hpp" // IWYU pragma: keep
 #include "utility.hpp"
 #include "generic.hpp"
 
@@ -167,7 +167,7 @@ namespace wrappers
         typename Class,
         asECallConvTypes OriginalCallConv>
     requires(OriginalCallConv == asCALL_CDECL_OBJFIRST || OriginalCallConv == asCALL_CDECL_OBJLAST)
-    class constrctor_function
+    class constructor_function
     {
     public:
         static constexpr bool is_acceptable_native_call_conv(asECallConvTypes conv) noexcept
@@ -1043,9 +1043,50 @@ global(const script_engine&) -> global<false>;
 
 namespace detail
 {
-    std::string generate_member_funcdef(
+    inline std::string generate_member_funcdef(
         const char* type, std::string_view funcdef
-    );
+    )
+    {
+        // Firstly, find the begin of parameters
+        auto param_being = std::find(funcdef.rbegin(), funcdef.rend(), '(');
+        if(param_being != funcdef.rend())
+        {
+            ++param_being; // Skip '('
+
+            // Skip possible whitespaces between the function name and the parameters
+            param_being = std::find_if_not(
+                param_being,
+                funcdef.rend(),
+                [](char ch) -> bool
+                { return ch == ' '; }
+            );
+        }
+        auto name_begin = std::find_if_not(
+            param_being,
+            funcdef.rend(),
+            [](char ch) -> bool
+            {
+                return ('0' <= ch && ch <= '9') ||
+                       ('a' <= ch && ch <= 'z') ||
+                       ('A' <= ch && ch <= 'Z') ||
+                       ch == '_' ||
+                       static_cast<std::uint8_t>(ch) > 127;
+            }
+        );
+
+        using namespace std::literals;
+
+        std::string_view return_type(funcdef.begin(), name_begin.base());
+        if(return_type.back() == ' ')
+            return_type.remove_suffix(1);
+        return string_concat(
+            return_type,
+            ' ',
+            type,
+            "::"sv,
+            std::string_view(name_begin.base(), funcdef.end())
+        );
+    }
 } // namespace detail
 
 template <bool ForceGeneric>
@@ -1629,7 +1670,7 @@ private:
     )
     {
         asGENFUNC_t wrapper =
-            wrappers::constrctor_function<Function, Class, CallConv>{}(use_generic);
+            wrappers::constructor_function<Function, Class, CallConv>{}(use_generic);
 
         if(explicit_)
         {

@@ -26,18 +26,11 @@ project(
 find_package(Threads REQUIRED)
 find_package(Angelscript 2.37.0 CONFIG REQUIRED)
 
-add_library(asbind20 STATIC)
-
- # Enable warnings for development
-target_compile_options(asbind20 PRIVATE
-    $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
-    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic -Werror>
-)
+add_library(asbind20 INTERFACE)
 
 # Add an ALIAS target for using the library by add_subdirectory()
 add_library(asbind20::asbind20 ALIAS asbind20)
 
-file(GLOB_RECURSE asbind20_src "include/asbind20/*.hpp" "src/*.cpp")
 option(asbind_build_ext "Build extensions" ON)
 
 include(GNUInstallDirs)
@@ -66,16 +59,11 @@ if(${asbind_build_ext})
     add_subdirectory(ext)
 endif()
 
-target_sources(asbind20 PRIVATE ${asbind20_src})
-target_include_directories(asbind20 PUBLIC
+target_include_directories(asbind20 INTERFACE
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
-target_link_libraries(asbind20 PUBLIC Threads::Threads)
-target_link_libraries(asbind20 PUBLIC Angelscript::angelscript)
-target_compile_definitions(asbind20
-    PRIVATE $<$<CONFIG:Debug>:ASBIND20_DEBUG=1>
-)
+target_link_libraries(asbind20 INTERFACE Angelscript::angelscript)
 
 install(
     TARGETS asbind20

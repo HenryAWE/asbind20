@@ -1,29 +1,49 @@
-#include <asbind20/utility.hpp>
-#include <cassert>
-#include <stdexcept>
-#include <asbind20/invoke.hpp>
+#include <asbind20/ext/exec.hpp>
+#include <fstream>
+#include <sstream>
 
-namespace asbind20
+namespace asbind20::ext
 {
-std::string extract_string(asIStringFactory* factory, void* str)
+int load_string(
+    asIScriptModule* m,
+    const char* section_name,
+    std::string_view code,
+    int line_offset
+)
 {
-    assert(factory);
+    assert(m != nullptr);
 
-    asUINT sz = 0;
-    if(factory->GetRawStringData(str, nullptr, &sz) < 0)
+    return m->AddScriptSection(
+        section_name,
+        code.data(),
+        code.size(),
+        line_offset
+    );
+}
+
+int load_file(
+    asIScriptModule* m,
+    const std::filesystem::path& filename,
+    std::ios_base::openmode mode
+)
+{
+    assert(m != nullptr);
+
+    std::string code;
     {
-        throw std::runtime_error("failed to get raw string data");
+        std::ifstream ifs(filename, std::ios_base::in | mode);
+        if(!ifs.good())
+            return asERROR;
+        std::stringstream ss;
+        ss << ifs.rdbuf();
+        code = std::move(ss).str();
     }
 
-    std::string result;
-    result.resize(sz);
-
-    if(factory->GetRawStringData(str, result.data(), nullptr) < 0)
-    {
-        throw std::runtime_error("failed to get raw string data");
-    }
-
-    return result;
+    return load_string(
+        m,
+        reinterpret_cast<const char*>(filename.u8string().c_str()),
+        code
+    );
 }
 
 namespace detail
@@ -92,4 +112,4 @@ int exec(
 
     return r;
 }
-} // namespace asbind20
+} // namespace asbind20::ext

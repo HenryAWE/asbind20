@@ -2,6 +2,7 @@
 #include <asbind20/asbind.hpp>
 #include <asbind20/ext/array.hpp>
 #include <asbind20/ext/stdstring.hpp>
+#include <asbind20/ext/exec.hpp>
 
 void my_print(const std::string& msg)
 {
@@ -21,7 +22,7 @@ int main()
     asbind20::global(engine)
         .function<&my_print>(asbind20::use_generic, "void print(const string&in msg)");
 
-    int result = asbind20::exec(engine, R"(print("hello");)");
+    int result = asbind20::ext::exec(engine, R"(print("hello");)");
 
     return result == asSUCCESS ? 0 : 1;
 }

@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <shared_test_lib.hpp>
 #include <asbind20/asbind.hpp>
+#include <asbind20/ext/exec.hpp>
 
 using namespace asbind_test;
 
@@ -66,11 +67,11 @@ TEST_F(asbind_test_suite, global)
     register_global_funcs(engine, wrapper, val);
 
     EXPECT_EQ(val, "val");
-    asbind20::exec(engine, "val = \"new string\"");
+    asbind20::ext::exec(engine, "val = \"new string\"");
     EXPECT_EQ(val, "new string");
 
     EXPECT_EQ(wrapper.value, 0);
-    asbind20::exec(engine, "set_val(gen_int())");
+    asbind20::ext::exec(engine, "set_val(gen_int())");
     EXPECT_EQ(wrapper.value, 42);
 
     {
@@ -99,11 +100,11 @@ TEST_F(asbind_test_suite_generic, global)
     register_global_funcs(asbind20::use_generic, engine, wrapper, val);
 
     EXPECT_EQ(val, "val");
-    asbind20::exec(engine, "val = \"new string\"");
+    asbind20::ext::exec(engine, "val = \"new string\"");
     EXPECT_EQ(val, "new string");
 
     EXPECT_EQ(wrapper.value, 0);
-    asbind20::exec(engine, "set_val(gen_int())");
+    asbind20::ext::exec(engine, "set_val(gen_int())");
     EXPECT_EQ(wrapper.value, 42);
 
     {

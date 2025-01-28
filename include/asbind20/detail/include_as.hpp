@@ -1,3 +1,10 @@
+/**
+ * @file include_as.hpp
+ * @author HenryAWE
+ *
+ * @brief Helper header for including AngelScript
+ */
+
 #ifndef ASBIND20_DETAIL_INCLUDE_AS_HPP
 #define ASBIND20_DETAIL_INCLUDE_AS_HPP
 

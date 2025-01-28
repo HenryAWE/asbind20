@@ -1,13 +1,13 @@
-#ifndef ASBIND20_BUILDER_HPP
-#define ASBIND20_BUILDER_HPP
+#ifndef ASBIND20_EXT_EXEC_HPP
+#define ASBIND20_EXT_EXEC_HPP
 
 #pragma once
 
+#include <ios>
 #include <filesystem>
-#include <string>
-#include "detail/include_as.hpp"
+#include <asbind20/asbind.hpp>
 
-namespace asbind20
+namespace asbind20::ext
 {
 /**
  * @brief Load a string as script section
@@ -31,6 +31,15 @@ int load_file(
     const std::filesystem::path& filename,
     std::ios_base::openmode mode = std::ios_base::in
 );
-} // namespace asbind20
+
+/**
+ * @brief Execute a piece of AngelScript code
+ */
+int exec(
+    asIScriptEngine* engine,
+    std::string_view code,
+    asIScriptContext* ctx = nullptr
+);
+} // namespace asbind20::ext
 
 #endif

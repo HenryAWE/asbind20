@@ -1,7 +1,29 @@
 #include <asbind20/ext/assert.hpp>
+#include <stdexcept>
 
 namespace asbind20::ext
 {
+std::string extract_string(asIStringFactory* factory, void* str)
+{
+    assert(factory);
+
+    asUINT sz = 0;
+    if(factory->GetRawStringData(str, nullptr, &sz) < 0)
+    {
+        throw std::runtime_error("failed to get raw string data");
+    }
+
+    std::string result;
+    result.resize(sz);
+
+    if(factory->GetRawStringData(str, result.data(), nullptr) < 0)
+    {
+        throw std::runtime_error("failed to get raw string data");
+    }
+
+    return result;
+}
+
 class script_assert_impl
 {
 public:

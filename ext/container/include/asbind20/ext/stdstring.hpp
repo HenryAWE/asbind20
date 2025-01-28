@@ -171,7 +171,7 @@ namespace detail
         const_string_iterator& operator++()
         {
             std::size_t next_offset = u8_index(m_str.substr(m_offset), 1);
-            if(next_offset == -1)
+            if(next_offset == std::size_t(-1))
                 m_offset = m_str.size();
             else
                 m_offset += next_offset;
@@ -190,7 +190,7 @@ namespace detail
         const_string_iterator& operator--()
         {
             std::size_t prev_offset = u8_index_r(m_str.substr(0, m_offset), 1);
-            if(prev_offset == -1)
+            if(prev_offset == std::size_t(-1))
                 prev_offset = 0;
             m_offset = prev_offset;
 

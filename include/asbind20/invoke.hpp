@@ -5,9 +5,8 @@
 
 #include <tuple>
 #include <functional>
-#include "detail/include_as.hpp"
+#include "detail/include_as.hpp" // IWYU pragma: keep
 #include "utility.hpp"
-#include "generic.hpp"
 
 namespace asbind20
 {
@@ -186,8 +185,8 @@ class script_invoke_result<R&>
 public:
     using value_type = R&;
 
-    script_invoke_result(R& result)
-        : m_r(asEXECUTION_FINISHED), m_ptr(std::addressof(result))
+    script_invoke_result(R& result) noexcept
+        : m_ptr(std::addressof(result)), m_r(asEXECUTION_FINISHED)
     {}
 
     script_invoke_result(bad_result_t, int r) noexcept

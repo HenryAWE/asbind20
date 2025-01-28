@@ -8,6 +8,16 @@
 
 namespace asbind20::ext
 {
+/**
+ * @brief Extracts the contents from a script string without knowing the underlying type
+ *
+ * @param factory The string factory
+ * @param str The pointer to script string
+ *
+ * @return std::string Result string
+ */
+std::string extract_string(asIStringFactory* factory, void* str);
+
 using assert_handler_t = void(std::string_view);
 
 std::function<assert_handler_t> register_script_assert(

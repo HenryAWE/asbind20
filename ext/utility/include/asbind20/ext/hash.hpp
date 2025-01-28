@@ -1,5 +1,5 @@
-#ifndef ASBIND20_EXT_HELPER_HPP
-#define ASBIND20_EXT_HELPER_HPP
+#ifndef ASBIND20_EXT_HASH_HPP
+#define ASBIND20_EXT_HASH_HPP
 
 #pragma once
 

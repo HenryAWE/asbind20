@@ -4,7 +4,7 @@
 #include <asbind20/ext/stdstring.hpp>
 #include <asbind20/ext/assert.hpp>
 #include <asbind20/ext/math.hpp>
-#include <asbind20/builder.hpp>
+#include <asbind20/ext/exec.hpp>
 
 namespace asbind_test
 {
@@ -87,7 +87,7 @@ void asbind_test_suite::run_file(
 
     asIScriptModule* m = m_engine->GetModule("run_file", asGM_ALWAYS_CREATE);
 
-    int r = asbind20::load_file(
+    int r = asbind20::ext::load_file(
         m,
         filename
     );

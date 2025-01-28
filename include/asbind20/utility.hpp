@@ -7,12 +7,12 @@
 #include <cstddef>
 #include <string>
 #include <utility>
-#include <mutex>
+#include <mutex> // IWYU pragma: keep for std::lock_guard
 #include <compare>
 #include <functional>
 #include <type_traits>
 #include <concepts>
-#include "detail/include_as.hpp"
+#include "detail/include_as.hpp" // IWYU pragma: keep
 
 namespace asbind20
 {
@@ -354,16 +354,6 @@ inline auto sizeof_script_type(asIScriptEngine* engine, int type_id)
 
     return ti->GetSize();
 }
-
-/**
- * @brief Extracts the contents from a script string without knowing the underlying type
- *
- * @param factory The string factory
- * @param str The pointer to script string
- *
- * @return std::string Result string
- */
-std::string extract_string(asIStringFactory* factory, void* str);
 
 /**
  * @brief Copy a single primitive value
@@ -1300,15 +1290,6 @@ struct type_traits<script_object>
 template <>
 struct type_traits<const script_object> : public type_traits<script_object>
 {};
-
-/**
- * @brief Execute a piece of AngelScript code
- */
-int exec(
-    asIScriptEngine* engine,
-    std::string_view code,
-    asIScriptContext* ctx = nullptr
-);
 } // namespace asbind20
 
 #endif
