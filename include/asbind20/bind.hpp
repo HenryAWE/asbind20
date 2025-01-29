@@ -16,8 +16,8 @@
 
 namespace asbind20
 {
-#ifdef __GNUC__
-#    if !(__GNUC__ >= 13 && __GNUC_MINOR__ >= 2)
+#if defined(__GNUC__) && !defined(__clang__)
+#    if !(__GNUC__ >= 14 || (__GNUC__ >= 13 && __GNUC_MINOR__ >= 2))
 // GCC 12 has bug for NTTP function pointer without linkage
 // Fixed in GCC 13.2
 // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=83258
@@ -504,15 +504,6 @@ namespace wrappers
             return this->template generate<CallConv>();
         }
     };
-
-    template <typename To>
-    concept opConv_acceptable_primitive =
-        !std::is_const_v<To> &&
-        !std::is_reference_v<To> &&
-        !std::is_pointer_v<To> &&
-        ((std::integral<To> && (sizeof(To) <= sizeof(asQWORD))) ||
-         std::same_as<To, float> ||
-         std::same_as<To, double>);
 
     template <typename Class, typename To>
     class opConv

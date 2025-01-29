@@ -1248,61 +1248,6 @@ inline void set_script_exception(const std::string& info)
 {
     set_script_exception(info.c_str());
 }
-
-template <typename T>
-struct type_traits;
-
-template <>
-struct type_traits<std::byte>
-{
-    static int set_arg(asIScriptContext* ctx, asUINT arg, std::byte val)
-    {
-        return ctx->SetArgByte(arg, static_cast<asBYTE>(val));
-    }
-
-    static std::byte get_arg(asIScriptGeneric* gen, asUINT arg)
-    {
-        return static_cast<std::byte>(gen->GetArgByte(arg));
-    }
-
-    static int set_return(asIScriptGeneric* gen, std::byte val)
-    {
-        return gen->SetReturnByte(static_cast<asBYTE>(val));
-    }
-
-    static std::byte get_return(asIScriptContext* ctx)
-    {
-        return static_cast<std::byte>(ctx->GetReturnByte());
-    }
-};
-
-template <>
-struct type_traits<script_object>
-{
-    static int set_arg(asIScriptContext* ctx, asUINT arg, const script_object& val)
-    {
-        return ctx->SetArgObject(arg, val.get());
-    }
-
-    static script_object get_arg(asIScriptGeneric* gen, asUINT arg)
-    {
-        return script_object(static_cast<asIScriptObject*>(gen->GetArgObject(arg)));
-    }
-
-    static int set_return(asIScriptGeneric* gen, const script_object& val)
-    {
-        return gen->SetReturnObject(val.get());
-    }
-
-    static script_object get_return(asIScriptContext* ctx)
-    {
-        return script_object(static_cast<asIScriptObject*>(ctx->GetReturnObject()));
-    }
-};
-
-template <>
-struct type_traits<const script_object> : public type_traits<script_object>
-{};
 } // namespace asbind20
 
 #endif

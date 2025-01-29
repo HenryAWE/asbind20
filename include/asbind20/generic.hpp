@@ -7,6 +7,7 @@
 #include <algorithm>
 #include "detail/include_as.hpp" // IWYU pragma: keep
 #include "utility.hpp"
+#include "type_traits.hpp"
 
 namespace asbind20
 {
@@ -73,12 +74,12 @@ template <typename T>
 T get_generic_arg(asIScriptGeneric* gen, asUINT idx)
 {
     constexpr bool is_customized = requires() {
-        { type_traits<T>::get_arg(gen, idx) } -> std::convertible_to<T>;
+        { type_traits<std::remove_cv_t<T>>::get_arg(gen, idx) } -> std::convertible_to<T>;
     };
 
     if constexpr(is_customized)
     {
-        return type_traits<T>::get_arg(gen, idx);
+        return type_traits<std::remove_cv_t<T>>::get_arg(gen, idx);
     }
     else if constexpr(
         std::is_same_v<std::remove_cv_t<T>, asITypeInfo*> ||
@@ -151,12 +152,12 @@ template <typename T>
 void set_generic_return(asIScriptGeneric* gen, T&& ret)
 {
     constexpr bool is_customized = requires() {
-        { type_traits<T>::set_return(gen, std::forward<T>(ret)) } -> std::same_as<int>;
+        { type_traits<std::remove_cv_t<T>>::set_return(gen, std::forward<T>(ret)) } -> std::same_as<int>;
     };
 
     if constexpr(is_customized)
     {
-        type_traits<T>::set_return(gen, std::forward<T>(ret));
+        type_traits<std::remove_cv_t<T>>::set_return(gen, std::forward<T>(ret));
     }
     else if constexpr(std::is_reference_v<T>)
     {
@@ -619,20 +620,6 @@ template <
     native_function auto Function,
     asECallConvTypes OriginalConv>
 constexpr inline generic_wrapper_t<Function, OriginalConv> generic_wrapper{};
-
-/**
- * @brief Get an enumeration value using its underlying type, instead of `int`
- *
- * This can be used to deal with type like `std::byte`.
- */
-template <typename Enum>
-requires(std::is_enum_v<Enum>)
-Enum get_generic_as_underlying(asIScriptGeneric* gen, asUINT idx)
-{
-    return static_cast<Enum>(
-        get_generic_arg<std::underlying_type_t<Enum>>(gen, idx)
-    );
-}
 } // namespace asbind20
 
 #endif

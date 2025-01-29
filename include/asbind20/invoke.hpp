@@ -7,6 +7,7 @@
 #include <functional>
 #include "detail/include_as.hpp" // IWYU pragma: keep
 #include "utility.hpp"
+#include "type_traits.hpp"
 
 namespace asbind20
 {
