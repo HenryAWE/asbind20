@@ -6,6 +6,7 @@
 #include <asbind20/ext/stdstring.hpp>
 #include <asbind20/ext/math.hpp>
 #include <asbind20/ext/hash.hpp>
+#include <asbind20/ext/exec.hpp>
 
 void script_print(const std::string& str, bool newline)
 {
@@ -89,9 +90,9 @@ int main(int argc, char* argv[])
 
     asbind20::global g(engine);
     g
-        .message_callback<&message_callback>();
+        .message_callback(&message_callback);
     if(asbind20::has_exceptions())
-        g.exception_translator<&ex_translator>();
+        g.exception_translator(&ex_translator);
     else
         std::cout << "[asexec] AS_NO_EXCEPTIONS is defined" << std::endl;
 
@@ -106,7 +107,7 @@ int main(int argc, char* argv[])
         .function<&script_print>(asbind20::use_generic, "void print(const string&in str, bool newline=true)");
 
     asIScriptModule* m = engine->GetModule("asexec", asGM_ALWAYS_CREATE);
-    int r = asbind20::load_file(
+    int r = asbind20::ext::load_file(
         m,
         argv[1]
     );

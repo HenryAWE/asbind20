@@ -291,11 +291,19 @@ template <int TypeId>
 using primitive_type_of_t = typename primitive_type_of<TypeId>::type;
 
 /**
+ * @brief Check if a type id refers to void
+ */
+constexpr bool is_void(int type_id) noexcept
+{
+    return type_id == (AS_NAMESPACE_QUALIFIER asTYPEID_VOID);
+}
+
+/**
  * @brief Check if a type id refers to a primitive type
  */
 constexpr bool is_primitive_type(int type_id) noexcept
 {
-    return !(type_id & ~asTYPEID_MASK_SEQNBR);
+    return !(type_id & ~(AS_NAMESPACE_QUALIFIER asTYPEID_MASK_SEQNBR));
 }
 
 /**
@@ -303,7 +311,7 @@ constexpr bool is_primitive_type(int type_id) noexcept
  */
 constexpr bool is_objhandle(int type_id) noexcept
 {
-    return type_id & asTYPEID_OBJHANDLE;
+    return type_id & (AS_NAMESPACE_QUALIFIER asTYPEID_OBJHANDLE);
 }
 
 /**
@@ -426,7 +434,7 @@ requires(sizeof...(VoidPtrs) > 0)
 decltype(auto) visit_primitive_type(Visitor&& vis, int type_id, VoidPtrs... args)
 {
     assert(is_primitive_type(type_id) && "Must be a primitive type");
-    assert(type_id != asTYPEID_VOID && "Must not be void");
+    assert(!is_void(type_id) && "Must not be void");
 
     auto wrapper = [&]<typename T>(std::in_place_type_t<T>) -> decltype(auto)
     {
