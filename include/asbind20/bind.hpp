@@ -16,6 +16,15 @@
 
 namespace asbind20
 {
+#ifdef __GNUC__
+#    if !(__GNUC__ >= 13 && __GNUC_MINOR__ >= 2)
+// GCC 12 has bug for NTTP function pointer without linkage
+// Fixed in GCC 13.2
+// https://gcc.gnu.org/bugzilla/show_bug.cgi?id=83258
+#        define ASBIND20_WORKAROUND_NTTP_FP_LINKAGE
+#    endif
+#endif
+
 class [[nodiscard]] namespace_
 {
 public:
@@ -2361,11 +2370,19 @@ public:
         call_conv_t<CallConv> = {}
     )
     {
+#ifdef ASBIND20_WORKAROUND_NTTP_FP_LINKAGE
+        static_assert(!sizeof(Lambda), "Current compiler has bug for compiling this function");
+        (void)decl;
+
+#else
         this->method_impl(
             decl,
             generic_wrapper<+Lambda{}, CallConv>(),
             call_conv<asCALL_GENERIC>
         );
+
+#endif
+
         return *this;
     }
 

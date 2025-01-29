@@ -193,11 +193,19 @@ void register_trivial_value_class(asbind20::use_generic_t, asIScriptEngine* engi
         .method<&test_bind::mul_obj_first>("void mul(int val)")
         .method<&test_bind::add_obj_last_ref>("void add2(int val)")
         .method<&test_bind::mul_obj_first_ref>("void mul2(int val)")
+#ifdef ASBIND20_WORKAROUND_NTTP_FP_LINKAGE
+        .method(
+            "void lambda_fun()",
+            [](asIScriptGeneric* gen) -> void
+            { get_generic_object<trivial_value_class&>(gen).value = 42; }
+        )
+#else
         .method(
             "void lambda_fun()",
             [](trivial_value_class& v)
             { v.value = 42; }
         )
+#endif
         .method<&test_bind::add_obj_last>("void add3(int val)")
         .method<&test_bind::mul_obj_first_ref>("void mul3(int val)")
         .property("int value", &trivial_value_class::value);

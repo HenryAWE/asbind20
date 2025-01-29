@@ -281,10 +281,14 @@ Detailed explanation of asbind20.
 3. [Customize Type Conversion Rules](./doc/custom_conv_rule.md)
 
 # Known Limitations
+Some feature of this library may not work on a broken compiler.
+
 1. Some version of Clang (<= 15) may fail to compile extension and test due to compiler bug.
 2. Some utilities are implemented by non-standard C++, but they are guaranteed to have correct result on common platforms, which are tested by CI.
 
 3. If you bind an overloaded function using syntax like `static_cast<return_type(*)()>(&func)` on MSVC, it may crash the compiler. The workaround is to write a standalone wrapper function with no overloading, then bind this wrapper to AngelScript.
+
+4. GCC 12 wrongly [rejects function pointer non-type template parameter without linkage](https://gcc.gnu.org/bugzilla/show_bug.cgi?id=83258). This will cause error when generating generic wrapper for a lambda. This has been fixed in GCC 13.2.
 
 # License
 [MIT License](./LICENSE)

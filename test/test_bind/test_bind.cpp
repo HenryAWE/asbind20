@@ -437,5 +437,8 @@ int main(int argc, char* argv[])
     std::cerr << "asGetLibraryVersion(): " << asGetLibraryVersion() << std::endl;
     std::cerr << "asGetLibraryOptions(): " << asGetLibraryOptions() << std::endl;
     std::cerr << "asbind20::library_version(): " << asbind20::library_version() << std::endl;
+#ifdef ASBIND20_WORKAROUND_NTTP_FP_LINKAGE
+    std::cerr << "ASBIND20_WORKAROUND_NTTP_FP_LINKAGE is defined" << std::endl;
+#endif
     return RUN_ALL_TESTS();
 }
