@@ -221,18 +221,18 @@ TEST_F(asbind_test_suite, generic_wrapper)
 
     asIScriptEngine* engine = get_engine();
 
-    asGENFUNC_t my_div_gen = generic_wrapper<&test_bind::my_div, asCALL_CDECL>();
-    asGENFUNC_t out_str_gen = generic_wrapper<&test_bind::out_str, asCALL_CDECL>();
-    asGENFUNC_t my_to_str_gen = generic_wrapper<&test_bind::my_to_str, asCALL_CDECL>(var_type<0>);
-    asGENFUNC_t my_to_str2_gen = generic_wrapper<&test_bind::my_to_str2, asCALL_CDECL>(var_type<1>);
+    asGENFUNC_t my_div_gen = to_asGENFUNC_t(fp<&test_bind::my_div>, call_conv<asCALL_CDECL>);
+    asGENFUNC_t out_str_gen = to_asGENFUNC_t(fp<&test_bind::out_str>, call_conv<asCALL_CDECL>);
+    asGENFUNC_t my_to_str_gen = to_asGENFUNC_t(fp<&test_bind::my_to_str>, call_conv<asCALL_CDECL>, var_type<0>);
+    asGENFUNC_t my_to_str2_gen = to_asGENFUNC_t(fp<&test_bind::my_to_str2>, call_conv<asCALL_CDECL>, var_type<1>);
 
     using test_bind::member_var_type;
-    asGENFUNC_t mem_to_str1 = generic_wrapper<&member_var_type::mem_to_str1, asCALL_THISCALL>(var_type<0>);
-    asGENFUNC_t mem_to_str2 = generic_wrapper<&member_var_type::mem_to_str2, asCALL_THISCALL>(var_type<1>);
-    asGENFUNC_t mem_to_str3 = generic_wrapper<&test_bind::mem_to_str3, asCALL_CDECL_OBJFIRST>(var_type<0>);
-    asGENFUNC_t mem_to_str4 = generic_wrapper<&test_bind::mem_to_str4, asCALL_CDECL_OBJFIRST>(var_type<1>);
-    asGENFUNC_t mem_to_str5 = generic_wrapper<&test_bind::mem_to_str5, asCALL_CDECL_OBJLAST>(var_type<0>);
-    asGENFUNC_t mem_to_str6 = generic_wrapper<&test_bind::mem_to_str6, asCALL_CDECL_OBJLAST>(var_type<1>);
+    asGENFUNC_t mem_to_str1 = to_asGENFUNC_t(fp<&member_var_type::mem_to_str1>, call_conv<asCALL_THISCALL>, var_type<0>);
+    asGENFUNC_t mem_to_str2 = to_asGENFUNC_t(fp<&member_var_type::mem_to_str2>, call_conv<asCALL_THISCALL>, var_type<1>);
+    asGENFUNC_t mem_to_str3 = to_asGENFUNC_t(fp<&test_bind::mem_to_str3>, call_conv<asCALL_CDECL_OBJFIRST>, var_type<0>);
+    asGENFUNC_t mem_to_str4 = to_asGENFUNC_t(fp<&test_bind::mem_to_str4>, call_conv<asCALL_CDECL_OBJFIRST>, var_type<1>);
+    asGENFUNC_t mem_to_str5 = to_asGENFUNC_t(fp<&test_bind::mem_to_str5>, call_conv<asCALL_CDECL_OBJLAST>, var_type<0>);
+    asGENFUNC_t mem_to_str6 = to_asGENFUNC_t(fp<&test_bind::mem_to_str6>, call_conv<asCALL_CDECL_OBJLAST>, var_type<1>);
 
     {
         constexpr auto result = detail::gen_script_arg_idx<2>(var_type<0>);
@@ -437,8 +437,5 @@ int main(int argc, char* argv[])
     std::cerr << "asGetLibraryVersion(): " << asGetLibraryVersion() << std::endl;
     std::cerr << "asGetLibraryOptions(): " << asGetLibraryOptions() << std::endl;
     std::cerr << "asbind20::library_version(): " << asbind20::library_version() << std::endl;
-#ifdef ASBIND20_WORKAROUND_NTTP_FP_LINKAGE
-    std::cerr << "ASBIND20_WORKAROUND_NTTP_FP_LINKAGE is defined" << std::endl;
-#endif
     return RUN_ALL_TESTS();
 }

@@ -173,12 +173,21 @@ assert(val.value() == 182376);
 # Advanced Features
 The asbind20 library also provides tools for advanced users. You can find detailed examples in extensions and unit tests.
 
-## 1. Automatically Generating Generic Wrapper at Compile-Time
-Generating generic wrapper by macro-free utilities.
+## 1. Generating Generic Wrapper at Compile-Time
+With the power of non-type template parameter (NTTP), asbind20 can generate generic wrapper by macro-free utilities. This can be useful for binding interface on platform without native calling convention support, e.g., Emscripten.
+
 ```c++
-// generic_wrapper<MyFunction, OriginalCallConv>();
-asGENFUNC_t f1 = asbind20::generic_wrapper<&global_func, asCALL_CDECL>();
-asGENFUNC_t f2 = asbind20::generic_wrapper<&my_class::method, asCALL_THISCALL>();
+// Helpers
+using asbind20::fp;
+using asbind20::call_conv;
+// Usage: to_asGENFUNC_t(fp<MyFunction>, call_conv<OriginalCallConv>);
+asGENFUNC_t f1 = asbind20::to_asGENFUNC_t(fp<&global_func>, call_conv<asCALL_CDECL>);
+asGENFUNC_t f2 = asbind20::to_asGENFUNC_t(fp<&my_class::method>, call_conv<asCALL_THISCALL>);
+using asbind20::var_type;
+// For function with variable type argument
+// void*, int pair in C++ / ?& in AngelScript
+// Use a helper to mark position of those special argument, i.e. index of the void*.
+asGENFUNC_t f3 = asbind20::to_asGENFUNC_t(fp<&var_type_func>, call_conv<asCALL_THISCALL>, var_type<0>);
 
 // Use `use_generic` tag to force generated proxies to use asCALL_GENERIC
 asbind20::value_class<my_value_class>(...)
@@ -288,7 +297,7 @@ Some feature of this library may not work on a broken compiler.
 
 3. If you bind an overloaded function using syntax like `static_cast<return_type(*)()>(&func)` on MSVC, it may crash the compiler. The workaround is to write a standalone wrapper function with no overloading, then bind this wrapper to AngelScript.
 
-4. GCC 12 wrongly [rejects function pointer non-type template parameter without linkage](https://gcc.gnu.org/bugzilla/show_bug.cgi?id=83258). This will cause error when generating generic wrapper for a lambda. This has been fixed in GCC 13.2.
+4. GCC 12 wrongly [rejects function pointer non-type template parameter without linkage](https://gcc.gnu.org/bugzilla/show_bug.cgi?id=83258). This will cause error when using wrapper with a lambda. This has been fixed in GCC 13.2.
 
 # License
 [MIT License](./LICENSE)

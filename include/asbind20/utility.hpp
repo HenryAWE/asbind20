@@ -183,9 +183,24 @@ concept native_function =
     detail::is_native_function_helper<std::decay_t<T>>;
 
 template <typename Lambda>
-concept noncapturing_lambda = requires(const Lambda& l) {
-    { +l } -> native_function;
+concept noncapturing_lambda = requires() {
+    { +Lambda{} } -> native_function;
+} && std::is_empty_v<Lambda>;
+
+template <native_function auto Function>
+struct fp_wrapper_t
+{
+    using function_type = std::decay_t<decltype(Function)>;
+
+    // Simulates a non-capturing lambda
+    constexpr function_type operator+() const noexcept
+    {
+        return Function;
+    };
 };
+
+template <native_function auto Function>
+constexpr inline fp_wrapper_t<Function> fp{};
 
 template <typename Func>
 asSFuncPtr to_asSFuncPtr(Func f)

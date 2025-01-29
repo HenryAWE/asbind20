@@ -60,6 +60,24 @@ TEST(utility, refptr_wrapper)
     }
 }
 
+namespace test_utility
+{
+int f1()
+{
+    return 1013;
+}
+} // namespace test_utility
+
+TEST(utility, fp_wrapper)
+{
+    using namespace asbind20;
+
+    constexpr auto wrapper = fp<&test_utility::f1>;
+    static_assert(noncapturing_lambda<decltype(wrapper)>);
+    static constexpr auto f1 = +wrapper;
+    EXPECT_EQ(f1(), 1013);
+}
+
 TEST(utility, string_concat)
 {
     using asbind20::string_concat;

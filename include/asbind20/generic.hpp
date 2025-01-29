@@ -11,6 +11,13 @@
 
 namespace asbind20
 {
+template <asECallConvTypes CallConv>
+struct call_conv_t
+{};
+
+template <asECallConvTypes CallConv>
+constexpr inline call_conv_t<CallConv> call_conv;
+
 template <std::size_t... Is>
 struct var_type_t : public std::index_sequence<Is...>
 {};
@@ -244,26 +251,26 @@ namespace detail
 } // namespace detail
 
 template <
-    native_function auto Function,
+    noncapturing_lambda Function,
     asECallConvTypes OriginalConv>
 requires(OriginalConv != asCALL_GENERIC)
-class generic_wrapper_t
+class generic_wrapper
 {
 public:
-    using function_type = std::decay_t<decltype(Function)>;
+    using function_type = decltype(+Function{});
 
     static_assert(
         !std::is_member_function_pointer_v<function_type> || OriginalConv == asCALL_THISCALL,
         "Invalid calling convention"
     );
 
-    constexpr generic_wrapper_t() noexcept = default;
+    constexpr generic_wrapper() noexcept = default;
 
-    constexpr generic_wrapper_t(const generic_wrapper_t&) noexcept = default;
+    constexpr generic_wrapper(const generic_wrapper&) noexcept = default;
 
-    static constexpr function_type underlying_function() noexcept
+    static consteval function_type underlying_function()
     {
-        return Function;
+        return +Function{};
     }
 
     static constexpr asECallConvTypes underlying_convention() noexcept
@@ -349,7 +356,7 @@ public:
             if constexpr(std::is_void_v<typename traits::return_type>)
             {
                 std::invoke(
-                    Function,
+                    underlying_function(),
                     get_generic_this(gen),
                     get_generic_arg<typename traits::template arg_type<Is>>(
                         gen, static_cast<asUINT>(Is)
@@ -361,7 +368,7 @@ public:
                 set_generic_return<typename traits::return_type>(
                     gen,
                     std::invoke(
-                        Function,
+                        underlying_function(),
                         get_generic_this(gen),
                         get_generic_arg<typename traits::template arg_type<Is>>(
                             gen, static_cast<asUINT>(Is)
@@ -381,7 +388,7 @@ public:
             if constexpr(std::is_void_v<typename traits::return_type>)
             {
                 std::invoke(
-                    Function,
+                    underlying_function(),
                     get_generic_this(gen),
                     get_generic_arg<typename traits::template arg_type<Is + 1>>(
                         gen, static_cast<asUINT>(Is)
@@ -393,7 +400,7 @@ public:
                 set_generic_return<typename traits::return_type>(
                     gen,
                     std::invoke(
-                        Function,
+                        underlying_function(),
                         get_generic_this(gen),
                         get_generic_arg<typename traits::template arg_type<Is + 1>>(
                             gen, static_cast<asUINT>(Is)
@@ -413,7 +420,7 @@ public:
             if constexpr(std::is_void_v<typename traits::return_type>)
             {
                 std::invoke(
-                    Function,
+                    underlying_function(),
                     get_generic_arg<typename traits::template arg_type<Is>>(
                         gen, static_cast<asUINT>(Is)
                     )...,
@@ -425,7 +432,7 @@ public:
                 set_generic_return<typename traits::return_type>(
                     gen,
                     std::invoke(
-                        Function,
+                        underlying_function(),
                         get_generic_arg<typename traits::template arg_type<Is>>(
                             gen, static_cast<asUINT>(Is)
                         )...,
@@ -443,7 +450,7 @@ public:
             if constexpr(std::is_void_v<typename traits::return_type>)
             {
                 std::invoke(
-                    Function,
+                    underlying_function(),
                     get_generic_arg<typename traits::template arg_type<Is>>(
                         gen, static_cast<asUINT>(Is)
                     )...
@@ -454,7 +461,7 @@ public:
                 set_generic_return<typename traits::return_type>(
                     gen,
                     std::invoke(
-                        Function,
+                        underlying_function(),
                         get_generic_arg<typename traits::template arg_type<Is>>(
                             gen, static_cast<asUINT>(Is)
                         )...
@@ -475,7 +482,7 @@ public:
             if constexpr(std::is_void_v<typename traits::return_type>)
             {
                 std::invoke(
-                    Function,
+                    underlying_function(),
                     get_generic_this(gen),
                     detail::var_type_helper<typename traits::template arg_type<Is>>(
                         detail::var_type_tag<VarType, Is>{},
@@ -489,7 +496,7 @@ public:
                 set_generic_return(
                     gen,
                     std::invoke(
-                        Function,
+                        underlying_function(),
                         get_generic_this(gen),
                         detail::var_type_helper<typename traits::template arg_type<Is>>(
                             detail::var_type_tag<VarType, Is>{},
@@ -513,7 +520,7 @@ public:
             if constexpr(std::is_void_v<typename traits::return_type>)
             {
                 std::invoke(
-                    Function,
+                    underlying_function(),
                     get_generic_this(gen),
                     detail::var_type_helper<typename traits::template arg_type<Is + 1>>(
                         detail::var_type_tag<VarType, Is>{},
@@ -527,7 +534,7 @@ public:
                 set_generic_return(
                     gen,
                     std::invoke(
-                        Function,
+                        underlying_function(),
                         get_generic_this(gen),
                         detail::var_type_helper<typename traits::template arg_type<Is + 1>>(
                             detail::var_type_tag<VarType, Is>{},
@@ -551,7 +558,7 @@ public:
             if constexpr(std::is_void_v<typename traits::return_type>)
             {
                 std::invoke(
-                    Function,
+                    underlying_function(),
                     detail::var_type_helper<typename traits::template arg_type<Is>>(
                         detail::var_type_tag<VarType, Is>{},
                         gen,
@@ -565,7 +572,7 @@ public:
                 set_generic_return(
                     gen,
                     std::invoke(
-                        Function,
+                        underlying_function(),
 
                         detail::var_type_helper<typename traits::template arg_type<Is>>(
                             detail::var_type_tag<VarType, Is>{},
@@ -590,7 +597,7 @@ public:
             if constexpr(std::is_void_v<typename traits::return_type>)
             {
                 std::invoke(
-                    Function,
+                    underlying_function(),
                     detail::var_type_helper<typename traits::template arg_type<Is>>(
                         detail::var_type_tag<VarType, Is>{},
                         gen,
@@ -603,7 +610,7 @@ public:
                 set_generic_return(
                     gen,
                     std::invoke(
-                        Function,
+                        underlying_function(),
                         detail::var_type_helper<typename traits::template arg_type<Is>>(
                             detail::var_type_tag<VarType, Is>{},
                             gen,
@@ -617,9 +624,23 @@ public:
 };
 
 template <
-    native_function auto Function,
-    asECallConvTypes OriginalConv>
-constexpr inline generic_wrapper_t<Function, OriginalConv> generic_wrapper{};
+    typename Function,
+    asECallConvTypes OriginalCallConv>
+requires(noncapturing_lambda<Function>)
+consteval asGENFUNC_t to_asGENFUNC_t(const Function&, call_conv_t<OriginalCallConv>)
+{
+    return generic_wrapper<Function, OriginalCallConv>{}();
+}
+
+template <
+    typename Function,
+    asECallConvTypes OriginalCallConv,
+    std::size_t... Is>
+requires(noncapturing_lambda<Function>)
+consteval asGENFUNC_t to_asGENFUNC_t(const Function&, call_conv_t<OriginalCallConv>, var_type_t<Is...>)
+{
+    return generic_wrapper<Function, OriginalCallConv>{}(var_type<Is...>);
+}
 } // namespace asbind20
 
 #endif

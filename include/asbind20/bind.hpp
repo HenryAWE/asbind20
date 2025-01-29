@@ -16,15 +16,6 @@
 
 namespace asbind20
 {
-#if defined(__GNUC__) && !defined(__clang__)
-#    if !(__GNUC__ >= 14 || (__GNUC__ >= 13 && __GNUC_MINOR__ >= 2))
-// GCC 12 has bug for NTTP function pointer without linkage
-// Fixed in GCC 13.2
-// https://gcc.gnu.org/bugzilla/show_bug.cgi?id=83258
-#        define ASBIND20_WORKAROUND_NTTP_FP_LINKAGE
-#    endif
-#endif
-
 class [[nodiscard]] namespace_
 {
 public:
@@ -72,13 +63,6 @@ private:
     asIScriptEngine* m_engine;
     std::string m_prev;
 };
-
-template <asECallConvTypes CallConv>
-struct call_conv_t
-{};
-
-template <asECallConvTypes CallConv>
-constexpr inline call_conv_t<CallConv> call_conv;
 
 struct use_generic_t
 {};
@@ -694,7 +678,7 @@ public:
     {
         function(
             decl,
-            generic_wrapper<Function, CallConv>()
+            to_asGENFUNC_t(fp<Function>, call_conv<CallConv>)
         );
 
         return *this;
@@ -1165,7 +1149,7 @@ protected:
         {
             method_impl(
                 decl,
-                generic_wrapper<Method, CallConv>(),
+                to_asGENFUNC_t(fp<Method>, call_conv<CallConv>),
                 call_conv<asCALL_GENERIC>
             );
         }
@@ -1220,7 +1204,7 @@ protected:
                 m_name,
                 beh,
                 decl,
-                to_asSFuncPtr(generic_wrapper<Behaviour, CallConv>()),
+                to_asSFuncPtr(to_asGENFUNC_t(fp<Behaviour>, call_conv<CallConv>)),
                 asCALL_GENERIC
             );
         }
@@ -2325,7 +2309,7 @@ public:
         asECallConvTypes CallConv = detail::deduce_method_callconv<Method, Class>()>
     value_class& method(use_generic_t, const char* decl)
     {
-        method(decl, generic_wrapper<Method, CallConv>(), call_conv<asCALL_GENERIC>);
+        method(decl, to_asGENFUNC_t(fp<Method>, call_conv<CallConv>), call_conv<asCALL_GENERIC>);
 
         return *this;
     }
@@ -2361,18 +2345,11 @@ public:
         call_conv_t<CallConv> = {}
     )
     {
-#ifdef ASBIND20_WORKAROUND_NTTP_FP_LINKAGE
-        static_assert(!sizeof(Lambda), "Current compiler has bug for compiling this function");
-        (void)decl;
-
-#else
         this->method_impl(
             decl,
-            generic_wrapper<+Lambda{}, CallConv>(),
+            to_asGENFUNC_t(Lambda{}, call_conv<CallConv>),
             call_conv<asCALL_GENERIC>
         );
-
-#endif
 
         return *this;
     }
@@ -2568,7 +2545,7 @@ public:
         asECallConvTypes CallConv = detail::deduce_method_callconv<Function, Class>()>
     reference_class& method(use_generic_t, const char* decl)
     {
-        method(decl, generic_wrapper<Function, CallConv>(), call_conv<asCALL_GENERIC>);
+        method(decl, to_asGENFUNC_t(fp<Function>, call_conv<CallConv>), call_conv<asCALL_GENERIC>);
 
         return *this;
     }
@@ -2733,7 +2710,7 @@ public:
     {
         factory_function(
             params,
-            generic_wrapper<Function, asCALL_CDECL>(),
+            to_asGENFUNC_t(fp<Function>, call_conv<asCALL_CDECL>),
             call_conv<asCALL_GENERIC>
         );
 
@@ -2750,7 +2727,7 @@ public:
         factory_function(
             params,
             use_explicit,
-            generic_wrapper<Function, asCALL_CDECL>(),
+            to_asGENFUNC_t(fp<Function>, call_conv<asCALL_CDECL>),
             call_conv<asCALL_GENERIC>
         );
 
@@ -3145,7 +3122,7 @@ public:
     template <addref_t AddRef>
     reference_class& addref(use_generic_t)
     {
-        addref(generic_wrapper<AddRef, asCALL_THISCALL>());
+        addref(to_asGENFUNC_t(fp<AddRef>, call_conv<asCALL_THISCALL>));
 
         return *this;
     }
@@ -3190,7 +3167,7 @@ public:
     template <release_t Release>
     reference_class& release(use_generic_t)
     {
-        release(generic_wrapper<Release, asCALL_THISCALL>());
+        release(to_asGENFUNC_t(fp<Release>, call_conv<asCALL_THISCALL>));
 
         return *this;
     }
@@ -3235,7 +3212,7 @@ public:
     template <get_refcount_t GetRefCount>
     reference_class& get_refcount(use_generic_t)
     {
-        get_refcount(generic_wrapper<GetRefCount, asCALL_THISCALL>());
+        get_refcount(to_asGENFUNC_t(fp<GetRefCount>, call_conv<asCALL_THISCALL>));
 
         return *this;
     }
@@ -3280,7 +3257,7 @@ public:
     template <set_gc_flag_t SetGCFlag>
     reference_class& set_gc_flag(use_generic_t)
     {
-        set_gc_flag(generic_wrapper<SetGCFlag, asCALL_THISCALL>());
+        set_gc_flag(to_asGENFUNC_t(fp<SetGCFlag>, call_conv<asCALL_THISCALL>));
 
         return *this;
     }
@@ -3325,7 +3302,7 @@ public:
     template <get_gc_flag_t GetGCFlag>
     reference_class& get_gc_flag(use_generic_t)
     {
-        get_gc_flag(generic_wrapper<GetGCFlag, asCALL_THISCALL>());
+        get_gc_flag(to_asGENFUNC_t(fp<GetGCFlag>, call_conv<asCALL_THISCALL>));
 
         return *this;
     }
