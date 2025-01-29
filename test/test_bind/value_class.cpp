@@ -149,6 +149,11 @@ void register_trivial_value_class(asIScriptEngine* engine)
         .method("void mul(int val)", &test_bind::mul_obj_first)
         .method("void add2(int val)", &test_bind::add_obj_last_ref)
         .method("void mul2(int val)", &test_bind::mul_obj_first_ref)
+        .method(
+            "void lambda_fun()",
+            [](trivial_value_class& v)
+            { v.value = 42; }
+        )
         .method<&test_bind::add_obj_last>("void add3(int val)")
         .method<&test_bind::mul_obj_first_ref>(use_generic, "void mul3(int val)") // Test mixing native and generic calling convention
         .property("int value", &trivial_value_class::value);
@@ -188,6 +193,11 @@ void register_trivial_value_class(asbind20::use_generic_t, asIScriptEngine* engi
         .method<&test_bind::mul_obj_first>("void mul(int val)")
         .method<&test_bind::add_obj_last_ref>("void add2(int val)")
         .method<&test_bind::mul_obj_first_ref>("void mul2(int val)")
+        .method(
+            "void lambda_fun()",
+            [](trivial_value_class& v)
+            { v.value = 42; }
+        )
         .method<&test_bind::add_obj_last>("void add3(int val)")
         .method<&test_bind::mul_obj_first_ref>("void mul3(int val)")
         .property("int value", &trivial_value_class::value);
@@ -217,6 +227,8 @@ int test_1()
 int test_2()
 {
     trivial_value_class val;
+    val.lambda_fun();
+    assert(val.value == 42);
     val.set_val2(182375);
     assert(val.value < 182376);
     assert(val < trivial_value_class(182376));

@@ -641,6 +641,18 @@ namespace detail
             }(std::make_index_sequence<traits::arg_count_v>());
         }
     }
+
+    template <noncapturing_lambda Lambda, typename Class>
+    consteval asECallConvTypes deduce_lambda_callconv()
+    {
+        using function_type = decltype(+std::declval<const Lambda>());
+        using traits = function_traits<function_type>;
+
+        return []<std::size_t... Is>(std::index_sequence<Is...>)
+        {
+            return deduce_method_callconv<Class, typename traits::template arg_type<Is>...>();
+        }(std::make_index_sequence<traits::arg_count_v>());
+    }
 } // namespace detail
 
 template <bool ForceGeneric>
@@ -2336,6 +2348,40 @@ public:
     {
         this->template method_auto_callconv<Class>(decl, fn);
 
+        return *this;
+    }
+
+    template <
+        noncapturing_lambda Lambda,
+        asECallConvTypes CallConv = detail::deduce_lambda_callconv<Lambda, Class>()>
+    value_class& method(
+        use_generic_t,
+        const char* decl,
+        const Lambda&,
+        call_conv_t<CallConv> = {}
+    )
+    {
+        this->method_impl(
+            decl,
+            generic_wrapper<+Lambda{}, CallConv>(),
+            call_conv<asCALL_GENERIC>
+        );
+        return *this;
+    }
+
+    template <
+        noncapturing_lambda Lambda,
+        asECallConvTypes CallConv = detail::deduce_lambda_callconv<Lambda, Class>()>
+    value_class& method(
+        const char* decl,
+        const Lambda&,
+        call_conv_t<CallConv> = {}
+    )
+    {
+        if constexpr(ForceGeneric)
+            this->method(use_generic, decl, Lambda{}, call_conv<CallConv>);
+        else
+            this->method_impl(decl, +Lambda{}, call_conv<CallConv>);
         return *this;
     }
 

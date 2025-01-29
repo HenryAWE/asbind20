@@ -182,6 +182,11 @@ concept native_function =
     !std::is_convertible_v<T, asGENFUNC_t> &&
     detail::is_native_function_helper<std::decay_t<T>>;
 
+template <typename Lambda>
+concept noncapturing_lambda = requires(const Lambda& l) {
+    { +l } -> native_function;
+};
+
 template <typename Func>
 asSFuncPtr to_asSFuncPtr(Func f)
 {

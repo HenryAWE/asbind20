@@ -1,6 +1,40 @@
 #include <gtest/gtest.h>
 #include <asbind20/asbind.hpp>
 
+consteval bool test_concepts()
+{
+    {
+        struct callable_struct
+        {
+            void operator()() const {}
+        };
+
+        using asbind20::noncapturing_lambda;
+
+        static_assert(!noncapturing_lambda<callable_struct>);
+
+        int tmp = 0;
+        auto lambda1 = [&tmp](int)
+        {
+            return tmp;
+        };
+
+        static_assert(!noncapturing_lambda<decltype(lambda1)>);
+
+        auto lambda2 = [](int)
+        {
+            return 42;
+        };
+
+        static_assert(noncapturing_lambda<decltype(lambda2)>);
+        static_assert((+lambda2)(0) == 42);
+    }
+
+    return true;
+}
+
+static_assert(test_concepts());
+
 TEST(utility, refptr_wrapper)
 {
     using asbind20::refptr_wrapper;
