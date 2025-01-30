@@ -126,6 +126,14 @@ int my_div(int a, int b)
     return a / b;
 }
 
+// AngelScript decl: int my_mul(int a, int b)
+void my_mul(asIScriptGeneric* gen)
+{
+    int a = asbind20::get_generic_arg<int>(gen, 0);
+    int b = asbind20::get_generic_arg<int>(gen, 1);
+    asbind20::set_generic_return<int>(gen, a * b);
+}
+
 void out_str(std::string& out)
 {
     out = "test";
@@ -222,6 +230,17 @@ TEST_F(asbind_test_suite, generic_wrapper)
     asIScriptEngine* engine = get_engine();
 
     asGENFUNC_t my_div_gen = to_asGENFUNC_t(fp<&test_bind::my_div>, call_conv<asCALL_CDECL>);
+    asGENFUNC_t my_mul_gen = to_asGENFUNC_t(test_bind::my_mul, call_conv<asCALL_GENERIC>);
+    asGENFUNC_t my_add_gen = to_asGENFUNC_t(
+        [](asIScriptGeneric* gen) -> void
+        {
+            int a = asbind20::get_generic_arg<int>(gen, 0);
+            int b = asbind20::get_generic_arg<int>(gen, 1);
+            asbind20::set_generic_return<int>(gen, a + b);
+        },
+        call_conv<asCALL_GENERIC>
+    );
+
     asGENFUNC_t out_str_gen = to_asGENFUNC_t(fp<&test_bind::out_str>, call_conv<asCALL_CDECL>);
     asGENFUNC_t my_to_str_gen = to_asGENFUNC_t(fp<&test_bind::my_to_str>, call_conv<asCALL_CDECL>, var_type<0>);
     asGENFUNC_t my_to_str2_gen = to_asGENFUNC_t(fp<&test_bind::my_to_str2>, call_conv<asCALL_CDECL>, var_type<1>);
@@ -262,6 +281,8 @@ TEST_F(asbind_test_suite, generic_wrapper)
 
     global<true>(engine)
         .function("int my_div(int a, int b)", my_div_gen)
+        .function("int my_mul(int a, int b)", my_mul_gen)
+        .function("int my_add(int a, int b)", my_add_gen)
         .function("void out_str(string&out)", out_str_gen)
         .function("string my_to_str(const ?&in)", my_to_str_gen)
         .function("void my_to_str2(int prefix_num, const ?&in, string&out)", my_to_str2_gen);
@@ -284,6 +305,8 @@ TEST_F(asbind_test_suite, generic_wrapper)
         "void main()"
         "{"
         "assert(my_div(6, 2) == 3);"
+        "assert(my_mul(2, 3) == 6);"
+        "assert(my_add(2, 3) == 5);"
         "assert(my_to_str(true) == \"true\");"
         "assert(my_to_str(6) == \"6\");"
         "string result;"
