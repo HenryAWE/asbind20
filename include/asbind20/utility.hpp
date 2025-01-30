@@ -190,13 +190,10 @@ concept noncapturing_lambda = requires() {
 template <native_function auto Function>
 struct fp_wrapper_t
 {
-    using function_type = std::decay_t<decltype(Function)>;
-
-    // Simulates a non-capturing lambda
-    constexpr function_type operator+() const noexcept
+    static constexpr auto get() noexcept
     {
         return Function;
-    };
+    }
 };
 
 template <native_function auto Function>

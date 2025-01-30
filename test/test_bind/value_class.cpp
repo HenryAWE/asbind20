@@ -154,6 +154,14 @@ void register_trivial_value_class(asIScriptEngine* engine)
             [](trivial_value_class& v)
             { v.value = 42; }
         )
+        .method(
+            "void parse(const ?&in)",
+            [](trivial_value_class& v, void* ref, int type_id)
+            {
+                if(type_id == asTYPEID_INT32)
+                    v.value = *(int*)ref;
+            }
+        )
         .method<&test_bind::add_obj_last>("void add3(int val)")
         .method<&test_bind::mul_obj_first_ref>(use_generic, "void mul3(int val)") // Test mixing native and generic calling convention
         .property("int value", &trivial_value_class::value);
@@ -198,6 +206,18 @@ void register_trivial_value_class(asbind20::use_generic_t, asIScriptEngine* engi
             [](trivial_value_class& v)
             { v.value = 42; }
         )
+        .method(
+            "void parse(const ?&in)",
+            to_asGENFUNC_t(
+                [](trivial_value_class& v, void* ref, int type_id)
+                {
+                    if(type_id == asTYPEID_INT32)
+                        v.value = *(int*)ref;
+                },
+                call_conv<asCALL_CDECL_OBJFIRST>,
+                var_type<0>
+            )
+        )
         .method<&test_bind::add_obj_last>("void add3(int val)")
         .method<&test_bind::mul_obj_first_ref>("void mul3(int val)")
         .property("int value", &trivial_value_class::value);
@@ -214,7 +234,11 @@ const char* trivial_value_class_test_script = R"(
 int test_0()
 {
     trivial_value_class val;
-    return val.get_val();
+    val.parse(1013);
+    assert(val.value == 1013);
+
+    trivial_value_class ret;
+    return ret.get_val();
 }
 int test_1()
 {

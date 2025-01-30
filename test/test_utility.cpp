@@ -73,8 +73,7 @@ TEST(utility, fp_wrapper)
     using namespace asbind20;
 
     constexpr auto wrapper = fp<&test_utility::f1>;
-    static_assert(noncapturing_lambda<decltype(wrapper)>);
-    static constexpr auto f1 = +wrapper;
+    static constexpr auto f1 = wrapper.get();
     EXPECT_EQ(f1(), 1013);
 }
 
