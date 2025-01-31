@@ -123,8 +123,8 @@ static void register_script_dictionary_impl(asIScriptEngine* engine)
     }
 
     c
-        .template method<&dictionary::erase>("bool erase(const string&in k)")
-        .template method<static_cast<bool (dictionary::*)(const string&) const>(&dictionary::contains)>("bool contains(const string&in k) const");
+        .method("bool erase(const string&in k)", fp<&dictionary::erase>)
+        .method("bool contains(const string&in k) const", fp<static_cast<bool (dictionary::*)(const string&) const>(&dictionary::contains)>);
 }
 
 void register_script_dictionary(asIScriptEngine* engine, bool generic)

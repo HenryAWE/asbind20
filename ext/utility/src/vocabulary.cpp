@@ -233,15 +233,15 @@ namespace detail
             .template factory<const void*>("const T&in")
             .template release<&script_optional::release>()
             .opAssign()
-            .template method<&optional_opAssign_value>("optional<T>& opAssign(const T&in)")
-            .template method<&script_optional::has_value>("bool get_has_value() const property")
-            .template method<&script_optional::has_value>("bool opConv() const")
-            .template method<&script_optional::reset>("void reset()")
-            .template method<&optional_value>("T& get_value() property")
-            .template method<&optional_value>("const T& get_value() const property")
-            .template method<&script_optional::assign>("void set_value(const T&in) property")
-            .template method<&optional_value_or>("T& value_or(T&in val)")
-            .template method<&optional_value_or>("const T& value_or(const T&in val) const");
+            .method("optional<T>& opAssign(const T&in)", fp<&optional_opAssign_value>)
+            .method("bool get_has_value() const property", fp<&script_optional::has_value>)
+            .method("bool opConv() const", fp<&script_optional::has_value>)
+            .method("void reset()", fp<&script_optional::reset>)
+            .method("T& get_value() property", fp<&optional_value>)
+            .method("const T& get_value() const property", fp<&optional_value>)
+            .method("void set_value(const T&in) property", fp<&script_optional::assign>)
+            .method("T& value_or(T&in val)", fp<&optional_value_or>)
+            .method("const T& value_or(const T&in val) const", fp<&optional_value_or>);
     }
 } // namespace detail
 

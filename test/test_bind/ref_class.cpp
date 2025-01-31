@@ -112,8 +112,8 @@ void register_ref_class(asbind20::use_generic_t, asIScriptEngine* engine)
         .opAddAssign()
         .opConv<bool>()
         .opImplConv<int>()
-        .method<&my_ref_class::use_count>("uint use_count() const")
-        .method<&test_bind::exchange_data>("int exchange_data(int new_data)")
+        .method("uint use_count() const", fp<&my_ref_class::use_count>)
+        .method("int exchange_data(int new_data)", fp<&test_bind::exchange_data>)
         .method("int get_data() const", &get_ref_class_data)
         .property("int data", &my_ref_class::data);
 
