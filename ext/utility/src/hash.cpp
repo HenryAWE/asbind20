@@ -15,16 +15,16 @@ static void register_script_hash_impl(asIScriptEngine* engine)
     global<UseGeneric> g(engine);
     g
         .typedef_("uint64", "hash_result_t")
-        .template function<&std_hash_wrapper<std::int8_t>>("uint64 hash(int8)")
-        .template function<&std_hash_wrapper<std::int16_t>>("uint64 hash(int16)")
-        .template function<&std_hash_wrapper<std::int32_t>>("uint64 hash(int)")
-        .template function<&std_hash_wrapper<std::int64_t>>("uint64 hash(int64)")
-        .template function<&std_hash_wrapper<std::uint8_t>>("uint64 hash(uint8)")
-        .template function<&std_hash_wrapper<std::uint16_t>>("uint64 hash(uint16)")
-        .template function<&std_hash_wrapper<std::uint32_t>>("uint64 hash(uint)")
-        .template function<&std_hash_wrapper<std::uint64_t>>("uint64 hash(uint64)")
-        .template function<&std_hash_wrapper<float>>("uint64 hash(float)")
-        .template function<&std_hash_wrapper<double>>("uint64 hash(double)");
+        .function("uint64 hash(int8)", fp<&std_hash_wrapper<std::int8_t>>)
+        .function("uint64 hash(int16)", fp<&std_hash_wrapper<std::int16_t>>)
+        .function("uint64 hash(int)", fp<&std_hash_wrapper<std::int32_t>>)
+        .function("uint64 hash(int64)", fp<&std_hash_wrapper<std::int64_t>>)
+        .function("uint64 hash(uint8)", fp<&std_hash_wrapper<std::uint8_t>>)
+        .function("uint64 hash(uint16)", fp<&std_hash_wrapper<std::uint16_t>>)
+        .function("uint64 hash(uint)", fp<&std_hash_wrapper<std::uint32_t>>)
+        .function("uint64 hash(uint64)", fp<&std_hash_wrapper<std::uint64_t>>)
+        .function("uint64 hash(float)", fp<&std_hash_wrapper<float>>)
+        .function("uint64 hash(double)", fp<&std_hash_wrapper<double>>);
 }
 
 void register_script_hash(asIScriptEngine* engine, bool generic)

@@ -674,6 +674,7 @@ public:
     template <
         native_function auto Function,
         asECallConvTypes CallConv = asCALL_CDECL>
+    [[deprecated("Use the version with fp<>")]]
     global& function(use_generic_t, const char* decl)
     {
         function(
@@ -685,14 +686,63 @@ public:
     }
 
     template <
+        auto Function,
+        asECallConvTypes CallConv = asCALL_CDECL>
+    requires(CallConv == asCALL_CDECL || CallConv == asCALL_STDCALL)
+    global& function(
+        use_generic_t,
+        const char* decl,
+        fp_wrapper_t<Function>,
+        call_conv_t<CallConv> = {}
+    )
+    {
+        this->function(
+            decl,
+            to_asGENFUNC_t(fp<Function>, call_conv<CallConv>)
+        );
+
+        return *this;
+    }
+
+    template <
         native_function auto Function,
         asECallConvTypes CallConv = asCALL_CDECL>
     requires(!std::is_member_function_pointer_v<std::decay_t<decltype(Function)>>)
+    [[deprecated("Use the version with fp<>")]]
     global& function(const char* decl)
     {
         if constexpr(ForceGeneric)
         {
             function<Function, CallConv>(use_generic, decl);
+        }
+        else
+        {
+            [[maybe_unused]]
+            int r = 0;
+            r = m_engine->RegisterGlobalFunction(
+                decl,
+                to_asSFuncPtr(Function),
+                CallConv
+            );
+            assert(r >= 0);
+        }
+
+        return *this;
+    }
+
+    template <
+        auto Function,
+        asECallConvTypes CallConv = asCALL_CDECL>
+    requires(CallConv == asCALL_CDECL || CallConv == asCALL_STDCALL)
+    global& function(
+        const char* decl,
+        fp_wrapper_t<Function>,
+        call_conv_t<CallConv> = {}
+    )
+    {
+        if constexpr(ForceGeneric)
+        {
+            function(use_generic, decl, fp<Function>, call_conv<CallConv>);
         }
         else
         {

@@ -5,6 +5,13 @@
 
 using namespace asbind_test;
 
+namespace test_bind
+{
+void set_int(int& out)
+{
+    out = 1013;
+}
+
 struct class_wrapper
 {
     int value = 0;
@@ -14,12 +21,16 @@ struct class_wrapper
         value = val;
     }
 };
+} // namespace test_bind
 
 static void register_global_funcs(
-    asIScriptEngine* engine, class_wrapper& wrapper, std::string& global_val
+    asIScriptEngine* engine, test_bind::class_wrapper& wrapper, std::string& global_val
 )
 {
+    using asbind20::fp;
+
     asbind20::global(engine)
+        .function("void set_int(int&out)", fp<&test_bind::set_int>)
         .function(
             "int gen_int()",
             +[]() -> int
@@ -27,17 +38,27 @@ static void register_global_funcs(
         )
         .function(
             "void set_val(int val)",
-            &class_wrapper::set_val,
+            &test_bind::class_wrapper::set_val,
             wrapper
         )
         .property("string val", global_val);
 }
 
 static void register_global_funcs(
-    asbind20::use_generic_t, asIScriptEngine* engine, class_wrapper& wrapper, std::string& global_val
+    asbind20::use_generic_t, asIScriptEngine* engine, test_bind::class_wrapper& wrapper, std::string& global_val
 )
 {
+    using asbind20::fp;
     asbind20::global<true>(engine)
+        .function(
+            "void set_int(int&out)",
+            [](asIScriptGeneric* gen) -> void
+            {
+                // TODO: Generated generic wrapper is not correct
+                int* addr = (int*)gen->GetArgAddress(0);
+                test_bind::set_int(*addr);
+            }
+        )
         .function(
             "int gen_int() ",
             +[](asIScriptGeneric* gen) -> void
@@ -45,7 +66,7 @@ static void register_global_funcs(
                 asbind20::set_generic_return<int>(gen, 42);
             }
         )
-        .function<&class_wrapper::set_val>("void set_val(int val)", wrapper)
+        .function<&test_bind::class_wrapper::set_val>("void set_val(int val)", wrapper)
         .property("string val", global_val);
 }
 
@@ -56,7 +77,7 @@ TEST_F(asbind_test_suite, global)
     asIScriptEngine* engine = get_engine();
 
     std::string val = "val";
-    class_wrapper wrapper{};
+    test_bind::class_wrapper wrapper{};
 
     {
         asbind20::global g(engine);
@@ -76,6 +97,17 @@ TEST_F(asbind_test_suite, global)
 
     {
         asbind20::request_context ctx(engine);
+        asIScriptFunction* set_int = engine->GetGlobalFunctionByDecl("void set_int(int&out)");
+        ASSERT_TRUE(set_int);
+
+        int out;
+        auto result = asbind20::script_invoke<void>(ctx, set_int, std::ref(out));
+        EXPECT_TRUE(result_has_value(result));
+        EXPECT_EQ(out, 1013);
+    }
+
+    {
+        asbind20::request_context ctx(engine);
         asIScriptFunction* gen_int = engine->GetGlobalFunctionByDecl("int gen_int()");
         ASSERT_TRUE(gen_int);
 
@@ -89,7 +121,7 @@ TEST_F(asbind_test_suite_generic, global)
     asIScriptEngine* engine = get_engine();
 
     std::string val = "val";
-    class_wrapper wrapper{};
+    test_bind::class_wrapper wrapper{};
 
     {
         asbind20::global<true> g(engine);
@@ -106,6 +138,17 @@ TEST_F(asbind_test_suite_generic, global)
     EXPECT_EQ(wrapper.value, 0);
     asbind20::ext::exec(engine, "set_val(gen_int())");
     EXPECT_EQ(wrapper.value, 42);
+
+    {
+        asbind20::request_context ctx(engine);
+        asIScriptFunction* set_int = engine->GetGlobalFunctionByDecl("void set_int(int&out)");
+        ASSERT_TRUE(set_int);
+
+        int out;
+        auto result = asbind20::script_invoke<void>(ctx, set_int, std::ref(out));
+        EXPECT_TRUE(result_has_value(result));
+        EXPECT_EQ(out, 1013);
+    }
 
     {
         asbind20::request_context ctx(engine);

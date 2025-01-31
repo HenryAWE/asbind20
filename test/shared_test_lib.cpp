@@ -138,7 +138,7 @@ void asbind_test_suite::register_all()
     );
 
     global(m_engine)
-        .function<&test_print>(use_generic, "void print(const string &in msg)");
+        .function(use_generic, "void print(const string &in msg)", fp<&test_print>);
 }
 
 void asbind_test_suite_generic::register_all()
@@ -161,6 +161,6 @@ void asbind_test_suite_generic::register_all()
     );
 
     global(engine)
-        .function<&test_print>(use_generic, "void print(const string &in msg)");
+        .function(use_generic, "void print(const string &in msg)", fp<&test_print>);
 }
 } // namespace asbind_test

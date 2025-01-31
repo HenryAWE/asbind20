@@ -623,23 +623,23 @@ void register_string_utils_impl(asIScriptEngine* engine)
     global<UseGeneric> g(engine);
 
     g
-        .template function<&as_bool_to_string>("string to_string(bool val)")
-        .template function<&as_int_to_string<int>>("string to_string(int val, int base=10)")
-        .template function<&as_int_to_string<asUINT>>("string to_string(uint val, int base=10)")
-        .template function<&as_int_to_string<std::int64_t>>("string to_string(int64 val, int base=10)")
-        .template function<&as_int_to_string<std::uint64_t>>("string to_string(uint64 val, int base=10)")
+        .function("string to_string(bool val)", fp<&as_bool_to_string>)
+        .function("string to_string(int val, int base=10)", fp<&as_int_to_string<int>>)
+        .function("string to_string(uint val, int base=10)", fp<&as_int_to_string<asUINT>>)
+        .function("string to_string(int64 val, int base=10)", fp<&as_int_to_string<std::int64_t>>)
+        .function("string to_string(uint64 val, int base=10)", fp<&as_int_to_string<std::uint64_t>>)
         .enum_type("float_format")
         .enum_value("float_format", std::chars_format::scientific, "scientific")
         .enum_value("float_format", std::chars_format::hex, "hex")
         .enum_value("float_format", std::chars_format::general, "general")
         .enum_value("float_format", std::chars_format::fixed, "fixed")
-        .template function<&as_float_to_string<float>>("string to_string(float val, float_format fmt=float_format::general)")
-        .template function<&as_float_to_string<double>>("string to_string(double val, float_format fmt=float_format::general)");
+        .function("string to_string(float val, float_format fmt=float_format::general)", fp<&as_float_to_string<float>>)
+        .function("string to_string(double val, float_format fmt=float_format::general)", fp<&as_float_to_string<double>>);
 
     if(engine->GetEngineProperty(asEP_USE_CHARACTER_LITERALS))
     {
         g
-            .template function<&as_chr>("string chr(uint ch)");
+            .function("string chr(uint ch)", fp<&as_chr>);
     }
 }
 
