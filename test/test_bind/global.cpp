@@ -58,7 +58,7 @@ static void register_global_funcs(
                 asbind20::set_generic_return<int>(gen, 42);
             }
         )
-        .function<&test_bind::class_wrapper::set_val>("void set_val(int val)", wrapper)
+        .function("void set_val(int val)", fp<&test_bind::class_wrapper::set_val>, wrapper)
         .property("string val", global_val);
 }
 

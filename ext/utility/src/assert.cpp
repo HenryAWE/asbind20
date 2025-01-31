@@ -79,9 +79,10 @@ std::function<assert_handler_t> register_script_assert(
     auto old = std::exchange(impl.callback, std::move(callback));
 
     g
-        .function<&script_assert_impl::assert_simple>(
+        .function(
             use_generic,
             "void assert(bool pred)",
+            fp<&script_assert_impl::assert_simple>,
             impl
         );
 

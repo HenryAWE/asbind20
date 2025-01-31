@@ -61,6 +61,11 @@ namespace detail
     }
 } // namespace detail
 
+/**
+ * @brief Get pointer/reference to the object
+ *
+ * @tparam T Object type, can be a pointer, otherwise the return type will a reference
+ */
 template <typename T>
 auto get_generic_object(asIScriptGeneric* gen)
     -> std::conditional_t<std::is_pointer_v<T>, T, std::add_lvalue_reference_t<T>>
@@ -226,9 +231,19 @@ decltype(auto) get_generic_this(asIScriptGeneric* gen)
 {
     using traits = function_traits<FunctionType>;
 
-    void* ptr = gen->GetObject();
+    constexpr bool from_auxiliary =
+        CallConv == asCALL_THISCALL_ASGLOBAL;
 
-    if constexpr(CallConv == asCALL_THISCALL)
+    void* ptr = nullptr;
+    if constexpr(from_auxiliary)
+        ptr = gen->GetAuxiliary();
+    else
+        ptr = gen->GetObject();
+
+    if constexpr(
+        CallConv == asCALL_THISCALL ||
+        CallConv == asCALL_THISCALL_ASGLOBAL
+    )
     {
         using pointer_t = typename traits::class_type*;
         return static_cast<pointer_t>(ptr);
@@ -564,7 +579,8 @@ public:
     using function_type = decltype(+Lambda{});
 
     static_assert(
-        !std::is_member_function_pointer_v<function_type> || OriginalConv == asCALL_THISCALL,
+        !std::is_member_function_pointer_v<function_type> ||
+            (OriginalConv == asCALL_THISCALL || OriginalConv == asCALL_THISCALL_ASGLOBAL),
         "Invalid calling convention"
     );
 
@@ -591,7 +607,10 @@ private:
 public:
     static constexpr asGENFUNC_t generate() noexcept
     {
-        if constexpr(OriginalConv == asCALL_THISCALL)
+        if constexpr(
+            OriginalConv == asCALL_THISCALL ||
+            OriginalConv == asCALL_THISCALL_ASGLOBAL
+        )
             return &wrapper_impl_thiscall;
         else if constexpr(OriginalConv == asCALL_CDECL_OBJFIRST)
             return &wrapper_impl_objfirst;
@@ -605,7 +624,10 @@ public:
     static constexpr asGENFUNC_t generate(var_type_t<Is...>)
     {
         using my_var_type = var_type_t<Is...>;
-        if constexpr(OriginalConv == asCALL_THISCALL)
+        if constexpr(
+            OriginalConv == asCALL_THISCALL ||
+            OriginalConv == asCALL_THISCALL_ASGLOBAL
+        )
             return &var_type_wrapper_impl_thiscall<my_var_type>;
         else if constexpr(OriginalConv == asCALL_CDECL_OBJFIRST)
             return &var_type_wrapper_impl_objfirst<my_var_type>;
@@ -637,7 +659,8 @@ public:
     using function_type = std::decay_t<decltype(Function)>;
 
     static_assert(
-        !std::is_member_function_pointer_v<function_type> || OriginalConv == asCALL_THISCALL,
+        !std::is_member_function_pointer_v<function_type> ||
+            (OriginalConv == asCALL_THISCALL || OriginalConv == asCALL_THISCALL_ASGLOBAL),
         "Invalid calling convention"
     );
 
@@ -662,7 +685,10 @@ private:
 public:
     static constexpr asGENFUNC_t generate() noexcept
     {
-        if constexpr(OriginalConv == asCALL_THISCALL)
+        if constexpr(
+            OriginalConv == asCALL_THISCALL ||
+            OriginalConv == asCALL_THISCALL_ASGLOBAL
+        )
             return &wrapper_impl_thiscall;
         else if constexpr(OriginalConv == asCALL_CDECL_OBJFIRST)
             return &wrapper_impl_objfirst;
@@ -676,7 +702,10 @@ public:
     static constexpr asGENFUNC_t generate(var_type_t<Is...>)
     {
         using my_var_type = var_type_t<Is...>;
-        if constexpr(OriginalConv == asCALL_THISCALL)
+        if constexpr(
+            OriginalConv == asCALL_THISCALL ||
+            OriginalConv == asCALL_THISCALL_ASGLOBAL
+        )
             return &var_type_wrapper_impl_thiscall<my_var_type>;
         else if constexpr(OriginalConv == asCALL_CDECL_OBJFIRST)
             return &var_type_wrapper_impl_objfirst<my_var_type>;

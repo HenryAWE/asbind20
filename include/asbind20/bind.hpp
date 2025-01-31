@@ -803,39 +803,12 @@ public:
         native_function auto Function,
         typename T>
     requires(std::is_member_function_pointer_v<std::decay_t<decltype(Function)>>)
+    [[deprecated("Use the version with fp<>")]]
     global& function(use_generic_t, const char* decl, T& instance)
     {
         function(
             decl,
-            +[](asIScriptGeneric* gen) -> void
-            {
-                using traits = function_traits<std::decay_t<decltype(Function)>>;
-
-                [gen]<std::size_t... Is>(std::index_sequence<Is...>)
-                {
-                    using return_t = typename traits::return_type;
-                    using class_t = typename traits::class_type;
-                    using args_tuple = typename traits::args_tuple;
-
-                    class_t* this_ = (class_t*)gen->GetAuxiliary();
-
-                    if constexpr(std::is_void_v<return_t>)
-                    {
-                        std::invoke(
-                            Function, this_, get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (asUINT)Is)...
-                        );
-                    }
-                    else
-                    {
-                        set_generic_return<return_t>(
-                            gen,
-                            std::invoke(
-                                Function, this_, get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (asUINT)Is)...
-                            )
-                        );
-                    }
-                }(std::make_index_sequence<traits::arg_count_v>());
-            },
+            to_asGENFUNC_t(fp<Function>, call_conv<asCALL_THISCALL_ASGLOBAL>),
             instance
         );
 
@@ -846,10 +819,57 @@ public:
         native_function auto Function,
         typename T>
     requires(std::is_member_function_pointer_v<std::decay_t<decltype(Function)>>)
+    [[deprecated("Use the version with fp<>")]]
     global& function(const char* decl, T& instance)
     {
         if constexpr(ForceGeneric)
             function<Function>(use_generic, decl, instance);
+        else
+            function(decl, Function, instance);
+
+        return *this;
+    }
+
+    template <
+        auto Function,
+        typename T>
+    global& function(
+        use_generic_t,
+        const char* decl,
+        fp_wrapper_t<Function>,
+        T& instance
+    )
+    {
+        static_assert(
+            std::is_member_function_pointer_v<std::decay_t<decltype(Function)>>,
+            "Function for asCALL_THISCALL_ASGLOBAL must be a member function"
+        );
+
+        function(
+            decl,
+            to_asGENFUNC_t(fp<Function>, call_conv<asCALL_THISCALL_ASGLOBAL>),
+            instance
+        );
+
+        return *this;
+    }
+
+    template <
+        auto Function,
+        typename T>
+    global& function(
+        const char* decl,
+        fp_wrapper_t<Function>,
+        T& instance
+    )
+    {
+        static_assert(
+            std::is_member_function_pointer_v<std::decay_t<decltype(Function)>>,
+            "Function for asCALL_THISCALL_ASGLOBAL must be a member function"
+        );
+
+        if constexpr(ForceGeneric)
+            function(use_generic, decl, fp<Function>, instance);
         else
             function(decl, Function, instance);
 
@@ -1164,8 +1184,6 @@ protected:
     }
 
     template <typename Fn, asECallConvTypes CallConv>
-    // method -> this call
-    requires(!std::is_member_pointer_v<Fn> || CallConv == asCALL_THISCALL)
     void method_impl(const char* decl, Fn&& fn, call_conv_t<CallConv>)
     {
         [[maybe_unused]]
