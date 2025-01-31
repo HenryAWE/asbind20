@@ -50,15 +50,7 @@ static void register_global_funcs(
 {
     using asbind20::fp;
     asbind20::global<true>(engine)
-        .function(
-            "void set_int(int&out)",
-            [](asIScriptGeneric* gen) -> void
-            {
-                // TODO: Generated generic wrapper is not correct
-                int* addr = (int*)gen->GetArgAddress(0);
-                test_bind::set_int(*addr);
-            }
-        )
+        .function("void set_int(int&out)", fp<&test_bind::set_int>)
         .function(
             "int gen_int() ",
             +[](asIScriptGeneric* gen) -> void

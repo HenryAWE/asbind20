@@ -104,14 +104,7 @@ T get_generic_arg(asIScriptGeneric* gen, asUINT idx)
     }
     else if constexpr(std::is_pointer_v<T>)
     {
-        using value_t = std::remove_pointer_t<T>;
-
-        void* ptr = nullptr;
-        if constexpr(std::is_class_v<value_t> || std::is_void_v<value_t>)
-            ptr = gen->GetArgAddress(idx);
-        else
-            ptr = gen->GetAddressOfArg(idx);
-        assert(ptr != nullptr);
+        void* ptr = gen->GetArgAddress(idx);
         return (T)ptr;
     }
     else if constexpr(std::is_reference_v<T>)
