@@ -579,10 +579,10 @@ namespace detail
 {
     template <typename T, typename Class>
     static constexpr bool is_this_arg_v =
-        std::is_same_v<T, Class*> ||
-        std::is_same_v<T, const Class*> ||
-        std::is_same_v<T, Class&> ||
-        std::is_same_v<T, const Class&>;
+        std::same_as<T, Class*> ||
+        std::same_as<T, const Class*> ||
+        std::same_as<T, Class&> ||
+        std::same_as<T, const Class&>;
 
     template <typename Class, typename... Args>
     static consteval asECallConvTypes deduce_method_callconv() noexcept
@@ -592,7 +592,7 @@ namespace detail
         using first_arg_t = std::tuple_element_t<0, args_t>;
         using last_arg_t = std::tuple_element_t<sizeof...(Args) - 1, args_t>;
 
-        if constexpr(arg_count == 1 && std::is_same_v<first_arg_t, asIScriptGeneric*>)
+        if constexpr(arg_count == 1 && std::same_as<first_arg_t, asIScriptGeneric*>)
             return asCALL_GENERIC;
         else
         {

@@ -43,7 +43,7 @@ TEST(utility, refptr_wrapper)
         int val = 42;
         refptr_wrapper r(val);
 
-        static_assert(std::is_same_v<int, decltype(r)::type>);
+        static_assert(std::same_as<int, decltype(r)::type>);
 
         EXPECT_EQ(r.get(), 42);
 

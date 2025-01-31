@@ -89,15 +89,15 @@ T get_generic_arg(asIScriptGeneric* gen, asUINT idx)
         return type_traits<std::remove_cv_t<T>>::get_arg(gen, idx);
     }
     else if constexpr(
-        std::is_same_v<std::remove_cv_t<T>, asITypeInfo*> ||
-        std::is_same_v<std::remove_cv_t<T>, const asITypeInfo*>
+        std::same_as<std::remove_cv_t<T>, asITypeInfo*> ||
+        std::same_as<std::remove_cv_t<T>, const asITypeInfo*>
     )
     {
         return *(asITypeInfo**)gen->GetAddressOfArg(idx);
     }
     else if constexpr(
-        std::is_same_v<std::remove_cv_t<T>, asIScriptObject*> ||
-        std::is_same_v<std::remove_cv_t<T>, const asIScriptObject*>
+        std::same_as<std::remove_cv_t<T>, asIScriptObject*> ||
+        std::same_as<std::remove_cv_t<T>, const asIScriptObject*>
     )
     {
         return static_cast<asIScriptObject*>(gen->GetArgObject(idx));
@@ -135,9 +135,9 @@ T get_generic_arg(asIScriptGeneric* gen, asUINT idx)
     }
     else if constexpr(std::floating_point<T>)
     {
-        if constexpr(std::is_same_v<std::remove_cv_t<T>, float>)
+        if constexpr(std::same_as<std::remove_cv_t<T>, float>)
             return gen->GetArgFloat(idx);
-        else if constexpr(std::is_same_v<std::remove_cv_t<T>, double>)
+        else if constexpr(std::same_as<std::remove_cv_t<T>, double>)
             return gen->GetArgDouble(idx);
         else
             static_assert(!sizeof(T), "Unsupported floating point type");
@@ -169,8 +169,8 @@ void set_generic_return(asIScriptGeneric* gen, T&& ret)
         void* ptr = (void*)ret;
 
         if constexpr(
-            std::is_same_v<std::remove_cv_t<T>, asIScriptObject*> ||
-            std::is_same_v<std::remove_cv_t<T>, const asIScriptObject*>
+            std::same_as<std::remove_cv_t<T>, asIScriptObject*> ||
+            std::same_as<std::remove_cv_t<T>, const asIScriptObject*>
         )
             gen->SetReturnObject(ptr);
         else
@@ -202,9 +202,9 @@ void set_generic_return(asIScriptGeneric* gen, T&& ret)
     }
     else if constexpr(std::floating_point<T>)
     {
-        if constexpr(std::is_same_v<std::remove_cv_t<T>, float>)
+        if constexpr(std::same_as<std::remove_cv_t<T>, float>)
             gen->SetReturnFloat(ret);
-        else if constexpr(std::is_same_v<std::remove_cv_t<T>, double>)
+        else if constexpr(std::same_as<std::remove_cv_t<T>, double>)
             gen->SetReturnDouble(ret);
         else
             static_assert(!sizeof(T), "Unsupported floating point type");

@@ -452,8 +452,8 @@ namespace detail
 
     template <typename T>
     concept is_script_obj =
-        std::is_same_v<T, asIScriptObject*> ||
-        std::is_same_v<T, const asIScriptObject*>;
+        std::same_as<T, asIScriptObject*> ||
+        std::same_as<T, const asIScriptObject*>;
 } // namespace detail
 
 template <typename T>
@@ -502,11 +502,11 @@ T get_script_return(asIScriptContext* ctx)
             else if constexpr(sizeof(primitive_t) == 8)
                 return static_cast<T>(ctx->GetReturnQWord());
         }
-        else if constexpr(std::is_same_v<primitive_t, float>)
+        else if constexpr(std::same_as<primitive_t, float>)
         {
             return ctx->GetReturnFloat();
         }
-        else if constexpr(std::is_same_v<primitive_t, double>)
+        else if constexpr(std::same_as<primitive_t, double>)
         {
             return ctx->GetReturnDouble();
         }
@@ -555,8 +555,8 @@ script_invoke_result<R> script_invoke(asIScriptContext* ctx, asIScriptFunction* 
 
 template <typename T>
 concept script_object_handle =
-    std::is_same_v<std::remove_cvref_t<T>, asIScriptObject*> ||
-    std::is_same_v<std::remove_cvref_t<T>, const asIScriptObject*> ||
+    std::same_as<std::remove_cvref_t<T>, asIScriptObject*> ||
+    std::same_as<std::remove_cvref_t<T>, const asIScriptObject*> ||
     requires(T&& obj) {
         (const asIScriptObject*)obj;
     };

@@ -235,7 +235,7 @@ public:
     using type = T;
 
     template <typename U>
-    requires(detail::refptr_check_helper_ref<T, U> && !std::is_same_v<refptr_wrapper, std::remove_cvref_t<U>>)
+    requires(detail::refptr_check_helper_ref<T, U> && !std::same_as<refptr_wrapper, std::remove_cvref_t<U>>)
     constexpr refptr_wrapper(U&& ref) noexcept(noexcept(detail::refptr_helper_ref<T>(std::forward<U>(ref))))
         : m_ptr(std::addressof(detail::refptr_helper_ref<T>(std::forward<U>(ref))))
     {}
@@ -598,10 +598,10 @@ namespace detail
 
     template <typename T>
     concept concat_accepted =
-        std::is_same_v<std::remove_cvref_t<T>, std::string> ||
-        std::is_same_v<std::remove_cvref_t<T>, std::string_view> ||
+        std::same_as<std::remove_cvref_t<T>, std::string> ||
+        std::same_as<std::remove_cvref_t<T>, std::string_view> ||
         std::is_convertible_v<std::decay_t<T>, const char*> ||
-        std::is_same_v<std::remove_cvref_t<T>, char>;
+        std::same_as<std::remove_cvref_t<T>, char>;
 } // namespace detail
 
 /**

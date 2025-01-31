@@ -226,11 +226,11 @@ asbind20::visit_primitive_type(
     {
         using type = std::remove_const_t<T>;
 
-        if constexpr(std::is_same_v<type, int>)
+        if constexpr(std::same_as<type, int>)
         {
             // play with int
         }
-        else if constexpr(std::is_same_v<type, float>)
+        else if constexpr(std::same_as<type, float>)
         {
             // play with float
         }
