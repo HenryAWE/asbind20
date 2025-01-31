@@ -143,7 +143,7 @@ void register_trivial_value_class(asIScriptEngine* engine)
         .opConv<bool>()
         .opImplConv<int>()
         .method("void set_val(int)", &trivial_value_class::set_val)
-        .method<&trivial_value_class::set_val>(use_generic, "void set_val2(int)")
+        .method(use_generic, "void set_val2(int)", fp<&trivial_value_class::set_val>)
         .method("int get_val() const", &trivial_value_class::get_val)
         .method("void add(int val)", &test_bind::add_obj_last)
         .method("void mul(int val)", &test_bind::mul_obj_first)
@@ -162,8 +162,8 @@ void register_trivial_value_class(asIScriptEngine* engine)
                     v.value = *(int*)ref;
             }
         )
-        .method<&test_bind::add_obj_last>("void add3(int val)")
-        .method<&test_bind::mul_obj_first_ref>(use_generic, "void mul3(int val)") // Test mixing native and generic calling convention
+        .method("void add3(int val)", fp<&test_bind::add_obj_last>)
+        .method(use_generic, "void mul3(int val)", fp<&test_bind::mul_obj_first_ref>) // Test mixing native and generic calling convention
         .property("int value", &trivial_value_class::value);
 
     EXPECT_EQ(c.get_engine(), engine);
@@ -194,13 +194,13 @@ void register_trivial_value_class(asbind20::use_generic_t, asIScriptEngine* engi
         .opNeg()
         .opConv<bool>()
         .opImplConv<int>()
-        .method<&trivial_value_class::set_val>("void set_val(int)")
-        .method<&trivial_value_class::set_val>(use_generic, "void set_val2(int)")
-        .method<&trivial_value_class::get_val>("int get_val() const")
-        .method<&test_bind::add_obj_last>("void add(int val)")
-        .method<&test_bind::mul_obj_first>("void mul(int val)")
-        .method<&test_bind::add_obj_last_ref>("void add2(int val)")
-        .method<&test_bind::mul_obj_first_ref>("void mul2(int val)")
+        .method("void set_val(int)", fp<&trivial_value_class::set_val>)
+        .method(use_generic, "void set_val2(int)", fp<&trivial_value_class::set_val>)
+        .method("int get_val() const", fp<&trivial_value_class::get_val>)
+        .method("void add(int val)", fp<&test_bind::add_obj_last>)
+        .method("void mul(int val)", fp<&test_bind::mul_obj_first>)
+        .method("void add2(int val)", fp<&test_bind::add_obj_last_ref>)
+        .method("void mul2(int val)", fp<&test_bind::mul_obj_first_ref>)
         .method(
             "void lambda_fun()",
             [](trivial_value_class& v)
@@ -218,8 +218,8 @@ void register_trivial_value_class(asbind20::use_generic_t, asIScriptEngine* engi
                 var_type<0>
             )
         )
-        .method<&test_bind::add_obj_last>("void add3(int val)")
-        .method<&test_bind::mul_obj_first_ref>("void mul3(int val)")
+        .method("void add3(int val)", fp<&test_bind::add_obj_last>)
+        .method("void mul3(int val)", fp<&test_bind::mul_obj_first_ref>)
         .property("int value", &trivial_value_class::value);
 
     EXPECT_EQ(c.get_engine(), engine);

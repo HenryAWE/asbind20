@@ -208,8 +208,8 @@ void register_math_complex_impl(asIScriptEngine* engine)
         .opSub()
         .opMul()
         .opDiv()
-        .template method<&complex_squared_length<float>>("float get_squared_length() const property")
-        .template method<&complex_length<float>>("float get_length() const property")
+        .method("float get_squared_length() const property", fp<&complex_squared_length<float>>)
+        .method("float get_length() const property", fp<&complex_length<float>>)
         .property("float real", 0)
         .property("float imag", sizeof(float));
 

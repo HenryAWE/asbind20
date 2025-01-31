@@ -513,50 +513,50 @@ static void register_string_impl(asIScriptEngine* engine)
         .opEquals()
         .opCmp()
         .opAdd()
-        .template method<&string_append>("void append(const string &in)")
+        .method("void append(const string &in)", fp<&string_append>)
         .opAddAssign()
-        .template method<&string_prepend>("void prepend(const string&in)")
-        .template method<&string_substr>("string substr(int pos, uint len=-1) const")
-        .template method<&string::empty>("bool get_empty() const property")
-        .template method<&string::empty>("bool opConv() const")
-        .template method<&string_size_bytes>("uint get_size_bytes() const property")
-        .template method<&string_size>("uint get_size() const property")
-        .template method<&string::clear>("void clear()")
-        .template method<&string_starts_with>("bool starts_with(const string&in str) const")
-        .template method<&string_ends_with>("bool ends_with(const string&in str) const")
-        .template method<&string_remove_prefix>("void remove_prefix(uint n)")
-        .template method<&string_remove_suffix>("void remove_suffix(uint n)")
-        .template method<&string_replace>("void replace(int idx, uint n, const string&in str, uint len=-1)")
-        .template method<&string_insert>("void insert(int idx, const string&in str, uint len=-1)")
-        .template method<&string_erase>("void erase(int idx, uint n=1)")
-        .template method<&string_hash>("uint64 get_hash() const property")
-        .template method<&string_contains>("bool contains(const string&in) const");
+        .method("void prepend(const string&in)", fp<&string_prepend>)
+        .method("string substr(int pos, uint len=-1) const", fp<&string_substr>)
+        .method("bool get_empty() const property", fp<&string::empty>)
+        .method("bool opConv() const", fp<&string::empty>)
+        .method("uint get_size_bytes() const property", fp<&string_size_bytes>)
+        .method("uint get_size() const property", fp<&string_size>)
+        .method("void clear()", fp<&string::clear>)
+        .method("bool starts_with(const string&in str) const", fp<&string_starts_with>)
+        .method("bool ends_with(const string&in str) const", fp<&string_ends_with>)
+        .method("void remove_prefix(uint n)", fp<&string_remove_prefix>)
+        .method("void remove_suffix(uint n)", fp<&string_remove_suffix>)
+        .method("void replace(int idx, uint n, const string&in str, uint len=-1)", fp<&string_replace>)
+        .method("void insert(int idx, const string&in str, uint len=-1)", fp<&string_insert>)
+        .method("void erase(int idx, uint n=1)", fp<&string_erase>)
+        .method("uint64 get_hash() const property", fp<&string_hash>)
+        .method("bool contains(const string&in) const", fp<&string_contains>);
 
     if(use_ch_api)
     {
         c
             .template constructor_function<&string_constructor_ch, asCALL_CDECL_OBJLAST>("uint count, uint ch")
-            .template method<&string_append_ch>("void append(uint ch)")
-            .template method<&string_opAdd_ch>("string opAdd(uint ch) const")
-            .template method<&string_prepend_ch>("void prepend(uint ch)")
-            .template method<&string_opAdd_r_ch>("string opAdd_r(uint ch) const")
-            .template method<&string_starts_with_ch>("bool starts_with(uint ch) const")
-            .template method<&string_ends_with_ch>("bool ends_with(uint ch) const")
-            .template method<&string_get_opIndex>("uint get_opIndex(int idx) const property")
-            .template method<&string_set_opIndex>("void set_opIndex(int idx, uint ch) property")
-            .template method<&string_contains_ch>("bool contains(uint ch) const")
+            .method("void append(uint ch)", fp<&string_append_ch>)
+            .method("string opAdd(uint ch) const", fp<&string_opAdd_ch>)
+            .method("void prepend(uint ch)", fp<&string_prepend_ch>)
+            .method("string opAdd_r(uint ch) const", fp<&string_opAdd_r_ch>)
+            .method("bool starts_with(uint ch) const", fp<&string_starts_with_ch>)
+            .method("bool ends_with(uint ch) const", fp<&string_ends_with_ch>)
+            .method("uint get_opIndex(int idx) const property", fp<&string_get_opIndex>)
+            .method("void set_opIndex(int idx, uint ch) property", fp<&string_set_opIndex>)
+            .method("bool contains(uint ch) const", fp<&string_contains_ch>)
             .funcdef("void for_each_callback(uint ch)")
-            .template method<&string_for_each>("void for_each(const for_each_callback&in fn)");
+            .method("void for_each(const for_each_callback&in fn)", fp<&string_for_each>);
     }
 
     if(engine->GetDefaultArrayTypeId() >= 0)
     {
         c
-            .template method<&string_split_simple>("array<string>@ split(bool skip_empty=true) const")
-            .template method<&string_split>("array<string>@ split(const string&in delimiter, bool skip_empty=true) const");
+            .method("array<string>@ split(bool skip_empty=true) const", fp<&string_split_simple>)
+            .method("array<string>@ split(const string&in delimiter, bool skip_empty=true) const", fp<&string_split>);
         if(use_ch_api)
         {
-            c.template method<&string_split_ch>("array<string>@ split(uint delimiter, bool skip_empty=true) const");
+            c.method("array<string>@ split(uint delimiter, bool skip_empty=true) const", fp<&string_split_ch>);
         }
     }
 }

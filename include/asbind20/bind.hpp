@@ -376,9 +376,9 @@ namespace wrappers
             {
                 if constexpr(Template)
                 {
-                    return +[](asITypeInfo* type, Args... args) -> Class*
+                    return +[](asITypeInfo* ti, Args... args) -> Class*
                     {
-                        return new Class(type, std::forward<Args>(args)...);
+                        return new Class(ti, std::forward<Args>(args)...);
                     };
                 }
                 else
@@ -461,9 +461,9 @@ namespace wrappers
             {
                 if constexpr(Template)
                 {
-                    return +[](asITypeInfo* type, ListElementType* list_buf) -> Class*
+                    return +[](asITypeInfo* ti, ListElementType* list_buf) -> Class*
                     {
-                        return new Class(type, list_buf);
+                        return new Class(ti, list_buf);
                     };
                 }
                 else
@@ -1554,8 +1554,6 @@ private:
 template <typename Class, bool ForceGeneric = false>
 class value_class final : public class_register_helper_base<ForceGeneric>
 {
-    static constexpr bool use_pod_v = std::is_trivial_v<Class> && std::is_standard_layout_v<Class>;
-
     using my_base = class_register_helper_base<ForceGeneric>;
 
     using my_base::m_engine;
@@ -2307,6 +2305,7 @@ public:
     template <
         native_function auto Method,
         asECallConvTypes CallConv = detail::deduce_method_callconv<Method, Class>()>
+    [[deprecated("Use the version with fp<>")]]
     value_class& method(use_generic_t, const char* decl)
     {
         method(decl, to_asGENFUNC_t(fp<Method>, call_conv<CallConv>), call_conv<asCALL_GENERIC>);
@@ -2315,14 +2314,83 @@ public:
     }
 
     template <
+        auto Method,
+        asECallConvTypes CallConv>
+    value_class& method(
+        use_generic_t,
+        const char* decl,
+        fp_wrapper_t<Method>,
+        call_conv_t<CallConv>
+    )
+    {
+        this->method_impl(
+            decl,
+            to_asGENFUNC_t(fp<Method>, call_conv<CallConv>),
+            call_conv<asCALL_GENERIC>
+        );
+
+        return *this;
+    }
+
+    template <auto Method>
+    value_class& method(
+        use_generic_t,
+        const char* decl,
+        fp_wrapper_t<Method>
+    )
+    {
+        constexpr asECallConvTypes conv = detail::deduce_method_callconv<Method, Class>();
+        this->method_impl(
+            decl,
+            to_asGENFUNC_t(fp<Method>, call_conv<conv>),
+            call_conv<asCALL_GENERIC>
+        );
+
+        return *this;
+    }
+
+    template <
         native_function auto Method,
         asECallConvTypes CallConv = detail::deduce_method_callconv<Method, Class>()>
+    [[deprecated("Use the version with fp<>")]]
     value_class& method(const char* decl)
     {
         if constexpr(ForceGeneric)
             this->template method<Method, CallConv>(use_generic, decl);
         else
             this->method(decl, Method, call_conv<CallConv>);
+
+        return *this;
+    }
+
+    template <
+        auto Method,
+        asECallConvTypes CallConv>
+    value_class& method(
+        const char* decl,
+        fp_wrapper_t<Method>,
+        call_conv_t<CallConv>
+    )
+    {
+        if constexpr(ForceGeneric)
+            this->method(use_generic, decl, fp<Method>, call_conv<CallConv>);
+        else
+            this->method(decl, Method, call_conv<CallConv>);
+
+        return *this;
+    }
+
+    template <auto Method>
+    value_class& method(
+        const char* decl,
+        fp_wrapper_t<Method>
+    )
+    {
+        constexpr asECallConvTypes conv = detail::deduce_method_callconv<Method, Class>();
+        if constexpr(ForceGeneric)
+            this->method(use_generic, decl, fp<Method>, call_conv<conv>);
+        else
+            this->method(decl, Method, call_conv<conv>);
 
         return *this;
     }
