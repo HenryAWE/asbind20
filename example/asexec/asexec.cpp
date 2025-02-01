@@ -88,6 +88,7 @@ int main(int argc, char* argv[])
     if(use_generic)
         std::cout << "[asexec] use_generic = true" << std::endl;
 
+    using asbind20::fp;
     asbind20::global g(engine);
     g
         .message_callback(&message_callback);
@@ -104,7 +105,7 @@ int main(int argc, char* argv[])
     asbind20::ext::register_std_string(engine, use_generic);
     asbind20::ext::register_string_utils(engine, use_generic);
     g
-        .function<&script_print>(asbind20::use_generic, "void print(const string&in str, bool newline=true)");
+        .function(asbind20::use_generic, "void print(const string&in str, bool newline=true)", fp<&script_print>);
 
     asIScriptModule* m = engine->GetModule("asexec", asGM_ALWAYS_CREATE);
     int r = asbind20::ext::load_file(

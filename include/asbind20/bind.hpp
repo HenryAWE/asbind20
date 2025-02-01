@@ -525,7 +525,7 @@ namespace wrappers
                     );
                 };
             }
-            else // CallConv == asCALL_CDECL_FISRT/LAST
+            else // CallConv == asCALL_CDECL_OBJFIRST/LAST
             {
                 return +[](Class& obj) -> To
                 {
@@ -3359,46 +3359,48 @@ public:
         return *this;
     }
 
-#define ASBIND20_REFERENCE_CLASS_BEH(func_name, as_beh, as_decl)                            \
-    template <native_function Fn>                                                           \
-    reference_class& func_name(Fn&& fn) requires(!ForceGeneric)                             \
-    {                                                                                       \
-        constexpr asECallConvTypes conv =                                                   \
-            detail::deduce_beh_callconv<as_beh, Class, std::decay_t<Fn>>();                 \
-        this->behaviour_impl(                                                               \
-            as_beh,                                                                         \
-            as_decl,                                                                        \
-            fn,                                                                             \
-            call_conv<conv>                                                                 \
-        );                                                                                  \
-        return *this;                                                                       \
-    }                                                                                       \
-    reference_class& func_name(asGENFUNC_t gfn)                                             \
-    {                                                                                       \
-        this->behaviour(                                                                    \
-            as_beh,                                                                         \
-            as_decl,                                                                        \
-            gfn,                                                                            \
-            call_conv<asCALL_GENERIC>                                                       \
-        );                                                                                  \
-        return *this;                                                                       \
-    }                                                                                       \
-    template <auto Function>                                                                \
-    reference_class& func_name(use_generic_t, fp_wrapper_t<Function>)                       \
-    {                                                                                       \
-        constexpr asECallConvTypes conv =                                                   \
-            detail::deduce_beh_callconv<as_beh, Class, std::decay_t<decltype(Function)>>(); \
-        this->func_name(to_asGENFUNC_t(fp<Function>, call_conv<conv>));                     \
-        return *this;                                                                       \
-    }                                                                                       \
-    template <auto Function>                                                                \
-    reference_class& func_name(fp_wrapper_t<Function>)                                      \
-    {                                                                                       \
-        if constexpr(ForceGeneric)                                                          \
-            this->func_name(use_generic, fp<Function>);                                     \
-        else                                                                                \
-            this->func_name(Function);                                                      \
-        return *this;                                                                       \
+#define ASBIND20_REFERENCE_CLASS_BEH(func_name, as_beh, as_decl)                         \
+    template <native_function Fn>                                                        \
+    reference_class& func_name(Fn&& fn) requires(!ForceGeneric)                          \
+    {                                                                                    \
+        using func_t = std::decay_t<Fn>;                                                 \
+        constexpr asECallConvTypes conv =                                                \
+            detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER as_beh, Class, func_t>(); \
+        this->behaviour_impl(                                                            \
+            AS_NAMESPACE_QUALIFIER as_beh,                                               \
+            as_decl,                                                                     \
+            fn,                                                                          \
+            call_conv<conv>                                                              \
+        );                                                                               \
+        return *this;                                                                    \
+    }                                                                                    \
+    reference_class& func_name(asGENFUNC_t gfn)                                          \
+    {                                                                                    \
+        this->behaviour(                                                                 \
+            AS_NAMESPACE_QUALIFIER as_beh,                                               \
+            as_decl,                                                                     \
+            gfn,                                                                         \
+            call_conv<asCALL_GENERIC>                                                    \
+        );                                                                               \
+        return *this;                                                                    \
+    }                                                                                    \
+    template <auto Function>                                                             \
+    reference_class& func_name(use_generic_t, fp_wrapper_t<Function>)                    \
+    {                                                                                    \
+        using func_t = std::decay_t<decltype(Function)>;                                 \
+        constexpr asECallConvTypes conv =                                                \
+            detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER as_beh, Class, func_t>(); \
+        this->func_name(to_asGENFUNC_t(fp<Function>, call_conv<conv>));                  \
+        return *this;                                                                    \
+    }                                                                                    \
+    template <auto Function>                                                             \
+    reference_class& func_name(fp_wrapper_t<Function>)                                   \
+    {                                                                                    \
+        if constexpr(ForceGeneric)                                                       \
+            this->func_name(use_generic, fp<Function>);                                  \
+        else                                                                             \
+            this->func_name(Function);                                                   \
+        return *this;                                                                    \
     }
 
     ASBIND20_REFERENCE_CLASS_BEH(addref, asBEHAVE_ADDREF, "void f()")

@@ -298,137 +298,131 @@ namespace detail
 
     template <typename VarType, std::size_t RawIdx>
     using var_type_tag = std::bool_constant<var_type_tag_helper(VarType{}, RawIdx)>;
-} // namespace detail
 
-#define ASBIND20_GENERIC_WRAPPER_IMPL(func)                                                             \
-    static void wrapper_impl_thiscall(asIScriptGeneric* gen)                                            \
-    {                                                                                                   \
-        [gen]<std::size_t... Is>(std::index_sequence<Is...>)                                            \
-        {                                                                                               \
-            if constexpr(std::is_void_v<typename traits::return_type>)                                  \
-            {                                                                                           \
-                std::invoke(                                                                            \
-                    func,                                                                               \
-                    this_(gen),                                                                         \
-                    get_generic_arg<typename traits::template arg_type<Is>>(                            \
-                        gen, static_cast<asUINT>(Is)                                                    \
-                    )...                                                                                \
-                );                                                                                      \
-            }                                                                                           \
-            else                                                                                        \
-            {                                                                                           \
-                set_generic_return<typename traits::return_type>(                                       \
-                    gen,                                                                                \
-                    std::invoke(                                                                        \
-                        func,                                                                           \
-                        this_(gen),                                                                     \
-                        get_generic_arg<typename traits::template arg_type<Is>>(                        \
-                            gen, static_cast<asUINT>(Is)                                                \
-                        )...                                                                            \
-                    )                                                                                   \
-                );                                                                                      \
-            }                                                                                           \
-        }(std::make_index_sequence<traits::arg_count::value>());                                        \
-    }                                                                                                   \
-                                                                                                        \
-    static void wrapper_impl_objfirst(asIScriptGeneric* gen)                                            \
-    {                                                                                                   \
-        static_assert(traits::arg_count::value >= 1);                                                   \
-                                                                                                        \
-        [gen]<std::size_t... Is>(std::index_sequence<Is...>)                                            \
-        {                                                                                               \
-            if constexpr(std::is_void_v<typename traits::return_type>)                                  \
-            {                                                                                           \
-                std::invoke(                                                                            \
-                    func,                                                                               \
-                    this_(gen),                                                                         \
-                    get_generic_arg<typename traits::template arg_type<Is + 1>>(                        \
-                        gen, static_cast<asUINT>(Is)                                                    \
-                    )...                                                                                \
-                );                                                                                      \
-            }                                                                                           \
-            else                                                                                        \
-            {                                                                                           \
-                set_generic_return<typename traits::return_type>(                                       \
-                    gen,                                                                                \
-                    std::invoke(                                                                        \
-                        func,                                                                           \
-                        this_(gen),                                                                     \
-                        get_generic_arg<typename traits::template arg_type<Is + 1>>(                    \
-                            gen, static_cast<asUINT>(Is)                                                \
-                        )...                                                                            \
-                    )                                                                                   \
-                );                                                                                      \
-            }                                                                                           \
-        }(std::make_index_sequence<traits::arg_count::value - 1>());                                    \
-    }                                                                                                   \
-                                                                                                        \
-    static void wrapper_impl_objlast(asIScriptGeneric* gen)                                             \
-    {                                                                                                   \
-        static_assert(traits::arg_count::value >= 1);                                                   \
-                                                                                                        \
-        [gen]<std::size_t... Is>(std::index_sequence<Is...>)                                            \
-        {                                                                                               \
-            if constexpr(std::is_void_v<typename traits::return_type>)                                  \
-            {                                                                                           \
-                std::invoke(                                                                            \
-                    func,                                                                               \
-                    get_generic_arg<typename traits::template arg_type<Is>>(                            \
-                        gen, static_cast<asUINT>(Is)                                                    \
-                    )...,                                                                               \
-                    this_(gen)                                                                          \
-                );                                                                                      \
-            }                                                                                           \
-            else                                                                                        \
-            {                                                                                           \
-                set_generic_return<typename traits::return_type>(                                       \
-                    gen,                                                                                \
-                    std::invoke(                                                                        \
-                        func,                                                                           \
-                        get_generic_arg<typename traits::template arg_type<Is>>(                        \
-                            gen, static_cast<asUINT>(Is)                                                \
-                        )...,                                                                           \
-                        this_(gen)                                                                      \
-                    )                                                                                   \
-                );                                                                                      \
-            }                                                                                           \
-        }(std::make_index_sequence<traits::arg_count::value - 1>());                                    \
-    }                                                                                                   \
-                                                                                                        \
-    static void wrapper_impl_general(asIScriptGeneric* gen)                                             \
-    {                                                                                                   \
-        [gen]<std::size_t... Is>(std::index_sequence<Is...>)                                            \
-        {                                                                                               \
-            if constexpr(std::is_void_v<typename traits::return_type>)                                  \
-            {                                                                                           \
-                std::invoke(                                                                            \
-                    func,                                                                               \
-                    get_generic_arg<typename traits::template arg_type<Is>>(                            \
-                        gen, static_cast<asUINT>(Is)                                                    \
-                    )...                                                                                \
-                );                                                                                      \
-            }                                                                                           \
-            else                                                                                        \
-            {                                                                                           \
-                set_generic_return<typename traits::return_type>(                                       \
-                    gen,                                                                                \
-                    std::invoke(                                                                        \
-                        func,                                                                           \
-                        get_generic_arg<typename traits::template arg_type<Is>>(                        \
-                            gen, static_cast<asUINT>(Is)                                                \
-                        )...                                                                            \
-                    )                                                                                   \
-                );                                                                                      \
-            }                                                                                           \
-        }(std::make_index_sequence<traits::arg_count::value>());                                        \
-    }                                                                                                   \
-                                                                                                        \
+#define ASBIND20_GENERIC_WRAPPER_IMPL(func)                                          \
+    static void wrapper_impl_thiscall(asIScriptGeneric* gen)                         \
+    {                                                                                \
+        [gen]<std::size_t... Is>(std::index_sequence<Is...>)                         \
+        {                                                                            \
+            if constexpr(std::is_void_v<typename traits::return_type>)               \
+            {                                                                        \
+                std::invoke(                                                         \
+                    func,                                                            \
+                    this_(gen),                                                      \
+                    get_generic_arg<typename traits::template arg_type<Is>>(         \
+                        gen, static_cast<asUINT>(Is)                                 \
+                    )...                                                             \
+                );                                                                   \
+            }                                                                        \
+            else                                                                     \
+            {                                                                        \
+                set_generic_return<typename traits::return_type>(                    \
+                    gen,                                                             \
+                    std::invoke(                                                     \
+                        func,                                                        \
+                        this_(gen),                                                  \
+                        get_generic_arg<typename traits::template arg_type<Is>>(     \
+                            gen, static_cast<asUINT>(Is)                             \
+                        )...                                                         \
+                    )                                                                \
+                );                                                                   \
+            }                                                                        \
+        }(std::make_index_sequence<traits::arg_count::value>());                     \
+    }                                                                                \
+    static void wrapper_impl_objfirst(asIScriptGeneric* gen)                         \
+    {                                                                                \
+        static_assert(traits::arg_count::value >= 1);                                \
+        [gen]<std::size_t... Is>(std::index_sequence<Is...>)                         \
+        {                                                                            \
+            if constexpr(std::is_void_v<typename traits::return_type>)               \
+            {                                                                        \
+                std::invoke(                                                         \
+                    func,                                                            \
+                    this_(gen),                                                      \
+                    get_generic_arg<typename traits::template arg_type<Is + 1>>(     \
+                        gen, static_cast<asUINT>(Is)                                 \
+                    )...                                                             \
+                );                                                                   \
+            }                                                                        \
+            else                                                                     \
+            {                                                                        \
+                set_generic_return<typename traits::return_type>(                    \
+                    gen,                                                             \
+                    std::invoke(                                                     \
+                        func,                                                        \
+                        this_(gen),                                                  \
+                        get_generic_arg<typename traits::template arg_type<Is + 1>>( \
+                            gen, static_cast<asUINT>(Is)                             \
+                        )...                                                         \
+                    )                                                                \
+                );                                                                   \
+            }                                                                        \
+        }(std::make_index_sequence<traits::arg_count::value - 1>());                 \
+    }                                                                                \
+    static void wrapper_impl_objlast(asIScriptGeneric* gen)                          \
+    {                                                                                \
+        static_assert(traits::arg_count::value >= 1);                                \
+        [gen]<std::size_t... Is>(std::index_sequence<Is...>)                         \
+        {                                                                            \
+            if constexpr(std::is_void_v<typename traits::return_type>)               \
+            {                                                                        \
+                std::invoke(                                                         \
+                    func,                                                            \
+                    get_generic_arg<typename traits::template arg_type<Is>>(         \
+                        gen, static_cast<asUINT>(Is)                                 \
+                    )...,                                                            \
+                    this_(gen)                                                       \
+                );                                                                   \
+            }                                                                        \
+            else                                                                     \
+            {                                                                        \
+                set_generic_return<typename traits::return_type>(                    \
+                    gen,                                                             \
+                    std::invoke(                                                     \
+                        func,                                                        \
+                        get_generic_arg<typename traits::template arg_type<Is>>(     \
+                            gen, static_cast<asUINT>(Is)                             \
+                        )...,                                                        \
+                        this_(gen)                                                   \
+                    )                                                                \
+                );                                                                   \
+            }                                                                        \
+        }(std::make_index_sequence<traits::arg_count::value - 1>());                 \
+    }                                                                                \
+    static void wrapper_impl_general(asIScriptGeneric* gen)                          \
+    {                                                                                \
+        [gen]<std::size_t... Is>(std::index_sequence<Is...>)                         \
+        {                                                                            \
+            if constexpr(std::is_void_v<typename traits::return_type>)               \
+            {                                                                        \
+                std::invoke(                                                         \
+                    func,                                                            \
+                    get_generic_arg<typename traits::template arg_type<Is>>(         \
+                        gen, static_cast<asUINT>(Is)                                 \
+                    )...                                                             \
+                );                                                                   \
+            }                                                                        \
+            else                                                                     \
+            {                                                                        \
+                set_generic_return<typename traits::return_type>(                    \
+                    gen,                                                             \
+                    std::invoke(                                                     \
+                        func,                                                        \
+                        get_generic_arg<typename traits::template arg_type<Is>>(     \
+                            gen, static_cast<asUINT>(Is)                             \
+                        )...                                                         \
+                    )                                                                \
+                );                                                                   \
+            }                                                                        \
+        }(std::make_index_sequence<traits::arg_count::value>());                     \
+    }
+
+#define ASBIND20_GENERIC_WRAPPER_VAR_TYPE_IMPL(func)                                                    \
     template <typename VarType>                                                                         \
     static void var_type_wrapper_impl_thiscall(asIScriptGeneric* gen)                                   \
     {                                                                                                   \
         using traits = function_traits<function_type>;                                                  \
         static constexpr auto indices = detail::gen_script_arg_idx<traits::arg_count_v>(VarType{});     \
-                                                                                                        \
         [gen]<std::size_t... Is>(std::index_sequence<Is...>)                                            \
         {                                                                                               \
             if constexpr(std::is_void_v<typename traits::return_type>)                                  \
@@ -460,13 +454,11 @@ namespace detail
             }                                                                                           \
         }(std::make_index_sequence<indices.size()>());                                                  \
     }                                                                                                   \
-                                                                                                        \
     template <typename VarType>                                                                         \
     static void var_type_wrapper_impl_objfirst(asIScriptGeneric* gen)                                   \
     {                                                                                                   \
         using traits = function_traits<function_type>;                                                  \
         static constexpr auto indices = detail::gen_script_arg_idx<traits::arg_count_v - 1>(VarType{}); \
-                                                                                                        \
         [gen]<std::size_t... Is>(std::index_sequence<Is...>)                                            \
         {                                                                                               \
             if constexpr(std::is_void_v<typename traits::return_type>)                                  \
@@ -498,13 +490,11 @@ namespace detail
             }                                                                                           \
         }(std::make_index_sequence<indices.size()>());                                                  \
     }                                                                                                   \
-                                                                                                        \
     template <typename VarType>                                                                         \
     static void var_type_wrapper_impl_objlast(asIScriptGeneric* gen)                                    \
     {                                                                                                   \
         using traits = function_traits<function_type>;                                                  \
         static constexpr auto indices = detail::gen_script_arg_idx<traits::arg_count_v - 1>(VarType{}); \
-                                                                                                        \
         [gen]<std::size_t... Is>(std::index_sequence<Is...>)                                            \
         {                                                                                               \
             if constexpr(std::is_void_v<typename traits::return_type>)                                  \
@@ -536,13 +526,11 @@ namespace detail
             }                                                                                           \
         }(std::make_index_sequence<indices.size()>());                                                  \
     }                                                                                                   \
-                                                                                                        \
     template <typename VarType>                                                                         \
     static void var_type_wrapper_impl_general(asIScriptGeneric* gen)                                    \
     {                                                                                                   \
         using traits = function_traits<function_type>;                                                  \
         static constexpr auto indices = detail::gen_script_arg_idx<traits::arg_count_v>(VarType{});     \
-                                                                                                        \
         [gen]<std::size_t... Is>(std::index_sequence<Is...>)                                            \
         {                                                                                               \
             if constexpr(std::is_void_v<typename traits::return_type>)                                  \
@@ -573,168 +561,135 @@ namespace detail
         }(std::make_index_sequence<indices.size()>());                                                  \
     }
 
-template <
-    noncapturing_lambda Lambda,
-    asECallConvTypes OriginalConv>
-requires(OriginalConv != asCALL_GENERIC)
-class generic_wrapper_lambda
-{
-public:
-    using function_type = decltype(+Lambda{});
-
-    static_assert(
-        !std::is_member_function_pointer_v<function_type> ||
-            (OriginalConv == asCALL_THISCALL || OriginalConv == asCALL_THISCALL_ASGLOBAL),
-        "Invalid calling convention"
-    );
-
-    static consteval function_type underlying_function()
+    template <
+        noncapturing_lambda Lambda,
+        asECallConvTypes OriginalConv>
+    requires(OriginalConv != asCALL_GENERIC)
+    class generic_wrapper_lambda
     {
-        return +Lambda{};
-    }
+    public:
+        using function_type = decltype(+Lambda{});
 
-    static constexpr asECallConvTypes underlying_convention() noexcept
+        static consteval function_type underlying_function()
+        {
+            return +Lambda{};
+        }
+
+        static constexpr asECallConvTypes underlying_convention() noexcept
+        {
+            return OriginalConv;
+        }
+
+    private:
+        using traits = function_traits<function_type>;
+
+        static decltype(auto) this_(asIScriptGeneric* gen)
+        {
+            return get_generic_this<function_type, OriginalConv>(gen);
+        }
+
+        ASBIND20_GENERIC_WRAPPER_IMPL(underlying_function())
+        ASBIND20_GENERIC_WRAPPER_VAR_TYPE_IMPL(underlying_function())
+
+    public:
+        static constexpr asGENFUNC_t generate() noexcept
+        {
+            if constexpr(
+                OriginalConv == asCALL_THISCALL ||
+                OriginalConv == asCALL_THISCALL_ASGLOBAL
+            )
+                return &wrapper_impl_thiscall;
+            else if constexpr(OriginalConv == asCALL_CDECL_OBJFIRST)
+                return &wrapper_impl_objfirst;
+            else if constexpr(OriginalConv == asCALL_CDECL_OBJLAST)
+                return &wrapper_impl_objlast;
+            else
+                return &wrapper_impl_general;
+        }
+
+        template <std::size_t... Is>
+        static constexpr asGENFUNC_t generate(var_type_t<Is...>)
+        {
+            using my_var_type = var_type_t<Is...>;
+            if constexpr(
+                OriginalConv == asCALL_THISCALL ||
+                OriginalConv == asCALL_THISCALL_ASGLOBAL
+            )
+                return &var_type_wrapper_impl_thiscall<my_var_type>;
+            else if constexpr(OriginalConv == asCALL_CDECL_OBJFIRST)
+                return &var_type_wrapper_impl_objfirst<my_var_type>;
+            else if constexpr(OriginalConv == asCALL_CDECL_OBJLAST)
+                return &var_type_wrapper_impl_objlast<my_var_type>;
+            else
+                return &var_type_wrapper_impl_general<my_var_type>;
+        }
+    };
+
+    template <
+        native_function auto Function,
+        asECallConvTypes OriginalConv>
+    requires(OriginalConv != asCALL_GENERIC)
+    class generic_wrapper_nontype
     {
-        return OriginalConv;
-    }
+    public:
+        using function_type = std::decay_t<decltype(Function)>;
 
-private:
-    using traits = function_traits<function_type>;
+        static constexpr asECallConvTypes underlying_convention() noexcept
+        {
+            return OriginalConv;
+        }
 
-    static decltype(auto) this_(asIScriptGeneric* gen)
-    {
-        return get_generic_this<function_type, OriginalConv>(gen);
-    }
+    private:
+        using traits = function_traits<function_type>;
 
-    ASBIND20_GENERIC_WRAPPER_IMPL(underlying_function())
+        static decltype(auto) this_(asIScriptGeneric* gen)
+        {
+            return get_generic_this<function_type, OriginalConv>(gen);
+        }
 
-public:
-    static constexpr asGENFUNC_t generate() noexcept
-    {
-        if constexpr(
-            OriginalConv == asCALL_THISCALL ||
-            OriginalConv == asCALL_THISCALL_ASGLOBAL
-        )
-            return &wrapper_impl_thiscall;
-        else if constexpr(OriginalConv == asCALL_CDECL_OBJFIRST)
-            return &wrapper_impl_objfirst;
-        else if constexpr(OriginalConv == asCALL_CDECL_OBJLAST)
-            return &wrapper_impl_objlast;
-        else
-            return &wrapper_impl_general;
-    }
+        // MSVC needs to directly use the Function as a workaround,
+        // i.e., NO constexpr/consteval function for getting function pointer,
+        // otherwise it may cause strange runtime behavior.
+        ASBIND20_GENERIC_WRAPPER_IMPL(Function)
+        ASBIND20_GENERIC_WRAPPER_VAR_TYPE_IMPL(Function)
 
-    template <std::size_t... Is>
-    static constexpr asGENFUNC_t generate(var_type_t<Is...>)
-    {
-        using my_var_type = var_type_t<Is...>;
-        if constexpr(
-            OriginalConv == asCALL_THISCALL ||
-            OriginalConv == asCALL_THISCALL_ASGLOBAL
-        )
-            return &var_type_wrapper_impl_thiscall<my_var_type>;
-        else if constexpr(OriginalConv == asCALL_CDECL_OBJFIRST)
-            return &var_type_wrapper_impl_objfirst<my_var_type>;
-        else if constexpr(OriginalConv == asCALL_CDECL_OBJLAST)
-            return &var_type_wrapper_impl_objlast<my_var_type>;
-        else
-            return &var_type_wrapper_impl_general<my_var_type>;
-    }
+    public:
+        static constexpr asGENFUNC_t generate() noexcept
+        {
+            if constexpr(
+                OriginalConv == asCALL_THISCALL ||
+                OriginalConv == asCALL_THISCALL_ASGLOBAL
+            )
+                return &wrapper_impl_thiscall;
+            else if constexpr(OriginalConv == asCALL_CDECL_OBJFIRST)
+                return &wrapper_impl_objfirst;
+            else if constexpr(OriginalConv == asCALL_CDECL_OBJLAST)
+                return &wrapper_impl_objlast;
+            else
+                return &wrapper_impl_general;
+        }
 
-    constexpr asGENFUNC_t operator()() const noexcept
-    {
-        return generate();
-    }
-
-    template <std::size_t... Is>
-    constexpr asGENFUNC_t operator()(var_type_t<Is...>) const noexcept
-    {
-        return generate(var_type<Is...>);
-    }
-};
-
-template <
-    native_function auto Function,
-    asECallConvTypes OriginalConv>
-requires(OriginalConv != asCALL_GENERIC)
-class generic_wrapper_nontype
-{
-public:
-    using function_type = std::decay_t<decltype(Function)>;
-
-    static_assert(
-        !std::is_member_function_pointer_v<function_type> ||
-            (OriginalConv == asCALL_THISCALL || OriginalConv == asCALL_THISCALL_ASGLOBAL),
-        "Invalid calling convention"
-    );
-
-    static constexpr asECallConvTypes underlying_convention() noexcept
-    {
-        return OriginalConv;
-    }
-
-private:
-    using traits = function_traits<function_type>;
-
-    static decltype(auto) this_(asIScriptGeneric* gen)
-    {
-        return get_generic_this<function_type, OriginalConv>(gen);
-    }
-
-    // MSVC needs to directly use the Function as a workaround,
-    // i.e., NO constexpr/consteval function for getting function pointer,
-    // otherwise it may cause strange runtime behavior.
-    ASBIND20_GENERIC_WRAPPER_IMPL(Function)
-
-public:
-    static constexpr asGENFUNC_t generate() noexcept
-    {
-        if constexpr(
-            OriginalConv == asCALL_THISCALL ||
-            OriginalConv == asCALL_THISCALL_ASGLOBAL
-        )
-            return &wrapper_impl_thiscall;
-        else if constexpr(OriginalConv == asCALL_CDECL_OBJFIRST)
-            return &wrapper_impl_objfirst;
-        else if constexpr(OriginalConv == asCALL_CDECL_OBJLAST)
-            return &wrapper_impl_objlast;
-        else
-            return &wrapper_impl_general;
-    }
-
-    template <std::size_t... Is>
-    static constexpr asGENFUNC_t generate(var_type_t<Is...>)
-    {
-        using my_var_type = var_type_t<Is...>;
-        if constexpr(
-            OriginalConv == asCALL_THISCALL ||
-            OriginalConv == asCALL_THISCALL_ASGLOBAL
-        )
-            return &var_type_wrapper_impl_thiscall<my_var_type>;
-        else if constexpr(OriginalConv == asCALL_CDECL_OBJFIRST)
-            return &var_type_wrapper_impl_objfirst<my_var_type>;
-        else if constexpr(OriginalConv == asCALL_CDECL_OBJLAST)
-            return &var_type_wrapper_impl_objlast<my_var_type>;
-        else
-            return &var_type_wrapper_impl_general<my_var_type>;
-    }
-
-    constexpr asGENFUNC_t operator()() const noexcept
-    {
-        return generate();
-    }
-
-    template <std::size_t... Is>
-    constexpr asGENFUNC_t operator()(var_type_t<Is...>) const noexcept
-    {
-        return generate(var_type<Is...>);
-    }
-};
+        template <std::size_t... Is>
+        static constexpr asGENFUNC_t generate(var_type_t<Is...>)
+        {
+            using my_var_type = var_type_t<Is...>;
+            if constexpr(
+                OriginalConv == asCALL_THISCALL ||
+                OriginalConv == asCALL_THISCALL_ASGLOBAL
+            )
+                return &var_type_wrapper_impl_thiscall<my_var_type>;
+            else if constexpr(OriginalConv == asCALL_CDECL_OBJFIRST)
+                return &var_type_wrapper_impl_objfirst<my_var_type>;
+            else if constexpr(OriginalConv == asCALL_CDECL_OBJLAST)
+                return &var_type_wrapper_impl_objlast<my_var_type>;
+            else
+                return &var_type_wrapper_impl_general<my_var_type>;
+        }
+    };
 
 #undef ASBIND20_GENERIC_WRAPPER_IMPL
+#undef ASBIND20_GENERIC_WRAPPER_VAR_TYPE_IMPL
 
-namespace detail
-{
     template <
         noncapturing_lambda Lambda,
         asECallConvTypes OriginalCallConv,
@@ -743,9 +698,9 @@ namespace detail
     {
 #ifndef _MSC_VER
         if constexpr(sizeof...(Is))
-            return generic_wrapper_lambda<Lambda, OriginalCallConv>{}(var_type<Is...>);
+            return generic_wrapper_lambda<Lambda, OriginalCallConv>::generate(var_type<Is...>);
         else
-            return generic_wrapper_lambda<Lambda, OriginalCallConv>{}();
+            return generic_wrapper_lambda<Lambda, OriginalCallConv>::generate();
 
 #else
         // GCC < 13.2 has problem on this branch,
@@ -753,11 +708,23 @@ namespace detail
         // Clang supports both branches.
 
         if constexpr(sizeof...(Is))
-            return generic_wrapper_nontype<+Lambda{}, OriginalCallConv>{}(var_type<Is...>);
+            return generic_wrapper_nontype<+Lambda{}, OriginalCallConv>::generate(var_type<Is...>);
         else
-            return generic_wrapper_nontype<+Lambda{}, OriginalCallConv>{}();
+            return generic_wrapper_nontype<+Lambda{}, OriginalCallConv>::generate();
 
 #endif
+    }
+
+    template <
+        native_function auto Function,
+        asECallConvTypes OriginalCallConv,
+        std::size_t... Is>
+    constexpr asGENFUNC_t fp_to_asGENFUNC_t_impl()
+    {
+        if constexpr(sizeof...(Is))
+            return generic_wrapper_nontype<Function, OriginalCallConv>::generate(var_type<Is...>);
+        else
+            return generic_wrapper_nontype<Function, OriginalCallConv>::generate();
     }
 } // namespace detail
 
@@ -776,7 +743,7 @@ template <
 requires(OriginalCallConv != asCALL_GENERIC)
 consteval asGENFUNC_t to_asGENFUNC_t(fp_wrapper_t<Function>, call_conv_t<OriginalCallConv>)
 {
-    return generic_wrapper_nontype<Function, OriginalCallConv>{}();
+    return detail::fp_to_asGENFUNC_t_impl<Function, OriginalCallConv>();
 }
 
 template <
@@ -794,7 +761,7 @@ template <
     std::size_t... Is>
 consteval asGENFUNC_t to_asGENFUNC_t(fp_wrapper_t<Function>, call_conv_t<OriginalCallConv>, var_type_t<Is...>)
 {
-    return generic_wrapper_nontype<Function, OriginalCallConv>{}(var_type<Is...>);
+    return detail::fp_to_asGENFUNC_t_impl<Function, OriginalCallConv, Is...>();
 }
 
 template <asECallConvTypes CallConv>
