@@ -228,10 +228,10 @@ namespace detail
     {
         template_class<script_optional, UseGeneric> c(engine, "optional<T>", asOBJ_SCOPED);
         c
-            .template template_callback<&optional_template_callback>()
+            .template_callback(fp<&optional_template_callback>)
             .default_factory()
             .template factory<const void*>("const T&in")
-            .template release<&script_optional::release>()
+            .release(fp<&script_optional::release>)
             .opAssign()
             .method("optional<T>& opAssign(const T&in)", fp<&optional_opAssign_value>)
             .method("bool get_has_value() const property", fp<&script_optional::has_value>)

@@ -73,13 +73,13 @@ static void register_script_dictionary_impl(asIScriptEngine* engine)
     ref_class<dictionary, UseGeneric> c(engine, "dictionary", asOBJ_GC);
     c
         .factory_function("", &dictionary_factory_default)
-        .template addref<&dictionary::addref>()
-        .template release<&dictionary::release>()
-        .template get_refcount<&dictionary::get_refcount>()
-        .template set_gc_flag<&dictionary::set_gc_flag>()
-        .template get_gc_flag<&dictionary::get_gc_flag>()
-        .template enum_refs<&dictionary::enum_refs>()
-        .template release_refs<&dictionary::release_refs>();
+        .addref(fp<&dictionary::addref>)
+        .release(fp<&dictionary::release>)
+        .get_refcount(fp<&dictionary::get_refcount>)
+        .set_gc_flag(fp<&dictionary::set_gc_flag>)
+        .get_gc_flag(fp<&dictionary::get_gc_flag>)
+        .enum_refs(fp<&dictionary::enum_refs>)
+        .release_refs(fp<&dictionary::release_refs>);
 
     const char* try_emplace_decl = "bool try_emplace(const string&in k, const ?&in value)";
     const char* get_decl = "bool get(const string&in k, ?&out value) const";

@@ -93,24 +93,28 @@ T get_generic_arg(asIScriptGeneric* gen, asUINT idx)
     {
         return type_traits<std::remove_cv_t<T>>::get_arg(gen, idx);
     }
-    else if constexpr(
-        std::same_as<std::remove_cv_t<T>, asITypeInfo*> ||
-        std::same_as<std::remove_cv_t<T>, const asITypeInfo*>
-    )
-    {
-        return *(asITypeInfo**)gen->GetAddressOfArg(idx);
-    }
-    else if constexpr(
-        std::same_as<std::remove_cv_t<T>, asIScriptObject*> ||
-        std::same_as<std::remove_cv_t<T>, const asIScriptObject*>
-    )
-    {
-        return static_cast<asIScriptObject*>(gen->GetArgObject(idx));
-    }
     else if constexpr(std::is_pointer_v<T>)
     {
-        void* ptr = gen->GetArgAddress(idx);
-        return (T)ptr;
+        using value_t = std::remove_cv_t<std::remove_pointer_t<T>>;
+
+        if constexpr(std::same_as<value_t, asIScriptObject>)
+        {
+            void* ptr = gen->GetArgObject(idx);
+            return static_cast<asIScriptObject*>(ptr);
+        }
+        else if constexpr(std::same_as<value_t, asITypeInfo>)
+        {
+            return *(asITypeInfo**)gen->GetAddressOfArg(idx);
+        }
+        else if constexpr(std::same_as<value_t, asIScriptEngine>)
+        {
+            return *(asIScriptEngine**)gen->GetAddressOfArg(idx);
+        }
+        else
+        {
+            void* ptr = gen->GetArgAddress(idx);
+            return (T)ptr;
+        }
     }
     else if constexpr(std::is_reference_v<T>)
     {
