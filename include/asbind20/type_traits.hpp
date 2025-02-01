@@ -21,22 +21,37 @@ struct type_traits
 template <>
 struct type_traits<std::byte>
 {
-    static int set_arg(asIScriptContext* ctx, asUINT arg, std::byte val)
+    static int set_arg(
+        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
+        AS_NAMESPACE_QUALIFIER asUINT arg,
+        std::byte val
+    )
     {
-        return ctx->SetArgByte(arg, static_cast<asBYTE>(val));
+        return ctx->SetArgByte(
+            arg, static_cast<AS_NAMESPACE_QUALIFIER asBYTE>(val)
+        );
     }
 
-    static std::byte get_arg(asIScriptGeneric* gen, asUINT arg)
+    static std::byte get_arg(
+        AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen,
+        AS_NAMESPACE_QUALIFIER asUINT arg
+    )
     {
         return static_cast<std::byte>(gen->GetArgByte(arg));
     }
 
-    static int set_return(asIScriptGeneric* gen, std::byte val)
+    static int set_return(
+        AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen, std::byte val
+    )
     {
-        return gen->SetReturnByte(static_cast<asBYTE>(val));
+        return gen->SetReturnByte(
+            static_cast<AS_NAMESPACE_QUALIFIER asBYTE>(val)
+        );
     }
 
-    static std::byte get_return(asIScriptContext* ctx)
+    static std::byte get_return(
+        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx
+    )
     {
         return static_cast<std::byte>(ctx->GetReturnByte());
     }
@@ -45,24 +60,39 @@ struct type_traits<std::byte>
 template <>
 struct type_traits<script_object>
 {
-    static int set_arg(asIScriptContext* ctx, asUINT arg, const script_object& val)
+    static int set_arg(
+        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
+        AS_NAMESPACE_QUALIFIER asUINT arg,
+        const script_object& val
+    )
     {
         return ctx->SetArgObject(arg, val.get());
     }
 
-    static script_object get_arg(asIScriptGeneric* gen, asUINT arg)
+    static script_object get_arg(
+        AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen,
+        AS_NAMESPACE_QUALIFIER asUINT arg
+    )
     {
-        return script_object(static_cast<asIScriptObject*>(gen->GetArgObject(arg)));
+        return script_object(
+            static_cast<AS_NAMESPACE_QUALIFIER asIScriptObject*>(gen->GetArgObject(arg))
+        );
     }
 
-    static int set_return(asIScriptGeneric* gen, const script_object& val)
+    static int set_return(
+        AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen, const script_object& val
+    )
     {
         return gen->SetReturnObject(val.get());
     }
 
-    static script_object get_return(asIScriptContext* ctx)
+    static script_object get_return(
+        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx
+    )
     {
-        return script_object(static_cast<asIScriptObject*>(ctx->GetReturnObject()));
+        return script_object(
+            static_cast<AS_NAMESPACE_QUALIFIER asIScriptObject*>(ctx->GetReturnObject())
+        );
     }
 };
 } // namespace asbind20

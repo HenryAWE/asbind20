@@ -463,7 +463,7 @@ decltype(auto) visit_primitive_type(Visitor&& vis, int type_id, VoidPtrs... args
 
 #define ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(as_type_id) \
 case as_type_id:                                               \
-    return wrapper(std::in_place_type<primitive_type_of_t<as_type_id>>)
+    return wrapper(std::in_place_type<primitive_type_of_t<AS_NAMESPACE_QUALIFIER as_type_id>>)
 
     switch(type_id)
     {
@@ -499,7 +499,7 @@ decltype(auto) visit_script_type(Visitor&& vis, int type_id, VoidPtrs... args)
 {
     if(is_primitive_type(type_id))
         return visit_primitive_type(std::forward<Visitor>(vis), type_id, args...);
-    else if(type_id & asTYPEID_OBJHANDLE)
+    else if(type_id & (AS_NAMESPACE_QUALIFIER asTYPEID_OBJHANDLE))
     {
         return std::invoke(
             std::forward<Visitor>(vis),
@@ -686,6 +686,8 @@ inline std::string to_string(asEContextState state)
 class script_object
 {
 public:
+    using handle_type = AS_NAMESPACE_QUALIFIER asIScriptObject*;
+
     script_object() noexcept = default;
 
     script_object(script_object&& other) noexcept
@@ -693,7 +695,7 @@ public:
 
     script_object(const script_object&) = delete;
 
-    explicit script_object(asIScriptObject* obj)
+    explicit script_object(handle_type obj)
         : m_obj(obj)
     {
         if(m_obj)
@@ -705,12 +707,17 @@ public:
         reset(nullptr);
     }
 
-    asIScriptObject* get() const noexcept
+    handle_type get() const noexcept
     {
         return m_obj;
     }
 
-    explicit operator asIScriptObject*() const noexcept
+    explicit operator handle_type() const noexcept
+    {
+        return get();
+    }
+
+    handle_type operator->() const noexcept
     {
         return get();
     }
@@ -720,9 +727,9 @@ public:
      *
      * @warning USE WITH CAUTION!
      *
-     * @return asIScriptObject* Previously stored object
+     * @return Previously stored object
      */
-    asIScriptObject* release() noexcept
+    handle_type release() noexcept
     {
         return std::exchange(m_obj, nullptr);
     }
@@ -749,9 +756,9 @@ public:
      *
      * @param obj New object to store
      *
-     * @return int Reference count after releasing the object
+     * @return Reference count after releasing the object
      */
-    int reset(asIScriptObject* obj)
+    int reset(handle_type obj)
     {
         int prev_refcount = reset(nullptr);
 
@@ -773,7 +780,8 @@ private:
  *
  * @return A pointer to the currently executing context, or null if no context is executing
  */
-inline asIScriptContext* current_context()
+inline auto current_context()
+    -> AS_NAMESPACE_QUALIFIER asIScriptContext*
 {
     return AS_NAMESPACE_QUALIFIER asGetActiveContext();
 }
@@ -786,12 +794,16 @@ inline asIScriptContext* current_context()
 class [[nodiscard]] reuse_active_context
 {
 public:
+    using handle_type = asIScriptContext*;
+
     reuse_active_context() = delete;
     reuse_active_context(const reuse_active_context&) = delete;
 
     reuse_active_context& operator=(const reuse_active_context&) = delete;
 
-    explicit reuse_active_context(asIScriptEngine* engine, bool propagate_error = true)
+    explicit reuse_active_context(
+        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, bool propagate_error = true
+    )
         : m_engine(engine), m_propagate_error(propagate_error)
     {
         assert(m_engine != nullptr);
@@ -820,19 +832,20 @@ public:
                 if(m_propagate_error)
                 {
                     std::string ex;
-                    asEContextState state = m_ctx->GetState();
-                    if(state == asEXECUTION_EXCEPTION)
+                    AS_NAMESPACE_QUALIFIER asEContextState state =
+                        m_ctx->GetState();
+                    if(state == AS_NAMESPACE_QUALIFIER asEXECUTION_EXCEPTION)
                         ex = m_ctx->GetExceptionString();
 
                     m_ctx->PopState();
 
                     switch(state)
                     {
-                    case asEXECUTION_EXCEPTION:
+                    case AS_NAMESPACE_QUALIFIER asEXECUTION_EXCEPTION:
                         m_ctx->SetException(ex.c_str());
                         break;
 
-                    case asEXECUTION_ABORTED:
+                    case AS_NAMESPACE_QUALIFIER asEXECUTION_ABORTED:
                         m_ctx->Abort();
                         break;
 
@@ -848,12 +861,17 @@ public:
         }
     }
 
-    asIScriptContext* get() const noexcept
+    handle_type get() const noexcept
     {
         return m_ctx;
     }
 
-    operator asIScriptContext*() const noexcept
+    operator handle_type() const noexcept
+    {
+        return get();
+    }
+
+    handle_type operator->() const noexcept
     {
         return get();
     }
@@ -872,8 +890,8 @@ public:
     }
 
 private:
-    asIScriptEngine* m_engine = nullptr;
-    asIScriptContext* m_ctx = nullptr;
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* m_engine = nullptr;
+    handle_type m_ctx = nullptr;
     bool m_is_nested = false;
     bool m_propagate_error = true;
 };
@@ -884,12 +902,14 @@ private:
 class [[nodiscard]] request_context
 {
 public:
+    using handle_type = AS_NAMESPACE_QUALIFIER asIScriptContext*;
+
     request_context() = delete;
     request_context(const request_context&) = delete;
 
     request_context& operator=(const request_context&) = delete;
 
-    explicit request_context(asIScriptEngine* engine)
+    explicit request_context(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         : m_engine(engine)
     {
         assert(m_engine != nullptr);
@@ -902,19 +922,24 @@ public:
             m_engine->ReturnContext(m_ctx);
     }
 
-    asIScriptContext* get() const noexcept
+    handle_type get() const noexcept
     {
         return m_ctx;
     }
 
-    operator asIScriptContext*() const noexcept
+    operator handle_type() const noexcept
+    {
+        return get();
+    }
+
+    handle_type operator->() const noexcept
     {
         return get();
     }
 
 private:
-    asIScriptEngine* m_engine = nullptr;
-    asIScriptContext* m_ctx = nullptr;
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* m_engine = nullptr;
+    handle_type m_ctx = nullptr;
 };
 
 /*
@@ -923,6 +948,8 @@ private:
 class script_engine
 {
 public:
+    using handle_type = AS_NAMESPACE_QUALIFIER asIScriptEngine*;
+
     script_engine() noexcept
         : m_engine(nullptr) {}
 
@@ -931,7 +958,7 @@ public:
     script_engine(script_engine&&) noexcept
         : m_engine(std::exchange(m_engine, nullptr)) {}
 
-    explicit script_engine(asIScriptEngine* engine) noexcept
+    explicit script_engine(handle_type engine) noexcept
         : m_engine(engine) {}
 
     script_engine& operator=(const script_engine&) = delete;
@@ -948,27 +975,27 @@ public:
         reset();
     }
 
-    asIScriptEngine* get() const noexcept
+    handle_type get() const noexcept
     {
         return m_engine;
     }
 
-    operator asIScriptEngine*() const noexcept
+    operator handle_type() const noexcept
     {
         return get();
     }
 
-    asIScriptEngine* operator->() const noexcept
+    handle_type operator->() const noexcept
     {
         return get();
     }
 
-    asIScriptEngine* release() noexcept
+    handle_type release() noexcept
     {
         return std::exchange(m_engine, nullptr);
     }
 
-    void reset(asIScriptEngine* engine = nullptr) noexcept
+    void reset(handle_type engine = nullptr) noexcept
     {
         if(m_engine)
             m_engine->ShutDownAndRelease();
@@ -976,7 +1003,7 @@ public:
     }
 
 private:
-    asIScriptEngine* m_engine;
+    handle_type m_engine;
 };
 
 inline script_engine make_script_engine(asDWORD version = ANGELSCRIPT_VERSION)
@@ -1190,13 +1217,15 @@ concept has_static_name =
     std::is_arithmetic_v<T> &&
     !std::same_as<T, char>;
 
-inline asIScriptFunction* get_default_factory(asITypeInfo* ti)
+inline auto get_default_factory(asITypeInfo* ti)
+    -> AS_NAMESPACE_QUALIFIER asIScriptFunction*
 {
     assert(ti != nullptr);
 
-    for(asUINT i = 0; i < ti->GetFactoryCount(); ++i)
+    for(AS_NAMESPACE_QUALIFIER asUINT i = 0; i < ti->GetFactoryCount(); ++i)
     {
-        asIScriptFunction* func = ti->GetFactoryByIndex(i);
+        AS_NAMESPACE_QUALIFIER asIScriptFunction* func =
+            ti->GetFactoryByIndex(i);
         if(func->GetParamCount() == 0)
             return func;
     }
@@ -1204,14 +1233,16 @@ inline asIScriptFunction* get_default_factory(asITypeInfo* ti)
     return nullptr;
 }
 
-inline asIScriptFunction* get_default_constructor(asITypeInfo* ti)
+inline auto get_default_constructor(asITypeInfo* ti)
+    -> AS_NAMESPACE_QUALIFIER asIScriptFunction*
 {
     assert(ti != nullptr);
 
-    for(asUINT i = 0; i < ti->GetBehaviourCount(); ++i)
+    for(AS_NAMESPACE_QUALIFIER asUINT i = 0; i < ti->GetBehaviourCount(); ++i)
     {
-        asEBehaviours beh;
-        asIScriptFunction* func = ti->GetBehaviourByIndex(i, &beh);
+        AS_NAMESPACE_QUALIFIER asEBehaviours beh;
+        AS_NAMESPACE_QUALIFIER asIScriptFunction* func =
+            ti->GetBehaviourByIndex(i, &beh);
         if(beh == asBEHAVE_CONSTRUCT)
         {
             if(func->GetParamCount() == 0)

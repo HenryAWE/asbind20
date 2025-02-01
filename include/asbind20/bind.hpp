@@ -24,13 +24,15 @@ public:
 
     namespace_& operator=(const namespace_&) = delete;
 
-    namespace_(asIScriptEngine* engine)
+    namespace_(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         : m_engine(engine), m_prev(engine->GetDefaultNamespace())
     {
         m_engine->SetDefaultNamespace("");
     }
 
-    namespace_(asIScriptEngine* engine, const char* ns, bool nested = true)
+    namespace_(
+        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, const char* ns, bool nested = true
+    )
         : m_engine(engine), m_prev(engine->GetDefaultNamespace())
     {
         if(nested)
@@ -54,13 +56,14 @@ public:
         m_engine->SetDefaultNamespace(m_prev.c_str());
     }
 
-    asIScriptEngine* get_engine() const noexcept
+    auto get_engine() const noexcept
+        -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
     {
         return m_engine;
     }
 
 private:
-    asIScriptEngine* m_engine;
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* m_engine;
     std::string m_prev;
 };
 
@@ -602,7 +605,8 @@ namespace detail
     }
 
     template <typename Class, typename FuncSig, bool TryVoidPtr = false>
-    consteval asECallConvTypes deduce_method_callconv() noexcept
+    consteval auto deduce_method_callconv() noexcept
+        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
     {
         if constexpr(std::is_member_function_pointer_v<FuncSig>)
             return asCALL_THISCALL;
@@ -627,7 +631,8 @@ namespace detail
     }
 
     template <asEBehaviours Beh, typename Class, typename FuncSig>
-    static consteval asECallConvTypes deduce_beh_callconv() noexcept
+    consteval auto deduce_beh_callconv() noexcept
+        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
     {
         if constexpr(
             Beh == asBEHAVE_TEMPLATE_CALLBACK ||
@@ -646,7 +651,8 @@ namespace detail
     }
 
     template <typename Class, noncapturing_lambda Lambda>
-    consteval asECallConvTypes deduce_lambda_callconv()
+    consteval auto deduce_lambda_callconv()
+        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
     {
         using function_type = decltype(+std::declval<const Lambda>());
 
@@ -679,7 +685,7 @@ public:
         r = m_engine->RegisterGlobalFunction(
             decl,
             to_asSFuncPtr(fn),
-            asCALL_CDECL
+            AS_NAMESPACE_QUALIFIER asCALL_CDECL
         );
         assert(r >= 0);
 
@@ -747,14 +753,19 @@ public:
 
     template <
         auto Function,
-        asECallConvTypes CallConv = asCALL_CDECL>
-    requires(CallConv == asCALL_CDECL || CallConv == asCALL_STDCALL)
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv = detail::deduce_function_callconv<std::decay_t<decltype(Function)>>()>
+
     global& function(
         const char* decl,
         fp_wrapper_t<Function>,
         call_conv_t<CallConv> = {}
     )
     {
+        static_assert(
+            CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL || CallConv == AS_NAMESPACE_QUALIFIER asCALL_STDCALL,
+            "Invalid calling convention for a global function"
+        );
+
         if constexpr(ForceGeneric)
         {
             function(use_generic, decl, fp<Function>, call_conv<CallConv>);
@@ -777,7 +788,7 @@ public:
     template <typename T>
     global& function(
         const char* decl,
-        asGENFUNC_t gfn,
+        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
         T& instance
     )
     {
@@ -786,7 +797,7 @@ public:
         r = m_engine->RegisterGlobalFunction(
             decl,
             to_asSFuncPtr(gfn),
-            asCALL_GENERIC,
+            AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
             (void*)std::addressof(instance)
         );
         assert(r >= 0);
@@ -806,7 +817,7 @@ public:
         r = m_engine->RegisterGlobalFunction(
             decl,
             to_asSFuncPtr(fn),
-            asCALL_THISCALL_ASGLOBAL,
+            AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL,
             (void*)std::addressof(instance)
         );
         assert(r >= 0);
@@ -862,7 +873,7 @@ public:
 
         function(
             decl,
-            to_asGENFUNC_t(fp<Function>, call_conv<asCALL_THISCALL_ASGLOBAL>),
+            to_asGENFUNC_t(fp<Function>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL>),
             instance
         );
 
@@ -1002,7 +1013,10 @@ public:
     /**
      * Generic calling convention for message callback is not supported.
      */
-    global& message_callback(asGENFUNC_t gfn, void* obj = nullptr) = delete;
+    global& message_callback(
+        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
+        void* obj = nullptr
+    ) = delete;
 
     template <native_function Callback>
     requires(!std::is_member_function_pointer_v<std::decay_t<Callback>>)
@@ -1061,7 +1075,10 @@ public:
     /**
      * Generic calling convention for exception translator is not supported.
      */
-    global& exception_translator(asGENFUNC_t gfn, void* obj = nullptr) = delete;
+    global& exception_translator(
+        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
+        void* obj = nullptr
+    ) = delete;
 
     template <native_function Callback>
     requires(!std::is_member_function_pointer_v<std::decay_t<Callback>>)
@@ -1182,11 +1199,11 @@ protected:
     class_register_helper_base() = delete;
     class_register_helper_base(const class_register_helper_base&) = default;
 
-    class_register_helper_base(asIScriptEngine* engine, const char* name)
+    class_register_helper_base(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, const char* name)
         : my_base(engine), m_name(name) {}
 
     template <typename Class>
-    void register_object_type(asQWORD flags)
+    void register_object_type(AS_NAMESPACE_QUALIFIER asQWORD flags)
     {
         [[maybe_unused]]
         int r = 0;
@@ -1198,7 +1215,7 @@ protected:
         assert(r >= 0);
     }
 
-    template <typename Fn, asECallConvTypes CallConv>
+    template <typename Fn, AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
     void method_impl(const char* decl, Fn&& fn, call_conv_t<CallConv>)
     {
         [[maybe_unused]]
@@ -1212,7 +1229,11 @@ protected:
         assert(r >= 0);
     }
 
-    void method_impl(const char* decl, asGENFUNC_t gfn, call_conv_t<asCALL_GENERIC>)
+    void method_impl(
+        const char* decl,
+        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
+        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>
+    )
     {
         [[maybe_unused]]
         int r = 0;
@@ -1246,7 +1267,12 @@ protected:
         }
     }
 
-    void behaviour_impl(asEBehaviours beh, const char* decl, asGENFUNC_t gfn, call_conv_t<asCALL_GENERIC>)
+    void behaviour_impl(
+        AS_NAMESPACE_QUALIFIER asEBehaviours beh,
+        const char* decl,
+        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
+        call_conv_t<asCALL_GENERIC>
+    )
     {
         [[maybe_unused]]
         int r = 0;
@@ -1255,14 +1281,19 @@ protected:
             beh,
             decl,
             to_asSFuncPtr(gfn),
-            asCALL_GENERIC
+            AS_NAMESPACE_QUALIFIER asCALL_GENERIC
         );
         assert(r >= 0);
     }
 
-    template <typename Fn, asECallConvTypes CallConv>
-    requires(CallConv != asCALL_GENERIC)
-    void behaviour_impl(asEBehaviours beh, const char* decl, Fn&& fn, call_conv_t<CallConv>) requires(!ForceGeneric)
+    template <typename Fn, AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
+    void behaviour_impl(
+        AS_NAMESPACE_QUALIFIER asEBehaviours beh,
+        const char* decl,
+        Fn&& fn,
+        call_conv_t<CallConv>
+    ) requires(!ForceGeneric)
     {
         [[maybe_unused]]
         int r = 0;
@@ -1348,7 +1379,7 @@ protected:
     {                                                                                              \
         method_impl(                                                                               \
             as_op_sig##_decl().c_str(),                                                            \
-            +[](asIScriptGeneric* gen) -> void                                                     \
+            +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void                              \
             {                                                                                      \
                 using this_arg_t = std::conditional_t<(#const_[0] != '\0'), const Class&, Class&>; \
                 set_generic_return<return_type>(                                                   \
@@ -1356,7 +1387,7 @@ protected:
                     cpp_op get_generic_object<this_arg_t>(gen)                                     \
                 );                                                                                 \
             },                                                                                     \
-            call_conv<asCALL_GENERIC>                                                              \
+            call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>                                       \
         );                                                                                         \
     }                                                                                              \
     template <typename Class>                                                                      \
@@ -1370,7 +1401,7 @@ protected:
             method_impl(                                                                           \
                 as_op_sig##_decl().c_str(),                                                        \
                 static_cast<return_type (Class::*)() const_>(&Class::operator cpp_op),             \
-                call_conv<asCALL_THISCALL>                                                         \
+                call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>                                  \
             );                                                                                     \
         }                                                                                          \
         else                                                                                       \
@@ -1382,7 +1413,7 @@ protected:
                 {                                                                                  \
                     return cpp_op this_;                                                           \
                 },                                                                                 \
-                call_conv<asCALL_CDECL_OBJFIRST>                                                   \
+                call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>                            \
             );                                                                                     \
         }                                                                                          \
     }
@@ -1411,14 +1442,14 @@ protected:
     {                                                                       \
         method_impl(                                                        \
             as_op_sig##_decl().c_str(),                                     \
-            +[](asIScriptGeneric* gen) -> void                              \
+            +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void       \
             {                                                               \
                 set_generic_return<Class>(                                  \
                     gen,                                                    \
                     get_generic_object<Class&>(gen) cpp_op                  \
                 );                                                          \
             },                                                              \
-            call_conv<asCALL_GENERIC>                                       \
+            call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>                \
         );                                                                  \
     }                                                                       \
     template <typename Class>                                               \
@@ -1429,7 +1460,7 @@ protected:
             as_op_sig##_decl().c_str(),                                     \
             +[](Class& this_) -> Class                                      \
             { return this_ cpp_op; },                                       \
-            call_conv<asCALL_CDECL_OBJLAST>                                 \
+            call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>          \
         );                                                                  \
     }
 
@@ -1442,7 +1473,7 @@ protected:
     do {                                                                                           \
         this->method_impl(                                                                         \
             as_decl,                                                                               \
-            +[](asIScriptGeneric* gen) -> void                                                     \
+            +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void                              \
             {                                                                                      \
                 using this_arg_t = std::conditional_t<(#const_[0] != '\0'), const Class&, Class&>; \
                 set_generic_return<return_type>(                                                   \
@@ -1450,7 +1481,7 @@ protected:
                     get_generic_object<this_arg_t>(gen) cpp_op get_generic_arg<rhs_type>(gen, 0)   \
                 );                                                                                 \
             },                                                                                     \
-            call_conv<asCALL_GENERIC>                                                              \
+            call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>                                       \
         );                                                                                         \
     } while(0)
 
@@ -1464,7 +1495,7 @@ protected:
             this->method_impl(                                                                 \
                 as_decl,                                                                       \
                 static_cast<return_type (Class::*)(rhs_type) const_>(&Class::operator cpp_op), \
-                call_conv<asCALL_THISCALL>                                                     \
+                call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>                              \
             );                                                                                 \
         }                                                                                      \
         else                                                                                   \
@@ -1476,7 +1507,7 @@ protected:
                 {                                                                              \
                     return lhs cpp_op rhs;                                                     \
                 },                                                                             \
-                call_conv<asCALL_CDECL_OBJFIRST>                                               \
+                call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>                        \
             );                                                                                 \
         }                                                                                      \
     } while(0)
@@ -1540,7 +1571,7 @@ protected:
     {
         method_impl(
             opCmp_decl().c_str(),
-            +[](asIScriptGeneric* gen) -> void
+            +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
             {
                 set_generic_return<int>(
                     gen,
@@ -1549,7 +1580,7 @@ protected:
                     )
                 );
             },
-            call_conv<asCALL_GENERIC>
+            call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>
         );
     }
 
@@ -1562,7 +1593,7 @@ protected:
             {
                 return translate_three_way(lhs <=> rhs);
             },
-            call_conv<asCALL_CDECL_OBJFIRST>
+            call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>
         );
     }
 
@@ -1645,16 +1676,22 @@ class value_class final : public class_register_helper_base<ForceGeneric>
 public:
     using class_type = Class;
 
-    value_class(asIScriptEngine* engine, const char* name, asQWORD flags = 0)
-        : my_base(engine, name), m_flags(asOBJ_VALUE | flags | AS_NAMESPACE_QUALIFIER asGetTypeTraits<Class>())
+    value_class(
+        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+        const char* name,
+        AS_NAMESPACE_QUALIFIER asQWORD flags = 0
+    )
+        : my_base(engine, name),
+          m_flags((AS_NAMESPACE_QUALIFIER asOBJ_VALUE) | flags | AS_NAMESPACE_QUALIFIER asGetTypeTraits<Class>())
     {
-        assert(!(m_flags & asOBJ_REF));
+        assert(!(m_flags & (AS_NAMESPACE_QUALIFIER asOBJ_REF)));
 
         this->template register_object_type<Class>(m_flags);
     }
 
     template <typename Method>
-    static constexpr asECallConvTypes method_callconv() noexcept
+    static constexpr auto method_callconv() noexcept
+        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
     {
         if constexpr(noncapturing_lambda<Method>)
             return detail::deduce_lambda_callconv<Class, Method>();
@@ -1663,7 +1700,8 @@ public:
     }
 
     template <auto Method>
-    static constexpr asECallConvTypes method_callconv() noexcept
+    static constexpr auto method_callconv() noexcept
+        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
     {
         return method_callconv<std::decay_t<decltype(Method)>>();
     }
@@ -1685,20 +1723,29 @@ private:
         }
     }
 
-    value_class& constructor_function_impl(std::string_view params, asGENFUNC_t gfn, bool explicit_, call_conv_t<asCALL_GENERIC> = {})
+    value_class& constructor_function_impl(
+        std::string_view params,
+        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
+        bool explicit_,
+        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
+    )
     {
         this->behaviour_impl(
-            asBEHAVE_CONSTRUCT,
+            AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
             decl_constructor_impl(params, explicit_).c_str(),
             gfn,
-            call_conv<asCALL_GENERIC>
+            call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>
         );
 
         return *this;
     }
 
 public:
-    value_class& constructor_function(std::string_view params, asGENFUNC_t gfn, call_conv_t<asCALL_GENERIC> = {})
+    value_class& constructor_function(
+        std::string_view params,
+        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
+        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
+    )
     {
         this->behaviour_impl(
             asBEHAVE_CONSTRUCT,
@@ -1710,7 +1757,12 @@ public:
         return *this;
     }
 
-    value_class& constructor_function(std::string_view params, use_explicit_t, asGENFUNC_t gfn, call_conv_t<asCALL_GENERIC> = {})
+    value_class& constructor_function(
+        std::string_view params,
+        use_explicit_t,
+        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
+        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
+    )
     {
         this->behaviour_impl(
             asBEHAVE_CONSTRUCT,
@@ -1722,9 +1774,13 @@ public:
         return *this;
     }
 
-    template <typename... Args, asECallConvTypes CallConv>
+    template <typename... Args, AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
     requires(CallConv != asCALL_GENERIC)
-    value_class& constructor_function(std::string_view params, void (*fn)(Args...), call_conv_t<CallConv>) requires(!ForceGeneric)
+    value_class& constructor_function(
+        std::string_view params,
+        void (*fn)(Args...),
+        call_conv_t<CallConv>
+    ) requires(!ForceGeneric)
     {
         this->behaviour_impl(
             asBEHAVE_CONSTRUCT,
@@ -1974,13 +2030,13 @@ public:
     value_class& destructor(use_generic_t)
     {
         behaviour(
-            asBEHAVE_DESTRUCT,
+            AS_NAMESPACE_QUALIFIER asBEHAVE_DESTRUCT,
             "void f()",
-            +[](asIScriptGeneric* gen) -> void
+            +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
             {
                 std::destroy_at(get_generic_object<Class*>(gen));
             },
-            call_conv<asCALL_GENERIC>
+            call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>
         );
 
         return *this;
@@ -1993,13 +2049,13 @@ public:
         else
         {
             behaviour(
-                asBEHAVE_DESTRUCT,
+                AS_NAMESPACE_QUALIFIER asBEHAVE_DESTRUCT,
                 "void f()",
                 +[](Class* ptr) -> void
                 {
                     std::destroy_at(ptr);
                 },
-                call_conv<asCALL_CDECL_OBJLAST>
+                call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
             );
         }
 
@@ -2016,28 +2072,28 @@ public:
         asQWORD traits = AS_NAMESPACE_QUALIFIER asGetTypeTraits<Class>()
     )
     {
-        if(traits & asOBJ_APP_CLASS_C)
+        if(traits & (AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_C))
         {
             if constexpr(is_only_constructible_v<Class>)
                 default_constructor(use_generic);
             else
                 assert(false && "missing default constructor");
         }
-        if(traits & asOBJ_APP_CLASS_D)
+        if(traits & (AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_D))
         {
             if constexpr(std::is_destructible_v<Class>)
                 destructor(use_generic);
             else
                 assert(false && "missing destructor");
         }
-        if(traits & asOBJ_APP_CLASS_A)
+        if(traits & (AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_A))
         {
             if constexpr(std::is_copy_assignable_v<Class>)
                 opAssign(use_generic);
             else
                 assert(false && "missing assignment operator");
         }
-        if(traits & asOBJ_APP_CLASS_K)
+        if(traits & (AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_K))
         {
             if constexpr(is_only_constructible_v<Class, const Class&>)
                 copy_constructor(use_generic);
@@ -2057,28 +2113,28 @@ public:
         asQWORD traits = AS_NAMESPACE_QUALIFIER asGetTypeTraits<Class>()
     )
     {
-        if(traits & asOBJ_APP_CLASS_C)
+        if(traits & (AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_C))
         {
             if constexpr(is_only_constructible_v<Class>)
                 default_constructor();
             else
                 assert(false && "missing default constructor");
         }
-        if(traits & asOBJ_APP_CLASS_D)
+        if(traits & (AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_D))
         {
             if constexpr(std::is_destructible_v<Class>)
                 destructor();
             else
                 assert(false && "missing destructor");
         }
-        if(traits & asOBJ_APP_CLASS_A)
+        if(traits & (AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_A))
         {
             if constexpr(std::is_copy_assignable_v<Class>)
                 opAssign();
             else
                 assert(false && "missing assignment operator");
         }
-        if(traits & asOBJ_APP_CLASS_K)
+        if(traits & (AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_K))
         {
             if constexpr(is_only_constructible_v<Class, const Class&>)
                 copy_constructor();
@@ -2094,19 +2150,23 @@ public:
         return string_concat("void f(int&in){", pattern, "}");
     }
 
-    value_class& list_constructor_function(std::string_view pattern, asGENFUNC_t gfn, call_conv_t<asCALL_GENERIC> = {})
+    value_class& list_constructor_function(
+        std::string_view pattern,
+        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
+        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
+    )
     {
         this->behaviour_impl(
-            asBEHAVE_LIST_CONSTRUCT,
+            AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_CONSTRUCT,
             decl_list_constructor(pattern).c_str(),
             gfn,
-            call_conv<asCALL_GENERIC>
+            call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>
         );
 
         return *this;
     }
 
-    template <asECallConvTypes CallConv, typename... Args>
+    template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv, typename... Args>
     requires(CallConv == asCALL_CDECL_OBJFIRST || CallConv == asCALL_CDECL_OBJLAST)
     value_class& list_constructor_function(
         std::string_view pattern,
@@ -2115,7 +2175,7 @@ public:
     ) requires(!ForceGeneric)
     {
         this->behaviour_impl(
-            asBEHAVE_LIST_CONSTRUCT,
+            AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_CONSTRUCT,
             decl_list_constructor(pattern).c_str(),
             fn,
             call_conv<CallConv>
@@ -2559,7 +2619,7 @@ public:
     }
 
 private:
-    asQWORD m_flags;
+    AS_NAMESPACE_QUALIFIER asQWORD m_flags;
 };
 
 template <typename Class, bool Template = false, bool ForceGeneric = false>
@@ -2573,25 +2633,28 @@ class reference_class : public class_register_helper_base<ForceGeneric>
 public:
     using class_type = Class;
 
-    reference_class(asIScriptEngine* engine, const char* name, asQWORD flags = 0)
-        : my_base(engine, name), m_flags(asOBJ_REF | flags)
+    reference_class(
+        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, const char* name, AS_NAMESPACE_QUALIFIER asQWORD flags = 0
+    )
+        : my_base(engine, name), m_flags((AS_NAMESPACE_QUALIFIER asOBJ_REF) | flags)
     {
-        assert(!(m_flags & asOBJ_VALUE));
+        assert(!(m_flags & (AS_NAMESPACE_QUALIFIER asOBJ_VALUE)));
 
         if constexpr(!Template)
         {
-            assert(!(m_flags & asOBJ_TEMPLATE));
+            assert(!(m_flags & (AS_NAMESPACE_QUALIFIER asOBJ_TEMPLATE)));
         }
         else
         {
-            m_flags |= asOBJ_TEMPLATE;
+            m_flags |= (AS_NAMESPACE_QUALIFIER asOBJ_TEMPLATE);
         }
 
         this->template register_object_type<Class>(m_flags);
     }
 
     template <typename Method>
-    static constexpr asECallConvTypes method_callconv() noexcept
+    static constexpr auto method_callconv() noexcept
+        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
     {
         if constexpr(noncapturing_lambda<Method>)
             return detail::deduce_lambda_callconv<Class, Method>();
@@ -2600,7 +2663,8 @@ public:
     }
 
     template <auto Method>
-    static constexpr asECallConvTypes method_callconv() noexcept
+    static constexpr auto method_callconv() noexcept
+        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
     {
         return method_callconv<std::decay_t<decltype(Method)>>();
     }
@@ -2804,7 +2868,8 @@ public:
         fp_wrapper_t<Function>
     )
     {
-        constexpr asECallConvTypes conv = this->method_callconv<Function>();
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
+            method_callconv<Function>();
         this->method_impl(
             decl,
             to_asGENFUNC_t(fp<Function>, call_conv<conv>),
@@ -2820,7 +2885,8 @@ public:
         fp_wrapper_t<Function>
     )
     {
-        constexpr asECallConvTypes conv = method_callconv<Function>();
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
+            method_callconv<Function>();
         if constexpr(ForceGeneric)
             this->method(decl, fp<Function>, call_conv<conv>);
         else
@@ -2929,18 +2995,18 @@ public:
 
     reference_class& factory_function(
         std::string_view params,
-        asGENFUNC_t gfn,
-        call_conv_t<asCALL_GENERIC> = {}
+        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
+        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
     )
     {
         [[maybe_unused]]
         int r = 0;
         r = m_engine->RegisterObjectBehaviour(
             m_name,
-            asBEHAVE_FACTORY,
+            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
             decl_factory(params).c_str(),
             to_asSFuncPtr(gfn),
-            asCALL_GENERIC
+            AS_NAMESPACE_QUALIFIER asCALL_GENERIC
         );
         assert(r >= 0);
 
@@ -2950,18 +3016,18 @@ public:
     reference_class& factory_function(
         std::string_view params,
         use_explicit_t,
-        asGENFUNC_t gfn,
-        call_conv_t<asCALL_GENERIC> = {}
+        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
+        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
     )
     {
         [[maybe_unused]]
         int r = 0;
         r = m_engine->RegisterObjectBehaviour(
             m_name,
-            asBEHAVE_FACTORY,
+            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
             decl_factory(params, use_explicit).c_str(),
             to_asSFuncPtr(gfn),
-            asCALL_GENERIC
+            AS_NAMESPACE_QUALIFIER asCALL_GENERIC
         );
         assert(r >= 0);
 
@@ -3080,7 +3146,7 @@ private:
     template <typename... Args>
     void factory_impl_generic(use_generic_t, std::string_view params, bool explicit_)
     {
-        asGENFUNC_t wrapper =
+        AS_NAMESPACE_QUALIFIER asGENFUNC_t wrapper =
             wrappers::factory<Class, Template, Args...>{}(use_generic);
 
         if(explicit_)
@@ -3364,7 +3430,7 @@ public:
     reference_class& func_name(Fn&& fn) requires(!ForceGeneric)                          \
     {                                                                                    \
         using func_t = std::decay_t<Fn>;                                                 \
-        constexpr asECallConvTypes conv =                                                \
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =                         \
             detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER as_beh, Class, func_t>(); \
         this->behaviour_impl(                                                            \
             AS_NAMESPACE_QUALIFIER as_beh,                                               \
@@ -3374,7 +3440,7 @@ public:
         );                                                                               \
         return *this;                                                                    \
     }                                                                                    \
-    reference_class& func_name(asGENFUNC_t gfn)                                          \
+    reference_class& func_name(AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn)                   \
     {                                                                                    \
         this->behaviour(                                                                 \
             AS_NAMESPACE_QUALIFIER as_beh,                                               \
@@ -3388,7 +3454,7 @@ public:
     reference_class& func_name(use_generic_t, fp_wrapper_t<Function>)                    \
     {                                                                                    \
         using func_t = std::decay_t<decltype(Function)>;                                 \
-        constexpr asECallConvTypes conv =                                                \
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =                         \
             detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER as_beh, Class, func_t>(); \
         this->func_name(to_asGENFUNC_t(fp<Function>, call_conv<conv>));                  \
         return *this;                                                                    \
@@ -3607,7 +3673,7 @@ public:
     }
 
 private:
-    asQWORD m_flags;
+    AS_NAMESPACE_QUALIFIER asQWORD m_flags;
 };
 
 template <typename Class, bool UseGeneric = false>
@@ -3622,7 +3688,7 @@ public:
     interface() = delete;
     interface(const interface&) = default;
 
-    interface(asIScriptEngine* engine, const char* name)
+    interface(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, const char* name)
         : m_engine(engine), m_name(name)
     {
         [[maybe_unused]]
@@ -3658,13 +3724,14 @@ public:
         return *this;
     }
 
-    asIScriptEngine* get_engine() const noexcept
+    auto get_engine() const noexcept
+        -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
     {
         return m_engine;
     }
 
 private:
-    asIScriptEngine* m_engine;
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* m_engine;
     const char* m_name;
 };
 
@@ -3673,7 +3740,7 @@ requires(std::is_enum_v<Enum>)
 class enum_
 {
 public:
-    enum_(asIScriptEngine* engine, const char* name)
+    enum_(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, const char* name)
         : m_engine(engine), m_name(name)
     {
         [[maybe_unused]]
@@ -3706,13 +3773,14 @@ public:
         return *this;
     }
 
-    asIScriptEngine* get_engine() const noexcept
+    auto get_engine() const noexcept
+        -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
     {
         return m_engine;
     }
 
 private:
-    asIScriptEngine* m_engine;
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* m_engine;
     const char* m_name;
 };
 } // namespace asbind20

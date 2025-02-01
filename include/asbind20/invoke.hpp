@@ -346,103 +346,142 @@ private:
 };
 
 template <typename T>
-int set_script_arg(asIScriptContext* ctx, asUINT idx, std::reference_wrapper<T> ref)
+int set_script_arg(
+    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
+    AS_NAMESPACE_QUALIFIER asUINT idx,
+    std::reference_wrapper<T> ref
+)
 {
     return ctx->SetArgAddress(idx, (void*)std::addressof(ref.get()));
 }
 
 template <std::integral T>
-int set_script_arg(asIScriptContext* ctx, asUINT idx, T val)
+int set_script_arg(
+    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
+    AS_NAMESPACE_QUALIFIER asUINT idx,
+    T val
+)
 {
     constexpr std::size_t int_size = sizeof(std::decay_t<T>);
 
-    if constexpr(int_size == sizeof(asBYTE))
+    if constexpr(int_size == sizeof(AS_NAMESPACE_QUALIFIER asBYTE))
         return ctx->SetArgByte(idx, val);
-    else if constexpr(int_size == sizeof(asWORD))
+    else if constexpr(int_size == sizeof(AS_NAMESPACE_QUALIFIER asWORD))
         return ctx->SetArgWord(idx, val);
-    else if constexpr(int_size == sizeof(asDWORD))
+    else if constexpr(int_size == sizeof(AS_NAMESPACE_QUALIFIER asDWORD))
         return ctx->SetArgDWord(idx, val);
-    else if constexpr(int_size == sizeof(asQWORD))
+    else if constexpr(int_size == sizeof(AS_NAMESPACE_QUALIFIER asQWORD))
         return ctx->SetArgQWord(idx, val);
     else
         static_assert(!sizeof(T), "size of integral type is too large");
 }
 
 template <typename Enum>
-requires std::is_enum_v<std::decay_t<Enum>>
-int set_script_arg(asIScriptContext* ctx, asUINT idx, Enum val)
+requires std::is_enum_v<Enum>
+int set_script_arg(
+    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
+    AS_NAMESPACE_QUALIFIER asUINT idx,
+    Enum val
+)
 {
-    using T = std::remove_cvref_t<Enum>;
+    using type = std::remove_cv_t<Enum>;
 
     constexpr bool is_customized = requires() {
-        { type_traits<T>::set_arg(ctx, idx, val) } -> std::same_as<int>;
+        { type_traits<type>::set_arg(ctx, idx, val) } -> std::same_as<int>;
     };
 
     if constexpr(is_customized)
     {
-        return type_traits<T>::set_arg(ctx, idx, val);
+        return type_traits<type>::set_arg(ctx, idx, val);
     }
     else
     {
-        static_assert(sizeof(T) <= sizeof(int), "underlying type of enum is too large");
+        static_assert(sizeof(type) <= sizeof(int), "underlying type of enum is too large");
         return set_script_arg(ctx, idx, static_cast<int>(val));
     }
 }
 
-inline int set_script_arg(asIScriptContext* ctx, asUINT idx, float val)
+template <std::floating_point T>
+inline int set_script_arg(
+    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
+    AS_NAMESPACE_QUALIFIER asUINT idx,
+    T val
+)
 {
-    return ctx->SetArgFloat(idx, val);
+    using type = std::remove_cv_t<T>;
+
+    if constexpr(std::same_as<type, float>)
+        return ctx->SetArgFloat(idx, val);
+    else if constexpr(std::same_as<type, double>)
+        return ctx->SetArgDouble(idx, val);
+    else
+        static_assert(!sizeof(T), "Invalid floating point");
 }
 
-inline int set_script_arg(asIScriptContext* ctx, asUINT idx, double val)
-{
-    return ctx->SetArgDouble(idx, val);
-}
-
-inline int set_script_arg(asIScriptContext* ctx, asUINT idx, void* obj)
+inline int set_script_arg(
+    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
+    AS_NAMESPACE_QUALIFIER asUINT idx,
+    void* obj
+)
 {
     return ctx->SetArgAddress(idx, obj);
 }
 
-inline int set_script_arg(asIScriptContext* ctx, asUINT idx, const void* obj)
+inline int set_script_arg(
+    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
+    AS_NAMESPACE_QUALIFIER asUINT idx,
+    const void* obj
+)
 {
     return ctx->SetArgAddress(idx, const_cast<void*>(obj));
 }
 
-inline int set_script_arg(asIScriptContext* ctx, asUINT idx, asIScriptObject* obj)
+inline int set_script_arg(
+    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
+    AS_NAMESPACE_QUALIFIER asUINT idx,
+    AS_NAMESPACE_QUALIFIER asIScriptObject* obj
+)
 {
     return ctx->SetArgObject(idx, obj);
 }
 
-inline int set_script_arg(asIScriptContext* ctx, asUINT idx, const asIScriptObject* obj)
+inline int set_script_arg(
+    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
+    AS_NAMESPACE_QUALIFIER asUINT idx,
+    AS_NAMESPACE_QUALIFIER asIScriptObject const* obj
+)
 {
-    return ctx->SetArgObject(idx, const_cast<asIScriptObject*>(obj));
+    return ctx->SetArgObject(idx, const_cast<AS_NAMESPACE_QUALIFIER asIScriptObject*>(obj));
 }
 
 template <typename Class>
 requires std::is_class_v<std::remove_cvref_t<Class>>
-void set_script_arg(asIScriptContext* ctx, asUINT idx, Class&& obj)
+int set_script_arg(
+    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
+    AS_NAMESPACE_QUALIFIER asUINT idx,
+    Class&& obj
+)
 {
-    using T = std::remove_cvref_t<Class>;
+    using type = std::remove_cvref_t<Class>;
 
     constexpr bool is_customized = requires() {
-        { type_traits<T>::set_script_arg(ctx, idx, obj) } -> std::same_as<int>;
+        { type_traits<type>::set_script_arg(ctx, idx, obj) } -> std::same_as<int>;
     };
 
     if constexpr(is_customized)
     {
-        type_traits<T>::set_script_arg(ctx, idx, obj);
+        return type_traits<type>::set_script_arg(ctx, idx, obj);
     }
     else
     {
-        ctx->SetArgObject(idx, (void*)std::addressof(obj));
+        return ctx->SetArgObject(idx, (void*)std::addressof(obj));
     }
 }
 
 namespace detail
 {
     template <typename Tuple>
-    void set_args(asIScriptContext* ctx, Tuple&& tp)
+    void set_args(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, Tuple&& tp)
     {
         [&]<asUINT... Idx>(std::integer_sequence<asUINT, Idx...>)
         {
@@ -452,15 +491,15 @@ namespace detail
 
     template <typename T>
     concept is_script_obj =
-        std::same_as<T, asIScriptObject*> ||
-        std::same_as<T, const asIScriptObject*>;
+        std::same_as<T, AS_NAMESPACE_QUALIFIER asIScriptObject*> ||
+        std::same_as<T, AS_NAMESPACE_QUALIFIER asIScriptObject const*>;
 } // namespace detail
 
 template <typename T>
 requires(!std::is_const_v<T>)
-T get_script_return(asIScriptContext* ctx)
+T get_script_return(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx)
 {
-    assert(ctx->GetState() == asEXECUTION_FINISHED);
+    assert(ctx->GetState() == (AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED));
 
     constexpr bool is_customized = requires() {
         { type_traits<T>::get_return(ctx) } -> std::convertible_to<T>;
@@ -472,7 +511,8 @@ T get_script_return(asIScriptContext* ctx)
     }
     else if constexpr(detail::is_script_obj<std::remove_cvref_t<T>>)
     {
-        asIScriptObject* ptr = *reinterpret_cast<asIScriptObject**>(ctx->GetAddressOfReturnValue());
+        AS_NAMESPACE_QUALIFIER asIScriptObject* ptr =
+            *(AS_NAMESPACE_QUALIFIER asIScriptObject**)ctx->GetAddressOfReturnValue();
         return T(ptr);
     }
     else if constexpr(std::is_reference_v<T>)
@@ -518,7 +558,7 @@ T get_script_return(asIScriptContext* ctx)
 namespace detail
 {
     template <typename R>
-    auto execute_context(asIScriptContext* ctx)
+    auto execute_context(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx)
     {
         int r = ctx->Execute();
 
@@ -538,7 +578,11 @@ namespace detail
  * @brief Call a script function
  */
 template <typename R, typename... Args>
-script_invoke_result<R> script_invoke(asIScriptContext* ctx, asIScriptFunction* func, Args&&... args)
+script_invoke_result<R> script_invoke(
+    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
+    AS_NAMESPACE_QUALIFIER asIScriptFunction* func,
+    Args&&... args
+)
 {
     assert(func != nullptr);
     assert(ctx != nullptr);
@@ -555,23 +599,30 @@ script_invoke_result<R> script_invoke(asIScriptContext* ctx, asIScriptFunction* 
 
 template <typename T>
 concept script_object_handle =
-    std::same_as<std::remove_cvref_t<T>, asIScriptObject*> ||
-    std::same_as<std::remove_cvref_t<T>, const asIScriptObject*> ||
+    std::same_as<std::remove_cvref_t<T>, AS_NAMESPACE_QUALIFIER asIScriptObject*> ||
+    std::same_as<std::remove_cvref_t<T>, AS_NAMESPACE_QUALIFIER asIScriptObject const*> ||
     requires(T&& obj) {
-        (const asIScriptObject*)obj;
+        (AS_NAMESPACE_QUALIFIER asIScriptObject const*)obj;
     };
 
 template <script_object_handle Object>
-int set_script_object(asIScriptContext* ctx, Object&& obj)
+int set_script_object(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, Object&& obj)
 {
-    return ctx->SetObject(const_cast<asIScriptObject*>((const asIScriptObject*)obj));
+    return ctx->SetObject(const_cast<AS_NAMESPACE_QUALIFIER asIScriptObject*>(
+        (AS_NAMESPACE_QUALIFIER asIScriptObject const*)obj
+    ));
 }
 
 /**
  * @brief Calling a method on script class
  */
 template <typename R, script_object_handle Object, typename... Args>
-script_invoke_result<R> script_invoke(asIScriptContext* ctx, Object&& obj, asIScriptFunction* func, Args&&... args)
+script_invoke_result<R> script_invoke(
+    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
+    Object&& obj,
+    AS_NAMESPACE_QUALIFIER asIScriptFunction* func,
+    Args&&... args
+)
 {
     assert(func != nullptr);
     assert(ctx != nullptr);
@@ -590,7 +641,9 @@ script_invoke_result<R> script_invoke(asIScriptContext* ctx, Object&& obj, asISc
 
 class script_function_base
 {
-protected:
+public:
+    using handle_type = asIScriptFunction*;
+
     script_function_base() noexcept
         : m_fp(nullptr) {}
 
@@ -600,14 +653,13 @@ protected:
     script_function_base(script_function_base&& other) noexcept
         : m_fp(std::exchange(other.m_fp, nullptr)) {}
 
-    script_function_base(asIScriptFunction* fp)
+    script_function_base(handle_type fp)
         : m_fp(fp)
     {
         if(m_fp)
             m_fp->AddRef();
     }
 
-public:
     ~script_function_base()
     {
         reset();
@@ -629,7 +681,7 @@ public:
         return *this;
     }
 
-    asIScriptFunction* target() const noexcept
+    handle_type target() const noexcept
     {
         return m_fp;
     }
@@ -639,7 +691,12 @@ public:
         return static_cast<bool>(target());
     }
 
-    explicit operator asIScriptFunction*() const noexcept
+    explicit operator handle_type() const noexcept
+    {
+        return target();
+    }
+
+    handle_type operator->() const noexcept
     {
         return target();
     }
@@ -656,7 +713,7 @@ public:
         return prev_refcount;
     }
 
-    int reset(asIScriptFunction* fp)
+    int reset(handle_type fp)
     {
         int prev_refcount = reset(nullptr);
         m_fp = fp;
@@ -698,15 +755,17 @@ public:
     script_function(const script_function&) = default;
     script_function(script_function&&) noexcept = default;
 
-    explicit script_function(asIScriptFunction* fp)
+    explicit script_function(handle_type fp)
         : script_function_base(fp) {}
 
     script_function& operator=(const script_function&) = default;
     script_function& operator=(script_function&&) noexcept = default;
 
-    result_type operator()(asIScriptContext* ctx, Args&&... args) const
+    result_type operator()(
+        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, Args&&... args
+    ) const
     {
-        asIScriptFunction* fp = target();
+        handle_type fp = target();
         if(!fp)
             throw_bad_call();
 
@@ -735,16 +794,18 @@ public:
     script_method(const script_method&) = default;
     script_method(script_method&&) noexcept = default;
 
-    explicit script_method(asIScriptFunction* fp)
+    explicit script_method(handle_type fp)
         : script_function_base(fp) {}
 
     script_method& operator=(const script_method&) = default;
     script_method& operator=(script_method&&) noexcept = default;
 
     template <script_object_handle Object>
-    result_type operator()(asIScriptContext* ctx, Object&& obj, Args&&... args) const
+    result_type operator()(
+        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, Object&& obj, Args&&... args
+    ) const
     {
-        asIScriptFunction* fp = target();
+        handle_type fp = target();
         if(!fp)
             throw_bad_call();
 
@@ -768,13 +829,17 @@ public:
  * @note This function requires the class to be default constructible
  */
 [[nodiscard]]
-inline script_object instantiate_class(asIScriptContext* ctx, asITypeInfo* class_info)
+inline script_object instantiate_class(
+    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
+    AS_NAMESPACE_QUALIFIER asITypeInfo* class_info
+)
 {
     if(!class_info) [[unlikely]]
         return script_object();
 
-    asIScriptFunction* factory = nullptr;
-    if(asQWORD flags = class_info->GetFlags(); flags & asOBJ_REF)
+    AS_NAMESPACE_QUALIFIER asIScriptFunction* factory = nullptr;
+    if(AS_NAMESPACE_QUALIFIER asQWORD flags = class_info->GetFlags();
+       flags & (AS_NAMESPACE_QUALIFIER asOBJ_REF))
     {
         factory = get_default_factory(class_info);
     }

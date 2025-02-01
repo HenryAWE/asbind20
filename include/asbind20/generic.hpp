@@ -11,11 +11,11 @@
 
 namespace asbind20
 {
-template <asECallConvTypes CallConv>
+template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
 struct call_conv_t
 {};
 
-template <asECallConvTypes CallConv>
+template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
 constexpr inline call_conv_t<CallConv> call_conv;
 
 template <std::size_t... Is>
@@ -67,7 +67,7 @@ namespace detail
  * @tparam T Object type, can be a pointer, otherwise the return type will a reference
  */
 template <typename T>
-auto get_generic_object(asIScriptGeneric* gen)
+auto get_generic_object(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
     -> std::conditional_t<std::is_pointer_v<T>, T, std::add_lvalue_reference_t<T>>
 {
     void* obj = gen->GetObject();
@@ -83,7 +83,10 @@ auto get_generic_object(asIScriptGeneric* gen)
 }
 
 template <typename T>
-T get_generic_arg(asIScriptGeneric* gen, asUINT idx)
+T get_generic_arg(
+    AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen,
+    AS_NAMESPACE_QUALIFIER asUINT idx
+)
 {
     constexpr bool is_customized = requires() {
         { type_traits<std::remove_cv_t<T>>::get_arg(gen, idx) } -> std::convertible_to<T>;
@@ -97,18 +100,18 @@ T get_generic_arg(asIScriptGeneric* gen, asUINT idx)
     {
         using value_t = std::remove_cv_t<std::remove_pointer_t<T>>;
 
-        if constexpr(std::same_as<value_t, asIScriptObject>)
+        if constexpr(std::same_as<value_t, AS_NAMESPACE_QUALIFIER asIScriptObject>)
         {
             void* ptr = gen->GetArgObject(idx);
             return static_cast<asIScriptObject*>(ptr);
         }
-        else if constexpr(std::same_as<value_t, asITypeInfo>)
+        else if constexpr(std::same_as<value_t, AS_NAMESPACE_QUALIFIER asITypeInfo>)
         {
-            return *(asITypeInfo**)gen->GetAddressOfArg(idx);
+            return *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(idx);
         }
-        else if constexpr(std::same_as<value_t, asIScriptEngine>)
+        else if constexpr(std::same_as<value_t, AS_NAMESPACE_QUALIFIER asIScriptEngine>)
         {
-            return *(asIScriptEngine**)gen->GetAddressOfArg(idx);
+            return *(AS_NAMESPACE_QUALIFIER asIScriptEngine**)gen->GetAddressOfArg(idx);
         }
         else
         {
@@ -131,13 +134,13 @@ T get_generic_arg(asIScriptGeneric* gen, asUINT idx)
     }
     else if constexpr(std::integral<T>)
     {
-        if constexpr(sizeof(T) == sizeof(asBYTE))
+        if constexpr(sizeof(T) == sizeof(AS_NAMESPACE_QUALIFIER asBYTE))
             return static_cast<T>(gen->GetArgByte(idx));
-        else if constexpr(sizeof(T) == sizeof(asWORD))
+        else if constexpr(sizeof(T) == sizeof(AS_NAMESPACE_QUALIFIER asWORD))
             return static_cast<T>(gen->GetArgWord(idx));
-        else if constexpr(sizeof(T) == sizeof(asDWORD))
+        else if constexpr(sizeof(T) == sizeof(AS_NAMESPACE_QUALIFIER asDWORD))
             return static_cast<T>(gen->GetArgDWord(idx));
-        else if constexpr(sizeof(T) == sizeof(asQWORD))
+        else if constexpr(sizeof(T) == sizeof(AS_NAMESPACE_QUALIFIER asQWORD))
             return static_cast<T>(gen->GetArgQWord(idx));
         else
             static_assert(!sizeof(T), "Integer size too large");
@@ -158,7 +161,9 @@ T get_generic_arg(asIScriptGeneric* gen, asUINT idx)
 }
 
 template <typename T>
-void set_generic_return(asIScriptGeneric* gen, T&& ret)
+void set_generic_return(
+    AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen, T&& ret
+)
 {
     constexpr bool is_customized = requires() {
         { type_traits<std::remove_cv_t<T>>::set_return(gen, std::forward<T>(ret)) } -> std::same_as<int>;
@@ -198,14 +203,14 @@ void set_generic_return(asIScriptGeneric* gen, T&& ret)
     }
     else if constexpr(std::integral<T>)
     {
-        if constexpr(sizeof(T) == sizeof(asBYTE))
-            gen->SetReturnByte(static_cast<asBYTE>(ret));
-        else if constexpr(sizeof(T) == sizeof(asWORD))
-            gen->SetReturnWord(static_cast<asWORD>(ret));
-        else if constexpr(sizeof(T) == sizeof(asDWORD))
-            gen->SetReturnDWord(static_cast<asDWORD>(ret));
-        else if constexpr(sizeof(T) == sizeof(asQWORD))
-            gen->SetReturnQWord(static_cast<asQWORD>(ret));
+        if constexpr(sizeof(T) == sizeof(AS_NAMESPACE_QUALIFIER asBYTE))
+            gen->SetReturnByte(static_cast<AS_NAMESPACE_QUALIFIER asBYTE>(ret));
+        else if constexpr(sizeof(T) == sizeof(AS_NAMESPACE_QUALIFIER asWORD))
+            gen->SetReturnWord(static_cast<AS_NAMESPACE_QUALIFIER asWORD>(ret));
+        else if constexpr(sizeof(T) == sizeof(AS_NAMESPACE_QUALIFIER asDWORD))
+            gen->SetReturnDWord(static_cast<AS_NAMESPACE_QUALIFIER asDWORD>(ret));
+        else if constexpr(sizeof(T) == sizeof(AS_NAMESPACE_QUALIFIER asQWORD))
+            gen->SetReturnQWord(static_cast<AS_NAMESPACE_QUALIFIER asQWORD>(ret));
         else
             static_assert(!sizeof(T), "Integer size too large");
     }
@@ -236,7 +241,7 @@ decltype(auto) get_generic_this(asIScriptGeneric* gen)
     using traits = function_traits<FunctionType>;
 
     constexpr bool from_auxiliary =
-        CallConv == asCALL_THISCALL_ASGLOBAL;
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL;
 
     void* ptr = nullptr;
     if constexpr(from_auxiliary)
@@ -245,14 +250,14 @@ decltype(auto) get_generic_this(asIScriptGeneric* gen)
         ptr = gen->GetObject();
 
     if constexpr(
-        CallConv == asCALL_THISCALL ||
-        CallConv == asCALL_THISCALL_ASGLOBAL
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL ||
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL
     )
     {
         using pointer_t = typename traits::class_type*;
         return static_cast<pointer_t>(ptr);
     }
-    else if constexpr(CallConv == asCALL_CDECL_OBJFIRST)
+    else if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
     {
         using this_arg_t = typename traits::first_arg_type;
         if constexpr(std::is_pointer_v<this_arg_t>)
@@ -260,7 +265,7 @@ decltype(auto) get_generic_this(asIScriptGeneric* gen)
         else
             return *static_cast<std::remove_reference_t<this_arg_t>*>(ptr);
     }
-    else if constexpr(CallConv == asCALL_CDECL_OBJLAST)
+    else if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST)
     {
         using this_arg_t = typename traits::last_arg_type;
         if constexpr(std::is_pointer_v<this_arg_t>)
@@ -275,15 +280,19 @@ decltype(auto) get_generic_this(asIScriptGeneric* gen)
 namespace detail
 {
     template <typename T> // unused
-    int var_type_helper(std::true_type, asIScriptGeneric* gen, std::size_t idx)
+    int var_type_helper(
+        std::true_type, AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen, std::size_t idx
+    )
     {
-        return gen->GetArgTypeId(static_cast<asUINT>(idx));
+        return gen->GetArgTypeId(static_cast<AS_NAMESPACE_QUALIFIER asUINT>(idx));
     }
 
     template <typename T>
-    T var_type_helper(std::false_type, asIScriptGeneric* gen, std::size_t idx)
+    T var_type_helper(
+        std::false_type, AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen, std::size_t idx
+    )
     {
-        return get_generic_arg<T>(gen, static_cast<asUINT>(idx));
+        return get_generic_arg<T>(gen, static_cast<AS_NAMESPACE_QUALIFIER asUINT>(idx));
     }
 
     template <std::size_t... Is>
@@ -300,7 +309,7 @@ namespace detail
     using var_type_tag = std::bool_constant<var_type_tag_helper(VarType{}, RawIdx)>;
 
 #define ASBIND20_GENERIC_WRAPPER_IMPL(func)                                          \
-    static void wrapper_impl_thiscall(asIScriptGeneric* gen)                         \
+    static void wrapper_impl_thiscall(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)  \
     {                                                                                \
         [gen]<std::size_t... Is>(std::index_sequence<Is...>)                         \
         {                                                                            \
@@ -329,7 +338,7 @@ namespace detail
             }                                                                        \
         }(std::make_index_sequence<traits::arg_count::value>());                     \
     }                                                                                \
-    static void wrapper_impl_objfirst(asIScriptGeneric* gen)                         \
+    static void wrapper_impl_objfirst(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)  \
     {                                                                                \
         static_assert(traits::arg_count::value >= 1);                                \
         [gen]<std::size_t... Is>(std::index_sequence<Is...>)                         \
@@ -359,7 +368,7 @@ namespace detail
             }                                                                        \
         }(std::make_index_sequence<traits::arg_count::value - 1>());                 \
     }                                                                                \
-    static void wrapper_impl_objlast(asIScriptGeneric* gen)                          \
+    static void wrapper_impl_objlast(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)   \
     {                                                                                \
         static_assert(traits::arg_count::value >= 1);                                \
         [gen]<std::size_t... Is>(std::index_sequence<Is...>)                         \
@@ -389,7 +398,7 @@ namespace detail
             }                                                                        \
         }(std::make_index_sequence<traits::arg_count::value - 1>());                 \
     }                                                                                \
-    static void wrapper_impl_general(asIScriptGeneric* gen)                          \
+    static void wrapper_impl_general(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)   \
     {                                                                                \
         [gen]<std::size_t... Is>(std::index_sequence<Is...>)                         \
         {                                                                            \
@@ -419,7 +428,7 @@ namespace detail
 
 #define ASBIND20_GENERIC_WRAPPER_VAR_TYPE_IMPL(func)                                                    \
     template <typename VarType>                                                                         \
-    static void var_type_wrapper_impl_thiscall(asIScriptGeneric* gen)                                   \
+    static void var_type_wrapper_impl_thiscall(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)            \
     {                                                                                                   \
         using traits = function_traits<function_type>;                                                  \
         static constexpr auto indices = detail::gen_script_arg_idx<traits::arg_count_v>(VarType{});     \
@@ -455,7 +464,7 @@ namespace detail
         }(std::make_index_sequence<indices.size()>());                                                  \
     }                                                                                                   \
     template <typename VarType>                                                                         \
-    static void var_type_wrapper_impl_objfirst(asIScriptGeneric* gen)                                   \
+    static void var_type_wrapper_impl_objfirst(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)            \
     {                                                                                                   \
         using traits = function_traits<function_type>;                                                  \
         static constexpr auto indices = detail::gen_script_arg_idx<traits::arg_count_v - 1>(VarType{}); \
@@ -491,7 +500,7 @@ namespace detail
         }(std::make_index_sequence<indices.size()>());                                                  \
     }                                                                                                   \
     template <typename VarType>                                                                         \
-    static void var_type_wrapper_impl_objlast(asIScriptGeneric* gen)                                    \
+    static void var_type_wrapper_impl_objlast(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)             \
     {                                                                                                   \
         using traits = function_traits<function_type>;                                                  \
         static constexpr auto indices = detail::gen_script_arg_idx<traits::arg_count_v - 1>(VarType{}); \
@@ -527,7 +536,7 @@ namespace detail
         }(std::make_index_sequence<indices.size()>());                                                  \
     }                                                                                                   \
     template <typename VarType>                                                                         \
-    static void var_type_wrapper_impl_general(asIScriptGeneric* gen)                                    \
+    static void var_type_wrapper_impl_general(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)             \
     {                                                                                                   \
         using traits = function_traits<function_type>;                                                  \
         static constexpr auto indices = detail::gen_script_arg_idx<traits::arg_count_v>(VarType{});     \
@@ -563,8 +572,8 @@ namespace detail
 
     template <
         noncapturing_lambda Lambda,
-        asECallConvTypes OriginalConv>
-    requires(OriginalConv != asCALL_GENERIC)
+        AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalConv>
+    requires(OriginalConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
     class generic_wrapper_lambda
     {
     public:
@@ -575,7 +584,8 @@ namespace detail
             return +Lambda{};
         }
 
-        static constexpr asECallConvTypes underlying_convention() noexcept
+        static constexpr auto underlying_convention() noexcept
+            -> AS_NAMESPACE_QUALIFIER asECallConvTypes
         {
             return OriginalConv;
         }
@@ -583,7 +593,7 @@ namespace detail
     private:
         using traits = function_traits<function_type>;
 
-        static decltype(auto) this_(asIScriptGeneric* gen)
+        static decltype(auto) this_(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
         {
             return get_generic_this<function_type, OriginalConv>(gen);
         }
@@ -592,33 +602,35 @@ namespace detail
         ASBIND20_GENERIC_WRAPPER_VAR_TYPE_IMPL(underlying_function())
 
     public:
-        static constexpr asGENFUNC_t generate() noexcept
+        static constexpr auto generate() noexcept
+            -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
         {
             if constexpr(
-                OriginalConv == asCALL_THISCALL ||
-                OriginalConv == asCALL_THISCALL_ASGLOBAL
+                OriginalConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL ||
+                OriginalConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL
             )
                 return &wrapper_impl_thiscall;
-            else if constexpr(OriginalConv == asCALL_CDECL_OBJFIRST)
+            else if constexpr(OriginalConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
                 return &wrapper_impl_objfirst;
-            else if constexpr(OriginalConv == asCALL_CDECL_OBJLAST)
+            else if constexpr(OriginalConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST)
                 return &wrapper_impl_objlast;
             else
                 return &wrapper_impl_general;
         }
 
         template <std::size_t... Is>
-        static constexpr asGENFUNC_t generate(var_type_t<Is...>)
+        static constexpr auto generate(var_type_t<Is...>)
+            -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
         {
             using my_var_type = var_type_t<Is...>;
             if constexpr(
-                OriginalConv == asCALL_THISCALL ||
-                OriginalConv == asCALL_THISCALL_ASGLOBAL
+                OriginalConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL ||
+                OriginalConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL
             )
                 return &var_type_wrapper_impl_thiscall<my_var_type>;
-            else if constexpr(OriginalConv == asCALL_CDECL_OBJFIRST)
+            else if constexpr(OriginalConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
                 return &var_type_wrapper_impl_objfirst<my_var_type>;
-            else if constexpr(OriginalConv == asCALL_CDECL_OBJLAST)
+            else if constexpr(OriginalConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST)
                 return &var_type_wrapper_impl_objlast<my_var_type>;
             else
                 return &var_type_wrapper_impl_general<my_var_type>;
@@ -627,14 +639,15 @@ namespace detail
 
     template <
         native_function auto Function,
-        asECallConvTypes OriginalConv>
-    requires(OriginalConv != asCALL_GENERIC)
+        AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalConv>
+    requires(OriginalConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
     class generic_wrapper_nontype
     {
     public:
         using function_type = std::decay_t<decltype(Function)>;
 
-        static constexpr asECallConvTypes underlying_convention() noexcept
+        static constexpr auto underlying_convention() noexcept
+            -> AS_NAMESPACE_QUALIFIER asECallConvTypes
         {
             return OriginalConv;
         }
@@ -642,7 +655,7 @@ namespace detail
     private:
         using traits = function_traits<function_type>;
 
-        static decltype(auto) this_(asIScriptGeneric* gen)
+        static decltype(auto) this_(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
         {
             return get_generic_this<function_type, OriginalConv>(gen);
         }
@@ -654,33 +667,35 @@ namespace detail
         ASBIND20_GENERIC_WRAPPER_VAR_TYPE_IMPL(Function)
 
     public:
-        static constexpr asGENFUNC_t generate() noexcept
+        static constexpr auto generate() noexcept
+            -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
         {
             if constexpr(
-                OriginalConv == asCALL_THISCALL ||
-                OriginalConv == asCALL_THISCALL_ASGLOBAL
+                OriginalConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL ||
+                OriginalConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL
             )
                 return &wrapper_impl_thiscall;
-            else if constexpr(OriginalConv == asCALL_CDECL_OBJFIRST)
+            else if constexpr(OriginalConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
                 return &wrapper_impl_objfirst;
-            else if constexpr(OriginalConv == asCALL_CDECL_OBJLAST)
+            else if constexpr(OriginalConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST)
                 return &wrapper_impl_objlast;
             else
                 return &wrapper_impl_general;
         }
 
         template <std::size_t... Is>
-        static constexpr asGENFUNC_t generate(var_type_t<Is...>)
+        static constexpr auto generate(var_type_t<Is...>)
+            -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
         {
             using my_var_type = var_type_t<Is...>;
             if constexpr(
-                OriginalConv == asCALL_THISCALL ||
-                OriginalConv == asCALL_THISCALL_ASGLOBAL
+                OriginalConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL ||
+                OriginalConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL
             )
                 return &var_type_wrapper_impl_thiscall<my_var_type>;
-            else if constexpr(OriginalConv == asCALL_CDECL_OBJFIRST)
+            else if constexpr(OriginalConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
                 return &var_type_wrapper_impl_objfirst<my_var_type>;
-            else if constexpr(OriginalConv == asCALL_CDECL_OBJLAST)
+            else if constexpr(OriginalConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST)
                 return &var_type_wrapper_impl_objlast<my_var_type>;
             else
                 return &var_type_wrapper_impl_general<my_var_type>;
@@ -692,9 +707,10 @@ namespace detail
 
     template <
         noncapturing_lambda Lambda,
-        asECallConvTypes OriginalCallConv,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv,
         std::size_t... Is>
-    consteval asGENFUNC_t lambda_to_asGENFUNC_t_impl()
+    consteval auto lambda_to_asGENFUNC_t_impl()
+        -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
     {
 #ifndef _MSC_VER
         if constexpr(sizeof...(Is))
@@ -717,9 +733,10 @@ namespace detail
 
     template <
         native_function auto Function,
-        asECallConvTypes OriginalCallConv,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv,
         std::size_t... Is>
-    constexpr asGENFUNC_t fp_to_asGENFUNC_t_impl()
+    constexpr auto fp_to_asGENFUNC_t_impl()
+        -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
     {
         if constexpr(sizeof...(Is))
             return generic_wrapper_nontype<Function, OriginalCallConv>::generate(var_type<Is...>);
@@ -730,43 +747,48 @@ namespace detail
 
 template <
     noncapturing_lambda Lambda,
-    asECallConvTypes OriginalCallConv>
+    AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv>
 requires(OriginalCallConv != asCALL_GENERIC)
-consteval asGENFUNC_t to_asGENFUNC_t(const Lambda&, call_conv_t<OriginalCallConv>)
+consteval auto to_asGENFUNC_t(const Lambda&, call_conv_t<OriginalCallConv>)
+    -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
 {
     return detail::lambda_to_asGENFUNC_t_impl<Lambda, OriginalCallConv>();
 }
 
 template <
     native_function auto Function,
-    asECallConvTypes OriginalCallConv>
+    AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv>
 requires(OriginalCallConv != asCALL_GENERIC)
-consteval asGENFUNC_t to_asGENFUNC_t(fp_wrapper_t<Function>, call_conv_t<OriginalCallConv>)
+consteval auto to_asGENFUNC_t(fp_wrapper_t<Function>, call_conv_t<OriginalCallConv>)
+    -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
 {
     return detail::fp_to_asGENFUNC_t_impl<Function, OriginalCallConv>();
 }
 
 template <
     noncapturing_lambda Lambda,
-    asECallConvTypes OriginalCallConv,
+    AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv,
     std::size_t... Is>
-consteval asGENFUNC_t to_asGENFUNC_t(const Lambda&, call_conv_t<OriginalCallConv>, var_type_t<Is...>)
+consteval auto to_asGENFUNC_t(const Lambda&, call_conv_t<OriginalCallConv>, var_type_t<Is...>)
+    -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
 {
     return detail::lambda_to_asGENFUNC_t_impl<Lambda, OriginalCallConv, Is...>();
 }
 
 template <
     native_function auto Function,
-    asECallConvTypes OriginalCallConv,
+    AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv,
     std::size_t... Is>
-consteval asGENFUNC_t to_asGENFUNC_t(fp_wrapper_t<Function>, call_conv_t<OriginalCallConv>, var_type_t<Is...>)
+consteval auto to_asGENFUNC_t(fp_wrapper_t<Function>, call_conv_t<OriginalCallConv>, var_type_t<Is...>)
+    -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
 {
     return detail::fp_to_asGENFUNC_t_impl<Function, OriginalCallConv, Is...>();
 }
 
-template <asECallConvTypes CallConv>
-requires(CallConv == asCALL_GENERIC)
-constexpr asGENFUNC_t to_asGENFUNC_t(asGENFUNC_t gfn, call_conv_t<CallConv>)
+template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+requires(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
+constexpr auto to_asGENFUNC_t(asGENFUNC_t gfn, call_conv_t<CallConv>)
+    -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
 {
     return gfn;
 }
