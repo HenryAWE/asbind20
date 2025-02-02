@@ -79,50 +79,9 @@ static void register_script_dictionary_impl(asIScriptEngine* engine)
         .set_gc_flag(fp<&dictionary::set_gc_flag>)
         .get_gc_flag(fp<&dictionary::get_gc_flag>)
         .enum_refs(fp<&dictionary::enum_refs>)
-        .release_refs(fp<&dictionary::release_refs>);
-
-    const char* try_emplace_decl = "bool try_emplace(const string&in k, const ?&in value)";
-    const char* get_decl = "bool get(const string&in k, ?&out value) const";
-
-    if constexpr(UseGeneric)
-    {
-        c.method(
-            try_emplace_decl,
-            +[](asIScriptGeneric* gen) -> void
-            {
-                set_generic_return<bool>(
-                    gen,
-                    get_generic_object<dictionary>(gen).try_emplace(
-                        get_generic_arg<const string&>(gen, 0),
-                        (const void*)gen->GetArgAddress(1),
-                        gen->GetArgTypeId(1)
-                    )
-                );
-            }
-        );
-        c.method(
-            get_decl,
-            +[](asIScriptGeneric* gen) -> void
-            {
-                set_generic_return<bool>(
-                    gen,
-                    get_generic_object<dictionary>(gen).get(
-                        get_generic_arg<const string&>(gen, 0),
-                        gen->GetArgAddress(1),
-                        gen->GetArgTypeId(1)
-                    )
-                );
-            }
-        );
-    }
-    else
-    {
-        c
-            .method(try_emplace_decl, &dictionary::try_emplace)
-            .method(get_decl, &dictionary::get);
-    }
-
-    c
+        .release_refs(fp<&dictionary::release_refs>)
+        .method("bool try_emplace(const string&in k, const ?&in value)", fp<&dictionary::try_emplace>, var_type<1>)
+        .method("bool get(const string&in k, ?&out value) const", fp<&dictionary::get>, var_type<1>)
         .method("bool erase(const string&in k)", fp<&dictionary::erase>)
         .method("bool contains(const string&in k) const", fp<static_cast<bool (dictionary::*)(const string&) const>(&dictionary::contains)>);
 }

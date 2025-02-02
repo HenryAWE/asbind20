@@ -2616,6 +2616,100 @@ public:
         return *this;
     }
 
+    template <
+        auto Function,
+        std::size_t... Is,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    reference_class& method(
+        use_generic_t,
+        const char* decl,
+        fp_wrapper_t<Function>,
+        var_type_t<Is...>,
+        call_conv_t<CallConv>
+    )
+    {
+        this->method_impl(
+            decl,
+            to_asGENFUNC_t(fp<Function>, call_conv<CallConv>, var_type<Is...>),
+            generic_call_conv
+        );
+
+        return *this;
+    }
+
+    template <
+        auto Function,
+        std::size_t... Is,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    reference_class& method(
+        const char* decl,
+        fp_wrapper_t<Function>,
+        var_type_t<Is...>,
+        call_conv_t<CallConv>
+    )
+    {
+        if constexpr(ForceGeneric)
+            this->method(use_generic, decl, fp<Function>, var_type<Is...>, call_conv<CallConv>);
+        else
+        {
+            this->method_impl(
+                decl,
+                Function,
+                call_conv<CallConv>
+            );
+        }
+
+        return *this;
+    }
+
+    template <
+        auto Function,
+        std::size_t... Is>
+    reference_class& method(
+        use_generic_t,
+        const char* decl,
+        fp_wrapper_t<Function>,
+        var_type_t<Is...>
+    )
+    {
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
+            method_callconv<Function>();
+        this->method(
+            use_generic,
+            decl,
+            fp<Function>,
+            var_type<Is...>,
+            call_conv<conv>
+        );
+
+        return *this;
+    }
+
+    template <
+        auto Function,
+        std::size_t... Is>
+    reference_class& method(
+        const char* decl,
+        fp_wrapper_t<Function>,
+        var_type_t<Is...>
+    )
+    {
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
+            method_callconv<Function>();
+        if constexpr(ForceGeneric)
+            this->method(use_generic, decl, fp<Function>, var_type<Is...>, call_conv<conv>);
+        else
+        {
+            this->method_impl(
+                decl,
+                Function,
+                call_conv<conv>
+            );
+        }
+
+        return *this;
+    }
+
     template <auto Function>
     reference_class& method(
         use_generic_t,

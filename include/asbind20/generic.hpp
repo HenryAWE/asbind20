@@ -18,6 +18,8 @@ struct call_conv_t
 template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
 constexpr inline call_conv_t<CallConv> call_conv;
 
+constexpr inline call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> generic_call_conv{};
+
 template <std::size_t... Is>
 struct var_type_t : public std::index_sequence<Is...>
 {};

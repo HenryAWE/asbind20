@@ -5,11 +5,10 @@
 
 using namespace asbind_test;
 
-TEST_F(asbind_test_suite, ext_dictionary_emplace)
+namespace test_ext_dictionary
 {
-    asIScriptEngine* engine = get_engine();
-    asbind20::ext::register_script_dictionary(engine);
-
+void check_emplace(asIScriptEngine* engine)
+{
     asIScriptModule* m = engine->GetModule("dictionary_emplace", asGM_ALWAYS_CREATE);
     m->AddScriptSection(
         "dictionary_emplace.as",
@@ -57,6 +56,23 @@ TEST_F(asbind_test_suite, ext_dictionary_emplace)
         std::cerr << ctx.get()->GetExceptionString() << std::endl;
         EXPECT_TRUE(result_has_value(result));
     }
+}
+} // namespace test_ext_dictionary
+
+TEST_F(asbind_test_suite, ext_dictionary_emplace)
+{
+    asIScriptEngine* engine = get_engine();
+    asbind20::ext::register_script_dictionary(engine);
+
+    test_ext_dictionary::check_emplace(engine);
+}
+
+TEST_F(asbind_test_suite_generic, ext_dictionary_emplace)
+{
+    asIScriptEngine* engine = get_engine();
+    asbind20::ext::register_script_dictionary(engine, true);
+
+    test_ext_dictionary::check_emplace(engine);
 }
 
 int main(int argc, char* argv[])
