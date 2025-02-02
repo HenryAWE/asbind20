@@ -64,8 +64,8 @@ void asbind_test_suite::SetUp()
     m_engine = asbind20::make_script_engine();
     asbind20::global g(m_engine);
     g
-        .message_callback<&asbind_test_suite::msg_callback>(*this)
-        .exception_translator<&asbind_test_suite::ex_translator>(*this);
+        .message_callback(&asbind_test_suite::msg_callback ,* this)
+        .exception_translator(&asbind_test_suite::ex_translator, *this);
 
     m_engine->SetEngineProperty(asEP_USE_CHARACTER_LITERALS, true);
 

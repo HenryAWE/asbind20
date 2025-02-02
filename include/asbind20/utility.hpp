@@ -208,75 +208,6 @@ asSFuncPtr to_asSFuncPtr(Func f)
         return asFunctionPtr(f);
 }
 
-namespace detail
-{
-    template <typename T>
-    constexpr T& refptr_helper_ref(T& ref) noexcept
-    {
-        return ref;
-    }
-
-    template <typename T>
-    constexpr void refptr_helper_ref(T&&) = delete;
-
-    template <typename T, typename U>
-    concept refptr_check_helper_ref = requires() {
-        refptr_helper_ref<T>(std::declval<U>());
-    };
-} // namespace detail
-
-/**
- * @brief Wrapper for interchanging between reference and pointer. Similar to the `std::reference_wrapper<T>`
- */
-template <typename T>
-class refptr_wrapper
-{
-public:
-    using type = T;
-
-    template <typename U>
-    requires(detail::refptr_check_helper_ref<T, U> && !std::same_as<refptr_wrapper, std::remove_cvref_t<U>>)
-    constexpr refptr_wrapper(U&& ref) noexcept(noexcept(detail::refptr_helper_ref<T>(std::forward<U>(ref))))
-        : m_ptr(std::addressof(detail::refptr_helper_ref<T>(std::forward<U>(ref))))
-    {}
-
-    constexpr refptr_wrapper(T* ptr) noexcept
-        : m_ptr(ptr) {}
-
-    constexpr refptr_wrapper(const refptr_wrapper&) noexcept = default;
-
-    constexpr refptr_wrapper& operator=(const refptr_wrapper&) noexcept = default;
-
-    constexpr operator T&() const noexcept
-    {
-        return *m_ptr;
-    }
-
-    constexpr operator T*() const noexcept
-    {
-        return m_ptr;
-    }
-
-    constexpr T& get() const noexcept
-    {
-        return *m_ptr;
-    }
-
-    constexpr T* get_ptr() const noexcept
-    {
-        return m_ptr;
-    }
-
-private:
-    T* m_ptr;
-};
-
-template <typename T>
-refptr_wrapper(T&) -> refptr_wrapper<T>;
-
-template <typename T>
-refptr_wrapper(T*) -> refptr_wrapper<T>;
-
 template <int TypeId>
 requires(!(TypeId & ~asTYPEID_MASK_SEQNBR))
 struct primitive_type_of;
@@ -1006,7 +937,9 @@ private:
     handle_type m_engine;
 };
 
-inline script_engine make_script_engine(asDWORD version = ANGELSCRIPT_VERSION)
+inline script_engine make_script_engine(
+    AS_NAMESPACE_QUALIFIER asDWORD version = ANGELSCRIPT_VERSION
+)
 {
     return script_engine(
         AS_NAMESPACE_QUALIFIER asCreateScriptEngine(version)
@@ -1243,7 +1176,7 @@ inline auto get_default_constructor(asITypeInfo* ti)
         AS_NAMESPACE_QUALIFIER asEBehaviours beh;
         AS_NAMESPACE_QUALIFIER asIScriptFunction* func =
             ti->GetBehaviourByIndex(i, &beh);
-        if(beh == asBEHAVE_CONSTRUCT)
+        if(beh == AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT)
         {
             if(func->GetParamCount() == 0)
                 return func;
@@ -1282,7 +1215,7 @@ inline std::strong_ordering translate_opCmp(int cmp) noexcept
  */
 inline void set_script_exception(const char* info)
 {
-    asIScriptContext* ctx = current_context();
+    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx = current_context();
     if(ctx)
         ctx->SetException(info);
 }

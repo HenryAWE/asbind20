@@ -31,7 +31,9 @@ public:
     }
 
     namespace_(
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, const char* ns, bool nested = true
+        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+        const char* ns,
+        bool nested = true
     )
         : m_engine(engine), m_prev(engine->GetDefaultNamespace())
     {
@@ -693,20 +695,6 @@ public:
     }
 
     template <
-        native_function auto Function,
-        asECallConvTypes CallConv = asCALL_CDECL>
-    [[deprecated("Use the version with fp<>")]]
-    global& function(use_generic_t, const char* decl)
-    {
-        function(
-            decl,
-            to_asGENFUNC_t(fp<Function>, call_conv<CallConv>)
-        );
-
-        return *this;
-    }
-
-    template <
         auto Function,
         asECallConvTypes CallConv = asCALL_CDECL>
     requires(CallConv == asCALL_CDECL || CallConv == asCALL_STDCALL)
@@ -726,35 +714,8 @@ public:
     }
 
     template <
-        native_function auto Function,
-        asECallConvTypes CallConv = asCALL_CDECL>
-    requires(!std::is_member_function_pointer_v<std::decay_t<decltype(Function)>>)
-    [[deprecated("Use the version with fp<>")]]
-    global& function(const char* decl)
-    {
-        if constexpr(ForceGeneric)
-        {
-            function<Function, CallConv>(use_generic, decl);
-        }
-        else
-        {
-            [[maybe_unused]]
-            int r = 0;
-            r = m_engine->RegisterGlobalFunction(
-                decl,
-                to_asSFuncPtr(Function),
-                CallConv
-            );
-            assert(r >= 0);
-        }
-
-        return *this;
-    }
-
-    template <
         auto Function,
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv = detail::deduce_function_callconv<std::decay_t<decltype(Function)>>()>
-
     global& function(
         const char* decl,
         fp_wrapper_t<Function>,
@@ -826,37 +787,6 @@ public:
     }
 
     template <
-        native_function auto Function,
-        typename T>
-    requires(std::is_member_function_pointer_v<std::decay_t<decltype(Function)>>)
-    [[deprecated("Use the version with fp<>")]]
-    global& function(use_generic_t, const char* decl, T& instance)
-    {
-        function(
-            decl,
-            to_asGENFUNC_t(fp<Function>, call_conv<asCALL_THISCALL_ASGLOBAL>),
-            instance
-        );
-
-        return *this;
-    }
-
-    template <
-        native_function auto Function,
-        typename T>
-    requires(std::is_member_function_pointer_v<std::decay_t<decltype(Function)>>)
-    [[deprecated("Use the version with fp<>")]]
-    global& function(const char* decl, T& instance)
-    {
-        if constexpr(ForceGeneric)
-            function<Function>(use_generic, decl, instance);
-        else
-            function(decl, Function, instance);
-
-        return *this;
-    }
-
-    template <
         auto Function,
         typename T>
     global& function(
@@ -920,7 +850,7 @@ public:
 
     global& function(
         const char* decl,
-        asGENFUNC_t gfn,
+        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
         void* auxiliary = nullptr
     )
     {
@@ -929,7 +859,7 @@ public:
         r = m_engine->RegisterGlobalFunction(
             decl,
             to_asSFuncPtr(gfn),
-            asCALL_GENERIC,
+            AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
             auxiliary
         );
         assert(r >= 0);
@@ -1025,7 +955,9 @@ public:
         [[maybe_unused]]
         int r = 0;
         r = m_engine->SetMessageCallback(
-            to_asSFuncPtr(fn), obj, asCALL_CDECL
+            to_asSFuncPtr(fn),
+            obj,
+            AS_NAMESPACE_QUALIFIER asCALL_CDECL
         );
         assert(r >= 0);
 
@@ -1039,35 +971,11 @@ public:
         [[maybe_unused]]
         int r = 0;
         r = m_engine->SetMessageCallback(
-            to_asSFuncPtr(fn), (void*)std::addressof(obj), asCALL_THISCALL
+            to_asSFuncPtr(fn),
+            (void*)std::addressof(obj),
+            AS_NAMESPACE_QUALIFIER asCALL_THISCALL
         );
         assert(r >= 0);
-
-        return *this;
-    }
-
-    /**
-     * Generic calling convention for message callback is not supported
-     */
-    template <native_function auto Callback>
-    global& message_callback(use_generic_t, void* obj = nullptr) = delete;
-    template <native_function auto Callback, typename T>
-    global& message_callback(use_generic_t, T& obj) = delete;
-
-    template <native_function auto Callback>
-    requires(!std::is_member_function_pointer_v<std::decay_t<decltype(Callback)>>)
-    global& message_callback(void* obj = nullptr)
-    {
-        message_callback(Callback, obj);
-
-        return *this;
-    }
-
-    template <native_function auto Callback, typename T>
-    requires(std::is_member_function_pointer_v<std::decay_t<decltype(Callback)>>)
-    global& message_callback(T& obj)
-    {
-        message_callback(Callback, obj);
 
         return *this;
     }
@@ -1087,7 +995,9 @@ public:
         [[maybe_unused]]
         int r = 0;
         r = m_engine->SetTranslateAppExceptionCallback(
-            to_asSFuncPtr(fn), obj, asCALL_CDECL
+            to_asSFuncPtr(fn),
+            obj,
+            AS_NAMESPACE_QUALIFIER asCALL_CDECL
         );
         assert(r >= 0);
 
@@ -1101,35 +1011,11 @@ public:
         [[maybe_unused]]
         int r = 0;
         r = m_engine->SetTranslateAppExceptionCallback(
-            to_asSFuncPtr(fn), (void*)std::addressof(obj), asCALL_THISCALL
+            to_asSFuncPtr(fn),
+            (void*)std::addressof(obj),
+            AS_NAMESPACE_QUALIFIER asCALL_THISCALL
         );
         assert(r >= 0);
-
-        return *this;
-    }
-
-    /**
-     * Generic calling convention for exception translator is not supported
-     */
-    template <native_function auto Callback>
-    global& exception_translator(use_generic_t, void* obj = nullptr) = delete;
-    template <native_function auto Callback, typename T>
-    global& exception_translator(use_generic_t, T& obj) = delete;
-
-    template <native_function auto Callback>
-    requires(!std::is_member_function_pointer_v<std::decay_t<decltype(Callback)>>)
-    global& exception_translator(void* obj = nullptr)
-    {
-        exception_translator(Callback, obj);
-
-        return *this;
-    }
-
-    template <native_function auto Callback, typename T>
-    requires(std::is_member_function_pointer_v<std::decay_t<decltype(Callback)>>)
-    global& exception_translator(T& obj)
-    {
-        exception_translator(Callback, obj);
 
         return *this;
     }
@@ -1241,30 +1127,9 @@ protected:
             m_name,
             decl,
             to_asSFuncPtr(gfn),
-            asCALL_GENERIC
+            AS_NAMESPACE_QUALIFIER asCALL_GENERIC
         );
         assert(r >= 0);
-    }
-
-    template <native_function auto Method, asECallConvTypes CallConv>
-    void wrapped_method_impl(const char* decl)
-    {
-        if constexpr(ForceGeneric)
-        {
-            method_impl(
-                decl,
-                to_asGENFUNC_t(fp<Method>, call_conv<CallConv>),
-                call_conv<asCALL_GENERIC>
-            );
-        }
-        else
-        {
-            method_impl(
-                decl,
-                Method,
-                call_conv<CallConv>
-            );
-        }
     }
 
     void behaviour_impl(
@@ -1305,50 +1170,6 @@ protected:
             CallConv
         );
         assert(r >= 0);
-    }
-
-    template <native_function auto Behaviour, asECallConvTypes CallConv>
-    void wrapped_behaviour_impl(asEBehaviours beh, const char* decl)
-    {
-        [[maybe_unused]]
-        int r = 0;
-        if constexpr(ForceGeneric)
-        {
-            r = m_engine->RegisterObjectBehaviour(
-                m_name,
-                beh,
-                decl,
-                to_asSFuncPtr(to_asGENFUNC_t(fp<Behaviour>, call_conv<CallConv>)),
-                asCALL_GENERIC
-            );
-        }
-        else
-        {
-            r = m_engine->RegisterObjectBehaviour(
-                m_name,
-                beh,
-                decl,
-                to_asSFuncPtr(Behaviour),
-                CallConv
-            );
-        }
-        assert(r >= 0);
-    }
-
-    template <typename Class, typename R, typename... Args>
-    void method_auto_callconv(const char* decl, R (*fn)(Args...))
-    {
-        method_impl(
-            decl, fn, call_conv<detail::deduce_method_callconv<Class, R (*)(Args...)>()>
-        );
-    }
-
-    template <typename Class, typename R, typename... Args>
-    void behaviour_wrapper_impl(asEBehaviours beh, const char* decl, R (*fn)(Args...))
-    {
-        behaviour_impl(
-            beh, decl, fn, call_conv<detail::deduce_method_callconv<Class, R (*)(Args...)>()>
-        );
     }
 
     void property_impl(const char* decl, std::size_t off)
@@ -1633,12 +1454,12 @@ protected:
     void opConv_impl_native(std::string_view ret, bool implicit)
     {
         auto wrapper =
-            wrappers::opConv<Class, To>{}(call_conv<asCALL_CDECL_OBJLAST>);
+            wrappers::opConv<Class, To>{}(call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>);
 
         method_impl(
             decl_opConv(ret, implicit).c_str(),
             wrapper,
-            call_conv<asCALL_CDECL_OBJLAST>
+            call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
         );
     }
 
@@ -1651,7 +1472,7 @@ protected:
         method_impl(
             decl_opConv(ret, implicit).c_str(),
             wrapper,
-            call_conv<asCALL_GENERIC>
+            call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>
         );
     }
 
@@ -1681,16 +1502,18 @@ public:
         const char* name,
         AS_NAMESPACE_QUALIFIER asQWORD flags = 0
     )
-        : my_base(engine, name),
-          m_flags((AS_NAMESPACE_QUALIFIER asOBJ_VALUE) | flags | AS_NAMESPACE_QUALIFIER asGetTypeTraits<Class>())
+        : my_base(engine, name)
     {
-        assert(!(m_flags & (AS_NAMESPACE_QUALIFIER asOBJ_REF)));
+        flags |= AS_NAMESPACE_QUALIFIER asOBJ_VALUE;
+        flags |= AS_NAMESPACE_QUALIFIER asGetTypeTraits<Class>();
 
-        this->template register_object_type<Class>(m_flags);
+        assert(!(flags & (AS_NAMESPACE_QUALIFIER asOBJ_REF)));
+
+        this->template register_object_type<Class>(flags);
     }
 
     template <typename Method>
-    static constexpr auto method_callconv() noexcept
+    static consteval auto method_callconv() noexcept
         -> AS_NAMESPACE_QUALIFIER asECallConvTypes
     {
         if constexpr(noncapturing_lambda<Method>)
@@ -1700,7 +1523,7 @@ public:
     }
 
     template <auto Method>
-    static constexpr auto method_callconv() noexcept
+    static consteval auto method_callconv() noexcept
         -> AS_NAMESPACE_QUALIFIER asECallConvTypes
     {
         return method_callconv<std::decay_t<decltype(Method)>>();
@@ -2029,7 +1852,7 @@ public:
 
     value_class& destructor(use_generic_t)
     {
-        behaviour(
+        this->behaviour_impl(
             AS_NAMESPACE_QUALIFIER asBEHAVE_DESTRUCT,
             "void f()",
             +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
@@ -2048,7 +1871,7 @@ public:
             destructor(use_generic);
         else
         {
-            behaviour(
+            this->behaviour_impl(
                 AS_NAMESPACE_QUALIFIER asBEHAVE_DESTRUCT,
                 "void f()",
                 +[](Class* ptr) -> void
@@ -2404,45 +2227,34 @@ public:
         return *this;
     }
 
-    template <typename Fn>
-    requires(std::is_member_function_pointer_v<Fn>)
-    value_class& behaviour(asEBehaviours beh, const char* decl, Fn&& fn, call_conv_t<asCALL_THISCALL> = {}) requires(!ForceGeneric)
+    template <
+        native_function Fn,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
+    value_class& method(
+        const char* decl,
+        Fn&& fn,
+        call_conv_t<CallConv>
+    ) requires(!ForceGeneric)
     {
-        behaviour_impl(beh, decl, std::forward<Fn>(fn), call_conv<asCALL_THISCALL>);
-
-        return *this;
-    }
-
-    template <typename R, typename... Args, asECallConvTypes CallConv>
-    requires(native_function<R (*)(Args...)> && CallConv != asCALL_GENERIC)
-    value_class& behaviour(asEBehaviours beh, const char* decl, R (*fn)(Args...), call_conv_t<CallConv>) requires(!ForceGeneric)
-    {
-        this->behaviour_impl(beh, decl, fn, call_conv<CallConv>);
-
-        return *this;
-    }
-
-    value_class& behaviour(asEBehaviours beh, const char* decl, asGENFUNC_t gfn, call_conv_t<asCALL_GENERIC> = {})
-    {
-        this->behaviour_impl(beh, decl, gfn, call_conv<asCALL_GENERIC>);
+        this->method_impl(decl, std::forward<Fn>(fn), call_conv<CallConv>);
 
         return *this;
     }
 
     template <native_function Fn>
-    requires(std::is_member_function_pointer_v<Fn>)
-    value_class& method(const char* decl, Fn&& fn, call_conv_t<asCALL_THISCALL> = {}) requires(!ForceGeneric)
+    value_class& method(
+        const char* decl,
+        Fn&& fn
+    ) requires(!ForceGeneric)
     {
-        this->method_impl(decl, std::forward<Fn>(fn), call_conv<asCALL_THISCALL>);
-
-        return *this;
-    }
-
-    template <native_function Fn, asECallConvTypes CallConv>
-    requires(CallConv != asCALL_GENERIC)
-    value_class& method(const char* decl, Fn&& fn, call_conv_t<CallConv>) requires(!ForceGeneric)
-    {
-        this->method_impl(decl, std::forward<Fn>(fn), call_conv<CallConv>);
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
+            method_callconv<Fn>();
+        this->method_impl(
+            decl,
+            fn,
+            call_conv<conv>
+        );
 
         return *this;
     }
@@ -2450,23 +2262,17 @@ public:
     /**
      * @brief Register a generic function.
      */
-    value_class& method(const char* decl, asGENFUNC_t gfn, call_conv_t<asCALL_GENERIC> = {})
+    value_class& method(
+        const char* decl,
+        asGENFUNC_t gfn,
+        call_conv_t<asCALL_GENERIC> = {}
+    )
     {
-        this->method_impl(decl, gfn, call_conv<asCALL_GENERIC>);
-
-        return *this;
-    }
-
-    /**
-     * @brief Register a function with generated generic wrapper.
-     */
-    template <
-        native_function auto Method,
-        asECallConvTypes CallConv = detail::deduce_method_callconv<Method, Class>()>
-    [[deprecated("Use the version with fp<>")]]
-    value_class& method(use_generic_t, const char* decl)
-    {
-        method(decl, to_asGENFUNC_t(fp<Method>, call_conv<CallConv>), call_conv<asCALL_GENERIC>);
+        this->method_impl(
+            decl,
+            gfn,
+            call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>
+        );
 
         return *this;
     }
@@ -2484,7 +2290,7 @@ public:
         this->method_impl(
             decl,
             to_asGENFUNC_t(fp<Method>, call_conv<CallConv>),
-            call_conv<asCALL_GENERIC>
+            call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>
         );
 
         return *this;
@@ -2497,26 +2303,13 @@ public:
         fp_wrapper_t<Method>
     )
     {
-        constexpr asECallConvTypes conv = method_callconv<Method>();
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
+            method_callconv<Method>();
         this->method_impl(
             decl,
             to_asGENFUNC_t(fp<Method>, call_conv<conv>),
-            call_conv<asCALL_GENERIC>
+            call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>
         );
-
-        return *this;
-    }
-
-    template <
-        native_function auto Method,
-        asECallConvTypes CallConv = detail::deduce_method_callconv<Class, std::decay_t<decltype(Method)>>()>
-    [[deprecated("Use the version with fp<>")]]
-    value_class& method(const char* decl)
-    {
-        if constexpr(ForceGeneric)
-            this->template method<Method, CallConv>(use_generic, decl);
-        else
-            this->method(decl, Method, call_conv<CallConv>);
 
         return *this;
     }
@@ -2544,19 +2337,12 @@ public:
         fp_wrapper_t<Method>
     )
     {
-        constexpr asECallConvTypes conv = method_callconv<Method>();
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
+            method_callconv<Method>();
         if constexpr(ForceGeneric)
             this->method(use_generic, decl, fp<Method>, call_conv<conv>);
         else
             this->method(decl, Method, call_conv<conv>);
-
-        return *this;
-    }
-
-    template <typename R, typename... Args>
-    value_class& method(const char* decl, R (*fn)(Args...)) requires(!ForceGeneric)
-    {
-        this->template method_auto_callconv<Class>(decl, fn);
 
         return *this;
     }
@@ -2568,31 +2354,58 @@ public:
         use_generic_t,
         const char* decl,
         const Lambda&,
-        call_conv_t<CallConv> = {}
+        call_conv_t<CallConv>
     )
     {
         this->method_impl(
             decl,
             to_asGENFUNC_t(Lambda{}, call_conv<CallConv>),
-            call_conv<asCALL_GENERIC>
+            call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>
         );
+
+        return *this;
+    }
+
+    template <noncapturing_lambda Lambda>
+    value_class& method(
+        use_generic_t,
+        const char* decl,
+        const Lambda&
+    )
+    {
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
+            method_callconv<Lambda>();
+        this->method(use_generic, decl, Lambda{}, call_conv<conv>);
 
         return *this;
     }
 
     template <
         noncapturing_lambda Lambda,
-        asECallConvTypes CallConv = detail::deduce_lambda_callconv<Class, Lambda>()>
+        asECallConvTypes CallConv>
     value_class& method(
         const char* decl,
         const Lambda&,
-        call_conv_t<CallConv> = {}
+        call_conv_t<CallConv>
     )
     {
         if constexpr(ForceGeneric)
             this->method(use_generic, decl, Lambda{}, call_conv<CallConv>);
         else
             this->method_impl(decl, +Lambda{}, call_conv<CallConv>);
+        return *this;
+    }
+
+    template <noncapturing_lambda Lambda>
+    value_class& method(
+        const char* decl,
+        const Lambda&
+    )
+    {
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
+            method_callconv<Lambda>();
+        this->method(decl, Lambda{}, call_conv<conv>);
+
         return *this;
     }
 
@@ -2617,9 +2430,6 @@ public:
 
         return *this;
     }
-
-private:
-    AS_NAMESPACE_QUALIFIER asQWORD m_flags;
 };
 
 template <typename Class, bool Template = false, bool ForceGeneric = false>
@@ -2634,22 +2444,25 @@ public:
     using class_type = Class;
 
     reference_class(
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, const char* name, AS_NAMESPACE_QUALIFIER asQWORD flags = 0
+        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+        const char* name,
+        AS_NAMESPACE_QUALIFIER asQWORD flags = 0
     )
-        : my_base(engine, name), m_flags((AS_NAMESPACE_QUALIFIER asOBJ_REF) | flags)
+        : my_base(engine, name)
     {
-        assert(!(m_flags & (AS_NAMESPACE_QUALIFIER asOBJ_VALUE)));
+        flags |= AS_NAMESPACE_QUALIFIER asOBJ_REF;
+        assert(!(flags & (AS_NAMESPACE_QUALIFIER asOBJ_VALUE)));
 
         if constexpr(!Template)
         {
-            assert(!(m_flags & (AS_NAMESPACE_QUALIFIER asOBJ_TEMPLATE)));
+            assert(!(flags & (AS_NAMESPACE_QUALIFIER asOBJ_TEMPLATE)));
         }
         else
         {
-            m_flags |= (AS_NAMESPACE_QUALIFIER asOBJ_TEMPLATE);
+            flags |= AS_NAMESPACE_QUALIFIER asOBJ_TEMPLATE;
         }
 
-        this->template register_object_type<Class>(m_flags);
+        this->template register_object_type<Class>(flags);
     }
 
     template <typename Method>
@@ -2669,31 +2482,10 @@ public:
         return method_callconv<std::decay_t<decltype(Method)>>();
     }
 
-    reference_class& behaviour(asEBehaviours beh, const char* decl, asGENFUNC_t gfn, call_conv_t<asCALL_GENERIC>)
-    {
-        this->behaviour_impl(beh, decl, gfn, call_conv<asCALL_GENERIC>);
-
-        return *this;
-    }
-
-    reference_class& behaviour(asEBehaviours beh, const char* decl, asGENFUNC_t gfn)
-    {
-        behaviour(beh, decl, gfn, call_conv<asCALL_GENERIC>);
-
-        return *this;
-    }
-
-    template <native_function Fn, asECallConvTypes CallConv>
-    requires(CallConv != asCALL_GENERIC)
-    reference_class& behaviour(asEBehaviours beh, const char* decl, Fn&& fn, call_conv_t<CallConv>) requires(!ForceGeneric)
-    {
-        this->behaviour_impl(beh, decl, std::forward<Fn>(fn), call_conv<CallConv>);
-
-        return *this;
-    }
-
+private:
     static constexpr char decl_template_callback[] = "bool f(int&in,bool&out)";
 
+public:
     reference_class& template_callback(asGENFUNC_t gfn) requires(Template)
     {
         this->behaviour_impl(
@@ -2707,7 +2499,6 @@ public:
     }
 
     template <native_function Fn>
-    requires(!std::is_member_function_pointer_v<std::decay_t<Fn>>)
     reference_class& template_callback(Fn&& fn) requires(Template && !ForceGeneric)
     {
         this->behaviour_impl(
@@ -2743,84 +2534,48 @@ public:
         return *this;
     }
 
-    template <native_function auto Callback>
-    [[deprecated("Use the version with fp<>")]]
-    reference_class& template_callback(use_generic_t) requires(Template)
-    {
-        template_callback(
-            to_asGENFUNC_t(fp<Callback>, call_conv<asCALL_CDECL>)
-        );
-
-        return *this;
-    }
-
-    template <native_function auto Callback>
-    [[deprecated("Use the version with fp<>")]]
-    reference_class& template_callback() requires(Template)
-    {
-        if constexpr(ForceGeneric)
-            template_callback<Callback>(use_generic);
-        else
-            template_callback(Callback);
-
-        return *this;
-    }
-
-    template <native_function Fn>
-    requires(std::is_member_function_pointer_v<std::decay_t<Fn>>)
-    reference_class& method(const char* decl, Fn&& fn, call_conv_t<asCALL_THISCALL> = {}) requires(!ForceGeneric)
-    {
-        this->method_impl(decl, std::forward<Fn>(fn), call_conv<asCALL_THISCALL>);
-
-        return *this;
-    }
-
-    template <native_function Fn, asECallConvTypes CallConv>
-    requires(!std::is_member_function_pointer_v<std::decay_t<Fn>> && CallConv != asCALL_GENERIC)
-    reference_class& method(const char* decl, Fn&& fn, call_conv_t<CallConv>) requires(!ForceGeneric)
+    template <
+        native_function Fn,
+        asECallConvTypes CallConv>
+    requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
+    reference_class& method(
+        const char* decl,
+        Fn&& fn,
+        call_conv_t<CallConv>
+    ) requires(!ForceGeneric)
     {
         this->method_impl(decl, std::forward<Fn>(fn), call_conv<CallConv>);
 
         return *this;
     }
 
-    reference_class& method(const char* decl, asGENFUNC_t gfn, call_conv_t<asCALL_GENERIC> = {})
+    template <native_function Fn>
+    reference_class& method(
+        const char* decl,
+        Fn&& fn
+    ) requires(!ForceGeneric)
     {
-        this->method_impl(decl, gfn, call_conv<asCALL_GENERIC>);
-
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
+            method_callconv<Fn>();
+        this->method(
+            decl,
+            std::forward<Fn>(fn),
+            call_conv<conv>
+        );
         return *this;
     }
 
-    template <typename R, typename... Args>
-    requires(native_function<R (*)(Args...)>)
-    reference_class& method(const char* decl, R (*fn)(Args...)) requires(!ForceGeneric)
+    reference_class& method(
+        const char* decl,
+        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
+        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
+    )
     {
-        this->template method_auto_callconv<Class>(decl, fn);
-
-        return *this;
-    }
-
-    template <
-        native_function auto Function,
-        asECallConvTypes CallConv = detail::deduce_method_callconv<Class, std::decay_t<decltype(Function)>>()>
-    [[deprecated("Use the version with fp<>")]]
-    reference_class& method(use_generic_t, const char* decl)
-    {
-        method(decl, to_asGENFUNC_t(fp<Function>, call_conv<CallConv>), call_conv<asCALL_GENERIC>);
-
-        return *this;
-    }
-
-    template <
-        native_function auto Function,
-        asECallConvTypes CallConv = detail::deduce_method_callconv<Class, std::decay_t<decltype(Function)>>()>
-    [[deprecated("Use the version with fp<>")]]
-    reference_class& method(const char* decl)
-    {
-        if constexpr(ForceGeneric)
-            this->template method<Function, CallConv>(use_generic, decl);
-        else
-            this->method_impl(decl, Function, call_conv<CallConv>);
+        this->method_impl(
+            decl,
+            gfn,
+            call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>
+        );
 
         return *this;
     }
@@ -2838,7 +2593,7 @@ public:
         this->method_impl(
             decl,
             to_asGENFUNC_t(fp<Function>, call_conv<CallConv>),
-            call_conv<asCALL_GENERIC>
+            call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>
         );
 
         return *this;
@@ -2873,7 +2628,7 @@ public:
         this->method_impl(
             decl,
             to_asGENFUNC_t(fp<Function>, call_conv<conv>),
-            call_conv<asCALL_GENERIC>
+            call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>
         );
 
         return *this;
@@ -2895,6 +2650,7 @@ public:
         return *this;
     }
 
+private:
     std::string decl_factory(std::string_view params) const
     {
         if constexpr(Template)
@@ -2927,7 +2683,6 @@ public:
         }
     }
 
-private:
     template <typename... Args>
     static consteval bool check_factory_args()
     {
@@ -2953,7 +2708,7 @@ public:
     reference_class& factory_function(
         std::string_view params,
         Class* (*fn)(Args...),
-        call_conv_t<asCALL_CDECL> = {}
+        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_CDECL> = {}
     ) requires(!ForceGeneric)
     {
         [[maybe_unused]]
@@ -3442,11 +3197,11 @@ public:
     }                                                                                    \
     reference_class& func_name(AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn)                   \
     {                                                                                    \
-        this->behaviour(                                                                 \
+        this->behaviour_impl(                                                            \
             AS_NAMESPACE_QUALIFIER as_beh,                                               \
             as_decl,                                                                     \
             gfn,                                                                         \
-            call_conv<asCALL_GENERIC>                                                    \
+            call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>                             \
         );                                                                               \
         return *this;                                                                    \
     }                                                                                    \
@@ -3470,183 +3225,12 @@ public:
     }
 
     ASBIND20_REFERENCE_CLASS_BEH(addref, asBEHAVE_ADDREF, "void f()")
-
-    using addref_t = void (Class::*)();
-
-    template <addref_t AddRef>
-    [[deprecated("Use the version with fp<>")]]
-    reference_class& addref(use_generic_t)
-    {
-        addref(to_asGENFUNC_t(fp<AddRef>, call_conv<asCALL_THISCALL>));
-
-        return *this;
-    }
-
-    template <native_function auto AddRef>
-    [[deprecated("Use the version with fp<>")]]
-    reference_class& addref()
-    {
-        if constexpr(ForceGeneric)
-            addref<AddRef>(use_generic);
-        else
-            addref(AddRef);
-
-        return *this;
-    }
-
     ASBIND20_REFERENCE_CLASS_BEH(release, asBEHAVE_RELEASE, "void f()")
-
-    using release_t = void (Class::*)();
-
-    template <release_t Release>
-    [[deprecated("Use the version with fp<>")]]
-    reference_class& release(use_generic_t)
-    {
-        release(to_asGENFUNC_t(fp<Release>, call_conv<asCALL_THISCALL>));
-
-        return *this;
-    }
-
-    template <native_function auto Release>
-    [[deprecated("Use the version with fp<>")]]
-    reference_class& release()
-    {
-        if constexpr(ForceGeneric)
-            release<Release>(use_generic);
-        else
-            release(Release);
-
-        return *this;
-    }
-
     ASBIND20_REFERENCE_CLASS_BEH(get_refcount, asBEHAVE_GETREFCOUNT, "int f()")
-
-    using get_refcount_t = int (Class::*)() const;
-
-    template <get_refcount_t GetRefCount>
-    [[deprecated("Use the version with fp<>")]]
-    reference_class& get_refcount(use_generic_t)
-    {
-        get_refcount(to_asGENFUNC_t(fp<GetRefCount>, call_conv<asCALL_THISCALL>));
-
-        return *this;
-    }
-
-    template <get_refcount_t GetRefCount>
-    [[deprecated("Use the version with fp<>")]]
-    reference_class& get_refcount()
-    {
-        if constexpr(ForceGeneric)
-            get_refcount<GetRefCount>(use_generic);
-        else
-            get_refcount(GetRefCount);
-
-        return *this;
-    }
-
     ASBIND20_REFERENCE_CLASS_BEH(set_gc_flag, asBEHAVE_SETGCFLAG, "void f()")
-
-    using set_gc_flag_t = void (Class::*)();
-
-    template <set_gc_flag_t SetGCFlag>
-    [[deprecated("Use the version with fp<>")]]
-    reference_class& set_gc_flag(use_generic_t)
-    {
-        set_gc_flag(to_asGENFUNC_t(fp<SetGCFlag>, call_conv<asCALL_THISCALL>));
-
-        return *this;
-    }
-
-    template <set_gc_flag_t SetGCFlag>
-    [[deprecated("Use the version with fp<>")]]
-    reference_class& set_gc_flag()
-    {
-        if constexpr(ForceGeneric)
-            set_gc_flag<SetGCFlag>(use_generic);
-        else
-            set_gc_flag(SetGCFlag);
-
-        return *this;
-    }
-
     ASBIND20_REFERENCE_CLASS_BEH(get_gc_flag, asBEHAVE_GETGCFLAG, "bool f()")
-
-    using get_gc_flag_t = bool (Class::*)() const;
-
-    template <get_gc_flag_t GetGCFlag>
-    [[deprecated("Use the version with fp<>")]]
-    reference_class& get_gc_flag(use_generic_t)
-    {
-        get_gc_flag(to_asGENFUNC_t(fp<GetGCFlag>, call_conv<asCALL_THISCALL>));
-
-        return *this;
-    }
-
-    template <get_gc_flag_t GetGCFlag>
-    [[deprecated("Use the version with fp<>")]]
-    reference_class& get_gc_flag()
-    {
-        if constexpr(ForceGeneric)
-            get_gc_flag<GetGCFlag>(use_generic);
-        else
-            get_gc_flag(GetGCFlag);
-
-        return *this;
-    }
-
     ASBIND20_REFERENCE_CLASS_BEH(enum_refs, asBEHAVE_ENUMREFS, "void f(int&in)")
-
-    using enum_refs_t = void (Class::*)(asIScriptEngine*);
-
-    template <enum_refs_t EnumRefs>
-    [[deprecated("Use the version with fp<>")]]
-    reference_class& enum_refs(use_generic_t)
-    {
-        enum_refs(
-            to_asGENFUNC_t(fp<EnumRefs>, call_conv<asCALL_THISCALL>)
-        );
-
-        return *this;
-    }
-
-    template <enum_refs_t EnumRefs>
-    [[deprecated("Use the version with fp<>")]]
-    reference_class& enum_refs()
-    {
-        if constexpr(ForceGeneric)
-            enum_refs<EnumRefs>(use_generic);
-        else
-            enum_refs(EnumRefs);
-
-        return *this;
-    }
-
     ASBIND20_REFERENCE_CLASS_BEH(release_refs, asBEHAVE_RELEASEREFS, "void f(int&in)")
-
-    using release_refs_t = void (Class::*)(asIScriptEngine*);
-
-    template <release_refs_t ReleaseRefs>
-    [[deprecated("Use the version with fp<>")]]
-    reference_class& release_refs(use_generic_t)
-    {
-        release_refs(
-            to_asGENFUNC_t(fp<ReleaseRefs>, call_conv<asCALL_THISCALL>)
-        );
-
-        return *this;
-    }
-
-    template <release_refs_t ReleaseRefs>
-    [[deprecated("Use the version with fp<>")]]
-    reference_class& release_refs()
-    {
-        if constexpr(ForceGeneric)
-            release_refs<ReleaseRefs>(use_generic);
-        else
-            release_refs(ReleaseRefs);
-
-        return *this;
-    }
 
 #undef ASBIND20_REFERENCE_CLASS_BEH
 
@@ -3671,9 +3255,6 @@ public:
 
         return *this;
     }
-
-private:
-    AS_NAMESPACE_QUALIFIER asQWORD m_flags;
 };
 
 template <typename Class, bool UseGeneric = false>
@@ -3740,6 +3321,8 @@ requires(std::is_enum_v<Enum>)
 class enum_
 {
 public:
+    using enum_type = Enum;
+
     enum_(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, const char* name)
         : m_engine(engine), m_name(name)
     {

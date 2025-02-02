@@ -16,11 +16,12 @@ int main()
         << asbind20::library_version()
         << std::endl;
 
+    using asbind20::fp;
     asIScriptEngine* engine = asCreateScriptEngine();
     asbind20::ext::register_script_array(engine);
     asbind20::ext::register_std_string(engine);
     asbind20::global(engine)
-        .function<&my_print>(asbind20::use_generic, "void print(const string&in msg)");
+        .function(asbind20::use_generic, "void print(const string&in msg)", fp<&my_print>);
 
     int result = asbind20::ext::exec(engine, R"(print("hello");)");
 

@@ -35,31 +35,6 @@ consteval bool test_concepts()
 
 static_assert(test_concepts());
 
-TEST(utility, refptr_wrapper)
-{
-    using asbind20::refptr_wrapper;
-
-    {
-        int val = 42;
-        refptr_wrapper r(val);
-
-        static_assert(std::same_as<int, decltype(r)::type>);
-
-        EXPECT_EQ(r.get(), 42);
-
-        [](int& v)
-        {
-            EXPECT_EQ(v, 42);
-        }(r);
-
-        [&val](int* v)
-        {
-            EXPECT_EQ(*v, 42);
-            EXPECT_EQ(&val, v);
-        }(r);
-    }
-}
-
 namespace test_utility
 {
 int f1()
