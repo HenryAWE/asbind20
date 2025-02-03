@@ -1132,33 +1132,15 @@ protected:
         assert(r >= 0);
     }
 
-    void behaviour_impl(
-        AS_NAMESPACE_QUALIFIER asEBehaviours beh,
-        const char* decl,
-        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
-        call_conv_t<asCALL_GENERIC>
-    )
-    {
-        [[maybe_unused]]
-        int r = 0;
-        r = m_engine->RegisterObjectBehaviour(
-            m_name,
-            beh,
-            decl,
-            to_asSFuncPtr(gfn),
-            AS_NAMESPACE_QUALIFIER asCALL_GENERIC
-        );
-        assert(r >= 0);
-    }
-
-    template <typename Fn, AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-    requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
+    template <
+        typename Fn,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
     void behaviour_impl(
         AS_NAMESPACE_QUALIFIER asEBehaviours beh,
         const char* decl,
         Fn&& fn,
         call_conv_t<CallConv>
-    ) requires(!ForceGeneric)
+    )
     {
         [[maybe_unused]]
         int r = 0;
@@ -1486,6 +1468,171 @@ private:
     }
 };
 
+#define ASBIND20_CLASS_METHOD(register_type)                                \
+    template <                                                              \
+        native_function Fn,                                                 \
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>                   \
+    requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)             \
+    register_type& method(                                                  \
+        const char* decl,                                                   \
+        Fn&& fn,                                                            \
+        call_conv_t<CallConv>                                               \
+    ) requires(!ForceGeneric)                                               \
+    {                                                                       \
+        this->method_impl(decl, std::forward<Fn>(fn), call_conv<CallConv>); \
+                                                                            \
+        return *this;                                                       \
+    }                                                                       \
+    template <native_function Fn>                                           \
+    register_type& method(                                                  \
+        const char* decl,                                                   \
+        Fn&& fn                                                             \
+    ) requires(!ForceGeneric)                                               \
+    {                                                                       \
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =            \
+            method_callconv<Fn>();                                          \
+        this->method_impl(                                                  \
+            decl,                                                           \
+            fn,                                                             \
+            call_conv<conv>                                                 \
+        );                                                                  \
+        return *this;                                                       \
+    }                                                                       \
+    register_type& method(                                                  \
+        const char* decl,                                                   \
+        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,                             \
+        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}             \
+    )                                                                       \
+    {                                                                       \
+        this->method_impl(                                                  \
+            decl,                                                           \
+            gfn,                                                            \
+            generic_call_conv                                               \
+        );                                                                  \
+        return *this;                                                       \
+    }
+
+#define ASBIND20_CLASS_WRAPPED_METHOD(register_type)                          \
+    template <                                                                \
+        auto Method,                                                          \
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>                     \
+    register_type& method(                                                    \
+        use_generic_t,                                                        \
+        const char* decl,                                                     \
+        fp_wrapper_t<Method>,                                                 \
+        call_conv_t<CallConv>                                                 \
+    )                                                                         \
+    {                                                                         \
+        this->method_impl(                                                    \
+            decl,                                                             \
+            to_asGENFUNC_t(fp<Method>, call_conv<CallConv>),                  \
+            generic_call_conv                                                 \
+        );                                                                    \
+        return *this;                                                         \
+    }                                                                         \
+    template <auto Method>                                                    \
+    register_type& method(                                                    \
+        use_generic_t,                                                        \
+        const char* decl,                                                     \
+        fp_wrapper_t<Method>                                                  \
+    )                                                                         \
+    {                                                                         \
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =              \
+            method_callconv<Method>();                                        \
+        this->method_impl(                                                    \
+            decl,                                                             \
+            to_asGENFUNC_t(fp<Method>, call_conv<conv>),                      \
+            generic_call_conv                                                 \
+        );                                                                    \
+        return *this;                                                         \
+    }                                                                         \
+    template <                                                                \
+        auto Method,                                                          \
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>                     \
+    register_type& method(                                                    \
+        const char* decl,                                                     \
+        fp_wrapper_t<Method>,                                                 \
+        call_conv_t<CallConv>                                                 \
+    )                                                                         \
+    {                                                                         \
+        if constexpr(ForceGeneric)                                            \
+            this->method(use_generic, decl, fp<Method>, call_conv<CallConv>); \
+        else                                                                  \
+            this->method(decl, Method, call_conv<CallConv>);                  \
+        return *this;                                                         \
+    }                                                                         \
+    template <auto Method>                                                    \
+    register_type& method(                                                    \
+        const char* decl,                                                     \
+        fp_wrapper_t<Method>                                                  \
+    )                                                                         \
+    {                                                                         \
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =              \
+            method_callconv<Method>();                                        \
+        if constexpr(ForceGeneric)                                            \
+            this->method(use_generic, decl, fp<Method>, call_conv<conv>);     \
+        else                                                                  \
+            this->method(decl, Method, call_conv<conv>);                      \
+        return *this;                                                         \
+    }
+
+#define ASBIND20_CLASS_WRAPPED_LAMBDA_METHOD(register_type)                 \
+    template <                                                              \
+        noncapturing_lambda Lambda,                                         \
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>                   \
+    register_type& method(                                                  \
+        use_generic_t,                                                      \
+        const char* decl,                                                   \
+        const Lambda&,                                                      \
+        call_conv_t<CallConv>                                               \
+    )                                                                       \
+    {                                                                       \
+        this->method_impl(                                                  \
+            decl,                                                           \
+            to_asGENFUNC_t(Lambda{}, call_conv<CallConv>),                  \
+            generic_call_conv                                               \
+        );                                                                  \
+        return *this;                                                       \
+    }                                                                       \
+    template <noncapturing_lambda Lambda>                                   \
+    register_type& method(                                                  \
+        use_generic_t,                                                      \
+        const char* decl,                                                   \
+        const Lambda&                                                       \
+    )                                                                       \
+    {                                                                       \
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =            \
+            method_callconv<Lambda>();                                      \
+        this->method(use_generic, decl, Lambda{}, call_conv<conv>);         \
+        return *this;                                                       \
+    }                                                                       \
+    template <                                                              \
+        noncapturing_lambda Lambda,                                         \
+        asECallConvTypes CallConv>                                          \
+    register_type& method(                                                  \
+        const char* decl,                                                   \
+        const Lambda&,                                                      \
+        call_conv_t<CallConv>                                               \
+    )                                                                       \
+    {                                                                       \
+        if constexpr(ForceGeneric)                                          \
+            this->method(use_generic, decl, Lambda{}, call_conv<CallConv>); \
+        else                                                                \
+            this->method_impl(decl, +Lambda{}, call_conv<CallConv>);        \
+        return *this;                                                       \
+    }                                                                       \
+    template <noncapturing_lambda Lambda>                                   \
+    register_type& method(                                                  \
+        const char* decl,                                                   \
+        const Lambda&                                                       \
+    )                                                                       \
+    {                                                                       \
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =            \
+            method_callconv<Lambda>();                                      \
+        this->method(decl, Lambda{}, call_conv<conv>);                      \
+        return *this;                                                       \
+    }
+
 #define ASBIND20_CLASS_WRAPPED_VAR_TYPE_METHOD(register_type)                                    \
     template <                                                                                   \
         auto Function,                                                                           \
@@ -1572,92 +1719,94 @@ private:
             );                                                                                   \
         }                                                                                        \
         return *this;                                                                            \
-    }                                                                                            \
-    template <                                                                                   \
-        noncapturing_lambda Lambda,                                                              \
-        std::size_t... Is,                                                                       \
-        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>                                        \
-    register_type& method(                                                                       \
-        use_generic_t,                                                                           \
-        const char* decl,                                                                        \
-        const Lambda&,                                                                           \
-        var_type_t<Is...>,                                                                       \
-        call_conv_t<CallConv>                                                                    \
-    )                                                                                            \
-    {                                                                                            \
-        this->method_impl(                                                                       \
-            decl,                                                                                \
-            to_asGENFUNC_t(Lambda{}, call_conv<CallConv>, var_type<Is...>),                      \
-            generic_call_conv                                                                    \
-        );                                                                                       \
-        return *this;                                                                            \
-    }                                                                                            \
-    template <                                                                                   \
-        noncapturing_lambda Lambda,                                                              \
-        std::size_t... Is,                                                                       \
-        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>                                        \
-    register_type& method(                                                                       \
-        const char* decl,                                                                        \
-        const Lambda&,                                                                           \
-        var_type_t<Is...>,                                                                       \
-        call_conv_t<CallConv>                                                                    \
-    )                                                                                            \
-    {                                                                                            \
-        if constexpr(ForceGeneric)                                                               \
-            this->method(use_generic, decl, Lambda{}, var_type<Is...>, call_conv<CallConv>);     \
-        else                                                                                     \
-        {                                                                                        \
-            this->method_impl(                                                                   \
-                decl,                                                                            \
-                +Lambda{},                                                                       \
-                call_conv<CallConv>                                                              \
-            );                                                                                   \
-        }                                                                                        \
-        return *this;                                                                            \
-    }                                                                                            \
-    template <                                                                                   \
-        noncapturing_lambda Lambda,                                                              \
-        std::size_t... Is>                                                                       \
-    register_type& method(                                                                       \
-        use_generic_t,                                                                           \
-        const char* decl,                                                                        \
-        const Lambda&,                                                                           \
-        var_type_t<Is...>                                                                        \
-    )                                                                                            \
-    {                                                                                            \
-        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =                                 \
-            method_callconv<Lambda>();                                                           \
-        this->method(                                                                            \
-            use_generic,                                                                         \
-            decl,                                                                                \
-            Lambda{},                                                                            \
-            var_type<Is...>,                                                                     \
-            call_conv<conv>                                                                      \
-        );                                                                                       \
-        return *this;                                                                            \
-    }                                                                                            \
-    template <                                                                                   \
-        noncapturing_lambda Lambda,                                                              \
-        std::size_t... Is>                                                                       \
-    register_type& method(                                                                       \
-        const char* decl,                                                                        \
-        const Lambda&,                                                                           \
-        var_type_t<Is...>                                                                        \
-    )                                                                                            \
-    {                                                                                            \
-        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =                                 \
-            method_callconv<Lambda>();                                                           \
-        if constexpr(ForceGeneric)                                                               \
-            this->method(use_generic, decl, Lambda{}, var_type<Is...>, call_conv<conv>);         \
-        else                                                                                     \
-        {                                                                                        \
-            this->method_impl(                                                                   \
-                decl,                                                                            \
-                +Lambda{},                                                                       \
-                call_conv<conv>                                                                  \
-            );                                                                                   \
-        }                                                                                        \
-        return *this;                                                                            \
+    }
+
+#define ASBIND20_CLASS_WRAPPED_LAMBDA_VAR_TYPE_METHOD(register_type)                         \
+    template <                                                                               \
+        noncapturing_lambda Lambda,                                                          \
+        std::size_t... Is,                                                                   \
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>                                    \
+    register_type& method(                                                                   \
+        use_generic_t,                                                                       \
+        const char* decl,                                                                    \
+        const Lambda&,                                                                       \
+        var_type_t<Is...>,                                                                   \
+        call_conv_t<CallConv>                                                                \
+    )                                                                                        \
+    {                                                                                        \
+        this->method_impl(                                                                   \
+            decl,                                                                            \
+            to_asGENFUNC_t(Lambda{}, call_conv<CallConv>, var_type<Is...>),                  \
+            generic_call_conv                                                                \
+        );                                                                                   \
+        return *this;                                                                        \
+    }                                                                                        \
+    template <                                                                               \
+        noncapturing_lambda Lambda,                                                          \
+        std::size_t... Is,                                                                   \
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>                                    \
+    register_type& method(                                                                   \
+        const char* decl,                                                                    \
+        const Lambda&,                                                                       \
+        var_type_t<Is...>,                                                                   \
+        call_conv_t<CallConv>                                                                \
+    )                                                                                        \
+    {                                                                                        \
+        if constexpr(ForceGeneric)                                                           \
+            this->method(use_generic, decl, Lambda{}, var_type<Is...>, call_conv<CallConv>); \
+        else                                                                                 \
+        {                                                                                    \
+            this->method_impl(                                                               \
+                decl,                                                                        \
+                +Lambda{},                                                                   \
+                call_conv<CallConv>                                                          \
+            );                                                                               \
+        }                                                                                    \
+        return *this;                                                                        \
+    }                                                                                        \
+    template <                                                                               \
+        noncapturing_lambda Lambda,                                                          \
+        std::size_t... Is>                                                                   \
+    register_type& method(                                                                   \
+        use_generic_t,                                                                       \
+        const char* decl,                                                                    \
+        const Lambda&,                                                                       \
+        var_type_t<Is...>                                                                    \
+    )                                                                                        \
+    {                                                                                        \
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =                             \
+            method_callconv<Lambda>();                                                       \
+        this->method(                                                                        \
+            use_generic,                                                                     \
+            decl,                                                                            \
+            Lambda{},                                                                        \
+            var_type<Is...>,                                                                 \
+            call_conv<conv>                                                                  \
+        );                                                                                   \
+        return *this;                                                                        \
+    }                                                                                        \
+    template <                                                                               \
+        noncapturing_lambda Lambda,                                                          \
+        std::size_t... Is>                                                                   \
+    register_type& method(                                                                   \
+        const char* decl,                                                                    \
+        const Lambda&,                                                                       \
+        var_type_t<Is...>                                                                    \
+    )                                                                                        \
+    {                                                                                        \
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =                             \
+            method_callconv<Lambda>();                                                       \
+        if constexpr(ForceGeneric)                                                           \
+            this->method(use_generic, decl, Lambda{}, var_type<Is...>, call_conv<conv>);     \
+        else                                                                                 \
+        {                                                                                    \
+            this->method_impl(                                                               \
+                decl,                                                                        \
+                +Lambda{},                                                                   \
+                call_conv<conv>                                                              \
+            );                                                                               \
+        }                                                                                    \
+        return *this;                                                                        \
     }
 
 template <typename Class, bool ForceGeneric = false>
@@ -2142,11 +2291,13 @@ public:
         return *this;
     }
 
+private:
     constexpr std::string decl_list_constructor(std::string_view pattern) const
     {
         return string_concat("void f(int&in){", pattern, "}");
     }
 
+public:
     value_class& list_constructor_function(
         std::string_view pattern,
         AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
@@ -2401,189 +2552,11 @@ public:
         return *this;
     }
 
-    template <
-        native_function Fn,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-    requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-    value_class& method(
-        const char* decl,
-        Fn&& fn,
-        call_conv_t<CallConv>
-    ) requires(!ForceGeneric)
-    {
-        this->method_impl(decl, std::forward<Fn>(fn), call_conv<CallConv>);
-
-        return *this;
-    }
-
-    template <native_function Fn>
-    value_class& method(
-        const char* decl,
-        Fn&& fn
-    ) requires(!ForceGeneric)
-    {
-        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
-            method_callconv<Fn>();
-        this->method_impl(
-            decl,
-            fn,
-            call_conv<conv>
-        );
-
-        return *this;
-    }
-
-    /**
-     * @brief Register a generic function.
-     */
-    value_class& method(
-        const char* decl,
-        asGENFUNC_t gfn,
-        call_conv_t<asCALL_GENERIC> = {}
-    )
-    {
-        this->method_impl(
-            decl,
-            gfn,
-            call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>
-        );
-
-        return *this;
-    }
-
-    template <
-        auto Method,
-        asECallConvTypes CallConv>
-    value_class& method(
-        use_generic_t,
-        const char* decl,
-        fp_wrapper_t<Method>,
-        call_conv_t<CallConv>
-    )
-    {
-        this->method_impl(
-            decl,
-            to_asGENFUNC_t(fp<Method>, call_conv<CallConv>),
-            call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>
-        );
-
-        return *this;
-    }
-
-    template <auto Method>
-    value_class& method(
-        use_generic_t,
-        const char* decl,
-        fp_wrapper_t<Method>
-    )
-    {
-        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
-            method_callconv<Method>();
-        this->method_impl(
-            decl,
-            to_asGENFUNC_t(fp<Method>, call_conv<conv>),
-            call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>
-        );
-
-        return *this;
-    }
-
-    template <
-        auto Method,
-        asECallConvTypes CallConv>
-    value_class& method(
-        const char* decl,
-        fp_wrapper_t<Method>,
-        call_conv_t<CallConv>
-    )
-    {
-        if constexpr(ForceGeneric)
-            this->method(use_generic, decl, fp<Method>, call_conv<CallConv>);
-        else
-            this->method(decl, Method, call_conv<CallConv>);
-
-        return *this;
-    }
-
-    template <auto Method>
-    value_class& method(
-        const char* decl,
-        fp_wrapper_t<Method>
-    )
-    {
-        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
-            method_callconv<Method>();
-        if constexpr(ForceGeneric)
-            this->method(use_generic, decl, fp<Method>, call_conv<conv>);
-        else
-            this->method(decl, Method, call_conv<conv>);
-
-        return *this;
-    }
-
-    template <
-        noncapturing_lambda Lambda,
-        asECallConvTypes CallConv = detail::deduce_lambda_callconv<Class, Lambda>()>
-    value_class& method(
-        use_generic_t,
-        const char* decl,
-        const Lambda&,
-        call_conv_t<CallConv>
-    )
-    {
-        this->method_impl(
-            decl,
-            to_asGENFUNC_t(Lambda{}, call_conv<CallConv>),
-            call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>
-        );
-
-        return *this;
-    }
-
-    template <noncapturing_lambda Lambda>
-    value_class& method(
-        use_generic_t,
-        const char* decl,
-        const Lambda&
-    )
-    {
-        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
-            method_callconv<Lambda>();
-        this->method(use_generic, decl, Lambda{}, call_conv<conv>);
-
-        return *this;
-    }
-
-    template <
-        noncapturing_lambda Lambda,
-        asECallConvTypes CallConv>
-    value_class& method(
-        const char* decl,
-        const Lambda&,
-        call_conv_t<CallConv>
-    )
-    {
-        if constexpr(ForceGeneric)
-            this->method(use_generic, decl, Lambda{}, call_conv<CallConv>);
-        else
-            this->method_impl(decl, +Lambda{}, call_conv<CallConv>);
-        return *this;
-    }
-
-    template <noncapturing_lambda Lambda>
-    value_class& method(
-        const char* decl,
-        const Lambda&
-    )
-    {
-        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
-            method_callconv<Lambda>();
-        this->method(decl, Lambda{}, call_conv<conv>);
-
-        return *this;
-    }
-
+    ASBIND20_CLASS_METHOD(value_class)
+    ASBIND20_CLASS_WRAPPED_METHOD(value_class)
+    ASBIND20_CLASS_WRAPPED_LAMBDA_METHOD(value_class)
     ASBIND20_CLASS_WRAPPED_VAR_TYPE_METHOD(value_class)
+    ASBIND20_CLASS_WRAPPED_LAMBDA_VAR_TYPE_METHOD(value_class)
 
     value_class& property(const char* decl, std::size_t off)
     {
@@ -2710,123 +2683,11 @@ public:
         return *this;
     }
 
-    template <
-        native_function Fn,
-        asECallConvTypes CallConv>
-    requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-    reference_class& method(
-        const char* decl,
-        Fn&& fn,
-        call_conv_t<CallConv>
-    ) requires(!ForceGeneric)
-    {
-        this->method_impl(decl, std::forward<Fn>(fn), call_conv<CallConv>);
-
-        return *this;
-    }
-
-    template <native_function Fn>
-    reference_class& method(
-        const char* decl,
-        Fn&& fn
-    ) requires(!ForceGeneric)
-    {
-        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
-            method_callconv<Fn>();
-        this->method(
-            decl,
-            std::forward<Fn>(fn),
-            call_conv<conv>
-        );
-        return *this;
-    }
-
-    reference_class& method(
-        const char* decl,
-        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
-        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
-    )
-    {
-        this->method_impl(
-            decl,
-            gfn,
-            call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>
-        );
-
-        return *this;
-    }
-
-    template <
-        auto Function,
-        asECallConvTypes CallConv>
-    reference_class& method(
-        use_generic_t,
-        const char* decl,
-        fp_wrapper_t<Function>,
-        call_conv_t<CallConv>
-    )
-    {
-        this->method_impl(
-            decl,
-            to_asGENFUNC_t(fp<Function>, call_conv<CallConv>),
-            call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>
-        );
-
-        return *this;
-    }
-
-    template <auto Function>
-    reference_class& method(
-        use_generic_t,
-        const char* decl,
-        fp_wrapper_t<Function>
-    )
-    {
-        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
-            method_callconv<Function>();
-        this->method_impl(
-            decl,
-            to_asGENFUNC_t(fp<Function>, call_conv<conv>),
-            call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>
-        );
-
-        return *this;
-    }
-
-    template <
-        auto Function,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-    reference_class& method(
-        const char* decl,
-        fp_wrapper_t<Function>,
-        call_conv_t<CallConv>
-    )
-    {
-        if constexpr(ForceGeneric)
-            this->method(use_generic, decl, fp<Function>, call_conv<CallConv>);
-        else
-            this->method_impl(decl, Function, call_conv<CallConv>);
-
-        return *this;
-    }
-
-    template <auto Function>
-    reference_class& method(
-        const char* decl,
-        fp_wrapper_t<Function>
-    )
-    {
-        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
-            method_callconv<Function>();
-        if constexpr(ForceGeneric)
-            this->method(decl, fp<Function>, call_conv<conv>);
-        else
-            this->method_impl(decl, Function, call_conv<conv>);
-
-        return *this;
-    }
-
+    ASBIND20_CLASS_METHOD(reference_class)
+    ASBIND20_CLASS_WRAPPED_METHOD(reference_class)
+    ASBIND20_CLASS_WRAPPED_LAMBDA_METHOD(reference_class)
     ASBIND20_CLASS_WRAPPED_VAR_TYPE_METHOD(reference_class)
+    ASBIND20_CLASS_WRAPPED_LAMBDA_VAR_TYPE_METHOD(reference_class)
 
 private:
     std::string decl_factory(std::string_view params) const
@@ -3435,7 +3296,11 @@ public:
     }
 };
 
+#undef ASBIND20_CLASS_METHOD
+#undef ASBIND20_CLASS_WRAPPED_METHOD
+#undef ASBIND20_CLASS_WRAPPED_LAMBDA_METHOD
 #undef ASBIND20_CLASS_WRAPPED_VAR_TYPE_METHOD
+#undef ASBIND20_CLASS_WRAPPED_LAMBDA_VAR_TYPE_METHOD
 
 template <typename Class, bool UseGeneric = false>
 using ref_class = reference_class<Class, false, UseGeneric>;

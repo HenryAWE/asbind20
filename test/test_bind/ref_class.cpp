@@ -56,6 +56,21 @@ public:
         return m_use_count;
     }
 
+    void from_var_type(void* ref, int type_id)
+    {
+        if(type_id == asTYPEID_VOID || !asbind20::is_primitive_type(type_id))
+            return;
+
+        asbind20::visit_primitive_type(
+            [this](auto* ref)
+            {
+                data = static_cast<int>(*ref);
+            },
+            type_id,
+            ref
+        );
+    }
+
     int data = 0;
 
 private:
@@ -92,6 +107,12 @@ void register_ref_class(asIScriptEngine* engine)
         .method("uint use_count() const", &my_ref_class::use_count)
         .method("int exchange_data(int new_data)", &test_bind::exchange_data)
         .method("int get_data() const", &get_ref_class_data)
+        .method("void from_var_type(const ?&in)", &my_ref_class::from_var_type)
+        .method(
+            "void set_by_lambda()",
+            [](my_ref_class& c)
+            { c.data = 1013; }
+        )
         .property("int data", &my_ref_class::data);
 
     EXPECT_EQ(c.get_engine(), engine);
@@ -115,6 +136,12 @@ void register_ref_class(asbind20::use_generic_t, asIScriptEngine* engine)
         .method("uint use_count() const", fp<&my_ref_class::use_count>)
         .method("int exchange_data(int new_data)", fp<&test_bind::exchange_data>)
         .method("int get_data() const", &get_ref_class_data)
+        .method("void from_var_type(const ?&in)", fp<&my_ref_class::from_var_type>, var_type<0>)
+        .method(
+            "void set_by_lambda()",
+            [](my_ref_class& c)
+            { c.data = 1013; }
+        )
         .property("int data", &my_ref_class::data);
 
     EXPECT_EQ(c.get_engine(), engine);
@@ -164,6 +191,20 @@ int test_5()
     assert(ref is @val2);
     return val2.data;
 }
+int test_6()
+{
+    my_ref_class val(0);
+    val.set_by_lambda();
+    return val.data;
+}
+int test_7()
+{
+    my_ref_class val(0);
+    val.from_var_type(3.14);
+    assert(val.data == 3);
+    val.from_var_type(true);
+    return val.data;
+}
 )";
 
 static void check_ref_class(asIScriptEngine* engine)
@@ -196,6 +237,8 @@ static void check_ref_class(asIScriptEngine* engine)
     check_int_result(3, 5);
     check_int_result(4, 7);
     check_int_result(5, 3);
+    check_int_result(6, 1013);
+    check_int_result(7, 1);
 }
 
 TEST_F(asbind_test_suite, ref_class)
