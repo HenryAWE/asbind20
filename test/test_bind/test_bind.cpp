@@ -221,6 +221,62 @@ void mem_to_str6(int prefix_num, void* ref, int type_id, std::string& out, membe
 {
     v.mem_to_str2(prefix_num, ref, type_id, out);
 }
+
+consteval void test_detail_arg_idx()
+{
+    using asbind20::var_type_t, asbind20::var_type;
+    using asbind20::detail::gen_script_arg_idx;
+    using asbind20::detail::var_type_tag;
+
+    {
+        // C++: (void*, int)
+        // AS: (?)
+        constexpr auto result = gen_script_arg_idx<2>(var_type<0>);
+        static_assert(result.size() == 2);
+
+        static_assert(result[0] == 0);
+        static_assert(result[1] == 0);
+
+        static_assert(!var_type_tag<var_type_t<0>, 0>{});
+        static_assert(var_type_tag<var_type_t<0>, 1>{});
+    }
+
+    {
+        // C++: (type, void*, int, type)
+        // AS: (type, ?, type)
+        constexpr auto result = gen_script_arg_idx<4>(var_type<1>);
+        static_assert(result.size() == 4);
+
+        static_assert(result[0] == 0);
+        static_assert(result[1] == 1);
+        static_assert(result[2] == 1);
+        static_assert(result[3] == 2);
+
+        static_assert(!var_type_tag<var_type_t<1>, 0>{});
+        static_assert(!var_type_tag<var_type_t<1>, 1>{});
+        static_assert(var_type_tag<var_type_t<1>, 2>{});
+        static_assert(!var_type_tag<var_type_t<1>, 3>{});
+    }
+
+    {
+        // C++: (void*, int, type, void*, int)
+        // AS: (?, type, ?)
+        constexpr auto result = gen_script_arg_idx<5>(var_type<0, 2>);
+        static_assert(result.size() == 5);
+
+        static_assert(result[0] == 0);
+        static_assert(result[1] == 0);
+        static_assert(result[2] == 1);
+        static_assert(result[3] == 2);
+        static_assert(result[4] == 2);
+
+        static_assert(!var_type_tag<var_type_t<0, 2>, 0>{});
+        static_assert(var_type_tag<var_type_t<0, 2>, 1>{});
+        static_assert(!var_type_tag<var_type_t<0, 2>, 2>{});
+        static_assert(var_type_tag<var_type_t<0, 2>, 3>{});
+        static_assert(!var_type_tag<var_type_t<0, 2>, 4>{});
+    }
+}
 } // namespace test_bind
 
 TEST_F(asbind_test_suite, generic_wrapper)
@@ -252,32 +308,6 @@ TEST_F(asbind_test_suite, generic_wrapper)
     asGENFUNC_t mem_to_str4 = to_asGENFUNC_t(fp<&test_bind::mem_to_str4>, call_conv<asCALL_CDECL_OBJFIRST>, var_type<1>);
     asGENFUNC_t mem_to_str5 = to_asGENFUNC_t(fp<&test_bind::mem_to_str5>, call_conv<asCALL_CDECL_OBJLAST>, var_type<0>);
     asGENFUNC_t mem_to_str6 = to_asGENFUNC_t(fp<&test_bind::mem_to_str6>, call_conv<asCALL_CDECL_OBJLAST>, var_type<1>);
-
-    {
-        constexpr auto result = detail::gen_script_arg_idx<2>(var_type<0>);
-        static_assert(result.size() == 2);
-
-        static_assert(result[0] == 0);
-        static_assert(result[1] == 0);
-
-        static_assert(!detail::var_type_tag<var_type_t<0>, 0>{});
-        static_assert(detail::var_type_tag<var_type_t<0>, 1>{});
-    }
-
-    {
-        constexpr auto result = detail::gen_script_arg_idx<4>(var_type<1>);
-        static_assert(result.size() == 4);
-
-        static_assert(result[0] == 0);
-        static_assert(result[1] == 1);
-        static_assert(result[2] == 1);
-        static_assert(result[3] == 2);
-
-        static_assert(!detail::var_type_tag<var_type_t<1>, 0>{});
-        static_assert(!detail::var_type_tag<var_type_t<1>, 1>{});
-        static_assert(detail::var_type_tag<var_type_t<1>, 2>{});
-        static_assert(!detail::var_type_tag<var_type_t<1>, 3>{});
-    }
 
     global<true>(engine)
         .function("int my_div(int a, int b)", my_div_gen)

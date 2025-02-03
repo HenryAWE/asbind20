@@ -34,7 +34,7 @@ namespace detail
     {
         // Generate a index of script argument.
         // For example, given var_type<1> and
-        // RawArgCount = 5, which can be (float, void*, int, float) in C++,
+        // RawArgCount = 4, which can be (float, void*, int, float) in C++,
         // the result should be {0, 1, 1, 2}, which means (float, ?&in, float) in the AS.
 
         static_assert(RawArgCount >= sizeof...(Is), "Invalid argument count");

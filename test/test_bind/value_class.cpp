@@ -54,6 +54,21 @@ public:
         value = new_val;
     }
 
+    void from_var_type(void* ref, int type_id)
+    {
+        if(type_id == asTYPEID_VOID || !asbind20::is_primitive_type(type_id))
+            return;
+
+        asbind20::visit_primitive_type(
+            [this](auto* ref)
+            {
+                value = static_cast<int>(*ref);
+            },
+            type_id,
+            ref
+        );
+    }
+
     trivial_value_class& operator++()
     {
         ++value;
@@ -154,8 +169,9 @@ void register_trivial_value_class(asIScriptEngine* engine)
             [](trivial_value_class& v)
             { v.value = 42; }
         )
+        .method("void from_var_type(const ?&in)", &trivial_value_class::from_var_type)
         .method(
-            "void parse(const ?&in)",
+            "void from_int(const ?&in)",
             [](trivial_value_class& v, void* ref, int type_id)
             {
                 if(type_id == asTYPEID_INT32)
@@ -206,17 +222,15 @@ void register_trivial_value_class(asbind20::use_generic_t, asIScriptEngine* engi
             [](trivial_value_class& v)
             { v.value = 42; }
         )
+        .method("void from_var_type(const ?&in)", fp<&trivial_value_class::from_var_type>, var_type<0>)
         .method(
-            "void parse(const ?&in)",
-            to_asGENFUNC_t(
-                [](trivial_value_class& v, void* ref, int type_id)
-                {
-                    if(type_id == asTYPEID_INT32)
-                        v.value = *(int*)ref;
-                },
-                call_conv<asCALL_CDECL_OBJFIRST>,
-                var_type<0>
-            )
+            "void from_int(const ?&in)",
+            [](trivial_value_class& v, void* ref, int type_id)
+            {
+                if(type_id == asTYPEID_INT32)
+                    v.value = *(int*)ref;
+            },
+            var_type<0>
         )
         .method("void add3(int val)", fp<&test_bind::add_obj_last>)
         .method("void mul3(int val)", fp<&test_bind::mul_obj_first_ref>)
@@ -234,8 +248,12 @@ const char* trivial_value_class_test_script = R"(
 int test_0()
 {
     trivial_value_class val;
-    val.parse(1013);
+    val.from_int(1013);
     assert(val.value == 1013);
+    val.from_var_type(true);
+    assert(val.value == 1);
+    val.from_var_type(3.14);
+    assert(val.value == 3);
 
     trivial_value_class ret;
     return ret.get_val();
