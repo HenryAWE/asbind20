@@ -498,7 +498,7 @@ void string_for_each(asIScriptFunction* fn, const std::string& this_)
 }
 
 template <bool UseGeneric>
-static void register_string_impl(asIScriptEngine* engine)
+static void register_string_impl(asIScriptEngine* engine, bool as_default)
 {
     using std::string;
     bool use_ch_api = engine->GetEngineProperty(asEP_USE_CHARACTER_LITERALS);
@@ -559,20 +559,17 @@ static void register_string_impl(asIScriptEngine* engine)
             c.method("array<string>@ split(uint delimiter, bool skip_empty=true) const", fp<&string_split_ch>);
         }
     }
+
+    if(as_default)
+        c.as_string(&string_factory::get());
 }
 
 void register_std_string(asIScriptEngine* engine, bool as_default, bool generic)
 {
     if(generic)
-        register_string_impl<true>(engine);
+        register_string_impl<true>(engine, as_default);
     else
-        register_string_impl<false>(engine);
-
-    if(as_default)
-    {
-        int r = engine->RegisterStringFactory("string", &string_factory::get());
-        assert(r >= 0);
-    }
+        register_string_impl<false>(engine, as_default);
 }
 
 static std::string as_bool_to_string(bool val)

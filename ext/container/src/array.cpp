@@ -1812,7 +1812,7 @@ static bool array_template_callback(asITypeInfo* ti, bool& no_gc)
 namespace detail
 {
     template <bool UseGeneric>
-    void register_script_array_impl(asIScriptEngine* engine)
+    void register_script_array_impl(asIScriptEngine* engine, bool as_default)
     {
         template_class<script_array, UseGeneric> c(engine, "array<T>", asOBJ_GC);
         c
@@ -1873,6 +1873,9 @@ namespace detail
                 .method("optional<uint>@ find_optional(const T&in, uint idx=0) const", fp<&script_array::find_optional>);
         }
 
+        if(as_default)
+            c.as_array();
+
         engine->SetTypeInfoUserDataCleanupCallback(
             &script_array::cache_cleanup_callback,
             script_array_cache_id()
@@ -1883,14 +1886,8 @@ namespace detail
 void register_script_array(asIScriptEngine* engine, bool as_default, bool generic)
 {
     if(generic)
-        detail::register_script_array_impl<true>(engine);
+        detail::register_script_array_impl<true>(engine, as_default);
     else
-        detail::register_script_array_impl<false>(engine);
-
-    if(as_default)
-    {
-        int r = engine->RegisterDefaultArrayType("array<T>");
-        assert(r >= 0);
-    }
+        detail::register_script_array_impl<false>(engine, as_default);
 }
 } // namespace asbind20::ext

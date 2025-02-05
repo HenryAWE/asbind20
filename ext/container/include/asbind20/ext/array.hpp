@@ -15,7 +15,7 @@ asPWORD script_array_cache_id();
 namespace detail
 {
     template <bool UseGeneric>
-    void register_script_array_impl(asIScriptEngine* engine);
+    void register_script_array_impl(asIScriptEngine* engine, bool as_default);
 } // namespace detail
 
 void register_script_array(asIScriptEngine* engine, bool as_default = true, bool generic = has_max_portability());
@@ -23,7 +23,7 @@ void register_script_array(asIScriptEngine* engine, bool as_default = true, bool
 class script_array
 {
     template <bool UseGeneric>
-    friend void detail::register_script_array_impl(asIScriptEngine* engine);
+    friend void detail::register_script_array_impl(asIScriptEngine* engine, bool as_default);
 
     void notify_gc_for_this();
 

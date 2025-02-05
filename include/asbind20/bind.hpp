@@ -1568,6 +1568,17 @@ protected:
         );
     }
 
+    void as_string_impl(
+        const char* name,
+        AS_NAMESPACE_QUALIFIER asIStringFactory* factory
+    )
+    {
+        [[maybe_unused]]
+        int r = 0;
+        r = m_engine->RegisterStringFactory(name, factory);
+        assert(r >= 0);
+    }
+
 private:
     void full_funcdef(const char* decl)
     {
@@ -2689,6 +2700,14 @@ public:
 
         return *this;
     }
+
+    value_class& as_string(
+        AS_NAMESPACE_QUALIFIER asIStringFactory* str_factory
+    )
+    {
+        this->as_string_impl(m_name, str_factory);
+        return *this;
+    }
 };
 
 template <typename Class, bool Template = false, bool ForceGeneric = false>
@@ -3401,6 +3420,24 @@ public:
     reference_class& funcdef(std::string_view decl)
     {
         this->member_funcdef_impl(decl);
+
+        return *this;
+    }
+
+    reference_class& as_string(
+        AS_NAMESPACE_QUALIFIER asIStringFactory* str_factory
+    )
+    {
+        this->as_string_impl(m_name, str_factory);
+        return *this;
+    }
+
+    reference_class& as_array() requires(Template)
+    {
+        [[maybe_unused]]
+        int r = 0;
+        r = m_engine->RegisterDefaultArrayType(m_name);
+        assert(r >= 0);
 
         return *this;
     }
