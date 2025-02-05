@@ -616,7 +616,7 @@ public:
     }
 
 protected:
-    asIScriptEngine* const m_engine;
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* const m_engine;
 };
 
 namespace detail
@@ -626,6 +626,14 @@ namespace detail
     constexpr asECallConvTypes deduce_function_callconv()
     {
         // TODO: Check stdcall
+
+        /*
+        On x64 and many platform, CDECL and STDCALL have the same effect.
+        It's safe to treat all global functions as CDECL.
+        See: https://www.gamedev.net/forums/topic/715839-question-about-calling-convention-when-registering-functions-on-x64-platform/
+
+        We'll support STDCALL in future version if anyone need it.
+        */
         return asCALL_CDECL;
     }
 
@@ -715,18 +723,59 @@ public:
     global(asIScriptEngine* engine)
         : my_base(engine) {}
 
-    template <typename Return, typename... Args>
+    template <
+        native_function Fn,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
     global& function(
         const char* decl,
-        Return (*fn)(Args...)
+        Fn&& fn,
+        call_conv_t<CallConv>
+    ) requires(!ForceGeneric)
+    {
+        static_assert(
+            CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL || CallConv == AS_NAMESPACE_QUALIFIER asCALL_STDCALL,
+            "Invalid calling convention for a global function"
+        );
+
+        [[maybe_unused]]
+        int r = 0;
+        r = m_engine->RegisterGlobalFunction(
+            decl,
+            to_asSFuncPtr(fn),
+            CallConv
+        );
+        assert(r >= 0);
+
+        return *this;
+    }
+
+    template <native_function Fn>
+    global& function(
+        const char* decl,
+        Fn&& fn
+    ) requires(!ForceGeneric)
+    {
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
+            detail::deduce_function_callconv<std::decay_t<Fn>>();
+
+        this->function(decl, fn, call_conv<conv>);
+
+        return *this;
+    }
+
+    global& function(
+        const char* decl,
+        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
+        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
     )
     {
         [[maybe_unused]]
         int r = 0;
         r = m_engine->RegisterGlobalFunction(
             decl,
-            to_asSFuncPtr(fn),
-            AS_NAMESPACE_QUALIFIER asCALL_CDECL
+            to_asSFuncPtr(gfn),
+            AS_NAMESPACE_QUALIFIER asCALL_GENERIC
         );
         assert(r >= 0);
 
@@ -735,18 +784,23 @@ public:
 
     template <
         auto Function,
-        asECallConvTypes CallConv = asCALL_CDECL>
-    requires(CallConv == asCALL_CDECL || CallConv == asCALL_STDCALL)
+        asECallConvTypes CallConv>
     global& function(
         use_generic_t,
         const char* decl,
         fp_wrapper_t<Function>,
-        call_conv_t<CallConv> = {}
+        call_conv_t<CallConv>
     )
     {
+        static_assert(
+            CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL || CallConv == AS_NAMESPACE_QUALIFIER asCALL_STDCALL,
+            "Invalid calling convention for a global function"
+        );
+
         this->function(
             decl,
-            to_asGENFUNC_t(fp<Function>, call_conv<CallConv>)
+            to_asGENFUNC_t(fp<Function>, call_conv<CallConv>),
+            generic_call_conv
         );
 
         return *this;
@@ -754,11 +808,12 @@ public:
 
     template <
         auto Function,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv = detail::deduce_function_callconv<std::decay_t<decltype(Function)>>()>
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
     global& function(
         const char* decl,
         fp_wrapper_t<Function>,
-        call_conv_t<CallConv> = {}
+        call_conv_t<CallConv>
     )
     {
         static_assert(
@@ -772,14 +827,43 @@ public:
         }
         else
         {
-            [[maybe_unused]]
-            int r = 0;
-            r = m_engine->RegisterGlobalFunction(
-                decl,
-                to_asSFuncPtr(Function),
-                CallConv
-            );
-            assert(r >= 0);
+            this->function(decl, Function, call_conv<CallConv>);
+        }
+
+        return *this;
+    }
+
+    template <auto Function>
+    global& function(
+        use_generic_t,
+        const char* decl,
+        fp_wrapper_t<Function>
+    )
+    {
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
+            detail::deduce_function_callconv<std::decay_t<decltype(Function)>>();
+
+        function(use_generic, decl, fp<Function>, call_conv<conv>);
+
+        return *this;
+    }
+
+    template <auto Function>
+    global& function(
+        const char* decl,
+        fp_wrapper_t<Function>
+    )
+    {
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
+            detail::deduce_function_callconv<std::decay_t<decltype(Function)>>();
+
+        if constexpr(ForceGeneric)
+        {
+            function(use_generic, decl, fp<Function>, call_conv<conv>);
+        }
+        else
+        {
+            this->function(decl, Function, call_conv<conv>);
         }
 
         return *this;
@@ -789,7 +873,8 @@ public:
     global& function(
         const char* decl,
         AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
-        auxiliary_wrapper<Auxiliary> aux
+        auxiliary_wrapper<Auxiliary> aux,
+        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
     )
     {
         [[maybe_unused]]
@@ -810,7 +895,8 @@ public:
     global& function(
         const char* decl,
         Fn&& fn,
-        auxiliary_wrapper<Auxiliary> aux
+        auxiliary_wrapper<Auxiliary> aux,
+        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL> = {}
     ) requires(!ForceGeneric)
     {
         [[maybe_unused]]
@@ -833,7 +919,8 @@ public:
         use_generic_t,
         const char* decl,
         fp_wrapper_t<Function>,
-        auxiliary_wrapper<Auxiliary> aux
+        auxiliary_wrapper<Auxiliary> aux,
+        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL> = {}
     )
     {
         static_assert(
@@ -844,7 +931,8 @@ public:
         function(
             decl,
             to_asGENFUNC_t(fp<Function>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL>),
-            aux
+            aux,
+            generic_call_conv
         );
 
         return *this;
@@ -856,7 +944,8 @@ public:
     global& function(
         const char* decl,
         fp_wrapper_t<Function>,
-        auxiliary_wrapper<Auxiliary> aux
+        auxiliary_wrapper<Auxiliary> aux,
+        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL> = {}
     )
     {
         static_assert(
@@ -882,25 +971,6 @@ public:
         int r = 0;
         r = m_engine->RegisterGlobalProperty(
             decl, (void*)std::addressof(val)
-        );
-        assert(r >= 0);
-
-        return *this;
-    }
-
-    global& function(
-        const char* decl,
-        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
-        void* auxiliary = nullptr
-    )
-    {
-        [[maybe_unused]]
-        int r = 0;
-        r = m_engine->RegisterGlobalFunction(
-            decl,
-            to_asSFuncPtr(gfn),
-            AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
-            auxiliary
         );
         assert(r >= 0);
 
