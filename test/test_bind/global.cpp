@@ -27,7 +27,7 @@ static void register_global_funcs(
     asIScriptEngine* engine, test_bind::class_wrapper& wrapper, std::string& global_val
 )
 {
-    using asbind20::fp;
+    using asbind20::fp, asbind20::auxiliary;
 
     asbind20::global(engine)
         .function("void set_int(int&out)", fp<&test_bind::set_int>)
@@ -39,7 +39,7 @@ static void register_global_funcs(
         .function(
             "void set_val(int val)",
             &test_bind::class_wrapper::set_val,
-            wrapper
+            auxiliary(wrapper)
         )
         .property("string val", global_val);
 }
@@ -48,7 +48,8 @@ static void register_global_funcs(
     asbind20::use_generic_t, asIScriptEngine* engine, test_bind::class_wrapper& wrapper, std::string& global_val
 )
 {
-    using asbind20::fp;
+    using asbind20::fp, asbind20::auxiliary;
+
     asbind20::global<true>(engine)
         .function("void set_int(int&out)", fp<&test_bind::set_int>)
         .function(
@@ -58,7 +59,7 @@ static void register_global_funcs(
                 asbind20::set_generic_return<int>(gen, 42);
             }
         )
-        .function("void set_val(int val)", fp<&test_bind::class_wrapper::set_val>, wrapper)
+        .function("void set_val(int val)", fp<&test_bind::class_wrapper::set_val>, auxiliary(wrapper))
         .property("string val", global_val);
 }
 

@@ -16,6 +16,45 @@
 
 namespace asbind20
 {
+template <typename T>
+class auxiliary_wrapper
+{
+public:
+    auxiliary_wrapper() = delete;
+    auxiliary_wrapper(const auxiliary_wrapper&) = default;
+
+    explicit auxiliary_wrapper(T& aux) noexcept
+        : m_aux(std::addressof(aux)) {}
+
+    explicit auxiliary_wrapper(T* aux) noexcept
+        : m_aux(aux) {}
+
+    auxiliary_wrapper(T&& aux) = delete;
+
+    void* to_address() const noexcept
+    {
+        return (void*)m_aux;
+    }
+
+private:
+    T* m_aux;
+};
+
+template <typename T>
+auxiliary_wrapper<T> auxiliary(T& aux) noexcept
+{
+    return auxiliary_wrapper<T>(aux);
+}
+
+template <typename T>
+auxiliary_wrapper<T> auxiliary(T* aux) noexcept
+{
+    return auxiliary_wrapper<T>(aux);
+}
+
+template <typename T>
+auxiliary_wrapper<T> auxiliary(T&& aux) = delete;
+
 class [[nodiscard]] namespace_
 {
 public:
@@ -746,11 +785,11 @@ public:
         return *this;
     }
 
-    template <typename T>
+    template <typename Auxiliary>
     global& function(
         const char* decl,
         AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
-        T& instance
+        auxiliary_wrapper<Auxiliary> aux
     )
     {
         [[maybe_unused]]
@@ -759,18 +798,19 @@ public:
             decl,
             to_asSFuncPtr(gfn),
             AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
-            (void*)std::addressof(instance)
+            aux.to_address()
         );
         assert(r >= 0);
 
         return *this;
     }
 
-    template <typename T, typename Return, typename Class, typename... Args>
+    template <typename Fn, typename Auxiliary>
+    requires(std::is_member_function_pointer_v<Fn>)
     global& function(
         const char* decl,
-        Return (Class::*fn)(Args...),
-        T& instance
+        Fn&& fn,
+        auxiliary_wrapper<Auxiliary> aux
     ) requires(!ForceGeneric)
     {
         [[maybe_unused]]
@@ -779,7 +819,7 @@ public:
             decl,
             to_asSFuncPtr(fn),
             AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL,
-            (void*)std::addressof(instance)
+            aux.to_address()
         );
         assert(r >= 0);
 
@@ -788,12 +828,12 @@ public:
 
     template <
         auto Function,
-        typename T>
+        typename Auxiliary>
     global& function(
         use_generic_t,
         const char* decl,
         fp_wrapper_t<Function>,
-        T& instance
+        auxiliary_wrapper<Auxiliary> aux
     )
     {
         static_assert(
@@ -804,7 +844,7 @@ public:
         function(
             decl,
             to_asGENFUNC_t(fp<Function>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL>),
-            instance
+            aux
         );
 
         return *this;
@@ -812,11 +852,11 @@ public:
 
     template <
         auto Function,
-        typename T>
+        typename Auxiliary>
     global& function(
         const char* decl,
         fp_wrapper_t<Function>,
-        T& instance
+        auxiliary_wrapper<Auxiliary> aux
     )
     {
         static_assert(
@@ -825,9 +865,9 @@ public:
         );
 
         if constexpr(ForceGeneric)
-            function(use_generic, decl, fp<Function>, instance);
+            function(use_generic, decl, fp<Function>, aux);
         else
-            function(decl, Function, instance);
+            function(decl, Function, aux);
 
         return *this;
     }
@@ -1167,7 +1207,7 @@ protected:
     }
 
     template <typename T, typename Class>
-    void property_impl(const char* decl, T Class::*mp)
+    void property_impl(const char* decl, T Class::* mp)
     {
         property_impl(decl, member_offset(mp));
     }
@@ -2566,7 +2606,7 @@ public:
     }
 
     template <typename T>
-    value_class& property(const char* decl, T Class::*mp)
+    value_class& property(const char* decl, T Class::* mp)
     {
         this->template property_impl<T, Class>(decl, mp);
 
@@ -3281,7 +3321,7 @@ public:
     }
 
     template <typename T>
-    reference_class& property(const char* decl, T Class::*mp)
+    reference_class& property(const char* decl, T Class::* mp)
     {
         this->template property_impl<T, Class>(decl, mp);
 

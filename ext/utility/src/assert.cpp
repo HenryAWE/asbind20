@@ -83,7 +83,7 @@ std::function<assert_handler_t> register_script_assert(
             use_generic,
             "void assert(bool pred)",
             fp<&script_assert_impl::assert_simple>,
-            impl
+            auxiliary(impl)
         );
 
     if(str_factory)
@@ -105,7 +105,7 @@ std::function<assert_handler_t> register_script_assert(
                 .function(
                     string_concat("void assert(bool pred, const ", string_t_decl, " &in msg)").c_str(),
                     &script_assert_impl::assert_msg_wrapper,
-                    impl
+                    auxiliary(impl)
                 );
         }
     }
