@@ -174,7 +174,8 @@ assert(val.value() == 182376);
 The asbind20 library also provides tools for advanced users. You can find detailed examples in extensions and unit tests.
 
 ## 1. Generating Generic Wrapper at Compile-Time
-With the power of non-type template parameter (NTTP), asbind20 can generate generic wrapper by macro-free utilities. This can be useful for binding interface on platform without native calling convention support, e.g., Emscripten.
+With the power of non-type template parameter (NTTP), asbind20 can generate generic wrapper by macro-free utilities. Additionally, it supports for wrapping a function with variable type (`?`).  
+This can be useful for binding interface on platform without native calling convention support, e.g., Emscripten.
 
 ```c++
 // Helpers
@@ -186,16 +187,14 @@ asGENFUNC_t f2 = asbind20::to_asGENFUNC_t(fp<&my_class::method>, call_conv<asCAL
 using asbind20::var_type;
 // For function with variable type argument
 // void*, int pair in C++ / ?& in AngelScript
-// Use a helper to mark position of those special argument, i.e. index of the void*.
+// Use a helper to mark the position of those special arguments, i.e., the index of question mark (?).
 asGENFUNC_t f3 = asbind20::to_asGENFUNC_t(fp<&var_type_func>, call_conv<asCALL_THISCALL>, var_type<0>);
 
 // Use `use_generic` tag to force generated proxies to use asCALL_GENERIC
 asbind20::value_class<my_value_class>(...)
-    .constructor<int>(asbind20::use_generic, "void f(int)")
+    .constructor<int>(asbind20::use_generic, "int")
     .opEquals(asbind20::use_generic)
-    // Due to limitation of C++,
-    // you can only pass the function pointer as template argument to the generic wrapper.
-    .method<&my_value_class::mem_func>(asbind20::use_generic,"int mem_func(int arg)");
+    .method(asbind20::use_generic, "int mem_func(int arg)", fp<&my_value_class::mem_func>);
 ```
 
 If you want to force all registered functions to be generic, you can set the `ForceGeneric` flag of binding generator to `true`.  
@@ -206,13 +205,13 @@ asbind20::ref_class<my_ref_class, true>(...);
 asbind20::global<true>(...);
 ```
 
-Note: If you use an outer template argument to control the mode of generator, the generator can be a dependent name, thus you need an additional `template` keyword to call the binding generator.
+NOTE: If you use an outer template argument to control the mode of generator, the generator can be a dependent name, thus you need an additional `template` disambiguator to call the binding generator.
 ```c++
 template <bool UseGeneric>
 void register_my_class(asIScriptEngine* engine)
 {
     asbind20::value_class<my_value_class, UseGeneric>(engine, "my_value_class")
-        .template method<&my_value_class::mem_func>("int mem_func(int arg)")
+        .template constructor<int>("int")
 }
 ```
 
@@ -248,13 +247,26 @@ You can find example usage in `ext/container/src/array.cpp`.
 # Supported Platforms
 - CMake >= 3.20
 - AngelScript >= 2.37.0
-- Any C++ compiler that supports C++20.  
-  Currently, this library has been tested by MSVC 19.41 on Windows and GCC 12 / Clang 18 on Linux.
-  You can find build and test status in the GitHub Actions.
+- Any C++ compiler that supports C++20.
+
+Currently, the following platforms and compilers are tested by CI.
+
+| Platform   | Compiler       |
+| ---------- | -------------- |
+| Windows    | MSVC 19.41     |
+| Linux      | GCC 12, 13, 14 |
+| Linux      | Clang 18       |
+| Emscripten | latest         |
+
+You can find detailed build and test status in the GitHub Actions.
 
 # How to Use
 Follow the tutorial of AngelScript to build and install it at first, or use a package manager like [vcpkg](https://github.com/microsoft/vcpkg).
-## A. Build and Install
+## A. Copy into Your Project
+asbind20 is a header-only library. You can directly copy all the files under `include/` into your project.
+If your project has a custom location of `<angelscript.h>`, you can include it before asbind20. This library will not include the AngelScript library for the second time.
+
+## B. Build and Install
 Build and install the library.
 ```sh
 cmake -GNinja -DCMAKE_BUILD_TYPE=Release -S . -B build
@@ -269,7 +281,7 @@ target_link_libraries(main PRIVATE asbind20::asbind20)
 ```
 You can find a detailed example in `test/test_install/`.
 
-## B. As Submodule
+## C. As Submodule
 Clone the library into your project.
 ```sh
 git clone https://github.com/HenryAWE/asbind20.git
