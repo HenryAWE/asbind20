@@ -33,7 +33,7 @@ static void register_global_funcs(
         .function("void set_int(int&out)", fp<&test_bind::set_int>)
         .function(
             "int gen_int()",
-            +[]() -> int
+            []() -> int
             { return 42; }
         )
         .function(
@@ -54,10 +54,8 @@ static void register_global_funcs(
         .function("void set_int(int&out)", fp<&test_bind::set_int>)
         .function(
             "int gen_int() ",
-            +[](asIScriptGeneric* gen) -> void
-            {
-                asbind20::set_generic_return<int>(gen, 42);
-            }
+            []() -> int
+            { return 42; }
         )
         .function("void set_val(int val)", fp<&test_bind::class_wrapper::set_val>, auxiliary(wrapper))
         .property("string val", global_val);

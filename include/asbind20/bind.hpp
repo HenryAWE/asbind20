@@ -869,6 +869,36 @@ public:
         return *this;
     }
 
+    template <noncapturing_lambda Lambda>
+    global& function(
+        use_generic_t,
+        const char* decl,
+        const Lambda&
+    )
+    {
+        this->function(
+            decl,
+            to_asGENFUNC_t(Lambda{}, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>),
+            generic_call_conv
+        );
+
+        return *this;
+    }
+
+    template <noncapturing_lambda Lambda>
+    global& function(
+        const char* decl,
+        const Lambda&
+    )
+    {
+        if constexpr(ForceGeneric)
+            this->function(use_generic, decl, Lambda{});
+        else
+            this->function(decl, +Lambda{}, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>);
+
+        return *this;
+    }
+
     template <typename Auxiliary>
     global& function(
         const char* decl,
