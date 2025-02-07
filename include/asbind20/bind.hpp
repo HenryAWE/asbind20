@@ -599,13 +599,14 @@ public:
     register_helper_base() = delete;
     register_helper_base(const register_helper_base&) noexcept = default;
 
-    register_helper_base(asIScriptEngine* engine)
+    register_helper_base(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         : m_engine(engine)
     {
         assert(engine != nullptr);
     }
 
-    asIScriptEngine* get_engine() const noexcept
+    auto get_engine() const noexcept
+        -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
     {
         return m_engine;
     }
@@ -658,9 +659,9 @@ namespace detail
         -> AS_NAMESPACE_QUALIFIER asECallConvTypes
     {
         if constexpr(std::is_member_function_pointer_v<FuncSig>)
-            return asCALL_THISCALL;
+            return AS_NAMESPACE_QUALIFIER asCALL_THISCALL;
         else if constexpr(std::convertible_to<FuncSig, asGENFUNC_t>)
-            return asCALL_GENERIC;
+            return AS_NAMESPACE_QUALIFIER asCALL_GENERIC;
         else
         {
             using traits = function_traits<FuncSig>;
@@ -673,9 +674,11 @@ namespace detail
             static_assert(obj_last || obj_first, "Missing object parameter");
 
             if(obj_first)
-                return traits::arg_count_v == 1 ? asCALL_CDECL_OBJLAST : asCALL_CDECL_OBJFIRST;
+                return traits::arg_count_v == 1 ?
+                           AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST :
+                           AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST;
             else
-                return asCALL_CDECL_OBJLAST;
+                return AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
         }
     }
 
@@ -684,8 +687,8 @@ namespace detail
         -> AS_NAMESPACE_QUALIFIER asECallConvTypes
     {
         if constexpr(
-            Beh == asBEHAVE_TEMPLATE_CALLBACK ||
-            Beh == asBEHAVE_FACTORY
+            Beh ==AS_NAMESPACE_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK ||
+            Beh ==AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY
         )
             return deduce_function_callconv<FuncSig>();
         else if constexpr(std::is_member_function_pointer_v<FuncSig>)
@@ -693,7 +696,7 @@ namespace detail
         else
         {
             constexpr bool try_void_ptr =
-                Beh == asBEHAVE_CONSTRUCT;
+                Beh == AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT;
 
             return deduce_method_callconv<Class, FuncSig, try_void_ptr>();
         }
@@ -720,7 +723,7 @@ public:
     global() = delete;
     global(const global&) = default;
 
-    global(asIScriptEngine* engine)
+    global(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         : my_base(engine) {}
 
     template <

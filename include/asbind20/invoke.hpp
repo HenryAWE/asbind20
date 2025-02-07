@@ -47,14 +47,14 @@ class script_invoke_result
 public:
     using value_type = R;
 
-    script_invoke_result(const R& result)
-        : m_r(asEXECUTION_FINISHED)
+    explicit script_invoke_result(const R& result)
+        : m_r(AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED)
     {
         construct_impl(result);
     }
 
-    script_invoke_result(R&& result) noexcept
-        : m_r(asEXECUTION_FINISHED)
+    explicit script_invoke_result(R&& result) noexcept
+        : m_r(AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED)
     {
         construct_impl(std::move(result));
     }
@@ -62,8 +62,8 @@ public:
     script_invoke_result(bad_result_t, int r) noexcept
         : m_r(r)
     {
-        if(r == asEXECUTION_FINISHED)
-            m_r = asEXECUTION_ERROR;
+        if(r == AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED)
+            m_r = AS_NAMESPACE_QUALIFIER asEXECUTION_ERROR;
     }
 
     ~script_invoke_result()
@@ -137,7 +137,7 @@ public:
 
     bool has_value() const noexcept
     {
-        return error() == asEXECUTION_FINISHED;
+        return error() == AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED;
     }
 
     explicit operator bool() const noexcept
@@ -186,15 +186,16 @@ class script_invoke_result<R&>
 public:
     using value_type = R&;
 
-    script_invoke_result(R& result) noexcept
-        : m_ptr(std::addressof(result)), m_r(asEXECUTION_FINISHED)
+    explicit script_invoke_result(R& result) noexcept
+        : m_ptr(std::addressof(result)),
+          m_r(AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED)
     {}
 
     script_invoke_result(bad_result_t, int r) noexcept
         : m_r(r)
     {
-        if(r == asEXECUTION_FINISHED)
-            m_r = asEXECUTION_ERROR;
+        if(r == AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED)
+            m_r = AS_NAMESPACE_QUALIFIER asEXECUTION_ERROR;
     }
 
     ~script_invoke_result() = default;
@@ -265,7 +266,7 @@ public:
 
     bool has_value() const noexcept
     {
-        return error() == asEXECUTION_FINISHED;
+        return error() == AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED;
     }
 
     explicit operator bool() const noexcept
@@ -299,10 +300,14 @@ public:
     using value_type = void;
 
     script_invoke_result()
-        : m_r(asEXECUTION_FINISHED) {}
+        : m_r(AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED) {}
 
     script_invoke_result(bad_result_t, int r)
-        : m_r(r) {}
+        : m_r(r)
+    {
+        if(r == AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED)
+            m_r = AS_NAMESPACE_QUALIFIER asEXECUTION_ERROR;
+    }
 
     void operator*() noexcept {}
 
@@ -310,7 +315,7 @@ public:
 
     bool has_value() const noexcept
     {
-        return m_r == asEXECUTION_FINISHED;
+        return m_r == AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED;
     }
 
     explicit operator bool() const noexcept
@@ -396,7 +401,6 @@ int set_script_arg(
     }
     else
     {
-        static_assert(sizeof(type) <= sizeof(int), "underlying type of enum is too large");
         return set_script_arg(ctx, idx, static_cast<int>(val));
     }
 }
@@ -562,7 +566,7 @@ namespace detail
     {
         int r = ctx->Execute();
 
-        if(r == asEXECUTION_FINISHED)
+        if(r == AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED)
         {
             if constexpr(std::is_void_v<R>)
                 return script_invoke_result<void>();
@@ -723,6 +727,11 @@ public:
         return prev_refcount;
     }
 
+    void swap(script_function_base& other) noexcept
+    {
+        std::swap(m_fp, other.m_fp);
+    }
+
 protected:
     [[noreturn]]
     static void throw_bad_call()
@@ -730,13 +739,8 @@ protected:
         throw std::bad_function_call();
     }
 
-    void swap(script_function_base& other) noexcept
-    {
-        std::swap(m_fp, other.m_fp);
-    }
-
 private:
-    asIScriptFunction* m_fp;
+    handle_type m_fp;
 };
 
 template <typename... Ts>
@@ -850,7 +854,6 @@ inline script_object instantiate_class(
     auto result = script_invoke<script_object>(ctx, factory);
     return result.has_value() ? std::move(*result) : script_object();
 }
-
 } // namespace asbind20
 
 #endif

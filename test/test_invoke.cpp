@@ -9,12 +9,21 @@ TEST(script_invoke_result, common)
     using namespace asbind20;
 
     {
-        script_invoke_result<int> result = 1;
+        script_invoke_result<int> result(1);
 
         ASSERT_TRUE(result.has_value());
         ASSERT_TRUE(result);
         EXPECT_EQ(result.value(), 1);
-        EXPECT_EQ(result.error(), asEXECUTION_FINISHED);
+        EXPECT_EQ(result.error(), AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED);
+    }
+
+    {
+        script_invoke_result<std::string> result(std::string("hello"));
+
+        ASSERT_TRUE(result.has_value());
+        ASSERT_TRUE(result);
+        EXPECT_EQ(result.value(), "hello");
+        EXPECT_EQ(result.error(), AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED);
     }
 }
 
@@ -29,7 +38,7 @@ TEST(script_invoke_result, reference)
         ASSERT_TRUE(result);
         EXPECT_EQ(result.value(), 1);
         EXPECT_EQ(&result.value(), &val);
-        EXPECT_EQ(result.error(), asEXECUTION_FINISHED);
+        EXPECT_EQ(result.error(), AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED);
     }
 }
 
@@ -42,16 +51,16 @@ TEST(script_invoke_result, void)
 
         ASSERT_TRUE(result.has_value());
         ASSERT_TRUE(result);
-
         EXPECT_NO_THROW(result.value());
-        EXPECT_EQ(result.error(), asEXECUTION_FINISHED);
+        EXPECT_NO_FATAL_FAILURE((void)*result);
+        EXPECT_EQ(result.error(), AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED);
     }
 }
 
 TEST_F(asbind_test_suite, invoke)
 {
     asIScriptEngine* engine = get_engine();
-    asIScriptModule* m = engine->GetModule("test_invoke", asGM_ALWAYS_CREATE);
+    asIScriptModule* m = engine->GetModule("test_invoke", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
 
     m->AddScriptSection(
         "test_invoke.as",
@@ -123,7 +132,7 @@ TEST_F(asbind_test_suite, invoke)
 TEST_F(asbind_test_suite, custom_rule)
 {
     asIScriptEngine* engine = get_engine();
-    asIScriptModule* m = engine->GetModule("test_custom_rule", asGM_ALWAYS_CREATE);
+    asIScriptModule* m = engine->GetModule("test_custom_rule", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
 
     m->AddScriptSection(
         "test_custom_rule.as",
@@ -145,7 +154,7 @@ TEST_F(asbind_test_suite, custom_rule)
 TEST_F(asbind_test_suite, script_class)
 {
     asIScriptEngine* engine = get_engine();
-    asIScriptModule* m = engine->GetModule("test_script_class", asGM_ALWAYS_CREATE);
+    asIScriptModule* m = engine->GetModule("test_script_class", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
 
     m->AddScriptSection(
         "test_invoke.as",
@@ -159,23 +168,24 @@ TEST_F(asbind_test_suite, script_class)
     );
     ASSERT_GE(m->Build(), 0);
 
-    asITypeInfo* my_class_t = m->GetTypeInfoByName("my_class");
+    AS_NAMESPACE_QUALIFIER asITypeInfo* my_class_t = m->GetTypeInfoByName("my_class");
     ASSERT_NE(my_class_t, nullptr);
 
-    asIScriptContext* ctx = engine->CreateContext();
     {
+        asbind20::request_context ctx(engine);
+
         auto my_class = asbind20::instantiate_class(ctx, my_class_t);
 
-        asIScriptFunction* set_val = my_class_t->GetMethodByDecl("void set_val(int)");
+        AS_NAMESPACE_QUALIFIER asIScriptFunction* set_val = my_class_t->GetMethodByDecl("void set_val(int)");
         asbind20::script_invoke<void>(ctx, my_class, set_val, 182375);
 
-        asIScriptFunction* get_val = my_class_t->GetMethodByDecl("int get_val() const");
+        AS_NAMESPACE_QUALIFIER asIScriptFunction* get_val = my_class_t->GetMethodByDecl("int get_val() const");
         auto val = asbind20::script_invoke<int>(ctx, my_class, get_val);
 
         ASSERT_TRUE(result_has_value(val));
         EXPECT_EQ(val.value(), 182375);
 
-        asIScriptFunction* get_val_ref = my_class_t->GetMethodByDecl("int& get_val_ref()");
+        AS_NAMESPACE_QUALIFIER asIScriptFunction* get_val_ref = my_class_t->GetMethodByDecl("int& get_val_ref()");
         auto val_ref = asbind20::script_invoke<int&>(ctx, my_class, get_val_ref);
 
         ASSERT_TRUE(result_has_value(val_ref));
@@ -187,7 +197,6 @@ TEST_F(asbind_test_suite, script_class)
         ASSERT_TRUE(result_has_value(val));
         EXPECT_EQ(val.value(), 182376);
     }
-    ctx->Release();
 }
 
 int main(int argc, char* argv[])
