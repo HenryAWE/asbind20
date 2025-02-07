@@ -535,7 +535,7 @@ static void register_string_impl(asIScriptEngine* engine, bool as_default)
     if(use_ch_api)
     {
         c
-            .template constructor_function<&string_constructor_ch, asCALL_CDECL_OBJLAST>("uint count, uint ch")
+            .constructor_function("uint count, uint ch", fp<&string_constructor_ch>)
             .method("void append(uint ch)", fp<&string_append_ch>)
             .method("string opAdd(uint ch) const", fp<&string_opAdd_ch>)
             .method("void prepend(uint ch)", fp<&string_prepend_ch>)

@@ -207,36 +207,36 @@ namespace wrappers
     class constructor_function
     {
     public:
-        static constexpr bool is_acceptable_native_call_conv(asECallConvTypes conv) noexcept
+        static constexpr bool is_acceptable_native_call_conv(AS_NAMESPACE_QUALIFIER asECallConvTypes conv) noexcept
         {
             return conv == OriginalCallConv;
         }
 
-        static constexpr bool is_acceptable_call_conv(asECallConvTypes conv) noexcept
+        static constexpr bool is_acceptable_call_conv(AS_NAMESPACE_QUALIFIER asECallConvTypes conv) noexcept
         {
             return conv == asCALL_GENERIC || is_acceptable_native_call_conv(conv);
         }
 
         using native_function_type = std::decay_t<decltype(ConstructorFunc)>;
 
-        template <asECallConvTypes CallConv>
+        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         using wrapper_type = std::conditional_t<
-            CallConv == asCALL_GENERIC,
-            asGENFUNC_t,
+            CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
+            AS_NAMESPACE_QUALIFIER asGENFUNC_t,
             native_function_type>;
 
-        template <asECallConvTypes CallConv>
+        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         requires(is_acceptable_call_conv(CallConv))
-        static auto generate() noexcept
+        static auto generate(call_conv_t<CallConv>) noexcept -> wrapper_type<CallConv>
         {
-            if constexpr(CallConv == asCALL_GENERIC)
+            if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
             {
                 using traits = function_traits<decltype(ConstructorFunc)>;
                 using args_tuple = typename traits::args_tuple;
 
-                if constexpr(OriginalCallConv == asCALL_CDECL_OBJFIRST)
+                if constexpr(OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
                 {
-                    return +[](asIScriptGeneric* gen) -> void
+                    return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
                     {
                         [gen]<std::size_t... Is>(std::index_sequence<Is...>)
                         {
@@ -251,7 +251,7 @@ namespace wrappers
                 }
                 else // OriginalCallConv == asCALL_CDECL_OBJLAST
                 {
-                    return +[](asIScriptGeneric* gen) -> void
+                    return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
                     {
                         [gen]<std::size_t... Is>(std::index_sequence<Is...>)
                         {
@@ -269,18 +269,6 @@ namespace wrappers
             {
                 return ConstructorFunc;
             }
-        }
-
-        asGENFUNC_t operator()(use_generic_t) const
-        {
-            return this->template generate<asCALL_GENERIC>();
-        }
-
-        template <asECallConvTypes CallConv>
-        requires(is_acceptable_call_conv(CallConv))
-        auto operator()(call_conv_t<CallConv>) const -> wrapper_type<CallConv>
-        {
-            return this->template generate<CallConv>();
         }
     };
 
@@ -687,8 +675,8 @@ namespace detail
         -> AS_NAMESPACE_QUALIFIER asECallConvTypes
     {
         if constexpr(
-            Beh ==AS_NAMESPACE_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK ||
-            Beh ==AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY
+            Beh == AS_NAMESPACE_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK ||
+            Beh == AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY
         )
             return deduce_function_callconv<FuncSig>();
         else if constexpr(std::is_member_function_pointer_v<FuncSig>)
@@ -2048,10 +2036,10 @@ public:
     )
     {
         this->behaviour_impl(
-            asBEHAVE_CONSTRUCT,
+            AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
             decl_constructor_impl(params, false).c_str(),
             gfn,
-            call_conv<asCALL_GENERIC>
+            generic_call_conv
         );
 
         return *this;
@@ -2065,132 +2053,230 @@ public:
     )
     {
         this->behaviour_impl(
-            asBEHAVE_CONSTRUCT,
+            AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
             decl_constructor_impl(params, true).c_str(),
             gfn,
-            call_conv<asCALL_GENERIC>
+            generic_call_conv
         );
 
         return *this;
     }
 
-    template <typename... Args, AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-    requires(CallConv != asCALL_GENERIC)
+    template <
+        native_function Constructor,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_CDECL || CallConv == AS_NAMESPACE_QUALIFIER asCALL_STDCALL)
     value_class& constructor_function(
         std::string_view params,
-        void (*fn)(Args...),
+        Constructor&& ctor,
         call_conv_t<CallConv>
     ) requires(!ForceGeneric)
     {
         this->behaviour_impl(
-            asBEHAVE_CONSTRUCT,
+            AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
             decl_constructor_impl(params, false).c_str(),
-            fn,
+            ctor,
             call_conv<CallConv>
         );
 
         return *this;
     }
 
-    template <typename... Args, asECallConvTypes CallConv>
-    requires(CallConv != asCALL_GENERIC)
+    template <
+        native_function Constructor,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_CDECL || CallConv == AS_NAMESPACE_QUALIFIER asCALL_STDCALL)
     value_class& constructor_function(
         std::string_view params,
         use_explicit_t,
-        void (*fn)(Args...),
+        Constructor&& ctor,
         call_conv_t<CallConv>
     ) requires(!ForceGeneric)
     {
         this->behaviour_impl(
-            asBEHAVE_CONSTRUCT,
+            AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
             decl_constructor_impl(params, true).c_str(),
-            fn,
+            ctor,
             call_conv<CallConv>
         );
 
         return *this;
     }
 
-private:
-    template <native_function auto Function, asECallConvTypes CallConv>
-    value_class& constructor_function_wrapper_impl(
-        use_generic_t, std::string_view params, bool explicit_
+    template <native_function Constructor>
+    value_class& constructor_function(
+        std::string_view params,
+        Constructor&& ctor
+    ) requires(!ForceGeneric)
+    {
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
+            detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT, Class, std::decay_t<Constructor>>();
+        this->constructor_function(
+            params,
+            ctor,
+            call_conv<conv>
+        );
+
+        return *this;
+    }
+
+    template <native_function Constructor>
+    value_class& constructor_function(
+        std::string_view params,
+        use_explicit_t,
+        Constructor&& ctor
+    ) requires(!ForceGeneric)
+    {
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
+            detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT, Class, std::decay_t<Constructor>>();
+        this->constructor_function(
+            params,
+            use_explicit,
+            ctor,
+            call_conv<conv>
+        );
+
+        return *this;
+    }
+
+    template <
+        auto Constructor,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
+    value_class& constructor_function(
+        use_generic_t,
+        std::string_view params,
+        fp_wrapper_t<Constructor>,
+        call_conv_t<CallConv>
     )
     {
-        asGENFUNC_t wrapper =
-            wrappers::constructor_function<Function, Class, CallConv>{}(use_generic);
+        this->constructor_function(
+            params,
+            wrappers::constructor_function<Constructor, Class, CallConv>::generate(generic_call_conv),
+            generic_call_conv
+        );
 
-        if(explicit_)
+        return *this;
+    }
+
+    template <
+        auto Constructor,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
+    value_class& constructor_function(
+        use_generic_t,
+        std::string_view params,
+        use_explicit_t,
+        fp_wrapper_t<Constructor>,
+        call_conv_t<CallConv>
+    )
+    {
+        this->constructor_function(
+            params,
+            use_explicit,
+            wrappers::constructor_function<Constructor, Class, CallConv>::generate(generic_call_conv),
+            generic_call_conv
+        );
+
+        return *this;
+    }
+
+    template <auto Constructor>
+    value_class& constructor_function(
+        use_generic_t,
+        std::string_view params,
+        fp_wrapper_t<Constructor>
+    )
+    {
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
+            detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT, Class, std::decay_t<decltype(Constructor)>>();
+        this->constructor_function(
+            use_generic,
+            params,
+            fp<Constructor>,
+            call_conv<conv>
+        );
+
+        return *this;
+    }
+
+    template <auto Constructor>
+    value_class& constructor_function(
+        use_generic_t,
+        std::string_view params,
+        use_explicit_t,
+        fp_wrapper_t<Constructor>
+    )
+    {
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
+            detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT, Class, std::decay_t<decltype(Constructor)>>();
+        this->constructor_function(
+            use_generic,
+            params,
+            use_explicit,
+            fp<Constructor>,
+            call_conv<conv>
+        );
+
+        return *this;
+    }
+
+    template <auto Constructor>
+    value_class& constructor_function(
+        std::string_view params,
+        fp_wrapper_t<Constructor>
+    )
+    {
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
+            detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT, Class, std::decay_t<decltype(Constructor)>>();
+        if constexpr(ForceGeneric)
         {
-            constructor_function(
+            this->constructor_function(
+                use_generic,
+                params,
+                fp<Constructor>,
+                call_conv<conv>
+            );
+        }
+        else
+        {
+            this->constructor_function(
+                params,
+                Constructor,
+                call_conv<conv>
+            );
+        }
+
+        return *this;
+    }
+
+    template <auto Constructor>
+    value_class& constructor_function(
+        std::string_view params,
+        use_explicit_t,
+        fp_wrapper_t<Constructor>
+    )
+    {
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
+            detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT, Class, std::decay_t<decltype(Constructor)>>();
+        if constexpr(ForceGeneric)
+        {
+            this->constructor_function(
+                use_generic,
                 params,
                 use_explicit,
-                wrapper,
-                call_conv<asCALL_GENERIC>
+                fp<Constructor>,
+                call_conv<conv>
             );
         }
         else
         {
-            constructor_function(
+            this->constructor_function(
                 params,
-                wrapper,
-                call_conv<asCALL_GENERIC>
+                use_explicit,
+                Constructor,
+                call_conv<conv>
             );
-        }
-
-        return *this;
-    }
-
-public:
-    template <native_function auto Function, asECallConvTypes CallConv>
-    requires(CallConv == asCALL_CDECL_OBJFIRST || CallConv == asCALL_CDECL_OBJLAST)
-    value_class& constructor_function(use_generic_t, std::string_view params)
-    {
-        this->constructor_function_wrapper_impl<Function, CallConv>(use_generic, params, false);
-
-        return *this;
-    }
-
-    template <native_function auto Function, asECallConvTypes CallConv>
-    requires(CallConv == asCALL_CDECL_OBJFIRST || CallConv == asCALL_CDECL_OBJLAST)
-    value_class& constructor_function(use_generic_t, std::string_view params, use_explicit_t)
-    {
-        this->constructor_function_wrapper_impl<Function, CallConv>(use_generic, params, true);
-
-        return *this;
-    }
-
-    template <
-        native_function auto Function,
-        asECallConvTypes CallConv = detail::deduce_method_callconv<Function, Class>()>
-    requires(CallConv != asCALL_GENERIC)
-    value_class& constructor_function(std::string_view params)
-    {
-        if constexpr(ForceGeneric)
-        {
-            constructor_function<Function, CallConv>(use_generic, params);
-        }
-        else
-        {
-            constructor_function(params, Function, call_conv<CallConv>);
-        }
-
-        return *this;
-    }
-
-    template <
-        native_function auto Function,
-        asECallConvTypes CallConv = detail::deduce_method_callconv<Function, Class>()>
-    requires(CallConv != asCALL_GENERIC)
-    value_class& constructor_function(std::string_view params, use_explicit_t)
-    {
-        if constexpr(ForceGeneric)
-        {
-            constructor_function<Function, CallConv>(use_generic, params, use_explicit);
-        }
-        else
-        {
-            constructor_function(params, use_explicit, Function, call_conv<CallConv>);
         }
 
         return *this;

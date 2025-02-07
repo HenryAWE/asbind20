@@ -195,7 +195,7 @@ void register_math_complex_impl(asIScriptEngine* engine)
         asOBJ_POD | asOBJ_APP_CLASS_MORE_CONSTRUCTORS | asOBJ_APP_CLASS_ALLFLOATS
     );
     c
-        .template constructor_function<&complex_default_constructor<float>, asCALL_CDECL_OBJLAST>("")
+        .constructor_function("", fp<&complex_default_constructor<float>>)
         .template constructor<float>("float r")
         .template constructor<float, float>("float r, float i")
         .template list_constructor_function<&complex_list_constructor<float>, asCALL_CDECL_OBJFIRST>("float,float")
