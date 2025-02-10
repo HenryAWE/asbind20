@@ -89,25 +89,6 @@ namespace detail
 
 #undef ASBIND20_FUNC_TRAITS_IMPL_MEMBER
 
-    template <typename T>
-    concept callable_class = std::is_class_v<T>&& requires()
-    {
-        &T::operator();
-    };
-
-    template <typename T>
-    requires callable_class<T>
-    class func_traits_impl<T> : public func_traits_impl<decltype(&T::operator())>
-    {
-    private:
-        using my_base = func_traits_impl<decltype(&T::operator())>;
-
-    public:
-        using return_type = typename my_base::return_type;
-        using args_tuple = typename my_base::args_tuple;
-        using class_type = typename my_base::class_type;
-    };
-
     template <
         std::size_t Idx,
         typename Tuple,
@@ -873,8 +854,8 @@ private:
     handle_type m_ctx = nullptr;
 };
 
-/*
- * @brief RAII helper for managing script engine
+/**
+ * @brief Script engine manager
  */
 class script_engine
 {
@@ -937,6 +918,9 @@ private:
     handle_type m_engine;
 };
 
+/**
+ * @brief Create an AngelScript engine
+ */
 inline script_engine make_script_engine(
     AS_NAMESPACE_QUALIFIER asDWORD version = ANGELSCRIPT_VERSION
 )
@@ -1089,7 +1073,7 @@ constexpr std::string_view static_enum_name() noexcept
  * @note This function is implemented by undefined behavior but is expected to work on most platforms
  */
 template <typename T, typename Class>
-std::size_t member_offset(T Class::*mp) noexcept
+std::size_t member_offset(T Class::* mp) noexcept
 {
     Class* p = nullptr;
     return std::size_t(std::addressof(p->*mp)) - std::size_t(p);
@@ -1150,7 +1134,7 @@ concept has_static_name =
     std::is_arithmetic_v<T> &&
     !std::same_as<T, char>;
 
-inline auto get_default_factory(asITypeInfo* ti)
+inline auto get_default_factory(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
     -> AS_NAMESPACE_QUALIFIER asIScriptFunction*
 {
     assert(ti != nullptr);
@@ -1166,7 +1150,7 @@ inline auto get_default_factory(asITypeInfo* ti)
     return nullptr;
 }
 
-inline auto get_default_constructor(asITypeInfo* ti)
+inline auto get_default_constructor(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
     -> AS_NAMESPACE_QUALIFIER asIScriptFunction*
 {
     assert(ti != nullptr);
