@@ -155,12 +155,6 @@ void register_math_function(asIScriptEngine* engine, bool generic)
 }
 
 template <typename Float>
-static void complex_default_constructor(void* mem)
-{
-    new(mem) std::complex<Float>();
-}
-
-template <typename Float>
 void complex_list_constructor(void* mem, Float* list_buf)
 {
     new(mem) std::complex<Float>{list_buf[0], list_buf[1]};
@@ -195,7 +189,11 @@ void register_math_complex_impl(asIScriptEngine* engine)
         asOBJ_POD | asOBJ_APP_CLASS_MORE_CONSTRUCTORS | asOBJ_APP_CLASS_ALLFLOATS
     );
     c
-        .constructor_function("", fp<&complex_default_constructor<float>>)
+        .constructor_function(
+            "",
+            [](void* mem)
+            { new(mem) std::complex<float>(); }
+        )
         .template constructor<float>("float r")
         .template constructor<float, float>("float r, float i")
         .list_constructor_function("float,float", fp<&complex_list_constructor<float>>)
