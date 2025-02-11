@@ -44,7 +44,7 @@ inline bool has_max_portability(
 }
 
 /**
- * @brief Check if `asGetLibraryOptions()` doesn't return "AS_NO_EXCEPTION"
+ * @brief Check if `asGetLibraryOptions()` doesn't return "AS_NO_EXCEPTIONS"
  */
 [[nodiscard]]
 inline bool has_exceptions(

@@ -1,7 +1,7 @@
 # asbind20
 [![Build](https://github.com/HenryAWE/asbind20/actions/workflows/build.yml/badge.svg)](https://github.com/HenryAWE/asbind20/actions/workflows/build.yml)
 
-C++20 AngelScript binding library powered by templates. It also provides tools for easy interoperability between the AngelScript and C++.
+C++20 [AngelScript](https://www.angelcode.com/angelscript/) binding library powered by templates. It also provides tools for easy interoperability between the AngelScript and C++.
 
 The name and API design are inspired by the famous [pybind11 library](https://github.com/pybind/pybind11).
 
@@ -41,6 +41,9 @@ public:
         value = new_val;
     }
 
+    // Can be found by ADL in C++ code
+    friend void process(my_value_class& val);
+
     int value = 0;
     int another_value = 0;
 };
@@ -68,7 +71,7 @@ asIScriptEngine* engine = /* Get a script engine */;
 asbind20::value_class<my_value_class>(
     engine,
     "my_value_class",
-    // Other flags will be automatically set
+    // Other flags will be automatically set using asGetTypeTraits<T>()
     asOBJ_APP_CLASS_ALLINTS | asOBJ_APP_CLASS_MORE_CONSTRUCTORS
 )
     // Generate & register the default constructor, copy constructor, destructor,
@@ -88,13 +91,18 @@ asbind20::value_class<my_value_class>(
     .method("void add(int val)", &add_obj_last)  // asCALL_CDECL_OBJLAST
     .method("void mul(int val)", &mul_obj_first) // asCALL_CDECL_OBJFIRST
     .method("void set_val(int)", &set_val_gen)   // asCALL_GENERIC
+    // Use lambda to bind a function found by ADL
+    .method(
+        "void process()",
+        [](my_value_class& val) -> void { process(val); }
+    )
     // Register property by member pointer.
     .property("int value", &my_value_class::value)
     // Register property by offset.
     .property("int another_value", offsetof(my_value_class, another_value));
 ```
 The binding helpers also support registering a reference type, an interface, or global functions, etc. to the AngelScript engine.  
-You can find more examples in `ext/container/src/array.cpp` and `ext/container/src/stdstring.cpp`.
+You can find more examples in `ext/container/src/array.cpp`, `ext/container/src/stdstring.cpp`, and tests under `test/test_bind/` directory.
 
 ## 2. Invoking a Script Function
 The library can automatically convert arguments in C++ for invoking an AngelScript function. Besides, the library provides RAII classes for easily managing lifetime of AngelScript object like `asIScriptContext`.
@@ -174,30 +182,30 @@ assert(val.value() == 182376);
 The asbind20 library also provides tools for advanced users. You can find detailed examples in extensions and unit tests.
 
 ## 1. Generating Generic Wrapper at Compile-Time
-With the power of non-type template parameter (NTTP), asbind20 can generate generic wrapper by macro-free utilities. Additionally, it supports for wrapping a function with variable type (`?`).  
+With the power of non-type template parameter (NTTP), asbind20 can generate generic wrapper of any function by macro-free utilities. Additionally, it supports for wrapping a function with variable type (declared by `?` in the AngelScript).  
 This can be useful for binding interface on platform without native calling convention support, e.g., Emscripten.
 
 ```c++
-// Helpers
-using asbind20::fp;
-using asbind20::call_conv;
-// Usage: to_asGENFUNC_t(fp<MyFunction>, call_conv<OriginalCallConv>);
-asGENFUNC_t f1 = asbind20::to_asGENFUNC_t(fp<&global_func>, call_conv<asCALL_CDECL>);
-asGENFUNC_t f2 = asbind20::to_asGENFUNC_t(fp<&my_class::method>, call_conv<asCALL_THISCALL>);
-using asbind20::var_type;
-// For function with variable type argument
-// void*, int pair in C++ / ?& in AngelScript
-// Use a helper to mark the position of those special arguments, i.e., the index of question mark (?).
-asGENFUNC_t f3 = asbind20::to_asGENFUNC_t(fp<&var_type_func>, call_conv<asCALL_THISCALL>, var_type<0>);
-
 // Use `use_generic` tag to force generated proxies to use asCALL_GENERIC
 asbind20::value_class<my_value_class>(...)
     .constructor<int>(asbind20::use_generic, "int")
     .opEquals(asbind20::use_generic)
-    .method(asbind20::use_generic, "int mem_func(int arg)", fp<&my_value_class::mem_func>);
+    // Due to the limitation of C++, you need to pass the function pointer by a helper (fp<>)
+    .method(asbind20::use_generic, "int mem_func(int arg)", fp<&my_value_class::mem_func>)
+    // Lambda can be directly registered
+    .method(
+        asbind20::use_generic,
+        "int f(int arg)",
+        [](my_value_class& this_, int arg) -> int { /* ... */ }
+    )
+    // For function with variable type argument
+    // void*, int pair in C++ / ?& in AngelScript
+    // Use a helper (ver_type<>) to mark the position of those special arguments, i.e., the index of question mark (?).
+    .method(asbind20::use_generic, "void log(int level, const ?&in)", fp<&my_value_class::log>, var_type<1>);
 ```
 
-If you want to force all registered functions to be generic, you can set the `ForceGeneric` flag of binding generator to `true`.  
+If you want to force all registered functions to be generic, you can set the `ForceGeneric` flag of binding generator to `true`. 
+You can use flag to avoid the code for bindings being flooded by `use_generic`.  
 Trying to register functions by native calling convention with `ForceGeneric` enabled will cause a compile-time error.
 ```c++
 asbind20::value_class<my_value_class, true>(...);
@@ -212,6 +220,7 @@ void register_my_class(asIScriptEngine* engine)
 {
     asbind20::value_class<my_value_class, UseGeneric>(engine, "my_value_class")
         .template constructor<int>("int")
+        .template opConv<int>();
 }
 ```
 
@@ -255,8 +264,8 @@ Currently, the following platforms and compilers are tested by CI.
 | ---------- | -------------- |
 | Windows    | MSVC 19.41     |
 | Linux      | GCC 12, 13, 14 |
-| Linux      | Clang 18       |
-| Emscripten | latest         |
+| Linux      | Clang 18+      |
+| Emscripten | 4.0.1+         |
 
 You can find detailed build and test status in the GitHub Actions.
 
@@ -304,12 +313,15 @@ Detailed explanation of asbind20.
 # Known Limitations
 Some feature of this library may not work on a broken compiler.
 
-1. Some version of Clang (<= 15) may fail to compile extension and test due to compiler bug.
-2. Some utilities are implemented by non-standard C++, but they are guaranteed to have correct result on common platforms, which are tested by CI.
+1. Some version of Clang (<= 15) may fail to compile extension and test due to compiler bug. Please use Clang 18+ for best experience.
 
-3. If you bind an overloaded function using syntax like `static_cast<return_type(*)()>(&func)` on MSVC, it may crash the compiler. The workaround is to write a standalone wrapper function with no overloading, then bind this wrapper to AngelScript.
+2. Some utilities are implemented by non-standard C++, but they are guaranteed to have correct result on supported platforms, which are tested by CI.
 
-4. GCC 12 wrongly [rejects function pointer non-type template parameter without linkage](https://gcc.gnu.org/bugzilla/show_bug.cgi?id=83258). This will cause error when using wrapper with a lambda. This has been fixed in GCC 13.2.
+3. If you bind an overloaded function using syntax like `static_cast<return_type(*)()>(&func)` on MSVC, it may crash the compiler. The workaround is to write a standalone wrapper function with no overloading, then bind this wrapper using asbind20.
+
+4. GCC 12 wrongly [rejects function pointer non-type template parameter without linkage](https://gcc.gnu.org/bugzilla/show_bug.cgi?id=83258). This will cause error when using wrapper with a lambda. This has been fixed in GCC 13.2. The asbind20 also has workaround for this, as long as you are not using some internal classes.
+
+5. If you are using clangd as your LSP, [it may crash when completing code for binding](https://github.com/llvm/llvm-project/issues/125500). You can restart clangd after you complete this part of code.
 
 # License
 [MIT License](./LICENSE)
