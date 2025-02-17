@@ -204,8 +204,7 @@ asbind20::value_class<my_value_class>(...)
     .method(asbind20::use_generic, "void log(int level, const ?&in)", fp<&my_value_class::log>, var_type<1>);
 ```
 
-If you want to force all registered functions to be generic, you can set the `ForceGeneric` flag of binding generator to `true`. 
-You can use flag to avoid the code for bindings being flooded by `use_generic`.  
+If you want to force all registered functions to be generic, you can set the `ForceGeneric` flag of binding generator to `true`. You can use this flag to avoid the code for bindings being flooded by `use_generic`.  
 Trying to register functions by native calling convention with `ForceGeneric` enabled will cause a compile-time error.
 ```c++
 asbind20::value_class<my_value_class, true>(...);
@@ -260,17 +259,19 @@ You can find example usage in `ext/container/src/array.cpp`.
 
 Currently, the following platforms and compilers are tested by CI.
 
-| Platform   | Compiler       |
-| ---------- | -------------- |
-| Windows    | MSVC 19.41     |
-| Linux      | GCC 12, 13, 14 |
-| Linux      | Clang 18+      |
-| Emscripten | 4.0.1+         |
+| Platform    | Compiler       |
+| ----------- | -------------- |
+| Windows x64 | MSVC 19.41     |
+| Linux x64   | GCC 12, 13, 14 |
+| Linux x64   | Clang 18       |
+| Emscripten  | emsdk 4.0.1    |
 
 You can find detailed build and test status in the GitHub Actions.
 
 # How to Use
-Follow the tutorial of AngelScript to build and install it at first, or use a package manager like [vcpkg](https://github.com/microsoft/vcpkg).
+Follow the tutorial of AngelScript to build and install it at first, or use a package manager like [vcpkg](https://github.com/microsoft/vcpkg).  
+You can also find example for installing AngelScript in the GitHub Actions script of asbind20.
+
 ## A. Copy into Your Project
 asbind20 is a header-only library. You can directly copy all the files under `include/` into your project.
 If your project has a custom location of `<angelscript.h>`, you can include it before asbind20. This library will not include the AngelScript library for the second time.
@@ -308,7 +309,8 @@ Detailed explanation of asbind20.
 
 1. [Registering Object Types](./doc/object_type.md)
 2. [Registering Global Entities](./doc/global.md)
-3. [Customize Type Conversion Rules](./doc/custom_conv_rule.md)
+3. [Customize Type Conversion Rules](./doc/custom_conv_rule.md): Customize how data are interchanged between AngelScript and C++ for special user-defined types.
+4. [Troubleshooting](./doc/troubleshooting.md): Solutions for common errors.
 
 # Known Limitations
 Some feature of this library may not work on a broken compiler.

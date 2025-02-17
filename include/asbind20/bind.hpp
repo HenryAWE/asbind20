@@ -2573,6 +2573,9 @@ public:
         return *this;
     }
 
+    /**
+     * @warning Remember to set `asOBJ_APP_CLASS_MORE_CONSTRUCTORS` if necessary!
+     */
     template <typename... Args>
     value_class& constructor(
         std::string_view params
@@ -2586,6 +2589,9 @@ public:
         return *this;
     }
 
+    /**
+     * @warning Remember to set `asOBJ_APP_CLASS_MORE_CONSTRUCTORS` if necessary!
+     */
     template <typename... Args>
     value_class& constructor(
         std::string_view params,

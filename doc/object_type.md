@@ -73,8 +73,11 @@ If you already have a wrapper for constructor, you can register it with `constru
 
 NOTE: When deducing calling convention for constructors, asbind20 will treat `void*` as valid parameter that emulates `this`, because some libraries use `void*` directly for placement new.
 
+**WARNING: Remember to set the `asOBJ_APP_CLASS_MORE_CONSTRUCTORS` flag when registering a custom constructor (constructor other than default/copy constructor), otherwise you may get strange runtime error.**
+
 ### Destructor
-Registered by `destructor()`.
+Registered by `destructor()`.  
+It will generated a wrapper for calling the destructor (`~type()`) of the registered type.
 
 ### List Constructor
 Registered by `list_constructor<ListElementType>("pattern")`. This helper expects the registered type is constructible with `ListElementType*`.
