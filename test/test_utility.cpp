@@ -162,6 +162,43 @@ TEST(name_of, arithmetic)
     EXPECT_EQ(name_of<double>(), "double"sv);
 }
 
+
+TEST(meta, fixed_string)
+{
+    using namespace asbind20;
+
+    static_assert(meta::fixed_string().empty());
+    static_assert(meta::fixed_string("int").size() == 3);
+    static_assert(meta::fixed_string("int").view() == "int");
+
+    {
+        meta::fixed_string s = "int";
+        EXPECT_EQ(s.size(), 3);
+        EXPECT_STREQ(s.c_str(), "int");
+
+        std::string str(s);
+        EXPECT_EQ(str, "int");
+    }
+
+    {
+        auto result = string_concat("void f()", meta::fixed_string("{int,int}"));
+        EXPECT_EQ(result, "void f(){int,int}");
+    }
+
+    {
+        constexpr meta::fixed_string hello = "hello";
+        constexpr meta::fixed_string world = " world";
+        static_assert((hello + world).view() == "hello world");
+        static_assert((hello + meta::fixed_string()).view() == "hello");
+        static_assert((meta::fixed_string() + hello).view() == "hello");
+
+        auto result = hello + world;
+        EXPECT_EQ(result.size(), 11);
+        EXPECT_STREQ(result.c_str(), "hello world");
+    }
+}
+
+
 int main(int argc, char* argv[])
 {
     ::testing::InitGoogleTest(&argc, argv);
