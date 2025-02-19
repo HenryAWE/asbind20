@@ -494,7 +494,7 @@ namespace wrappers
         }
     };
 
-    template <typename Class, typename ListElementType>
+    template <typename Class, typename ListBufType>
     class list_constructor_base
     {
     public:
@@ -518,16 +518,16 @@ namespace wrappers
         using wrapper_type = std::conditional_t<
             CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
             AS_NAMESPACE_QUALIFIER asGENFUNC_t,
-            void (*)(ListElementType*, void*)>;
+            void (*)(ListBufType, void*)>;
     };
 
     template <
         typename Class,
         typename ListElementType = void,
         policies::initialization_list_policy Policy = void>
-    class list_constructor : public list_constructor_base<Class, ListElementType>
+    class list_constructor : public list_constructor_base<Class, ListElementType*>
     {
-        using my_base = list_constructor_base<Class, ListElementType>;
+        using my_base = list_constructor_base<Class, ListElementType*>;
 
     public:
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
@@ -557,9 +557,9 @@ namespace wrappers
         typename ListElementType,
         std::size_t Size>
     class list_constructor<Class, ListElementType, policies::apply_to<Size>> :
-        public list_constructor_base<Class, ListElementType>
+        public list_constructor_base<Class, ListElementType*>
     {
-        using my_base = list_constructor_base<Class, ListElementType>;
+        using my_base = list_constructor_base<Class, ListElementType*>;
 
     public:
         static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
@@ -568,13 +568,11 @@ namespace wrappers
         static auto generate(call_conv_t<CallConv>) noexcept
             -> my_base::template wrapper_type<CallConv>
         {
-            static constexpr auto helper = [](void* mem, script_init_list_repeat list)
+            static constexpr auto helper = [](void* mem, ListElementType* list_buf)
             {
                 [&]<std::size_t... Is>(std::index_sequence<Is...>)
                 {
-                    const ListElementType* data = (const ListElementType*)list.data();
-                    assert((std::size_t)list.size() == Size);
-                    new(mem) Class(data[Is]...);
+                    new(mem) Class(list_buf[Is]...);
                 }(std::make_index_sequence<Size>());
             };
 
@@ -584,7 +582,7 @@ namespace wrappers
                 {
                     helper(
                         gen->GetObject(),
-                        script_init_list_repeat(*(void**)gen->GetAddressOfArg(0))
+                        *(ListElementType**)gen->GetAddressOfArg(0)
                     );
                 };
             }
@@ -592,7 +590,7 @@ namespace wrappers
             {
                 return +[](ListElementType* list_buf, void* mem) -> void
                 {
-                    helper(mem, script_init_list_repeat(list_buf));
+                    helper(mem, list_buf);
                 };
             }
         }
@@ -602,9 +600,9 @@ namespace wrappers
         typename Class,
         typename ListElementType>
     class list_constructor<Class, ListElementType, policies::as_iterators> :
-        public list_constructor_base<Class, ListElementType>
+        public list_constructor_base<Class, void*>
     {
-        using my_base = list_constructor_base<Class, ListElementType>;
+        using my_base = list_constructor_base<Class, void*>;
 
     public:
         static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
@@ -630,13 +628,13 @@ namespace wrappers
                 {
                     helper(
                         gen->GetObject(),
-                        script_init_list_repeat(*(void**)gen->GetAddressOfArg(0))
+                        script_init_list_repeat(gen)
                     );
                 };
             }
             else // CallConv == asCALL_CDECL_OBJLAST
             {
-                return +[](ListElementType* list_buf, void* mem) -> void
+                return +[](void* list_buf, void* mem) -> void
                 {
                     helper(mem, script_init_list_repeat(list_buf));
                 };
@@ -648,9 +646,9 @@ namespace wrappers
         typename Class,
         typename ListElementType>
     class list_constructor<Class, ListElementType, policies::pointer_and_size> :
-        public list_constructor_base<Class, ListElementType>
+        public list_constructor_base<Class, void*>
     {
-        using my_base = list_constructor_base<Class, ListElementType>;
+        using my_base = list_constructor_base<Class, void*>;
 
     public:
         static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
@@ -670,13 +668,13 @@ namespace wrappers
                 {
                     helper(
                         gen->GetObject(),
-                        script_init_list_repeat(*(void**)gen->GetAddressOfArg(0))
+                        script_init_list_repeat(gen)
                     );
                 };
             }
             else // CallConv == asCALL_CDECL_OBJLAST
             {
-                return +[](ListElementType* list_buf, void* mem) -> void
+                return +[](void* list_buf, void* mem) -> void
                 {
                     helper(mem, script_init_list_repeat(list_buf));
                 };
@@ -687,12 +685,15 @@ namespace wrappers
     template <
         typename Class,
         typename ListElementType,
-        policies::initialization_list_policy ConvertibleRange>
-    requires(std::same_as<ConvertibleRange, policies::as_initializer_list> || std::same_as<ConvertibleRange, policies::as_span>)
-    class list_constructor<Class, ListElementType, ConvertibleRange> :
-        public list_constructor_base<Class, ListElementType>
+        policies::initialization_list_policy ConvertibleRangePolicy>
+    requires(
+        std::same_as<ConvertibleRangePolicy, policies::as_initializer_list> ||
+        std::same_as<ConvertibleRangePolicy, policies::as_span>
+    )
+    class list_constructor<Class, ListElementType, ConvertibleRangePolicy> :
+        public list_constructor_base<Class, void*>
     {
-        using my_base = list_constructor_base<Class, ListElementType>;
+        using my_base = list_constructor_base<Class, void*>;
 
     public:
         static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
@@ -703,22 +704,22 @@ namespace wrappers
         {
             static constexpr auto helper = [](void* mem, script_init_list_repeat list)
             {
-                new(mem) Class(ConvertibleRange::template convert<ListElementType>(list));
+                new(mem) Class(ConvertibleRangePolicy::template convert<ListElementType>(list));
             };
 
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
             {
-                return +[](asIScriptGeneric* gen) -> void
+                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
                 {
                     helper(
                         gen->GetObject(),
-                        script_init_list_repeat(*(void**)gen->GetAddressOfArg(0))
+                        script_init_list_repeat(gen)
                     );
                 };
             }
             else // CallConv == asCALL_CDECL_OBJLAST
             {
-                return +[](ListElementType* list_buf, void* mem) -> void
+                return +[](void* list_buf, void* mem) -> void
                 {
                     helper(mem, script_init_list_repeat(list_buf));
                 };
@@ -812,28 +813,30 @@ namespace wrappers
         }
     };
 
-    template <typename Class, bool Template, typename ListElementType = void>
-    class list_factory
+    template <typename Class, bool Template, typename ListBufType>
+    class list_factory_base
     {
     public:
         static constexpr bool is_acceptable_native_call_conv(
             AS_NAMESPACE_QUALIFIER asECallConvTypes conv
         ) noexcept
         {
-            return conv == asCALL_CDECL;
+            return conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL;
         }
 
         static constexpr bool is_acceptable_call_conv(
             AS_NAMESPACE_QUALIFIER asECallConvTypes conv
         ) noexcept
         {
-            return conv == asCALL_GENERIC || is_acceptable_native_call_conv(conv);
+            return conv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC ||
+                   is_acceptable_native_call_conv(conv);
         }
 
         using native_function_type = std::conditional_t<
             Template,
-            Class* (*)(asITypeInfo*, ListElementType*),
-            Class* (*)(ListElementType*)>;
+            Class* (*)(AS_NAMESPACE_QUALIFIER asITypeInfo*, ListBufType),
+            Class* (*)(ListBufType)>;
+
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         requires(is_acceptable_call_conv(CallConv))
@@ -841,9 +844,21 @@ namespace wrappers
             CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
             AS_NAMESPACE_QUALIFIER asGENFUNC_t,
             native_function_type>;
+    };
 
+    template <
+        typename Class,
+        bool Template,
+        typename ListElementType = void,
+        policies::initialization_list_policy Policy = void>
+    class list_factory : public list_factory_base<Class, Template, ListElementType*>
+    {
+        using my_base = list_factory_base<Class, Template, ListElementType*>;
+
+    public:
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        static auto generate(call_conv_t<CallConv>) noexcept -> wrapper_type<CallConv>
+        static auto generate(call_conv_t<CallConv>) noexcept
+            -> my_base::template wrapper_type<CallConv>
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
             {
@@ -885,6 +900,185 @@ namespace wrappers
                         return new Class(list_buf);
                     };
                 }
+            }
+        }
+    };
+
+    template <
+        typename Class,
+        bool Template,
+        typename ListElementType,
+        std::size_t Size>
+    class list_factory<Class, Template, ListElementType, policies::apply_to<Size>> :
+        public list_factory_base<Class, Template, ListElementType*>
+    {
+        using my_base = list_factory_base<Class, Template, ListElementType*>;
+
+    public:
+        static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
+        static_assert(!Template, "This policy is invalid for a template class");
+
+        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        static auto generate(call_conv_t<CallConv>) noexcept
+            -> my_base::template wrapper_type<CallConv>
+        {
+            static constexpr auto helper = [](ListElementType* list_buf) -> Class*
+            {
+                return [&]<std::size_t... Is>(std::index_sequence<Is...>)
+                {
+                    return new Class(list_buf[Is]...);
+                }(std::make_index_sequence<Size>());
+            };
+
+            if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
+            {
+                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+                {
+                    set_generic_return<Class*>(
+                        gen, helper(*(ListElementType**)gen->GetAddressOfArg(0))
+                    );
+                };
+            }
+            else // CallConv == asCALL_CDECL
+            {
+                return +[](ListElementType* list_buf) -> Class*
+                {
+                    return helper(list_buf);
+                };
+            }
+        }
+    };
+
+    template <
+        typename Class,
+        bool Template,
+        typename ListElementType>
+    class list_factory<Class, Template, ListElementType, policies::as_iterators> :
+        public list_factory_base<Class, Template, void*>
+    {
+        using my_base = list_factory_base<Class, Template, void*>;
+
+    public:
+        static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
+        static_assert(!Template, "This policy is invalid for a template class");
+
+        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        static auto generate(call_conv_t<CallConv>) noexcept
+            -> my_base::template wrapper_type<CallConv>
+        {
+            static constexpr auto helper = [](script_init_list_repeat list) -> Class*
+            {
+                return policies::as_iterators::apply<ListElementType>(
+                    [](auto start, auto stop) -> Class*
+                    {
+                        return new Class(start, stop);
+                    },
+                    list
+                );
+            };
+
+            if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
+            {
+                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+                {
+                    set_generic_return<Class*>(
+                        gen, helper(script_init_list_repeat(gen))
+                    );
+                };
+            }
+            else // CallConv == asCALL_CDECL
+            {
+                return +[](void* list_buf) -> Class*
+                {
+                    return helper(script_init_list_repeat(list_buf));
+                };
+            }
+        }
+    };
+
+    template <
+        typename Class,
+        bool Template,
+        typename ListElementType>
+    class list_factory<Class, Template, ListElementType, policies::pointer_and_size> :
+        public list_factory_base<Class, Template, void*>
+    {
+        using my_base = list_factory_base<Class, Template, void*>;
+
+    public:
+        static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
+        static_assert(!Template, "This policy is invalid for a template class");
+
+        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        static auto generate(call_conv_t<CallConv>) noexcept
+            -> my_base::template wrapper_type<CallConv>
+        {
+            static constexpr auto helper = [](script_init_list_repeat list) -> Class*
+            {
+                return new Class((ListElementType*)list.data(), list.size());
+            };
+
+            if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
+            {
+                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+                {
+                    set_generic_return<Class*>(
+                        gen, helper(script_init_list_repeat(gen))
+                    );
+                };
+            }
+            else // CallConv == asCALL_CDECL
+            {
+                return +[](void* list_buf) -> Class*
+                {
+                    return helper(script_init_list_repeat(list_buf));
+                };
+            }
+        }
+    };
+
+    template <
+        typename Class,
+        bool Template,
+        typename ListElementType,
+        policies::initialization_list_policy ConvertibleRangePolicy>
+    requires(
+        std::same_as<ConvertibleRangePolicy, policies::as_initializer_list> ||
+        std::same_as<ConvertibleRangePolicy, policies::as_span>
+    )
+    class list_factory<Class, Template, ListElementType, ConvertibleRangePolicy> :
+        public list_factory_base<Class, Template, void*>
+    {
+        using my_base = list_factory_base<Class, Template, void*>;
+
+    public:
+        static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
+        static_assert(!Template, "This policy is invalid for a template class");
+
+        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        static auto generate(call_conv_t<CallConv>) noexcept
+            -> my_base::template wrapper_type<CallConv>
+        {
+            static constexpr auto helper = [](script_init_list_repeat list) -> Class*
+            {
+                return new Class(ConvertibleRangePolicy::template convert<ListElementType>(list));
+            };
+
+            if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
+            {
+                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+                {
+                    set_generic_return<Class*>(
+                        gen, helper(script_init_list_repeat(gen))
+                    );
+                };
+            }
+            else // CallConv == asCALL_CDECL
+            {
+                return +[](void* list_buf) -> Class*
+                {
+                    return helper(script_init_list_repeat(list_buf));
+                };
             }
         }
     };
@@ -3939,14 +4133,16 @@ public:
         return *this;
     }
 
-    template <typename ListElementType = void>
+    template <
+        typename ListElementType = void,
+        policies::initialization_list_policy Policy = void>
     reference_class& list_factory(
         use_generic_t,
         std::string_view pattern
     )
     {
         AS_NAMESPACE_QUALIFIER asGENFUNC_t wrapper =
-            wrappers::list_factory<Class, Template, ListElementType>::generate(generic_call_conv);
+            wrappers::list_factory<Class, Template, ListElementType, Policy>::generate(generic_call_conv);
 
         list_factory_function(
             pattern,
@@ -3957,17 +4153,21 @@ public:
         return *this;
     }
 
-    template <typename ListElementType = void>
+    template <
+        typename ListElementType = void,
+        policies::initialization_list_policy Policy = void>
     reference_class& list_factory(std::string_view pattern)
     {
         if constexpr(ForceGeneric)
         {
-            list_factory<ListElementType>(use_generic, pattern);
+            list_factory<ListElementType, Policy>(use_generic, pattern);
         }
         else
         {
             auto wrapper =
-                wrappers::list_factory<Class, Template, ListElementType>::generate(call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>);
+                wrappers::list_factory<Class, Template, ListElementType, Policy>::generate(
+                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
+                );
 
             list_factory_function(
                 pattern,

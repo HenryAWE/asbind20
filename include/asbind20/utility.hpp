@@ -990,6 +990,17 @@ public:
         m_data = static_cast<std::byte*>(list_buf) + sizeof(size_type);
     }
 
+    /**
+     * @brief Create a wrapper for script initialization list from for generic calling convention
+     *
+     * @param idx The parameter index of the list. Usually, this should be 0 for ordinary types and 1 for template classes.
+     */
+    explicit script_init_list_repeat(
+        AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen,
+        AS_NAMESPACE_QUALIFIER asUINT idx = 0
+    )
+        : script_init_list_repeat(*(void**)gen->GetAddressOfArg(idx)) {}
+
     script_init_list_repeat& operator=(const script_init_list_repeat&) noexcept = default;
 
     bool operator==(const script_init_list_repeat& rhs) const noexcept

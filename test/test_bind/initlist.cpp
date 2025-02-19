@@ -393,3 +393,322 @@ TEST(initlist_generic, value_as_span)
     test_bind::register_from_span<true>(engine);
     test_bind::check_from_span(engine);
 }
+
+namespace test_bind
+{
+class ref_initlist_test_base
+{
+public:
+    virtual ~ref_initlist_test_base() = default;
+
+    void addref()
+    {
+        ++m_counter;
+    }
+
+    void release()
+    {
+        assert(m_counter >= 0);
+        if(--m_counter == 0)
+            delete this;
+    }
+
+    int use_count() const noexcept
+    {
+        return m_counter;
+    }
+
+private:
+    int m_counter = 1;
+};
+
+class ref_test_apply : public ref_initlist_test_base
+{
+public:
+    ref_test_apply(int x, int y)
+        : data{x, y} {}
+
+    int data[2];
+};
+
+template <bool UseGeneric>
+void register_ref_test_apply(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
+    using namespace asbind20;
+    ref_class<ref_test_apply, UseGeneric>(engine, "ref_test_apply")
+        .addref(fp<&ref_test_apply::addref>)
+        .release(fp<&ref_test_apply::release>)
+        .template list_factory<int, policies::apply_to<2>>("int,int");
+}
+
+void check_ref_test_apply(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
+    auto* m = engine->GetModule("ref_test_apply", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
+
+    m->AddScriptSection(
+        "ref_test_apply",
+        "ref_test_apply@ create0() { return {0, 0}; }\n"
+        "ref_test_apply@ create1() { return {10, 13}; }"
+    );
+    ASSERT_GE(m->Build(), 0);
+
+    auto create = [&](int idx) -> ref_test_apply*
+    {
+        std::string decl = asbind20::string_concat("ref_test_apply@ create", std::to_string(idx), "()");
+        auto* f = m->GetFunctionByDecl(decl.c_str());
+
+        if(!f)
+        {
+            EXPECT_TRUE(f) << decl << ": not found";
+            return nullptr;
+        }
+
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<ref_test_apply*>(ctx, f);
+        EXPECT_TRUE(asbind_test::result_has_value(result));
+
+        auto* val = result.value();
+        EXPECT_EQ(val->use_count(), 1);
+        val->addref();
+        return val;
+    };
+
+    {
+        auto* val = create(0);
+        ASSERT_EQ(val->use_count(), 1);
+
+        EXPECT_EQ(val->data[0], 0);
+        EXPECT_EQ(val->data[1], 0);
+
+        val->release();
+    }
+
+    {
+        auto* val = create(1);
+        ASSERT_EQ(val->use_count(), 1);
+
+        EXPECT_EQ(val->data[0], 10);
+        EXPECT_EQ(val->data[1], 13);
+
+        val->release();
+    }
+}
+
+// Multipurpose
+class ref_test_vector : public ref_initlist_test_base
+{
+public:
+    template <typename Iterator>
+    ref_test_vector(Iterator start, Iterator sentinel)
+        : data(start, sentinel)
+    {}
+
+    ref_test_vector(std::initializer_list<int> il)
+        : data(il) {}
+
+    ref_test_vector(std::span<int> sp)
+        : ref_test_vector(sp.begin(), sp.end())
+    {}
+
+    ref_test_vector(int* data, std::size_t count)
+        : ref_test_vector(std::span<int>(data, count))
+    {}
+
+    std::vector<int> data;
+};
+
+template <asbind20::policies::initialization_list_policy IListPolicy, bool UseGeneric>
+void register_ref_test_vector_with(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
+    using namespace asbind20;
+    ref_class<ref_test_vector, UseGeneric>(engine, "ref_test_vector")
+        .addref(fp<&ref_test_apply::addref>)
+        .release(fp<&ref_test_apply::release>)
+        .template list_factory<int, IListPolicy>("repeat int");
+}
+
+void check_ref_test_vector(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
+    auto* m = engine->GetModule("ref_test_vector", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
+
+    m->AddScriptSection(
+        "ref_test_vector",
+        "ref_test_vector@ create0() { return {}; }\n"
+        "ref_test_vector@ create1() { return {1013}; }\n"
+        "ref_test_vector@ create2() { return {10, 13}; }"
+    );
+    ASSERT_GE(m->Build(), 0);
+
+    auto create = [&](int idx) -> ref_test_vector*
+    {
+        std::string decl = asbind20::string_concat("ref_test_vector@ create", std::to_string(idx), "()");
+        auto* f = m->GetFunctionByDecl(decl.c_str());
+
+        if(!f)
+        {
+            EXPECT_TRUE(f) << decl << ": not found";
+            return nullptr;
+        }
+
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<ref_test_vector*>(ctx, f);
+        EXPECT_TRUE(asbind_test::result_has_value(result));
+
+        auto* val = result.value();
+        EXPECT_EQ(val->use_count(), 1);
+        val->addref();
+        return val;
+    };
+
+    {
+        auto* val = create(0);
+        ASSERT_EQ(val->use_count(), 1);
+
+        EXPECT_EQ(val->data.size(), 0);
+
+        val->release();
+    }
+
+    {
+        auto* val = create(1);
+        ASSERT_EQ(val->use_count(), 1);
+
+        EXPECT_EQ(val->data.at(0), 1013);
+        EXPECT_EQ(val->data.size(), 1);
+
+        val->release();
+    }
+
+    {
+        auto* val = create(2);
+        ASSERT_EQ(val->use_count(), 1);
+
+        EXPECT_EQ(val->data.at(0), 10);
+        EXPECT_EQ(val->data.at(1), 13);
+        EXPECT_EQ(val->data.size(), 2);
+
+        val->release();
+    }
+}
+} // namespace test_bind
+
+TEST(initlist_native, ref_apply_to)
+{
+    if(asbind20::has_max_portability())
+        GTEST_SKIP() << "max portability";
+
+    auto engine = asbind20::make_script_engine();
+    test_bind::setup_initlist_test_env(engine);
+
+    test_bind::register_ref_test_apply<false>(engine);
+    test_bind::check_ref_test_apply(engine);
+}
+
+TEST(initlist_generic, ref_apply_to)
+{
+    auto engine = asbind20::make_script_engine();
+    test_bind::setup_initlist_test_env(engine);
+
+    test_bind::register_ref_test_apply<true>(engine);
+    test_bind::check_ref_test_apply(engine);
+}
+
+TEST(initlist_native, ref_test_vector)
+{
+    if(asbind20::has_max_portability())
+        GTEST_SKIP() << "max portability";
+
+    auto engine = asbind20::make_script_engine();
+    test_bind::setup_initlist_test_env(engine);
+
+    test_bind::register_ref_test_vector_with<asbind20::policies::as_iterators, false>(
+        engine
+    );
+    test_bind::check_ref_test_vector(engine);
+}
+
+TEST(initlist_generic, ref_test_vector)
+{
+    auto engine = asbind20::make_script_engine();
+    test_bind::setup_initlist_test_env(engine);
+
+    test_bind::register_ref_test_vector_with<asbind20::policies::as_iterators, true>(
+        engine
+    );
+    test_bind::check_ref_test_vector(engine);
+}
+
+TEST(initlist_native, ref_test_size_and_pointer)
+{
+    if(asbind20::has_max_portability())
+        GTEST_SKIP() << "max portability";
+
+    auto engine = asbind20::make_script_engine();
+    test_bind::setup_initlist_test_env(engine);
+
+    test_bind::register_ref_test_vector_with<asbind20::policies::pointer_and_size, false>(
+        engine
+    );
+    test_bind::check_ref_test_vector(engine);
+}
+
+TEST(initlist_generic, ref_test_size_and_pointer)
+{
+    auto engine = asbind20::make_script_engine();
+    test_bind::setup_initlist_test_env(engine);
+
+    test_bind::register_ref_test_vector_with<asbind20::policies::pointer_and_size, true>(
+        engine
+    );
+    test_bind::check_ref_test_vector(engine);
+}
+
+TEST(initlist_native, ref_test_as_initializer_list)
+{
+    if(asbind20::has_max_portability())
+        GTEST_SKIP() << "max portability";
+
+    auto engine = asbind20::make_script_engine();
+    test_bind::setup_initlist_test_env(engine);
+
+    test_bind::register_ref_test_vector_with<asbind20::policies::as_initializer_list, false>(
+        engine
+    );
+    test_bind::check_ref_test_vector(engine);
+}
+
+TEST(initlist_generic, ref_test_as_initializer_list)
+{
+    auto engine = asbind20::make_script_engine();
+    test_bind::setup_initlist_test_env(engine);
+
+    test_bind::register_ref_test_vector_with<asbind20::policies::as_initializer_list, true>(
+        engine
+    );
+    test_bind::check_ref_test_vector(engine);
+}
+
+TEST(initlist_native, ref_test_as_span)
+{
+    if(asbind20::has_max_portability())
+        GTEST_SKIP() << "max portability";
+
+    auto engine = asbind20::make_script_engine();
+    test_bind::setup_initlist_test_env(engine);
+
+    test_bind::register_ref_test_vector_with<asbind20::policies::as_span, false>(
+        engine
+    );
+    test_bind::check_ref_test_vector(engine);
+}
+
+TEST(initlist_generic, ref_test_as_span)
+{
+    auto engine = asbind20::make_script_engine();
+    test_bind::setup_initlist_test_env(engine);
+
+    test_bind::register_ref_test_vector_with<asbind20::policies::as_span, true>(
+        engine
+    );
+    test_bind::check_ref_test_vector(engine);
+}
