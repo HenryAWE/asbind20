@@ -7,12 +7,12 @@
 #include <cstddef>
 #include <string>
 #include <utility>
-#include <mutex> // IWYU pragma: keep for std::lock_guard
+#include <mutex> // IWYU pragma: export `std::lock_guard`
 #include <compare>
 #include <functional>
 #include <type_traits>
 #include <concepts>
-#include "detail/include_as.hpp" // IWYU pragma: keep
+#include "detail/include_as.hpp"
 
 namespace asbind20
 {

@@ -15,10 +15,14 @@
 
 #define ASBIND20_VERSION_STRING "1.2.0"
 
-#include "detail/include_as.hpp" // IWYU pragma: keep
-#include "utility.hpp" // IWYU pragma: keep
-#include "bind.hpp" // IWYU pragma: keep
-#include "invoke.hpp" // IWYU pragma: keep
+// IWYU pragma: begin_exports
+
+#include "detail/include_as.hpp"
+#include "utility.hpp"
+#include "bind.hpp"
+#include "invoke.hpp"
+
+// IWYU pragma: end_exports
 
 namespace asbind20
 {

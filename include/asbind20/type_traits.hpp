@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "detail/include_as.hpp" // IWYU pragma: keep
+#include "detail/include_as.hpp"
 #include "utility.hpp"
 
 namespace asbind20

@@ -12,7 +12,7 @@
 #include <algorithm>
 #include <functional>
 #include <span>
-#include "detail/include_as.hpp" // IWYU pragma: keep
+#include "detail/include_as.hpp"
 #include "utility.hpp"
 #include "generic.hpp"
 

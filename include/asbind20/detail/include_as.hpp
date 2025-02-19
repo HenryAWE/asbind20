@@ -12,7 +12,7 @@
 
 #ifndef ANGELSCRIPT_H
 // Avoid having to inform include path if header is already included before
-#    include <angelscript.h>
+#    include <angelscript.h> // IWYU pragma: export
 #endif
 
 #endif
