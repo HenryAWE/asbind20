@@ -494,25 +494,15 @@ namespace wrappers
         }
     };
 
-    template <
-        typename Class,
-        typename ListElementType = void,
-        policies::initialization_list_policy Policy = void>
-    class list_constructor
+    template <typename Class, typename ListElementType>
+    class list_constructor_base
     {
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        using native_function_type_helper = std::conditional<
-            CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST,
-            void (*)(void*, ListElementType*),
-            void (*)(ListElementType*, void*)>;
-
     public:
         static constexpr bool is_acceptable_native_call_conv(
             AS_NAMESPACE_QUALIFIER asECallConvTypes conv
         ) noexcept
         {
-            return conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
-                   conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
+            return conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
         }
 
         static constexpr bool is_acceptable_call_conv(
@@ -524,32 +514,32 @@ namespace wrappers
         }
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        requires(is_acceptable_native_call_conv(CallConv))
-        using native_function_type = typename native_function_type_helper<CallConv>::type;
-
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        requires(is_acceptable_native_call_conv(CallConv) || CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
+        requires(is_acceptable_call_conv(CallConv))
         using wrapper_type = std::conditional_t<
             CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
             AS_NAMESPACE_QUALIFIER asGENFUNC_t,
-            typename native_function_type_helper<CallConv>::type>;
+            void (*)(ListElementType*, void*)>;
+    };
 
+    template <
+        typename Class,
+        typename ListElementType = void,
+        policies::initialization_list_policy Policy = void>
+    class list_constructor : public list_constructor_base<Class, ListElementType>
+    {
+        using my_base = list_constructor_base<Class, ListElementType>;
+
+    public:
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        static auto generate(call_conv_t<CallConv>) noexcept -> wrapper_type<CallConv>
+        static auto generate(call_conv_t<CallConv>) noexcept
+            -> my_base::template wrapper_type<CallConv>
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
             {
-                return +[](asIScriptGeneric* gen) -> void
+                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
                 {
                     void* mem = gen->GetObject();
                     new(mem) Class(*(ListElementType**)gen->GetAddressOfArg(0));
-                };
-            }
-            else if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
-            {
-                return +[](void* mem, ListElementType* list_buf) -> void
-                {
-                    new(mem) Class(list_buf);
                 };
             }
             else // CallConv == asCALL_CDECL_OBJLAST
@@ -566,35 +556,17 @@ namespace wrappers
         typename Class,
         typename ListElementType,
         std::size_t Size>
-    class list_constructor<Class, ListElementType, policies::apply_to<Size>>
+    class list_constructor<Class, ListElementType, policies::apply_to<Size>> :
+        public list_constructor_base<Class, ListElementType>
     {
+        using my_base = list_constructor_base<Class, ListElementType>;
+
     public:
         static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
 
-        static constexpr bool is_acceptable_native_call_conv(
-            AS_NAMESPACE_QUALIFIER asECallConvTypes conv
-        ) noexcept
-        {
-            return conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
-        }
-
-        static constexpr bool is_acceptable_call_conv(
-            AS_NAMESPACE_QUALIFIER asECallConvTypes conv
-        ) noexcept
-        {
-            return conv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC ||
-                   is_acceptable_native_call_conv(conv);
-        }
-
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        requires(is_acceptable_call_conv(CallConv))
-        using wrapper_type = std::conditional_t<
-            CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
-            AS_NAMESPACE_QUALIFIER asGENFUNC_t,
-            void (*)(ListElementType*, void*)>;
-
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        static auto generate(call_conv_t<CallConv>) noexcept -> wrapper_type<CallConv>
+        static auto generate(call_conv_t<CallConv>) noexcept
+            -> my_base::template wrapper_type<CallConv>
         {
             static constexpr auto helper = [](void* mem, script_init_list_repeat list)
             {
@@ -608,7 +580,7 @@ namespace wrappers
 
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
             {
-                return +[](asIScriptGeneric* gen) -> void
+                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
                 {
                     helper(
                         gen->GetObject(),
@@ -629,35 +601,17 @@ namespace wrappers
     template <
         typename Class,
         typename ListElementType>
-    class list_constructor<Class, ListElementType, policies::as_iterators>
+    class list_constructor<Class, ListElementType, policies::as_iterators> :
+        public list_constructor_base<Class, ListElementType>
     {
+        using my_base = list_constructor_base<Class, ListElementType>;
+
     public:
         static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
 
-        static constexpr bool is_acceptable_native_call_conv(
-            AS_NAMESPACE_QUALIFIER asECallConvTypes conv
-        ) noexcept
-        {
-            return conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
-        }
-
-        static constexpr bool is_acceptable_call_conv(
-            AS_NAMESPACE_QUALIFIER asECallConvTypes conv
-        ) noexcept
-        {
-            return conv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC ||
-                   is_acceptable_native_call_conv(conv);
-        }
-
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        requires(is_acceptable_call_conv(CallConv))
-        using wrapper_type = std::conditional_t<
-            CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
-            AS_NAMESPACE_QUALIFIER asGENFUNC_t,
-            void (*)(ListElementType*, void*)>;
-
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        static auto generate(call_conv_t<CallConv>) noexcept -> wrapper_type<CallConv>
+        static auto generate(call_conv_t<CallConv>) noexcept
+            -> my_base::template wrapper_type<CallConv>
         {
             static constexpr auto helper = [](void* mem, script_init_list_repeat list)
             {
@@ -672,7 +626,7 @@ namespace wrappers
 
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
             {
-                return +[](asIScriptGeneric* gen) -> void
+                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
                 {
                     helper(
                         gen->GetObject(),
@@ -693,35 +647,17 @@ namespace wrappers
     template <
         typename Class,
         typename ListElementType>
-    class list_constructor<Class, ListElementType, policies::pointer_and_size>
+    class list_constructor<Class, ListElementType, policies::pointer_and_size> :
+        public list_constructor_base<Class, ListElementType>
     {
+        using my_base = list_constructor_base<Class, ListElementType>;
+
     public:
         static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
 
-        static constexpr bool is_acceptable_native_call_conv(
-            AS_NAMESPACE_QUALIFIER asECallConvTypes conv
-        ) noexcept
-        {
-            return conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
-        }
-
-        static constexpr bool is_acceptable_call_conv(
-            AS_NAMESPACE_QUALIFIER asECallConvTypes conv
-        ) noexcept
-        {
-            return conv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC ||
-                   is_acceptable_native_call_conv(conv);
-        }
-
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        requires(is_acceptable_call_conv(CallConv))
-        using wrapper_type = std::conditional_t<
-            CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
-            AS_NAMESPACE_QUALIFIER asGENFUNC_t,
-            void (*)(ListElementType*, void*)>;
-
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        static auto generate(call_conv_t<CallConv>) noexcept -> wrapper_type<CallConv>
+        static auto generate(call_conv_t<CallConv>) noexcept
+            -> my_base::template wrapper_type<CallConv>
         {
             static constexpr auto helper = [](void* mem, script_init_list_repeat list)
             {
@@ -730,7 +666,7 @@ namespace wrappers
 
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
             {
-                return +[](asIScriptGeneric* gen) -> void
+                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
                 {
                     helper(
                         gen->GetObject(),
@@ -750,98 +686,24 @@ namespace wrappers
 
     template <
         typename Class,
-        typename ListElementType>
-    class list_constructor<Class, ListElementType, policies::as_initializer_list>
+        typename ListElementType,
+        policies::initialization_list_policy ConvertibleRange>
+    requires(std::same_as<ConvertibleRange, policies::as_initializer_list> || std::same_as<ConvertibleRange, policies::as_span>)
+    class list_constructor<Class, ListElementType, ConvertibleRange> :
+        public list_constructor_base<Class, ListElementType>
     {
+        using my_base = list_constructor_base<Class, ListElementType>;
+
     public:
         static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
 
-        static constexpr bool is_acceptable_native_call_conv(
-            AS_NAMESPACE_QUALIFIER asECallConvTypes conv
-        ) noexcept
-        {
-            return conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
-        }
-
-        static constexpr bool is_acceptable_call_conv(
-            AS_NAMESPACE_QUALIFIER asECallConvTypes conv
-        ) noexcept
-        {
-            return conv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC ||
-                   is_acceptable_native_call_conv(conv);
-        }
-
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        requires(is_acceptable_call_conv(CallConv))
-        using wrapper_type = std::conditional_t<
-            CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
-            AS_NAMESPACE_QUALIFIER asGENFUNC_t,
-            void (*)(ListElementType*, void*)>;
-
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        static auto generate(call_conv_t<CallConv>) noexcept -> wrapper_type<CallConv>
+        static auto generate(call_conv_t<CallConv>) noexcept
+            -> my_base::template wrapper_type<CallConv>
         {
             static constexpr auto helper = [](void* mem, script_init_list_repeat list)
             {
-                new(mem) Class(policies::as_initializer_list::convert<ListElementType>(list));
-            };
-
-            if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-            {
-                return +[](asIScriptGeneric* gen) -> void
-                {
-                    helper(
-                        gen->GetObject(),
-                        script_init_list_repeat(*(void**)gen->GetAddressOfArg(0))
-                    );
-                };
-            }
-            else // CallConv == asCALL_CDECL_OBJLAST
-            {
-                return +[](ListElementType* list_buf, void* mem) -> void
-                {
-                    helper(mem, script_init_list_repeat(list_buf));
-                };
-            }
-        }
-    };
-
-    template <
-        typename Class,
-        typename ListElementType>
-    class list_constructor<Class, ListElementType, policies::as_span>
-    {
-    public:
-        static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
-
-        static constexpr bool is_acceptable_native_call_conv(
-            AS_NAMESPACE_QUALIFIER asECallConvTypes conv
-        ) noexcept
-        {
-            return conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
-        }
-
-        static constexpr bool is_acceptable_call_conv(
-            AS_NAMESPACE_QUALIFIER asECallConvTypes conv
-        ) noexcept
-        {
-            return conv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC ||
-                   is_acceptable_native_call_conv(conv);
-        }
-
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        requires(is_acceptable_call_conv(CallConv))
-        using wrapper_type = std::conditional_t<
-            CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
-            AS_NAMESPACE_QUALIFIER asGENFUNC_t,
-            void (*)(ListElementType*, void*)>;
-
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        static auto generate(call_conv_t<CallConv>) noexcept -> wrapper_type<CallConv>
-        {
-            static constexpr auto helper = [](void* mem, script_init_list_repeat list)
-            {
-                new(mem) Class(policies::as_span::convert<ListElementType>(list));
+                new(mem) Class(ConvertibleRange::template convert<ListElementType>(list));
             };
 
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
