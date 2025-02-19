@@ -40,7 +40,7 @@ public:
 
     script_array(asITypeInfo* ti, size_type n, const void* value);
 
-    script_array(asITypeInfo* ti, void* list_buf);
+    script_array(asITypeInfo* ti, script_init_list_repeat list);
 
 private:
     ~script_array();

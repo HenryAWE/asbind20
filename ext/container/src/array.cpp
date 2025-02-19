@@ -103,7 +103,7 @@ script_array::script_array(asITypeInfo* ti, size_type n, const void* value)
     notify_gc_for_this();
 }
 
-script_array::script_array(asITypeInfo* ti, void* list_buf)
+script_array::script_array(asITypeInfo* ti, script_init_list_repeat list)
     : m_ti(ti), m_subtype_id(ti->GetSubTypeId())
 {
     asIScriptEngine* engine = ti->GetEngine();
@@ -111,39 +111,37 @@ script_array::script_array(asITypeInfo* ti, void* list_buf)
     m_ti->AddRef();
     m_elem_size = get_elem_size(engine, m_subtype_id);
 
-    script_init_list_repeat init_list(list_buf);
-
     cache_data();
 
-    mem_resize_to(init_list.size());
+    mem_resize_to(list.size());
     if(!(m_subtype_id & asTYPEID_MASK_OBJECT))
     {
-        if(init_list.size() > 0)
+        if(list.size() > 0)
         {
             std::memcpy(
                 m_data.ptr,
-                init_list.data(),
-                static_cast<std::size_t>(init_list.size()) * m_elem_size
+                list.data(),
+                static_cast<std::size_t>(list.size()) * m_elem_size
             );
         }
-        m_data.size = init_list.size();
+        m_data.size = list.size();
     }
     else if((m_subtype_id & asTYPEID_OBJHANDLE) || (subtype_flags() & asOBJ_REF))
     {
-        if(init_list.size() > 0)
+        if(list.size() > 0)
         {
             std::memcpy(
                 m_data.ptr,
-                init_list.data(),
-                static_cast<std::size_t>(init_list.size()) * m_elem_size
+                list.data(),
+                static_cast<std::size_t>(list.size()) * m_elem_size
             );
             std::memset(
-                init_list.data(),
+                list.data(),
                 0,
-                static_cast<std::size_t>(init_list.size()) * m_elem_size
+                static_cast<std::size_t>(list.size()) * m_elem_size
             );
         }
-        m_data.size = init_list.size();
+        m_data.size = list.size();
     }
     else
     {
@@ -153,16 +151,16 @@ script_array::script_array(asITypeInfo* ti, void* list_buf)
         assert(subtype_ti == m_ti->GetSubType());
 
         size_type list_elem_size = subtype_ti->GetSize();
-        for(size_type i = 0; i < init_list.size(); ++i)
+        for(size_type i = 0; i < list.size(); ++i)
         {
             assert(m_elem_size == sizeof(void*));
             void** dst = (void**)(m_data.ptr + i * m_elem_size);
-            void* src = static_cast<std::byte*>(init_list.data()) + i * list_elem_size;
+            void* src = static_cast<std::byte*>(list.data()) + i * list_elem_size;
 
             *dst = engine->CreateScriptObjectCopy(src, subtype_ti);
         }
 
-        m_data.size = init_list.size();
+        m_data.size = list.size();
     }
 
     notify_gc_for_this();
@@ -1820,7 +1818,7 @@ namespace detail
             .default_factory()
             .template factory<asUINT>("uint", use_explicit)
             .template factory<asUINT, const void*>("uint, const T&in")
-            .list_factory("repeat T")
+            .template list_factory<void, policies::repeat_list_proxy>("repeat T")
             .opAssign()
             .opEquals()
             .addref(fp<&script_array::addref>)

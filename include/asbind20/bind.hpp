@@ -166,6 +166,16 @@ namespace policies
     };
 
     /**
+     * @brief Convert script list to a proxy class
+     *
+     * @sa script_init_list_repeat
+     */
+    struct repeat_list_proxy
+    {
+        using initialization_list_policy_tag = void;
+    };
+
+    /**
      * @brief Convert the initialization list to an iterator pair of `[begin, end)`.
      */
     struct as_iterators
@@ -547,6 +557,37 @@ namespace wrappers
                 return +[](ListElementType* list_buf, void* mem) -> void
                 {
                     new(mem) Class(list_buf);
+                };
+            }
+        }
+    };
+
+    template <
+        typename Class,
+        typename ListElementType>
+    class list_constructor<Class, ListElementType, policies::repeat_list_proxy> :
+        public list_constructor_base<Class, void*>
+    {
+        using my_base = list_constructor_base<Class, void*>;
+
+    public:
+        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        static auto generate(call_conv_t<CallConv>) noexcept
+            -> my_base::template wrapper_type<CallConv>
+        {
+            if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
+            {
+                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+                {
+                    void* mem = gen->GetObject();
+                    new(mem) Class(script_init_list_repeat(gen));
+                };
+            }
+            else // CallConv == asCALL_CDECL_OBJLAST
+            {
+                return +[](void* list_buf, void* mem) -> void
+                {
+                    new(mem) Class(script_init_list_repeat(list_buf));
                 };
             }
         }
@@ -945,6 +986,65 @@ namespace wrappers
                 {
                     return helper(list_buf);
                 };
+            }
+        }
+    };
+
+    template <
+        typename Class,
+        bool Template,
+        typename ListElementType>
+    class list_factory<Class, Template, ListElementType, policies::repeat_list_proxy> :
+        public list_factory_base<Class, Template, void*>
+    {
+        using my_base = list_factory_base<Class, Template, void*>;
+
+    public:
+        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        static auto generate(call_conv_t<CallConv>) noexcept
+            -> my_base::template wrapper_type<CallConv>
+        {
+            if constexpr(Template)
+            {
+                if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
+                {
+                    return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+                    {
+                        set_generic_return<Class*>(
+                            gen,
+                            new Class(
+                                *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
+                                script_init_list_repeat(gen, 1)
+                            )
+                        );
+                    };
+                }
+                else // CallConv == asCALL_CDECL
+                {
+                    return +[](AS_NAMESPACE_QUALIFIER asITypeInfo* ti, void* list_buf) -> Class*
+                    {
+                        return new Class(ti, script_init_list_repeat(list_buf));
+                    };
+                }
+            }
+            else
+            {
+                if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
+                {
+                    return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+                    {
+                        set_generic_return<Class*>(
+                            gen, new Class(script_init_list_repeat(gen))
+                        );
+                    };
+                }
+                else // CallConv == asCALL_CDECL
+                {
+                    return +[](void* list_buf) -> Class*
+                    {
+                        return new Class(script_init_list_repeat(list_buf));
+                    };
+                }
             }
         }
     };

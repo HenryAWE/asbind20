@@ -973,15 +973,19 @@ public:
 // Ref: https://www.angelcode.com/angelscript/sdk/docs/manual/doc_reg_basicref.html#doc_reg_basicref_4
 
 /**
- * @brief Wrapper for the initialization list of AngelScript with repeated values
+ * @brief Proxy for the initialization list of AngelScript with repeated values
+ *
+ * @warning Never use this proxy with a pattern of limited size, e.g., `{int, int}`
  */
 class script_init_list_repeat
 {
 public:
-    using size_type = asUINT;
+    using size_type = AS_NAMESPACE_QUALIFIER asUINT;
 
     script_init_list_repeat() = delete;
     script_init_list_repeat(const script_init_list_repeat&) noexcept = default;
+
+    explicit script_init_list_repeat(std::nullptr_t) = delete;
 
     explicit script_init_list_repeat(void* list_buf) noexcept
     {
@@ -997,7 +1001,7 @@ public:
      */
     explicit script_init_list_repeat(
         AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen,
-        AS_NAMESPACE_QUALIFIER asUINT idx = 0
+        size_type idx = 0
     )
         : script_init_list_repeat(*(void**)gen->GetAddressOfArg(idx)) {}
 

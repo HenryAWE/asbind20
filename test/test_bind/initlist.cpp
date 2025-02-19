@@ -80,11 +80,16 @@ void check_vector_ints(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     }
 }
 
+// Multipurpose
 struct my_vec_ints
 {
     my_vec_ints() = default;
 
     ~my_vec_ints() = default;
+
+    my_vec_ints(asbind20::script_init_list_repeat list)
+        : my_vec_ints((int*)list.data(), list.size())
+    {}
 
     my_vec_ints(int* ptr, std::size_t count)
     {
@@ -95,7 +100,7 @@ struct my_vec_ints
     std::vector<int> data;
 };
 
-template <bool UseGeneric>
+template <asbind20::policies::initialization_list_policy Policy, bool UseGeneric>
 void register_my_vec_ints(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     using namespace asbind20;
@@ -104,7 +109,7 @@ void register_my_vec_ints(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 
     value_class<vector_t, UseGeneric>(engine, "my_vec_ints")
         .behaviours_by_traits()
-        .template list_constructor<int, policies::pointer_and_size>("repeat int");
+        .template list_constructor<int, Policy>("repeat int");
 }
 
 void check_my_vec_ints(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
@@ -331,6 +336,31 @@ TEST(initlist_generic, value_as_iterators)
     test_bind::check_vector_ints(engine);
 }
 
+TEST(initlist_native, value_repeat_list_proxy)
+{
+    if(asbind20::has_max_portability())
+        GTEST_SKIP() << "max portability";
+
+    auto engine = asbind20::make_script_engine();
+    test_bind::setup_initlist_test_env(engine);
+
+    test_bind::register_my_vec_ints<asbind20::policies::repeat_list_proxy, false>(
+        engine
+    );
+    test_bind::check_my_vec_ints(engine);
+}
+
+TEST(initlist_generic, value_repeat_list_proxy)
+{
+    auto engine = asbind20::make_script_engine();
+    test_bind::setup_initlist_test_env(engine);
+
+    test_bind::register_my_vec_ints<asbind20::policies::repeat_list_proxy, true>(
+        engine
+    );
+    test_bind::check_my_vec_ints(engine);
+}
+
 TEST(initlist_native, value_pointer_size)
 {
     if(asbind20::has_max_portability())
@@ -339,7 +369,9 @@ TEST(initlist_native, value_pointer_size)
     auto engine = asbind20::make_script_engine();
     test_bind::setup_initlist_test_env(engine);
 
-    test_bind::register_my_vec_ints<false>(engine);
+    test_bind::register_my_vec_ints<asbind20::policies::repeat_list_proxy, false>(
+        engine
+    );
     test_bind::check_my_vec_ints(engine);
 }
 
@@ -348,7 +380,9 @@ TEST(initlist_generic, value_pointer_size)
     auto engine = asbind20::make_script_engine();
     test_bind::setup_initlist_test_env(engine);
 
-    test_bind::register_my_vec_ints<true>(engine);
+    test_bind::register_my_vec_ints<asbind20::policies::repeat_list_proxy, true>(
+        engine
+    );
     test_bind::check_my_vec_ints(engine);
 }
 
@@ -514,6 +548,10 @@ public:
         : ref_test_vector(std::span<int>(data, count))
     {}
 
+    ref_test_vector(asbind20::script_init_list_repeat list)
+        : ref_test_vector((int*)list.data(), list.size())
+    {}
+
     std::vector<int> data;
 };
 
@@ -638,7 +676,32 @@ TEST(initlist_generic, ref_test_vector)
     test_bind::check_ref_test_vector(engine);
 }
 
-TEST(initlist_native, ref_test_size_and_pointer)
+TEST(initlist_native, ref_test_repeat_list_proxy)
+{
+    if(asbind20::has_max_portability())
+        GTEST_SKIP() << "max portability";
+
+    auto engine = asbind20::make_script_engine();
+    test_bind::setup_initlist_test_env(engine);
+
+    test_bind::register_ref_test_vector_with<asbind20::policies::repeat_list_proxy, false>(
+        engine
+    );
+    test_bind::check_ref_test_vector(engine);
+}
+
+TEST(initlist_generic, ref_test_repeat_list_proxy)
+{
+    auto engine = asbind20::make_script_engine();
+    test_bind::setup_initlist_test_env(engine);
+
+    test_bind::register_ref_test_vector_with<asbind20::policies::repeat_list_proxy, true>(
+        engine
+    );
+    test_bind::check_ref_test_vector(engine);
+}
+
+TEST(initlist_native, ref_test_pointer_and_size)
 {
     if(asbind20::has_max_portability())
         GTEST_SKIP() << "max portability";
@@ -652,7 +715,7 @@ TEST(initlist_native, ref_test_size_and_pointer)
     test_bind::check_ref_test_vector(engine);
 }
 
-TEST(initlist_generic, ref_test_size_and_pointer)
+TEST(initlist_generic, ref_test_pointer_and_size)
 {
     auto engine = asbind20::make_script_engine();
     test_bind::setup_initlist_test_env(engine);
