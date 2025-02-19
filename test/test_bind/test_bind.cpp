@@ -490,5 +490,12 @@ int main(int argc, char* argv[])
     std::cerr << "asGetLibraryVersion(): " << asGetLibraryVersion() << std::endl;
     std::cerr << "asGetLibraryOptions(): " << asGetLibraryOptions() << std::endl;
     std::cerr << "asbind20::library_version(): " << asbind20::library_version() << std::endl;
+
+#ifdef ASBIND20_HAS_AS_INITIALIZER_LIST
+    std::cerr << "ASBIND20_HAS_AS_INITIALIZER_LIST: " << ASBIND20_HAS_AS_INITIALIZER_LIST << std::endl;
+#else
+    std::cerr << "ASBIND20_HAS_AS_INITIALIZER_LIST not defined" << std::endl;
+#endif
+
     return RUN_ALL_TESTS();
 }
