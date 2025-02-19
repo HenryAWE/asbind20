@@ -181,16 +181,18 @@ template <native_function auto Function>
 constexpr inline fp_wrapper_t<Function> fp{};
 
 template <typename Func>
-asSFuncPtr to_asSFuncPtr(Func f)
+auto to_asSFuncPtr(Func f)
+    -> AS_NAMESPACE_QUALIFIER asSFuncPtr
 {
+    // Reference: asFUNCTION and asMETHOD from the AngelScript interface
     if constexpr(std::is_member_function_pointer_v<Func>)
-        return asSMethodPtr<sizeof(f)>::Convert(f);
+        return AS_NAMESPACE_QUALIFIER asSMethodPtr<sizeof(f)>::Convert(f);
     else
-        return asFunctionPtr(f);
+        return AS_NAMESPACE_QUALIFIER asFunctionPtr(f);
 }
 
 template <int TypeId>
-requires(!(TypeId & ~asTYPEID_MASK_SEQNBR))
+requires(!(TypeId & ~(AS_NAMESPACE_QUALIFIER asTYPEID_MASK_SEQNBR)))
 struct primitive_type_of;
 
 #define ASBIND20_UTILITY_DEFINE_PRIMITIVE_TYPE_OF(as_type_id, cpp_type, script_decl) \
@@ -248,7 +250,9 @@ constexpr bool is_objhandle(int type_id) noexcept
  *
  * @param type_id AngelScript type id
  */
-inline auto sizeof_script_type(asIScriptEngine* engine, int type_id)
+inline auto sizeof_script_type(
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id
+)
     -> AS_NAMESPACE_QUALIFIER asUINT
 {
     assert(engine != nullptr);
@@ -285,7 +289,7 @@ inline auto sizeof_script_type(asIScriptEngine* engine, int type_id)
         }
     }
 
-    asITypeInfo* ti = engine->GetTypeInfoById(type_id);
+    AS_NAMESPACE_QUALIFIER asITypeInfo* ti = engine->GetTypeInfoById(type_id);
     if(!ti)
         return 0;
 
@@ -1092,11 +1096,11 @@ public:
     }
 };
 
-// Tools for initialization list
-// Ref: https://www.angelcode.com/angelscript/sdk/docs/manual/doc_reg_basicref.html#doc_reg_basicref_4
-
 /**
  * @brief Proxy for the initialization list of AngelScript with repeated values
+ *
+ * Official documentation:
+ * https://www.angelcode.com/angelscript/sdk/docs/manual/doc_reg_basicref.html#doc_reg_basicref_4
  *
  * @warning Never use this proxy with a pattern of limited size, e.g., `{int, int}`
  */
@@ -1158,6 +1162,14 @@ private:
     void* m_data;
 };
 
+/**
+ * @brief Get string from an enum value
+ *
+ * @note This function uses compiler extension to get name of enum.
+ *       It cannot handle enum value that has same underlying value with another enum.
+ *
+ * @tparam Value Enum value
+ */
 template <auto Value>
 requires(std::is_enum_v<decltype(Value)>)
 constexpr std::string_view static_enum_name() noexcept
@@ -1204,6 +1216,21 @@ constexpr std::string_view static_enum_name() noexcept
 
     return name;
 }
+
+namespace meta
+{
+    template <auto Value>
+    auto fixed_enum_name() noexcept
+    {
+        constexpr std::string_view name_view = static_enum_name<Value>();
+        constexpr std::size_t size = name_view.size();
+
+        return [&]<std::size_t... Is>(std::index_sequence<Is...>)
+        {
+            return fixed_string<size>(name_view[Is]...);
+        }(std::make_index_sequence<size>());
+    }
+} // namespace meta
 
 /**
  * @brief Get offset from a member pointer

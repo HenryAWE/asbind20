@@ -4572,12 +4572,19 @@ public:
         return *this;
     }
 
+    /**
+     * @brief Registering an enum value. Its declaration will be generated from its name in C++.
+     *
+     * @note This function has some limitations. @sa static_enum_name
+     *
+     * @tparam Value Enum value
+     */
     template <Enum Value>
     enum_& value()
     {
         this->value(
             Value,
-            std::string(static_enum_name<Value>()).c_str()
+            meta::fixed_enum_name<Value>().c_str()
         );
         return *this;
     }
