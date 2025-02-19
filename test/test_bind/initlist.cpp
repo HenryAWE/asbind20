@@ -3,6 +3,17 @@
 
 namespace test_bind
 {
+static void setup_initlist_test_env(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
+    asbind20::global(engine)
+        .message_callback(
+            +[](const asSMessageInfo* msg, void*)
+            {
+                std::cerr << msg->message << std::endl;
+            }
+        );
+}
+
 template <bool UseGeneric>
 void register_vector_of_ints(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
@@ -299,65 +310,85 @@ void check_from_span(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 }
 } // namespace test_bind
 
-TEST(initlist, value_as_iterators)
+TEST(initlist_native, value_as_iterators)
+{
+    if(asbind20::has_max_portability())
+        GTEST_SKIP() << "max portability";
+
+    auto engine = asbind20::make_script_engine();
+    test_bind::setup_initlist_test_env(engine);
+
+    test_bind::register_vector_of_ints<false>(engine);
+    test_bind::check_vector_ints(engine);
+}
+
+TEST(initlist_generic, value_as_iterators)
 {
     auto engine = asbind20::make_script_engine();
-
-    asbind20::global(engine)
-        .message_callback(
-            +[](const asSMessageInfo* msg, void*)
-            {
-                std::cerr << msg->message << std::endl;
-            }
-        );
+    test_bind::setup_initlist_test_env(engine);
 
     test_bind::register_vector_of_ints<true>(engine);
     test_bind::check_vector_ints(engine);
 }
 
-TEST(initlist, value_pointer_size)
+TEST(initlist_native, value_pointer_size)
+{
+    if(asbind20::has_max_portability())
+        GTEST_SKIP() << "max portability";
+
+    auto engine = asbind20::make_script_engine();
+    test_bind::setup_initlist_test_env(engine);
+
+    test_bind::register_my_vec_ints<false>(engine);
+    test_bind::check_my_vec_ints(engine);
+}
+
+TEST(initlist_generic, value_pointer_size)
 {
     auto engine = asbind20::make_script_engine();
-
-    asbind20::global(engine)
-        .message_callback(
-            +[](const asSMessageInfo* msg, void*)
-            {
-                std::cerr << msg->message << std::endl;
-            }
-        );
+    test_bind::setup_initlist_test_env(engine);
 
     test_bind::register_my_vec_ints<true>(engine);
     test_bind::check_my_vec_ints(engine);
 }
 
-TEST(initlist, as_initializer_list)
+TEST(initlist_native, value_as_initializer_list)
+{
+    if(asbind20::has_max_portability())
+        GTEST_SKIP() << "max portability";
+
+    auto engine = asbind20::make_script_engine();
+    test_bind::setup_initlist_test_env(engine);
+
+    test_bind::register_from_init_list<false>(engine);
+    test_bind::check_from_init_list(engine);
+}
+
+TEST(initlist_generic, value_as_initializer_list)
 {
     auto engine = asbind20::make_script_engine();
-
-    asbind20::global(engine)
-        .message_callback(
-            +[](const asSMessageInfo* msg, void*)
-            {
-                std::cerr << msg->message << std::endl;
-            }
-        );
+    test_bind::setup_initlist_test_env(engine);
 
     test_bind::register_from_init_list<true>(engine);
     test_bind::check_from_init_list(engine);
 }
 
-TEST(initlist, as_span)
+TEST(initlist_native, value_as_span)
+{
+    if(asbind20::has_max_portability())
+        GTEST_SKIP() << "max portability";
+
+    auto engine = asbind20::make_script_engine();
+    test_bind::setup_initlist_test_env(engine);
+
+    test_bind::register_from_span<false>(engine);
+    test_bind::check_from_span(engine);
+}
+
+TEST(initlist_generic, value_as_span)
 {
     auto engine = asbind20::make_script_engine();
-
-    asbind20::global(engine)
-        .message_callback(
-            +[](const asSMessageInfo* msg, void*)
-            {
-                std::cerr << msg->message << std::endl;
-            }
-        );
+    test_bind::setup_initlist_test_env(engine);
 
     test_bind::register_from_span<true>(engine);
     test_bind::check_from_span(engine);
