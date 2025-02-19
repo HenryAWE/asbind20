@@ -524,6 +524,10 @@ T get_script_return(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx)
         using ptr_t = std::add_pointer_t<std::remove_reference_t<T>>;
         return *reinterpret_cast<ptr_t>(ctx->GetReturnAddress());
     }
+    else if constexpr(std::is_pointer_v<T>)
+    {
+        return (T)ctx->GetReturnAddress();
+    }
     else if constexpr(std::is_class_v<T>)
     {
         using ptr_t = std::add_pointer_t<std::remove_reference_t<T>>;

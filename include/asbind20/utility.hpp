@@ -1096,15 +1096,19 @@ public:
 // Ref: https://www.angelcode.com/angelscript/sdk/docs/manual/doc_reg_basicref.html#doc_reg_basicref_4
 
 /**
- * @brief Wrapper for the initialization list of AngelScript with repeated values
+ * @brief Proxy for the initialization list of AngelScript with repeated values
+ *
+ * @warning Never use this proxy with a pattern of limited size, e.g., `{int, int}`
  */
 class script_init_list_repeat
 {
 public:
-    using size_type = asUINT;
+    using size_type = AS_NAMESPACE_QUALIFIER asUINT;
 
     script_init_list_repeat() = delete;
     script_init_list_repeat(const script_init_list_repeat&) noexcept = default;
+
+    explicit script_init_list_repeat(std::nullptr_t) = delete;
 
     explicit script_init_list_repeat(void* list_buf) noexcept
     {
@@ -1112,6 +1116,17 @@ public:
         m_size = *static_cast<size_type*>(list_buf);
         m_data = static_cast<std::byte*>(list_buf) + sizeof(size_type);
     }
+
+    /**
+     * @brief Create a wrapper for script initialization list from for generic calling convention
+     *
+     * @param idx The parameter index of the list. Usually, this should be 0 for ordinary types and 1 for template classes.
+     */
+    explicit script_init_list_repeat(
+        AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen,
+        size_type idx = 0
+    )
+        : script_init_list_repeat(*(void**)gen->GetAddressOfArg(idx)) {}
 
     script_init_list_repeat& operator=(const script_init_list_repeat&) noexcept = default;
 
