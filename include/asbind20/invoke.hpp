@@ -323,13 +323,13 @@ public:
         return has_value();
     }
 
-    void value() noexcept
+    void value()
     {
         if(!has_value())
             throw_bad_access();
     }
 
-    void value() const noexcept
+    void value() const
     {
         if(!has_value())
             throw_bad_access();
