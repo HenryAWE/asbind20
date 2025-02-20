@@ -1841,8 +1841,8 @@ std::size_t member_offset(T Class::* mp) noexcept
 }
 
 template <typename T>
-requires(std::is_arithmetic_v<T>)
-auto name_of() noexcept
+requires(std::is_arithmetic_v<T> && !std::same_as<std::remove_cv_t<T>, char>)
+consteval auto name_of() noexcept
 {
     if constexpr(std::same_as<T, bool>)
         return meta::fixed_string("bool");
@@ -1893,7 +1893,40 @@ auto name_of() noexcept
 template <typename T>
 concept has_static_name =
     std::is_arithmetic_v<T> &&
-    !std::same_as<T, char>;
+    !std::same_as<std::remove_cv_t<T>, char>;
+
+namespace meta
+{
+    template <
+        typename T,
+        AS_NAMESPACE_QUALIFIER asETypeModifiers RefMod>
+    requires(has_static_name<std::remove_cvref_t<T>>)
+    consteval auto full_fixed_name_of()
+    {
+        constexpr auto type_name = []()
+        {
+            constexpr auto name = name_of<std::remove_cvref_t<T>>();
+            if constexpr(std::is_const_v<std::remove_reference_t<T>>)
+                return fixed_string("const ") + name;
+            else
+                return name;
+        }();
+
+        if constexpr(std::is_reference_v<T>)
+        {
+            if constexpr(RefMod == AS_NAMESPACE_QUALIFIER asTM_INREF)
+                return type_name + fixed_string("&in");
+            else if constexpr(RefMod == AS_NAMESPACE_QUALIFIER asTM_OUTREF)
+                return type_name + fixed_string("&out");
+            else if constexpr(RefMod == AS_NAMESPACE_QUALIFIER asTM_INOUTREF)
+                return type_name + fixed_string("&inout");
+            else
+                return type_name + fixed_string('&');
+        }
+        else
+            return type_name;
+    }
+} // namespace meta
 
 [[nodiscard]]
 inline auto get_default_factory(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
