@@ -21,13 +21,21 @@ struct class_wrapper
         value = val;
     }
 };
+
+// AngelScript declaration: int from_aux()
+void from_aux(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+{
+    auto val = std::bit_cast<std::intptr_t>(gen->GetAuxiliary());
+
+    asbind20::set_generic_return<int>(gen, static_cast<int>(val));
+}
 } // namespace test_bind
 
 static void register_global_funcs(
     asIScriptEngine* engine, test_bind::class_wrapper& wrapper, std::string& global_val
 )
 {
-    using asbind20::fp, asbind20::auxiliary;
+    using asbind20::fp, asbind20::auxiliary, asbind20::aux_value;
 
     asbind20::global(engine)
         .function("void set_int(int&out)", fp<&test_bind::set_int>)
@@ -41,6 +49,11 @@ static void register_global_funcs(
             &test_bind::class_wrapper::set_val,
             auxiliary(wrapper)
         )
+        .function(
+            "int from_aux()",
+            &test_bind::from_aux,
+            aux_value(1013)
+        )
         .property("string val", global_val);
 }
 
@@ -48,7 +61,7 @@ static void register_global_funcs(
     asbind20::use_generic_t, asIScriptEngine* engine, test_bind::class_wrapper& wrapper, std::string& global_val
 )
 {
-    using asbind20::fp, asbind20::auxiliary;
+    using asbind20::fp, asbind20::auxiliary, asbind20::aux_value;
 
     asbind20::global<true>(engine)
         .function("void set_int(int&out)", fp<&test_bind::set_int>)
@@ -58,6 +71,11 @@ static void register_global_funcs(
             { return 42; }
         )
         .function("void set_val(int val)", fp<&test_bind::class_wrapper::set_val>, auxiliary(wrapper))
+        .function(
+            "int from_aux()",
+            &test_bind::from_aux,
+            aux_value(1013)
+        )
         .property("string val", global_val);
 }
 
@@ -85,6 +103,8 @@ TEST_F(asbind_test_suite, global)
     EXPECT_EQ(wrapper.value, 0);
     asbind20::ext::exec(engine, "set_val(gen_int())");
     EXPECT_EQ(wrapper.value, 42);
+    asbind20::ext::exec(engine, "set_val(from_aux())");
+    EXPECT_EQ(wrapper.value, 1013);
 
     {
         asbind20::request_context ctx(engine);
@@ -129,6 +149,8 @@ TEST_F(asbind_test_suite_generic, global)
     EXPECT_EQ(wrapper.value, 0);
     asbind20::ext::exec(engine, "set_val(gen_int())");
     EXPECT_EQ(wrapper.value, 42);
+    asbind20::ext::exec(engine, "set_val(from_aux())");
+    EXPECT_EQ(wrapper.value, 1013);
 
     {
         asbind20::request_context ctx(engine);

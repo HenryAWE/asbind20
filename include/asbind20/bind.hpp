@@ -25,13 +25,8 @@ public:
     auxiliary_wrapper() = delete;
     auxiliary_wrapper(const auxiliary_wrapper&) = default;
 
-    explicit auxiliary_wrapper(T& aux) noexcept
-        : m_aux(std::addressof(aux)) {}
-
-    explicit auxiliary_wrapper(T* aux) noexcept
+    explicit constexpr auxiliary_wrapper(T* aux) noexcept
         : m_aux(aux) {}
-
-    auxiliary_wrapper(T&& aux) = delete;
 
     void* to_address() const noexcept
     {
@@ -43,19 +38,33 @@ private:
 };
 
 template <typename T>
-auxiliary_wrapper<T> auxiliary(T& aux) noexcept
+constexpr auxiliary_wrapper<T> auxiliary(T& aux) noexcept
+{
+    return auxiliary_wrapper<T>(std::addressof(aux));
+}
+
+template <typename T>
+constexpr auxiliary_wrapper<T> auxiliary(T* aux) noexcept
 {
     return auxiliary_wrapper<T>(aux);
 }
 
 template <typename T>
-auxiliary_wrapper<T> auxiliary(T* aux) noexcept
-{
-    return auxiliary_wrapper<T>(aux);
-}
+constexpr auxiliary_wrapper<T> auxiliary(T&& aux) = delete;
 
-template <typename T>
-auxiliary_wrapper<T> auxiliary(T&& aux) = delete;
+/**
+ * @brief Store a pointer-sized integer value as auxiliary object
+ *
+ * @note DO NOT use this unless you know what you are doing!
+ *
+ * @warning Only use this with the @b generic calling convention!
+ *
+ * @param val Integer value
+ */
+constexpr auxiliary_wrapper<void> aux_value(std::intptr_t val)
+{
+    return auxiliary_wrapper<void>(std::bit_cast<void*>(val));
+}
 
 class [[nodiscard]] namespace_
 {
@@ -2286,7 +2295,6 @@ private:
     ) requires(!ForceGeneric)                                               \
     {                                                                       \
         this->method_impl(decl, std::forward<Fn>(fn), call_conv<CallConv>); \
-                                                                            \
         return *this;                                                       \
     }                                                                       \
     template <native_function Fn>                                           \
@@ -2651,6 +2659,7 @@ public:
             return detail::deduce_method_callconv<Class, Method>();
     }
 
+private:
     template <auto Method>
     static consteval auto method_callconv() noexcept
         -> AS_NAMESPACE_QUALIFIER asECallConvTypes
@@ -2658,7 +2667,6 @@ public:
         return method_callconv<std::decay_t<decltype(Method)>>();
     }
 
-private:
     std::string decl_constructor_impl(std::string_view params, bool explicit_) const
     {
         if(explicit_)
@@ -3770,6 +3778,7 @@ public:
         this->template register_object_type<Class>(flags);
     }
 
+private:
     template <typename Method>
     static constexpr auto method_callconv() noexcept
         -> AS_NAMESPACE_QUALIFIER asECallConvTypes
@@ -3787,7 +3796,6 @@ public:
         return method_callconv<std::decay_t<decltype(Method)>>();
     }
 
-private:
     static constexpr char decl_template_callback[] = "bool f(int&in,bool&out)";
 
 public:
