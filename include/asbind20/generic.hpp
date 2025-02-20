@@ -85,6 +85,22 @@ auto get_generic_object(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
 }
 
 template <typename T>
+auto get_generic_auxiliary(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+    -> std::conditional_t<std::is_pointer_v<T>, T, std::add_lvalue_reference_t<T>>
+{
+    void* obj = gen->GetAuxiliary();
+    if constexpr(std::is_pointer_v<T>)
+    {
+        return (T)obj;
+    }
+    else
+    {
+        using pointer_t = std::add_pointer_t<std::remove_reference_t<T>>;
+        return *(pointer_t)obj;
+    }
+}
+
+template <typename T>
 T get_generic_arg(
     AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen,
     AS_NAMESPACE_QUALIFIER asUINT idx
@@ -354,7 +370,6 @@ namespace detail
                 get_generic_arg<typename traits::template arg_type<Is>>(            \
                     gen, static_cast<asUINT>(Is)                                    \
                 )...                                                                \
-                                                                                    \
             );                                                                      \
         }(std::make_index_sequence<traits::arg_count::value>());                    \
     }                                                                               \
@@ -370,7 +385,6 @@ namespace detail
                 get_generic_arg<typename traits::template arg_type<Is + 1>>(        \
                     gen, static_cast<asUINT>(Is)                                    \
                 )...                                                                \
-                                                                                    \
             );                                                                      \
         }(std::make_index_sequence<traits::arg_count::value - 1>());                \
     }                                                                               \

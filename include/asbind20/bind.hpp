@@ -295,19 +295,12 @@ namespace wrappers
     template <typename Class, typename... Args>
     class constructor
     {
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        using native_function_type_helper = std::conditional<
-            CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST,
-            void (*)(void*, Args...),
-            void (*)(Args..., void*)>;
-
     public:
         static constexpr bool is_acceptable_native_call_conv(
             AS_NAMESPACE_QUALIFIER asECallConvTypes conv
         ) noexcept
         {
-            return conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
-                   conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
+            return conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
         }
 
         static constexpr bool is_acceptable_call_conv(
@@ -323,7 +316,7 @@ namespace wrappers
         using wrapper_type = std::conditional_t<
             CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
             AS_NAMESPACE_QUALIFIER asGENFUNC_t,
-            typename native_function_type_helper<CallConv>::type>;
+            void (*)(Args..., void*)>;
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         static auto generate(call_conv_t<CallConv>) noexcept -> wrapper_type<CallConv>
@@ -340,13 +333,6 @@ namespace wrappers
                     }(std::index_sequence_for<Args...>());
                 };
             }
-            else if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
-            {
-                return +[](void* mem, Args... args) -> void
-                {
-                    new(mem) Class(std::forward<Args>(args)...);
-                };
-            }
             else // CallConv == asCALL_CDECL_OBJLAST
             {
                 return +[](Args... args, void* mem) -> void
@@ -361,7 +347,10 @@ namespace wrappers
         native_function auto ConstructorFunc,
         typename Class,
         AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv>
-    requires(OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST || OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST)
+    requires(
+        OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
+        OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
+    )
     class constructor_function
     {
     public:
@@ -439,7 +428,10 @@ namespace wrappers
         noncapturing_lambda ConstructorFunc,
         typename Class,
         AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv>
-    requires(OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST || OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST)
+    requires(
+        OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
+        OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
+    )
     class constructor_lambda
     {
     public:
@@ -798,7 +790,7 @@ namespace wrappers
 
         using native_function_type = std::conditional_t<
             Template,
-            Class* (*)(asITypeInfo*, Args...),
+            Class* (*)(AS_NAMESPACE_QUALIFIER asITypeInfo*, Args...),
             Class* (*)(Args...)>;
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
@@ -859,6 +851,90 @@ namespace wrappers
                         return new Class(std::forward<Args>(args)...);
                     };
                 }
+            }
+        }
+    };
+
+    template <
+        native_function auto FactoryFunc,
+        bool Template,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv>
+    requires(
+        OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
+        OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
+    )
+    class factory_function_auxiliary
+    {
+    public:
+        static auto generate(call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>) noexcept
+            -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
+        {
+            using traits = function_traits<decltype(FactoryFunc)>;
+            using args_tuple = typename traits::args_tuple;
+            using auxiliary_type = std::conditional_t<
+                OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST,
+                typename traits::first_arg_type,
+                typename traits::last_arg_type>;
+
+            if constexpr(Template)
+            {
+                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+                {
+                    void* ptr = nullptr;
+
+                    [&]<std::size_t... Is>(std::index_sequence<Is...>)
+                    {
+                        if constexpr(OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
+                        {
+                            ptr = std::invoke(
+                                FactoryFunc,
+                                get_generic_auxiliary<auxiliary_type>(gen),
+                                *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
+                                get_generic_arg<std::tuple_element_t<Is + 2, args_tuple>>(gen, (asUINT)Is + 1)...
+                            );
+                        }
+                        else // OriginalCallConv == asCALL_CDECL_OBJLAST
+                        {
+                            ptr = std::invoke(
+                                FactoryFunc,
+                                *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
+                                get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(gen, (asUINT)Is + 1)...,
+                                get_generic_auxiliary<auxiliary_type>(gen)
+                            );
+                        }
+                    }(std::make_index_sequence<traits::arg_count_v - 2>());
+
+                    gen->SetReturnAddress(ptr);
+                };
+            }
+            else
+            {
+                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+                {
+                    void* ptr = nullptr;
+
+                    [&]<std::size_t... Is>(std::index_sequence<Is...>)
+                    {
+                        if constexpr(OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
+                        {
+                            ptr = std::invoke(
+                                FactoryFunc,
+                                get_generic_auxiliary<auxiliary_type>(gen),
+                                get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(gen, (asUINT)Is)...
+                            );
+                        }
+                        else // OriginalCallConv == asCALL_CDECL_OBJLAST
+                        {
+                            ptr = std::invoke(
+                                FactoryFunc,
+                                get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (asUINT)Is)...,
+                                get_generic_auxiliary<auxiliary_type>(gen)
+                            );
+                        }
+                    }(std::make_index_sequence<traits::arg_count_v - 1>());
+
+                    gen->SetReturnAddress(ptr);
+                };
             }
         }
     };
@@ -1327,17 +1403,35 @@ namespace detail
             using first_arg_t = std::remove_cv_t<typename traits::first_arg_type>;
             using last_arg_t = std::remove_cv_t<typename traits::last_arg_type>;
 
-            constexpr bool obj_first = is_this_arg<first_arg_t, Class>(TryVoidPtr);
-            constexpr bool obj_last = is_this_arg<last_arg_t, Class>(TryVoidPtr && !obj_first);
+            constexpr bool obj_first = is_this_arg<first_arg_t, Class>(false);
+            constexpr bool obj_last = is_this_arg<last_arg_t, Class>(false);
 
-            static_assert(obj_last || obj_first, "Missing object parameter");
-
-            if(obj_first)
-                return traits::arg_count_v == 1 ?
-                           AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST :
-                           AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST;
+            if constexpr(obj_last || obj_first)
+            {
+                if(obj_first)
+                    return traits::arg_count_v == 1 ?
+                               AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST :
+                               AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST;
+                else
+                    return AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
+            }
             else
-                return AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
+            {
+                if constexpr(!TryVoidPtr)
+                    static_assert(obj_last || obj_first, "Missing object parameter");
+
+                constexpr bool void_obj_first = is_this_arg<first_arg_t, Class>(true);
+                constexpr bool void_obj_last = is_this_arg<last_arg_t, Class>(true);
+
+                static_assert(void_obj_last || void_obj_first, "Missing object/void* parameter");
+
+                if(void_obj_first)
+                    return traits::arg_count_v == 1 ?
+                               AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST :
+                               AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST;
+                else
+                    return AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
+            }
         }
     }
 
@@ -1361,6 +1455,36 @@ namespace detail
 
             return deduce_method_callconv<Class, FuncSig, try_void_ptr>();
         }
+    }
+
+    template <AS_NAMESPACE_QUALIFIER asEBehaviours Beh, typename Class, typename FuncSig, typename Auxiliary>
+    consteval auto deduce_beh_callconv_aux() noexcept
+        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    {
+        if constexpr(Beh == AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY)
+        {
+            // According to the AngelScript documentation, the factory function with auxiliary object uses
+            // asCALL_CDECL_OBJFIRST/LAST for native calling convention.
+            // See: https://www.angelcode.com/angelscript/sdk/docs/manual/doc_reg_basicref.html#doc_reg_basicref_1_1
+
+            using traits = function_traits<FuncSig>;
+            using first_arg_t = std::remove_cv_t<typename traits::first_arg_type>;
+            using last_arg_t = std::remove_cv_t<typename traits::last_arg_type>;
+
+            constexpr bool obj_first = is_this_arg<first_arg_t, Auxiliary>(false);
+            constexpr bool obj_last = is_this_arg<last_arg_t, Auxiliary>(false);
+
+            static_assert(obj_last || obj_first, "Missing auxiliary object parameter");
+
+            if(obj_first)
+                return traits::arg_count_v == 1 ?
+                           AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST :
+                           AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST;
+            else
+                return AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
+        }
+
+        // unreachable
     }
 
     template <typename Class, noncapturing_lambda Lambda>
@@ -1943,7 +2067,8 @@ protected:
         AS_NAMESPACE_QUALIFIER asEBehaviours beh,
         const char* decl,
         Fn&& fn,
-        call_conv_t<CallConv>
+        call_conv_t<CallConv>,
+        void* aux = nullptr
     )
     {
         [[maybe_unused]]
@@ -1953,7 +2078,8 @@ protected:
             beh,
             decl,
             to_asSFuncPtr(fn),
-            CallConv
+            CallConv,
+            aux
         );
         assert(r >= 0);
     }
@@ -3908,12 +4034,10 @@ private:
     }
 
 public:
-    template <typename... Args>
-    requires(check_factory_args<Args...>())
+    template <typename Factory>
     reference_class& factory_function(
         std::string_view params,
-        Class* (*fn)(Args...),
-        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_CDECL> = {}
+        Factory fn
     ) requires(!ForceGeneric)
     {
         this->behaviour_impl(
@@ -3926,13 +4050,11 @@ public:
         return *this;
     }
 
-    template <typename... Args>
-    requires(check_factory_args<Args...>())
+    template <typename Factory>
     reference_class& factory_function(
         std::string_view params,
         use_explicit_t,
-        Class* (*fn)(Args...),
-        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_CDECL> = {}
+        Factory fn
     ) requires(!ForceGeneric)
     {
         this->behaviour_impl(
@@ -3940,6 +4062,134 @@ public:
             decl_factory(params, use_explicit).c_str(),
             fn,
             call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
+        );
+
+        return *this;
+    }
+
+    template <typename Factory, asECallConvTypes CallConv>
+    requires(CallConv == asCALL_CDECL)
+    reference_class& factory_function(
+        std::string_view params,
+        Factory fn,
+        call_conv_t<CallConv>
+    ) requires(!ForceGeneric)
+    {
+        this->behaviour_impl(
+            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
+            decl_factory(params).c_str(),
+            fn,
+            call_conv<CallConv>
+        );
+
+        return *this;
+    }
+
+    template <typename Factory, asECallConvTypes CallConv>
+    requires(CallConv == asCALL_CDECL)
+    reference_class& factory_function(
+        std::string_view params,
+        use_explicit_t,
+        Factory fn,
+        call_conv_t<CallConv>
+    ) requires(!ForceGeneric)
+    {
+        this->behaviour_impl(
+            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
+            decl_factory(params, use_explicit).c_str(),
+            fn,
+            call_conv<CallConv>
+        );
+
+        return *this;
+    }
+
+    template <
+        typename Factory,
+        typename Auxiliary,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    reference_class& factory_function(
+        std::string_view params,
+        Factory fn,
+        auxiliary_wrapper<Auxiliary> aux,
+        call_conv_t<CallConv>
+    ) requires(!ForceGeneric)
+    {
+        this->behaviour_impl(
+            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
+            decl_factory(params).c_str(),
+            fn,
+            call_conv<CallConv>,
+            aux.to_address()
+        );
+
+        return *this;
+    }
+
+    template <
+        typename Factory,
+        typename Auxiliary,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    reference_class& factory_function(
+        std::string_view params,
+        use_explicit_t,
+        Factory fn,
+        auxiliary_wrapper<Auxiliary> aux,
+        call_conv_t<CallConv>
+    ) requires(!ForceGeneric)
+    {
+        this->behaviour_impl(
+            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
+            decl_factory(params, use_explicit).c_str(),
+            fn,
+            call_conv<CallConv>,
+            aux.to_address()
+        );
+
+        return *this;
+    }
+
+    template <
+        typename Factory,
+        typename Auxiliary>
+    reference_class& factory_function(
+        std::string_view params,
+        Factory fn,
+        auxiliary_wrapper<Auxiliary> aux
+    ) requires(!ForceGeneric)
+    {
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
+            detail::deduce_beh_callconv_aux<AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY, Class, std::decay_t<Factory>, Auxiliary>();
+
+        this->factory_function(
+            params,
+            fn,
+            aux,
+            call_conv<conv>
+        );
+
+        return *this;
+    }
+
+    template <
+        typename Factory,
+        typename Auxiliary>
+    reference_class& factory_function(
+        std::string_view params,
+        use_explicit_t,
+        Factory fn,
+        auxiliary_wrapper<Auxiliary> aux
+    ) requires(!ForceGeneric)
+    {
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
+            detail::deduce_beh_callconv_aux<AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY, Class, std::decay_t<Factory>, Auxiliary>();
+
+        this->factory_function(
+            params,
+            use_explicit,
+            fn,
+            aux,
+            call_conv<conv>
         );
 
         return *this;
@@ -3973,6 +4223,45 @@ public:
             decl_factory(params, use_explicit).c_str(),
             gfn,
             generic_call_conv
+        );
+
+        return *this;
+    }
+
+    template <typename Auxiliary>
+    reference_class& factory_function(
+        std::string_view params,
+        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
+        auxiliary_wrapper<Auxiliary> aux,
+        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
+    )
+    {
+        this->behaviour_impl(
+            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
+            decl_factory(params).c_str(),
+            gfn,
+            generic_call_conv,
+            aux.to_address()
+        );
+
+        return *this;
+    }
+
+    template <typename Auxiliary>
+    reference_class& factory_function(
+        std::string_view params,
+        use_explicit_t,
+        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
+        auxiliary_wrapper<Auxiliary> aux,
+        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
+    )
+    {
+        this->behaviour_impl(
+            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
+            decl_factory(params, use_explicit).c_str(),
+            gfn,
+            generic_call_conv,
+            aux.to_address()
         );
 
         return *this;
@@ -4014,11 +4303,56 @@ public:
         return *this;
     }
 
+    template <
+        auto Factory,
+        typename Auxiliary,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    reference_class& factory_function(
+        use_generic_t,
+        std::string_view params,
+        fp_wrapper_t<Factory>,
+        auxiliary_wrapper<Auxiliary> aux,
+        call_conv_t<CallConv>
+    )
+    {
+        factory_function(
+            params,
+            wrappers::factory_function_auxiliary<Factory, Template, CallConv>::generate(generic_call_conv),
+            aux,
+            generic_call_conv
+        );
+
+        return *this;
+    }
+
+    template <
+        auto Factory,
+        typename Auxiliary,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    reference_class& factory_function(
+        use_generic_t,
+        std::string_view params,
+        use_explicit_t,
+        fp_wrapper_t<Factory>,
+        auxiliary_wrapper<Auxiliary> aux,
+        call_conv_t<CallConv>
+    )
+    {
+        factory_function(
+            params,
+            use_explicit,
+            wrappers::factory_function_auxiliary<Factory, Template, CallConv>::generate(generic_call_conv),
+            aux,
+            generic_call_conv
+        );
+
+        return *this;
+    }
+
     template <auto Factory>
     reference_class& factory_function(
         std::string_view params,
-        fp_wrapper_t<Factory>,
-        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_CDECL> = {}
+        fp_wrapper_t<Factory>
     )
     {
         if constexpr(ForceGeneric)
@@ -4033,14 +4367,128 @@ public:
     reference_class& factory_function(
         std::string_view params,
         use_explicit_t,
-        fp_wrapper_t<Factory>,
-        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_CDECL> = {}
+        fp_wrapper_t<Factory>
     )
     {
         if constexpr(ForceGeneric)
             factory_function(use_generic, params, use_explicit, fp<Factory>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>);
         else
             factory_function(params, use_explicit, Factory, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>);
+
+        return *this;
+    }
+
+    template <auto Factory, asECallConvTypes CallConv>
+    requires(CallConv == asCALL_CDECL)
+    reference_class& factory_function(
+        std::string_view params,
+        fp_wrapper_t<Factory>,
+        call_conv_t<CallConv>
+    )
+    {
+        if constexpr(ForceGeneric)
+            factory_function(use_generic, params, fp<Factory>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>);
+        else
+            factory_function(params, Factory, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>);
+
+        return *this;
+    }
+
+    template <auto Factory, asECallConvTypes CallConv>
+    requires(CallConv == asCALL_CDECL)
+    reference_class& factory_function(
+        std::string_view params,
+        use_explicit_t,
+        fp_wrapper_t<Factory>,
+        call_conv_t<CallConv>
+    )
+    {
+        if constexpr(ForceGeneric)
+            factory_function(use_generic, params, use_explicit, fp<Factory>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>);
+        else
+            factory_function(params, use_explicit, Factory, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>);
+
+        return *this;
+    }
+
+    template <
+        auto Factory,
+        typename Auxiliary,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
+    reference_class& factory_function(
+        std::string_view params,
+        fp_wrapper_t<Factory>,
+        auxiliary_wrapper<Auxiliary> aux,
+        call_conv_t<CallConv>
+    )
+    {
+        if constexpr(ForceGeneric)
+            factory_function(use_generic, params, fp<Factory>, aux, call_conv<CallConv>);
+        else
+            factory_function(params, Factory, aux, call_conv<CallConv>);
+
+        return *this;
+    }
+
+    template <
+        auto Factory,
+        typename Auxiliary,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
+    reference_class& factory_function(
+        std::string_view params,
+        use_explicit_t,
+        fp_wrapper_t<Factory>,
+        auxiliary_wrapper<Auxiliary> aux,
+        call_conv_t<CallConv>
+    )
+    {
+        if constexpr(ForceGeneric)
+            factory_function(use_generic, params, use_explicit, fp<Factory>, aux, call_conv<CallConv>);
+        else
+            factory_function(params, use_explicit, Factory, aux, call_conv<CallConv>);
+
+        return *this;
+    }
+
+    template <
+        auto Factory,
+        typename Auxiliary>
+    reference_class& factory_function(
+        std::string_view params,
+        fp_wrapper_t<Factory>,
+        auxiliary_wrapper<Auxiliary> aux
+    )
+    {
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
+            detail::deduce_beh_callconv_aux<AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY, Class, std::decay_t<decltype(Factory)>, Auxiliary>();
+
+        if constexpr(ForceGeneric)
+            factory_function(use_generic, params, fp<Factory>, aux, call_conv<conv>);
+        else
+            factory_function(params, Factory, aux, call_conv<conv>);
+
+        return *this;
+    }
+
+    template <
+        auto Factory,
+        typename Auxiliary>
+    reference_class& factory_function(
+        std::string_view params,
+        use_explicit_t,
+        fp_wrapper_t<Factory>,
+        auxiliary_wrapper<Auxiliary> aux
+    )
+    {
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
+            detail::deduce_beh_callconv_aux<AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY, Class, std::decay_t<decltype(Factory)>, Auxiliary>();
+
+        if constexpr(ForceGeneric)
+            factory_function(use_generic, params, use_explicit, fp<Factory>, aux, call_conv<conv>);
+        else
+            factory_function(params, use_explicit, Factory, aux, call_conv<conv>);
 
         return *this;
     }
