@@ -860,6 +860,7 @@ namespace wrappers
         bool Template,
         AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv>
     requires(
+        OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL ||
         OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
         OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
     )
@@ -878,13 +879,27 @@ namespace wrappers
 
             if constexpr(Template)
             {
+                constexpr std::size_t real_arg_count =
+                    OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL ?
+                        traits::arg_count_v - 1 :
+                        traits::arg_count_v - 2;
+
                 return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
                 {
                     void* ptr = nullptr;
 
                     [&]<std::size_t... Is>(std::index_sequence<Is...>)
                     {
-                        if constexpr(OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
+                        if constexpr(OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL)
+                        {
+                            ptr = std::invoke(
+                                FactoryFunc,
+                                get_generic_auxiliary<typename traits::class_type>(gen),
+                                *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
+                                get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(gen, (asUINT)Is + 1)...
+                            );
+                        }
+                        else if constexpr(OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
                         {
                             ptr = std::invoke(
                                 FactoryFunc,
@@ -902,20 +917,33 @@ namespace wrappers
                                 get_generic_auxiliary<auxiliary_type>(gen)
                             );
                         }
-                    }(std::make_index_sequence<traits::arg_count_v - 2>());
+                    }(std::make_index_sequence<real_arg_count>());
 
                     gen->SetReturnAddress(ptr);
                 };
             }
             else
             {
+                constexpr std::size_t real_arg_count =
+                    OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL ?
+                        traits::arg_count_v :
+                        traits::arg_count_v - 1;
+
                 return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
                 {
                     void* ptr = nullptr;
 
                     [&]<std::size_t... Is>(std::index_sequence<Is...>)
                     {
-                        if constexpr(OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
+                        if constexpr(OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL)
+                        {
+                            ptr = std::invoke(
+                                FactoryFunc,
+                                get_generic_auxiliary<typename traits::class_type>(gen),
+                                get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (asUINT)Is)...
+                            );
+                        }
+                        else if constexpr(OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
                         {
                             ptr = std::invoke(
                                 FactoryFunc,
@@ -931,7 +959,7 @@ namespace wrappers
                                 get_generic_auxiliary<auxiliary_type>(gen)
                             );
                         }
-                    }(std::make_index_sequence<traits::arg_count_v - 1>());
+                    }(std::make_index_sequence<real_arg_count>());
 
                     gen->SetReturnAddress(ptr);
                 };
@@ -1463,25 +1491,32 @@ namespace detail
     {
         if constexpr(Beh == AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY)
         {
-            // According to the AngelScript documentation, the factory function with auxiliary object uses
-            // asCALL_CDECL_OBJFIRST/LAST for native calling convention.
-            // See: https://www.angelcode.com/angelscript/sdk/docs/manual/doc_reg_basicref.html#doc_reg_basicref_1_1
-
-            using traits = function_traits<FuncSig>;
-            using first_arg_t = std::remove_cv_t<typename traits::first_arg_type>;
-            using last_arg_t = std::remove_cv_t<typename traits::last_arg_type>;
-
-            constexpr bool obj_first = is_this_arg<first_arg_t, Auxiliary>(false);
-            constexpr bool obj_last = is_this_arg<last_arg_t, Auxiliary>(false);
-
-            static_assert(obj_last || obj_first, "Missing auxiliary object parameter");
-
-            if(obj_first)
-                return traits::arg_count_v == 1 ?
-                           AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST :
-                           AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST;
+            if constexpr(std::is_member_function_pointer_v<FuncSig>)
+            {
+                return AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL;
+            }
             else
-                return AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
+            {
+                // According to the AngelScript documentation, the factory function with auxiliary object uses
+                // asCALL_CDECL_OBJFIRST/LAST for native calling convention.
+                // See: https://www.angelcode.com/angelscript/sdk/docs/manual/doc_reg_basicref.html#doc_reg_basicref_1_1
+
+                using traits = function_traits<FuncSig>;
+                using first_arg_t = std::remove_cv_t<typename traits::first_arg_type>;
+                using last_arg_t = std::remove_cv_t<typename traits::last_arg_type>;
+
+                constexpr bool obj_first = is_this_arg<first_arg_t, Auxiliary>(false);
+                constexpr bool obj_last = is_this_arg<last_arg_t, Auxiliary>(false);
+
+                static_assert(obj_last || obj_first, "Missing auxiliary object parameter");
+
+                if(obj_first)
+                    return traits::arg_count_v == 1 ?
+                               AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST :
+                               AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST;
+                else
+                    return AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
+            }
         }
 
         // unreachable

@@ -36,6 +36,12 @@ struct aux_factory_helper
 {
     int predefined_value = 0;
     std::size_t created = 0;
+
+    test_aux_factory* create_aux_as_global(int additional)
+    {
+        ++created;
+        return new test_aux_factory(predefined_value + additional);
+    }
 };
 
 test_aux_factory* create_aux_auxfirst(aux_factory_helper& helper, int additional)
@@ -107,6 +113,53 @@ void print_factories(std::ostream& os, asITypeInfo* ti)
     }
 }
 } // namespace test_bind
+
+TEST(aux_factory_native, as_global)
+{
+    using namespace asbind20;
+
+    if(has_max_portability())
+        GTEST_SKIP() << "max portability";
+
+    auto engine = asbind20::make_script_engine();
+    test_bind::setup_env(engine);
+
+    test_bind::aux_factory_helper helper{.predefined_value = 0};
+
+    test_bind::register_test_class<false>(engine)
+        .factory_function("int", use_explicit, &test_bind::aux_factory_helper::create_aux_as_global, auxiliary(helper));
+
+    EXPECT_EQ(helper.created, 0);
+
+    test_bind::check_aux_factory(engine, 0, 0);
+    EXPECT_EQ(helper.created, 1);
+
+    helper.predefined_value = 1000;
+    test_bind::check_aux_factory(engine, 1013, 13);
+    EXPECT_EQ(helper.created, 2);
+}
+
+TEST(aux_factory_generic, as_global)
+{
+    using namespace asbind20;
+
+    auto engine = asbind20::make_script_engine();
+    test_bind::setup_env(engine);
+
+    test_bind::aux_factory_helper helper{.predefined_value = 0};
+
+    test_bind::register_test_class<true>(engine)
+        .factory_function("int", use_explicit, fp<&test_bind::aux_factory_helper::create_aux_as_global>, auxiliary(helper));
+
+    EXPECT_EQ(helper.created, 0);
+
+    test_bind::check_aux_factory(engine, 0, 0);
+    EXPECT_EQ(helper.created, 1);
+
+    helper.predefined_value = 1000;
+    test_bind::check_aux_factory(engine, 1013, 13);
+    EXPECT_EQ(helper.created, 2);
+}
 
 TEST(aux_factory_native, auxfirst)
 {
