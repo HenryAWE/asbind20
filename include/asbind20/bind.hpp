@@ -2089,7 +2089,7 @@ protected:
     template <typename Fn, AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
     void method_impl(
         const char* decl, Fn&& fn, call_conv_t<CallConv>, void* aux = nullptr
-    )
+    ) requires(!ForceGeneric)
     {
         [[maybe_unused]]
         int r = 0;
@@ -2098,6 +2098,28 @@ protected:
             decl,
             to_asSFuncPtr(fn),
             CallConv,
+            aux
+        );
+        assert(r >= 0);
+    }
+
+    // Implementation Note: DO NOT DELETE this specialization!
+    // MSVC needs this to produce correct result.
+    // 2025-2-21: Tested with MSVC 19.42.34436
+    void method_impl(
+        const char* decl,
+        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
+        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>,
+        void* aux = nullptr
+    )
+    {
+        [[maybe_unused]]
+        int r = 0;
+        r = m_engine->RegisterObjectMethod(
+            m_name,
+            decl,
+            to_asSFuncPtr(gfn),
+            AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
             aux
         );
         assert(r >= 0);
