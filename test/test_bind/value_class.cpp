@@ -480,8 +480,41 @@ public:
     int value;
 };
 
+struct friend_ops_helper
+{
+    int predefined_value = 0;
+
+    int by_functor_objfirst(friend_ops& this_, int additional)
+    {
+        this_.value += additional;
+        return std::exchange(predefined_value, 0);
+    }
+
+    int by_functor_objlast(int additional, friend_ops& this_)
+    {
+        this_.value += additional;
+        return std::exchange(predefined_value, 0);
+    }
+
+    int by_functor_objfirst_var(friend_ops& this_, int additional, void* ref, int type_id)
+    {
+        this_.value += additional;
+        if(type_id == AS_NAMESPACE_QUALIFIER asTYPEID_INT32)
+            this_.value += *(int*)ref;
+        return std::exchange(predefined_value, 0);
+    }
+
+    int by_functor_objlast_var(int additional, void* ref, int type_id, friend_ops& this_)
+    {
+        this_.value += additional;
+        if(type_id == AS_NAMESPACE_QUALIFIER asTYPEID_INT32)
+            this_.value += *(int*)ref;
+        return std::exchange(predefined_value, 0);
+    }
+};
+
 template <bool UseGeneric>
-void register_friend_ops(asIScriptEngine* engine)
+void register_friend_ops(asIScriptEngine* engine, friend_ops_helper& helper)
 {
     using namespace asbind20;
 
@@ -499,6 +532,10 @@ void register_friend_ops(asIScriptEngine* engine)
         .opNeg()
         .opAdd()
         .opSub()
+        .method("int by_functor_objfirst(int)", fp<&friend_ops_helper::by_functor_objfirst>, auxiliary(helper))
+        .method("int by_functor_objlast(int)", fp<&friend_ops_helper::by_functor_objlast>, auxiliary(helper))
+        .method("int by_functor_objfirst_var(int, const ?&in)", fp<&friend_ops_helper::by_functor_objfirst_var>, var_type<1>, auxiliary(helper))
+        .method("int by_functor_objlast_var(int, const ?&in)", fp<&friend_ops_helper::by_functor_objlast_var>, var_type<1>, auxiliary(helper))
         .property("int value", offsetof(friend_ops, value));
 }
 } // namespace test_bind
@@ -532,9 +569,33 @@ int test_3()
     friend_ops arg_count = {1, 2, 3, 4, 5, 6};
     return arg_count.value;
 }
+int test_4()
+{
+    friend_ops val(1000);
+    assert(val.by_functor_objfirst(13) == 182375);
+    return val.value;
+}
+int test_5()
+{
+    friend_ops val(1000);
+    assert(val.by_functor_objlast(13) == 182376);
+    return val.value;
+}
+int test_6()
+{
+    friend_ops val(1000);
+    assert(val.by_functor_objfirst_var(10, 3) == 182375);
+    return val.value;
+}
+int test_7()
+{
+    friend_ops val(1000);
+    assert(val.by_functor_objlast_var(10, 3) == 182376);
+    return val.value;
+}
 )";
 
-static void check_friend_ops(asIScriptEngine* engine)
+static void check_friend_ops(asIScriptEngine* engine, friend_ops_helper& helper)
 {
     asIScriptModule* m = engine->GetModule("test_value_class", asGM_ALWAYS_CREATE);
     ASSERT_TRUE(m);
@@ -561,6 +622,20 @@ static void check_friend_ops(asIScriptEngine* engine)
     check_int_result(1, 5);
     check_int_result(2, -1);
     check_int_result(3, 6);
+
+    helper.predefined_value = 182375;
+    check_int_result(4, 1013);
+    EXPECT_EQ(helper.predefined_value, 0);
+    helper.predefined_value = 182376;
+    check_int_result(5, 1013);
+    EXPECT_EQ(helper.predefined_value, 0);
+
+    helper.predefined_value = 182375;
+    check_int_result(6, 1013);
+    EXPECT_EQ(helper.predefined_value, 0);
+    helper.predefined_value = 182376;
+    check_int_result(7, 1013);
+    EXPECT_EQ(helper.predefined_value, 0);
 }
 
 TEST_F(asbind_test_suite, friend_ops)
@@ -569,15 +644,19 @@ TEST_F(asbind_test_suite, friend_ops)
         GTEST_SKIP() << "AS_MAX_PORTABILITY";
 
     asIScriptEngine* engine = get_engine();
-    register_friend_ops<false>(engine);
 
-    check_friend_ops(engine);
+    friend_ops_helper helper;
+    register_friend_ops<false>(engine, helper);
+
+    check_friend_ops(engine, helper);
 }
 
 TEST_F(asbind_test_suite_generic, friend_ops)
 {
     asIScriptEngine* engine = get_engine();
-    register_friend_ops<true>(engine);
 
-    check_friend_ops(engine);
+    friend_ops_helper helper;
+    register_friend_ops<true>(engine, helper);
+
+    check_friend_ops(engine, helper);
 }

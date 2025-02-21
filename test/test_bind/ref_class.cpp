@@ -259,3 +259,151 @@ TEST_F(asbind_test_suite_generic, ref_class)
 
     check_ref_class(engine);
 }
+
+namespace test_bind
+{
+class ref_class_for_helper
+{
+public:
+    void addref()
+    {
+        ++m_counter;
+    }
+
+    void release()
+    {
+        assert(m_counter != 0);
+        if(--m_counter)
+            delete this;
+    }
+
+    ref_class_for_helper(int val)
+        : value(val) {}
+
+    int value;
+
+private:
+    ~ref_class_for_helper() = default;
+
+    int m_counter = 1;
+};
+
+struct ref_helper
+{
+    int predefined_value = 0;
+
+    int by_functor_objfirst(ref_class_for_helper& this_, int additional)
+    {
+        this_.value += additional;
+        return std::exchange(predefined_value, 0);
+    }
+
+    int by_functor_objlast(int additional, ref_class_for_helper& this_)
+    {
+        this_.value += additional;
+        return std::exchange(predefined_value, 0);
+    }
+
+    int by_functor_objfirst_var(ref_class_for_helper& this_, int additional, void* ref, int type_id)
+    {
+        this_.value += additional;
+        if(type_id == AS_NAMESPACE_QUALIFIER asTYPEID_INT32)
+            this_.value += *(int*)ref;
+        return std::exchange(predefined_value, 0);
+    }
+
+    int by_functor_objlast_var(int additional, void* ref, int type_id, ref_class_for_helper& this_)
+    {
+        this_.value += additional;
+        if(type_id == AS_NAMESPACE_QUALIFIER asTYPEID_INT32)
+            this_.value += *(int*)ref;
+        return std::exchange(predefined_value, 0);
+    }
+};
+
+template <bool UseGeneric>
+void register_ref_class_for_helper(asIScriptEngine* engine, ref_helper& helper)
+{
+    using namespace asbind20;
+
+    ref_class<ref_class_for_helper, UseGeneric> c(
+        engine,
+        "ref_class_for_helper"
+    );
+
+    c
+        .template factory<int>("int")
+        .addref(fp<&ref_class_for_helper::addref>)
+        .release(fp<&ref_class_for_helper::release>)
+        .method("int by_functor_objfirst(int)", fp<&ref_helper::by_functor_objfirst>, auxiliary(helper))
+        .method("int by_functor_objlast(int)", fp<&ref_helper::by_functor_objlast>, auxiliary(helper))
+        .method("int by_functor_objfirst_var(int, const ?&in)", fp<&ref_helper::by_functor_objfirst_var>, var_type<1>, auxiliary(helper))
+        .method("int by_functor_objlast_var(int, const ?&in)", fp<&ref_helper::by_functor_objlast_var>, var_type<1>, auxiliary(helper))
+        .property("int value", &ref_class_for_helper::value);
+}
+
+void check_ref_class_for_helper(asIScriptEngine* engine, ref_helper& helper)
+{
+    using test_bind::ref_class_for_helper;
+
+    auto* m = engine->GetModule("test_value_class", asGM_ALWAYS_CREATE);
+
+    m->AddScriptSection(
+        "test_ref_class.as",
+        "int test0() { ref_class_for_helper val(1000); assert(val.by_functor_objfirst(13) == 182375); return val.value; }"
+        "int test1() { ref_class_for_helper val(1000); assert(val.by_functor_objlast(13) == 182376); return val.value; }"
+        "int test2() { ref_class_for_helper val(1000); assert(val.by_functor_objfirst_var(10, 3) == 182375); return val.value; }"
+        "int test3() { ref_class_for_helper val(1000); assert(val.by_functor_objfirst_var(10, 3) == 182376); return val.value; }"
+    );
+    ASSERT_GE(m->Build(), 0);
+
+    auto check_int_result = [&](int idx, int expected_val) -> void
+    {
+        std::string test_name = asbind20::string_concat("test", std::to_string(idx));
+        auto test_case = asbind20::script_function<int()>(m->GetFunctionByName(test_name.c_str()));
+
+        asbind20::request_context ctx(engine);
+        auto result = test_case(ctx);
+        ASSERT_TRUE(result_has_value(result));
+        EXPECT_EQ(*result, expected_val)
+            << test_name;
+    };
+
+    helper.predefined_value = 182375;
+    check_int_result(0, 1013);
+    EXPECT_EQ(helper.predefined_value, 0);
+
+    helper.predefined_value = 182376;
+    check_int_result(1, 1013);
+    EXPECT_EQ(helper.predefined_value, 0);
+
+    helper.predefined_value = 182375;
+    check_int_result(2, 1013);
+    EXPECT_EQ(helper.predefined_value, 0);
+
+    helper.predefined_value = 182376;
+    check_int_result(3, 1013);
+    EXPECT_EQ(helper.predefined_value, 0);
+}
+} // namespace test_bind
+
+TEST_F(asbind_test_suite, ref_class_for_helper)
+{
+    if(asbind20::has_max_portability())
+        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+
+    auto* engine = get_engine();
+    test_bind::ref_helper helper;
+    test_bind::register_ref_class_for_helper<false>(engine, helper);
+
+    test_bind::check_ref_class_for_helper(engine, helper);
+}
+
+TEST_F(asbind_test_suite_generic, ref_class_for_helper)
+{
+    auto* engine = get_engine();
+    test_bind::ref_helper helper;
+    test_bind::register_ref_class_for_helper<true>(engine, helper);
+
+    test_bind::check_ref_class_for_helper(engine, helper);
+}

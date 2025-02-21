@@ -1463,6 +1463,28 @@ namespace detail
         }
     }
 
+    template <typename Class, typename FuncSig, typename Auxiliary>
+    consteval auto deduce_method_callconv_aux() noexcept
+    {
+        static_assert(std::is_member_function_pointer_v<FuncSig>);
+
+        using traits = function_traits<FuncSig>;
+        using first_arg_t = std::remove_cv_t<typename traits::first_arg_type>;
+        using last_arg_t = std::remove_cv_t<typename traits::last_arg_type>;
+
+        constexpr bool obj_first = is_this_arg<first_arg_t, Class>(false);
+        constexpr bool obj_last = is_this_arg<last_arg_t, Class>(false);
+
+        static_assert(obj_last || obj_first, "Missing object parameter");
+
+        if(obj_first)
+            return traits::arg_count_v == 1 ?
+                       AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJLAST :
+                       AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJFIRST;
+        else
+            return AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJLAST;
+    }
+
     template <AS_NAMESPACE_QUALIFIER asEBehaviours Beh, typename Class, typename FuncSig>
     consteval auto deduce_beh_callconv() noexcept
         -> AS_NAMESPACE_QUALIFIER asECallConvTypes
@@ -2065,7 +2087,9 @@ protected:
     }
 
     template <typename Fn, AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-    void method_impl(const char* decl, Fn&& fn, call_conv_t<CallConv>)
+    void method_impl(
+        const char* decl, Fn&& fn, call_conv_t<CallConv>, void* aux = nullptr
+    ) requires(!ForceGeneric)
     {
         [[maybe_unused]]
         int r = 0;
@@ -2073,15 +2097,20 @@ protected:
             m_name,
             decl,
             to_asSFuncPtr(fn),
-            CallConv
+            CallConv,
+            aux
         );
         assert(r >= 0);
     }
 
+    // Implementation Note: DO NOT DELETE this specialization!
+    // MSVC needs this to produce correct result.
+    // 2025-2-21: Tested with MSVC 19.42.34436
     void method_impl(
         const char* decl,
         AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
-        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>
+        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>,
+        void* aux = nullptr
     )
     {
         [[maybe_unused]]
@@ -2090,7 +2119,8 @@ protected:
             m_name,
             decl,
             to_asSFuncPtr(gfn),
-            AS_NAMESPACE_QUALIFIER asCALL_GENERIC
+            AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
+            aux
         );
         assert(r >= 0);
     }
@@ -2487,6 +2517,63 @@ private:
         return *this;                                                       \
     }
 
+#define ASBIND20_CLASS_METHOD_AUXILIARY(register_type)           \
+    template <                                                   \
+        native_function Fn,                                      \
+        typename Auxiliary,                                      \
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>        \
+    requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)  \
+    register_type& method(                                       \
+        const char* decl,                                        \
+        Fn&& fn,                                                 \
+        auxiliary_wrapper<Auxiliary> aux,                        \
+        call_conv_t<CallConv>                                    \
+    ) requires(!ForceGeneric)                                    \
+    {                                                            \
+        this->method_impl(                                       \
+            decl,                                                \
+            std::forward<Fn>(fn),                                \
+            call_conv<CallConv>,                                 \
+            aux.to_address()                                     \
+        );                                                       \
+        return *this;                                            \
+    }                                                            \
+    template <                                                   \
+        native_function Fn,                                      \
+        typename Auxiliary>                                      \
+    register_type& method(                                       \
+        const char* decl,                                        \
+        Fn&& fn,                                                 \
+        auxiliary_wrapper<Auxiliary> aux                         \
+    ) requires(!ForceGeneric)                                    \
+    {                                                            \
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv = \
+            method_callconv_aux<Fn, Auxiliary>();                \
+        this->method(                                            \
+            decl,                                                \
+            std::forward<Fn>(fn),                                \
+            aux,                                                 \
+            call_conv<conv>                                      \
+        );                                                       \
+        return *this;                                            \
+    }                                                            \
+    template <typename Auxiliary>                                \
+    register_type& method(                                       \
+        const char* decl,                                        \
+        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,                  \
+        auxiliary_wrapper<Auxiliary> aux,                        \
+        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}  \
+    )                                                            \
+    {                                                            \
+        this->method_impl(                                       \
+            decl,                                                \
+            gfn,                                                 \
+            generic_call_conv,                                   \
+            aux.to_address()                                     \
+        );                                                       \
+        return *this;                                            \
+    }
+
 #define ASBIND20_CLASS_WRAPPED_METHOD(register_type)                          \
     template <                                                                \
         auto Method,                                                          \
@@ -2549,6 +2636,79 @@ private:
         else                                                                  \
             this->method(decl, Method, call_conv<conv>);                      \
         return *this;                                                         \
+    }
+
+#define ASBIND20_CLASS_WRAPPED_METHOD_AUXILIARY(register_type)                     \
+    template <                                                                     \
+        auto Method,                                                               \
+        typename Auxiliary,                                                        \
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>                          \
+    register_type& method(                                                         \
+        use_generic_t,                                                             \
+        const char* decl,                                                          \
+        fp_wrapper_t<Method>,                                                      \
+        auxiliary_wrapper<Auxiliary> aux,                                          \
+        call_conv_t<CallConv>                                                      \
+    )                                                                              \
+    {                                                                              \
+        this->method_impl(                                                         \
+            decl,                                                                  \
+            to_asGENFUNC_t(fp<Method>, call_conv<CallConv>),                       \
+            generic_call_conv,                                                     \
+            aux.to_address()                                                       \
+        );                                                                         \
+        return *this;                                                              \
+    }                                                                              \
+    template <auto Method, typename Auxiliary>                                     \
+    register_type& method(                                                         \
+        use_generic_t,                                                             \
+        const char* decl,                                                          \
+        fp_wrapper_t<Method>,                                                      \
+        auxiliary_wrapper<Auxiliary> aux                                           \
+    )                                                                              \
+    {                                                                              \
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =                   \
+            method_callconv_aux<Method, Auxiliary>();                              \
+        this->method_impl(                                                         \
+            decl,                                                                  \
+            to_asGENFUNC_t(fp<Method>, call_conv<conv>),                           \
+            generic_call_conv,                                                     \
+            aux.to_address()                                                       \
+        );                                                                         \
+        return *this;                                                              \
+    }                                                                              \
+    template <                                                                     \
+        auto Method,                                                               \
+        typename Auxiliary,                                                        \
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>                          \
+    requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)                    \
+    register_type& method(                                                         \
+        const char* decl,                                                          \
+        fp_wrapper_t<Method>,                                                      \
+        auxiliary_wrapper<Auxiliary> aux,                                          \
+        call_conv_t<CallConv>                                                      \
+    )                                                                              \
+    {                                                                              \
+        if constexpr(ForceGeneric)                                                 \
+            this->method(use_generic, decl, fp<Method>, aux, call_conv<CallConv>); \
+        else                                                                       \
+            this->method(decl, Method, call_conv<CallConv>, aux);                  \
+        return *this;                                                              \
+    }                                                                              \
+    template <auto Method, typename Auxiliary>                                     \
+    register_type& method(                                                         \
+        const char* decl,                                                          \
+        fp_wrapper_t<Method>,                                                      \
+        auxiliary_wrapper<Auxiliary> aux                                           \
+    )                                                                              \
+    {                                                                              \
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =                   \
+            method_callconv_aux<Method, Auxiliary>();                              \
+        if constexpr(ForceGeneric)                                                 \
+            this->method(use_generic, decl, fp<Method>, aux, call_conv<conv>);     \
+        else                                                                       \
+            this->method(decl, Method, aux, call_conv<conv>);                      \
+        return *this;                                                              \
     }
 
 #define ASBIND20_CLASS_WRAPPED_LAMBDA_METHOD(register_type)                 \
@@ -2696,6 +2856,106 @@ private:
         return *this;                                                                            \
     }
 
+#define ASBIND20_CLASS_WRAPPED_VAR_TYPE_METHOD_AUXILIARY(register_type)                               \
+    template <                                                                                        \
+        auto Function,                                                                                \
+        std::size_t... Is,                                                                            \
+        typename Auxiliary,                                                                           \
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>                                             \
+    register_type& method(                                                                            \
+        use_generic_t,                                                                                \
+        const char* decl,                                                                             \
+        fp_wrapper_t<Function>,                                                                       \
+        var_type_t<Is...>,                                                                            \
+        auxiliary_wrapper<Auxiliary> aux,                                                             \
+        call_conv_t<CallConv>                                                                         \
+    )                                                                                                 \
+    {                                                                                                 \
+        this->method_impl(                                                                            \
+            decl,                                                                                     \
+            to_asGENFUNC_t(fp<Function>, call_conv<CallConv>, var_type<Is...>),                       \
+            generic_call_conv,                                                                        \
+            aux.to_address()                                                                          \
+        );                                                                                            \
+        return *this;                                                                                 \
+    }                                                                                                 \
+    template <                                                                                        \
+        auto Function,                                                                                \
+        std::size_t... Is,                                                                            \
+        typename Auxiliary,                                                                           \
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>                                             \
+    register_type& method(                                                                            \
+        const char* decl,                                                                             \
+        fp_wrapper_t<Function>,                                                                       \
+        var_type_t<Is...>,                                                                            \
+        auxiliary_wrapper<Auxiliary> aux,                                                             \
+        call_conv_t<CallConv>                                                                         \
+    )                                                                                                 \
+    {                                                                                                 \
+        if constexpr(ForceGeneric)                                                                    \
+            this->method(use_generic, decl, fp<Function>, var_type<Is...>, aux, call_conv<CallConv>); \
+        else                                                                                          \
+        {                                                                                             \
+            this->method_impl(                                                                        \
+                decl,                                                                                 \
+                Function,                                                                             \
+                call_conv<CallConv>,                                                                  \
+                aux.to_address()                                                                      \
+            );                                                                                        \
+        }                                                                                             \
+        return *this;                                                                                 \
+    }                                                                                                 \
+    template <                                                                                        \
+        auto Function,                                                                                \
+        std::size_t... Is,                                                                            \
+        typename Auxiliary>                                                                           \
+    register_type& method(                                                                            \
+        use_generic_t,                                                                                \
+        const char* decl,                                                                             \
+        fp_wrapper_t<Function>,                                                                       \
+        var_type_t<Is...>,                                                                            \
+        auxiliary_wrapper<Auxiliary> aux                                                              \
+    )                                                                                                 \
+    {                                                                                                 \
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =                                      \
+            method_callconv_aux<Function, Auxiliary>();                                               \
+        this->method(                                                                                 \
+            use_generic,                                                                              \
+            decl,                                                                                     \
+            fp<Function>,                                                                             \
+            var_type<Is...>,                                                                          \
+            aux,                                                                                      \
+            call_conv<conv>                                                                           \
+        );                                                                                            \
+        return *this;                                                                                 \
+    }                                                                                                 \
+    template <                                                                                        \
+        auto Function,                                                                                \
+        std::size_t... Is,                                                                            \
+        typename Auxiliary>                                                                           \
+    register_type& method(                                                                            \
+        const char* decl,                                                                             \
+        fp_wrapper_t<Function>,                                                                       \
+        var_type_t<Is...>,                                                                            \
+        auxiliary_wrapper<Auxiliary> aux                                                              \
+    )                                                                                                 \
+    {                                                                                                 \
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =                                      \
+            method_callconv_aux<Function, Auxiliary>();                                               \
+        if constexpr(ForceGeneric)                                                                    \
+            this->method(use_generic, decl, fp<Function>, var_type<Is...>, aux, call_conv<conv>);     \
+        else                                                                                          \
+        {                                                                                             \
+            this->method_impl(                                                                        \
+                decl,                                                                                 \
+                Function,                                                                             \
+                call_conv<conv>,                                                                      \
+                aux.to_address()                                                                      \
+            );                                                                                        \
+        }                                                                                             \
+        return *this;                                                                                 \
+    }
+
 #define ASBIND20_CLASS_WRAPPED_LAMBDA_VAR_TYPE_METHOD(register_type)                         \
     template <                                                                               \
         noncapturing_lambda Lambda,                                                          \
@@ -2810,6 +3070,7 @@ public:
         this->template register_object_type<Class>(flags);
     }
 
+private:
     template <typename Method>
     static consteval auto method_callconv() noexcept
         -> AS_NAMESPACE_QUALIFIER asECallConvTypes
@@ -2820,12 +3081,25 @@ public:
             return detail::deduce_method_callconv<Class, Method>();
     }
 
-private:
     template <auto Method>
     static consteval auto method_callconv() noexcept
         -> AS_NAMESPACE_QUALIFIER asECallConvTypes
     {
         return method_callconv<std::decay_t<decltype(Method)>>();
+    }
+
+    template <typename Method, typename Auxiliary>
+    static consteval auto method_callconv_aux() noexcept
+        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    {
+        return detail::deduce_method_callconv_aux<Class, Method, Auxiliary>();
+    }
+
+    template <auto Method, typename Auxiliary>
+    static consteval auto method_callconv_aux() noexcept
+        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    {
+        return method_callconv_aux<std::decay_t<decltype(Method)>, Auxiliary>();
     }
 
     std::string decl_constructor_impl(std::string_view params, bool explicit_) const
@@ -3870,9 +4144,12 @@ public:
     }
 
     ASBIND20_CLASS_METHOD(value_class)
+    ASBIND20_CLASS_METHOD_AUXILIARY(value_class)
     ASBIND20_CLASS_WRAPPED_METHOD(value_class)
+    ASBIND20_CLASS_WRAPPED_METHOD_AUXILIARY(value_class)
     ASBIND20_CLASS_WRAPPED_LAMBDA_METHOD(value_class)
     ASBIND20_CLASS_WRAPPED_VAR_TYPE_METHOD(value_class)
+    ASBIND20_CLASS_WRAPPED_VAR_TYPE_METHOD_AUXILIARY(value_class)
     ASBIND20_CLASS_WRAPPED_LAMBDA_VAR_TYPE_METHOD(value_class)
 
     value_class& property(const char* decl, std::size_t off)
@@ -3957,6 +4234,20 @@ private:
         return method_callconv<std::decay_t<decltype(Method)>>();
     }
 
+    template <typename Method, typename Auxiliary>
+    static consteval auto method_callconv_aux() noexcept
+        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    {
+        return detail::deduce_method_callconv_aux<Class, Method, Auxiliary>();
+    }
+
+    template <auto Method, typename Auxiliary>
+    static consteval auto method_callconv_aux() noexcept
+        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    {
+        return method_callconv_aux<std::decay_t<decltype(Method)>, Auxiliary>();
+    }
+
     static constexpr char decl_template_callback[] = "bool f(int&in,bool&out)";
 
 public:
@@ -4011,9 +4302,12 @@ public:
     }
 
     ASBIND20_CLASS_METHOD(reference_class)
+    ASBIND20_CLASS_METHOD_AUXILIARY(reference_class)
     ASBIND20_CLASS_WRAPPED_METHOD(reference_class)
+    ASBIND20_CLASS_WRAPPED_METHOD_AUXILIARY(reference_class)
     ASBIND20_CLASS_WRAPPED_LAMBDA_METHOD(reference_class)
     ASBIND20_CLASS_WRAPPED_VAR_TYPE_METHOD(reference_class)
+    ASBIND20_CLASS_WRAPPED_VAR_TYPE_METHOD_AUXILIARY(reference_class)
     ASBIND20_CLASS_WRAPPED_LAMBDA_VAR_TYPE_METHOD(reference_class)
 
 private:
@@ -4969,9 +5263,12 @@ public:
 };
 
 #undef ASBIND20_CLASS_METHOD
+#undef ASBIND20_CLASS_METHOD_AUXILIARY
 #undef ASBIND20_CLASS_WRAPPED_METHOD
+#undef ASBIND20_CLASS_WRAPPED_METHOD_AUXILIARY
 #undef ASBIND20_CLASS_WRAPPED_LAMBDA_METHOD
 #undef ASBIND20_CLASS_WRAPPED_VAR_TYPE_METHOD
+#undef ASBIND20_CLASS_WRAPPED_VAR_TYPE_METHOD_AUXILIARY
 #undef ASBIND20_CLASS_WRAPPED_LAMBDA_VAR_TYPE_METHOD
 
 template <typename Class, bool UseGeneric = false>
