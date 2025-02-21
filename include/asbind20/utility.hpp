@@ -1,3 +1,9 @@
+/**
+ * @file utility.hpp
+ * @author HenryAWE
+ * @brief Utilities for AngelScript and binding generator
+ */
+
 #ifndef ASBIND20_UTILITY_HPP
 #define ASBIND20_UTILITY_HPP
 
@@ -116,6 +122,11 @@ namespace detail
     using safe_tuple_elem_t = typename safe_tuple_elem<Idx, Tuple>::type;
 } // namespace detail
 
+/**
+ * @brief Function traits
+ *
+ * @tparam T Function type
+ */
 template <typename T>
 class function_traits : public detail::func_traits_impl<std::remove_cvref_t<T>>
 {
@@ -141,7 +152,11 @@ public:
     template <std::size_t Idx>
     using arg_type = std::tuple_element_t<Idx, args_tuple>;
 
-    // `void` if `Idx` is invalid
+    /**
+     * @brief `void` if `Idx` is invalid
+     *
+     * @tparam Idx Argument index
+     */
     template <std::size_t Idx>
     using arg_type_optional = detail::safe_tuple_elem_t<Idx, args_tuple>;
 
@@ -168,6 +183,11 @@ concept noncapturing_lambda = requires() {
     { +Lambda{} } -> native_function;
 } && std::is_empty_v<Lambda>;
 
+/**
+ * @brief Wrap NTTP function pointer as type
+ *
+ * @tparam Function NTTP function pointer
+ */
 template <native_function auto Function>
 struct fp_wrapper_t
 {
@@ -583,7 +603,7 @@ constexpr std::string string_concat(Args&&... args)
  *                     If the state value is invalid, the result will be "asEContextState({state})",
  *                     e.g. "asEContextState(-1)".
  */
-inline std::string to_string(asEContextState state)
+inline std::string to_string(AS_NAMESPACE_QUALIFIER asEContextState state)
 {
     switch(state)
     {
@@ -611,6 +631,82 @@ inline std::string to_string(asEContextState state)
         return string_concat(
             "asEContextState("sv,
             std::to_string(static_cast<int>(state)),
+            ')'
+        );
+    }
+}
+
+/**
+ * @brief Convert return code to string
+ */
+inline std::string to_string(AS_NAMESPACE_QUALIFIER asERetCodes ret)
+{
+    switch(ret)
+    {
+    case AS_NAMESPACE_QUALIFIER asSUCCESS:
+        return "asSUCCESS";
+    case AS_NAMESPACE_QUALIFIER asERROR:
+        return "asERROR";
+    case AS_NAMESPACE_QUALIFIER asCONTEXT_ACTIVE:
+        return "asCONTEXT_ACTIVE";
+    case AS_NAMESPACE_QUALIFIER asCONTEXT_NOT_FINISHED:
+        return "asCONTEXT_NOT_FINISHED";
+    case AS_NAMESPACE_QUALIFIER asCONTEXT_NOT_PREPARED:
+        return "asCONTEXT_NOT_PREPARED";
+    case AS_NAMESPACE_QUALIFIER asINVALID_ARG:
+        return "asINVALID_ARG";
+    case AS_NAMESPACE_QUALIFIER asNO_FUNCTION:
+        return "asNO_FUNCTION";
+    case AS_NAMESPACE_QUALIFIER asNOT_SUPPORTED:
+        return "asNOT_SUPPORTED";
+    case AS_NAMESPACE_QUALIFIER asINVALID_NAME:
+        return "asINVALID_NAME";
+    case AS_NAMESPACE_QUALIFIER asNAME_TAKEN:
+        return "asNAME_TAKEN";
+    case AS_NAMESPACE_QUALIFIER asINVALID_DECLARATION:
+        return "asINVALID_DECLARATION";
+    case AS_NAMESPACE_QUALIFIER asINVALID_OBJECT:
+        return "asINVALID_OBJECT";
+    case AS_NAMESPACE_QUALIFIER asINVALID_TYPE:
+        return "asINVALID_TYPE";
+    case AS_NAMESPACE_QUALIFIER asALREADY_REGISTERED:
+        return "asALREADY_REGISTERED";
+    case AS_NAMESPACE_QUALIFIER asMULTIPLE_FUNCTIONS:
+        return "asMULTIPLE_FUNCTIONS";
+    case AS_NAMESPACE_QUALIFIER asNO_MODULE:
+        return "asNO_MODULE";
+    case AS_NAMESPACE_QUALIFIER asNO_GLOBAL_VAR:
+        return "asNO_GLOBAL_VAR";
+    case AS_NAMESPACE_QUALIFIER asINVALID_CONFIGURATION:
+        return "asINVALID_CONFIGURATION";
+    case AS_NAMESPACE_QUALIFIER asINVALID_INTERFACE:
+        return "asINVALID_INTERFACE";
+    case AS_NAMESPACE_QUALIFIER asCANT_BIND_ALL_FUNCTIONS:
+        return "asCANT_BIND_ALL_FUNCTIONS";
+    case AS_NAMESPACE_QUALIFIER asLOWER_ARRAY_DIMENSION_NOT_REGISTERED:
+        return "asLOWER_ARRAY_DIMENSION_NOT_REGISTERED";
+    case AS_NAMESPACE_QUALIFIER asWRONG_CONFIG_GROUP:
+        return "asWRONG_CONFIG_GROUP";
+    case AS_NAMESPACE_QUALIFIER asCONFIG_GROUP_IS_IN_USE:
+        return "asCONFIG_GROUP_IS_IN_USE";
+    case AS_NAMESPACE_QUALIFIER asILLEGAL_BEHAVIOUR_FOR_TYPE:
+        return "asILLEGAL_BEHAVIOUR_FOR_TYPE";
+    case AS_NAMESPACE_QUALIFIER asWRONG_CALLING_CONV:
+        return "asWRONG_CALLING_CONV";
+    case AS_NAMESPACE_QUALIFIER asBUILD_IN_PROGRESS:
+        return "asBUILD_IN_PROGRESS";
+    case AS_NAMESPACE_QUALIFIER asINIT_GLOBAL_VARS_FAILED:
+        return "asINIT_GLOBAL_VARS_FAILED";
+    case AS_NAMESPACE_QUALIFIER asOUT_OF_MEMORY:
+        return "asOUT_OF_MEMORY";
+    case AS_NAMESPACE_QUALIFIER asMODULE_IS_IN_USE:
+        return "asMODULE_IS_IN_USE";
+
+    [[unlikely]] default:
+        using namespace std::literals;
+        return string_concat(
+            "asERetCodes("sv,
+            std::to_string(static_cast<int>(ret)),
             ')'
         );
     }
