@@ -213,8 +213,15 @@ void set_generic_return(
     }
     else if constexpr(std::is_class_v<Return>)
     {
-        void* mem = gen->GetAddressOfReturnLocation();
-        new(mem) Return(std::forward<Return>(ret));
+        if constexpr(is_only_constructible_v<Return, Return&&>)
+        {
+            void* mem = gen->GetAddressOfReturnLocation();
+            new(mem) Return(std::forward<Return>(ret));
+        }
+        else
+        {
+            gen->SetReturnObject((void*)std::addressof(ret));
+        }
     }
     else if constexpr(std::is_enum_v<Return>)
     {

@@ -12,6 +12,9 @@ public:
     template_val(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
         : subtype_id(ti->GetSubTypeId()) {}
 
+    template_val(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, const template_val& val)
+        : subtype_id(ti->GetSubTypeId()), value(val.value) {}
+
     template_val(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, int val)
         : subtype_id(ti->GetSubTypeId()), value(val) {}
 
@@ -44,15 +47,18 @@ static void register_template_val_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* 
         new(mem) template_val(ti, val1 * 100 + val2);
     };
 
+    constexpr AS_NAMESPACE_QUALIFIER asQWORD flags =
+        AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_CDA |
+        AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_ALLINTS |
+        AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_MORE_CONSTRUCTORS;
     template_value_class<template_val>(
         engine,
         "template_val<T>",
-        AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_CD |
-            AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_ALLINTS |
-            AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_MORE_CONSTRUCTORS
+        flags
     )
         .template_callback(template_callback)
         .default_constructor()
+        .opAssign()
         .constructor_function("int", use_explicit, &create_template_val)
         .constructor_function("int,int", wrapper)
         .destructor()

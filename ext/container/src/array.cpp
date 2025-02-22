@@ -2,6 +2,7 @@
 #include <cassert>
 #include <cstring>
 #include <algorithm>
+#include <stdexcept>
 #include <asbind20/invoke.hpp>
 
 #ifndef ASBIND20_EXT_ARRAY_CACHE_ID
@@ -674,23 +675,20 @@ script_array::size_type script_array::count(const void* value, size_type idx, si
     return counter;
 }
 
-script_optional* script_array::find_optional(const void* val, size_type idx)
+script_optional script_array::find_optional(const void* val, size_type idx)
 {
     asIScriptEngine* engine = m_ti->GetEngine();
 
     size_type result = find(val, idx);
 
     asITypeInfo* ret_ti = engine->GetTypeInfoByDecl("optional<uint>");
-    script_optional* opt = (script_optional*)engine->CreateScriptObject(ret_ti);
-    if(!opt) [[unlikely]]
-        return nullptr;
+    if(!ret_ti) [[unlikely]]
+        throw std::runtime_error("failed to get typeinfo of optional<uint>");
+
     if(result == -1)
-        return opt;
+        return script_optional(ret_ti);
 
-    assert(opt->get_type_info()->GetSubTypeId() == asTYPEID_UINT32);
-    opt->assign(&result);
-
-    return opt;
+    return script_optional(ret_ti, &result);
 }
 
 void script_array::copy_construct_range(void* start, const void* input_start, size_type n)
@@ -1868,7 +1866,7 @@ namespace detail
         if(engine->GetTypeIdByDecl("optional<uint>") >= 0)
         {
             c
-                .method("optional<uint>@ find_optional(const T&in, uint idx=0) const", fp<&script_array::find_optional>);
+                .method("optional<uint> find_optional(const T&in, uint idx=0) const", fp<&script_array::find_optional>);
         }
 
         if(as_default)

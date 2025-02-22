@@ -21,22 +21,22 @@ class script_optional
     friend void detail::register_script_optional_impl(asIScriptEngine* engine);
 
 public:
+    script_optional() = delete;
+    script_optional(const script_optional&) = delete;
+
     script_optional(asITypeInfo* ti);
+
+    script_optional(asITypeInfo* ti, const script_optional& other);
 
     script_optional(asITypeInfo* ti, const void* value);
 
-private:
     ~script_optional();
 
-public:
     script_optional& operator=(const script_optional& other);
 
     bool operator==(const script_optional& rhs) const;
 
     void assign(const void* val);
-
-    void* operator new(std::size_t bytes);
-    void operator delete(void* mem);
 
     bool has_value() const noexcept
     {
@@ -62,6 +62,22 @@ public:
     }
 
 private:
+    friend type_traits<script_optional>;
+
+    // For generic calling convention
+    void move_to_ret_loc(void* dst)
+    {
+        new(dst) script_optional(m_ti);
+
+        script_optional* opt = static_cast<script_optional*>(dst);
+        if(m_has_value)
+        {
+            opt->m_has_value = true;
+            std::memcpy(&opt->m_data, &m_data, sizeof(m_data));
+            m_has_value = false;
+        }
+    }
+
     asITypeInfo* m_ti = nullptr;
 
     union data_t
@@ -86,5 +102,17 @@ private:
     void release();
 };
 } // namespace asbind20::ext
+
+template <>
+struct asbind20::type_traits<asbind20::ext::script_optional>
+{
+    static int set_return(
+        AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen, ext::script_optional&& val
+    )
+    {
+        val.move_to_ret_loc(gen->GetAddressOfReturnLocation());
+        return AS_NAMESPACE_QUALIFIER asSUCCESS;
+    }
+};
 
 #endif

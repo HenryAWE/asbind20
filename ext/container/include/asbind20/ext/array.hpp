@@ -118,7 +118,7 @@ public:
 
     size_type count(const void* value, size_type idx = 0, size_type n = -1) const;
 
-    script_optional* find_optional(const void* val, size_type idx = 0);
+    script_optional find_optional(const void* val, size_type idx = 0);
 
     [[nodiscard]]
     asITypeInfo* script_type_info() const noexcept

@@ -18,6 +18,15 @@ script_optional::script_optional(asITypeInfo* ti)
     assert(m_has_value == false);
 }
 
+script_optional::script_optional(asITypeInfo* ti, const script_optional& other)
+    : m_ti(ti)
+{
+    m_ti->AddRef();
+    assert(m_ti == other.m_ti);
+    if(other.has_value())
+        assign(other.m_data.get(other.m_ti));
+}
+
 script_optional::script_optional(asITypeInfo* ti, const void* val)
     : m_ti(ti)
 {
@@ -54,18 +63,6 @@ void script_optional::assign(const void* val)
     assert(val != nullptr);
 
     m_has_value = m_data.copy_construct(m_ti, val);
-}
-
-void* script_optional::operator new(std::size_t bytes)
-{
-    return as_allocator<std::byte>::allocate(bytes);
-}
-
-void script_optional::operator delete(void* p)
-{
-    as_allocator<std::byte>::deallocate(
-        static_cast<std::byte*>(p), sizeof(script_optional)
-    );
 }
 
 void* script_optional::value()
@@ -226,12 +223,21 @@ namespace detail
     template <bool UseGeneric>
     void register_script_optional_impl(asIScriptEngine* engine)
     {
-        template_ref_class<script_optional, UseGeneric> c(engine, "optional<T>", asOBJ_SCOPED);
+        constexpr AS_NAMESPACE_QUALIFIER asQWORD flags =
+            AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_CDAK |
+            AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_ALLINTS |
+            AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_MORE_CONSTRUCTORS;
+        template_value_class<script_optional, UseGeneric> c(
+            engine,
+            "optional<T>",
+            flags
+        );
         c
             .template_callback(fp<&optional_template_callback>)
-            .default_factory()
-            .template factory<const void*>("const T&in")
-            .release(fp<&script_optional::release>)
+            .default_constructor()
+            .copy_constructor()
+            .template constructor<const void*>("const T&in")
+            .destructor()
             .opAssign()
             .method("optional<T>& opAssign(const T&in)", fp<&optional_opAssign_value>)
             .method("bool get_has_value() const property", fp<&script_optional::has_value>)
