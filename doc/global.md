@@ -33,12 +33,6 @@ asbind20::global(engine)
 
 ## Type Aliases and Enumerations
 ```c++
-enum class my_enum : int
-{
-    A,
-    B
-};
-
 asIScriptEngine* engine = ...;
 asbind20::global(engine)
     .funcdef("bool callback(int, int)")
@@ -46,10 +40,36 @@ asbind20::global(engine)
     // For those who feel more comfortable with the C++11 style `using alias = type`
     .using_("float32", "float");
 
+enum class my_enum : int
+{
+    A,
+    B
+};
+
 enum_<my_enum>(engine, "my_enum")
     .value(my_enum::A, "A")
     .value(my_enum::B, "B");
 ```
+
+Besides, the library provides tool for generating string representation of enum value at compile-time.
+```c++
+// The following code is equivalent to the above one
+asbind20::enum_<my_enum>(engine, "my_enum")
+    .value<my_enum::A>()
+    .value<my_enum::B>();
+```
+
+However, as static reflection is still waiting for the C++26, this feature relies on compiler extension and is platform dependent. **It has some limitations**. For example, it cannot generate string representation for enums with same value.
+```c++
+enum overlapped
+{
+    A = 1,
+    B = 1 // Not supported for this kind of enum value
+};
+```
+
+If you are interested in how this is achieved, you can read [this article written by YKIKO (Chinese)](https://zhuanlan.zhihu.com/p/680412313)
+(or author's [English translation](https://ykiko.me/en/articles/680412313/)).
 
 ## Special Functions
 Please check the official documentation of AngelScript for the requirements of following functions.

@@ -45,7 +45,8 @@ c
 You can find detailed example in extension for registering the `std::string`.
 
 ## Notes
-1. The type flags cannot be retrieved by `asGetTypeTraits<T>()` like `asOBJ_APP_CLASS_MORE_CONSTRUCTORS` or `asOBJ_APP_CLASS_ALLINTS` needs to be set manually.
+1. The type flags cannot be retrieved by `asGetTypeTraits<T>()` like `asOBJ_APP_CLASS_MORE_CONSTRUCTORS` or `asOBJ_APP_CLASS_ALLINTS` needs to be set manually.  
+   **If you cannot provide the correct flags, you will probably get some runtime errors like stack corruption!**
 
 2. If a wrapper function satisfies both `asCALL_CDECL_OBJFIRST` and `asCALL_CDECL_OBJLAST`, the binding generator will prefer the `asCALL_CDECL_OBJFIRST`, i.e., treating the first argument as `this`.  
   If you need `asCALL_CDECL_OBJLAST` for this kind of functions, you can specify the calling convention manually using a tag as the last argument.
@@ -69,9 +70,9 @@ Registered by `constructor<Args...>("params")`.
 The `params` string should only contains declarations of parameters such as `int val` or `float, float`.  
 If you want to register an explicit constructor, you can use the `use_explicit` tag. For example, `constructor<Args...>("params", asbind20::use_explicit)`.
 
-If you already have a wrapper for constructor, you can register it with `constructor_function()`. The supported calling convention of this helper are `GENERIC`, `CDECL_OBJLAST`, and `CDECL_OBJFIRST`.
+If you already have a wrapper for constructor, you can register it with `constructor_function()`. The supported calling conventions of this helper are `GENERIC`, `CDECL_OBJLAST`, and `CDECL_OBJFIRST`.
 
-NOTE: When deducing calling convention for constructors, asbind20 will treat `void*` as valid parameter that emulates `this`, because some libraries use `void*` directly for placement new.
+NOTE: When deducing calling convention for constructors, if the convention cannot be deduced by the pointer to class in parameters, asbind20 will fallback to treat `void*` as valid parameter that emulates `this`, because some libraries use `void*` directly for placement new.
 
 **WARNING: Remember to set the `asOBJ_APP_CLASS_MORE_CONSTRUCTORS` flag when registering a custom constructor (constructor other than default/copy constructor), otherwise you may get strange runtime error.**
 
@@ -82,6 +83,8 @@ It will generated a wrapper for calling the destructor (`~type()`) of the regist
 ### List Constructor
 Registered by `list_constructor<ListElementType>("pattern")`. This helper expects the registered type is constructible with `ListElementType*`.
 If your pattern is repeated or contains variable type (`?`) which cannot have a consistent element type, you can ignore this template argument. The `ListElementType` will be set to `void` by default.
+
+If you have a constructor that satisfies some common C++ paradigm, you can use a policy type as the second template argument. For example, if your class accept an iterator range of `int`, whose declaration is `template <typename Iterator> type(Iterator start, Iterator stop)`, you can register it by `.list_constructor<int, asbind20::policies::as_iterators>("repeat int")`. You can check the `namespace asbind20::policies` for more list constructor policies.
 
 If you already have a wrapper, you can register it with `list_constructor_function()`. The supported calling convention of this helper are `GENERIC`, `CDECL_OBJLAST`, and `CDECL_OBJFIRST`.
 
@@ -105,8 +108,11 @@ Given constant C++ references `a` and `b`, as well as a variable `val` of regist
 
 **Notes:**  
 1. In native mode, the binding generator will try to use the member version at first, then fallback to a lambda for using friend operators. The generic mode will directly use lambda for all operators.
-2. The wrapper requires `operator<=>` returns `std::weak_ordering` at least. The result of three way comparison will be translate to integral value recognized by AngelScript.
+2. The wrapper requires `operator<=>` returns `std::weak_ordering` at least, i.e., **no** `std::partial_ordering` support.  
+   The result of three way comparison will be translated to integral value recognized by AngelScript.
 3. Returning by value using native calling convention of AngelScript needs you set the type flags carefully, otherwise you might get error when receiving value from these functions. Besides, some types cannot be passed/returned by value in native calling convention on some platforms. If you encounter such situation, you can force asbind20 to use generic calling convention for the specific generated wrappers using the tag `use_generic`. For example, `c.opPostInc(asbind20::use_generic)`.
+
+If your operators are not included in the above list, you can register them by `method()` with a lambda for choosing the correct operator overload.
 
 ## Member Aliases
 You can register a member `funcdef`.  
@@ -129,13 +135,26 @@ The `behaviours_by_traits()` will use `asGetTypeTraits<T>()` to register default
 Register with advanced API `c.method(use_generic, "method decl", fp<&val_class:member_fun>)`. This will create a generic wrapper for the `val_class::member_fun` and register it with `asCALL_GENERIC` convention.
 
 # Registering a Reference Class
-For non-template reference class, register it with `ref_class` helper. This is similar to registering a value class. But the constructor is replaced by factory function. Thus, you need to register special behaviours for AngelScript handling lifetime of the registered object type, e.g. `addref()` and `release()`.
+For non-template reference class, register it with `ref_class` helper. This is similar to registering a value class. But the constructor is replaced by factory function. Thus, you need to register special behaviours for AngelScript to handle lifetime of the registered object type, e.g., `addref()` and `release()`.
+
+- Behaviors for handling lifetime:  
+
+| Registering Helper | `asEBehaviours`        | Script Declaration |
+| ------------------ | ---------------------- | ------------------ |
+| `addref()`         | `asBEHAVE_ADDREF`      | `void f()`         |
+| `release()`        | `asBEHAVE_RELEASE`     | `void f()`         |
+| `get_refcount()`   | `asBEHAVE_GETREFCOUNT` | `int f()`          |
+| `set_gc_flag()`    | `asBEHAVE_SETGCFLAG`   | `void f()`         |
+| `get_gc_flag()`    | `asBEHAVE_GETGCFLAG`   | `bool f()`         |
+| `enum_refs()`      | `asBEHAVE_ENUMREFS`    | `void f(int&in)`   |
+| `release_refs()`   | `asBEHAVE_RELEASEREFS` | `void f(int&in)`   |
 
 Besides, the generated operator wrappers don't support function that may return a reference class by value, e.g. `T opAdd(const T&in) const`.
 
 ## Template Class
-The template class is a special reference class. It can be registered with `template_class`. The binding generator will automatically handle the hidden type information (passed by `int&in` in AngelScript) as the first argument when generating factory function from constructors.  
-The template validation callback can be registered with `template_callback`. The C++ signature of the callback should be either `bool(asITypeType*, bool&)` or `bool(asITypeInfo*, bool*)`.
+The template class is a special reference class. It can be registered with `template_class`. The binding generator will automatically handle the hidden type information (passed by `int&in` in AngelScript) as the first argument when generating factory function from constructors.
+
+The template validation callback (`asBEHAVE_TEMPLATE_CALLBACK`) can be registered with `template_callback`. The C++ signature of the callback should be either `bool(asITypeInfo*, bool&)` or `bool(asITypeInfo*, bool*)`.
 
 You can find detailed example in extension for registering script array.
 
