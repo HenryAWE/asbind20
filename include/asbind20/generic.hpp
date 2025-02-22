@@ -280,6 +280,9 @@ void set_generic_return_by(
  *
  * @tparam FunctionType The function signature of wrapped function
  * @tparam CallConv Calling convention of original function, must support `this` pointer
+ *
+ * @note For `asCALL_THISCALL_OBJFIRST/LAST`, this function will return `this` for the `OBJFIRST/LAST`.
+ *       Please use the `get_generic_auxiliary` for the auxiliary pointer. @sa get_generic_auxiliary
  */
 template <
     typename FunctionType,
@@ -374,7 +377,7 @@ namespace detail
                 func,                                                               \
                 this_(gen),                                                         \
                 get_generic_arg<typename traits::template arg_type<Is>>(            \
-                    gen, static_cast<asUINT>(Is)                                    \
+                    gen, static_cast<AS_NAMESPACE_QUALIFIER asUINT>(Is)             \
                 )...                                                                \
             );                                                                      \
         }(std::make_index_sequence<traits::arg_count::value>());                    \
@@ -389,7 +392,7 @@ namespace detail
                 func,                                                               \
                 this_(gen),                                                         \
                 get_generic_arg<typename traits::template arg_type<Is + 1>>(        \
-                    gen, static_cast<asUINT>(Is)                                    \
+                    gen, static_cast<AS_NAMESPACE_QUALIFIER asUINT>(Is)             \
                 )...                                                                \
             );                                                                      \
         }(std::make_index_sequence<traits::arg_count::value - 1>());                \
@@ -403,7 +406,7 @@ namespace detail
                 gen,                                                                \
                 func,                                                               \
                 get_generic_arg<typename traits::template arg_type<Is>>(            \
-                    gen, static_cast<asUINT>(Is)                                    \
+                    gen, static_cast<AS_NAMESPACE_QUALIFIER asUINT>(Is)             \
                 )...,                                                               \
                 this_(gen)                                                          \
             );                                                                      \
@@ -417,7 +420,7 @@ namespace detail
                 gen,                                                                \
                 func,                                                               \
                 get_generic_arg<typename traits::template arg_type<Is>>(            \
-                    gen, static_cast<asUINT>(Is)                                    \
+                    gen, static_cast<AS_NAMESPACE_QUALIFIER asUINT>(Is)             \
                 )...                                                                \
             );                                                                      \
         }(std::make_index_sequence<traits::arg_count::value>());                    \
@@ -438,7 +441,7 @@ namespace detail
                 detail::var_type_helper<typename traits::template arg_type<Is>>(                        \
                     detail::var_type_tag<VarType, Is>{},                                                \
                     gen,                                                                                \
-                    static_cast<asUINT>(indices[Is])                                                    \
+                    static_cast<AS_NAMESPACE_QUALIFIER asUINT>(indices[Is])                             \
                 )...                                                                                    \
             );                                                                                          \
         }(std::make_index_sequence<indices.size()>());                                                  \
@@ -457,7 +460,7 @@ namespace detail
                 detail::var_type_helper<typename traits::template arg_type<Is + 1>>(                    \
                     detail::var_type_tag<VarType, Is>{},                                                \
                     gen,                                                                                \
-                    static_cast<asUINT>(indices[Is])                                                    \
+                    static_cast<AS_NAMESPACE_QUALIFIER asUINT>(indices[Is])                             \
                 )...                                                                                    \
             );                                                                                          \
         }(std::make_index_sequence<indices.size()>());                                                  \
@@ -475,7 +478,7 @@ namespace detail
                 detail::var_type_helper<typename traits::template arg_type<Is>>(                        \
                     detail::var_type_tag<VarType, Is>{},                                                \
                     gen,                                                                                \
-                    static_cast<asUINT>(indices[Is])                                                    \
+                    static_cast<AS_NAMESPACE_QUALIFIER asUINT>(indices[Is])                             \
                 )...,                                                                                   \
                 this_(gen)                                                                              \
             );                                                                                          \
@@ -494,7 +497,7 @@ namespace detail
                 detail::var_type_helper<typename traits::template arg_type<Is>>(                        \
                     detail::var_type_tag<VarType, Is>{},                                                \
                     gen,                                                                                \
-                    static_cast<asUINT>(indices[Is])                                                    \
+                    static_cast<AS_NAMESPACE_QUALIFIER asUINT>(indices[Is])                             \
                 )...                                                                                    \
             );                                                                                          \
         }(std::make_index_sequence<indices.size()>());                                                  \

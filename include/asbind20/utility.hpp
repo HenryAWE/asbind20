@@ -175,7 +175,7 @@ namespace detail
 
 template <typename T>
 concept native_function =
-    !std::is_convertible_v<T, asGENFUNC_t> &&
+    !std::is_convertible_v<T, AS_NAMESPACE_QUALIFIER asGENFUNC_t> &&
     detail::is_native_function_helper<std::decay_t<T>>;
 
 template <typename Lambda>

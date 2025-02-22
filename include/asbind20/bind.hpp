@@ -23,7 +23,7 @@ class auxiliary_wrapper
 {
 public:
     auxiliary_wrapper() = delete;
-    auxiliary_wrapper(const auxiliary_wrapper&) = default;
+    constexpr auxiliary_wrapper(const auxiliary_wrapper&) noexcept = default;
 
     explicit constexpr auxiliary_wrapper(T* aux) noexcept
         : m_aux(aux) {}
@@ -1300,14 +1300,20 @@ namespace wrappers
     class opConv
     {
     public:
-        static constexpr bool is_acceptable_native_call_conv(asECallConvTypes conv) noexcept
+        static constexpr bool is_acceptable_native_call_conv(
+            AS_NAMESPACE_QUALIFIER asECallConvTypes conv
+        ) noexcept
         {
-            return conv == asCALL_CDECL_OBJFIRST || conv == asCALL_CDECL_OBJLAST;
+            return conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
+                   conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
         }
 
-        static constexpr bool is_acceptable_call_conv(asECallConvTypes conv) noexcept
+        static constexpr bool is_acceptable_call_conv(
+            AS_NAMESPACE_QUALIFIER asECallConvTypes conv
+        ) noexcept
         {
-            return conv == asCALL_GENERIC || is_acceptable_native_call_conv(conv);
+            return conv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC ||
+                   is_acceptable_native_call_conv(conv);
         }
 
         using native_function_type = To (*)(Class&);
@@ -1316,15 +1322,16 @@ namespace wrappers
         requires(is_acceptable_call_conv(CallConv))
         using wrapper_type = std::conditional_t<
             CallConv == asCALL_GENERIC,
-            asGENFUNC_t,
+            AS_NAMESPACE_QUALIFIER asGENFUNC_t,
             native_function_type>;
 
-        template <asECallConvTypes CallConv>
-        static auto generate() noexcept -> wrapper_type<CallConv>
+        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        requires(is_acceptable_call_conv(CallConv))
+        static auto generate(call_conv_t<CallConv>) noexcept -> wrapper_type<CallConv>
         {
-            if constexpr(CallConv == asCALL_GENERIC)
+            if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
             {
-                return +[](asIScriptGeneric* gen) -> void
+                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
                 {
                     set_generic_return<To>(
                         gen,
@@ -1339,18 +1346,6 @@ namespace wrappers
                     return static_cast<To>(obj);
                 };
             }
-        }
-
-        asGENFUNC_t operator()(use_generic_t) const
-        {
-            return this->template generate<asCALL_GENERIC>();
-        }
-
-        template <asECallConvTypes CallConv>
-        requires(is_acceptable_call_conv(CallConv))
-        auto operator()(call_conv_t<CallConv>) const -> wrapper_type<CallConv>
-        {
-            return this->template generate<CallConv>();
         }
     };
 } // namespace wrappers
@@ -2430,8 +2425,9 @@ protected:
     template <typename Class, typename To>
     void opConv_impl_native(std::string_view ret, bool implicit)
     {
-        auto wrapper =
-            wrappers::opConv<Class, To>{}(call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>);
+        auto wrapper = wrappers::opConv<std::add_const_t<Class>, To>::generate(
+            call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+        );
 
         method_impl(
             decl_opConv(ret, implicit).c_str(),
@@ -2443,13 +2439,12 @@ protected:
     template <typename Class, typename To>
     void opConv_impl_generic(std::string_view ret, bool implicit)
     {
-        auto wrapper =
-            wrappers::opConv<Class, To>{}(use_generic);
+        auto wrapper = wrappers::opConv<std::add_const_t<Class>, To>::generate(generic_call_conv);
 
         method_impl(
             decl_opConv(ret, implicit).c_str(),
             wrapper,
-            call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>
+            generic_call_conv
         );
     }
 
