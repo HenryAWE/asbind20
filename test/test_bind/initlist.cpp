@@ -5,17 +5,11 @@ namespace test_bind
 {
 static void setup_initlist_test_env(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
-    asbind20::global(engine)
-        .message_callback(
-            +[](const asSMessageInfo* msg, void*)
-            {
-                std::cerr << msg->message << std::endl;
-            }
-        );
+    asbind_test::setup_message_callback(engine);
 }
 
 template <bool UseGeneric>
-void register_vector_of_ints(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void register_vector_of_ints(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     using namespace asbind20;
 
@@ -26,7 +20,7 @@ void register_vector_of_ints(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         .template list_constructor<int, policies::as_iterators>("repeat int");
 }
 
-void check_vector_ints(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void check_vector_ints(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     auto* m = engine->GetModule("test_vec_ints", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
 
@@ -101,7 +95,7 @@ struct my_vec_ints
 };
 
 template <asbind20::policies::initialization_list_policy Policy, bool UseGeneric>
-void register_my_vec_ints(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void register_my_vec_ints(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     using namespace asbind20;
 
@@ -112,7 +106,7 @@ void register_my_vec_ints(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         .template list_constructor<int, Policy>("repeat int");
 }
 
-void check_my_vec_ints(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void check_my_vec_ints(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     auto* m = engine->GetModule("test_my_vec_ints", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
 
@@ -177,7 +171,7 @@ struct from_init_list
 };
 
 template <bool UseGeneric>
-void register_from_init_list(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void register_from_init_list(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     using namespace asbind20;
 
@@ -186,7 +180,7 @@ void register_from_init_list(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         .template list_constructor<int, policies::as_initializer_list>("repeat int");
 }
 
-void check_from_init_list(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void check_from_init_list(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     auto* m = engine->GetModule("test_from_init_list", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
 
@@ -251,7 +245,7 @@ struct from_span
 };
 
 template <bool UseGeneric>
-void register_from_span(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void register_from_span(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     using namespace asbind20;
 
@@ -260,7 +254,7 @@ void register_from_span(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         .template list_constructor<int, policies::as_span>("repeat int");
 }
 
-void check_from_span(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void check_from_span(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     auto* m = engine->GetModule("test_from_span", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
 
@@ -556,7 +550,7 @@ public:
 };
 
 template <asbind20::policies::initialization_list_policy IListPolicy, bool UseGeneric>
-void register_ref_test_vector_with(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void register_ref_test_vector_with(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     using namespace asbind20;
     ref_class<ref_test_vector, UseGeneric>(engine, "ref_test_vector")
@@ -565,7 +559,7 @@ void register_ref_test_vector_with(AS_NAMESPACE_QUALIFIER asIScriptEngine* engin
         .template list_factory<int, IListPolicy>("repeat int");
 }
 
-void check_ref_test_vector(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void check_ref_test_vector(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     auto* m = engine->GetModule("ref_test_vector", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
 

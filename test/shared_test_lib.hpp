@@ -16,15 +16,15 @@ template <typename T>
         const char* state_str = "";
         switch(r.error())
         {
-        case asEXECUTION_FINISHED: state_str = "FINISHED"; break;
-        case asEXECUTION_SUSPENDED: state_str = "SUSPENDED"; break;
-        case asEXECUTION_ABORTED: state_str = "ABORTED"; break;
-        case asEXECUTION_EXCEPTION: state_str = "EXCEPTION"; break;
-        case asEXECUTION_PREPARED: state_str = "PREPARED"; break;
-        case asEXECUTION_UNINITIALIZED: state_str = "UNINITIALIZED"; break;
-        case asEXECUTION_ACTIVE: state_str = "ACTIVE"; break;
-        case asEXECUTION_ERROR: state_str = "ERROR"; break;
-        case asEXECUTION_DESERIALIZATION: state_str = "DESERIALIZATION"; break;
+        case AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED: state_str = "FINISHED"; break;
+        case AS_NAMESPACE_QUALIFIER asEXECUTION_SUSPENDED: state_str = "SUSPENDED"; break;
+        case AS_NAMESPACE_QUALIFIER asEXECUTION_ABORTED: state_str = "ABORTED"; break;
+        case AS_NAMESPACE_QUALIFIER asEXECUTION_EXCEPTION: state_str = "EXCEPTION"; break;
+        case AS_NAMESPACE_QUALIFIER asEXECUTION_PREPARED: state_str = "PREPARED"; break;
+        case AS_NAMESPACE_QUALIFIER asEXECUTION_UNINITIALIZED: state_str = "UNINITIALIZED"; break;
+        case AS_NAMESPACE_QUALIFIER asEXECUTION_ACTIVE: state_str = "ACTIVE"; break;
+        case AS_NAMESPACE_QUALIFIER asEXECUTION_ERROR: state_str = "ERROR"; break;
+        case AS_NAMESPACE_QUALIFIER asEXECUTION_DESERIALIZATION: state_str = "DESERIALIZATION"; break;
         }
 
         return ::testing::AssertionFailure()
@@ -32,17 +32,19 @@ template <typename T>
     }
 }
 
+void setup_message_callback(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine);
+
 class asbind_test_suite : public ::testing::Test
 {
 public:
-    void msg_callback(const asSMessageInfo* msg);
-    void ex_translator(asIScriptContext* ctx);
+    void msg_callback(const AS_NAMESPACE_QUALIFIER asSMessageInfo* msg);
+    void ex_translator(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx);
 
     void SetUp() override;
 
     void TearDown() override;
 
-    asIScriptEngine* get_engine() const noexcept
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* get_engine() const noexcept
     {
         return m_engine.get();
     }

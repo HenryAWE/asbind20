@@ -113,34 +113,35 @@ public:
     int value = 0;
 };
 
-void add_obj_last(int val, trivial_value_class* this_)
+static void add_obj_last(int val, trivial_value_class* this_)
 {
     this_->value += val;
 }
 
-void mul_obj_first(trivial_value_class* this_, int val)
+static void mul_obj_first(trivial_value_class* this_, int val)
 {
     this_->value *= val;
 }
 
-void add_obj_last_ref(int val, trivial_value_class& this_)
+static void add_obj_last_ref(int val, trivial_value_class& this_)
 {
     this_.value += val;
 }
 
-void mul_obj_first_ref(trivial_value_class& this_, int val)
+static void mul_obj_first_ref(trivial_value_class& this_, int val)
 {
     this_.value *= val;
 }
 
-void register_trivial_value_class(asIScriptEngine* engine)
+void register_trivial_value_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     using namespace asbind20;
 
     value_class<trivial_value_class> c(
         engine,
         "trivial_value_class",
-        asGetTypeTraits<trivial_value_class>() | asOBJ_APP_CLASS_ALLINTS | asOBJ_APP_CLASS_MORE_CONSTRUCTORS
+        AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_ALLINTS |
+            AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_MORE_CONSTRUCTORS
     );
     c
         .behaviours_by_traits()
@@ -174,7 +175,7 @@ void register_trivial_value_class(asIScriptEngine* engine)
             "void from_int(const ?&in)",
             [](trivial_value_class& v, void* ref, int type_id)
             {
-                if(type_id == asTYPEID_INT32)
+                if(type_id == AS_NAMESPACE_QUALIFIER asTYPEID_INT32)
                     v.value = *(int*)ref;
             }
         )
@@ -186,14 +187,15 @@ void register_trivial_value_class(asIScriptEngine* engine)
     EXPECT_FALSE(c.force_generic());
 }
 
-void register_trivial_value_class(asbind20::use_generic_t, asIScriptEngine* engine)
+void register_trivial_value_class(asbind20::use_generic_t, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     using namespace asbind20;
 
     value_class<trivial_value_class, true> c(
         engine,
         "trivial_value_class",
-        asGetTypeTraits<trivial_value_class>() | asOBJ_APP_CLASS_ALLINTS | asOBJ_APP_CLASS_MORE_CONSTRUCTORS
+        AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_ALLINTS |
+            AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_MORE_CONSTRUCTORS
     );
     c
         .behaviours_by_traits()
@@ -227,7 +229,7 @@ void register_trivial_value_class(asbind20::use_generic_t, asIScriptEngine* engi
             "void from_int(const ?&in)",
             [](trivial_value_class& v, void* ref, int type_id)
             {
-                if(type_id == asTYPEID_INT32)
+                if(type_id == AS_NAMESPACE_QUALIFIER asTYPEID_INT32)
                     v.value = *(int*)ref;
             },
             var_type<0>
@@ -354,7 +356,7 @@ bool test_12(trivial_value_class val)
 }
 )";
 
-static void check_trivial_class(asIScriptEngine* engine)
+static void check_trivial_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     asIScriptModule* m = engine->GetModule("test_value_class", asGM_ALWAYS_CREATE);
     ASSERT_TRUE(m);
@@ -423,7 +425,7 @@ TEST_F(asbind_test_suite, trivial_value_class)
     if(asbind20::has_max_portability())
         GTEST_SKIP() << "AS_MAX_PORTABILITY";
 
-    asIScriptEngine* engine = get_engine();
+    auto* engine = get_engine();
     register_trivial_value_class(engine);
 
     check_trivial_class(engine);
@@ -431,7 +433,7 @@ TEST_F(asbind_test_suite, trivial_value_class)
 
 TEST_F(asbind_test_suite_generic, trivial_value_class)
 {
-    asIScriptEngine* engine = get_engine();
+    auto* engine = get_engine();
     register_trivial_value_class(asbind20::use_generic, engine);
 
     check_trivial_class(engine);
@@ -514,7 +516,7 @@ struct friend_ops_helper
 };
 
 template <bool UseGeneric>
-void register_friend_ops(asIScriptEngine* engine, friend_ops_helper& helper)
+static void register_friend_ops(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, friend_ops_helper& helper)
 {
     using namespace asbind20;
 
@@ -595,7 +597,7 @@ int test_7()
 }
 )";
 
-static void check_friend_ops(asIScriptEngine* engine, friend_ops_helper& helper)
+static void check_friend_ops(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, friend_ops_helper& helper)
 {
     asIScriptModule* m = engine->GetModule("test_value_class", asGM_ALWAYS_CREATE);
     ASSERT_TRUE(m);
@@ -643,7 +645,7 @@ TEST_F(asbind_test_suite, friend_ops)
     if(asbind20::has_max_portability())
         GTEST_SKIP() << "AS_MAX_PORTABILITY";
 
-    asIScriptEngine* engine = get_engine();
+    auto* engine = get_engine();
 
     friend_ops_helper helper;
     register_friend_ops<false>(engine, helper);
@@ -653,7 +655,7 @@ TEST_F(asbind_test_suite, friend_ops)
 
 TEST_F(asbind_test_suite_generic, friend_ops)
 {
-    asIScriptEngine* engine = get_engine();
+    auto* engine = get_engine();
 
     friend_ops_helper helper;
     register_friend_ops<true>(engine, helper);

@@ -30,7 +30,7 @@ TEST(detail, generate_member_funcdef)
 
 TEST_F(asbind_test_suite, interface)
 {
-    asIScriptEngine* engine = get_engine();
+    auto* engine = get_engine();
 
     {
         asbind20::interface i(engine, "my_interface");
@@ -41,7 +41,7 @@ TEST_F(asbind_test_suite, interface)
         EXPECT_EQ(i.get_engine(), engine);
     }
 
-    asIScriptModule* m = engine->GetModule("test_interface", asGM_ALWAYS_CREATE);
+    auto* m = engine->GetModule("test_interface", asGM_ALWAYS_CREATE);
 
     m->AddScriptSection(
         "test_interface.as",
@@ -54,29 +54,29 @@ TEST_F(asbind_test_suite, interface)
     );
     ASSERT_GE(m->Build(), 0);
 
-    asIScriptContext* ctx = engine->CreateContext();
-    asIScriptFunction* func = m->GetFunctionByDecl("int test()");
+    auto* func = m->GetFunctionByDecl("int test()");
     ASSERT_TRUE(func);
 
-    auto result = asbind20::script_invoke<int>(ctx, func);
-    ASSERT_TRUE(result_has_value(result));
-    EXPECT_EQ(result.value(), 42);
-
-    ctx->Release();
+    {
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<int>(ctx, func);
+        ASSERT_TRUE(result_has_value(result));
+        EXPECT_EQ(result.value(), 42);
+    }
 
     m->Discard();
 }
 
 TEST_F(asbind_test_suite, funcdef_and_typedef)
 {
-    asIScriptEngine* engine = get_engine();
+    auto* engine = get_engine();
 
     asbind20::global(engine)
         .funcdef("bool callback(int, int)")
         .typedef_("float", "real32")
         .using_("float32", "float");
 
-    asIScriptModule* m = engine->GetModule("test_def", asGM_ALWAYS_CREATE);
+    auto* m = engine->GetModule("test_def", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
 
     m->AddScriptSection(
         "test_def.as",
@@ -89,7 +89,7 @@ TEST_F(asbind_test_suite, funcdef_and_typedef)
 
     {
         asbind20::request_context ctx(engine);
-        asIScriptFunction* func = m->GetFunctionByDecl("void main()");
+        auto* func = m->GetFunctionByDecl("void main()");
         ASSERT_TRUE(func);
 
         auto result = asbind20::script_invoke<void>(ctx, func);
@@ -98,7 +98,7 @@ TEST_F(asbind_test_suite, funcdef_and_typedef)
 
     {
         asbind20::request_context ctx(engine);
-        asIScriptFunction* func = m->GetFunctionByDecl("real32 get_pi()");
+        auto* func = m->GetFunctionByDecl("real32 get_pi()");
         ASSERT_TRUE(func);
 
         auto result = asbind20::script_invoke<float>(ctx, func);
@@ -108,7 +108,7 @@ TEST_F(asbind_test_suite, funcdef_and_typedef)
 
     {
         asbind20::request_context ctx(engine);
-        asIScriptFunction* func = m->GetFunctionByDecl("float32 get_pi_2()");
+        auto* func = m->GetFunctionByDecl("float32 get_pi_2()");
         ASSERT_TRUE(func);
 
         auto result = asbind20::script_invoke<float>(ctx, func);
@@ -127,7 +127,7 @@ int my_div(int a, int b)
 }
 
 // AngelScript decl: int my_mul(int a, int b)
-void my_mul(asIScriptGeneric* gen)
+void my_mul(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
 {
     int a = asbind20::get_generic_arg<int>(gen, 0);
     int b = asbind20::get_generic_arg<int>(gen, 1);
@@ -283,12 +283,12 @@ TEST_F(asbind_test_suite, generic_wrapper)
 {
     using namespace asbind20;
 
-    asIScriptEngine* engine = get_engine();
+    auto* engine = get_engine();
 
-    asGENFUNC_t my_div_gen = to_asGENFUNC_t(fp<&test_bind::my_div>, call_conv<asCALL_CDECL>);
-    asGENFUNC_t my_mul_gen = to_asGENFUNC_t(test_bind::my_mul, call_conv<asCALL_GENERIC>);
-    asGENFUNC_t my_add_gen = to_asGENFUNC_t(
-        [](asIScriptGeneric* gen) -> void
+    AS_NAMESPACE_QUALIFIER asGENFUNC_t my_div_gen = to_asGENFUNC_t(fp<&test_bind::my_div>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>);
+    AS_NAMESPACE_QUALIFIER asGENFUNC_t my_mul_gen = to_asGENFUNC_t(test_bind::my_mul, call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>);
+    AS_NAMESPACE_QUALIFIER asGENFUNC_t my_add_gen = to_asGENFUNC_t(
+        [](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
         {
             int a = asbind20::get_generic_arg<int>(gen, 0);
             int b = asbind20::get_generic_arg<int>(gen, 1);
@@ -297,17 +297,17 @@ TEST_F(asbind_test_suite, generic_wrapper)
         call_conv<asCALL_GENERIC>
     );
 
-    asGENFUNC_t out_str_gen = to_asGENFUNC_t(fp<&test_bind::out_str>, call_conv<asCALL_CDECL>);
-    asGENFUNC_t my_to_str_gen = to_asGENFUNC_t(fp<&test_bind::my_to_str>, call_conv<asCALL_CDECL>, var_type<0>);
-    asGENFUNC_t my_to_str2_gen = to_asGENFUNC_t(fp<&test_bind::my_to_str2>, call_conv<asCALL_CDECL>, var_type<1>);
+    AS_NAMESPACE_QUALIFIER asGENFUNC_t out_str_gen = to_asGENFUNC_t(fp<&test_bind::out_str>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>);
+    AS_NAMESPACE_QUALIFIER asGENFUNC_t my_to_str_gen = to_asGENFUNC_t(fp<&test_bind::my_to_str>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>, var_type<0>);
+    AS_NAMESPACE_QUALIFIER asGENFUNC_t my_to_str2_gen = to_asGENFUNC_t(fp<&test_bind::my_to_str2>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>, var_type<1>);
 
     using test_bind::member_var_type;
-    asGENFUNC_t mem_to_str1 = to_asGENFUNC_t(fp<&member_var_type::mem_to_str1>, call_conv<asCALL_THISCALL>, var_type<0>);
-    asGENFUNC_t mem_to_str2 = to_asGENFUNC_t(fp<&member_var_type::mem_to_str2>, call_conv<asCALL_THISCALL>, var_type<1>);
-    asGENFUNC_t mem_to_str3 = to_asGENFUNC_t(fp<&test_bind::mem_to_str3>, call_conv<asCALL_CDECL_OBJFIRST>, var_type<0>);
-    asGENFUNC_t mem_to_str4 = to_asGENFUNC_t(fp<&test_bind::mem_to_str4>, call_conv<asCALL_CDECL_OBJFIRST>, var_type<1>);
-    asGENFUNC_t mem_to_str5 = to_asGENFUNC_t(fp<&test_bind::mem_to_str5>, call_conv<asCALL_CDECL_OBJLAST>, var_type<0>);
-    asGENFUNC_t mem_to_str6 = to_asGENFUNC_t(fp<&test_bind::mem_to_str6>, call_conv<asCALL_CDECL_OBJLAST>, var_type<1>);
+    AS_NAMESPACE_QUALIFIER asGENFUNC_t mem_to_str1 = to_asGENFUNC_t(fp<&member_var_type::mem_to_str1>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>, var_type<0>);
+    AS_NAMESPACE_QUALIFIER asGENFUNC_t mem_to_str2 = to_asGENFUNC_t(fp<&member_var_type::mem_to_str2>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>, var_type<1>);
+    AS_NAMESPACE_QUALIFIER asGENFUNC_t mem_to_str3 = to_asGENFUNC_t(fp<&test_bind::mem_to_str3>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>, var_type<0>);
+    AS_NAMESPACE_QUALIFIER asGENFUNC_t mem_to_str4 = to_asGENFUNC_t(fp<&test_bind::mem_to_str4>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>, var_type<1>);
+    AS_NAMESPACE_QUALIFIER asGENFUNC_t mem_to_str5 = to_asGENFUNC_t(fp<&test_bind::mem_to_str5>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>, var_type<0>);
+    AS_NAMESPACE_QUALIFIER asGENFUNC_t mem_to_str6 = to_asGENFUNC_t(fp<&test_bind::mem_to_str6>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>, var_type<1>);
 
     global<true>(engine)
         .function("int my_div(int a, int b)", my_div_gen)
@@ -328,7 +328,7 @@ TEST_F(asbind_test_suite, generic_wrapper)
         .method("string to_str5(const ?&in)", mem_to_str5)
         .method("void to_str6(int prefix_num, const ?&in, string&out)", mem_to_str6);
 
-    asIScriptModule* m = engine->GetModule("test_generic", asGM_ALWAYS_CREATE);
+    auto* m = engine->GetModule("test_generic", asGM_ALWAYS_CREATE);
 
     m->AddScriptSection(
         "test_def.as",
@@ -364,7 +364,7 @@ TEST_F(asbind_test_suite, generic_wrapper)
 
     {
         request_context ctx(engine);
-        asIScriptFunction* func = m->GetFunctionByDecl("void main()");
+        auto* func = m->GetFunctionByDecl("void main()");
         ASSERT_TRUE(func);
         auto result = script_invoke<void>(ctx, func);
         EXPECT_TRUE(result_has_value(result));
@@ -372,7 +372,7 @@ TEST_F(asbind_test_suite, generic_wrapper)
 
     {
         request_context ctx(engine);
-        asIScriptFunction* func = m->GetFunctionByDecl("void test_member()");
+        auto* func = m->GetFunctionByDecl("void test_member()");
         ASSERT_TRUE(func);
         auto result = script_invoke<void>(ctx, func);
         EXPECT_TRUE(result_has_value(result));
@@ -392,7 +392,7 @@ enum class my_enum : int
 
 TEST_F(asbind_test_suite, enum)
 {
-    asIScriptEngine* engine = get_engine();
+    auto* engine = get_engine();
 
     using test_bind::my_enum;
 
@@ -401,7 +401,7 @@ TEST_F(asbind_test_suite, enum)
         .enum_value("my_enum", my_enum::A, "A")
         .enum_value("my_enum", my_enum::B, "B");
 
-    asIScriptModule* m = engine->GetModule("test_enum", asGM_ALWAYS_CREATE);
+    auto* m = engine->GetModule("test_enum", asGM_ALWAYS_CREATE);
 
     m->AddScriptSection(
         "test_enum.as",
@@ -412,7 +412,7 @@ TEST_F(asbind_test_suite, enum)
 
     {
         asbind20::request_context ctx(engine);
-        asIScriptFunction* func = m->GetFunctionByDecl("my_enum get_enum_val()");
+        auto* func = m->GetFunctionByDecl("my_enum get_enum_val()");
         ASSERT_TRUE(func);
 
         auto result = asbind20::script_invoke<my_enum>(ctx, func);
@@ -422,7 +422,7 @@ TEST_F(asbind_test_suite, enum)
 
     {
         asbind20::request_context ctx(engine);
-        asIScriptFunction* func = m->GetFunctionByDecl("bool check_enum_val(my_enum val)");
+        auto* func = m->GetFunctionByDecl("bool check_enum_val(my_enum val)");
         ASSERT_TRUE(func);
 
         auto result = asbind20::script_invoke<bool>(ctx, func, my_enum::B);
@@ -439,7 +439,7 @@ TEST_F(asbind_test_suite, enum_helper)
     GTEST_SKIP() << "ASBIND20_HAS_STATIC_ENUM_NAME not defined";
 
 #else
-    asIScriptEngine* engine = get_engine();
+    auto* engine = get_engine();
 
     using test_bind::my_enum;
     {
@@ -451,7 +451,7 @@ TEST_F(asbind_test_suite, enum_helper)
         EXPECT_EQ(e.get_engine(), engine);
     }
 
-    asIScriptModule* m = engine->GetModule("test_enum", asGM_ALWAYS_CREATE);
+    auto* m = engine->GetModule("test_enum", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
 
     m->AddScriptSection(
         "test_enum.as",
@@ -462,7 +462,7 @@ TEST_F(asbind_test_suite, enum_helper)
 
     {
         asbind20::request_context ctx(engine);
-        asIScriptFunction* func = m->GetFunctionByDecl("my_enum get_enum_val()");
+        auto* func = m->GetFunctionByDecl("my_enum get_enum_val()");
         ASSERT_TRUE(func);
 
         auto result = asbind20::script_invoke<my_enum>(ctx, func);
@@ -472,7 +472,7 @@ TEST_F(asbind_test_suite, enum_helper)
 
     {
         asbind20::request_context ctx(engine);
-        asIScriptFunction* func = m->GetFunctionByDecl("bool check_enum_val(my_enum val)");
+        auto* func = m->GetFunctionByDecl("bool check_enum_val(my_enum val)");
         ASSERT_TRUE(func);
 
         auto result = asbind20::script_invoke<bool>(ctx, func, my_enum::B);
@@ -487,8 +487,8 @@ TEST_F(asbind_test_suite, enum_helper)
 int main(int argc, char* argv[])
 {
     ::testing::InitGoogleTest(&argc, argv);
-    std::cerr << "asGetLibraryVersion(): " << asGetLibraryVersion() << std::endl;
-    std::cerr << "asGetLibraryOptions(): " << asGetLibraryOptions() << std::endl;
+    std::cerr << "asGetLibraryVersion(): " << AS_NAMESPACE_QUALIFIER asGetLibraryVersion() << std::endl;
+    std::cerr << "asGetLibraryOptions(): " << AS_NAMESPACE_QUALIFIER asGetLibraryOptions() << std::endl;
     std::cerr << "asbind20::library_version(): " << asbind20::library_version() << std::endl;
 
 #ifdef ASBIND20_HAS_AS_INITIALIZER_LIST

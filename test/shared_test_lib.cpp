@@ -8,16 +8,38 @@
 
 namespace asbind_test
 {
-void asbind_test_suite::msg_callback(const asSMessageInfo* msg)
+void setup_message_callback(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
-    if(msg->type == asEMsgType::asMSGTYPE_ERROR)
+    asbind20::global(engine)
+        .message_callback(
+            +[](const AS_NAMESPACE_QUALIFIER asSMessageInfo* msg, void*)
+            {
+                switch(msg->type)
+                {
+                case AS_NAMESPACE_QUALIFIER asMSGTYPE_ERROR:
+                    std::cerr << "ERROR: ";
+                    break;
+                case AS_NAMESPACE_QUALIFIER asMSGTYPE_WARNING:
+                    std::cerr << "WARNING: ";
+                    break;
+                case AS_NAMESPACE_QUALIFIER asMSGTYPE_INFORMATION:
+                    std::cerr << "INFO: ";
+                }
+                std::cerr << msg->message << std::endl;
+            }
+        );
+}
+
+void asbind_test_suite::msg_callback(const AS_NAMESPACE_QUALIFIER asSMessageInfo* msg)
+{
+    if(msg->type == AS_NAMESPACE_QUALIFIER asMSGTYPE_ERROR)
     {
         FAIL()
             << msg->section
             << "(" << msg->row << ':' << msg->col << "): "
             << msg->message;
     }
-    else if(msg->type == asEMsgType::asMSGTYPE_WARNING)
+    else if(msg->type == AS_NAMESPACE_QUALIFIER asMSGTYPE_WARNING)
     {
         std::cerr
             << msg->section
@@ -27,7 +49,7 @@ void asbind_test_suite::msg_callback(const asSMessageInfo* msg)
     }
 }
 
-void asbind_test_suite::ex_translator(asIScriptContext* ctx)
+void asbind_test_suite::ex_translator(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx)
 {
     try
     {
@@ -64,10 +86,10 @@ void asbind_test_suite::SetUp()
     m_engine = asbind20::make_script_engine();
     asbind20::global g(m_engine);
     g
-        .message_callback(&asbind_test_suite::msg_callback ,* this)
+        .message_callback(&asbind_test_suite::msg_callback, *this)
         .exception_translator(&asbind_test_suite::ex_translator, *this);
 
-    m_engine->SetEngineProperty(asEP_USE_CHARACTER_LITERALS, true);
+    m_engine->SetEngineProperty(AS_NAMESPACE_QUALIFIER asEP_USE_CHARACTER_LITERALS, true);
 
     register_all();
 }
@@ -138,7 +160,7 @@ void asbind_test_suite::register_all()
     );
 
     global(m_engine)
-        .function(use_generic, "void print(const string &in msg)", fp<&test_print>);
+        .function(use_generic, "void print(const string&in msg)", fp<&test_print>);
 }
 
 void asbind_test_suite_generic::register_all()

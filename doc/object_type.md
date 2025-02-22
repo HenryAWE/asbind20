@@ -163,5 +163,7 @@ You can find detailed example in extension for registering script array.
 asIScriptEngine* engine = ...;
 asbind20::interface(engine, "my_interface")
     // Declaration only
-    .method("int get() const");
+    .method("int get() const")
+    .funcdef("int callback(int)")
+    .method("int invoke(callback@ cb) const");
 ```

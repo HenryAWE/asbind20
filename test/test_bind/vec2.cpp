@@ -4,7 +4,7 @@
 #include <asbind20/ext/stdstring.hpp>
 #include <asbind20/ext/assert.hpp>
 
-constexpr char vec2_test_script[] = R"(void test0()
+constexpr char vec2_test_script[] = R"AngelScript(void test0()
 {
     vec2 v1;
     assert(v1.x == 0);
@@ -20,7 +20,14 @@ void test1()
     vec2 v2(0, 1);
     assert(v1 * v2 == 0);
 }
-)";
+
+void test2()
+{
+    vec2 v1 = {1, 0};
+    assert(v1 == vec2(1, 0));
+    assert(string(v1) == "(1, 0)");
+}
+)AngelScript";
 
 namespace test_bind
 {
@@ -87,10 +94,11 @@ void register_vec2(asIScriptEngine* engine)
     using namespace asbind20;
 
     value_class<vec2>(
-        engine, "vec2", asOBJ_APP_CLASS_ALLFLOATS | asOBJ_APP_CLASS_MORE_CONSTRUCTORS
+        engine, "vec2", asOBJ_POD | asOBJ_APP_CLASS_ALLFLOATS | asOBJ_APP_CLASS_MORE_CONSTRUCTORS
     )
-        .behaviours_by_traits()
+        .behaviours_by_traits(asOBJ_POD | AS_NAMESPACE_QUALIFIER asGetTypeTraits<vec2>())
         .constructor<float, float>("float,float")
+        .list_constructor<float, policies::apply_to<2>>("float,float")
         .opEquals()
         .opAdd()
         .opNeg()
@@ -115,6 +123,7 @@ void register_vec2(asbind20::use_generic_t, asIScriptEngine* engine)
     )
         .behaviours_by_traits()
         .constructor<float, float>("float,float")
+        .list_constructor<float, policies::apply_to<2>>("float,float")
         .opEquals()
         .opAdd()
         .opNeg()
@@ -135,13 +144,7 @@ void setup_bind_vec2_env(
     bool generic
 )
 {
-    asbind20::global(engine)
-        .message_callback(
-            +[](const asSMessageInfo* msg, void*)
-            {
-                std::cerr << msg->message << std::endl;
-            }
-        );
+    asbind_test::setup_message_callback(engine);
     asbind20::ext::register_std_string(engine, true, generic);
     asbind20::ext::register_script_assert(
         engine,
@@ -157,7 +160,7 @@ void setup_bind_vec2_env(
         register_vec2(engine);
 }
 
-static void run_script(asIScriptEngine* engine)
+static void run_vec2_test_script(asIScriptEngine* engine)
 {
     using asbind_test::result_has_value;
 
@@ -166,7 +169,7 @@ static void run_script(asIScriptEngine* engine)
     m->AddScriptSection("vec2_test_script.as", vec2_test_script);
     ASSERT_GE(m->Build(), 0);
 
-    for(int idx : {0, 1})
+    for(int idx : {0, 1, 2})
     {
         auto f = m->GetFunctionByDecl(
             asbind20::string_concat("void test", std::to_string(idx), "()").c_str()
@@ -191,7 +194,7 @@ TEST(bind_vec2, native)
     auto engine = asbind20::make_script_engine();
     test_bind::setup_bind_vec2_env(engine, false);
 
-    test_bind::run_script(engine);
+    test_bind::run_vec2_test_script(engine);
 }
 
 TEST(bind_vec2, generic)
@@ -199,5 +202,5 @@ TEST(bind_vec2, generic)
     auto engine = asbind20::make_script_engine();
     test_bind::setup_bind_vec2_env(engine, true);
 
-    test_bind::run_script(engine);
+    test_bind::run_vec2_test_script(engine);
 }

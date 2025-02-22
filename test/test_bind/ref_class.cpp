@@ -207,11 +207,11 @@ int test_7()
 }
 )";
 
-static void check_ref_class(asIScriptEngine* engine)
+static void check_ref_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     using test_bind::my_ref_class;
 
-    asIScriptModule* m = engine->GetModule("test_value_class", asGM_ALWAYS_CREATE);
+    auto* m = engine->GetModule("test_value_class", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
 
     m->AddScriptSection(
         "test_ref_class.as",
@@ -246,7 +246,7 @@ TEST_F(asbind_test_suite, ref_class)
     if(asbind20::has_max_portability())
         GTEST_SKIP() << "AS_MAX_PORTABILITY";
 
-    asIScriptEngine* engine = get_engine();
+    auto* engine = get_engine();
     register_ref_class(engine);
 
     check_ref_class(engine);
@@ -254,7 +254,7 @@ TEST_F(asbind_test_suite, ref_class)
 
 TEST_F(asbind_test_suite_generic, ref_class)
 {
-    asIScriptEngine* engine = get_engine();
+    auto* engine = get_engine();
     register_ref_class(asbind20::use_generic, engine);
 
     check_ref_class(engine);
@@ -322,7 +322,7 @@ struct ref_helper
 };
 
 template <bool UseGeneric>
-void register_ref_class_for_helper(asIScriptEngine* engine, ref_helper& helper)
+static void register_ref_class_for_helper(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, ref_helper& helper)
 {
     using namespace asbind20;
 
@@ -342,11 +342,11 @@ void register_ref_class_for_helper(asIScriptEngine* engine, ref_helper& helper)
         .property("int value", &ref_class_for_helper::value);
 }
 
-void check_ref_class_for_helper(asIScriptEngine* engine, ref_helper& helper)
+static void check_ref_class_for_helper(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, ref_helper& helper)
 {
     using test_bind::ref_class_for_helper;
 
-    auto* m = engine->GetModule("test_value_class", asGM_ALWAYS_CREATE);
+    auto* m = engine->GetModule("test_value_class", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
 
     m->AddScriptSection(
         "test_ref_class.as",

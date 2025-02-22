@@ -16,23 +16,28 @@ void test1()
 
 namespace test_bind
 {
-struct ref_string
+class ref_string
 {
+public:
     static ref_string* create()
     {
-        return new ref_string(std::string(), 1);
+        return new ref_string(std::string());
     }
 
     static ref_string* from_str(std::string_view sv)
     {
-        return new ref_string(std::string(sv), 1);
+        return new ref_string(std::string(sv));
     }
 
+    ref_string(std::string s)
+        : str(std::move(s)) {}
+
     std::string str;
-    AS_NAMESPACE_QUALIFIER asUINT refcount;
 
 private:
     ~ref_string() = default;
+
+    AS_NAMESPACE_QUALIFIER asUINT m_refcount = 1;
 
 public:
     ref_string& operator=(const ref_string& rhs)
@@ -41,7 +46,7 @@ public:
         return *this;
     }
 
-    char get_opIndex(asUINT idx) const
+    char get_opIndex(AS_NAMESPACE_QUALIFIER asUINT idx) const
     {
         if(idx > str.size())
             return '\0';
@@ -50,21 +55,22 @@ public:
 
     void addref()
     {
-        ++refcount;
+        ++m_refcount;
     }
 
     void release()
     {
-        --refcount;
-        if(refcount == 0)
+        assert(m_refcount >= 1);
+        --m_refcount;
+        if(m_refcount == 0)
             delete this;
     }
 };
 
-class ref_string_factory : public asIStringFactory
+class ref_string_factory : public AS_NAMESPACE_QUALIFIER asIStringFactory
 {
 public:
-    const void* GetStringConstant(const char* data, asUINT length) override
+    const void* GetStringConstant(const char* data, AS_NAMESPACE_QUALIFIER asUINT length) override
     {
         return ref_string::from_str(std::string_view(data, length));
     }
@@ -72,23 +78,23 @@ public:
     int ReleaseStringConstant(const void* str) override
     {
         if(!str)
-            return asERROR;
+            return AS_NAMESPACE_QUALIFIER asERROR;
 
         auto* ptr = (ref_string*)str;
         ptr->release();
-        return asSUCCESS;
+        return AS_NAMESPACE_QUALIFIER asSUCCESS;
     }
 
-    int GetRawStringData(const void* str, char* data, asUINT* length) const override
+    int GetRawStringData(const void* str, char* data, AS_NAMESPACE_QUALIFIER asUINT* length) const override
     {
         if(!str)
-            return asERROR;
+            return AS_NAMESPACE_QUALIFIER asERROR;
         auto ptr = (ref_string*)str;
         if(length)
             *length = (asUINT)ptr->str.size();
         if(data)
             ptr->str.copy(data, ptr->str.size());
-        return asSUCCESS;
+        return AS_NAMESPACE_QUALIFIER asSUCCESS;
     }
 
     static ref_string_factory& get()
@@ -111,12 +117,12 @@ void register_ref_string(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         .method(
             "uint get_size() const property",
             [](ref_string* ref)
-            { return asUINT(ref->str.size()); }
+            { return AS_NAMESPACE_QUALIFIER asUINT(ref->str.size()); }
         )
         .as_string(&ref_string_factory::get());
 }
 
-void register_ref_string(asbind20::use_generic_t, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void register_ref_string(asbind20::use_generic_t, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     using namespace asbind20;
     using test_bind::ref_string;
@@ -134,18 +140,12 @@ void register_ref_string(asbind20::use_generic_t, AS_NAMESPACE_QUALIFIER asIScri
         .as_string(&ref_string_factory::get());
 }
 
-void setup_bind_ref_string_env(
-    asIScriptEngine* engine,
+static void setup_bind_ref_string_env(
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
     bool generic
 )
 {
-    asbind20::global(engine)
-        .message_callback(
-            +[](const asSMessageInfo* msg, void*)
-            {
-                std::cerr << msg->message << std::endl;
-            }
-        );
+    asbind_test::setup_message_callback(engine);
 
     if(generic)
         register_ref_string(asbind20::use_generic, engine);

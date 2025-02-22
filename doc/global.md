@@ -74,9 +74,9 @@ If you are interested in how this is achieved, you can read [this article writte
 ## Special Functions
 Please check the official documentation of AngelScript for the requirements of following functions.
 
-### Message Callback
+### [Message Callback](https://www.angelcode.com/angelscript/sdk/docs/manual/doc_compile_script.html#doc_compile_script_msg)
 Registered by `message_callback`.
 
-### Exception Translator
+### [Exception Translator](https://www.angelcode.com/angelscript/sdk/docs/manual/doc_cpp_exceptions.html)
 Registered by `exception_translator`.  
 NOTE: If your AngelScript is built without exception support (`asGetLibraryOptions()` reports `AS_NO_EXCEPTIONS`), this function will fail to register the translator.

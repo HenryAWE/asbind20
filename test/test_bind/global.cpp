@@ -7,7 +7,7 @@ using namespace asbind_test;
 
 namespace test_bind
 {
-void set_int(int& out)
+static void set_int(int& out)
 {
     out = 1013;
 }
@@ -23,7 +23,7 @@ struct class_wrapper
 };
 
 // AngelScript declaration: int from_aux()
-void from_aux(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+static void from_aux(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
 {
     auto val = std::bit_cast<std::intptr_t>(gen->GetAuxiliary());
 
@@ -32,7 +32,7 @@ void from_aux(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
 } // namespace test_bind
 
 static void register_global_funcs(
-    asIScriptEngine* engine, test_bind::class_wrapper& wrapper, std::string& global_val
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, test_bind::class_wrapper& wrapper, std::string& global_val
 )
 {
     using asbind20::fp, asbind20::auxiliary, asbind20::aux_value;
@@ -58,7 +58,7 @@ static void register_global_funcs(
 }
 
 static void register_global_funcs(
-    asbind20::use_generic_t, asIScriptEngine* engine, test_bind::class_wrapper& wrapper, std::string& global_val
+    asbind20::use_generic_t, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, test_bind::class_wrapper& wrapper, std::string& global_val
 )
 {
     using asbind20::fp, asbind20::auxiliary, asbind20::aux_value;
@@ -83,7 +83,7 @@ TEST_F(asbind_test_suite, global)
 {
     if(asbind20::has_max_portability())
         GTEST_SKIP() << "AS_MAX_PORTABILITY";
-    asIScriptEngine* engine = get_engine();
+    auto* engine = get_engine();
 
     std::string val = "val";
     test_bind::class_wrapper wrapper{};
@@ -108,7 +108,7 @@ TEST_F(asbind_test_suite, global)
 
     {
         asbind20::request_context ctx(engine);
-        asIScriptFunction* set_int = engine->GetGlobalFunctionByDecl("void set_int(int&out)");
+        auto* set_int = engine->GetGlobalFunctionByDecl("void set_int(int&out)");
         ASSERT_TRUE(set_int);
 
         int out;
@@ -119,7 +119,7 @@ TEST_F(asbind_test_suite, global)
 
     {
         asbind20::request_context ctx(engine);
-        asIScriptFunction* gen_int = engine->GetGlobalFunctionByDecl("int gen_int()");
+        auto* gen_int = engine->GetGlobalFunctionByDecl("int gen_int()");
         ASSERT_TRUE(gen_int);
 
         auto result = asbind20::script_invoke<int>(ctx, gen_int);
@@ -129,7 +129,7 @@ TEST_F(asbind_test_suite, global)
 
 TEST_F(asbind_test_suite_generic, global)
 {
-    asIScriptEngine* engine = get_engine();
+    auto* engine = get_engine();
 
     std::string val = "val";
     test_bind::class_wrapper wrapper{};
@@ -154,7 +154,7 @@ TEST_F(asbind_test_suite_generic, global)
 
     {
         asbind20::request_context ctx(engine);
-        asIScriptFunction* set_int = engine->GetGlobalFunctionByDecl("void set_int(int&out)");
+        auto* set_int = engine->GetGlobalFunctionByDecl("void set_int(int&out)");
         ASSERT_TRUE(set_int);
 
         int out;
@@ -165,7 +165,7 @@ TEST_F(asbind_test_suite_generic, global)
 
     {
         asbind20::request_context ctx(engine);
-        asIScriptFunction* gen_int = engine->GetGlobalFunctionByDecl("int gen_int()");
+        auto* gen_int = engine->GetGlobalFunctionByDecl("int gen_int()");
         ASSERT_TRUE(gen_int);
 
         auto result = asbind20::script_invoke<int>(ctx, gen_int);

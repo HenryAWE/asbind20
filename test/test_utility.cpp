@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <asbind20/asbind.hpp>
 
-consteval bool test_concepts()
+static consteval bool test_utility_concepts()
 {
     {
         struct callable_struct
@@ -33,11 +33,11 @@ consteval bool test_concepts()
     return true;
 }
 
-static_assert(test_concepts());
+static_assert(test_utility_concepts());
 
 namespace test_utility
 {
-int f1()
+static int f1()
 {
     return 1013;
 }
@@ -61,6 +61,12 @@ TEST(utility, string_concat)
     {
         const char* name = "my_name";
         EXPECT_EQ(string_concat("void f(", name, ')'), "void f(my_name)");
+    }
+
+    {
+        using namespace std::string_view_literals;
+        const char* name = "my_name";
+        EXPECT_EQ(string_concat("void f("sv, name, ')'), "void f(my_name)");
     }
 }
 
@@ -186,15 +192,15 @@ TEST(name_of, arithmetic)
 
     EXPECT_EQ(name_of<bool>(), "bool"sv);
 
-    EXPECT_EQ(name_of<asINT8>(), "int8"sv);
-    EXPECT_EQ(name_of<asINT16>(), "int16"sv);
-    EXPECT_EQ(name_of<asINT32>(), "int"sv);
-    EXPECT_EQ(name_of<asINT64>(), "int64"sv);
+    EXPECT_EQ(name_of<AS_NAMESPACE_QUALIFIER asINT8>(), "int8"sv);
+    EXPECT_EQ(name_of<AS_NAMESPACE_QUALIFIER asINT16>(), "int16"sv);
+    EXPECT_EQ(name_of<AS_NAMESPACE_QUALIFIER asINT32>(), "int"sv);
+    EXPECT_EQ(name_of<AS_NAMESPACE_QUALIFIER asINT64>(), "int64"sv);
 
-    EXPECT_EQ(name_of<asBYTE>(), "uint8"sv);
-    EXPECT_EQ(name_of<asWORD>(), "uint16"sv);
-    EXPECT_EQ(name_of<asDWORD>(), "uint"sv);
-    EXPECT_EQ(name_of<asQWORD>(), "uint64"sv);
+    EXPECT_EQ(name_of<AS_NAMESPACE_QUALIFIER asBYTE>(), "uint8"sv);
+    EXPECT_EQ(name_of<AS_NAMESPACE_QUALIFIER asWORD>(), "uint16"sv);
+    EXPECT_EQ(name_of<AS_NAMESPACE_QUALIFIER asDWORD>(), "uint"sv);
+    EXPECT_EQ(name_of<AS_NAMESPACE_QUALIFIER asQWORD>(), "uint64"sv);
 
     EXPECT_EQ(name_of<float>(), "float"sv);
     EXPECT_EQ(name_of<double>(), "double"sv);

@@ -44,13 +44,13 @@ struct aux_factory_helper
     }
 };
 
-test_aux_factory* create_aux_auxfirst(aux_factory_helper& helper, int additional)
+static test_aux_factory* create_aux_auxfirst(aux_factory_helper& helper, int additional)
 {
     ++helper.created;
     return new test_aux_factory(helper.predefined_value + additional);
 }
 
-test_aux_factory* create_aux_auxlast(int additional, aux_factory_helper& helper)
+static test_aux_factory* create_aux_auxlast(int additional, aux_factory_helper& helper)
 {
     ++helper.created;
     return new test_aux_factory(helper.predefined_value + additional);
@@ -58,13 +58,7 @@ test_aux_factory* create_aux_auxlast(int additional, aux_factory_helper& helper)
 
 static void setup_env(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
-    asbind20::global(engine)
-        .message_callback(
-            +[](const asSMessageInfo* msg, void*)
-            {
-                std::cerr << msg->message << std::endl;
-            }
-        );
+    asbind_test::setup_message_callback(engine);
 
     asbind20::ext::register_script_assert(
         engine,
@@ -76,7 +70,7 @@ static void setup_env(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 }
 
 template <bool UseGeneric>
-auto register_test_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static auto register_test_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     using namespace asbind20;
     return asbind20::ref_class<test_aux_factory, UseGeneric>(engine, "test_aux_factory")
@@ -85,7 +79,7 @@ auto register_test_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         .property("int val", &test_aux_factory::value);
 }
 
-void check_aux_factory(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int expected_val, int arg)
+static void check_aux_factory(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int expected_val, int arg)
 {
     auto* m = engine->GetModule("test_aux_factory", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
     m->AddScriptSection(
@@ -102,21 +96,6 @@ void check_aux_factory(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int expec
     ASSERT_TRUE(asbind_test::result_has_value(result));
 
     EXPECT_EQ(result.value(), expected_val);
-}
-
-void print_factories(std::ostream& os, asITypeInfo* ti)
-{
-    os << "Factories of " << ti->GetName() << ":\n";
-    auto count = ti->GetBehaviourCount();
-    for(asUINT i = 0; i < count; ++i)
-    {
-        asEBehaviours beh;
-        auto* factory = ti->GetBehaviourByIndex(i, &beh);
-        if(beh != asBEHAVE_FACTORY)
-            continue;
-
-        os << "Factory: " << factory->GetDeclaration() << std::endl;
-    }
 }
 } // namespace test_bind
 
@@ -313,13 +292,13 @@ struct aux_factory_helper_template
     }
 };
 
-test_aux_factory_template* create_aux_template_auxfirst(aux_factory_helper_template& helper, AS_NAMESPACE_QUALIFIER asITypeInfo* ti, int additional)
+static test_aux_factory_template* create_aux_template_auxfirst(aux_factory_helper_template& helper, AS_NAMESPACE_QUALIFIER asITypeInfo* ti, int additional)
 {
     ++helper.created;
     return new test_aux_factory_template(ti, helper.predefined_value + additional);
 }
 
-test_aux_factory_template* create_aux_template_auxlast(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, int additional, aux_factory_helper_template& helper)
+static test_aux_factory_template* create_aux_template_auxlast(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, int additional, aux_factory_helper_template& helper)
 {
     ++helper.created;
     return new test_aux_factory_template(ti, helper.predefined_value + additional);
