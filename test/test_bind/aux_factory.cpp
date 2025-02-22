@@ -308,7 +308,7 @@ template <bool UseGeneric>
 auto register_test_class_template(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     using namespace asbind20;
-    return asbind20::template_class<test_aux_factory_template, UseGeneric>(engine, "test_aux_factory_template<T>")
+    return asbind20::template_ref_class<test_aux_factory_template, UseGeneric>(engine, "test_aux_factory_template<T>")
         .template_callback(fp<&aux_factory_helper_template_callback>)
         .addref(fp<&test_aux_factory_template::addref>)
         .release(fp<&test_aux_factory_template::release>)

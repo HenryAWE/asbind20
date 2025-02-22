@@ -5277,12 +5277,6 @@ public:
 template <typename Class, bool UseGeneric = false>
 using ref_class = basic_ref_class<Class, false, UseGeneric>;
 
-/**
- * @deprecated Use template_ref_class instead! This name is misleading and it will be removed in 1.4.
- */
-template <typename Class, bool ForceGeneric = false>
-using template_class = basic_ref_class<Class, true, ForceGeneric>;
-
 template <typename Class, bool ForceGeneric = false>
 using template_ref_class = basic_ref_class<Class, true, ForceGeneric>;
 
