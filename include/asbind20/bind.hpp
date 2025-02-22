@@ -3040,7 +3040,7 @@ private:
     }
 
 template <typename Class, bool ForceGeneric = false>
-class value_class final : public class_register_helper_base<ForceGeneric>
+class basic_value_class final : public class_register_helper_base<ForceGeneric>
 {
     using my_base = class_register_helper_base<ForceGeneric>;
 
@@ -3050,7 +3050,7 @@ class value_class final : public class_register_helper_base<ForceGeneric>
 public:
     using class_type = Class;
 
-    value_class(
+    basic_value_class(
         AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
         const char* name,
         AS_NAMESPACE_QUALIFIER asQWORD flags = 0
@@ -3114,7 +3114,7 @@ private:
     }
 
 public:
-    value_class& constructor_function(
+    basic_value_class& constructor_function(
         std::string_view params,
         AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
         call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
@@ -3130,7 +3130,7 @@ public:
         return *this;
     }
 
-    value_class& constructor_function(
+    basic_value_class& constructor_function(
         std::string_view params,
         use_explicit_t,
         AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
@@ -3151,7 +3151,7 @@ public:
         native_function Constructor,
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
     requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_CDECL || CallConv == AS_NAMESPACE_QUALIFIER asCALL_STDCALL)
-    value_class& constructor_function(
+    basic_value_class& constructor_function(
         std::string_view params,
         Constructor ctor,
         call_conv_t<CallConv>
@@ -3171,7 +3171,7 @@ public:
         native_function Constructor,
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
     requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_CDECL || CallConv == AS_NAMESPACE_QUALIFIER asCALL_STDCALL)
-    value_class& constructor_function(
+    basic_value_class& constructor_function(
         std::string_view params,
         use_explicit_t,
         Constructor ctor,
@@ -3189,7 +3189,7 @@ public:
     }
 
     template <native_function Constructor>
-    value_class& constructor_function(
+    basic_value_class& constructor_function(
         std::string_view params,
         Constructor ctor
     ) requires(!ForceGeneric)
@@ -3206,7 +3206,7 @@ public:
     }
 
     template <native_function Constructor>
-    value_class& constructor_function(
+    basic_value_class& constructor_function(
         std::string_view params,
         use_explicit_t,
         Constructor ctor
@@ -3228,7 +3228,7 @@ public:
         auto Constructor,
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
     requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-    value_class& constructor_function(
+    basic_value_class& constructor_function(
         use_generic_t,
         std::string_view params,
         fp_wrapper_t<Constructor>,
@@ -3248,7 +3248,7 @@ public:
         auto Constructor,
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
     requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-    value_class& constructor_function(
+    basic_value_class& constructor_function(
         use_generic_t,
         std::string_view params,
         use_explicit_t,
@@ -3267,7 +3267,7 @@ public:
     }
 
     template <auto Constructor>
-    value_class& constructor_function(
+    basic_value_class& constructor_function(
         use_generic_t,
         std::string_view params,
         fp_wrapper_t<Constructor>
@@ -3286,7 +3286,7 @@ public:
     }
 
     template <auto Constructor>
-    value_class& constructor_function(
+    basic_value_class& constructor_function(
         use_generic_t,
         std::string_view params,
         use_explicit_t,
@@ -3307,7 +3307,7 @@ public:
     }
 
     template <auto Constructor>
-    value_class& constructor_function(
+    basic_value_class& constructor_function(
         std::string_view params,
         fp_wrapper_t<Constructor>
     )
@@ -3336,7 +3336,7 @@ public:
     }
 
     template <auto Constructor>
-    value_class& constructor_function(
+    basic_value_class& constructor_function(
         std::string_view params,
         use_explicit_t,
         fp_wrapper_t<Constructor>
@@ -3371,7 +3371,7 @@ public:
         noncapturing_lambda Constructor,
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
     requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-    value_class& constructor_function(
+    basic_value_class& constructor_function(
         use_generic_t,
         std::string_view params,
         const Constructor&,
@@ -3391,7 +3391,7 @@ public:
         noncapturing_lambda Constructor,
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
     requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-    value_class& constructor_function(
+    basic_value_class& constructor_function(
         use_generic_t,
         std::string_view params,
         use_explicit_t,
@@ -3413,7 +3413,7 @@ public:
         noncapturing_lambda Constructor,
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
     requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-    value_class& constructor_function(
+    basic_value_class& constructor_function(
         std::string_view params,
         const Constructor&,
         call_conv_t<CallConv>
@@ -3444,7 +3444,7 @@ public:
         noncapturing_lambda Constructor,
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
     requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-    value_class& constructor_function(
+    basic_value_class& constructor_function(
         std::string_view params,
         use_explicit_t,
         const Constructor&,
@@ -3475,7 +3475,7 @@ public:
     }
 
     template <noncapturing_lambda Constructor>
-    value_class& constructor_function(
+    basic_value_class& constructor_function(
         use_generic_t,
         std::string_view params,
         const Constructor&
@@ -3494,7 +3494,7 @@ public:
     }
 
     template <noncapturing_lambda Constructor>
-    value_class& constructor_function(
+    basic_value_class& constructor_function(
         use_generic_t,
         std::string_view params,
         use_explicit_t,
@@ -3515,7 +3515,7 @@ public:
     }
 
     template <noncapturing_lambda Constructor>
-    value_class& constructor_function(
+    basic_value_class& constructor_function(
         std::string_view params,
         const Constructor&
     )
@@ -3532,7 +3532,7 @@ public:
     }
 
     template <noncapturing_lambda Constructor>
-    value_class& constructor_function(
+    basic_value_class& constructor_function(
         std::string_view params,
         use_explicit_t,
         const Constructor&
@@ -3599,7 +3599,7 @@ private:
 
 public:
     template <typename... Args>
-    value_class& constructor(
+    basic_value_class& constructor(
         use_generic_t,
         std::string_view params
     ) requires(is_only_constructible_v<Class, Args...>)
@@ -3610,7 +3610,7 @@ public:
     }
 
     template <typename... Args>
-    value_class& constructor(
+    basic_value_class& constructor(
         use_generic_t,
         std::string_view params,
         use_explicit_t
@@ -3625,7 +3625,7 @@ public:
      * @warning Remember to set `asOBJ_APP_CLASS_MORE_CONSTRUCTORS` if necessary!
      */
     template <typename... Args>
-    value_class& constructor(
+    basic_value_class& constructor(
         std::string_view params
     ) requires(is_only_constructible_v<Class, Args...>)
     {
@@ -3641,7 +3641,7 @@ public:
      * @warning Remember to set `asOBJ_APP_CLASS_MORE_CONSTRUCTORS` if necessary!
      */
     template <typename... Args>
-    value_class& constructor(
+    basic_value_class& constructor(
         std::string_view params,
         use_explicit_t
     ) requires(is_only_constructible_v<Class, Args...>)
@@ -3654,21 +3654,21 @@ public:
         return *this;
     }
 
-    value_class& default_constructor(use_generic_t)
+    basic_value_class& default_constructor(use_generic_t)
     {
         constructor<>(use_generic, "");
 
         return *this;
     }
 
-    value_class& default_constructor()
+    basic_value_class& default_constructor()
     {
         constructor<>("");
 
         return *this;
     }
 
-    value_class& copy_constructor(use_generic_t)
+    basic_value_class& copy_constructor(use_generic_t)
     {
         constructor<const Class&>(
             use_generic,
@@ -3678,7 +3678,7 @@ public:
         return *this;
     }
 
-    value_class& copy_constructor()
+    basic_value_class& copy_constructor()
     {
         constructor<const Class&>(
             string_concat("const ", m_name, "&in")
@@ -3687,7 +3687,7 @@ public:
         return *this;
     }
 
-    value_class& destructor(use_generic_t)
+    basic_value_class& destructor(use_generic_t)
     {
         this->behaviour_impl(
             AS_NAMESPACE_QUALIFIER asBEHAVE_DESTRUCT,
@@ -3702,7 +3702,7 @@ public:
         return *this;
     }
 
-    value_class& destructor()
+    basic_value_class& destructor()
     {
         if constexpr(ForceGeneric)
             destructor(use_generic);
@@ -3727,7 +3727,7 @@ public:
      *
      * @param traits Type traits
      */
-    value_class& behaviours_by_traits(
+    basic_value_class& behaviours_by_traits(
         use_generic_t,
         asQWORD traits = AS_NAMESPACE_QUALIFIER asGetTypeTraits<Class>()
     )
@@ -3769,7 +3769,7 @@ public:
      *
      * @param traits Type traits
      */
-    value_class& behaviours_by_traits(
+    basic_value_class& behaviours_by_traits(
         asQWORD traits = AS_NAMESPACE_QUALIFIER asGetTypeTraits<Class>()
     )
     {
@@ -3812,7 +3812,7 @@ private:
     }
 
 public:
-    value_class& list_constructor_function(
+    basic_value_class& list_constructor_function(
         std::string_view pattern,
         AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
         call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
@@ -3832,7 +3832,7 @@ public:
         native_function ListConstructor,
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
     requires(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST || CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST)
-    value_class& list_constructor_function(
+    basic_value_class& list_constructor_function(
         std::string_view pattern,
         ListConstructor&& ctor,
         call_conv_t<CallConv>
@@ -3849,7 +3849,7 @@ public:
     }
 
     template <native_function ListConstructor>
-    value_class& list_constructor_function(
+    basic_value_class& list_constructor_function(
         std::string_view pattern,
         ListConstructor&& ctor
     ) requires(!ForceGeneric)
@@ -3869,7 +3869,7 @@ public:
         auto ListConstructor,
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
     requires(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST || CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST)
-    value_class& list_constructor_function(
+    basic_value_class& list_constructor_function(
         use_generic_t,
         std::string_view pattern,
         fp_wrapper_t<ListConstructor>,
@@ -3920,7 +3920,7 @@ public:
         auto ListConstructor,
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
     requires(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST || CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST)
-    value_class& list_constructor_function(
+    basic_value_class& list_constructor_function(
         std::string_view pattern,
         fp_wrapper_t<ListConstructor>,
         call_conv_t<CallConv>
@@ -3939,7 +3939,7 @@ public:
     }
 
     template <auto ListConstructor>
-    value_class& list_constructor_function(
+    basic_value_class& list_constructor_function(
         use_generic_t,
         std::string_view pattern,
         fp_wrapper_t<ListConstructor>
@@ -3954,7 +3954,7 @@ public:
     }
 
     template <auto ListConstructor>
-    value_class& list_constructor_function(
+    basic_value_class& list_constructor_function(
         std::string_view pattern,
         fp_wrapper_t<ListConstructor>
     )
@@ -3983,7 +3983,7 @@ public:
     template <
         typename ListElementType = void,
         policies::initialization_list_policy Policy = void>
-    value_class& list_constructor(
+    basic_value_class& list_constructor(
         use_generic_t, std::string_view pattern
     )
     {
@@ -4006,7 +4006,7 @@ public:
     template <
         typename ListElementType = void,
         policies::initialization_list_policy Policy = void>
-    value_class& list_constructor(
+    basic_value_class& list_constructor(
         std::string_view pattern
     )
     {
@@ -4027,12 +4027,12 @@ public:
     }
 
 #define ASBIND20_VALUE_CLASS_OP(op_name)                   \
-    value_class& op_name(use_generic_t)                    \
+    basic_value_class& op_name(use_generic_t)              \
     {                                                      \
         this->template op_name##_impl_generic<Class>();    \
         return *this;                                      \
     }                                                      \
-    value_class& op_name()                                 \
+    basic_value_class& op_name()                           \
     {                                                      \
         if constexpr(ForceGeneric)                         \
             this->op_name(use_generic);                    \
@@ -4065,7 +4065,7 @@ public:
 #undef ASBIND20_VALUE_CLASS_OP
 
     template <typename To>
-    value_class& opConv(use_generic_t, std::string_view to_decl)
+    basic_value_class& opConv(use_generic_t, std::string_view to_decl)
     {
         this->template opConv_impl_generic<Class, To>(to_decl, false);
 
@@ -4073,7 +4073,7 @@ public:
     }
 
     template <typename To>
-    value_class& opConv(std::string_view to_decl)
+    basic_value_class& opConv(std::string_view to_decl)
     {
         if constexpr(ForceGeneric)
             opConv<To>(use_generic, to_decl);
@@ -4086,7 +4086,7 @@ public:
     }
 
     template <typename To>
-    value_class& opImplConv(use_generic_t, std::string_view to_decl)
+    basic_value_class& opImplConv(use_generic_t, std::string_view to_decl)
     {
         this->template opConv_impl_generic<Class, To>(to_decl, true);
 
@@ -4094,7 +4094,7 @@ public:
     }
 
     template <typename To>
-    value_class& opImplConv(std::string_view to_decl)
+    basic_value_class& opImplConv(std::string_view to_decl)
     {
         if constexpr(ForceGeneric)
             opImplConv<To>(use_generic, to_decl);
@@ -4107,7 +4107,7 @@ public:
     }
 
     template <has_static_name To>
-    value_class& opConv(use_generic_t)
+    basic_value_class& opConv(use_generic_t)
     {
         opConv<To>(use_generic, name_of<To>());
 
@@ -4115,7 +4115,7 @@ public:
     }
 
     template <has_static_name To>
-    value_class& opConv()
+    basic_value_class& opConv()
     {
         opConv<To>(name_of<To>());
 
@@ -4123,7 +4123,7 @@ public:
     }
 
     template <has_static_name To>
-    value_class& opImplConv(use_generic_t)
+    basic_value_class& opImplConv(use_generic_t)
     {
         opImplConv<To>(use_generic, name_of<To>());
 
@@ -4131,23 +4131,26 @@ public:
     }
 
     template <has_static_name To>
-    value_class& opImplConv()
+    basic_value_class& opImplConv()
     {
         opImplConv<To>(name_of<To>());
 
         return *this;
     }
 
-    ASBIND20_CLASS_METHOD(value_class)
-    ASBIND20_CLASS_METHOD_AUXILIARY(value_class)
-    ASBIND20_CLASS_WRAPPED_METHOD(value_class)
-    ASBIND20_CLASS_WRAPPED_METHOD_AUXILIARY(value_class)
-    ASBIND20_CLASS_WRAPPED_LAMBDA_METHOD(value_class)
-    ASBIND20_CLASS_WRAPPED_VAR_TYPE_METHOD(value_class)
-    ASBIND20_CLASS_WRAPPED_VAR_TYPE_METHOD_AUXILIARY(value_class)
-    ASBIND20_CLASS_WRAPPED_LAMBDA_VAR_TYPE_METHOD(value_class)
+    ASBIND20_CLASS_METHOD(basic_value_class)
+    ASBIND20_CLASS_METHOD_AUXILIARY(basic_value_class)
+    ASBIND20_CLASS_WRAPPED_METHOD(basic_value_class)
+    ASBIND20_CLASS_WRAPPED_METHOD_AUXILIARY(basic_value_class)
+    ASBIND20_CLASS_WRAPPED_LAMBDA_METHOD(basic_value_class)
+    ASBIND20_CLASS_WRAPPED_VAR_TYPE_METHOD(basic_value_class)
+    ASBIND20_CLASS_WRAPPED_VAR_TYPE_METHOD_AUXILIARY(basic_value_class)
+    ASBIND20_CLASS_WRAPPED_LAMBDA_VAR_TYPE_METHOD(basic_value_class)
 
-    value_class& property(const char* decl, std::size_t off)
+    // TODO: Garbage collected value type
+    // See: https://www.angelcode.com/angelscript/sdk/docs/manual/doc_gc_object.html#doc_reg_gcref_value
+
+    basic_value_class& property(const char* decl, std::size_t off)
     {
         this->property_impl(decl, off);
 
@@ -4155,21 +4158,21 @@ public:
     }
 
     template <typename T>
-    value_class& property(const char* decl, T Class::* mp)
+    basic_value_class& property(const char* decl, T Class::* mp)
     {
         this->template property_impl<T, Class>(decl, mp);
 
         return *this;
     }
 
-    value_class& funcdef(std::string_view decl)
+    basic_value_class& funcdef(std::string_view decl)
     {
         this->member_funcdef_impl(decl);
 
         return *this;
     }
 
-    value_class& as_string(
+    basic_value_class& as_string(
         AS_NAMESPACE_QUALIFIER asIStringFactory* str_factory
     )
     {
@@ -4178,8 +4181,13 @@ public:
     }
 };
 
+// TODO: template value class
+
+template <typename Class, bool ForceGeneric = false>
+using value_class = basic_value_class<Class, ForceGeneric>;
+
 template <typename Class, bool Template = false, bool ForceGeneric = false>
-class reference_class : public class_register_helper_base<ForceGeneric>
+class basic_ref_class : public class_register_helper_base<ForceGeneric>
 {
     using my_base = class_register_helper_base<ForceGeneric>;
 
@@ -4189,7 +4197,7 @@ class reference_class : public class_register_helper_base<ForceGeneric>
 public:
     using class_type = Class;
 
-    reference_class(
+    basic_ref_class(
         AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
         const char* name,
         AS_NAMESPACE_QUALIFIER asQWORD flags = 0
@@ -4246,7 +4254,7 @@ private:
     static constexpr char decl_template_callback[] = "bool f(int&in,bool&out)";
 
 public:
-    reference_class& template_callback(
+    basic_ref_class& template_callback(
         AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn
     ) requires(Template)
     {
@@ -4261,7 +4269,7 @@ public:
     }
 
     template <native_function Fn>
-    reference_class& template_callback(Fn&& fn) requires(Template && !ForceGeneric)
+    basic_ref_class& template_callback(Fn&& fn) requires(Template && !ForceGeneric)
     {
         this->behaviour_impl(
             asBEHAVE_TEMPLATE_CALLBACK,
@@ -4274,7 +4282,7 @@ public:
     }
 
     template <auto Callback>
-    reference_class& template_callback(use_generic_t, fp_wrapper_t<Callback>) requires(Template)
+    basic_ref_class& template_callback(use_generic_t, fp_wrapper_t<Callback>) requires(Template)
     {
         constexpr asECallConvTypes conv =
             detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK, Class, std::decay_t<decltype(Callback)>>();
@@ -4286,7 +4294,7 @@ public:
     }
 
     template <auto Callback>
-    reference_class& template_callback(fp_wrapper_t<Callback>) requires(Template)
+    basic_ref_class& template_callback(fp_wrapper_t<Callback>) requires(Template)
     {
         if constexpr(ForceGeneric)
             template_callback(use_generic, fp<Callback>);
@@ -4296,14 +4304,14 @@ public:
         return *this;
     }
 
-    ASBIND20_CLASS_METHOD(reference_class)
-    ASBIND20_CLASS_METHOD_AUXILIARY(reference_class)
-    ASBIND20_CLASS_WRAPPED_METHOD(reference_class)
-    ASBIND20_CLASS_WRAPPED_METHOD_AUXILIARY(reference_class)
-    ASBIND20_CLASS_WRAPPED_LAMBDA_METHOD(reference_class)
-    ASBIND20_CLASS_WRAPPED_VAR_TYPE_METHOD(reference_class)
-    ASBIND20_CLASS_WRAPPED_VAR_TYPE_METHOD_AUXILIARY(reference_class)
-    ASBIND20_CLASS_WRAPPED_LAMBDA_VAR_TYPE_METHOD(reference_class)
+    ASBIND20_CLASS_METHOD(basic_ref_class)
+    ASBIND20_CLASS_METHOD_AUXILIARY(basic_ref_class)
+    ASBIND20_CLASS_WRAPPED_METHOD(basic_ref_class)
+    ASBIND20_CLASS_WRAPPED_METHOD_AUXILIARY(basic_ref_class)
+    ASBIND20_CLASS_WRAPPED_LAMBDA_METHOD(basic_ref_class)
+    ASBIND20_CLASS_WRAPPED_VAR_TYPE_METHOD(basic_ref_class)
+    ASBIND20_CLASS_WRAPPED_VAR_TYPE_METHOD_AUXILIARY(basic_ref_class)
+    ASBIND20_CLASS_WRAPPED_LAMBDA_VAR_TYPE_METHOD(basic_ref_class)
 
 private:
     std::string decl_factory(std::string_view params) const
@@ -4359,7 +4367,7 @@ private:
 
 public:
     template <typename Factory>
-    reference_class& factory_function(
+    basic_ref_class& factory_function(
         std::string_view params,
         Factory fn
     ) requires(!ForceGeneric)
@@ -4375,7 +4383,7 @@ public:
     }
 
     template <typename Factory>
-    reference_class& factory_function(
+    basic_ref_class& factory_function(
         std::string_view params,
         use_explicit_t,
         Factory fn
@@ -4393,7 +4401,7 @@ public:
 
     template <typename Factory, asECallConvTypes CallConv>
     requires(CallConv == asCALL_CDECL)
-    reference_class& factory_function(
+    basic_ref_class& factory_function(
         std::string_view params,
         Factory fn,
         call_conv_t<CallConv>
@@ -4411,7 +4419,7 @@ public:
 
     template <typename Factory, asECallConvTypes CallConv>
     requires(CallConv == asCALL_CDECL)
-    reference_class& factory_function(
+    basic_ref_class& factory_function(
         std::string_view params,
         use_explicit_t,
         Factory fn,
@@ -4432,7 +4440,7 @@ public:
         typename Factory,
         typename Auxiliary,
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-    reference_class& factory_function(
+    basic_ref_class& factory_function(
         std::string_view params,
         Factory fn,
         auxiliary_wrapper<Auxiliary> aux,
@@ -4454,7 +4462,7 @@ public:
         typename Factory,
         typename Auxiliary,
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-    reference_class& factory_function(
+    basic_ref_class& factory_function(
         std::string_view params,
         use_explicit_t,
         Factory fn,
@@ -4476,7 +4484,7 @@ public:
     template <
         typename Factory,
         typename Auxiliary>
-    reference_class& factory_function(
+    basic_ref_class& factory_function(
         std::string_view params,
         Factory fn,
         auxiliary_wrapper<Auxiliary> aux
@@ -4498,7 +4506,7 @@ public:
     template <
         typename Factory,
         typename Auxiliary>
-    reference_class& factory_function(
+    basic_ref_class& factory_function(
         std::string_view params,
         use_explicit_t,
         Factory fn,
@@ -4519,7 +4527,7 @@ public:
         return *this;
     }
 
-    reference_class& factory_function(
+    basic_ref_class& factory_function(
         std::string_view params,
         AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
         call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
@@ -4535,7 +4543,7 @@ public:
         return *this;
     }
 
-    reference_class& factory_function(
+    basic_ref_class& factory_function(
         std::string_view params,
         use_explicit_t,
         AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
@@ -4553,7 +4561,7 @@ public:
     }
 
     template <typename Auxiliary>
-    reference_class& factory_function(
+    basic_ref_class& factory_function(
         std::string_view params,
         AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
         auxiliary_wrapper<Auxiliary> aux,
@@ -4572,7 +4580,7 @@ public:
     }
 
     template <typename Auxiliary>
-    reference_class& factory_function(
+    basic_ref_class& factory_function(
         std::string_view params,
         use_explicit_t,
         AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
@@ -4592,7 +4600,7 @@ public:
     }
 
     template <auto Factory>
-    reference_class& factory_function(
+    basic_ref_class& factory_function(
         use_generic_t,
         std::string_view params,
         fp_wrapper_t<Factory>,
@@ -4609,7 +4617,7 @@ public:
     }
 
     template <auto Factory>
-    reference_class& factory_function(
+    basic_ref_class& factory_function(
         use_generic_t,
         std::string_view params,
         use_explicit_t,
@@ -4631,7 +4639,7 @@ public:
         auto Factory,
         typename Auxiliary,
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-    reference_class& factory_function(
+    basic_ref_class& factory_function(
         use_generic_t,
         std::string_view params,
         fp_wrapper_t<Factory>,
@@ -4653,7 +4661,7 @@ public:
         auto Factory,
         typename Auxiliary,
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-    reference_class& factory_function(
+    basic_ref_class& factory_function(
         use_generic_t,
         std::string_view params,
         use_explicit_t,
@@ -4674,7 +4682,7 @@ public:
     }
 
     template <auto Factory>
-    reference_class& factory_function(
+    basic_ref_class& factory_function(
         std::string_view params,
         fp_wrapper_t<Factory>
     )
@@ -4688,7 +4696,7 @@ public:
     }
 
     template <auto Factory>
-    reference_class& factory_function(
+    basic_ref_class& factory_function(
         std::string_view params,
         use_explicit_t,
         fp_wrapper_t<Factory>
@@ -4704,7 +4712,7 @@ public:
 
     template <auto Factory, asECallConvTypes CallConv>
     requires(CallConv == asCALL_CDECL)
-    reference_class& factory_function(
+    basic_ref_class& factory_function(
         std::string_view params,
         fp_wrapper_t<Factory>,
         call_conv_t<CallConv>
@@ -4720,7 +4728,7 @@ public:
 
     template <auto Factory, asECallConvTypes CallConv>
     requires(CallConv == asCALL_CDECL)
-    reference_class& factory_function(
+    basic_ref_class& factory_function(
         std::string_view params,
         use_explicit_t,
         fp_wrapper_t<Factory>,
@@ -4740,7 +4748,7 @@ public:
         typename Auxiliary,
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
     requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-    reference_class& factory_function(
+    basic_ref_class& factory_function(
         std::string_view params,
         fp_wrapper_t<Factory>,
         auxiliary_wrapper<Auxiliary> aux,
@@ -4760,7 +4768,7 @@ public:
         typename Auxiliary,
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
     requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-    reference_class& factory_function(
+    basic_ref_class& factory_function(
         std::string_view params,
         use_explicit_t,
         fp_wrapper_t<Factory>,
@@ -4779,7 +4787,7 @@ public:
     template <
         auto Factory,
         typename Auxiliary>
-    reference_class& factory_function(
+    basic_ref_class& factory_function(
         std::string_view params,
         fp_wrapper_t<Factory>,
         auxiliary_wrapper<Auxiliary> aux
@@ -4799,7 +4807,7 @@ public:
     template <
         auto Factory,
         typename Auxiliary>
-    reference_class& factory_function(
+    basic_ref_class& factory_function(
         std::string_view params,
         use_explicit_t,
         fp_wrapper_t<Factory>,
@@ -4817,7 +4825,7 @@ public:
         return *this;
     }
 
-    reference_class& default_factory(use_generic_t)
+    basic_ref_class& default_factory(use_generic_t)
     {
         AS_NAMESPACE_QUALIFIER asGENFUNC_t wrapper =
             wrappers::factory<Class, Template>::generate(generic_call_conv);
@@ -4831,7 +4839,7 @@ public:
         return *this;
     }
 
-    reference_class& default_factory()
+    basic_ref_class& default_factory()
     {
         if constexpr(ForceGeneric)
         {
@@ -4905,7 +4913,7 @@ private:
 
 public:
     template <typename... Args>
-    reference_class& factory(use_generic_t, std::string_view params)
+    basic_ref_class& factory(use_generic_t, std::string_view params)
     {
         this->factory_impl_generic<Args...>(use_generic, params, false);
 
@@ -4913,7 +4921,7 @@ public:
     }
 
     template <typename... Args>
-    reference_class& factory(use_generic_t, std::string_view params, use_explicit_t)
+    basic_ref_class& factory(use_generic_t, std::string_view params, use_explicit_t)
     {
         this->factory_impl_generic<Args...>(use_generic, params, true);
 
@@ -4921,7 +4929,7 @@ public:
     }
 
     template <typename... Args>
-    reference_class& factory(std::string_view params)
+    basic_ref_class& factory(std::string_view params)
     {
         if constexpr(ForceGeneric)
         {
@@ -4936,7 +4944,7 @@ public:
     }
 
     template <typename... Args>
-    reference_class& factory(std::string_view params, use_explicit_t)
+    basic_ref_class& factory(std::string_view params, use_explicit_t)
     {
         if constexpr(ForceGeneric)
         {
@@ -4964,7 +4972,7 @@ public:
         native_function ListFactory,
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
     requires(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL || CallConv == AS_NAMESPACE_QUALIFIER asCALL_STDCALL)
-    reference_class& list_factory_function(
+    basic_ref_class& list_factory_function(
         std::string_view pattern,
         ListFactory ctor,
         call_conv_t<CallConv>
@@ -4981,7 +4989,7 @@ public:
     }
 
     template <native_function ListFactory>
-    reference_class& list_factory_function(
+    basic_ref_class& list_factory_function(
         std::string_view pattern,
         ListFactory ctor
     ) requires(!ForceGeneric)
@@ -4997,7 +5005,7 @@ public:
         return *this;
     }
 
-    reference_class& list_factory_function(
+    basic_ref_class& list_factory_function(
         std::string_view pattern,
         AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
         call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
@@ -5016,7 +5024,7 @@ public:
     template <
         typename ListElementType = void,
         policies::initialization_list_policy Policy = void>
-    reference_class& list_factory(
+    basic_ref_class& list_factory(
         use_generic_t,
         std::string_view pattern
     )
@@ -5036,7 +5044,7 @@ public:
     template <
         typename ListElementType = void,
         policies::initialization_list_policy Policy = void>
-    reference_class& list_factory(std::string_view pattern)
+    basic_ref_class& list_factory(std::string_view pattern)
     {
         if constexpr(ForceGeneric)
         {
@@ -5060,12 +5068,12 @@ public:
     }
 
 #define ASBIND20_REFERENCE_CLASS_OP(op_name)               \
-    reference_class& op_name(use_generic_t)                \
+    basic_ref_class& op_name(use_generic_t)                \
     {                                                      \
         this->template op_name##_impl_generic<Class>();    \
         return *this;                                      \
     }                                                      \
-    reference_class& op_name()                             \
+    basic_ref_class& op_name()                             \
     {                                                      \
         if constexpr(ForceGeneric)                         \
             this->op_name(use_generic);                    \
@@ -5089,7 +5097,7 @@ public:
 #undef ASBIND20_REFERENCE_CLASS_OP
 
     template <typename To>
-    reference_class& opConv(use_generic_t, std::string_view to_decl)
+    basic_ref_class& opConv(use_generic_t, std::string_view to_decl)
     {
         this->template opConv_impl_generic<Class, To>(to_decl, false);
 
@@ -5097,7 +5105,7 @@ public:
     }
 
     template <typename To>
-    reference_class& opConv(std::string_view to_decl)
+    basic_ref_class& opConv(std::string_view to_decl)
     {
         if constexpr(ForceGeneric)
             opConv<To>(use_generic, to_decl);
@@ -5110,7 +5118,7 @@ public:
     }
 
     template <typename To>
-    reference_class& opImplConv(use_generic_t, std::string_view to_decl)
+    basic_ref_class& opImplConv(use_generic_t, std::string_view to_decl)
     {
         this->template opConv_impl_generic<Class, To>(to_decl, true);
 
@@ -5118,7 +5126,7 @@ public:
     }
 
     template <typename To>
-    reference_class& opImplConv(std::string_view to_decl)
+    basic_ref_class& opImplConv(std::string_view to_decl)
     {
         if constexpr(ForceGeneric)
             opImplConv<To>(use_generic, to_decl);
@@ -5131,7 +5139,7 @@ public:
     }
 
     template <has_static_name To>
-    reference_class& opConv(use_generic_t)
+    basic_ref_class& opConv(use_generic_t)
     {
         opConv<To>(use_generic, name_of<To>());
 
@@ -5139,7 +5147,7 @@ public:
     }
 
     template <has_static_name To>
-    reference_class& opConv()
+    basic_ref_class& opConv()
     {
         opConv<To>(name_of<To>());
 
@@ -5147,7 +5155,7 @@ public:
     }
 
     template <has_static_name To>
-    reference_class& opImplConv(use_generic_t)
+    basic_ref_class& opImplConv(use_generic_t)
     {
         opImplConv<To>(use_generic, name_of<To>());
 
@@ -5155,7 +5163,7 @@ public:
     }
 
     template <has_static_name To>
-    reference_class& opImplConv()
+    basic_ref_class& opImplConv()
     {
         opImplConv<To>(name_of<To>());
 
@@ -5164,7 +5172,7 @@ public:
 
 #define ASBIND20_REFERENCE_CLASS_BEH(func_name, as_beh, as_decl)                         \
     template <native_function Fn>                                                        \
-    reference_class& func_name(Fn&& fn) requires(!ForceGeneric)                          \
+    basic_ref_class& func_name(Fn&& fn) requires(!ForceGeneric)                          \
     {                                                                                    \
         using func_t = std::decay_t<Fn>;                                                 \
         constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =                         \
@@ -5177,7 +5185,7 @@ public:
         );                                                                               \
         return *this;                                                                    \
     }                                                                                    \
-    reference_class& func_name(AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn)                   \
+    basic_ref_class& func_name(AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn)                   \
     {                                                                                    \
         this->behaviour_impl(                                                            \
             AS_NAMESPACE_QUALIFIER as_beh,                                               \
@@ -5188,7 +5196,7 @@ public:
         return *this;                                                                    \
     }                                                                                    \
     template <auto Function>                                                             \
-    reference_class& func_name(use_generic_t, fp_wrapper_t<Function>)                    \
+    basic_ref_class& func_name(use_generic_t, fp_wrapper_t<Function>)                    \
     {                                                                                    \
         using func_t = std::decay_t<decltype(Function)>;                                 \
         constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =                         \
@@ -5197,7 +5205,7 @@ public:
         return *this;                                                                    \
     }                                                                                    \
     template <auto Function>                                                             \
-    reference_class& func_name(fp_wrapper_t<Function>)                                   \
+    basic_ref_class& func_name(fp_wrapper_t<Function>)                                   \
     {                                                                                    \
         if constexpr(ForceGeneric)                                                       \
             this->func_name(use_generic, fp<Function>);                                  \
@@ -5216,7 +5224,7 @@ public:
 
 #undef ASBIND20_REFERENCE_CLASS_BEH
 
-    reference_class& property(const char* decl, std::size_t off)
+    basic_ref_class& property(const char* decl, std::size_t off)
     {
         this->property_impl(decl, off);
 
@@ -5224,21 +5232,21 @@ public:
     }
 
     template <typename T>
-    reference_class& property(const char* decl, T Class::* mp)
+    basic_ref_class& property(const char* decl, T Class::* mp)
     {
         this->template property_impl<T, Class>(decl, mp);
 
         return *this;
     }
 
-    reference_class& funcdef(std::string_view decl)
+    basic_ref_class& funcdef(std::string_view decl)
     {
         this->member_funcdef_impl(decl);
 
         return *this;
     }
 
-    reference_class& as_string(
+    basic_ref_class& as_string(
         AS_NAMESPACE_QUALIFIER asIStringFactory* str_factory
     )
     {
@@ -5246,7 +5254,7 @@ public:
         return *this;
     }
 
-    reference_class& as_array() requires(Template)
+    basic_ref_class& as_array() requires(Template)
     {
         [[maybe_unused]]
         int r = 0;
@@ -5267,10 +5275,16 @@ public:
 #undef ASBIND20_CLASS_WRAPPED_LAMBDA_VAR_TYPE_METHOD
 
 template <typename Class, bool UseGeneric = false>
-using ref_class = reference_class<Class, false, UseGeneric>;
+using ref_class = basic_ref_class<Class, false, UseGeneric>;
+
+/**
+ * @deprecated Use template_ref_class instead! This name is misleading and it will be removed in 1.4.
+ */
+template <typename Class, bool ForceGeneric = false>
+using template_class = basic_ref_class<Class, true, ForceGeneric>;
 
 template <typename Class, bool ForceGeneric = false>
-using template_class = reference_class<Class, true, ForceGeneric>;
+using template_ref_class = basic_ref_class<Class, true, ForceGeneric>;
 
 class interface
 {

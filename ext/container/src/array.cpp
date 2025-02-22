@@ -1812,7 +1812,7 @@ namespace detail
     template <bool UseGeneric>
     void register_script_array_impl(asIScriptEngine* engine, bool as_default)
     {
-        template_class<script_array, UseGeneric> c(engine, "array<T>", asOBJ_GC);
+        template_ref_class<script_array, UseGeneric> c(engine, "array<T>", asOBJ_GC);
         c
             .template_callback(fp<&array_template_callback>)
             .default_factory()
