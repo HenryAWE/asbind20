@@ -18,10 +18,90 @@ public:
     template_val(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, int val)
         : subtype_id(ti->GetSubTypeId()), value(val) {}
 
+    template_val(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, asbind20::script_init_list_repeat list)
+        : subtype_id(ti->GetSubTypeId()), value(0)
+    {
+        int* start = static_cast<int*>(list.data());
+        int* sentinel = start + list.size();
+
+        for(int* it = start; it != sentinel; ++it)
+            value += *it;
+    }
+
     ~template_val() = default;
 
     int subtype_id;
     int value = 0;
+};
+
+class template_val_complex
+{
+public:
+    template_val_complex() = delete;
+
+    template_val_complex(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+        : subtype_id(ti->GetSubTypeId()) {}
+
+    template_val_complex(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, const template_val_complex& val)
+        : subtype_id(ti->GetSubTypeId()), str(val.str) {}
+
+    template_val_complex(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, int val)
+        : subtype_id(ti->GetSubTypeId()), str(std::to_string(val)) {}
+
+    // Pattern: {repeat int}
+    template_val_complex(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, void* list_buf)
+        : subtype_id(ti->GetSubTypeId())
+    {
+        asbind20::script_init_list_repeat list(list_buf);
+        int* start = static_cast<int*>(list.data());
+        int* sentinel = start + list.size();
+
+        for(int* it = start; it != sentinel; ++it)
+        {
+            if(it != start)
+                str += ", ";
+            str += std::to_string(*it);
+        }
+    }
+
+    ~template_val_complex() = default;
+
+    int subtype_id;
+    std::string str;
+};
+
+// Template specialization for AngelScript
+// template_val_complex<int>
+class template_val_complex_spec
+{
+public:
+    template_val_complex_spec() = default;
+
+    template_val_complex_spec(const template_val_complex& val)
+        : str(val.str) {}
+
+    template_val_complex_spec(int val)
+        : str(std::to_string(val)) {}
+
+    // Pattern: {repeat int}
+    template_val_complex_spec(void* list_buf)
+    {
+        asbind20::script_init_list_repeat list(list_buf);
+        int* start = static_cast<int*>(list.data());
+        int* sentinel = start + list.size();
+
+        str += "SPEC: ";
+        for(int* it = start; it != sentinel; ++it)
+        {
+            if(it != start)
+                str += ", ";
+            str += std::to_string(*it);
+        }
+    }
+
+    ~template_val_complex_spec() = default;
+
+    std::string str;
 };
 
 static bool template_callback(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, bool& no_gc)
@@ -61,9 +141,45 @@ static void register_template_val_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* 
         .opAssign()
         .constructor_function("int", use_explicit, &create_template_val)
         .constructor_function("int,int", wrapper)
+        .list_constructor<int, policies::repeat_list_proxy>("repeat int")
         .destructor()
         .property("int subtype_id", &template_val::subtype_id)
         .property("int value", &template_val::value);
+
+    template_value_class<template_val_complex>(
+        engine,
+        "template_val_complex<T>",
+        flags | AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_COPY_CONSTRUCTOR
+    )
+        .template_callback(template_callback)
+        .default_constructor()
+        .copy_constructor()
+        .opAssign()
+        .constructor<int>("int", use_explicit)
+        .list_constructor("repeat int")
+        .destructor()
+        .property("int subtype_id", &template_val_complex::subtype_id)
+        .property("string str", &template_val_complex::str);
+
+    value_class<template_val_complex_spec>(
+        engine,
+        "template_val_complex<int>",
+        AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_ALLINTS | AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_MORE_CONSTRUCTORS
+    )
+        .default_constructor()
+        .copy_constructor()
+        .opAssign()
+        .constructor<int>("int", use_explicit)
+        .list_constructor("repeat int")
+        .destructor()
+        .method(
+            "int get_subtype_id() const property",
+            [](const template_val_complex_spec&) -> int
+            {
+                return AS_NAMESPACE_QUALIFIER asTYPEID_INT32;
+            }
+        )
+        .property("string str", &template_val_complex_spec::str);
 }
 
 static void register_template_val_class(asbind20::use_generic_t, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
@@ -75,20 +191,55 @@ static void register_template_val_class(asbind20::use_generic_t, AS_NAMESPACE_QU
         new(mem) template_val(ti, val1 * 100 + val2);
     };
 
+    constexpr AS_NAMESPACE_QUALIFIER asQWORD flags =
+        AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_CDA |
+        AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_ALLINTS |
+        AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_MORE_CONSTRUCTORS;
     template_value_class<template_val, true>(
         engine,
         "template_val<T>",
-        AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_CD |
-            AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_ALLINTS |
-            AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_MORE_CONSTRUCTORS
+        flags
     )
         .template_callback(fp<&template_callback>)
         .default_constructor()
         .constructor_function("int", use_explicit, fp<&create_template_val>)
         .constructor_function("int,int", wrapper)
+        .list_constructor<int, policies::repeat_list_proxy>("repeat int")
         .destructor()
         .property("int subtype_id", &template_val::subtype_id)
         .property("int value", &template_val::value);
+
+    template_value_class<template_val_complex, true>(
+        engine,
+        "template_val_complex<T>",
+        flags | AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_COPY_CONSTRUCTOR
+    )
+        .template_callback(fp<&template_callback>)
+        .default_constructor()
+        .copy_constructor()
+        .opAssign()
+        .constructor<int>("int", use_explicit)
+        .list_constructor("repeat int")
+        .destructor()
+        .property("int subtype_id", &template_val_complex::subtype_id)
+        .property("string str", &template_val_complex::str);
+
+    value_class<template_val_complex_spec, true>(
+        engine,
+        "template_val_complex<int>",
+        AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_ALLINTS | AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_MORE_CONSTRUCTORS
+    )
+        .behaviours_by_traits()
+        .constructor<int>("int", use_explicit)
+        .list_constructor("repeat int")
+        .method(
+            "int get_subtype_id() const property",
+            [](const template_val_complex_spec&) -> int
+            {
+                return AS_NAMESPACE_QUALIFIER asTYPEID_INT32;
+            }
+        )
+        .property("string str", &template_val_complex_spec::str);
 }
 } // namespace test_bind
 
@@ -116,6 +267,24 @@ int test_3()
 {
     template_val<float> val(10, 13);
     assert(val.value == 1013);
+    return val.subtype_id;
+}
+int test_4()
+{
+    template_val<int> val = {1000, 10, 3};
+    assert(val.value == 1013);
+    return val.subtype_id;
+}
+int test_5()
+{
+    template_val_complex<float> val = {1, 2, 3};
+    assert(val.str == "1, 2, 3");
+    return val.subtype_id;
+}
+int test_6()
+{
+    template_val_complex<int> val = {1, 2, 3};
+    assert(val.str == "SPEC: 1, 2, 3");
     return val.subtype_id;
 })";
 
@@ -148,6 +317,9 @@ static void check_template_val_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* eng
     check_int_result(1, AS_NAMESPACE_QUALIFIER asTYPEID_FLOAT);
     check_int_result(2, AS_NAMESPACE_QUALIFIER asTYPEID_INT32);
     check_int_result(3, AS_NAMESPACE_QUALIFIER asTYPEID_FLOAT);
+    check_int_result(4, AS_NAMESPACE_QUALIFIER asTYPEID_INT32);
+    check_int_result(5, AS_NAMESPACE_QUALIFIER asTYPEID_FLOAT);
+    check_int_result(6, AS_NAMESPACE_QUALIFIER asTYPEID_INT32);
 }
 
 TEST_F(asbind_test_suite, template_val_class)

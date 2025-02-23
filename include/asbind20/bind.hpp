@@ -568,7 +568,7 @@ namespace wrappers
         }
     };
 
-    template <typename Class, typename ListBufType>
+    template <typename Class, bool Template, typename ListBufType>
     class list_constructor_base
     {
     public:
@@ -587,21 +587,28 @@ namespace wrappers
                    is_acceptable_native_call_conv(conv);
         }
 
+        using native_function_type =
+            std::conditional_t<
+                Template,
+                void (*)(AS_NAMESPACE_QUALIFIER asITypeInfo*, ListBufType, void*),
+                void (*)(ListBufType, void*)>;
+
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         requires(is_acceptable_call_conv(CallConv))
         using wrapper_type = std::conditional_t<
             CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
             AS_NAMESPACE_QUALIFIER asGENFUNC_t,
-            void (*)(ListBufType, void*)>;
+            native_function_type>;
     };
 
     template <
         typename Class,
+        bool Template,
         typename ListElementType = void,
         policies::initialization_list_policy Policy = void>
-    class list_constructor : public list_constructor_base<Class, ListElementType*>
+    class list_constructor : public list_constructor_base<Class, Template, ListElementType*>
     {
-        using my_base = list_constructor_base<Class, ListElementType*>;
+        using my_base = list_constructor_base<Class, Template, ListElementType*>;
 
     public:
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
@@ -610,29 +617,54 @@ namespace wrappers
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
             {
-                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+                if constexpr(Template)
                 {
-                    void* mem = gen->GetObject();
-                    new(mem) Class(*(ListElementType**)gen->GetAddressOfArg(0));
-                };
+                    return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+                    {
+                        void* mem = gen->GetObject();
+                        new(mem) Class(
+                            *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
+                            *(ListElementType**)gen->GetAddressOfArg(1)
+                        );
+                    };
+                }
+                else
+                {
+                    return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+                    {
+                        void* mem = gen->GetObject();
+                        new(mem) Class(*(ListElementType**)gen->GetAddressOfArg(0));
+                    };
+                }
             }
             else // CallConv == asCALL_CDECL_OBJLAST
             {
-                return +[](ListElementType* list_buf, void* mem) -> void
+                if constexpr(Template)
                 {
-                    new(mem) Class(list_buf);
-                };
+                    return +[](AS_NAMESPACE_QUALIFIER asITypeInfo* ti, ListElementType* list_buf, void* mem) -> void
+                    {
+                        new(mem) Class(ti, list_buf);
+                    };
+                }
+                else
+                {
+                    return +[](ListElementType* list_buf, void* mem) -> void
+                    {
+                        new(mem) Class(list_buf);
+                    };
+                }
             }
         }
     };
 
     template <
         typename Class,
+        bool Template,
         typename ListElementType>
-    class list_constructor<Class, ListElementType, policies::repeat_list_proxy> :
-        public list_constructor_base<Class, void*>
+    class list_constructor<Class, Template, ListElementType, policies::repeat_list_proxy> :
+        public list_constructor_base<Class, Template, void*>
     {
-        using my_base = list_constructor_base<Class, void*>;
+        using my_base = list_constructor_base<Class, Template, void*>;
 
     public:
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
@@ -641,33 +673,59 @@ namespace wrappers
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
             {
-                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+                if constexpr(Template)
                 {
-                    void* mem = gen->GetObject();
-                    new(mem) Class(script_init_list_repeat(gen));
-                };
+                    return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+                    {
+                        void* mem = gen->GetObject();
+                        new(mem) Class(
+                            *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
+                            script_init_list_repeat(gen, 1)
+                        );
+                    };
+                }
+                else
+                {
+                    return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+                    {
+                        void* mem = gen->GetObject();
+                        new(mem) Class(script_init_list_repeat(gen));
+                    };
+                }
             }
             else // CallConv == asCALL_CDECL_OBJLAST
             {
-                return +[](void* list_buf, void* mem) -> void
+                if constexpr(Template)
                 {
-                    new(mem) Class(script_init_list_repeat(list_buf));
-                };
+                    return +[](AS_NAMESPACE_QUALIFIER asITypeInfo* ti, void* list_buf, void* mem) -> void
+                    {
+                        new(mem) Class(ti, script_init_list_repeat(list_buf));
+                    };
+                }
+                else
+                {
+                    return +[](void* list_buf, void* mem) -> void
+                    {
+                        new(mem) Class(script_init_list_repeat(list_buf));
+                    };
+                }
             }
         }
     };
 
     template <
         typename Class,
+        bool Template,
         typename ListElementType,
         std::size_t Size>
-    class list_constructor<Class, ListElementType, policies::apply_to<Size>> :
-        public list_constructor_base<Class, ListElementType*>
+    class list_constructor<Class, Template, ListElementType, policies::apply_to<Size>> :
+        public list_constructor_base<Class, Template, ListElementType*>
     {
-        using my_base = list_constructor_base<Class, ListElementType*>;
+        using my_base = list_constructor_base<Class, Template, ListElementType*>;
 
     public:
         static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
+        static_assert(!Template, "This policy is invalid for a template class");
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         static auto generate(call_conv_t<CallConv>) noexcept
@@ -703,14 +761,16 @@ namespace wrappers
 
     template <
         typename Class,
+        bool Template,
         typename ListElementType>
-    class list_constructor<Class, ListElementType, policies::as_iterators> :
-        public list_constructor_base<Class, void*>
+    class list_constructor<Class, Template, ListElementType, policies::as_iterators> :
+        public list_constructor_base<Class, Template, void*>
     {
-        using my_base = list_constructor_base<Class, void*>;
+        using my_base = list_constructor_base<Class, Template, void*>;
 
     public:
         static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
+        static_assert(!Template, "This policy is invalid for a template class");
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         static auto generate(call_conv_t<CallConv>) noexcept
@@ -749,14 +809,16 @@ namespace wrappers
 
     template <
         typename Class,
+        bool Template,
         typename ListElementType>
-    class list_constructor<Class, ListElementType, policies::pointer_and_size> :
-        public list_constructor_base<Class, void*>
+    class list_constructor<Class, Template, ListElementType, policies::pointer_and_size> :
+        public list_constructor_base<Class, Template, void*>
     {
-        using my_base = list_constructor_base<Class, void*>;
+        using my_base = list_constructor_base<Class, Template, void*>;
 
     public:
         static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
+        static_assert(!Template, "This policy is invalid for a template class");
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         static auto generate(call_conv_t<CallConv>) noexcept
@@ -789,19 +851,21 @@ namespace wrappers
 
     template <
         typename Class,
+        bool Template,
         typename ListElementType,
         policies::initialization_list_policy ConvertibleRangePolicy>
     requires(
         std::same_as<ConvertibleRangePolicy, policies::as_initializer_list> ||
         std::same_as<ConvertibleRangePolicy, policies::as_span>
     )
-    class list_constructor<Class, ListElementType, ConvertibleRangePolicy> :
-        public list_constructor_base<Class, void*>
+    class list_constructor<Class, Template, ListElementType, ConvertibleRangePolicy> :
+        public list_constructor_base<Class, Template, void*>
     {
-        using my_base = list_constructor_base<Class, void*>;
+        using my_base = list_constructor_base<Class, Template, void*>;
 
     public:
         static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
+        static_assert(!Template, "This policy is invalid for a template class");
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         static auto generate(call_conv_t<CallConv>) noexcept
@@ -3954,7 +4018,10 @@ public:
 private:
     constexpr std::string decl_list_constructor(std::string_view pattern) const
     {
-        return string_concat("void f(int&in){", pattern, "}");
+        if constexpr(Template)
+            return string_concat("void f(int&in,int&in){", pattern, '}');
+        else
+            return string_concat("void f(int&in){", pattern, '}');
     }
 
 public:
@@ -4135,7 +4202,7 @@ public:
     {
         list_constructor_function(
             pattern,
-            wrappers::list_constructor<Class, ListElementType, Policy>::generate(generic_call_conv),
+            wrappers::list_constructor<Class, Template, ListElementType, Policy>::generate(generic_call_conv),
             generic_call_conv
         );
 
@@ -4162,7 +4229,7 @@ public:
         {
             list_constructor_function(
                 pattern,
-                wrappers::list_constructor<Class, ListElementType, Policy>::generate(
+                wrappers::list_constructor<Class, Template, ListElementType, Policy>::generate(
                     call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
                 ),
                 call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
