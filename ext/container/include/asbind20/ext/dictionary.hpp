@@ -257,11 +257,13 @@ public:
 
     void addref()
     {
+        m_gc_flag = false;
         asAtomicInc(m_refcount);
     }
 
     void release()
     {
+        m_gc_flag = false;
         if(asAtomicDec(m_refcount) == 0)
             delete this;
     }

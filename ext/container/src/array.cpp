@@ -206,6 +206,7 @@ void script_array::operator delete(void* p)
 
 void script_array::addref()
 {
+    m_gc_flag = false;
     asAtomicInc(m_refcount);
 }
 

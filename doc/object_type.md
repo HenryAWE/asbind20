@@ -149,9 +149,10 @@ Register with advanced API `c.method(use_generic, "method decl", fp<&val_class:m
 # Registering a Reference Class
 For non-template reference class, register it with `ref_class` helper. This is similar to registering a value class. But the constructor is replaced by factory function. Thus, you need to register special behaviours for AngelScript to handle lifetime of the registered object type, e.g., `addref()` and `release()`. Additionally, you can [check the official document for other memory management ways](https://www.angelcode.com/angelscript/sdk/docs/manual/doc_reg_basicref.html#doc_reg_nocount) for reference type.
 
-- Behaviors for handling lifetime:  
+## Generating Wrappers
+### Behaviors for handling lifetime:  
 For ordinary reference types, you only need to support reference counting by registering `addref()` and `release()`.  
-However, if you are registering types involving circular reference, you may need to register behaviours for GC. Please [read the official document explaining GC](https://www.angelcode.com/angelscript/sdk/docs/manual/doc_gc_object.html).
+However, if you are registering types involving circular reference, you may need to register behaviours for GC. Please [read the official document explaining GC](https://www.angelcode.com/angelscript/sdk/docs/manual/doc_gc_object.html). For garbage collected types with reference counting, you should be aware of that `addref()` and `release()` should clear GC flag according to [the official document](https://www.angelcode.com/angelscript/sdk/docs/manual/doc_gc_object.html#doc_reg_gcref_3).
 
 | Registering Helper | `asEBehaviours`        | Script Declaration |
 | ------------------ | ---------------------- | ------------------ |
@@ -163,8 +164,21 @@ However, if you are registering types involving circular reference, you may need
 | `enum_refs()`      | `asBEHAVE_ENUMREFS`    | `void f(int&in)`   |
 | `release_refs()`   | `asBEHAVE_RELEASEREFS` | `void f(int&in)`   |
 
-- Besides, the generated operator wrappers don't support function that may return a reference class by value, e.g. `T opAdd(const T&in) const`, which can easily cause an issue related to lifetime.  
+### Factory
+Similar to `constructor(_function)()` / `list_constructor(_function)()`, they can be registered by `factory(_function)()` / `list_factory(_function)()`. The only difference is that, while constructor of value class uses placement `new` on uninitialized memory preallocated by AngelScript,
+factory of reference type returns a pointer to an allocated and initialized object.
+
+Some tips for the factory of reference type:
+- For reference counted type, the reference counter should be set to `1` during initialization.
+- If your type involves GC, you need to notify the GC of a newly created object by `NotifyGarbageCollectorOfNewObject`, [as explained in AngelScript's official document](https://www.angelcode.com/angelscript/sdk/docs/manual/doc_gc_object.html#doc_reg_gcref_2).
+
+### Operators
+They are similar to binding operators for value type.  
+However, the generated operator wrappers don't support function that may return a reference class by value, e.g. `T opAdd(const T&in) const`, which can easily cause an issue related to lifetime.  
 You can use a lambda expression to convert value to pointer/reference by your desired conversion logic.
+
+### Methods
+Similar to that for value class. But you should deal with ownership/lifetime of returned object carefully. Use a lambda wrapper if necessary.
 
 # Templated Value/Reference Class
 The template class is special value/reference class. It can be registered with `template_value_class`/`template_ref_class`. The binding generator will automatically handle the hidden type information (`asITypeInfo*`, passed by `int&in` in AngelScript) as the first argument when generating constructor/factory function from C++ constructors.
