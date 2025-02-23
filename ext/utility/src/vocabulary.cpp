@@ -2,11 +2,36 @@
 
 namespace asbind20::ext
 {
-static bool optional_template_callback(asITypeInfo* ti, bool&)
+static bool optional_template_callback(asITypeInfo* ti, bool& no_gc)
 {
     int subtype_id = ti->GetSubTypeId();
-    if(subtype_id == asTYPEID_VOID)
+    if(subtype_id == AS_NAMESPACE_QUALIFIER asTYPEID_VOID)
         return false;
+
+    if(is_primitive_type(subtype_id))
+        no_gc = true;
+    else
+    {
+        asQWORD subtype_flags = ti->GetSubType()->GetFlags();
+        if(subtype_flags & AS_NAMESPACE_QUALIFIER asOBJ_POD)
+            no_gc = true;
+        else if((subtype_flags & AS_NAMESPACE_QUALIFIER asOBJ_REF))
+        {
+            if(subtype_flags & AS_NAMESPACE_QUALIFIER asOBJ_NOCOUNT)
+                no_gc = true;
+            else
+                no_gc = false;
+        }
+        else if((subtype_flags & AS_NAMESPACE_QUALIFIER asOBJ_VALUE))
+        {
+            if(!(subtype_flags & AS_NAMESPACE_QUALIFIER asOBJ_GC))
+                no_gc = true;
+            else
+                no_gc = false;
+        }
+        else
+            no_gc = false;
+    }
 
     return true;
 }
@@ -16,6 +41,15 @@ script_optional::script_optional(asITypeInfo* ti)
 {
     m_ti->AddRef();
     assert(m_has_value == false);
+}
+
+script_optional::script_optional(asITypeInfo* ti, const script_optional& other)
+    : m_ti(ti)
+{
+    m_ti->AddRef();
+    assert(m_ti == other.m_ti);
+    if(other.has_value())
+        assign(other.m_data.get(other.m_ti));
 }
 
 script_optional::script_optional(asITypeInfo* ti, const void* val)
@@ -54,18 +88,6 @@ void script_optional::assign(const void* val)
     assert(val != nullptr);
 
     m_has_value = m_data.copy_construct(m_ti, val);
-}
-
-void* script_optional::operator new(std::size_t bytes)
-{
-    return as_allocator<std::byte>::allocate(bytes);
-}
-
-void script_optional::operator delete(void* p)
-{
-    as_allocator<std::byte>::deallocate(
-        static_cast<std::byte*>(p), sizeof(script_optional)
-    );
 }
 
 void* script_optional::value()
@@ -111,6 +133,19 @@ void script_optional::reset()
 
     m_has_value = false;
     m_data.destruct(m_ti);
+}
+
+void script_optional::enum_refs(asIScriptEngine* engine)
+{
+    if(m_ti->GetFlags() & AS_NAMESPACE_QUALIFIER asOBJ_GC)
+    {
+        engine->ForwardGCEnumReferences(m_data.get(m_ti), m_ti->GetSubType());
+    }
+}
+void script_optional::release_refs(asIScriptEngine* engine)
+{
+    (void)engine;
+    reset();
 }
 
 bool script_optional::data_t::use_storage(asITypeInfo* ti)
@@ -226,13 +261,25 @@ namespace detail
     template <bool UseGeneric>
     void register_script_optional_impl(asIScriptEngine* engine)
     {
-        template_ref_class<script_optional, UseGeneric> c(engine, "optional<T>", asOBJ_SCOPED);
+        constexpr AS_NAMESPACE_QUALIFIER asQWORD flags =
+            AS_NAMESPACE_QUALIFIER asOBJ_GC |
+            AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_CDAK |
+            AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_ALLINTS |
+            AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_MORE_CONSTRUCTORS;
+        template_value_class<script_optional, UseGeneric> c(
+            engine,
+            "optional<T>",
+            flags
+        );
         c
             .template_callback(fp<&optional_template_callback>)
-            .default_factory()
-            .template factory<const void*>("const T&in")
-            .release(fp<&script_optional::release>)
+            .default_constructor()
+            .copy_constructor()
+            .template constructor<const void*>("const T&in")
+            .destructor()
             .opAssign()
+            .enum_refs(fp<&script_optional::enum_refs>)
+            .release_refs(fp<&script_optional::release_refs>)
             .method("optional<T>& opAssign(const T&in)", fp<&optional_opAssign_value>)
             .method("bool get_has_value() const property", fp<&script_optional::has_value>)
             .method("bool opConv() const", fp<&script_optional::has_value>)

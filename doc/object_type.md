@@ -59,6 +59,8 @@ asbind20::value_class<my_value_class>(...)
     .method("void do_something(my_value_class& other)", &do_something, asbind20::call_conv<asCALL_CDECL_OBJLAST>);
 ```
 
+3. If you want to register a templated value class, please read the following sections.
+
 ## Generating Wrappers
 asbind20 has support for generating wrappers for common usage.
 
@@ -114,6 +116,16 @@ Given constant C++ references `a` and `b`, as well as a variable `val` of regist
 
 If your operators are not included in the above list, you can register them by `method()` with a lambda for choosing the correct operator overload.
 
+### [Garbage Collected Value Types](https://www.angelcode.com/angelscript/sdk/docs/manual/doc_gc_object.html#doc_reg_gcref_value)
+Value types are normally not thought of as being part of circular references as they themselves cannot be referenced, however if a value type can hold a reference to a type, and then that type can have the value type as a member then a circular reference can be established preventing the reference type from being released.
+
+To solve these situations the value types can also be registered with the following of the garbage collector behaviours.
+
+| Registering Helper | `asEBehaviours`        | Script Declaration |
+| ------------------ | ---------------------- | ------------------ |
+| `enum_refs()`      | `asBEHAVE_ENUMREFS`    | `void f(int&in)`   |
+| `release_refs()`   | `asBEHAVE_RELEASEREFS` | `void f(int&in)`   |
+
 ## Member Aliases
 You can register a member `funcdef`.  
 Here use a template class as example, but the same logic also applies to value class.
@@ -135,9 +147,11 @@ The `behaviours_by_traits()` will use `asGetTypeTraits<T>()` to register default
 Register with advanced API `c.method(use_generic, "method decl", fp<&val_class:member_fun>)`. This will create a generic wrapper for the `val_class::member_fun` and register it with `asCALL_GENERIC` convention.
 
 # Registering a Reference Class
-For non-template reference class, register it with `ref_class` helper. This is similar to registering a value class. But the constructor is replaced by factory function. Thus, you need to register special behaviours for AngelScript to handle lifetime of the registered object type, e.g., `addref()` and `release()`.
+For non-template reference class, register it with `ref_class` helper. This is similar to registering a value class. But the constructor is replaced by factory function. Thus, you need to register special behaviours for AngelScript to handle lifetime of the registered object type, e.g., `addref()` and `release()`. Additionally, you can [check the official document for other memory management ways](https://www.angelcode.com/angelscript/sdk/docs/manual/doc_reg_basicref.html#doc_reg_nocount) for reference type.
 
 - Behaviors for handling lifetime:  
+For ordinary reference types, you only need to support reference counting by registering `addref()` and `release()`.  
+However, if you are registering types involving circular reference, you may need to register behaviours for GC. Please [read the official document explaining GC](https://www.angelcode.com/angelscript/sdk/docs/manual/doc_gc_object.html).
 
 | Registering Helper | `asEBehaviours`        | Script Declaration |
 | ------------------ | ---------------------- | ------------------ |
@@ -149,14 +163,20 @@ For non-template reference class, register it with `ref_class` helper. This is s
 | `enum_refs()`      | `asBEHAVE_ENUMREFS`    | `void f(int&in)`   |
 | `release_refs()`   | `asBEHAVE_RELEASEREFS` | `void f(int&in)`   |
 
-Besides, the generated operator wrappers don't support function that may return a reference class by value, e.g. `T opAdd(const T&in) const`.
+- Besides, the generated operator wrappers don't support function that may return a reference class by value, e.g. `T opAdd(const T&in) const`, which can easily cause an issue related to lifetime.  
+You can use a lambda expression to convert value to pointer/reference by your desired conversion logic.
 
-## Template Class
-The template class is a special reference class. It can be registered with `template_class`. The binding generator will automatically handle the hidden type information (passed by `int&in` in AngelScript) as the first argument when generating factory function from constructors.
+# Templated Value/Reference Class
+The template class is special value/reference class. It can be registered with `template_value_class`/`template_ref_class`. The binding generator will automatically handle the hidden type information (`asITypeInfo*`, passed by `int&in` in AngelScript) as the first argument when generating constructor/factory function from C++ constructors.
 
-The template validation callback (`asBEHAVE_TEMPLATE_CALLBACK`) can be registered with `template_callback`. The C++ signature of the callback should be either `bool(asITypeInfo*, bool&)` or `bool(asITypeInfo*, bool*)`.
+The template validation callback (`asBEHAVE_TEMPLATE_CALLBACK`) can be registered with `template_callback`. The C++ signature of the callback should be `bool(asITypeInfo*, bool&)`. You can read the [official document explaining template callback](https://www.angelcode.com/angelscript/sdk/docs/manual/doc_adv_template.html#doc_adv_template_4).
 
 You can find detailed example in extension for registering script array.
+
+## Notice for returning/receiving templated value class by value using generic wrapper
+Usually, the copy constructor of templated value class is declared as `(asITypeInfo*, const Class& other)`, so the class may not have a ordinary copy/move constructor in C++, 
+thus the generic wrapper will try to use [NRVO](https://en.cppreference.com/w/cpp/language/copy_elision) for those non-copyable/non-moveable types to directly construct them at the return location.  
+However, if this is not your desired behavior, you [need to tell asbind20 how to convert those values for generic wrapper](./custom_conv_rule.md).
 
 # Registering an Interface
 ```c++

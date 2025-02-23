@@ -21,22 +21,22 @@ class script_optional
     friend void detail::register_script_optional_impl(asIScriptEngine* engine);
 
 public:
+    script_optional() = delete;
+    script_optional(const script_optional&) = delete;
+
     script_optional(asITypeInfo* ti);
+
+    script_optional(asITypeInfo* ti, const script_optional& other);
 
     script_optional(asITypeInfo* ti, const void* value);
 
-private:
     ~script_optional();
 
-public:
     script_optional& operator=(const script_optional& other);
 
     bool operator==(const script_optional& rhs) const;
 
     void assign(const void* val);
-
-    void* operator new(std::size_t bytes);
-    void operator delete(void* mem);
 
     bool has_value() const noexcept
     {
@@ -60,6 +60,9 @@ public:
     {
         return m_ti;
     }
+
+    void enum_refs(asIScriptEngine* engine);
+    void release_refs(asIScriptEngine* engine);
 
 private:
     asITypeInfo* m_ti = nullptr;
