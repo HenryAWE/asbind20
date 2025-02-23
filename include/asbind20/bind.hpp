@@ -4351,6 +4351,58 @@ public:
         return *this;
     }
 
+#    define ASBIND20_VALUE_CLASS_BEH(func_name, as_beh, as_decl)                             \
+        template <native_function Fn>                                                        \
+        basic_value_class& func_name(Fn&& fn) requires(!ForceGeneric)                        \
+        {                                                                                    \
+            using func_t = std::decay_t<Fn>;                                                 \
+            constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =                         \
+                detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER as_beh, Class, func_t>(); \
+            this->behaviour_impl(                                                            \
+                AS_NAMESPACE_QUALIFIER as_beh,                                               \
+                as_decl,                                                                     \
+                fn,                                                                          \
+                call_conv<conv>                                                              \
+            );                                                                               \
+            return *this;                                                                    \
+        }                                                                                    \
+        basic_value_class& func_name(AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn)                 \
+        {                                                                                    \
+            this->behaviour_impl(                                                            \
+                AS_NAMESPACE_QUALIFIER as_beh,                                               \
+                as_decl,                                                                     \
+                gfn,                                                                         \
+                call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>                             \
+            );                                                                               \
+            return *this;                                                                    \
+        }                                                                                    \
+        template <auto Function>                                                             \
+        basic_value_class& func_name(use_generic_t, fp_wrapper_t<Function>)                  \
+        {                                                                                    \
+            using func_t = std::decay_t<decltype(Function)>;                                 \
+            constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =                         \
+                detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER as_beh, Class, func_t>(); \
+            this->func_name(to_asGENFUNC_t(fp<Function>, call_conv<conv>));                  \
+            return *this;                                                                    \
+        }                                                                                    \
+        template <auto Function>                                                             \
+        basic_value_class& func_name(fp_wrapper_t<Function>)                                 \
+        {                                                                                    \
+            if constexpr(ForceGeneric)                                                       \
+                this->func_name(use_generic, fp<Function>);                                  \
+            else                                                                             \
+                this->func_name(Function);                                                   \
+            return *this;                                                                    \
+        }
+
+    // For garbage collected value type
+    // See: https://www.angelcode.com/angelscript/sdk/docs/manual/doc_gc_object.html#doc_reg_gcref_value
+
+    ASBIND20_VALUE_CLASS_BEH(enum_refs, asBEHAVE_ENUMREFS, "void f(int&in)")
+    ASBIND20_VALUE_CLASS_BEH(release_refs, asBEHAVE_RELEASEREFS, "void f(int&in)")
+
+#undef ASBIND20_VALUE_CLASS_BEH
+
     ASBIND20_CLASS_TEMPLATE_CALLBACK(basic_value_class)
 
     ASBIND20_CLASS_METHOD(basic_value_class)
@@ -4362,8 +4414,6 @@ public:
     ASBIND20_CLASS_WRAPPED_VAR_TYPE_METHOD_AUXILIARY(basic_value_class)
     ASBIND20_CLASS_WRAPPED_LAMBDA_VAR_TYPE_METHOD(basic_value_class)
 
-    // TODO: Garbage collected value type
-    // See: https://www.angelcode.com/angelscript/sdk/docs/manual/doc_gc_object.html#doc_reg_gcref_value
 
     basic_value_class& property(const char* decl, std::size_t off)
     {

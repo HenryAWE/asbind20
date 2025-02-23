@@ -61,6 +61,9 @@ public:
         return m_ti;
     }
 
+    void enum_refs(asIScriptEngine* engine);
+    void release_refs(asIScriptEngine* engine);
+
 private:
     asITypeInfo* m_ti = nullptr;
 

@@ -2,11 +2,36 @@
 
 namespace asbind20::ext
 {
-static bool optional_template_callback(asITypeInfo* ti, bool&)
+static bool optional_template_callback(asITypeInfo* ti, bool& no_gc)
 {
     int subtype_id = ti->GetSubTypeId();
-    if(subtype_id == asTYPEID_VOID)
+    if(subtype_id == AS_NAMESPACE_QUALIFIER asTYPEID_VOID)
         return false;
+
+    if(is_primitive_type(subtype_id))
+        no_gc = true;
+    else
+    {
+        asQWORD subtype_flags = ti->GetSubType()->GetFlags();
+        if(subtype_flags & AS_NAMESPACE_QUALIFIER asOBJ_POD)
+            no_gc = true;
+        else if((subtype_flags & AS_NAMESPACE_QUALIFIER asOBJ_REF))
+        {
+            if(subtype_flags & AS_NAMESPACE_QUALIFIER asOBJ_NOCOUNT)
+                no_gc = true;
+            else
+                no_gc = false;
+        }
+        else if((subtype_flags & AS_NAMESPACE_QUALIFIER asOBJ_VALUE))
+        {
+            if(!(subtype_flags & AS_NAMESPACE_QUALIFIER asOBJ_GC))
+                no_gc = true;
+            else
+                no_gc = false;
+        }
+        else
+            no_gc = false;
+    }
 
     return true;
 }
@@ -108,6 +133,19 @@ void script_optional::reset()
 
     m_has_value = false;
     m_data.destruct(m_ti);
+}
+
+void script_optional::enum_refs(asIScriptEngine* engine)
+{
+    if(m_ti->GetFlags() & AS_NAMESPACE_QUALIFIER asOBJ_GC)
+    {
+        engine->ForwardGCEnumReferences(m_data.get(m_ti), m_ti->GetSubType());
+    }
+}
+void script_optional::release_refs(asIScriptEngine* engine)
+{
+    (void)engine;
+    reset();
 }
 
 bool script_optional::data_t::use_storage(asITypeInfo* ti)
@@ -224,6 +262,7 @@ namespace detail
     void register_script_optional_impl(asIScriptEngine* engine)
     {
         constexpr AS_NAMESPACE_QUALIFIER asQWORD flags =
+            AS_NAMESPACE_QUALIFIER asOBJ_GC |
             AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_CDAK |
             AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_ALLINTS |
             AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_MORE_CONSTRUCTORS;
@@ -239,6 +278,8 @@ namespace detail
             .template constructor<const void*>("const T&in")
             .destructor()
             .opAssign()
+            .enum_refs(fp<&script_optional::enum_refs>)
+            .release_refs(fp<&script_optional::release_refs>)
             .method("optional<T>& opAssign(const T&in)", fp<&optional_opAssign_value>)
             .method("bool get_has_value() const property", fp<&script_optional::has_value>)
             .method("bool opConv() const", fp<&script_optional::has_value>)
