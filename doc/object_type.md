@@ -161,9 +161,9 @@ The template validation callback (`asBEHAVE_TEMPLATE_CALLBACK`) can be registere
 You can find detailed example in extension for registering script array.
 
 ## Notice for returning/receiving templated value class by value using generic wrapper
-Usually, the copy constructor of templated value class is declared as `(asITypeInfo*, const Class& other)`. So the class may not have a ordinary copy/move constructor in C++, thus the generic wrapper won't know how to convert them. To deal with this situation, you [need to tell asbind20 how to convert those values for generic wrapper](./custom_conv_rule.md).
-
-You can check the script optional in the extension (`ext/utility/vocabulary.hpp`) on how to return by value for generic wrapper.
+Usually, the copy constructor of templated value class is declared as `(asITypeInfo*, const Class& other)`, so the class may not have a ordinary copy/move constructor in C++, 
+thus the generic wrapper will try to use [NRVO](https://en.cppreference.com/w/cpp/language/copy_elision) for those non-copyable/non-moveable types to directly construct them at the return location.  
+However, if this is not your desired behavior, you [need to tell asbind20 how to convert those values for generic wrapper](./custom_conv_rule.md).
 
 # Registering an Interface
 ```c++

@@ -258,6 +258,9 @@ void set_generic_return(
 /**
  * @brief Set generic return value by invocation result
  *
+ * @note Use this function instead of directly using the `set_generic_return` for non-moveable types.
+ *       This function will try to use NRVO for non-moveable types.
+ *
  * @tparam Return Return type
  *
  * @param fn Function to invoke
@@ -269,9 +272,23 @@ void set_generic_return_by(
     Args&&... args
 )
 {
+    constexpr bool is_customized = requires() {
+        { type_traits<std::remove_cv_t<Return>>::set_return(gen, std::declval<Return>()) } -> std::same_as<int>;
+    };
+    constexpr bool non_moveable =
+        !(std::is_reference_v<Return> || std::is_pointer_v<Return>) &&
+        std::is_class_v<Return> &&
+        (!is_customized ||
+         std::is_move_constructible_v<Return>);
+
     if constexpr(std::is_void_v<Return>)
     {
         std::invoke(std::forward<Fn>(fn), std::forward<Args>(args)...);
+    }
+    else if constexpr(non_moveable) // Try NRVO for non-moveable types
+    {
+        void* mem = gen->GetAddressOfReturnLocation();
+        new(mem) Return(std::invoke(std::forward<Fn>(fn), std::forward<Args>(args)...));
     }
     else
     {

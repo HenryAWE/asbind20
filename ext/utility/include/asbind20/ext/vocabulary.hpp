@@ -62,22 +62,6 @@ public:
     }
 
 private:
-    friend type_traits<script_optional>;
-
-    // For generic calling convention
-    void move_to_ret_loc(void* dst)
-    {
-        new(dst) script_optional(m_ti);
-
-        script_optional* opt = static_cast<script_optional*>(dst);
-        if(m_has_value)
-        {
-            opt->m_has_value = true;
-            std::memcpy(&opt->m_data, &m_data, sizeof(m_data));
-            m_has_value = false;
-        }
-    }
-
     asITypeInfo* m_ti = nullptr;
 
     union data_t
@@ -102,17 +86,5 @@ private:
     void release();
 };
 } // namespace asbind20::ext
-
-template <>
-struct asbind20::type_traits<asbind20::ext::script_optional>
-{
-    static int set_return(
-        AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen, ext::script_optional&& val
-    )
-    {
-        val.move_to_ret_loc(gen->GetAddressOfReturnLocation());
-        return AS_NAMESPACE_QUALIFIER asSUCCESS;
-    }
-};
 
 #endif
