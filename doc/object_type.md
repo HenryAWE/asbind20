@@ -59,6 +59,8 @@ asbind20::value_class<my_value_class>(...)
     .method("void do_something(my_value_class& other)", &do_something, asbind20::call_conv<asCALL_CDECL_OBJLAST>);
 ```
 
+3. If you want to register a templated value class, please read the following sections.
+
 ## Generating Wrappers
 asbind20 has support for generating wrappers for common usage.
 
@@ -151,12 +153,17 @@ For non-template reference class, register it with `ref_class` helper. This is s
 
 Besides, the generated operator wrappers don't support function that may return a reference class by value, e.g. `T opAdd(const T&in) const`.
 
-## Template Class
-The template class is a special reference class. It can be registered with `template_class`. The binding generator will automatically handle the hidden type information (passed by `int&in` in AngelScript) as the first argument when generating factory function from constructors.
+# Templated Value/Reference Class
+The template class is special value/reference class. It can be registered with `template_value_class`/`template_ref_class`. The binding generator will automatically handle the hidden type information (`asITypeInfo*`, passed by `int&in` in AngelScript) as the first argument when generating constructor/factory function from C++ constructors.
 
-The template validation callback (`asBEHAVE_TEMPLATE_CALLBACK`) can be registered with `template_callback`. The C++ signature of the callback should be either `bool(asITypeInfo*, bool&)` or `bool(asITypeInfo*, bool*)`.
+The template validation callback (`asBEHAVE_TEMPLATE_CALLBACK`) can be registered with `template_callback`. The C++ signature of the callback should be `bool(asITypeInfo*, bool&)`. You can read the [official document explaining template callback](https://www.angelcode.com/angelscript/sdk/docs/manual/doc_adv_template.html#doc_adv_template_4).
 
 You can find detailed example in extension for registering script array.
+
+## Notice for returning/receiving templated value class by value using generic wrapper
+Usually, the copy constructor of templated value class is declared as `(asITypeInfo*, const Class& other)`. So the class may not have a ordinary copy/move constructor in C++, thus the generic wrapper won't know how to convert them. To deal with this situation, you [need to tell asbind20 how to convert those values for generic wrapper](./custom_conv_rule.md).
+
+You can check the script optional in the extension (`ext/utility/vocabulary.hpp`) on how to return by value for generic wrapper.
 
 # Registering an Interface
 ```c++
