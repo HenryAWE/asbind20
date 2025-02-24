@@ -22,6 +22,14 @@
 
 namespace asbind20
 {
+struct inplace_addref_t
+{};
+
+/**
+ * @brief Tag indicating that the object's reference count should be increased
+ */
+constexpr inline inplace_addref_t inplace_addref{};
+
 namespace detail
 {
     // std::is_constructible implicitly requires T to be destructible,
@@ -1180,12 +1188,9 @@ public:
         reset(nullptr);
     }
 
-    bool operator==(const lockable_shared_bool& other) const
-    {
-        return m_bool == other.m_bool;
-    }
+    bool operator==(const lockable_shared_bool& other) const = default;
 
-    void reset(std::nullptr_t) noexcept
+    void reset(std::nullptr_t = nullptr) noexcept
     {
         if(m_bool)
         {
@@ -1194,11 +1199,26 @@ public:
         }
     }
 
+    /**
+     * @warning If you get the lockable shared bool by `GetWeakRefFlagOfScriptObject()`,
+     *          you should @b not use this function! Because that function won't increase the reference count.
+     *
+     * @sa reset(inplace_addref_t, handle_type)
+     */
     void reset(handle_type bool_) noexcept
     {
         if(m_bool)
             m_bool->Release();
         m_bool = bool_;
+    }
+
+    void reset(inplace_addref_t, handle_type bool_) noexcept
+    {
+        if(m_bool)
+            m_bool->Release();
+        m_bool = bool_;
+        if(m_bool)
+            m_bool->AddRef();
     }
 
     lockable_shared_bool& operator=(const lockable_shared_bool& other)
@@ -1275,6 +1295,108 @@ inline lockable_shared_bool make_lockable_shared_bool()
 {
     return lockable_shared_bool(AS_NAMESPACE_QUALIFIER asCreateLockableSharedBool());
 }
+
+/**
+ * @brief
+ *
+ */
+class script_typeinfo
+{
+public:
+    using handle_type = AS_NAMESPACE_QUALIFIER asITypeInfo*;
+
+    script_typeinfo() noexcept = default;
+
+    /**
+     * @brief Assign a type info object. It @b won't increase the reference count!
+     * @sa script_typeinfo(inplace_addref_t, handle_type)
+     *
+     * @warning DON'T use this constructor unless you know what you are doing!
+     *
+     * @note Generally, the AngelScript APIs for getting type info won't increase reference count,
+     *       such as being the hidden first argument of template class constructor/factory.
+     */
+    explicit script_typeinfo(handle_type ti) noexcept
+        : m_ti(ti) {}
+
+    /**
+     * @brief Assign a type info object, and increase reference count
+     */
+    script_typeinfo(inplace_addref_t, handle_type ti) noexcept
+        : m_ti(ti)
+    {
+        if(m_ti)
+            m_ti->AddRef();
+    }
+
+    script_typeinfo(const script_typeinfo& other) noexcept
+        : m_ti(other.m_ti)
+    {
+        if(m_ti)
+            m_ti->AddRef();
+    }
+
+    script_typeinfo(script_typeinfo&& other) noexcept
+        : m_ti(std::exchange(other.m_ti, nullptr)) {}
+
+    ~script_typeinfo()
+    {
+        reset();
+    }
+
+    script_typeinfo& operator=(const script_typeinfo& other) noexcept
+    {
+        if(this != &other)
+            reset(other.m_ti);
+        return *this;
+    }
+
+    script_typeinfo& operator=(script_typeinfo&& other) noexcept
+    {
+        if(this != &other)
+            reset(other.release());
+        return *this;
+    }
+
+    handle_type get() const noexcept
+    {
+        return m_ti;
+    }
+
+    handle_type operator->() const noexcept
+    {
+        return get();
+    }
+
+    operator handle_type() const noexcept
+    {
+        return get();
+    }
+
+    handle_type release() noexcept
+    {
+        return std::exchange(m_ti, nullptr);
+    }
+
+    void reset(std::nullptr_t = nullptr) noexcept
+    {
+        if(m_ti)
+        {
+            m_ti->Release();
+            m_ti = nullptr;
+        }
+    }
+
+    void reset(handle_type ti)
+    {
+        if(m_ti)
+            m_ti->Release();
+        m_ti = ti;
+    }
+
+private:
+    handle_type m_ti = nullptr;
+};
 
 /**
  * @brief Wrap `asAllocMem()` and `asFreeMem()` as a C++ allocator
@@ -1545,6 +1667,26 @@ inline auto get_default_constructor(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
         AS_NAMESPACE_QUALIFIER asIScriptFunction* func =
             ti->GetBehaviourByIndex(i, &beh);
         if(beh == AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT)
+        {
+            if(func->GetParamCount() == 0)
+                return func;
+        }
+    }
+
+    return nullptr;
+}
+
+inline auto get_weakref_flag(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+    -> AS_NAMESPACE_QUALIFIER asIScriptFunction*
+{
+    assert(ti != nullptr);
+
+    for(AS_NAMESPACE_QUALIFIER asUINT i = 0; i < ti->GetBehaviourCount(); ++i)
+    {
+        AS_NAMESPACE_QUALIFIER asEBehaviours beh;
+        AS_NAMESPACE_QUALIFIER asIScriptFunction* func =
+            ti->GetBehaviourByIndex(i, &beh);
+        if(beh == AS_NAMESPACE_QUALIFIER asBEHAVE_GET_WEAKREF_FLAG)
         {
             if(func->GetParamCount() == 0)
                 return func;
