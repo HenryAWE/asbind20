@@ -1153,6 +1153,129 @@ inline script_engine make_script_engine(
     );
 }
 
+class lockable_shared_bool
+{
+public:
+    using handle_type = AS_NAMESPACE_QUALIFIER asILockableSharedBool*;
+
+    lockable_shared_bool() = default;
+
+    explicit lockable_shared_bool(handle_type bool_)
+        : m_bool(bool_) {}
+
+    lockable_shared_bool(const lockable_shared_bool& other)
+    {
+        if(other.m_bool)
+        {
+            other.m_bool->AddRef();
+            m_bool = other.m_bool;
+        }
+    }
+
+    lockable_shared_bool(lockable_shared_bool&& other) noexcept
+        : m_bool(std::exchange(other.m_bool, nullptr)) {}
+
+    ~lockable_shared_bool()
+    {
+        reset(nullptr);
+    }
+
+    bool operator==(const lockable_shared_bool& other) const
+    {
+        return m_bool == other.m_bool;
+    }
+
+    void reset(std::nullptr_t) noexcept
+    {
+        if(m_bool)
+        {
+            m_bool->Release();
+            m_bool = nullptr;
+        }
+    }
+
+    void reset(handle_type bool_) noexcept
+    {
+        if(m_bool)
+            m_bool->Release();
+        m_bool = bool_;
+    }
+
+    lockable_shared_bool& operator=(const lockable_shared_bool& other)
+    {
+        if(this == &other)
+            return *this;
+
+        reset(nullptr);
+        if(other.m_bool)
+        {
+            other.m_bool->AddRef();
+            m_bool = other.m_bool;
+        }
+
+        return *this;
+    }
+
+    lockable_shared_bool& operator=(lockable_shared_bool&& other)
+    {
+        if(this == &other)
+            return *this;
+
+        lockable_shared_bool(std::move(other)).swap(*this);
+        return *this;
+    }
+
+    void lock()
+    {
+        assert(*this);
+        m_bool->Lock();
+    }
+
+    void unlock() noexcept
+    {
+        assert(*this);
+        m_bool->Unlock();
+    }
+
+    handle_type get() const noexcept
+    {
+        return m_bool;
+    }
+
+    handle_type operator->() const noexcept
+    {
+        return m_bool;
+    }
+
+    operator handle_type() const noexcept
+    {
+        return get();
+    }
+
+    explicit operator bool() const noexcept
+    {
+        return m_bool != nullptr;
+    }
+
+    void swap(lockable_shared_bool& other) noexcept
+    {
+        std::swap(m_bool, other.m_bool);
+    }
+
+private:
+    handle_type m_bool = nullptr;
+};
+
+/**
+ * @brief Create a lockable shared bool for implementing weak reference
+ *
+ * @note Lock the exclusive lock in multithreading enviornment
+ */
+inline lockable_shared_bool make_lockable_shared_bool()
+{
+    return lockable_shared_bool(AS_NAMESPACE_QUALIFIER asCreateLockableSharedBool());
+}
+
 /**
  * @brief Wrap `asAllocMem()` and `asFreeMem()` as a C++ allocator
  */

@@ -49,6 +49,11 @@ constexpr auxiliary_wrapper<T> auxiliary(T* aux) noexcept
     return auxiliary_wrapper<T>(aux);
 }
 
+constexpr inline auxiliary_wrapper<void> auxiliary(std::nullptr_t) noexcept
+{
+    return auxiliary_wrapper<void>(nullptr);
+}
+
 template <typename T>
 constexpr auxiliary_wrapper<T> auxiliary(T&& aux) = delete;
 
@@ -65,6 +70,39 @@ constexpr auxiliary_wrapper<void> aux_value(std::intptr_t val)
 {
     return auxiliary_wrapper<void>(std::bit_cast<void*>(val));
 }
+
+class [[nodiscard]] access_mask
+{
+public:
+    using mask_type = AS_NAMESPACE_QUALIFIER asDWORD;
+
+    access_mask() = delete;
+    access_mask(const access_mask&) = delete;
+
+    access_mask(
+        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+        mask_type mask
+    )
+        : m_engine(engine)
+    {
+        m_prev = m_engine->SetDefaultAccessMask(mask);
+    }
+
+    ~access_mask()
+    {
+        m_engine->SetDefaultAccessMask(m_prev);
+    }
+
+    auto get_engine() const noexcept
+        -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
+    {
+        return m_engine;
+    }
+
+private:
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* m_engine;
+    mask_type m_prev;
+};
 
 class [[nodiscard]] namespace_
 {
@@ -4351,49 +4389,49 @@ public:
         return *this;
     }
 
-#    define ASBIND20_VALUE_CLASS_BEH(func_name, as_beh, as_decl)                             \
-        template <native_function Fn>                                                        \
-        basic_value_class& func_name(Fn&& fn) requires(!ForceGeneric)                        \
-        {                                                                                    \
-            using func_t = std::decay_t<Fn>;                                                 \
-            constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =                         \
-                detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER as_beh, Class, func_t>(); \
-            this->behaviour_impl(                                                            \
-                AS_NAMESPACE_QUALIFIER as_beh,                                               \
-                as_decl,                                                                     \
-                fn,                                                                          \
-                call_conv<conv>                                                              \
-            );                                                                               \
-            return *this;                                                                    \
-        }                                                                                    \
-        basic_value_class& func_name(AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn)                 \
-        {                                                                                    \
-            this->behaviour_impl(                                                            \
-                AS_NAMESPACE_QUALIFIER as_beh,                                               \
-                as_decl,                                                                     \
-                gfn,                                                                         \
-                call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>                             \
-            );                                                                               \
-            return *this;                                                                    \
-        }                                                                                    \
-        template <auto Function>                                                             \
-        basic_value_class& func_name(use_generic_t, fp_wrapper_t<Function>)                  \
-        {                                                                                    \
-            using func_t = std::decay_t<decltype(Function)>;                                 \
-            constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =                         \
-                detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER as_beh, Class, func_t>(); \
-            this->func_name(to_asGENFUNC_t(fp<Function>, call_conv<conv>));                  \
-            return *this;                                                                    \
-        }                                                                                    \
-        template <auto Function>                                                             \
-        basic_value_class& func_name(fp_wrapper_t<Function>)                                 \
-        {                                                                                    \
-            if constexpr(ForceGeneric)                                                       \
-                this->func_name(use_generic, fp<Function>);                                  \
-            else                                                                             \
-                this->func_name(Function);                                                   \
-            return *this;                                                                    \
-        }
+#define ASBIND20_VALUE_CLASS_BEH(func_name, as_beh, as_decl)                             \
+    template <native_function Fn>                                                        \
+    basic_value_class& func_name(Fn&& fn) requires(!ForceGeneric)                        \
+    {                                                                                    \
+        using func_t = std::decay_t<Fn>;                                                 \
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =                         \
+            detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER as_beh, Class, func_t>(); \
+        this->behaviour_impl(                                                            \
+            AS_NAMESPACE_QUALIFIER as_beh,                                               \
+            as_decl,                                                                     \
+            fn,                                                                          \
+            call_conv<conv>                                                              \
+        );                                                                               \
+        return *this;                                                                    \
+    }                                                                                    \
+    basic_value_class& func_name(AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn)                 \
+    {                                                                                    \
+        this->behaviour_impl(                                                            \
+            AS_NAMESPACE_QUALIFIER as_beh,                                               \
+            as_decl,                                                                     \
+            gfn,                                                                         \
+            call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>                             \
+        );                                                                               \
+        return *this;                                                                    \
+    }                                                                                    \
+    template <auto Function>                                                             \
+    basic_value_class& func_name(use_generic_t, fp_wrapper_t<Function>)                  \
+    {                                                                                    \
+        using func_t = std::decay_t<decltype(Function)>;                                 \
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =                         \
+            detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER as_beh, Class, func_t>(); \
+        this->func_name(to_asGENFUNC_t(fp<Function>, call_conv<conv>));                  \
+        return *this;                                                                    \
+    }                                                                                    \
+    template <auto Function>                                                             \
+    basic_value_class& func_name(fp_wrapper_t<Function>)                                 \
+    {                                                                                    \
+        if constexpr(ForceGeneric)                                                       \
+            this->func_name(use_generic, fp<Function>);                                  \
+        else                                                                             \
+            this->func_name(Function);                                                   \
+        return *this;                                                                    \
+    }
 
     // For garbage collected value type
     // See: https://www.angelcode.com/angelscript/sdk/docs/manual/doc_gc_object.html#doc_reg_gcref_value
@@ -4413,7 +4451,6 @@ public:
     ASBIND20_CLASS_WRAPPED_VAR_TYPE_METHOD(basic_value_class)
     ASBIND20_CLASS_WRAPPED_VAR_TYPE_METHOD_AUXILIARY(basic_value_class)
     ASBIND20_CLASS_WRAPPED_LAMBDA_VAR_TYPE_METHOD(basic_value_class)
-
 
     basic_value_class& property(const char* decl, std::size_t off)
     {

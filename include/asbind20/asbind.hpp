@@ -22,6 +22,7 @@
 #include "utility.hpp"
 #include "bind.hpp"
 #include "invoke.hpp"
+#include "io.hpp"
 
 // IWYU pragma: end_exports
 
