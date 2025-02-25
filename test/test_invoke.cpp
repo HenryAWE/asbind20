@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <shared_test_lib.hpp>
 #include <asbind20/asbind.hpp>
+#include <asbind20/ext/vocabulary.hpp>
 
 using namespace asbind_test;
 
@@ -25,6 +26,15 @@ TEST(script_invoke_result, common)
         EXPECT_EQ(result.value(), "hello");
         EXPECT_EQ(result.error(), AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED);
     }
+
+    {
+        script_invoke_result<int> result(bad_result, AS_NAMESPACE_QUALIFIER asEXECUTION_EXCEPTION);
+
+        ASSERT_FALSE(result.has_value());
+        ASSERT_FALSE(result);
+        EXPECT_THROW((void)result.value(), bad_script_invoke_result_access);
+        EXPECT_EQ(result.error(), AS_NAMESPACE_QUALIFIER asEXECUTION_EXCEPTION);
+    }
 }
 
 TEST(script_invoke_result, reference)
@@ -40,6 +50,15 @@ TEST(script_invoke_result, reference)
         EXPECT_EQ(&result.value(), &val);
         EXPECT_EQ(result.error(), AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED);
     }
+
+    {
+        script_invoke_result<int&> result(bad_result, AS_NAMESPACE_QUALIFIER asEXECUTION_EXCEPTION);
+
+        ASSERT_FALSE(result.has_value());
+        ASSERT_FALSE(result);
+        EXPECT_THROW((void)result.value(), bad_script_invoke_result_access);
+        EXPECT_EQ(result.error(), AS_NAMESPACE_QUALIFIER asEXECUTION_EXCEPTION);
+    }
 }
 
 TEST(script_invoke_result, void)
@@ -54,6 +73,15 @@ TEST(script_invoke_result, void)
         EXPECT_NO_THROW(result.value());
         EXPECT_NO_FATAL_FAILURE((void)*result);
         EXPECT_EQ(result.error(), AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED);
+    }
+
+    {
+        script_invoke_result<void> result(bad_result, AS_NAMESPACE_QUALIFIER asEXECUTION_EXCEPTION);
+
+        ASSERT_FALSE(result.has_value());
+        ASSERT_FALSE(result);
+        EXPECT_THROW(result.value(), bad_script_invoke_result_access);
+        EXPECT_EQ(result.error(), AS_NAMESPACE_QUALIFIER asEXECUTION_EXCEPTION);
     }
 }
 
@@ -196,6 +224,67 @@ TEST_F(asbind_test_suite, script_class)
         val = asbind20::script_invoke<int>(ctx, my_class, get_val);
         ASSERT_TRUE(result_has_value(val));
         EXPECT_EQ(val.value(), 182376);
+    }
+}
+
+TEST_F(asbind_test_suite, non_copyable)
+{
+    auto* engine = get_engine();
+    auto* m = engine->GetModule("test_invoke", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
+
+    m->AddScriptSection(
+        "test_invoke.as",
+        "array<string> strs = {\"aaa\", \"bbb\"};\n"
+        "optional<uint> test(const string&in s) { return strs.find_optional(s); }"
+    );
+    ASSERT_GE(m->Build(), 0);
+
+
+    auto* f = m->GetFunctionByName("test");
+    ASSERT_NE(f, nullptr);
+
+    using asbind20::ext::script_optional;
+    using namespace std::string_literals;
+
+    // Use reference for the non-copyable / non-moveable type.
+    // The result is available as long as the context is alive.
+
+    {
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<script_optional&>(ctx, f, "aaa"s);
+        EXPECT_TRUE(result_has_value(result));
+
+        EXPECT_TRUE(result.value().has_value());
+        EXPECT_EQ(
+            result.value().get_type_info()->GetSubTypeId(),
+            AS_NAMESPACE_QUALIFIER asTYPEID_UINT32
+        );
+        EXPECT_EQ(*(std::uint32_t*)result.value().value(), 0);
+    }
+
+    {
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<script_optional&>(ctx, f, "bbb"s);
+        EXPECT_TRUE(result_has_value(result));
+
+        EXPECT_TRUE(result.value().has_value());
+        EXPECT_EQ(
+            result.value().get_type_info()->GetSubTypeId(),
+            AS_NAMESPACE_QUALIFIER asTYPEID_UINT32
+        );
+        EXPECT_EQ(*(std::uint32_t*)result.value().value(), 1);
+    }
+
+    {
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<script_optional&>(ctx, f, "not found"s);
+        EXPECT_TRUE(result_has_value(result));
+
+        EXPECT_FALSE(result.value().has_value());
+        EXPECT_EQ(
+            result.value().get_type_info()->GetSubTypeId(),
+            AS_NAMESPACE_QUALIFIER asTYPEID_UINT32
+        );
     }
 }
 

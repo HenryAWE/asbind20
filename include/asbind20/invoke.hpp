@@ -107,6 +107,7 @@ public:
         return std::move(*ptr());
     }
 
+    [[nodiscard]]
     R& value() &
     {
         if(!has_value())
@@ -114,6 +115,7 @@ public:
         return **this;
     }
 
+    [[nodiscard]]
     R&& value() &&
     {
         if(!has_value())
@@ -121,6 +123,7 @@ public:
         return std::move(**this);
     }
 
+    [[nodiscard]]
     const R& value() const&
     {
         if(!has_value())
@@ -128,6 +131,7 @@ public:
         return **this;
     }
 
+    [[nodiscard]]
     const R&& value() const&&
     {
         if(!has_value())
@@ -135,6 +139,7 @@ public:
         return std::move(**this);
     }
 
+    [[nodiscard]]
     bool has_value() const noexcept
     {
         return error() == AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED;
@@ -145,6 +150,7 @@ public:
         return has_value();
     }
 
+    [[nodiscard]]
     int error() const noexcept
     {
         return m_r;
@@ -236,6 +242,7 @@ public:
         return std::move(*m_ptr);
     }
 
+    [[nodiscard]]
     R& value() &
     {
         if(!has_value())
@@ -243,6 +250,7 @@ public:
         return **this;
     }
 
+    [[nodiscard]]
     R&& value() &&
     {
         if(!has_value())
@@ -250,6 +258,7 @@ public:
         return std::move(**this);
     }
 
+    [[nodiscard]]
     const R& value() const&
     {
         if(!has_value())
@@ -257,6 +266,7 @@ public:
         return **this;
     }
 
+    [[nodiscard]]
     const R&& value() const&&
     {
         if(!has_value())
@@ -264,16 +274,19 @@ public:
         return std::move(**this);
     }
 
+    [[nodiscard]]
     bool has_value() const noexcept
     {
         return error() == AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED;
     }
 
+    [[nodiscard]]
     explicit operator bool() const noexcept
     {
         return has_value();
     }
 
+    [[nodiscard]]
     int error() const noexcept
     {
         return m_r;
@@ -313,6 +326,7 @@ public:
 
     void operator*() const noexcept {}
 
+    [[nodiscard]]
     bool has_value() const noexcept
     {
         return m_r == AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED;
@@ -335,6 +349,7 @@ public:
             throw_bad_access();
     }
 
+    [[nodiscard]]
     int error() const noexcept
     {
         return m_r;
