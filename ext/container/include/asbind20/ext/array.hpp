@@ -186,7 +186,7 @@ private:
 
     array_data m_data = array_data();
     asITypeInfo* m_ti = nullptr;
-    int m_refcount = 1;
+    atomic_counter m_refcount;
     int m_subtype_id = 0;
     size_type m_elem_size = 0;
     bool m_gc_flag = false;

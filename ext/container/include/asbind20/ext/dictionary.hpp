@@ -258,14 +258,13 @@ public:
     void addref()
     {
         m_gc_flag = false;
-        asAtomicInc(m_refcount);
+        ++m_refcount;
     }
 
     void release()
     {
         m_gc_flag = false;
-        if(asAtomicDec(m_refcount) == 0)
-            delete this;
+        m_refcount.dec_and_try_delete(this);
     }
 
     int get_refcount() const;
@@ -277,7 +276,7 @@ public:
 private:
     container_type m_container;
     std::mutex m_mx;
-    int m_refcount = 1;
+    atomic_counter m_refcount;
     bool m_gc_flag = false;
 };
 

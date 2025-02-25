@@ -1398,6 +1398,85 @@ private:
     handle_type m_ti = nullptr;
 };
 
+class atomic_counter
+{
+public:
+    using value_type = int;
+
+    /**
+     * @brief Construct a new atomic counter and set the counter value to 1
+     */
+    atomic_counter() noexcept
+        : m_val(1) {}
+
+    atomic_counter(const atomic_counter&) = default;
+
+    atomic_counter(int val) noexcept
+        : m_val(val) {}
+
+    ~atomic_counter() = default;
+
+    atomic_counter& operator=(const atomic_counter&) noexcept = default;
+
+    atomic_counter& operator=(int val) noexcept
+    {
+        m_val = val;
+        return *this;
+    }
+
+    bool operator==(const atomic_counter&) const = default;
+
+    int inc() noexcept
+    {
+        return AS_NAMESPACE_QUALIFIER asAtomicInc(m_val);
+    }
+
+    int dec() noexcept
+    {
+        return AS_NAMESPACE_QUALIFIER asAtomicDec(m_val);
+    }
+
+    operator int() const noexcept
+    {
+        return m_val;
+    }
+
+    int operator++() noexcept
+    {
+        return inc();
+    }
+
+    int operator--() noexcept
+    {
+        return dec();
+    }
+
+    template <typename Destroyer, typename... Args>
+    decltype(auto) dec_and_try_destroy(Destroyer&& d, Args&&... args)
+    {
+        if(dec() == 0)
+        {
+            return std::invoke(
+                std::forward<Destroyer>(d),
+                std::forward<Args>(args)...
+            );
+        }
+    }
+
+    template <typename T>
+    requires(requires(T* ptr) { delete ptr; })
+    void dec_and_try_delete(T* ptr) noexcept
+    {
+        if(dec() == 0)
+        {
+            delete ptr;
+        }
+    }
+
+private:
+    int m_val;
+};
+
 /**
  * @brief Wrap `asAllocMem()` and `asFreeMem()` as a C++ allocator
  */

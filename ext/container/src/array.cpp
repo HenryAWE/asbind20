@@ -207,16 +207,17 @@ void script_array::operator delete(void* p)
 void script_array::addref()
 {
     m_gc_flag = false;
-    asAtomicInc(m_refcount);
+    ++m_refcount;
 }
 
 void script_array::release()
 {
     m_gc_flag = false;
-    if(asAtomicDec(m_refcount) == 0)
-    {
-        delete this;
-    }
+    m_refcount.dec_and_try_destroy(
+        [](auto* p)
+        { delete p; },
+        this
+    );
 }
 
 void script_array::reserve(size_type new_cap)
