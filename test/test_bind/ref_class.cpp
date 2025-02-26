@@ -273,7 +273,7 @@ public:
     void release()
     {
         assert(m_counter != 0);
-        if(--m_counter)
+        if(--m_counter == 0)
             delete this;
     }
 
