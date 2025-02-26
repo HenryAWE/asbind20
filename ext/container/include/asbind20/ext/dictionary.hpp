@@ -6,9 +6,7 @@
 #include <map>
 #include <cstring>
 #include <asbind20/asbind.hpp>
-#ifndef NDEBUG
-#    include <iostream>
-#endif
+#include <asbind20/container.hpp>
 
 namespace asbind20::ext
 {
@@ -19,108 +17,25 @@ public:
 
     struct mapped_type
     {
-        union storage_t
-        {
-            std::byte local[8];
-            void* ptr;
-        };
-
-        storage_t storage;
+        container::single data;
         int type_id;
 
         mapped_type() = delete;
 
-        mapped_type(asIScriptEngine* engine, void* ref, int tid)
+        mapped_type(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, void* ref, int tid)
             : type_id(tid)
         {
-            std::memset(&storage, 0, sizeof(storage));
-
-            if(!(type_id & ~asTYPEID_MASK_SEQNBR))
-            {
-                visit_primitive_type(
-                    [this]<typename T>(T* val) -> void
-                    {
-                        static_assert(sizeof(T) <= sizeof(storage_t::local));
-                        *(T*)storage.local = *val;
-                    },
-                    tid,
-                    ref
-                );
-                return;
-            }
-
-            if(type_id & asTYPEID_OBJHANDLE)
-            {
-                *(void**)storage.local = ref;
-                if(ref)
-                    engine->AddRefScriptObject(ref, engine->GetTypeInfoById(type_id));
-            }
-            else
-            {
-                if(!ref)
-                {
-                    storage.ptr = nullptr;
-                    return;
-                }
-
-                storage.ptr = engine->CreateScriptObjectCopy(ref, type_info(engine));
-            }
+           data.copy_construct(engine, tid, ref);
         }
 
-        void get(asIScriptEngine* engine, void* out) const
+        void get(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, void* out) const
         {
-            if(!(type_id & ~asTYPEID_MASK_SEQNBR))
-            {
-                copy_primitive_value(out, storage.local, type_id);
-                return;
-            }
-
-            if(!(type_id & asTYPEID_OBJHANDLE))
-            {
-                assert(type_id & asTYPEID_MASK_OBJECT);
-                engine->AssignScriptObject(out, storage.ptr, type_info(engine));
-            }
-            if(type_id & asTYPEID_OBJHANDLE)
-            {
-                asITypeInfo* ti = type_info(engine);
-
-                void* tmp = *(void**)out;
-                *(void**)out = *(void**)storage.local;
-                engine->AddRefScriptObject(*(void**)storage.local, ti);
-                if(tmp)
-                    engine->ReleaseScriptObject(tmp, ti);
-            }
+            data.copy_assign_to(engine, type_id, out);
         }
 
-        asITypeInfo* type_info(asIScriptEngine* engine) const
+        void release_data(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         {
-            assert(type_id & ~asTYPEID_MASK_SEQNBR);
-            return engine->GetTypeInfoById(type_id);
-        }
-
-        void release_data(asIScriptEngine* engine)
-        {
-            if(!(type_id & ~asTYPEID_MASK_SEQNBR))
-                return;
-
-            if(type_id & asTYPEID_OBJHANDLE)
-            {
-                void* handle = *(void**)storage.local;
-                if(handle)
-                {
-                    asITypeInfo* ti = type_info(engine);
-                    engine->ReleaseScriptObject(handle, ti);
-                }
-            }
-            else
-            {
-                void* handle = storage.ptr;
-                if(handle)
-                {
-                    asITypeInfo* ti = type_info(engine);
-                    engine->ReleaseScriptObject(handle, ti);
-                }
-            }
+            data.destroy(engine, type_id);
         }
     };
 

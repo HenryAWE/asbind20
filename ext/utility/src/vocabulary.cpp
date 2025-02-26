@@ -49,7 +49,7 @@ script_optional::script_optional(asITypeInfo* ti, const script_optional& other)
     m_ti->AddRef();
     assert(m_ti == other.m_ti);
     if(other.has_value())
-        assign(other.m_data.get(other.m_ti));
+        assign(other.m_data.data_address(other.subtype_id()));
 }
 
 script_optional::script_optional(asITypeInfo* ti, const void* val)
@@ -72,7 +72,7 @@ script_optional& script_optional::operator=(const script_optional& other)
 
     assert(m_ti == other.m_ti);
     if(other)
-        assign(other.m_data.get(other.m_ti));
+        assign(other.m_data.data_address(other.subtype_id()));
     else
         reset();
 
@@ -81,13 +81,17 @@ script_optional& script_optional::operator=(const script_optional& other)
 
 void script_optional::assign(const void* val)
 {
+    assert(m_ti != nullptr);
+
     if(has_value())
-        reset();
-
-    assert(m_ti);
-    assert(val != nullptr);
-
-    m_has_value = m_data.copy_construct(m_ti, val);
+    {
+        m_data.copy_assign_from(m_ti->GetEngine(), subtype_id(), val);
+    }
+    else
+    {
+        m_data.copy_construct(m_ti->GetEngine(), subtype_id(), val);
+        m_has_value = true;
+    }
 }
 
 void* script_optional::value()
@@ -98,7 +102,7 @@ void* script_optional::value()
         return nullptr;
     }
 
-    return m_data.get(m_ti);
+    return m_data.data_address(subtype_id());
 }
 
 const void* script_optional::value() const
@@ -109,21 +113,21 @@ const void* script_optional::value() const
         return nullptr;
     }
 
-    return m_data.get(m_ti);
+    return m_data.data_address(subtype_id());
 }
 
 void* script_optional::value_or(void* val)
 {
     assert(val != nullptr);
 
-    return m_has_value ? m_data.get(m_ti) : val;
+    return m_has_value ? m_data.data_address(subtype_id()) : val;
 }
 
 const void* script_optional::value_or(const void* val) const
 {
     assert(val != nullptr);
 
-    return m_has_value ? m_data.get(m_ti) : val;
+    return m_has_value ? m_data.data_address(subtype_id()) : val;
 }
 
 void script_optional::reset()
@@ -131,113 +135,26 @@ void script_optional::reset()
     if(!m_has_value)
         return;
 
+    m_data.destroy(m_ti->GetEngine(), subtype_id());
     m_has_value = false;
-    m_data.destruct(m_ti);
 }
 
 void script_optional::enum_refs(asIScriptEngine* engine)
 {
     if(m_ti->GetFlags() & AS_NAMESPACE_QUALIFIER asOBJ_GC)
     {
-        engine->ForwardGCEnumReferences(m_data.get(m_ti), m_ti->GetSubType());
+        AS_NAMESPACE_QUALIFIER asITypeInfo* subtype = m_ti->GetSubType();
+        engine->ForwardGCEnumReferences(
+            m_data.object_ref(), subtype
+        );
     }
 }
+
 void script_optional::release_refs(asIScriptEngine* engine)
 {
     (void)engine;
+    assert(engine == m_ti->GetEngine());
     reset();
-}
-
-bool script_optional::data_t::use_storage(asITypeInfo* ti)
-{
-    int subtype_id = ti->GetSubTypeId();
-    if(!(subtype_id & ~asTYPEID_MASK_SEQNBR))
-    {
-        return true;
-    }
-    else if(subtype_id & asTYPEID_OBJHANDLE)
-        return true;
-
-    return false;
-}
-
-bool script_optional::data_t::copy_construct(asITypeInfo* ti, const void* val)
-{
-    int subtype_id = ti->GetSubTypeId();
-    if(!(subtype_id & ~asTYPEID_MASK_SEQNBR))
-    {
-        visit_primitive_type(
-            [this]<typename T>(const T* val)
-            {
-                static_assert(sizeof(T) <= sizeof(data_t::storage));
-                *(T*)storage = *val;
-            },
-            subtype_id,
-            val
-        );
-    }
-    else if(subtype_id & asTYPEID_OBJHANDLE)
-    {
-        void** obj = (void**)storage;
-        *obj = (void*)val;
-        if(*obj)
-        {
-            asIScriptEngine* engine = ti->GetEngine();
-            engine->AddRefScriptObject(*obj, ti->GetSubType());
-        }
-    }
-    else
-    {
-        asIScriptEngine* engine = ti->GetEngine();
-
-        ptr = engine->CreateScriptObjectCopy((void*)val, ti->GetSubType());
-        if(!ptr)
-            return false;
-    }
-
-    return true;
-}
-
-void script_optional::data_t::destruct(asITypeInfo* ti)
-{
-    int subtype_id = ti->GetSubTypeId();
-    if(!(subtype_id & ~asTYPEID_MASK_SEQNBR))
-        return;
-    else if(subtype_id & asTYPEID_OBJHANDLE)
-    {
-        void* obj = (void**)storage;
-        if(obj)
-        {
-            asIScriptEngine* engine = ti->GetEngine();
-            engine->ReleaseScriptObject(obj, ti->GetSubType());
-        }
-    }
-    else
-    {
-        asIScriptEngine* engine = ti->GetEngine();
-        engine->ReleaseScriptObject(ptr, ti);
-    }
-}
-
-void* script_optional::data_t::get(asITypeInfo* ti)
-{
-    if(use_storage(ti))
-        return storage;
-    else
-        return ptr;
-}
-
-const void* script_optional::data_t::get(asITypeInfo* ti) const
-{
-    if(use_storage(ti))
-        return storage;
-    else
-        return ptr;
-}
-
-void script_optional::release()
-{
-    delete this;
 }
 
 static void* optional_value(script_optional& this_)
@@ -271,6 +188,10 @@ namespace detail
             "optional<T>",
             flags
         );
+
+#define ASBIND20_EXT_OPTIONAL_METHOD(name, ret, args) \
+        static_cast<ret(script_optional::*) args>(&script_optional::name)
+
         c
             .template_callback(fp<&optional_template_callback>)
             .default_constructor()
@@ -280,15 +201,24 @@ namespace detail
             .opAssign()
             .enum_refs(fp<&script_optional::enum_refs>)
             .release_refs(fp<&script_optional::release_refs>)
-            .method("optional<T>& opAssign(const T&in)", fp<&optional_opAssign_value>)
+            .method(
+                "optional<T>& opAssign(const T&in if_handle_then_const)",
+                [](const void* val, script_optional& this_) -> script_optional&
+                {
+                    this_.assign(val);
+                    return this_;
+                }
+            )
             .method("bool get_has_value() const property", fp<&script_optional::has_value>)
             .method("bool opConv() const", fp<&script_optional::has_value>)
             .method("void reset()", fp<&script_optional::reset>)
-            .method("T& get_value() property", fp<&optional_value>)
-            .method("const T& get_value() const property", fp<&optional_value>)
+            .method("T& get_value() property", fp<ASBIND20_EXT_OPTIONAL_METHOD(value, void*, ())>)
+            .method("const T& get_value() const property", fp<ASBIND20_EXT_OPTIONAL_METHOD(value, void*, ())>)
             .method("void set_value(const T&in) property", fp<&script_optional::assign>)
-            .method("T& value_or(T&in val)", fp<&optional_value_or>)
-            .method("const T& value_or(const T&in val) const", fp<&optional_value_or>);
+            .method("T& value_or(T&in val)", fp<ASBIND20_EXT_OPTIONAL_METHOD(value_or, void*, (void*))>)
+            .method("const T& value_or(const T&in val) const", fp<ASBIND20_EXT_OPTIONAL_METHOD(value_or, void*, (void*))>);
+
+#undef ASBIND20_EXT_OPTIONAL_METHOD
     }
 } // namespace detail
 

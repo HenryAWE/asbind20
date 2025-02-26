@@ -26,19 +26,20 @@ void dictionary::enum_refs(asIScriptEngine* engine)
         if(!(v.type_id & asTYPEID_MASK_OBJECT))
             continue;
 
-        void* obj = v.type_id & asTYPEID_OBJHANDLE ?
-                        *(void**)v.storage.local :
-                        v.storage.ptr;
+        void* obj = v.data.object_ref();
         if(!obj)
             continue;
 
-        asITypeInfo* ti = v.type_info(engine);
+        AS_NAMESPACE_QUALIFIER asITypeInfo* ti = engine->GetTypeInfoById(v.type_id);
         assert(ti != nullptr);
-        if(ti->GetFlags() & asOBJ_REF)
+        if(ti->GetFlags() & AS_NAMESPACE_QUALIFIER asOBJ_REF)
         {
             engine->GCEnumCallback(obj);
         }
-        else if((ti->GetFlags() & asOBJ_VALUE) && (ti->GetFlags() & asOBJ_GC))
+        else if(
+            (ti->GetFlags() & AS_NAMESPACE_QUALIFIER asOBJ_VALUE) &&
+            (ti->GetFlags() & AS_NAMESPACE_QUALIFIER asOBJ_GC)
+        )
         {
             engine->ForwardGCEnumReferences(obj, ti);
         }
@@ -47,6 +48,7 @@ void dictionary::enum_refs(asIScriptEngine* engine)
 
 void dictionary::release_refs(asIScriptEngine* engine)
 {
+    (void)engine;
     clear();
 }
 

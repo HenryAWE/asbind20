@@ -4,6 +4,7 @@
 #pragma once
 
 #include <asbind20/asbind.hpp>
+#include <asbind20/container.hpp>
 
 namespace asbind20::ext
 {
@@ -64,29 +65,16 @@ public:
     void enum_refs(asIScriptEngine* engine);
     void release_refs(asIScriptEngine* engine);
 
+    int subtype_id() const
+    {
+        return m_ti->GetSubTypeId();
+    }
+
 private:
     asITypeInfo* m_ti = nullptr;
 
-    union data_t
-    {
-    private:
-        void* ptr;
-        std::byte storage[8];
-
-        static bool use_storage(asITypeInfo* ti);
-
-    public:
-        bool copy_construct(asITypeInfo* ti, const void* val);
-        void destruct(asITypeInfo* ti);
-
-        void* get(asITypeInfo* ti);
-        const void* get(asITypeInfo* ti) const;
-    };
-
-    alignas(alignof(double)) data_t m_data;
+    container::single m_data;
     bool m_has_value = false;
-
-    void release();
 };
 } // namespace asbind20::ext
 
