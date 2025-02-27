@@ -621,7 +621,8 @@ namespace container
 
             public:
                 using pointer = T*;
-                using value_type = typename seq_object::value_type;
+                using value_type = T;
+                using proxy_type = typename seq_object::value_type;
 
                 object_allocator(AS_NAMESPACE_QUALIFIER asITypeInfo* ti) noexcept(std::is_nothrow_default_constructible_v<my_base>)
                     : my_base(), m_ti(ti)
@@ -640,17 +641,17 @@ namespace container
 
                 template <typename... Args>
                 requires(is_only_constructible_v<T, AS_NAMESPACE_QUALIFIER asITypeInfo*, Args...>)
-                void construct(pointer mem, Args&&... args)
+                void construct(proxy_type* mem, Args&&... args)
                 {
                     new(mem) T(get_type_info(), std::forward<Args>(args)...);
                 }
 
-                void construct(pointer mem, value_type&& val) noexcept
+                void construct(proxy_type* mem, proxy_type&& val) noexcept
                 {
                     new(mem) T(std::move(val));
                 }
 
-                void destroy(value_type* mem) noexcept
+                void destroy(proxy_type* mem) noexcept
                 {
                     if(!mem) [[unlikely]]
                         return;
