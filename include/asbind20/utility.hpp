@@ -266,6 +266,15 @@ constexpr bool is_primitive_type(int type_id) noexcept
 }
 
 /**
+ * @brief Check if a type id refers to an enum type
+ */
+constexpr bool is_enum_type(int type_id) noexcept
+{
+    return is_primitive_type(type_id) &&
+           type_id > AS_NAMESPACE_QUALIFIER asTYPEID_DOUBLE;
+}
+
+/**
  * @brief Check if a type id refers to an object handle
  */
 constexpr bool is_objhandle(int type_id) noexcept
