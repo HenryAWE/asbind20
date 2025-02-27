@@ -11,7 +11,6 @@
 #include <cstddef>
 #include <cassert>
 #include <cstring>
-#include <ranges>
 #include <vector>
 #include <deque>
 #include "utility.hpp"
@@ -237,6 +236,10 @@ namespace container
         internal_t m_data;
     };
 
+
+    template <template <typename...> typename Container>
+    struct container_traits;
+
     class container_base
     {
     public:
@@ -276,8 +279,17 @@ namespace container
                 assert(m_handle == nullptr);
             }
 
-            handle_proxy& operator=(handle_proxy&) = delete;
-            handle_proxy& operator=(handle_proxy&&) = delete;
+            handle_proxy& operator=(handle_proxy&& rhs) noexcept
+            {
+                if(this == &rhs)
+                    return *this;
+
+                // m_handle should be empty to avoid potential memory leak
+                assert(this->m_handle == nullptr);
+                m_handle = std::exchange(rhs.m_handle, nullptr);
+
+                return *this;
+            }
 
             void assign(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, handle_type handle)
             {
@@ -356,6 +368,18 @@ namespace container
                 assert(m_ptr == nullptr);
             }
 
+            object_proxy& operator=(object_proxy&& rhs) noexcept
+            {
+                if(this == &rhs)
+                    return *this;
+
+                // m_ptr should be empty to avoid potential memory leak
+                assert(this->m_ptr == nullptr);
+                m_ptr = std::exchange(rhs.m_ptr, nullptr);
+
+                return *this;
+            }
+
             void assign(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, void* ptr)
             {
                 if(!ti) [[unlikely]]
@@ -404,10 +428,70 @@ namespace container
             IsHandle,
             handle_proxy,
             object_proxy>;
-    };
 
-    template <template <typename...> typename Container>
-    struct container_traits;
+    protected:
+        template <typename Container, typename Proxy>
+        struct container_proxy
+        {
+            Container c;
+
+            template <typename... Args>
+            container_proxy(Args&&... args) noexcept(std::is_nothrow_constructible_v<Container, Args...>)
+                : c(std::forward<Args>(args)...)
+            {}
+
+            template <typename... Args>
+            void emplace_back(Args&&... args)
+            {
+                if constexpr(requires() { Proxy::emplace_back(c, std::forward<Args>(args)...); })
+                {
+                    Proxy::emplace_back(c, std::forward<Args>(args)...);
+                }
+                else
+                {
+                    c.emplace_back(std::forward<Args>(args)...);
+                }
+            }
+
+            template <typename... Args>
+            void emplace_front(Args&&... args)
+            {
+                if constexpr(requires() { Proxy::emplace_front(c, std::forward<Args>(args)...); })
+                {
+                    Proxy::emplace_front(c, std::forward<Args>(args)...);
+                }
+                else
+                {
+                    c.emplace_front(std::forward<Args>(args)...);
+                }
+            }
+
+            constexpr std::size_t size() const noexcept
+            {
+                return c.size();
+            }
+
+            auto iterator_at(std::size_t idx)
+            {
+                using std::end;
+                if(idx >= size()) [[unlikely]]
+                    return end(c);
+
+                using std::begin;
+                return std::next(begin(c), idx);
+            }
+
+            auto iterator_at(std::size_t idx) const
+            {
+                using std::end;
+                if(idx >= size()) [[unlikely]]
+                    return end(c);
+
+                using std::begin;
+                return std::next(begin(c), idx);
+            }
+        };
+    };
 
     template <>
     struct container_traits<std::vector>
@@ -416,6 +500,16 @@ namespace container
 
         template <typename T, typename Allocator>
         using container_type = std::vector<T, Allocator>;
+
+        template <typename C>
+        struct proxy
+        {
+            template <typename... Args>
+            static void emplace_front(C& c, Args&&... args)
+            {
+                c.emplace(c.begin(), std::forward<Args>(args)...);
+            }
+        };
     };
 
     template <>
@@ -429,6 +523,19 @@ namespace container
 
     namespace detail
     {
+        template <typename C, template <typename...> typename T>
+        struct get_proxy
+        {
+            using type = void;
+        };
+
+        template <typename C, template <typename...> typename T>
+        requires(requires() { typename container_traits<T>::template proxy<C>; })
+        struct get_proxy<C, T>
+        {
+            using type = typename container_traits<T>::template proxy<C>;
+        };
+
         // Deal with the std::vector<bool>
 
         template <template <typename...> typename T>
@@ -486,19 +593,24 @@ namespace container
             return impl().size();
         }
 
+        void push_front(const void* ref)
+        {
+            impl().push_front(ref);
+        }
+
         void push_back(const void* ref)
         {
             impl().push_back(ref);
         }
 
-        void* nth_address(size_type idx)
+        void* address_at(size_type idx)
         {
-            return impl().nth_address(idx);
+            return impl().address_at(idx);
         }
 
-        const void* nth_address(size_type idx) const
+        const void* address_at(size_type idx) const
         {
-            return impl().nth_address(idx);
+            return impl().address_at(idx);
         }
 
     private:
@@ -523,8 +635,9 @@ namespace container
             virtual size_type size() const noexcept = 0;
 
             virtual void push_back(const void* ref) = 0;
+            virtual void push_front(const void* ref) = 0;
 
-            virtual void* nth_address(size_type idx) const = 0;
+            virtual void* address_at(size_type idx) const = 0;
         };
 
         template <int TypeId>
@@ -561,8 +674,7 @@ namespace container
 
             size_type size() const noexcept final
             {
-                using std::size;
-                return size(m_container);
+                return m_container.size();
             }
 
             void push_back(const void* ref) override
@@ -570,16 +682,28 @@ namespace container
                 m_container.emplace_back(ref_to_elem_val(ref));
             }
 
-            void* nth_address(size_type idx) const final
+            void push_front(const void* ref) override
             {
-                using std::begin;
+                m_container.emplace_front(ref_to_elem_val(ref));
+            }
 
-                return (void*)std::addressof(*std::next(begin(m_container), idx));
+            void* address_at(size_type idx) const final
+            {
+                auto it = m_container.iterator_at(idx);
+                using std::end;
+                if(it == end(m_container.c))
+                    return nullptr;
+                return (void*)std::addressof(*it);
             }
 
         private:
             AS_NAMESPACE_QUALIFIER asIScriptEngine* m_engine;
-            container_type m_container;
+
+            using container_proxy_type = container_proxy<
+                container_type,
+                typename detail::get_proxy<container_type, Container>::type>;
+
+            container_proxy_type m_container;
 
             static auto ref_to_elem_val(const void* ref) noexcept
             {
@@ -641,12 +765,12 @@ namespace container
 
                 template <typename... Args>
                 requires(is_only_constructible_v<T, AS_NAMESPACE_QUALIFIER asITypeInfo*, Args...>)
-                void construct(proxy_type* mem, Args&&... args)
+                void construct(pointer mem, Args&&... args)
                 {
                     new(mem) T(get_type_info(), std::forward<Args>(args)...);
                 }
 
-                void construct(proxy_type* mem, proxy_type&& val) noexcept
+                void construct(pointer mem, proxy_type&& val) noexcept
                 {
                     new(mem) T(std::move(val));
                 }
@@ -657,7 +781,7 @@ namespace container
                         return;
 
                     mem->destroy(get_type_info());
-                    mem->~T();
+                    mem->~proxy_type();
                 }
 
             private:
@@ -693,13 +817,12 @@ namespace container
             virtual auto element_type_info() const
                 -> AS_NAMESPACE_QUALIFIER asITypeInfo* final
             {
-                return m_container.get_allocator().get_type_info();
+                return m_container.c.get_allocator().get_type_info();
             }
 
             size_type size() const noexcept final
             {
-                using std::size;
-                return size(m_container);
+                return m_container.size();
             }
 
             void push_back(const void* ref) override
@@ -707,16 +830,28 @@ namespace container
                 m_container.emplace_back(ref_to_ptr(ref));
             }
 
-            void* nth_address(size_type idx) const final
+            void push_front(const void* ref) override
             {
-                using std::begin;
+                m_container.emplace_front(ref_to_ptr(ref));
+            }
 
-                return (void*)std::next(begin(m_container), idx)->data_address();
+            void* address_at(size_type idx) const final
+            {
+                auto it = m_container.iterator_at(idx);
+                using std::end;
+                if(it == end(m_container.c))
+                    return nullptr;
+                return (void*)it->data_address();
             }
 
         private:
             int m_type_id;
-            container_type m_container;
+
+            using container_proxy_type = container_proxy<
+                container_type,
+                typename detail::get_proxy<container_type, Container>::type>;
+
+            container_proxy_type m_container;
 
             static void* ref_to_ptr(const void* ref)
             {

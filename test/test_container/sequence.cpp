@@ -47,6 +47,11 @@ public:
         return static_cast<size_type>(m_vec.size());
     }
 
+    void push_front(const void* ref)
+    {
+        m_vec.push_front(ref);
+    }
+
     void push_back(const void* ref)
     {
         m_vec.push_back(ref);
@@ -54,7 +59,7 @@ public:
 
     void* opIndex(size_type idx)
     {
-        void* ref = m_vec.nth_address(idx);
+        void* ref = m_vec.address_at(idx);
         if(!ref)
             throw std::out_of_range("out of range");
         return ref;
@@ -75,6 +80,7 @@ void register_seq_wrapper(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         .release(fp<&seq_t::release>)
         .default_factory()
         .method("uint get_size() const property", fp<&seq_t::size>)
+        .method("void push_front(const T&in)", fp<&seq_t::push_front>)
         .method("void push_back(const T&in)", fp<&seq_t::push_back>)
         .method("T& opIndex(uint)", fp<&seq_t::opIndex>)
         .method("const T& opIndex(uint) const", fp<&seq_t::opIndex>);
@@ -90,7 +96,8 @@ void check_sequence_wrapper(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         "{\n"
         "    sequence<int> v;\n"
         "    v.push_back(42);\n"
-        "    return v[0] == 42;\n"
+        "    v.push_front(0);\n"
+        "    return v[0] == 0 && v[1] == 42;\n"
         "}\n"
         "bool test1()\n"
         "{\n"
