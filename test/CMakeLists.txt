@@ -26,3 +26,5 @@ target_link_libraries(test_io PRIVATE shared_test_lib)
 gtest_discover_tests(test_io)
 
 add_subdirectory(test_bind)
+
+add_subdirectory(test_container)

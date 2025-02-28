@@ -6,7 +6,6 @@
 #include <map>
 #include <cstring>
 #include <asbind20/asbind.hpp>
-#include <asbind20/container.hpp>
 
 namespace asbind20::ext
 {
