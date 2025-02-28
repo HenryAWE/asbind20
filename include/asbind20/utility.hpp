@@ -283,6 +283,26 @@ constexpr bool is_objhandle(int type_id) noexcept
     return type_id & (AS_NAMESPACE_QUALIFIER asTYPEID_OBJHANDLE);
 }
 
+inline bool requires_gc(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+{
+    if(!ti) [[unlikely]]
+        return false;
+
+    auto flags = ti->GetFlags();
+
+    if(flags & AS_NAMESPACE_QUALIFIER asOBJ_REF)
+    {
+        return true;
+    }
+    else if((flags & AS_NAMESPACE_QUALIFIER asOBJ_VALUE) &&
+            (flags & AS_NAMESPACE_QUALIFIER asOBJ_GC))
+    {
+        return true;
+    }
+
+    return false;
+}
+
 /**
  * @brief Get the size of a script type
  *

@@ -94,6 +94,10 @@ public:
             }
         }
 
+        handle_proxy(std::in_place_t, handle_type handle) noexcept
+            : m_handle(handle)
+        {}
+
         ~handle_proxy()
         {
             assert(m_handle == nullptr);
@@ -171,6 +175,10 @@ public:
 
             m_ptr = ti->GetEngine()->CreateScriptObject(ti);
         }
+
+        object_proxy(std::in_place_t, void* ptr) noexcept
+            : m_ptr(ptr)
+        {}
 
         object_proxy(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, void* ptr)
             : m_ptr(nullptr)
@@ -317,6 +325,22 @@ protected:
             return c.size();
         }
 
+        constexpr std::size_t capacity() const noexcept
+        {
+            if constexpr(requires() { c.capacity(); })
+                return c.capacity();
+            else
+                return size();
+        }
+
+        void reserve(std::size_t new_cap)
+        {
+            if constexpr(requires() { c.reserve(new_cap); })
+            {
+                c.reserve(new_cap);
+            }
+        }
+
         auto iterator_at(std::size_t idx)
         {
             using std::end;
@@ -384,6 +408,15 @@ public:
         setup_impl(engine, elem_type_id);
     }
 
+    sequence(
+        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+        int elem_type_id,
+        script_init_list_repeat ilist
+    )
+    {
+        setup_impl(engine, elem_type_id, ilist);
+    }
+
     ~sequence()
     {
         impl().~seq_interface();
@@ -441,6 +474,16 @@ public:
         impl().pop_back();
     }
 
+    void clear()
+    {
+        impl().clear();
+    }
+
+    void enum_refs()
+    {
+        impl().enum_refs();
+    }
+
     [[nodiscard]]
     void* address_at(size_type idx)
     {
@@ -473,6 +516,12 @@ private:
             -> AS_NAMESPACE_QUALIFIER asIScriptEngine* = 0;
 
         virtual size_type size() const noexcept = 0;
+        virtual size_type capacity() const noexcept = 0;
+        virtual void reserve(size_type new_cap) = 0;
+
+        virtual void clear() noexcept = 0;
+
+        virtual void enum_refs() = 0;
 
         virtual void push_back(const void* ref) = 0;
         virtual void push_front(const void* ref) = 0;
@@ -508,6 +557,24 @@ private:
         seq_primitive(AS_NAMESPACE_QUALIFIER asIScriptEngine* e)
             : m_engine(e) {}
 
+        seq_primitive(AS_NAMESPACE_QUALIFIER asIScriptEngine* e, script_init_list_repeat ilist)
+            : m_engine(e)
+        {
+            value_type* start = static_cast<value_type*>(ilist.data());
+            value_type* stop = start + ilist.size();
+
+            m_container.c.insert(
+                m_container.c.end(),
+                start,
+                stop
+            );
+        }
+
+        ~seq_primitive()
+        {
+            clear();
+        }
+
         auto get_engine() const
             -> AS_NAMESPACE_QUALIFIER asIScriptEngine* final
         {
@@ -523,6 +590,23 @@ private:
         {
             return m_container.size();
         }
+
+        size_type capacity() const noexcept final
+        {
+            return m_container.capacity();
+        }
+
+        void reserve(size_type new_cap) noexcept final
+        {
+            return m_container.reserve(new_cap);
+        }
+
+        void clear() noexcept final
+        {
+            return m_container.c.clear();
+        }
+
+        void enum_refs() final {}
 
         void push_back(const void* ref) override
         {
@@ -581,6 +665,9 @@ private:
         seq_enum(AS_NAMESPACE_QUALIFIER asIScriptEngine* e, int elem_type_id)
             : my_base(e), m_type_id(elem_type_id) {}
 
+        seq_enum(AS_NAMESPACE_QUALIFIER asIScriptEngine* e, int elem_type_id, script_init_list_repeat ilist)
+            : my_base(e, ilist), m_type_id(elem_type_id) {}
+
         int element_type_id() const noexcept override
         {
             return m_type_id;
@@ -634,6 +721,11 @@ private:
                 new(mem) T(std::move(val));
             }
 
+            void construct(pointer mem, std::in_place_t, void* ptr) noexcept
+            {
+                new(mem) T(std::in_place, ptr);
+            }
+
             void destroy(proxy_type* mem) noexcept
             {
                 if(!mem) [[unlikely]]
@@ -657,8 +749,40 @@ private:
             element_type_info()->AddRef();
         }
 
+        seq_object(AS_NAMESPACE_QUALIFIER asIScriptEngine* e, int elem_type_id, script_init_list_repeat ilist)
+            : m_type_id(elem_type_id), m_container(allocator_type(e->GetTypeInfoById(elem_type_id)))
+        {
+            AS_NAMESPACE_QUALIFIER asITypeInfo* ti = element_type_info();
+            ti->AddRef();
+
+            reserve(ilist.size());
+
+            auto flags = ti->GetFlags();
+            if(is_objhandle(elem_type_id) || (flags & AS_NAMESPACE_QUALIFIER asOBJ_REF))
+            {
+                for(std::size_t i = 0; i < ilist.size(); ++i)
+                {
+                    void* ptr = ((void**)ilist.data())[i];
+                    m_container.emplace_back(std::in_place, ptr);
+                }
+
+                // Set the original list to 0, preventing it from being double freed.
+                std::memset(ilist.data(), 0, sizeof(void*) * ilist.size());
+            }
+            else
+            {
+                std::size_t elem_size = ti->GetSize();
+                for(std::size_t i = 0; i < ilist.size(); ++i)
+                {
+                    void* ptr = (std::byte*)ilist.data() + elem_size * i;
+                    m_container.emplace_back(ptr);
+                }
+            }
+        }
+
         ~seq_object()
         {
+            clear();
             element_type_info()->Release();
         }
 
@@ -682,6 +806,49 @@ private:
         size_type size() const noexcept final
         {
             return m_container.size();
+        }
+
+        size_type capacity() const noexcept final
+        {
+            return m_container.capacity();
+        }
+
+        void reserve(size_type new_cap) noexcept final
+        {
+            return m_container.reserve(new_cap);
+        }
+
+        void clear() noexcept final
+        {
+            return m_container.c.clear();
+        }
+
+        void enum_refs() final
+        {
+            AS_NAMESPACE_QUALIFIER asITypeInfo* ti = element_type_info();
+            auto* engine = ti->GetEngine();
+
+            auto flags = ti->GetFlags();
+            if(flags & AS_NAMESPACE_QUALIFIER asOBJ_REF)
+            {
+                for(auto it = m_container.c.begin(); it != m_container.c.end(); ++it)
+                {
+                    void* ref = it->object_ref();
+                    if(!ref)
+                        continue;
+                    engine->GCEnumCallback(ref);
+                }
+            }
+            else if((flags & AS_NAMESPACE_QUALIFIER asOBJ_VALUE) && (flags & AS_NAMESPACE_QUALIFIER asOBJ_GC))
+            {
+                for(auto it = m_container.c.begin(); it != m_container.c.end(); ++it)
+                {
+                    void* ref = it->object_ref();
+                    if(!ref)
+                        continue;
+                    engine->ForwardGCEnumReferences(ref, ti);
+                }
+            }
         }
 
         void push_back(const void* ref) override
@@ -747,7 +914,8 @@ private:
         new(m_data) ImplType(engine, std::forward<Args>(args)...);
     }
 
-    void setup_impl(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int elem_type_id)
+    template <typename... Args>
+    void setup_impl(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int elem_type_id, Args&&... args)
     {
         assert(!is_void(elem_type_id));
 
@@ -755,9 +923,11 @@ private:
         {
             switch(elem_type_id)
             {
-#define ASBIND20_CONTAINER_SEQ_PRIMITIVE_CASE(as_type_id)                     \
-case AS_NAMESPACE_QUALIFIER as_type_id:                                       \
-    construct_impl<seq_primitive<AS_NAMESPACE_QUALIFIER as_type_id>>(engine); \
+#define ASBIND20_CONTAINER_SEQ_PRIMITIVE_CASE(as_type_id)             \
+case AS_NAMESPACE_QUALIFIER as_type_id:                               \
+    construct_impl<seq_primitive<AS_NAMESPACE_QUALIFIER as_type_id>>( \
+        engine, std::forward<Args>(args)...                           \
+    );                                                                \
     break
 
                 ASBIND20_CONTAINER_SEQ_PRIMITIVE_CASE(asTYPEID_BOOL);
@@ -776,16 +946,16 @@ case AS_NAMESPACE_QUALIFIER as_type_id:                                       \
 
             default: // enum
                 assert(is_enum_type(elem_type_id));
-                construct_impl<seq_enum>(engine, elem_type_id);
+                construct_impl<seq_enum>(engine, elem_type_id, std::forward<Args>(args)...);
                 break;
             }
         }
         else
         {
             if(is_objhandle(elem_type_id))
-                construct_impl<seq_object<true>>(engine, elem_type_id);
+                construct_impl<seq_object<true>>(engine, elem_type_id, std::forward<Args>(args)...);
             else
-                construct_impl<seq_object<false>>(engine, elem_type_id);
+                construct_impl<seq_object<false>>(engine, elem_type_id, std::forward<Args>(args)...);
         }
     }
 
