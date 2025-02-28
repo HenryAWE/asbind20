@@ -1,3 +1,9 @@
+/**
+ * @file sequence.hpp
+ * @author HenryAWE
+ * @brief Sequence containers wrapper for AngelScript
+ */
+
 #ifndef ASBIND20_CONTAINER_SEQUENCE_HPP
 #define ASBIND20_CONTAINER_SEQUENCE_HPP
 
@@ -7,7 +13,6 @@
 #include <deque>
 #include "../detail/include_as.hpp"
 #include "../utility.hpp"
-#include "traits.hpp"
 
 #if defined(__GNUC__) && !defined(__clang__)
 #    if __GNUC__ <= 12
@@ -17,9 +22,12 @@
 
 namespace asbind20::container
 {
+template <template <typename...> typename Container>
+struct sequence_container_traits
+{};
 
 template <>
-struct container_traits<std::vector>
+struct sequence_container_traits<std::vector>
 {
     using sequence_container_tag = void;
 
@@ -34,11 +42,17 @@ struct container_traits<std::vector>
         {
             c.emplace(c.begin(), std::forward<Args>(args)...);
         }
+
+        template <typename... Args>
+        static void pop_front(C& c)
+        {
+            c.erase(c.begin());
+        }
     };
 };
 
 template <>
-struct container_traits<std::deque>
+struct sequence_container_traits<std::deque>
 {
     using sequence_container_tag = void;
 
@@ -90,9 +104,9 @@ public:
             if(this == &rhs)
                 return *this;
 
-            // m_handle should be empty to avoid potential memory leak
-            assert(this->m_handle == nullptr);
-            m_handle = std::exchange(rhs.m_handle, nullptr);
+            // Swap the pointer
+            // Current pointer will be released by rhs
+            std::swap(m_handle, rhs.m_handle);
 
             return *this;
         }
@@ -179,9 +193,9 @@ public:
             if(this == &rhs)
                 return *this;
 
-            // m_ptr should be empty to avoid potential memory leak
-            assert(this->m_ptr == nullptr);
-            m_ptr = std::exchange(rhs.m_ptr, nullptr);
+            // Swap the pointer
+            // Current pointer will be released by rhs
+            std::swap(m_ptr, rhs.m_ptr);
 
             return *this;
         }
@@ -272,6 +286,32 @@ protected:
             }
         }
 
+        template <typename... Args>
+        void pop_back(Args&&... args)
+        {
+            if constexpr(requires() { Proxy::pop_back(c, std::forward<Args>(args)...); })
+            {
+                Proxy::pop_back(c, std::forward<Args>(args)...);
+            }
+            else
+            {
+                c.pop_back(std::forward<Args>(args)...);
+            }
+        }
+
+        template <typename... Args>
+        void pop_front(Args&&... args)
+        {
+            if constexpr(requires() { Proxy::pop_front(c, std::forward<Args>(args)...); })
+            {
+                Proxy::pop_front(c, std::forward<Args>(args)...);
+            }
+            else
+            {
+                c.pop_front(std::forward<Args>(args)...);
+            }
+        }
+
         constexpr std::size_t size() const noexcept
         {
             return c.size();
@@ -308,10 +348,10 @@ namespace detail
     };
 
     template <typename C, template <typename...> typename T>
-    requires(requires() { typename container_traits<T>::template proxy<C>; })
+    requires(requires() { typename sequence_container_traits<T>::template proxy<C>; })
     struct get_proxy<C, T>
     {
-        using type = typename container_traits<T>::template proxy<C>;
+        using type = typename sequence_container_traits<T>::template proxy<C>;
     };
 
     // Deal with the std::vector<bool>
@@ -326,7 +366,7 @@ namespace detail
 } // namespace detail
 
 template <template <typename...> typename Container, typename Alloc = as_allocator<void>>
-requires(requires() { typename container_traits<Container>::sequence_container_tag; })
+requires(requires() { typename sequence_container_traits<Container>::sequence_container_tag; })
 class sequence final : public container_base
 {
 public:
@@ -349,26 +389,36 @@ public:
         impl().~seq_interface();
     }
 
+    [[nodiscard]]
     auto get_engine() const noexcept
         -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
     {
         return impl().get_engine();
     }
 
+    [[nodiscard]]
     int element_type_id() const
     {
         return impl().element_type_id();
     }
 
+    [[nodiscard]]
     auto element_type_info() const
         -> AS_NAMESPACE_QUALIFIER asITypeInfo*
     {
         return impl().element_type_info();
     }
 
+    [[nodiscard]]
     size_type size() const noexcept
     {
         return impl().size();
+    }
+
+    [[nodiscard]]
+    bool empty() const noexcept
+    {
+        return impl().empty();
     }
 
     void push_front(const void* ref)
@@ -381,11 +431,23 @@ public:
         impl().push_back(ref);
     }
 
+    void pop_front()
+    {
+        impl().pop_front();
+    }
+
+    void pop_back()
+    {
+        impl().pop_back();
+    }
+
+    [[nodiscard]]
     void* address_at(size_type idx)
     {
         return impl().address_at(idx);
     }
 
+    [[nodiscard]]
     const void* address_at(size_type idx) const
     {
         return impl().address_at(idx);
@@ -414,8 +476,15 @@ private:
 
         virtual void push_back(const void* ref) = 0;
         virtual void push_front(const void* ref) = 0;
+        virtual void pop_back() = 0;
+        virtual void pop_front() = 0;
 
         virtual void* address_at(size_type idx) const = 0;
+
+        bool empty() const
+        {
+            return size() == 0;
+        }
     };
 
     template <int TypeId>
@@ -430,7 +499,7 @@ private:
     public:
         using value_type = primitive_type_of_t<TypeId>;
         using allocator_type = typename std::allocator_traits<Alloc>::template rebind_alloc<value_type>;
-        using traits_type = container_traits<Container>;
+        using traits_type = sequence_container_traits<Container>;
         using container_type = std::conditional_t<
             vector_bool_workaround,
             std::vector<std::uint8_t, typename std::allocator_traits<Alloc>::template rebind_alloc<std::uint8_t>>,
@@ -463,6 +532,18 @@ private:
         void push_front(const void* ref) override
         {
             m_container.emplace_front(ref_to_elem_val(ref));
+        }
+
+        void pop_back() override
+        {
+            if(!this->empty())
+                m_container.pop_back();
+        }
+
+        void pop_front() override
+        {
+            if(!this->empty())
+                m_container.pop_front();
         }
 
         void* address_at(size_type idx) const final
@@ -566,7 +647,7 @@ private:
             AS_NAMESPACE_QUALIFIER asITypeInfo* m_ti;
         };
 
-        using traits_type = container_traits<Container>;
+        using traits_type = sequence_container_traits<Container>;
         using allocator_type = object_allocator<value_type>;
         using container_type = typename traits_type::template container_type<value_type, allocator_type>;
 
@@ -611,6 +692,18 @@ private:
         void push_front(const void* ref) override
         {
             m_container.emplace_front(ref_to_ptr(ref));
+        }
+
+        void pop_back() override
+        {
+            if(!this->empty())
+                m_container.pop_back();
+        }
+
+        void pop_front() override
+        {
+            if(!this->empty())
+                m_container.pop_front();
         }
 
         void* address_at(size_type idx) const final
@@ -706,6 +799,12 @@ case AS_NAMESPACE_QUALIFIER as_type_id:                                       \
         return *reinterpret_cast<const seq_interface*>(m_data);
     }
 };
+
+template <typename Allocator = as_allocator<void>>
+using vector = sequence<std::vector, Allocator>;
+
+template <typename Allocator = as_allocator<void>>
+using deque = sequence<std::deque, Allocator>;
 } // namespace asbind20::container
 
 #endif

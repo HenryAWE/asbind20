@@ -35,7 +35,7 @@ private:
     asbind20::atomic_counter m_counter;
 };
 
-template <template <typename...> typename Sequence>
+template <template <typename...> typename Sequence, typename  Allocator = asbind20::as_allocator<void>>
 class seq_wrapper : public refcounting_base
 {
 public:
@@ -60,6 +60,16 @@ public:
         m_vec.push_back(ref);
     }
 
+    void pop_front()
+    {
+        m_vec.pop_front();
+    }
+
+    void pop_back()
+    {
+        m_vec.pop_back();
+    }
+
     void* opIndex(size_type idx)
     {
         void* ref = m_vec.address_at(idx);
@@ -68,8 +78,10 @@ public:
         return ref;
     }
 
+    using container_type = asbind20::container::sequence<Sequence, Allocator>;
+
 private:
-    asbind20::container::sequence<Sequence> m_vec;
+    container_type m_vec;
 };
 
 template <template <typename...> typename Sequence, bool UseGeneric>
@@ -85,6 +97,8 @@ void register_seq_wrapper(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         .method("uint get_size() const property", fp<&seq_t::size>)
         .method("void push_front(const T&in)", fp<&seq_t::push_front>)
         .method("void push_back(const T&in)", fp<&seq_t::push_back>)
+        .method("void pop_front()", fp<&seq_t::pop_front>)
+        .method("void pop_back()", fp<&seq_t::pop_back>)
         .method("T& opIndex(uint)", fp<&seq_t::opIndex>)
         .method("const T& opIndex(uint) const", fp<&seq_t::opIndex>);
 }
@@ -100,12 +114,17 @@ void check_sequence_wrapper(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         "    sequence<int> v;\n"
         "    v.push_back(42);\n"
         "    v.push_front(0);\n"
-        "    return v[0] == 0 && v[1] == 42;\n"
+        "    v.push_back(0);\n"
+        "    v.push_back(42);\n"
+        "    v.pop_back();\n"
+        "    return v[0] == 0 && v[1] == 42 && v.size == 3;\n"
         "}\n"
         "bool test1()\n"
         "{\n"
         "    sequence<string> v;\n"
+        "    v.push_back(\"to be removed\");\n"
         "    v.push_back(\"hello\");\n"
+        "    v.pop_front();"
         "    v.push_back(\"AngelScript\");\n"
         "    return v.size == 2 && v[0].size == 5;\n"
         "}\n"
@@ -116,6 +135,14 @@ void check_sequence_wrapper(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         "    v.push_back(foo());\n"
         "    v.push_back(null);\n"
         "    return v[1] is null;\n"
+        "}\n"
+        "bool test3()\n"
+        "{\n"
+        "    sequence<foo@> v;\n"
+        "    v.push_back(foo());\n"
+        "    v.push_back(foo());\n"
+        "    v.pop_front();\n"
+        "    return v.size == 1 && v[0] !is null;\n"
         "}\n"
     );
     ASSERT_GE(m->Build(), 0);
@@ -139,6 +166,7 @@ void check_sequence_wrapper(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     test(0);
     test(1);
     test(2);
+    test(3);
 }
 } // namespace test_container
 
@@ -164,6 +192,8 @@ TEST(sequence, vector_generic)
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
     ext::register_std_string(engine, true, true);
+
+    static_assert(std::same_as<test_container::seq_wrapper<std::vector>::container_type, container::vector<>>);
 
     test_container::register_seq_wrapper<std::vector, true>(engine);
     test_container::check_sequence_wrapper(engine);
@@ -191,6 +221,8 @@ TEST(sequence, deque_generic)
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
     ext::register_std_string(engine, true, true);
+
+    static_assert(std::same_as<test_container::seq_wrapper<std::deque>::container_type, container::deque<>>);
 
     test_container::register_seq_wrapper<std::deque, true>(engine);
     test_container::check_sequence_wrapper(engine);
