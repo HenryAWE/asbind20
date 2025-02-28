@@ -2,7 +2,7 @@
 #include <shared_test_lib.hpp>
 #include <asbind20/asbind.hpp>
 #include <asbind20/ext/stdstring.hpp>
-#include <asbind20/container.hpp>
+#include <asbind20/container/sequence.hpp>
 
 namespace test_container
 {
