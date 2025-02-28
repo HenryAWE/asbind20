@@ -1,8 +1,11 @@
 #include <gtest/gtest.h>
 #include <shared_test_lib.hpp>
 #include <asbind20/asbind.hpp>
-#include <asbind20/ext/stdstring.hpp>
-#include <asbind20/container/sequence.hpp>
+#include "test_container.hpp"
+
+#ifndef ASBIND20_TEST_SKIP_SEQUENCE_TEST
+#    include <asbind20/ext/stdstring.hpp>
+#    include <asbind20/container/sequence.hpp>
 
 namespace test_container
 {
@@ -192,3 +195,5 @@ TEST(sequence, deque_generic)
     test_container::register_seq_wrapper<std::deque, true>(engine);
     test_container::check_sequence_wrapper(engine);
 }
+
+#endif

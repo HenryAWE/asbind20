@@ -9,8 +9,43 @@
 #include "../utility.hpp"
 #include "traits.hpp"
 
+#if defined(__GNUC__) && !defined(__clang__)
+#    if __GNUC__ <= 12
+#        error "This header requires at least GCC 13"
+#    endif
+#endif
+
 namespace asbind20::container
 {
+
+template <>
+struct container_traits<std::vector>
+{
+    using sequence_container_tag = void;
+
+    template <typename T, typename Allocator>
+    using container_type = std::vector<T, Allocator>;
+
+    template <typename C>
+    struct proxy
+    {
+        template <typename... Args>
+        static void emplace_front(C& c, Args&&... args)
+        {
+            c.emplace(c.begin(), std::forward<Args>(args)...);
+        }
+    };
+};
+
+template <>
+struct container_traits<std::deque>
+{
+    using sequence_container_tag = void;
+
+    template <typename T, typename Allocator>
+    using container_type = std::deque<T, Allocator>;
+};
+
 class container_base
 {
 public:
@@ -262,34 +297,6 @@ protected:
             return std::next(begin(c), idx);
         }
     };
-};
-
-template <>
-struct container_traits<std::vector>
-{
-    using sequence_container_tag = void;
-
-    template <typename T, typename Allocator>
-    using container_type = std::vector<T, Allocator>;
-
-    template <typename C>
-    struct proxy
-    {
-        template <typename... Args>
-        static void emplace_front(C& c, Args&&... args)
-        {
-            c.emplace(c.begin(), std::forward<Args>(args)...);
-        }
-    };
-};
-
-template <>
-struct container_traits<std::deque>
-{
-    using sequence_container_tag = void;
-
-    template <typename T, typename Allocator>
-    using container_type = std::deque<T, Allocator>;
 };
 
 namespace detail
