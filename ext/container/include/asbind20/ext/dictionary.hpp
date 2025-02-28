@@ -70,11 +70,6 @@ public:
 
         void destroy(mapped_type* p)
         {
-#ifndef NDEBUG
-            std::cerr
-                << "[dict alloc] Destroy at " << (void*)p << ", type = " << p->type_id
-                << std::endl;
-#endif
             p->release_data(m_engine);
         }
 

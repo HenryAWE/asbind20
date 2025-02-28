@@ -253,7 +253,8 @@ using primitive_type_of_t = typename primitive_type_of<TypeId>::type;
 /**
  * @brief Check if a type id refers to void
  */
-constexpr bool is_void(int type_id) noexcept
+[[nodiscard]]
+constexpr bool is_void_type(int type_id) noexcept
 {
     return type_id == (AS_NAMESPACE_QUALIFIER asTYPEID_VOID);
 }
@@ -261,6 +262,7 @@ constexpr bool is_void(int type_id) noexcept
 /**
  * @brief Check if a type id refers to a primitive type
  */
+[[nodiscard]]
 constexpr bool is_primitive_type(int type_id) noexcept
 {
     return !(type_id & ~(AS_NAMESPACE_QUALIFIER asTYPEID_MASK_SEQNBR));
@@ -269,6 +271,7 @@ constexpr bool is_primitive_type(int type_id) noexcept
 /**
  * @brief Check if a type id refers to an enum type
  */
+[[nodiscard]]
 constexpr bool is_enum_type(int type_id) noexcept
 {
     return is_primitive_type(type_id) &&
@@ -278,12 +281,22 @@ constexpr bool is_enum_type(int type_id) noexcept
 /**
  * @brief Check if a type id refers to an object handle
  */
+[[nodiscard]]
 constexpr bool is_objhandle(int type_id) noexcept
 {
     return type_id & (AS_NAMESPACE_QUALIFIER asTYPEID_OBJHANDLE);
 }
 
-inline bool requires_gc(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+/**
+ * @brief Check if a type requires GC
+ *
+ * This can be used for template callback.
+ *
+ * @param ti Type info. Null pointer is allowed for indicating primitive type.
+ *           It's safe to call this function by `type_requires_gc(ti->GetSubType())`
+ */
+[[nodiscard]]
+inline bool type_requires_gc(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
 {
     if(!ti) [[unlikely]]
         return false;
@@ -399,19 +412,22 @@ inline std::size_t copy_primitive_value(void* dst, const void* src, int type_id)
     }
 }
 
+namespace meta
+{
+    template <typename... Ts>
+    class overloaded : public Ts...
+    {
+    public:
+        using Ts::operator()...;
+    };
+
+    template <typename... Ts>
+    overloaded(Ts&&...) -> overloaded<Ts...>;
+} // namespace meta
+
 template <typename T>
 concept void_ptr = std::is_pointer_v<std::decay_t<T>> &&
                    std::is_void_v<std::remove_pointer_t<std::decay_t<T>>>;
-
-template <typename... Ts>
-class overloaded : public Ts...
-{
-public:
-    using Ts::operator()...;
-};
-
-template <typename... Ts>
-overloaded(Ts&&...) -> overloaded<Ts...>;
 
 /**
  * @brief Dispatches pointer of primitive values to corresponding type. Similar to the `std::visit`.
@@ -425,7 +441,7 @@ requires(sizeof...(VoidPtrs) > 0)
 decltype(auto) visit_primitive_type(Visitor&& vis, int type_id, VoidPtrs... args)
 {
     assert(is_primitive_type(type_id) && "Must be a primitive type");
-    assert(!is_void(type_id) && "Must not be void");
+    assert(!is_void_type(type_id) && "Must not be void");
 
     auto wrapper = [&]<typename T>(std::in_place_type_t<T>) -> decltype(auto)
     {
@@ -489,43 +505,47 @@ decltype(auto) visit_script_type(Visitor&& vis, int type_id, VoidPtrs... args)
     }
 }
 
-class as_exclusive_lock_t
+namespace detail
 {
-public:
-    static void lock()
+    class as_exclusive_lock_t
     {
-        AS_NAMESPACE_QUALIFIER asAcquireExclusiveLock();
-    }
+    public:
+        static void lock()
+        {
+            AS_NAMESPACE_QUALIFIER asAcquireExclusiveLock();
+        }
 
-    static void unlock()
+        static void unlock()
+        {
+            AS_NAMESPACE_QUALIFIER asReleaseExclusiveLock();
+        }
+    };
+
+    class as_shared_lock_t
     {
-        AS_NAMESPACE_QUALIFIER asReleaseExclusiveLock();
-    }
-};
+    public:
+        static void lock()
+        {
+            AS_NAMESPACE_QUALIFIER asAcquireSharedLock();
+        }
+
+        static void unlock()
+        {
+            AS_NAMESPACE_QUALIFIER asReleaseSharedLock();
+        }
+    };
+} // namespace detail
 
 /**
  * @brief Wrapper for `asAcquireExclusiveLock()` and `asReleaseExclusiveLock()`
  */
-inline constexpr as_exclusive_lock_t as_exclusive_lock = {};
+inline constexpr detail::as_exclusive_lock_t as_exclusive_lock = {};
 
-class as_shared_lock_t
-{
-public:
-    static void lock()
-    {
-        AS_NAMESPACE_QUALIFIER asAcquireSharedLock();
-    }
-
-    static void unlock()
-    {
-        AS_NAMESPACE_QUALIFIER asReleaseSharedLock();
-    }
-};
 
 /**
  * @brief Wrapper for `asAcquireSharedLock()` and `asReleaseSharedLock()`
  */
-inline constexpr as_shared_lock_t as_shared_lock = {};
+inline constexpr detail::as_shared_lock_t as_shared_lock = {};
 
 namespace detail
 {
@@ -953,6 +973,7 @@ private:
  *
  * @return A pointer to the currently executing context, or null if no context is executing
  */
+[[nodiscard]]
 inline auto current_context()
     -> AS_NAMESPACE_QUALIFIER asIScriptContext*
 {
@@ -1321,6 +1342,7 @@ private:
  *
  * @note Lock the exclusive lock in multithreading enviornment
  */
+[[nodiscard]]
 inline lockable_shared_bool make_lockable_shared_bool()
 {
     return lockable_shared_bool(AS_NAMESPACE_QUALIFIER asCreateLockableSharedBool());
@@ -1589,11 +1611,13 @@ public:
         return m_data == rhs.data();
     }
 
+    [[nodiscard]]
     size_type size() const noexcept
     {
         return m_size;
     }
 
+    [[nodiscard]]
     void* data() const noexcept
     {
         return m_data;
@@ -1669,6 +1693,13 @@ constexpr std::string_view static_enum_name() noexcept
 
 namespace meta
 {
+    /**
+     * @brief Get string representation of an enum value in fixed string
+     *
+     * @note This function has limitations. @sa static_enum_name
+     *
+     * @tparam Value Enum value
+     */
     template <auto Value>
     auto fixed_enum_name() noexcept
     {
@@ -1884,7 +1915,7 @@ namespace container
 
         void* data_address(int type_id)
         {
-            assert(!is_void(type_id));
+            assert(!is_void_type(type_id));
 
             if(is_primitive_type(type_id))
                 return m_data.primitive;
@@ -1896,7 +1927,7 @@ namespace container
 
         const void* data_address(int type_id) const
         {
-            assert(!is_void(type_id));
+            assert(!is_void_type(type_id));
 
             if(is_primitive_type(type_id))
                 return m_data.primitive;
@@ -1918,7 +1949,7 @@ namespace container
 
         void construct(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id)
         {
-            assert(!is_void(type_id));
+            assert(!is_void_type(type_id));
 
             if(is_primitive_type(type_id))
             {
@@ -1938,7 +1969,7 @@ namespace container
 
         void copy_construct(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id, const void* ref)
         {
-            assert(!is_void(type_id));
+            assert(!is_void_type(type_id));
 
             if(is_primitive_type(type_id))
             {
@@ -1967,7 +1998,7 @@ namespace container
 
         void copy_assign_from(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id, const void* ref)
         {
-            assert(!is_void(type_id));
+            assert(!is_void_type(type_id));
 
             if(is_primitive_type(type_id))
             {
@@ -1999,7 +2030,7 @@ namespace container
 
         void copy_assign_to(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id, void* out) const
         {
-            assert(!is_void(type_id));
+            assert(!is_void_type(type_id));
             assert(out != nullptr);
 
             if(is_primitive_type(type_id))

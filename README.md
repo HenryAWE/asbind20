@@ -257,14 +257,17 @@ You can find example usage in `ext/container/src/array.cpp`.
 - AngelScript >= 2.37.0
 - Any C++ compiler that supports C++20.
 
-Currently, the following platforms and compilers are tested by CI.
+Currently, the following platforms and compilers are officially supported and tested by CI.
 
-| Platform    | Compiler       |
-| ----------- | -------------- |
-| Windows x64 | MSVC 19.41     |
-| Linux x64   | GCC 12, 13, 14 |
-| Linux x64   | Clang 18       |
-| Emscripten  | emsdk 4.0.1    |
+| Platform    | Compiler        |
+| ----------- | --------------- |
+| Windows x64 | MSVC 19.41      |
+| Linux x64   | GCC 12, 13, 14  |
+| Linux x64   | Clang 18        |
+| Linux x64   | Clang 18 (ASan) |
+| Emscripten  | emsdk 4.0.1     |
+
+Please note that some advanced features are only available on newer compilers.
 
 You can find detailed build and test status in the GitHub Actions.
 
@@ -275,6 +278,13 @@ You can also find example for installing AngelScript in the GitHub Actions scrip
 ## A. Copy into Your Project
 asbind20 is a header-only library. You can directly copy all the files under `include/` into your project.
 If your project has a custom location of `<angelscript.h>`, you can include it before asbind20. This library will not include the AngelScript library for the second time.
+
+Additionally, files under `io/` and `container/` are optional components. You can omit those files if they are unnecessary for your project.
+
+#### About the `asbind20::ext`
+The extension part (under `ext/`) is not header-only. If you wish to use this part of library, you still need to build the asbind20 with extension (which is enabled by default).
+
+However, those extensions are mainly used for demonstrating & testing asbind20. **The extensions are not meant to be used in the final product**, which means they don't guarantee compatibility across versions. Please consider the official add-ons or implement by yourself. But these extensions might still be helpful for prototyping your application.
 
 ## B. Build and Install
 Build and install the library.
@@ -315,15 +325,11 @@ Detailed explanation of asbind20.
 # Known Limitations
 Some feature of this library may not work on a broken compiler.
 
-1. Some version of Clang (<= 15) may fail to compile extension and test due to compiler bug. Please use Clang 18+ for best experience.
+1. Some utilities are implemented by non-standard C++, but they are guaranteed to have correct result on supported platforms, which are tested by CI.
 
-2. Some utilities are implemented by non-standard C++, but they are guaranteed to have correct result on supported platforms, which are tested by CI.
+2. If you bind an overloaded function using syntax like `static_cast<return_type(*)()>(&func)` on MSVC, it may crash the compiler. The workaround is to write a standalone wrapper function with no overloading, then bind this wrapper using asbind20.
 
-3. If you bind an overloaded function using syntax like `static_cast<return_type(*)()>(&func)` on MSVC, it may crash the compiler. The workaround is to write a standalone wrapper function with no overloading, then bind this wrapper using asbind20.
-
-4. GCC 12 wrongly [rejects function pointer non-type template parameter without linkage](https://gcc.gnu.org/bugzilla/show_bug.cgi?id=83258). This will cause error when using wrapper with a lambda. This has been fixed in GCC 13.2. The asbind20 also has workaround for this, as long as you are not using some internal classes.
-
-5. If you are using clangd as your LSP, [it may crash when completing code for binding](https://github.com/llvm/llvm-project/issues/125500). You can restart clangd after you complete this part of code.
+3. If you are using clangd as your LSP, [it may crash when completing code for binding](https://github.com/llvm/llvm-project/issues/125500). You can restart clangd after you complete this part of code.
 
 # License
 [MIT License](./LICENSE)

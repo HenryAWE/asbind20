@@ -917,7 +917,7 @@ private:
     template <typename... Args>
     void setup_impl(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int elem_type_id, Args&&... args)
     {
-        assert(!is_void(elem_type_id));
+        assert(!is_void_type(elem_type_id));
 
         if(is_primitive_type(elem_type_id))
         {

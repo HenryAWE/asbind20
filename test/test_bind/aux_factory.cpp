@@ -273,7 +273,7 @@ private:
 static bool aux_factory_helper_template_callback(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, bool& no_gc)
 {
     int subtype_id = ti->GetSubTypeId();
-    if(asbind20::is_void(subtype_id))
+    if(asbind20::is_void_type(subtype_id))
         return false;
 
     no_gc = true;

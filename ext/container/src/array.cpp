@@ -898,7 +898,8 @@ void script_array::insert_range_impl(size_type idx, const void* src, size_type n
 void script_array::copy_assign_at(void* ptr, void* value)
 {
     visit_script_type(
-        overloaded{
+        meta::overloaded
+        {
             // objhandle
             [this](void** ptr, void** value)
             {

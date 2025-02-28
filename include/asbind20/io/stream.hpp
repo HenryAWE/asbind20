@@ -1,9 +1,15 @@
-#ifndef ASBIND20_IO_HPP
-#define ASBIND20_IO_HPP
+/**
+ * @file io/stream.hpp
+ * @author HenryAWE
+ * @brief Utilities for `asIBinaryStream`
+ */
+
+#ifndef ASBIND20_IO_STREAM_HPP
+#define ASBIND20_IO_STREAM_HPP
 
 #pragma once
 
-#include "detail/include_as.hpp"
+#include "../detail/include_as.hpp"
 #include <cassert>
 #include <cstring>
 #include <algorithm>
