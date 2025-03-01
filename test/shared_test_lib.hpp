@@ -32,7 +32,10 @@ template <typename T>
     }
 }
 
-void setup_message_callback(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine);
+void setup_message_callback(
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    bool propagate_erro_to_gtest = false
+);
 
 class asbind_test_suite : public ::testing::Test
 {

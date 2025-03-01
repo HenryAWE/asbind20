@@ -251,8 +251,32 @@ bool test7()
     sequence<bar@> v = {null, null, bar()};
     assert(v.size == 3);
     assert(v[v.size - 1] !is null);
+    v[2].refs.push_back(@v[2]);
     v.clear();
     return v.empty();
+}
+
+class foobar
+{
+    sequence<foobar@>@ refs;
+};
+
+bool test8()
+{
+    foobar@ fb = foobar();
+    {
+        sequence<foobar@> seq = {@fb};
+        @fb.refs = seq;
+    }
+    assert(fb.refs[0] is fb);
+    fb.refs.push_back(@fb);
+    assert(fb.refs[1] is fb.refs[0]);
+
+    sequence<foobar@>@ refs = @fb.refs;
+    assert(refs !is null);
+    assert(refs.size == 2);
+    @fb = null;
+    return refs !is null;
 }
 )AngelScript";
 
@@ -282,7 +306,7 @@ void check_sequence_wrapper(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         EXPECT_TRUE(result.value());
     };
 
-    for(int i = 0; i <= 7; ++i)
+    for(int i = 0; i <= 8; ++i)
     {
         test(i);
     }
@@ -291,8 +315,10 @@ void check_sequence_wrapper(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 void setup_seq_test_env(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, bool use_generic)
 {
     using namespace asbind20;
-    engine->SetEngineProperty(asEP_DISALLOW_VALUE_ASSIGN_FOR_REF_TYPE, true);
-    asbind_test::setup_message_callback(engine);
+    engine->SetEngineProperty(
+        AS_NAMESPACE_QUALIFIER asEP_DISALLOW_VALUE_ASSIGN_FOR_REF_TYPE, true
+    );
+    asbind_test::setup_message_callback(engine, true);
     ext::register_std_string(engine, true, use_generic);
     ext::register_script_assert(
         engine,
@@ -350,7 +376,6 @@ TEST(sequence, deque_generic)
     using namespace asbind20;
 
     auto engine = make_script_engine();
-    asbind_test::setup_message_callback(engine);
     test_container::setup_seq_test_env(engine, true);
 
     static_assert(std::same_as<test_container::seq_wrapper<std::deque>::container_type, container::deque<>>);
