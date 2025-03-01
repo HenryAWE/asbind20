@@ -80,7 +80,7 @@ public:
     seq_wrapper(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
         : m_vec(ti->GetEngine(), ti->GetSubTypeId())
     {
-        notify_gc_for_this(ti);
+        // notify_gc_for_this(ti);
     }
 
     seq_wrapper(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, asbind20::script_init_list_repeat ilist)
@@ -169,7 +169,7 @@ void register_seq_wrapper(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         .set_gc_flag(fp<&seq_t::set_gc_flag>)
         .enum_refs(fp<&seq_t::enum_refs>)
         .release_refs(fp<&seq_t::release_refs>)
-        .default_factory()
+        .default_factory(use_policy<policies::notify_gc>)
         .list_factory("repeat T", use_policy<policies::repeat_list_proxy>)
         .method("uint get_size() const property", fp<&seq_t::size>)
         .method("bool empty() const", fp<&seq_t::empty>)
