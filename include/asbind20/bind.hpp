@@ -5602,10 +5602,18 @@ public:
         AS_NAMESPACE_QUALIFIER asGENFUNC_t wrapper =
             wrappers::list_factory<Class, Template, ListElementType, ListPolicy, FactoryPolicy>::generate(generic_call_conv);
 
-        list_factory_function(
-            pattern,
+        void* aux = nullptr;
+        if constexpr(std::same_as<FactoryPolicy, policies::notify_gc> && !Template)
+            aux = m_engine->GetTypeInfoByName(m_name);
+
+        // TODO: list factory function with an auxiliary object
+
+        this->behaviour_impl(
+            AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY,
+            decl_list_factory(pattern).c_str(),
             wrapper,
-            generic_call_conv
+            generic_call_conv,
+            aux
         );
 
         return *this;
@@ -5626,16 +5634,36 @@ public:
         }
         else
         {
-            auto wrapper =
-                wrappers::list_factory<Class, Template, ListElementType, ListPolicy, FactoryPolicy>::generate(
+            if constexpr(std::same_as<FactoryPolicy, policies::notify_gc> && !Template)
+            {
+                auto wrapper =
+                    wrappers::list_factory<Class, Template, ListElementType, ListPolicy, FactoryPolicy>::generate(
+                        call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+                    );
+
+                AS_NAMESPACE_QUALIFIER asITypeInfo* ti = m_engine->GetTypeInfoByName(m_name);
+
+                this->behaviour_impl(
+                    AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY,
+                    decl_list_factory(pattern).c_str(),
+                    wrapper,
+                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>,
+                    ti
+                );
+            }
+            else
+            {
+                auto wrapper =
+                    wrappers::list_factory<Class, Template, ListElementType, ListPolicy, FactoryPolicy>::generate(
+                        call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
+                    );
+
+                list_factory_function(
+                    pattern,
+                    wrapper,
                     call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
                 );
-
-            list_factory_function(
-                pattern,
-                wrapper,
-                call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
-            );
+            }
         }
 
         return *this;

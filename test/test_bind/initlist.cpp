@@ -466,7 +466,7 @@ void register_ref_test_apply(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     ref_class<ref_test_apply, UseGeneric>(engine, "ref_test_apply")
         .addref(fp<&ref_test_apply::addref>)
         .release(fp<&ref_test_apply::release>)
-        .template list_factory<int, policies::apply_to<2>>("int,int");
+        .template list_factory<int>("int,int", use_policy<policies::apply_to<2>>);
 }
 
 void check_ref_test_apply(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
