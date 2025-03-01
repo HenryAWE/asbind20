@@ -68,26 +68,14 @@ static bool template_callback(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, bool& no_g
 template <template <typename...> typename Sequence, typename Allocator = asbind20::as_allocator<void>>
 class seq_wrapper : public refcounting_base
 {
-    void notify_gc_for_this(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
-    {
-        bool use_gc = ti->GetFlags() & AS_NAMESPACE_QUALIFIER asOBJ_GC;
-
-        if(use_gc)
-            ti->GetEngine()->NotifyGarbageCollectorOfNewObject(this, ti);
-    }
-
 public:
     seq_wrapper(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
         : m_vec(ti->GetEngine(), ti->GetSubTypeId())
-    {
-        // notify_gc_for_this(ti);
-    }
+    {}
 
     seq_wrapper(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, asbind20::script_init_list_repeat ilist)
         : m_vec(ti->GetEngine(), ti->GetSubTypeId(), ilist)
-    {
-        notify_gc_for_this(ti);
-    }
+    {}
 
     using size_type = AS_NAMESPACE_QUALIFIER asUINT;
 
@@ -170,7 +158,7 @@ void register_seq_wrapper(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         .enum_refs(fp<&seq_t::enum_refs>)
         .release_refs(fp<&seq_t::release_refs>)
         .default_factory(use_policy<policies::notify_gc>)
-        .list_factory("repeat T", use_policy<policies::repeat_list_proxy>)
+        .list_factory("repeat T", use_policy<policies::repeat_list_proxy, policies::notify_gc>)
         .method("uint get_size() const property", fp<&seq_t::size>)
         .method("bool empty() const", fp<&seq_t::empty>)
         .method("void clear()", fp<&seq_t::clear>)
