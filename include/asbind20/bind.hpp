@@ -320,6 +320,21 @@ namespace policies
         requires() {
             typename T::initialization_list_policy_tag;
         };
+
+    /**
+     * @brief Notify GC for newly created reference class
+     */
+    struct notify_gc
+    {
+        using factory_policy_tag = void;
+    };
+
+    template <typename T>
+    concept factory_policy =
+        std::is_void_v<T> || // Default policy: no-op
+        requires() {
+            typename T::factory_policy_tag;
+        };
 } // namespace policies
 
 /**
@@ -1132,6 +1147,158 @@ namespace wrappers
         }
     };
 
+    template <typename Class, bool Template, typename... Args>
+    class factory_gc;
+
+    template <typename Class, typename... Args>
+    class factory_gc<Class, false, Args...>
+    {
+    public:
+        static constexpr bool is_acceptable_native_call_conv(
+            AS_NAMESPACE_QUALIFIER asECallConvTypes conv
+        ) noexcept
+        {
+            return conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
+        }
+
+        static constexpr bool is_acceptable_call_conv(
+            AS_NAMESPACE_QUALIFIER asECallConvTypes conv
+        ) noexcept
+        {
+            return conv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC ||
+                   is_acceptable_native_call_conv(conv);
+        }
+
+        using native_function_type =
+            Class* (*)(Args..., AS_NAMESPACE_QUALIFIER asITypeInfo*);
+
+        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        using wrapper_type = std::conditional_t<
+            CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
+            AS_NAMESPACE_QUALIFIER asGENFUNC_t,
+            native_function_type>;
+
+        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        requires(is_acceptable_call_conv(CallConv))
+        auto generate(call_conv_t<CallConv>) noexcept
+            -> wrapper_type<CallConv>
+        {
+            if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST)
+            {
+                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+                {
+                    using args_tuple = std::tuple<Args...>;
+
+                    [gen]<std::size_t... Is>(std::index_sequence<Is...>)
+                    {
+                        auto* ti = (AS_NAMESPACE_QUALIFIER asITypeInfo*)gen->GetAuxiliary();
+                        Class* ptr = new Class(
+                            get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
+                                gen, (AS_NAMESPACE_QUALIFIER asUINT)Is
+                            )...,
+                            ti
+                        );
+                        assert(ti->GetEngine() == gen->GetEngine());
+                        gen->GetEngine()->NotifyGarbageCollectorOfNewObject(ptr, ti);
+
+                        gen->SetReturnAddress(ptr);
+                    }(std::index_sequence_for<Args...>());
+                };
+            }
+            else // CallConv == asCALL_CDECL_OBJLAST
+            {
+                return +[](Args... args, AS_NAMESPACE_QUALIFIER asITypeInfo* ti) -> Class
+                {
+                    Class* ptr = new Class(std::forward<Args>(args)...);
+                    ti->GetEngine()->NotifyGarbageCollectorOfNewObject(ptr, ti);
+
+                    return ptr;
+                };
+            }
+        }
+    };
+
+    template <typename Class, typename... Args>
+    class factory_gc<Class, true, Args...>
+    {
+    public:
+        static constexpr bool is_acceptable_native_call_conv(
+            AS_NAMESPACE_QUALIFIER asECallConvTypes conv
+        ) noexcept
+        {
+            return conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
+        }
+
+        static constexpr bool is_acceptable_call_conv(
+            AS_NAMESPACE_QUALIFIER asECallConvTypes conv
+        ) noexcept
+        {
+            return conv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC ||
+                   is_acceptable_native_call_conv(conv);
+        }
+
+        using native_function_type =
+            Class* (*)(AS_NAMESPACE_QUALIFIER asITypeInfo*, Args...);
+
+        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        using wrapper_type = std::conditional_t<
+            CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
+            AS_NAMESPACE_QUALIFIER asGENFUNC_t,
+            native_function_type>;
+
+        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        requires(is_acceptable_call_conv(CallConv))
+        auto generate(call_conv_t<CallConv>) noexcept
+            -> wrapper_type<CallConv>
+        {
+            // Note: Template callback may remove the asOBJ_GC flag for some instantiations,
+            // so this helper will check the flag at runtime.
+
+            if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST)
+            {
+                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+                {
+                    using args_tuple = std::tuple<Args...>;
+
+                    [gen]<std::size_t... Is>(std::index_sequence<Is...>)
+                    {
+                        auto* ti = *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0);
+                        Class* ptr = new Class(
+                            ti,
+                            get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
+                                gen, (AS_NAMESPACE_QUALIFIER asUINT)Is + 1
+                            )...
+                        );
+
+                        auto flags = ti->GetFlags();
+                        if(flags & AS_NAMESPACE_QUALIFIER asOBJ_GC)
+                        {
+                            assert(ti->GetEngine() == gen->GetEngine());
+                            gen->GetEngine()->NotifyGarbageCollectorOfNewObject(ptr, ti);
+                        }
+
+                        gen->SetReturnAddress(ptr);
+                    }(std::index_sequence_for<Args...>());
+                };
+            }
+            else // CallConv == asCALL_CDECL_OBJLAST
+            {
+                return +[](AS_NAMESPACE_QUALIFIER asITypeInfo* ti, Args... args) -> Class
+                {
+                    Class* ptr = new Class(ti, std::forward<Args>(args)...);
+
+                    auto flags = ti->GetFlags();
+                    if(flags & AS_NAMESPACE_QUALIFIER asOBJ_GC)
+                    {
+                        ti->GetEngine()->NotifyGarbageCollectorOfNewObject(ptr, ti);
+                    }
+
+                    return ptr;
+                };
+            }
+        }
+    };
+
     template <typename Class, bool Template, typename ListBufType>
     class list_factory_base
     {
@@ -1514,6 +1681,16 @@ namespace wrappers
         }
     };
 } // namespace wrappers
+
+template <typename FirstPolicy = void, typename... Policies>
+struct use_policy_t
+{
+    using first_policy = FirstPolicy;
+    using policies_tuple = std::tuple<FirstPolicy, Policies...>;
+};
+
+template <typename FirstPolicy = void, typename... Policies>
+constexpr inline use_policy_t<FirstPolicy, Policies...> use_policy{};
 
 template <bool ForceGeneric>
 class register_helper_base
@@ -4235,7 +4412,7 @@ public:
         typename ListElementType = void,
         policies::initialization_list_policy Policy = void>
     basic_value_class& list_constructor(
-        use_generic_t, std::string_view pattern
+        use_generic_t, std::string_view pattern, use_policy_t<Policy> = {}
     )
     {
         list_constructor_function(
@@ -4258,11 +4435,11 @@ public:
         typename ListElementType = void,
         policies::initialization_list_policy Policy = void>
     basic_value_class& list_constructor(
-        std::string_view pattern
+        std::string_view pattern, use_policy_t<Policy> = {}
     )
     {
         if constexpr(ForceGeneric)
-            list_constructor<ListElementType, Policy>(use_generic, pattern);
+            list_constructor<ListElementType>(use_generic, pattern, use_policy<Policy>);
         else
         {
             list_constructor_function(
@@ -5279,7 +5456,8 @@ public:
         policies::initialization_list_policy Policy = void>
     basic_ref_class& list_factory(
         use_generic_t,
-        std::string_view pattern
+        std::string_view pattern,
+        use_policy_t<Policy> = {}
     )
     {
         AS_NAMESPACE_QUALIFIER asGENFUNC_t wrapper =
@@ -5297,11 +5475,14 @@ public:
     template <
         typename ListElementType = void,
         policies::initialization_list_policy Policy = void>
-    basic_ref_class& list_factory(std::string_view pattern)
+    basic_ref_class& list_factory(
+        std::string_view pattern,
+        use_policy_t<Policy> = {}
+    )
     {
         if constexpr(ForceGeneric)
         {
-            list_factory<ListElementType, Policy>(use_generic, pattern);
+            list_factory<ListElementType>(use_generic, pattern, use_policy<Policy>);
         }
         else
         {
