@@ -2080,6 +2080,27 @@ namespace container
             m_data.ptr = nullptr;
         }
 
+        void enum_refs(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+        {
+            if(!ti) [[unlikely]]
+                return;
+
+            auto flags = ti->GetFlags();
+            if(!(flags & AS_NAMESPACE_QUALIFIER asOBJ_GC)) [[unlikely]]
+                return;
+
+            if(flags & AS_NAMESPACE_QUALIFIER asOBJ_REF)
+            {
+                ti->GetEngine()->GCEnumCallback(object_ref());
+            }
+            else if(flags & AS_NAMESPACE_QUALIFIER asOBJ_VALUE)
+            {
+                ti->GetEngine()->ForwardGCEnumReferences(
+                    object_ref(), ti
+                );
+            }
+        }
+
     private:
         union internal_t
         {
