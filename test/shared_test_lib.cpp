@@ -10,10 +10,10 @@ namespace asbind_test
 {
 void setup_message_callback(
     AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
-    bool propagate_erro_to_gtest
+    bool propagate_error_to_gtest
 )
 {
-    if(propagate_erro_to_gtest)
+    if(propagate_error_to_gtest)
     {
         asbind20::global(engine)
             .message_callback(
