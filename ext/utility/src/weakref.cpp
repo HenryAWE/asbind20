@@ -21,16 +21,13 @@ static bool weakref_template_callback(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, bo
 }
 
 weakref::weakref(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
-    : m_ref(nullptr), m_ti(inplace_addref, ti), m_flag()
+    : m_ref(nullptr), m_ti(ti), m_flag()
 {}
 
 weakref::weakref(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, void* ref)
-    : m_ref(ref), m_ti(inplace_addref, ti), m_flag()
+    : m_ref(ref), m_ti(ti), m_flag()
 {
-    m_flag.reset(
-        inplace_addref,
-        m_ti->GetEngine()->GetWeakRefFlagOfScriptObject(m_ref, m_ti->GetSubType())
-    );
+    m_flag.connect_object(ref, ti->GetSubType());
 }
 
 // Those RAII helpers should be able to handle destruction for us
@@ -62,10 +59,7 @@ void weakref::reset(void* ref)
     m_ref = ref;
     if(ref)
     {
-        m_flag.reset(
-            inplace_addref,
-            m_ti->GetEngine()->GetWeakRefFlagOfScriptObject(m_ref, m_ti->GetSubType())
-        );
+        m_flag.connect_object(ref, referenced_type());
 
         // Release the ref since we're only supposed to hold a weakref
         m_ti->GetEngine()->ReleaseScriptObject(ref, referenced_type());
@@ -80,7 +74,7 @@ void* weakref::get()
         return nullptr;
 
     std::lock_guard guard(m_flag);
-    if(!m_flag->Get())
+    if(!m_flag.get_flag())
     {
         m_ti->GetEngine()->AddRefScriptObject(m_ref, referenced_type());
         return m_ref;

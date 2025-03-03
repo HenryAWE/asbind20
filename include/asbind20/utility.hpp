@@ -23,14 +23,6 @@
 
 namespace asbind20
 {
-struct inplace_addref_t
-{};
-
-/**
- * @brief Tag indicating that the object's reference count should be increased
- */
-constexpr inline inplace_addref_t inplace_addref{};
-
 namespace detail
 {
     // std::is_constructible implicitly requires T to be destructible,
@@ -1220,15 +1212,18 @@ public:
     lockable_shared_bool() = default;
 
     explicit lockable_shared_bool(handle_type bool_)
-        : m_bool(bool_) {}
+    {
+        reset(bool_);
+    }
+
+    lockable_shared_bool(std::in_place_t, handle_type bool_)
+    {
+        reset(std::in_place, bool_);
+    }
 
     lockable_shared_bool(const lockable_shared_bool& other)
     {
-        if(other.m_bool)
-        {
-            other.m_bool->AddRef();
-            m_bool = other.m_bool;
-        }
+        reset(other.m_bool);
     }
 
     lockable_shared_bool(lockable_shared_bool&& other) noexcept
@@ -1250,26 +1245,37 @@ public:
         }
     }
 
-    /**
-     * @warning If you get the lockable shared bool by `GetWeakRefFlagOfScriptObject()`,
-     *          you should @b not use this function! Because that function won't increase the reference count.
-     *
-     * @sa reset(inplace_addref_t, handle_type)
-     */
     void reset(handle_type bool_) noexcept
-    {
-        if(m_bool)
-            m_bool->Release();
-        m_bool = bool_;
-    }
-
-    void reset(inplace_addref_t, handle_type bool_) noexcept
     {
         if(m_bool)
             m_bool->Release();
         m_bool = bool_;
         if(m_bool)
             m_bool->AddRef();
+    }
+
+    void connect_object(void* obj, AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+    {
+        if(!ti) [[unlikely]]
+        {
+            reset();
+            return;
+        }
+
+        reset(ti->GetEngine()->GetWeakRefFlagOfScriptObject(obj, ti));
+    }
+
+    /**
+     * @warning If you get the lockable shared bool by `GetWeakRefFlagOfScriptObject()`,
+     *          you should @b not use this function! Because that function won't increase the reference count.
+     *
+     * @sa reset(inplace_addref_t, handle_type)
+     */
+    void reset(std::in_place_t, handle_type bool_) noexcept
+    {
+        if(m_bool)
+            m_bool->Release();
+        m_bool = bool_;
     }
 
     lockable_shared_bool& operator=(const lockable_shared_bool& other)
@@ -1306,6 +1312,17 @@ public:
     {
         assert(*this);
         m_bool->Unlock();
+    }
+
+    bool get_flag() const
+    {
+        assert(*this);
+        return m_bool->Get();
+    }
+
+    void set_flag(bool value = true)
+    {
+        m_bool->Set(value);
     }
 
     handle_type get() const noexcept
@@ -1345,7 +1362,9 @@ private:
 [[nodiscard]]
 inline lockable_shared_bool make_lockable_shared_bool()
 {
-    return lockable_shared_bool(AS_NAMESPACE_QUALIFIER asCreateLockableSharedBool());
+    return lockable_shared_bool(
+        std::in_place, AS_NAMESPACE_QUALIFIER asCreateLockableSharedBool()
+    );
 }
 
 /**
@@ -1368,13 +1387,13 @@ public:
      * @note Generally, the AngelScript APIs for getting type info won't increase reference count,
      *       such as being the hidden first argument of template class constructor/factory.
      */
-    explicit script_typeinfo(handle_type ti) noexcept
+    explicit script_typeinfo(std::in_place_t, handle_type ti) noexcept
         : m_ti(ti) {}
 
     /**
      * @brief Assign a type info object, and increase reference count
      */
-    script_typeinfo(inplace_addref_t, handle_type ti) noexcept
+    script_typeinfo(handle_type ti) noexcept
         : m_ti(ti)
     {
         if(m_ti)
@@ -1444,6 +1463,24 @@ public:
         if(m_ti)
             m_ti->Release();
         m_ti = ti;
+        if(m_ti)
+            m_ti->AddRef();
+    }
+
+    int type_id() const
+    {
+        if(!m_ti) [[unlikely]]
+            return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
+
+        return m_ti->GetTypeId();
+    }
+
+    int subtype_id(AS_NAMESPACE_QUALIFIER asUINT idx) const
+    {
+        if(!m_ti) [[unlikely]]
+            return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
+
+        return m_ti->GetSubTypeId(idx);
     }
 
 private:
