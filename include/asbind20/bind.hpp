@@ -1086,8 +1086,7 @@ namespace wrappers
                         Class* ptr = new Class(
                             get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
                                 gen, (AS_NAMESPACE_QUALIFIER asUINT)Is
-                            )...,
-                            ti
+                            )...
                         );
                         assert(ti->GetEngine() == gen->GetEngine());
                         gen->GetEngine()->NotifyGarbageCollectorOfNewObject(ptr, ti);
@@ -1449,6 +1448,7 @@ namespace wrappers
                     if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
                     {
                         auto* ti = (AS_NAMESPACE_QUALIFIER asITypeInfo*)gen->GetAuxiliary();
+                        assert(ti != nullptr);
                         my_base::notify_gc_helper(ptr, ti);
                     }
                     gen->SetReturnAddress(ptr);
