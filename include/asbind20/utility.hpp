@@ -1817,10 +1817,12 @@ concept has_static_name =
     std::is_arithmetic_v<T> &&
     !std::same_as<T, char>;
 
+[[nodiscard]]
 inline auto get_default_factory(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
     -> AS_NAMESPACE_QUALIFIER asIScriptFunction*
 {
-    assert(ti != nullptr);
+    if(!ti) [[unlikely]]
+        return nullptr;
 
     for(AS_NAMESPACE_QUALIFIER asUINT i = 0; i < ti->GetFactoryCount(); ++i)
     {
@@ -1833,10 +1835,12 @@ inline auto get_default_factory(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
     return nullptr;
 }
 
+[[nodiscard]]
 inline auto get_default_constructor(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
     -> AS_NAMESPACE_QUALIFIER asIScriptFunction*
 {
-    assert(ti != nullptr);
+    if(!ti) [[unlikely]]
+        return nullptr;
 
     for(AS_NAMESPACE_QUALIFIER asUINT i = 0; i < ti->GetBehaviourCount(); ++i)
     {
@@ -1853,10 +1857,12 @@ inline auto get_default_constructor(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
     return nullptr;
 }
 
+[[nodiscard]]
 inline auto get_weakref_flag(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
     -> AS_NAMESPACE_QUALIFIER asIScriptFunction*
 {
-    assert(ti != nullptr);
+    if(!ti) [[unlikely]]
+        return nullptr;
 
     for(AS_NAMESPACE_QUALIFIER asUINT i = 0; i < ti->GetBehaviourCount(); ++i)
     {
@@ -1873,6 +1879,7 @@ inline auto get_weakref_flag(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
     return nullptr;
 }
 
+[[nodiscard]]
 inline int translate_three_way(std::weak_ordering ord) noexcept
 {
     if(ord < 0)
@@ -1883,6 +1890,7 @@ inline int translate_three_way(std::weak_ordering ord) noexcept
         return 0;
 }
 
+[[nodiscard]]
 inline std::strong_ordering translate_opCmp(int cmp) noexcept
 {
     if(cmp < 0)
@@ -1979,7 +1987,8 @@ namespace container
          *
          * @note Only available if stored data is @b NOT primitive value
          */
-        void* object_ref() const
+         [[nodiscard]]
+        void* object_ref() const noexcept
         {
             return m_data.ptr;
         }

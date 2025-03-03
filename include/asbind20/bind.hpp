@@ -33,7 +33,8 @@ public:
     explicit constexpr auxiliary_wrapper(T* aux) noexcept
         : m_aux(aux) {}
 
-    void* obj_to_address() const noexcept
+    [[nodiscard]]
+    void* get_address() const noexcept
     {
         return (void*)m_aux;
     }
@@ -52,34 +53,27 @@ public:
     explicit constexpr auxiliary_wrapper(this_type_t) noexcept {};
 };
 
-namespace detail
-{
-    template <typename T>
-    struct is_this_type_aux : public std::false_type
-    {};
-
-    template <>
-    struct is_this_type_aux<auxiliary_wrapper<this_type_t>> : public std::true_type
-    {};
-} // namespace detail
-
 template <typename T>
+[[nodiscard]]
 constexpr auxiliary_wrapper<T> auxiliary(T& aux) noexcept
 {
     return auxiliary_wrapper<T>(std::addressof(aux));
 }
 
 template <typename T>
+[[nodiscard]]
 constexpr auxiliary_wrapper<T> auxiliary(T* aux) noexcept
 {
     return auxiliary_wrapper<T>(aux);
 }
 
+[[nodiscard]]
 constexpr inline auxiliary_wrapper<void> auxiliary(std::nullptr_t) noexcept
 {
     return auxiliary_wrapper<void>(nullptr);
 }
 
+[[nodiscard]]
 constexpr inline auxiliary_wrapper<this_type_t> auxiliary(this_type_t) noexcept
 {
     return auxiliary_wrapper<this_type_t>(this_type);
@@ -97,7 +91,8 @@ constexpr auxiliary_wrapper<T> auxiliary(T&& aux) = delete;
  *
  * @param val Integer value
  */
-constexpr auxiliary_wrapper<void> aux_value(std::intptr_t val)
+[[nodiscard]]
+constexpr auxiliary_wrapper<void> aux_value(std::intptr_t val) noexcept
 {
     return auxiliary_wrapper<void>(std::bit_cast<void*>(val));
 }
@@ -124,6 +119,7 @@ public:
         m_engine->SetDefaultAccessMask(m_prev);
     }
 
+    [[nodiscard]]
     auto get_engine() const noexcept
         -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
     {
@@ -177,6 +173,7 @@ public:
         m_engine->SetDefaultNamespace(m_prev.c_str());
     }
 
+    [[nodiscard]]
     auto get_engine() const noexcept
         -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
     {
@@ -1838,6 +1835,7 @@ public:
         assert(engine != nullptr);
     }
 
+    [[nodiscard]]
     auto get_engine() const noexcept
         -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
     {
@@ -2063,7 +2061,7 @@ public:
         }
         else
         {
-            return aux.obj_to_address();
+            return aux.get_address();
         }
     }
 
@@ -2579,7 +2577,7 @@ public:
         }
         else
         {
-            return aux.obj_to_address();
+            return aux.get_address();
         }
     }
 
@@ -3753,7 +3751,10 @@ public:
     template <
         native_function Constructor,
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-    requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_CDECL || CallConv == AS_NAMESPACE_QUALIFIER asCALL_STDCALL)
+    requires(
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
+    )
     basic_value_class& constructor_function(
         std::string_view params,
         Constructor ctor,
@@ -3773,7 +3774,10 @@ public:
     template <
         native_function Constructor,
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-    requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_CDECL || CallConv == AS_NAMESPACE_QUALIFIER asCALL_STDCALL)
+    requires(
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
+    )
     basic_value_class& constructor_function(
         std::string_view params,
         use_explicit_t,
@@ -3830,7 +3834,10 @@ public:
     template <
         auto Constructor,
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-    requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
+    requires(
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
+    )
     basic_value_class& constructor_function(
         use_generic_t,
         std::string_view params,
@@ -3850,7 +3857,10 @@ public:
     template <
         auto Constructor,
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-    requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
+    requires(
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
+    )
     basic_value_class& constructor_function(
         use_generic_t,
         std::string_view params,
@@ -6355,6 +6365,7 @@ public:
         return *this;
     }
 
+    [[nodiscard]]
     auto get_engine() const noexcept
         -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
     {
@@ -6413,6 +6424,7 @@ public:
         return *this;
     }
 
+    [[nodiscard]]
     auto get_engine() const noexcept
         -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
     {
