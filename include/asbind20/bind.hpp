@@ -1950,7 +1950,10 @@ namespace detail
     consteval auto deduce_beh_callconv_aux() noexcept
         -> AS_NAMESPACE_QUALIFIER asECallConvTypes
     {
-        if constexpr(Beh == AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY)
+        if constexpr(
+            Beh == AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY ||
+            Beh == AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY
+        )
         {
             if constexpr(std::is_member_function_pointer_v<FuncSig>)
             {
@@ -4931,8 +4934,13 @@ public:
         return *this;
     }
 
-    template <typename Factory, asECallConvTypes CallConv>
-    requires(CallConv == asCALL_CDECL)
+    template <
+        typename Factory,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    requires(
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL ||
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_STDCALL
+    )
     basic_ref_class& factory_function(
         std::string_view params,
         Factory fn,
@@ -4949,8 +4957,13 @@ public:
         return *this;
     }
 
-    template <typename Factory, asECallConvTypes CallConv>
-    requires(CallConv == asCALL_CDECL)
+    template <
+        typename Factory,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    requires(
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL ||
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_STDCALL
+    )
     basic_ref_class& factory_function(
         std::string_view params,
         use_explicit_t,
@@ -5539,7 +5552,10 @@ public:
     template <
         native_function ListFactory,
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-    requires(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL || CallConv == AS_NAMESPACE_QUALIFIER asCALL_STDCALL)
+    requires(
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL ||
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_STDCALL
+    )
     basic_ref_class& list_factory_function(
         std::string_view pattern,
         ListFactory ctor,
@@ -5590,6 +5606,75 @@ public:
     }
 
     template <
+        native_function ListFactory,
+        typename Auxiliary,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    requires(
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL ||
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
+    )
+    basic_ref_class& list_factory_function(
+        std::string_view pattern,
+        ListFactory ctor,
+        auxiliary_wrapper<Auxiliary> aux,
+        call_conv_t<CallConv>
+    ) requires(!ForceGeneric)
+    {
+        this->behaviour_impl(
+            AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY,
+            decl_list_factory(pattern).c_str(),
+            ctor,
+            call_conv<CallConv>,
+            aux.to_address()
+        );
+
+        return *this;
+    }
+
+    template <typename Auxiliary>
+    basic_ref_class& list_factory_function(
+        std::string_view pattern,
+        AS_NAMESPACE_QUALIFIER asGENFUNC_t ctor,
+        auxiliary_wrapper<Auxiliary> aux,
+        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
+    )
+    {
+        this->behaviour_impl(
+            AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY,
+            decl_list_factory(pattern).c_str(),
+            ctor,
+            generic_call_conv,
+            aux.to_address()
+        );
+
+        return *this;
+    }
+
+    template <
+        native_function ListFactory,
+        typename Auxiliary>
+    basic_ref_class& list_factory_function(
+        std::string_view pattern,
+        ListFactory ctor,
+        auxiliary_wrapper<Auxiliary> aux
+    ) requires(!ForceGeneric)
+    {
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
+            detail::deduce_beh_callconv_aux<AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY, Class, std::decay_t<ListFactory>, Auxiliary>();
+
+        this->behaviour_impl(
+            AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY,
+            decl_list_factory(pattern).c_str(),
+            ctor,
+            call_conv<conv>,
+            aux
+        );
+
+        return *this;
+    }
+
+    template <
         typename ListElementType = void,
         policies::initialization_list_policy ListPolicy,
         policies::factory_policy FactoryPolicy>
@@ -5606,14 +5691,11 @@ public:
         if constexpr(std::same_as<FactoryPolicy, policies::notify_gc> && !Template)
             aux = m_engine->GetTypeInfoByName(m_name);
 
-        // TODO: list factory function with an auxiliary object
-
-        this->behaviour_impl(
-            AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY,
-            decl_list_factory(pattern).c_str(),
+        this->list_factory_function(
+            pattern,
             wrapper,
-            generic_call_conv,
-            aux
+            auxiliary(aux),
+            generic_call_conv
         );
 
         return *this;
@@ -5643,12 +5725,11 @@ public:
 
                 AS_NAMESPACE_QUALIFIER asITypeInfo* ti = m_engine->GetTypeInfoByName(m_name);
 
-                this->behaviour_impl(
-                    AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY,
-                    decl_list_factory(pattern).c_str(),
+                this->list_factory_function(
+                    pattern,
                     wrapper,
-                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>,
-                    ti
+                    auxiliary(ti),
+                    call_conv<asCALL_CDECL_OBJLAST>
                 );
             }
             else
