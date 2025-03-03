@@ -141,13 +141,9 @@ void script_optional::reset()
 
 void script_optional::enum_refs(asIScriptEngine* engine)
 {
-    if(m_ti->GetFlags() & AS_NAMESPACE_QUALIFIER asOBJ_GC)
-    {
-        AS_NAMESPACE_QUALIFIER asITypeInfo* subtype = m_ti->GetSubType();
-        engine->ForwardGCEnumReferences(
-            m_data.object_ref(), subtype
-        );
-    }
+    assert(m_ti->GetFlags() & AS_NAMESPACE_QUALIFIER asOBJ_GC);
+
+    m_data.enum_refs(m_ti->GetSubType());
 }
 
 void script_optional::release_refs(asIScriptEngine* engine)

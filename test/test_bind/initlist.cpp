@@ -17,7 +17,7 @@ static void register_vector_of_ints(AS_NAMESPACE_QUALIFIER asIScriptEngine* engi
 
     value_class<vector_t, UseGeneric>(engine, "vec_ints")
         .behaviours_by_traits()
-        .template list_constructor<int, policies::as_iterators>("repeat int");
+        .template list_constructor<int>("repeat int", use_policy<policies::as_iterators>);
 }
 
 static void check_vector_ints(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
@@ -103,7 +103,7 @@ static void register_my_vec_ints(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 
     value_class<vector_t, UseGeneric>(engine, "my_vec_ints")
         .behaviours_by_traits()
-        .template list_constructor<int, Policy>("repeat int");
+        .template list_constructor<int>("repeat int", use_policy<Policy>);
 }
 
 static void check_my_vec_ints(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
@@ -177,7 +177,7 @@ static void register_from_init_list(AS_NAMESPACE_QUALIFIER asIScriptEngine* engi
 
     value_class<from_init_list, UseGeneric>(engine, "from_init_list")
         .behaviours_by_traits()
-        .template list_constructor<int, policies::as_initializer_list>("repeat int");
+        .template list_constructor<int>("repeat int", use_policy<policies::as_initializer_list>);
 }
 
 static void check_from_init_list(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
@@ -251,7 +251,7 @@ static void register_from_span(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 
     value_class<from_span, UseGeneric>(engine, "from_span")
         .behaviours_by_traits()
-        .template list_constructor<int, policies::as_span>("repeat int");
+        .template list_constructor<int>("repeat int", use_policy<policies::as_span>);
 }
 
 static void check_from_span(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
@@ -466,7 +466,7 @@ void register_ref_test_apply(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     ref_class<ref_test_apply, UseGeneric>(engine, "ref_test_apply")
         .addref(fp<&ref_test_apply::addref>)
         .release(fp<&ref_test_apply::release>)
-        .template list_factory<int, policies::apply_to<2>>("int,int");
+        .template list_factory<int>("int,int", use_policy<policies::apply_to<2>>);
 }
 
 void check_ref_test_apply(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
@@ -556,7 +556,7 @@ static void register_ref_test_vector_with(AS_NAMESPACE_QUALIFIER asIScriptEngine
     ref_class<ref_test_vector, UseGeneric>(engine, "ref_test_vector")
         .addref(fp<&ref_test_apply::addref>)
         .release(fp<&ref_test_apply::release>)
-        .template list_factory<int, IListPolicy>("repeat int");
+        .template list_factory<int>("repeat int", use_policy<IListPolicy>);
 }
 
 static void check_ref_test_vector(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)

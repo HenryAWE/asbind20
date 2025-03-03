@@ -18,6 +18,11 @@
 
 namespace asbind20
 {
+struct this_type_t
+{};
+
+inline constexpr this_type_t this_type{};
+
 template <typename T>
 class auxiliary_wrapper
 {
@@ -28,7 +33,7 @@ public:
     explicit constexpr auxiliary_wrapper(T* aux) noexcept
         : m_aux(aux) {}
 
-    void* to_address() const noexcept
+    void* obj_to_address() const noexcept
     {
         return (void*)m_aux;
     }
@@ -36,6 +41,27 @@ public:
 private:
     T* m_aux;
 };
+
+template <>
+class auxiliary_wrapper<this_type_t>
+{
+public:
+    auxiliary_wrapper() = delete;
+    constexpr auxiliary_wrapper(const auxiliary_wrapper&) noexcept = default;
+
+    explicit constexpr auxiliary_wrapper(this_type_t) noexcept {};
+};
+
+namespace detail
+{
+    template <typename T>
+    struct is_this_type_aux : public std::false_type
+    {};
+
+    template <>
+    struct is_this_type_aux<auxiliary_wrapper<this_type_t>> : public std::true_type
+    {};
+} // namespace detail
 
 template <typename T>
 constexpr auxiliary_wrapper<T> auxiliary(T& aux) noexcept
@@ -52,6 +78,11 @@ constexpr auxiliary_wrapper<T> auxiliary(T* aux) noexcept
 constexpr inline auxiliary_wrapper<void> auxiliary(std::nullptr_t) noexcept
 {
     return auxiliary_wrapper<void>(nullptr);
+}
+
+constexpr inline auxiliary_wrapper<this_type_t> auxiliary(this_type_t) noexcept
+{
+    return auxiliary_wrapper<this_type_t>(this_type);
 }
 
 template <typename T>
@@ -319,6 +350,21 @@ namespace policies
         std::is_void_v<T> || // Default policy: directly pass the initialization list from AS to C++
         requires() {
             typename T::initialization_list_policy_tag;
+        };
+
+    /**
+     * @brief Notify GC for newly created reference class
+     */
+    struct notify_gc
+    {
+        using factory_policy_tag = void;
+    };
+
+    template <typename T>
+    concept factory_policy =
+        std::is_void_v<T> || // Default policy: no-op
+        requires() {
+            typename T::factory_policy_tag;
         };
 } // namespace policies
 
@@ -934,9 +980,15 @@ namespace wrappers
         }
     };
 
-    template <typename Class, bool Template, typename... Args>
+    template <
+        typename Class,
+        bool Template,
+        policies::factory_policy Policy,
+        typename... Args>
     class factory
     {
+        static_assert(std::is_void_v<Policy>);
+
     public:
         static constexpr bool is_acceptable_native_call_conv(
             AS_NAMESPACE_QUALIFIER asECallConvTypes conv
@@ -1016,6 +1068,154 @@ namespace wrappers
                         return new Class(std::forward<Args>(args)...);
                     };
                 }
+            }
+        }
+    };
+
+    template <typename Class, typename... Args>
+    class factory<Class, false, policies::notify_gc, Args...>
+    {
+    public:
+        static constexpr bool is_acceptable_native_call_conv(
+            AS_NAMESPACE_QUALIFIER asECallConvTypes conv
+        ) noexcept
+        {
+            return conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
+        }
+
+        static constexpr bool is_acceptable_call_conv(
+            AS_NAMESPACE_QUALIFIER asECallConvTypes conv
+        ) noexcept
+        {
+            return conv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC ||
+                   is_acceptable_native_call_conv(conv);
+        }
+
+        using native_function_type =
+            Class* (*)(Args..., AS_NAMESPACE_QUALIFIER asITypeInfo*);
+
+        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        using wrapper_type = std::conditional_t<
+            CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
+            AS_NAMESPACE_QUALIFIER asGENFUNC_t,
+            native_function_type>;
+
+        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        requires(is_acceptable_call_conv(CallConv))
+        static auto generate(call_conv_t<CallConv>) noexcept
+            -> wrapper_type<CallConv>
+        {
+            if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
+            {
+                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+                {
+                    using args_tuple = std::tuple<Args...>;
+
+                    [gen]<std::size_t... Is>(std::index_sequence<Is...>)
+                    {
+                        auto* ti = (AS_NAMESPACE_QUALIFIER asITypeInfo*)gen->GetAuxiliary();
+                        Class* ptr = new Class(
+                            get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
+                                gen, (AS_NAMESPACE_QUALIFIER asUINT)Is
+                            )...
+                        );
+                        assert(ti->GetEngine() == gen->GetEngine());
+                        gen->GetEngine()->NotifyGarbageCollectorOfNewObject(ptr, ti);
+
+                        gen->SetReturnAddress(ptr);
+                    }(std::index_sequence_for<Args...>());
+                };
+            }
+            else // CallConv == asCALL_CDECL_OBJLAST
+            {
+                return +[](Args... args, AS_NAMESPACE_QUALIFIER asITypeInfo* ti) -> Class*
+                {
+                    Class* ptr = new Class(std::forward<Args>(args)...);
+                    ti->GetEngine()->NotifyGarbageCollectorOfNewObject(ptr, ti);
+
+                    return ptr;
+                };
+            }
+        }
+    };
+
+    template <typename Class, typename... Args>
+    class factory<Class, true, policies::notify_gc, Args...>
+    {
+    public:
+        static constexpr bool is_acceptable_native_call_conv(
+            AS_NAMESPACE_QUALIFIER asECallConvTypes conv
+        ) noexcept
+        {
+            return conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL;
+        }
+
+        static constexpr bool is_acceptable_call_conv(
+            AS_NAMESPACE_QUALIFIER asECallConvTypes conv
+        ) noexcept
+        {
+            return conv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC ||
+                   is_acceptable_native_call_conv(conv);
+        }
+
+        using native_function_type =
+            Class* (*)(AS_NAMESPACE_QUALIFIER asITypeInfo*, Args...);
+
+        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        using wrapper_type = std::conditional_t<
+            CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
+            AS_NAMESPACE_QUALIFIER asGENFUNC_t,
+            native_function_type>;
+
+        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        requires(is_acceptable_call_conv(CallConv))
+        static auto generate(call_conv_t<CallConv>) noexcept
+            -> wrapper_type<CallConv>
+        {
+            // Note: Template callback may remove the asOBJ_GC flag for some instantiations,
+            // so this helper will check the flag at runtime.
+
+            if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
+            {
+                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+                {
+                    using args_tuple = std::tuple<Args...>;
+
+                    [gen]<std::size_t... Is>(std::index_sequence<Is...>)
+                    {
+                        auto* ti = *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0);
+                        Class* ptr = new Class(
+                            ti,
+                            get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
+                                gen, (AS_NAMESPACE_QUALIFIER asUINT)Is + 1
+                            )...
+                        );
+
+                        auto flags = ti->GetFlags();
+                        if(flags & AS_NAMESPACE_QUALIFIER asOBJ_GC)
+                        {
+                            assert(ti->GetEngine() == gen->GetEngine());
+                            gen->GetEngine()->NotifyGarbageCollectorOfNewObject(ptr, ti);
+                        }
+
+                        gen->SetReturnAddress(ptr);
+                    }(std::index_sequence_for<Args...>());
+                };
+            }
+            else // CallConv == asCALL_CDECL
+            {
+                return +[](AS_NAMESPACE_QUALIFIER asITypeInfo* ti, Args... args) -> Class*
+                {
+                    Class* ptr = new Class(ti, std::forward<Args>(args)...);
+
+                    auto flags = ti->GetFlags();
+                    if(flags & AS_NAMESPACE_QUALIFIER asOBJ_GC)
+                    {
+                        ti->GetEngine()->NotifyGarbageCollectorOfNewObject(ptr, ti);
+                    }
+
+                    return ptr;
+                };
             }
         }
     };
@@ -1132,7 +1332,7 @@ namespace wrappers
         }
     };
 
-    template <typename Class, bool Template, typename ListBufType>
+    template <typename Class, bool Template, typename ListBufType, policies::factory_policy FactoryPolicy>
     class list_factory_base
     {
     public:
@@ -1140,7 +1340,10 @@ namespace wrappers
             AS_NAMESPACE_QUALIFIER asECallConvTypes conv
         ) noexcept
         {
-            return conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL;
+            if constexpr(std::same_as<FactoryPolicy, policies::notify_gc> && !Template)
+                return conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
+            else
+                return conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL;
         }
 
         static constexpr bool is_acceptable_call_conv(
@@ -1154,7 +1357,10 @@ namespace wrappers
         using native_function_type = std::conditional_t<
             Template,
             Class* (*)(AS_NAMESPACE_QUALIFIER asITypeInfo*, ListBufType),
-            Class* (*)(ListBufType)>;
+            std::conditional_t<
+                std::same_as<FactoryPolicy, policies::notify_gc>,
+                Class* (*)(ListBufType, AS_NAMESPACE_QUALIFIER asITypeInfo*),
+                Class* (*)(ListBufType)>>;
 
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
@@ -1163,16 +1369,31 @@ namespace wrappers
             CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
             AS_NAMESPACE_QUALIFIER asGENFUNC_t,
             native_function_type>;
+
+        static void notify_gc_helper(void* obj, AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+        {
+            if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
+            {
+                if constexpr(Template)
+                {
+                    auto flags = ti->GetFlags();
+                    if(!(flags & AS_NAMESPACE_QUALIFIER asOBJ_GC))
+                        return;
+                }
+                ti->GetEngine()->NotifyGarbageCollectorOfNewObject(obj, ti);
+            }
+        }
     };
 
     template <
         typename Class,
         bool Template,
         typename ListElementType = void,
-        policies::initialization_list_policy Policy = void>
-    class list_factory : public list_factory_base<Class, Template, ListElementType*>
+        policies::initialization_list_policy Policy = void,
+        policies::factory_policy FactoryPolicy = void>
+    class list_factory : public list_factory_base<Class, Template, ListElementType*, FactoryPolicy>
     {
-        using my_base = list_factory_base<Class, Template, ListElementType*>;
+        using my_base = list_factory_base<Class, Template, ListElementType*, FactoryPolicy>;
 
     public:
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
@@ -1227,11 +1448,12 @@ namespace wrappers
         typename Class,
         bool Template,
         typename ListElementType,
-        std::size_t Size>
-    class list_factory<Class, Template, ListElementType, policies::apply_to<Size>> :
-        public list_factory_base<Class, Template, ListElementType*>
+        std::size_t Size,
+        policies::factory_policy FactoryPolicy>
+    class list_factory<Class, Template, ListElementType, policies::apply_to<Size>, FactoryPolicy> :
+        public list_factory_base<Class, Template, ListElementType*, FactoryPolicy>
     {
-        using my_base = list_factory_base<Class, Template, ListElementType*>;
+        using my_base = list_factory_base<Class, Template, ListElementType*, FactoryPolicy>;
 
     public:
         static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
@@ -1253,9 +1475,23 @@ namespace wrappers
             {
                 return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
                 {
-                    set_generic_return<Class*>(
-                        gen, helper(*(ListElementType**)gen->GetAddressOfArg(0))
-                    );
+                    Class* ptr = helper(*(ListElementType**)gen->GetAddressOfArg(0));
+                    if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
+                    {
+                        auto* ti = (AS_NAMESPACE_QUALIFIER asITypeInfo*)gen->GetAuxiliary();
+                        assert(ti != nullptr);
+                        my_base::notify_gc_helper(ptr, ti);
+                    }
+                    gen->SetReturnAddress(ptr);
+                };
+            }
+            else if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
+            {
+                return +[](ListElementType* list_buf, AS_NAMESPACE_QUALIFIER asITypeInfo* ti) -> Class*
+                {
+                    Class* ptr = helper(list_buf);
+                    my_base::notify_gc_helper(ptr, ti);
+                    return ptr;
                 };
             }
             else // CallConv == asCALL_CDECL
@@ -1271,11 +1507,12 @@ namespace wrappers
     template <
         typename Class,
         bool Template,
-        typename ListElementType>
-    class list_factory<Class, Template, ListElementType, policies::repeat_list_proxy> :
-        public list_factory_base<Class, Template, void*>
+        typename ListElementType,
+        policies::factory_policy FactoryPolicy>
+    class list_factory<Class, Template, ListElementType, policies::repeat_list_proxy, FactoryPolicy> :
+        public list_factory_base<Class, Template, void*, FactoryPolicy>
     {
-        using my_base = list_factory_base<Class, Template, void*>;
+        using my_base = list_factory_base<Class, Template, void*, FactoryPolicy>;
 
     public:
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
@@ -1288,20 +1525,22 @@ namespace wrappers
                 {
                     return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
                     {
-                        set_generic_return<Class*>(
-                            gen,
-                            new Class(
-                                *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
-                                script_init_list_repeat(gen, 1)
-                            )
+                        auto* ti = *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0);
+                        Class* ptr = new Class(
+                            ti,
+                            script_init_list_repeat(gen, 1)
                         );
+                        my_base::notify_gc_helper(ptr, ti);
+                        gen->SetReturnAddress(ptr);
                     };
                 }
                 else // CallConv == asCALL_CDECL
                 {
                     return +[](AS_NAMESPACE_QUALIFIER asITypeInfo* ti, void* list_buf) -> Class*
                     {
-                        return new Class(ti, script_init_list_repeat(list_buf));
+                        Class* ptr = new Class(ti, script_init_list_repeat(list_buf));
+                        my_base::notify_gc_helper(ptr, ti);
+                        return ptr;
                     };
                 }
             }
@@ -1311,9 +1550,28 @@ namespace wrappers
                 {
                     return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
                     {
-                        set_generic_return<Class*>(
-                            gen, new Class(script_init_list_repeat(gen))
-                        );
+                        if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
+                        {
+                            Class* ptr = new Class(script_init_list_repeat(gen));
+                            auto* ti = (AS_NAMESPACE_QUALIFIER asITypeInfo*)gen->GetAuxiliary();
+                            my_base::notify_gc_helper(ptr, ti);
+                            gen->SetReturnAddress(ptr);
+                        }
+                        else
+                        {
+                            gen->SetReturnAddress(
+                                new Class(script_init_list_repeat(gen))
+                            );
+                        }
+                    };
+                }
+                else if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
+                {
+                    return +[](void* list_buf, AS_NAMESPACE_QUALIFIER asITypeInfo* ti) -> Class*
+                    {
+                        Class* ptr = new Class(script_init_list_repeat(list_buf));
+                        my_base::notify_gc_helper(ptr, ti);
+                        return ptr;
                     };
                 }
                 else // CallConv == asCALL_CDECL
@@ -1330,11 +1588,12 @@ namespace wrappers
     template <
         typename Class,
         bool Template,
-        typename ListElementType>
-    class list_factory<Class, Template, ListElementType, policies::as_iterators> :
-        public list_factory_base<Class, Template, void*>
+        typename ListElementType,
+        policies::factory_policy FactoryPolicy>
+    class list_factory<Class, Template, ListElementType, policies::as_iterators, FactoryPolicy> :
+        public list_factory_base<Class, Template, void*, FactoryPolicy>
     {
-        using my_base = list_factory_base<Class, Template, void*>;
+        using my_base = list_factory_base<Class, Template, void*, FactoryPolicy>;
 
     public:
         static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
@@ -1359,9 +1618,22 @@ namespace wrappers
             {
                 return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
                 {
-                    set_generic_return<Class*>(
-                        gen, helper(script_init_list_repeat(gen))
-                    );
+                    Class* ptr = helper(script_init_list_repeat(gen));
+                    if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
+                    {
+                        auto* ti = (AS_NAMESPACE_QUALIFIER asITypeInfo*)gen->GetAuxiliary();
+                        my_base::notify_gc_helper(ptr, ti);
+                    }
+                    gen->SetReturnAddress(ptr);
+                };
+            }
+            else if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
+            {
+                return +[](void* list_buf, AS_NAMESPACE_QUALIFIER asITypeInfo* ti) -> Class*
+                {
+                    Class* ptr = helper(script_init_list_repeat(list_buf));
+                    my_base::notify_gc_helper(ptr, ti);
+                    return ptr;
                 };
             }
             else // CallConv == asCALL_CDECL
@@ -1377,11 +1649,12 @@ namespace wrappers
     template <
         typename Class,
         bool Template,
-        typename ListElementType>
-    class list_factory<Class, Template, ListElementType, policies::pointer_and_size> :
-        public list_factory_base<Class, Template, void*>
+        typename ListElementType,
+        policies::factory_policy FactoryPolicy>
+    class list_factory<Class, Template, ListElementType, policies::pointer_and_size, FactoryPolicy> :
+        public list_factory_base<Class, Template, void*, FactoryPolicy>
     {
-        using my_base = list_factory_base<Class, Template, void*>;
+        using my_base = list_factory_base<Class, Template, void*, FactoryPolicy>;
 
     public:
         static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
@@ -1400,9 +1673,22 @@ namespace wrappers
             {
                 return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
                 {
-                    set_generic_return<Class*>(
-                        gen, helper(script_init_list_repeat(gen))
-                    );
+                    Class* ptr = helper(script_init_list_repeat(gen));
+                    if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
+                    {
+                        auto* ti = (AS_NAMESPACE_QUALIFIER asITypeInfo*)gen->GetAuxiliary();
+                        my_base::notify_gc_helper(ptr, ti);
+                    }
+                    gen->SetReturnAddress(ptr);
+                };
+            }
+            else if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
+            {
+                return +[](void* list_buf, AS_NAMESPACE_QUALIFIER asITypeInfo* ti) -> Class*
+                {
+                    Class* ptr = helper(script_init_list_repeat(list_buf));
+                    my_base::notify_gc_helper(ptr, ti);
+                    return ptr;
                 };
             }
             else // CallConv == asCALL_CDECL
@@ -1419,15 +1705,16 @@ namespace wrappers
         typename Class,
         bool Template,
         typename ListElementType,
-        policies::initialization_list_policy ConvertibleRangePolicy>
+        policies::initialization_list_policy ConvertibleRangePolicy,
+        policies::factory_policy FactoryPolicy>
     requires(
         std::same_as<ConvertibleRangePolicy, policies::as_initializer_list> ||
         std::same_as<ConvertibleRangePolicy, policies::as_span>
     )
-    class list_factory<Class, Template, ListElementType, ConvertibleRangePolicy> :
-        public list_factory_base<Class, Template, void*>
+    class list_factory<Class, Template, ListElementType, ConvertibleRangePolicy, FactoryPolicy> :
+        public list_factory_base<Class, Template, void*, FactoryPolicy>
     {
-        using my_base = list_factory_base<Class, Template, void*>;
+        using my_base = list_factory_base<Class, Template, void*, FactoryPolicy>;
 
     public:
         static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
@@ -1446,9 +1733,22 @@ namespace wrappers
             {
                 return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
                 {
-                    set_generic_return<Class*>(
-                        gen, helper(script_init_list_repeat(gen))
-                    );
+                    Class* ptr = helper(script_init_list_repeat(gen));
+                    if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
+                    {
+                        auto* ti = (AS_NAMESPACE_QUALIFIER asITypeInfo*)gen->GetAuxiliary();
+                        my_base::notify_gc_helper(ptr, ti);
+                    }
+                    gen->SetReturnAddress(ptr);
+                };
+            }
+            else if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
+            {
+                return +[](void* list_buf, AS_NAMESPACE_QUALIFIER asITypeInfo* ti) -> Class*
+                {
+                    Class* ptr = helper(script_init_list_repeat(list_buf));
+                    my_base::notify_gc_helper(ptr, ti);
+                    return ptr;
                 };
             }
             else // CallConv == asCALL_CDECL
@@ -1515,6 +1815,16 @@ namespace wrappers
     };
 } // namespace wrappers
 
+template <typename FirstPolicy = void, typename... Policies>
+struct use_policy_t
+{
+    using first_policy = FirstPolicy;
+    using policies_tuple = std::tuple<FirstPolicy, Policies...>;
+};
+
+template <typename FirstPolicy = void, typename... Policies>
+constexpr inline use_policy_t<FirstPolicy, Policies...> use_policy{};
+
 template <bool ForceGeneric>
 class register_helper_base
 {
@@ -1545,6 +1855,18 @@ protected:
 
 namespace detail
 {
+    template <typename Auxiliary>
+    struct real_aux_type
+    {
+        using type = Auxiliary;
+    };
+
+    template <>
+    struct real_aux_type<this_type_t>
+    {
+        using type = AS_NAMESPACE_QUALIFIER asITypeInfo;
+    };
+
     template <typename FuncSig>
     requires(!std::is_member_function_pointer_v<FuncSig>)
     constexpr asECallConvTypes deduce_function_callconv()
@@ -1671,7 +1993,10 @@ namespace detail
     consteval auto deduce_beh_callconv_aux() noexcept
         -> AS_NAMESPACE_QUALIFIER asECallConvTypes
     {
-        if constexpr(Beh == AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY)
+        if constexpr(
+            Beh == AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY ||
+            Beh == AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY
+        )
         {
             if constexpr(std::is_member_function_pointer_v<FuncSig>)
             {
@@ -1686,9 +2011,10 @@ namespace detail
                 using traits = function_traits<FuncSig>;
                 using first_arg_t = std::remove_cv_t<typename traits::first_arg_type>;
                 using last_arg_t = std::remove_cv_t<typename traits::last_arg_type>;
+                using aux_t = typename real_aux_type<Auxiliary>::type;
 
-                constexpr bool obj_first = is_this_arg<first_arg_t, Auxiliary>(false);
-                constexpr bool obj_last = is_this_arg<last_arg_t, Auxiliary>(false);
+                constexpr bool obj_first = is_this_arg<first_arg_t, aux_t>(false);
+                constexpr bool obj_last = is_this_arg<last_arg_t, aux_t>(false);
 
                 static_assert(obj_last || obj_first, "Missing auxiliary object parameter");
 
@@ -1727,6 +2053,19 @@ public:
 
     global(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         : my_base(engine) {}
+
+    template <typename Auxiliary>
+    void* get_auxiliary_address(auxiliary_wrapper<Auxiliary> aux) const
+    {
+        if constexpr(std::same_as<Auxiliary, this_type_t>)
+        {
+            static_assert(!sizeof(Auxiliary), "auxiliary(this_type) is invalid for a global function!");
+        }
+        else
+        {
+            return aux.obj_to_address();
+        }
+    }
 
     template <
         native_function Fn,
@@ -1918,7 +2257,7 @@ public:
             decl,
             to_asSFuncPtr(gfn),
             AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
-            aux.to_address()
+            get_auxiliary_address(aux)
         );
         assert(r >= 0);
 
@@ -1940,7 +2279,7 @@ public:
             decl,
             to_asSFuncPtr(fn),
             AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL,
-            aux.to_address()
+            get_auxiliary_address(aux)
         );
         assert(r >= 0);
 
@@ -2223,9 +2562,31 @@ class class_register_helper_base : public register_helper_base<ForceGeneric>
 {
     using my_base = register_helper_base<ForceGeneric>;
 
+public:
+    [[nodiscard]]
+    int get_type_id() const noexcept
+    {
+        assert(m_this_type_id > 0);
+        return m_this_type_id;
+    }
+
+    template <typename Auxiliary>
+    void* get_auxiliary_address(auxiliary_wrapper<Auxiliary> aux) const
+    {
+        if constexpr(std::same_as<Auxiliary, this_type_t>)
+        {
+            return m_engine->GetTypeInfoById(get_type_id());
+        }
+        else
+        {
+            return aux.obj_to_address();
+        }
+    }
+
 protected:
     using my_base::m_engine;
     const char* m_name;
+    int m_this_type_id = 0; // asTYPEID_VOID
 
     class_register_helper_base() = delete;
     class_register_helper_base(const class_register_helper_base&) = default;
@@ -2244,6 +2605,9 @@ protected:
             flags
         );
         assert(r >= 0);
+
+        if(r > 0)
+            m_this_type_id = r;
     }
 
     template <typename Fn, AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
@@ -2741,7 +3105,7 @@ private:
             decl,                                                \
             std::forward<Fn>(fn),                                \
             call_conv<CallConv>,                                 \
-            aux.to_address()                                     \
+            my_base::get_auxiliary_address(aux)                  \
         );                                                       \
         return *this;                                            \
     }                                                            \
@@ -2776,7 +3140,7 @@ private:
             decl,                                                \
             gfn,                                                 \
             generic_call_conv,                                   \
-            aux.to_address()                                     \
+            my_base::get_auxiliary_address(aux)                  \
         );                                                       \
         return *this;                                            \
     }
@@ -2862,7 +3226,7 @@ private:
             decl,                                                                  \
             to_asGENFUNC_t(fp<Method>, call_conv<CallConv>),                       \
             generic_call_conv,                                                     \
-            aux.to_address()                                                       \
+            my_base::get_auxiliary_address(aux)                                    \
         );                                                                         \
         return *this;                                                              \
     }                                                                              \
@@ -2880,7 +3244,7 @@ private:
             decl,                                                                  \
             to_asGENFUNC_t(fp<Method>, call_conv<conv>),                           \
             generic_call_conv,                                                     \
-            aux.to_address()                                                       \
+            my_base::get_auxiliary_address(aux)                                    \
         );                                                                         \
         return *this;                                                              \
     }                                                                              \
@@ -3082,7 +3446,7 @@ private:
             decl,                                                                                     \
             to_asGENFUNC_t(fp<Function>, call_conv<CallConv>, var_type<Is...>),                       \
             generic_call_conv,                                                                        \
-            aux.to_address()                                                                          \
+            my_base::get_auxiliary_address(aux)                                                       \
         );                                                                                            \
         return *this;                                                                                 \
     }                                                                                                 \
@@ -3107,7 +3471,7 @@ private:
                 decl,                                                                                 \
                 Function,                                                                             \
                 call_conv<CallConv>,                                                                  \
-                aux.to_address()                                                                      \
+                my_base::get_auxiliary_address(aux)                                                   \
             );                                                                                        \
         }                                                                                             \
         return *this;                                                                                 \
@@ -3157,7 +3521,7 @@ private:
                 decl,                                                                                 \
                 Function,                                                                             \
                 call_conv<conv>,                                                                      \
-                aux.to_address()                                                                      \
+                my_base::get_auxiliary_address(aux)                                                   \
             );                                                                                        \
         }                                                                                             \
         return *this;                                                                                 \
@@ -4235,7 +4599,7 @@ public:
         typename ListElementType = void,
         policies::initialization_list_policy Policy = void>
     basic_value_class& list_constructor(
-        use_generic_t, std::string_view pattern
+        use_generic_t, std::string_view pattern, use_policy_t<Policy> = {}
     )
     {
         list_constructor_function(
@@ -4258,11 +4622,11 @@ public:
         typename ListElementType = void,
         policies::initialization_list_policy Policy = void>
     basic_value_class& list_constructor(
-        std::string_view pattern
+        std::string_view pattern, use_policy_t<Policy> = {}
     )
     {
         if constexpr(ForceGeneric)
-            list_constructor<ListElementType, Policy>(use_generic, pattern);
+            list_constructor<ListElementType>(use_generic, pattern, use_policy<Policy>);
         else
         {
             list_constructor_function(
@@ -4652,8 +5016,13 @@ public:
         return *this;
     }
 
-    template <typename Factory, asECallConvTypes CallConv>
-    requires(CallConv == asCALL_CDECL)
+    template <
+        typename Factory,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    requires(
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL ||
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_STDCALL
+    )
     basic_ref_class& factory_function(
         std::string_view params,
         Factory fn,
@@ -4670,8 +5039,13 @@ public:
         return *this;
     }
 
-    template <typename Factory, asECallConvTypes CallConv>
-    requires(CallConv == asCALL_CDECL)
+    template <
+        typename Factory,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    requires(
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL ||
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_STDCALL
+    )
     basic_ref_class& factory_function(
         std::string_view params,
         use_explicit_t,
@@ -4705,7 +5079,7 @@ public:
             decl_factory(params).c_str(),
             fn,
             call_conv<CallConv>,
-            aux.to_address()
+            my_base::get_auxiliary_address(aux)
         );
 
         return *this;
@@ -4728,7 +5102,7 @@ public:
             decl_factory(params, use_explicit).c_str(),
             fn,
             call_conv<CallConv>,
-            aux.to_address()
+            my_base::get_auxiliary_address(aux)
         );
 
         return *this;
@@ -4826,7 +5200,7 @@ public:
             decl_factory(params).c_str(),
             gfn,
             generic_call_conv,
-            aux.to_address()
+            my_base::get_auxiliary_address(aux)
         );
 
         return *this;
@@ -4846,7 +5220,7 @@ public:
             decl_factory(params, use_explicit).c_str(),
             gfn,
             generic_call_conv,
-            aux.to_address()
+            my_base::get_auxiliary_address(aux)
         );
 
         return *this;
@@ -5078,47 +5452,41 @@ public:
         return *this;
     }
 
-    basic_ref_class& default_factory(use_generic_t)
+    template <policies::factory_policy Policy = void>
+    basic_ref_class& default_factory(use_generic_t, use_policy_t<Policy> = {})
     {
-        AS_NAMESPACE_QUALIFIER asGENFUNC_t wrapper =
-            wrappers::factory<Class, Template>::generate(generic_call_conv);
-
-        factory_function(
-            "",
-            wrapper,
-            generic_call_conv
-        );
+        this->factory<>(use_generic, "", use_policy<Policy>);
 
         return *this;
     }
 
-    basic_ref_class& default_factory()
+    template <policies::factory_policy Policy = void>
+    basic_ref_class& default_factory(use_policy_t<Policy> = {})
     {
         if constexpr(ForceGeneric)
         {
-            default_factory(use_generic);
+            default_factory(use_generic, use_policy<Policy>);
         }
         else
         {
-            auto wrapper =
-                wrappers::factory<Class, Template>::generate(call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>);
-
-            factory_function(
-                "",
-                wrapper,
-                call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
-            );
+            this->factory<>("", use_policy<Policy>);
         }
 
         return *this;
     }
 
 private:
-    template <typename... Args>
-    void factory_impl_generic(use_generic_t, std::string_view params, bool explicit_)
+    template <typename... Args, typename Policy>
+    void factory_impl_generic(
+        std::string_view params, use_policy_t<Policy>, bool explicit_
+    )
     {
         AS_NAMESPACE_QUALIFIER asGENFUNC_t wrapper =
-            wrappers::factory<Class, Template, Args...>::generate(generic_call_conv);
+            wrappers::factory<Class, Template, Policy, Args...>::generate(generic_call_conv);
+
+        void* aux = nullptr;
+        if constexpr(std::same_as<Policy, policies::notify_gc> && !Template)
+            aux = m_engine->GetTypeInfoById(this->get_type_id());
 
         if(explicit_)
         {
@@ -5126,6 +5494,7 @@ private:
                 params,
                 use_explicit,
                 wrapper,
+                auxiliary(aux),
                 generic_call_conv
             );
         }
@@ -5134,78 +5503,119 @@ private:
             factory_function(
                 params,
                 wrapper,
+                auxiliary(aux),
                 generic_call_conv
             );
         }
     }
 
-    template <typename... Args>
-    void factory_impl_native(std::string_view params, bool explicit_) requires(!ForceGeneric)
+    template <typename... Args, typename Policy>
+    void factory_impl_native(
+        std::string_view params, use_policy_t<Policy>, bool explicit_
+    ) requires(!ForceGeneric)
     {
-        auto wrapper =
-            wrappers::factory<Class, Template, Args...>::generate(call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>);
-
-        if(explicit_)
+        if constexpr(std::same_as<Policy, policies::notify_gc> && !Template)
         {
-            factory_function(
-                params,
-                use_explicit,
-                wrapper,
-                call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
-            );
+            auto wrapper =
+                wrappers::factory<Class, Template, Policy, Args...>::generate(call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>);
+
+            AS_NAMESPACE_QUALIFIER asITypeInfo* ti = m_engine->GetTypeInfoById(this->get_type_id());
+
+            if(explicit_)
+            {
+                factory_function(
+                    params,
+                    use_explicit,
+                    wrapper,
+                    auxiliary(ti),
+                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+                );
+            }
+            else
+            {
+                factory_function(
+                    params,
+                    wrapper,
+                    auxiliary(ti),
+                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+                );
+            }
         }
         else
         {
-            factory_function(
-                params,
-                wrapper,
-                call_conv<asCALL_CDECL>
-            );
+            auto wrapper =
+                wrappers::factory<Class, Template, Policy, Args...>::generate(call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>);
+
+            if(explicit_)
+            {
+                factory_function(
+                    params,
+                    use_explicit,
+                    wrapper,
+                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
+                );
+            }
+            else
+            {
+                factory_function(
+                    params,
+                    wrapper,
+                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
+                );
+            }
         }
     }
 
 public:
-    template <typename... Args>
-    basic_ref_class& factory(use_generic_t, std::string_view params)
+    template <typename... Args, policies::factory_policy Policy = void>
+    basic_ref_class& factory(
+        use_generic_t, std::string_view params, use_policy_t<Policy> = {}
+    )
     {
-        this->factory_impl_generic<Args...>(use_generic, params, false);
+        this->factory_impl_generic<Args...>(params, use_policy<Policy>, false);
 
         return *this;
     }
 
-    template <typename... Args>
-    basic_ref_class& factory(use_generic_t, std::string_view params, use_explicit_t)
+    template <typename... Args, policies::factory_policy Policy = void>
+    basic_ref_class& factory(
+        use_generic_t, std::string_view params, use_explicit_t, use_policy_t<Policy> = {}
+    )
     {
-        this->factory_impl_generic<Args...>(use_generic, params, true);
+        this->factory_impl_generic<Args...>(params, use_policy<Policy>, true);
 
         return *this;
     }
 
-    template <typename... Args>
-    basic_ref_class& factory(std::string_view params)
+    template <typename... Args, policies::factory_policy Policy = void>
+    basic_ref_class& factory(
+        std::string_view params, use_policy_t<Policy> = {}
+    )
     {
         if constexpr(ForceGeneric)
         {
-            factory<Args...>(use_generic, params);
+            factory<Args...>(use_generic, params, use_policy<Policy>);
         }
         else
         {
-            this->factory_impl_native<Args...>(params, false);
+            this->factory_impl_native<Args...>(params, use_policy<Policy>, false);
         }
 
         return *this;
     }
 
-    template <typename... Args>
-    basic_ref_class& factory(std::string_view params, use_explicit_t)
+    template <typename... Args, policies::factory_policy Policy = void>
+    basic_ref_class& factory(
+        std::string_view params, use_explicit_t, use_policy_t<Policy> = {}
+    )
     {
         if constexpr(ForceGeneric)
         {
-            factory<Args...>(use_generic, params, use_explicit);
+            factory<Args...>(use_generic, params, use_explicit, use_policy<Policy>);
         }
         else
         {
-            this->factory_impl_native<Args...>(params, true);
+            this->factory_impl_native<Args...>(params, use_policy<Policy>, true);
         }
 
         return *this;
@@ -5224,7 +5634,10 @@ public:
     template <
         native_function ListFactory,
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-    requires(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL || CallConv == AS_NAMESPACE_QUALIFIER asCALL_STDCALL)
+    requires(
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL ||
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_STDCALL
+    )
     basic_ref_class& list_factory_function(
         std::string_view pattern,
         ListFactory ctor,
@@ -5275,11 +5688,372 @@ public:
     }
 
     template <
+        native_function ListFactory,
+        typename Auxiliary,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    requires(
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL ||
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
+    )
+    basic_ref_class& list_factory_function(
+        std::string_view pattern,
+        ListFactory ctor,
+        auxiliary_wrapper<Auxiliary> aux,
+        call_conv_t<CallConv>
+    ) requires(!ForceGeneric)
+    {
+        this->behaviour_impl(
+            AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY,
+            decl_list_factory(pattern).c_str(),
+            ctor,
+            call_conv<CallConv>,
+            my_base::get_auxiliary_address(aux)
+        );
+
+        return *this;
+    }
+
+    template <typename Auxiliary>
+    basic_ref_class& list_factory_function(
+        std::string_view pattern,
+        AS_NAMESPACE_QUALIFIER asGENFUNC_t ctor,
+        auxiliary_wrapper<Auxiliary> aux,
+        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
+    )
+    {
+        this->behaviour_impl(
+            AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY,
+            decl_list_factory(pattern).c_str(),
+            ctor,
+            generic_call_conv,
+            my_base::get_auxiliary_address(aux)
+        );
+
+        return *this;
+    }
+
+    template <
+        native_function ListFactory,
+        typename Auxiliary>
+    basic_ref_class& list_factory_function(
+        std::string_view pattern,
+        ListFactory ctor,
+        auxiliary_wrapper<Auxiliary> aux
+    ) requires(!ForceGeneric)
+    {
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
+            detail::deduce_beh_callconv_aux<AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY, Class, std::decay_t<ListFactory>, Auxiliary>();
+
+        this->behaviour_impl(
+            AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY,
+            decl_list_factory(pattern).c_str(),
+            ctor,
+            call_conv<conv>,
+            my_base::get_auxiliary_address(aux)
+        );
+
+        return *this;
+    }
+
+    template <
+        auto ListFactory,
+        typename Auxiliary,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    requires(
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL ||
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
+    )
+    basic_ref_class& list_factory_function(
+        use_generic_t,
+        std::string_view pattern,
+        fp_wrapper_t<ListFactory>,
+        auxiliary_wrapper<Auxiliary> aux,
+        call_conv_t<CallConv>
+    )
+    {
+        AS_NAMESPACE_QUALIFIER asGENFUNC_t wrapper = nullptr;
+
+        using traits = function_traits<std::decay_t<decltype(ListFactory)>>;
+        if constexpr(Template)
+        {
+            if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL)
+            {
+                wrapper = +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+                {
+                    Class* ptr = std::invoke(
+                        ListFactory,
+                        get_generic_auxiliary<Auxiliary>(gen),
+                        *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
+                        *(void**)gen->GetAddressOfArg(1)
+                    );
+                    gen->SetReturnAddress(ptr);
+                };
+            }
+            else if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
+            {
+                using first_arg_type = typename traits::first_arg_type;
+                wrapper = +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+                {
+                    Class* ptr = std::invoke(
+                        ListFactory,
+                        get_generic_auxiliary<first_arg_type>(gen),
+                        *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
+                        *(void**)gen->GetAddressOfArg(1)
+                    );
+                    gen->SetReturnAddress(ptr);
+                };
+            }
+            else // CallConv == asCALL_CDECL_OBJLAST
+            {
+                using last_arg_type = typename traits::last_arg_type;
+                wrapper = +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+                {
+                    Class* ptr = std::invoke(
+                        ListFactory,
+                        *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
+                        *(void**)gen->GetAddressOfArg(1),
+                        get_generic_auxiliary<last_arg_type>(gen)
+                    );
+                    gen->SetReturnAddress(ptr);
+                };
+            }
+        }
+        else // !Template
+        {
+            if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL)
+            {
+                wrapper = +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+                {
+                    Class* ptr = std::invoke(
+                        ListFactory,
+                        get_generic_auxiliary<Auxiliary>(gen),
+                        *(void**)gen->GetAddressOfArg(0)
+                    );
+                    gen->SetReturnAddress(ptr);
+                };
+            }
+            else if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
+            {
+                using first_arg_type = typename traits::first_arg_type;
+                wrapper = +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+                {
+                    Class* ptr = std::invoke(
+                        ListFactory,
+                        get_generic_auxiliary<first_arg_type>(gen),
+                        *(void**)gen->GetAddressOfArg(0)
+                    );
+                    gen->SetReturnAddress(ptr);
+                };
+            }
+            else // CallConv == asCALL_CDECL_OBJLAST
+            {
+                using last_arg_type = typename traits::last_arg_type;
+                wrapper = +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+                {
+                    Class* ptr = std::invoke(
+                        ListFactory,
+                        *(void**)gen->GetAddressOfArg(0),
+                        get_generic_auxiliary<last_arg_type>(gen)
+                    );
+                    gen->SetReturnAddress(ptr);
+                };
+            }
+        }
+
+        this->behaviour_impl(
+            AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY,
+            decl_list_factory(pattern).c_str(),
+            wrapper,
+            generic_call_conv,
+            my_base::get_auxiliary_address(aux)
+        );
+
+        return *this;
+    }
+
+    template <
+        auto ListFactory,
+        typename Auxiliary,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    requires(
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL ||
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
+    )
+    basic_ref_class& list_factory_function(
+        std::string_view pattern,
+        fp_wrapper_t<ListFactory>,
+        auxiliary_wrapper<Auxiliary> aux,
+        call_conv_t<CallConv>
+    )
+    {
+        if(ForceGeneric)
+        {
+            this->list_factory_function(
+                use_generic,
+                pattern,
+                fp<ListFactory>,
+                aux,
+                call_conv<CallConv>
+            );
+        }
+        else
+        {
+            this->list_factory_function(
+                pattern,
+                ListFactory,
+                aux,
+                call_conv<CallConv>
+            );
+        }
+
+        return *this;
+    }
+
+    template <
+        auto ListFactory,
+        typename Auxiliary>
+    basic_ref_class& list_factory_function(
+        use_generic_t,
+        std::string_view pattern,
+        fp_wrapper_t<ListFactory>,
+        auxiliary_wrapper<Auxiliary> aux
+    )
+    {
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
+            detail::deduce_beh_callconv_aux<AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY, Class, std::decay_t<decltype(ListFactory)>, Auxiliary>();
+
+        this->list_factory_function(
+            use_generic,
+            pattern,
+            fp<ListFactory>,
+            aux,
+            call_conv<conv>
+        );
+
+        return *this;
+    }
+
+    template <
+        auto ListFactory,
+        typename Auxiliary>
+    basic_ref_class& list_factory_function(
+        std::string_view pattern,
+        fp_wrapper_t<ListFactory>,
+        auxiliary_wrapper<Auxiliary> aux
+    )
+    {
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
+            detail::deduce_beh_callconv_aux<AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY, Class, std::decay_t<decltype(ListFactory)>, Auxiliary>();
+
+        if constexpr(ForceGeneric)
+        {
+            this->list_factory_function(
+                use_generic,
+                pattern,
+                fp<ListFactory>,
+                aux,
+                call_conv<conv>
+            );
+        }
+        else
+        {
+            this->list_factory_function(
+                pattern,
+                fp<ListFactory>,
+                aux,
+                call_conv<conv>
+            );
+        }
+
+        return *this;
+    }
+
+    template <
+        typename ListElementType = void,
+        policies::initialization_list_policy ListPolicy,
+        policies::factory_policy FactoryPolicy>
+    basic_ref_class& list_factory(
+        use_generic_t,
+        std::string_view pattern,
+        use_policy_t<ListPolicy, FactoryPolicy>
+    )
+    {
+        AS_NAMESPACE_QUALIFIER asGENFUNC_t wrapper =
+            wrappers::list_factory<Class, Template, ListElementType, ListPolicy, FactoryPolicy>::generate(generic_call_conv);
+
+        void* aux = nullptr;
+        if constexpr(std::same_as<FactoryPolicy, policies::notify_gc> && !Template)
+            aux = m_engine->GetTypeInfoById(this->get_type_id());
+
+        this->list_factory_function(
+            pattern,
+            wrapper,
+            auxiliary(aux),
+            generic_call_conv
+        );
+
+        return *this;
+    }
+
+    template <
+        typename ListElementType = void,
+        policies::initialization_list_policy ListPolicy,
+        policies::factory_policy FactoryPolicy>
+    basic_ref_class& list_factory(
+        std::string_view pattern,
+        use_policy_t<ListPolicy, FactoryPolicy>
+    )
+    {
+        if constexpr(ForceGeneric)
+        {
+            list_factory<ListElementType>(use_generic, pattern, use_policy<ListPolicy, FactoryPolicy>);
+        }
+        else
+        {
+            if constexpr(std::same_as<FactoryPolicy, policies::notify_gc> && !Template)
+            {
+                auto wrapper =
+                    wrappers::list_factory<Class, Template, ListElementType, ListPolicy, FactoryPolicy>::generate(
+                        call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+                    );
+
+                AS_NAMESPACE_QUALIFIER asITypeInfo* ti = m_engine->GetTypeInfoById(this->get_type_id());
+
+                this->list_factory_function(
+                    pattern,
+                    wrapper,
+                    auxiliary(ti),
+                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+                );
+            }
+            else
+            {
+                auto wrapper =
+                    wrappers::list_factory<Class, Template, ListElementType, ListPolicy, FactoryPolicy>::generate(
+                        call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
+                    );
+
+                list_factory_function(
+                    pattern,
+                    wrapper,
+                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
+                );
+            }
+        }
+
+        return *this;
+    }
+
+    template <
         typename ListElementType = void,
         policies::initialization_list_policy Policy = void>
     basic_ref_class& list_factory(
         use_generic_t,
-        std::string_view pattern
+        std::string_view pattern,
+        use_policy_t<Policy> = {}
     )
     {
         AS_NAMESPACE_QUALIFIER asGENFUNC_t wrapper =
@@ -5297,11 +6071,14 @@ public:
     template <
         typename ListElementType = void,
         policies::initialization_list_policy Policy = void>
-    basic_ref_class& list_factory(std::string_view pattern)
+    basic_ref_class& list_factory(
+        std::string_view pattern,
+        use_policy_t<Policy> = {}
+    )
     {
         if constexpr(ForceGeneric)
         {
-            list_factory<ListElementType, Policy>(use_generic, pattern);
+            list_factory<ListElementType>(use_generic, pattern, use_policy<Policy>);
         }
         else
         {

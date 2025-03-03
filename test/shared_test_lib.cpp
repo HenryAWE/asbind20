@@ -8,26 +8,54 @@
 
 namespace asbind_test
 {
-void setup_message_callback(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+void setup_message_callback(
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    bool propagate_error_to_gtest
+)
 {
-    asbind20::global(engine)
-        .message_callback(
-            +[](const AS_NAMESPACE_QUALIFIER asSMessageInfo* msg, void*)
-            {
-                switch(msg->type)
+    if(propagate_error_to_gtest)
+    {
+        asbind20::global(engine)
+            .message_callback(
+                +[](const AS_NAMESPACE_QUALIFIER asSMessageInfo* msg, void*)
                 {
-                case AS_NAMESPACE_QUALIFIER asMSGTYPE_ERROR:
-                    std::cerr << "ERROR: ";
-                    break;
-                case AS_NAMESPACE_QUALIFIER asMSGTYPE_WARNING:
-                    std::cerr << "WARNING: ";
-                    break;
-                case AS_NAMESPACE_QUALIFIER asMSGTYPE_INFORMATION:
-                    std::cerr << "INFO: ";
+                    switch(msg->type)
+                    {
+                    case AS_NAMESPACE_QUALIFIER asMSGTYPE_ERROR:
+                        FAIL() << "ERROR: " << msg->message;
+                        // FAIL() contains return statement
+
+                    case AS_NAMESPACE_QUALIFIER asMSGTYPE_WARNING:
+                        std::cerr << "WARNING: ";
+                        break;
+                    case AS_NAMESPACE_QUALIFIER asMSGTYPE_INFORMATION:
+                        std::cerr << "INFO: ";
+                    }
+                    std::cerr << msg->message << std::endl;
                 }
-                std::cerr << msg->message << std::endl;
-            }
-        );
+            );
+    }
+    else
+    {
+        asbind20::global(engine)
+            .message_callback(
+                +[](const AS_NAMESPACE_QUALIFIER asSMessageInfo* msg, void*)
+                {
+                    switch(msg->type)
+                    {
+                    case AS_NAMESPACE_QUALIFIER asMSGTYPE_ERROR:
+                        std::cerr << "ERROR: ";
+                        break;
+                    case AS_NAMESPACE_QUALIFIER asMSGTYPE_WARNING:
+                        std::cerr << "WARNING: ";
+                        break;
+                    case AS_NAMESPACE_QUALIFIER asMSGTYPE_INFORMATION:
+                        std::cerr << "INFO: ";
+                    }
+                    std::cerr << msg->message << std::endl;
+                }
+            );
+    }
 }
 
 void asbind_test_suite::msg_callback(const AS_NAMESPACE_QUALIFIER asSMessageInfo* msg)
