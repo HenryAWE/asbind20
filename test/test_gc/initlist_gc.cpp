@@ -524,3 +524,158 @@ TYPED_TEST(initlist_gc_test_generic, run_script)
     AS_NAMESPACE_QUALIFIER asIScriptModule* m = TestFixture::build_script();
     test_gc::run_initlist_gc_test(m, TestFixture::max_test_idx());
 }
+
+namespace test_gc
+{
+static constexpr char test_custom_list_function[] = R"AngelScript(class foo
+{
+    gc_init_list@ il_ref;
+};
+
+bool test0()
+{
+    gc_init_list il = {182, 376};
+    assert(il.int_count == 3);
+    assert(il.ints[0] == 18);
+    assert(il.ints[1] == 23);
+    assert(il.ints[2] == 76);
+
+    foo@ f = foo();
+    @f.il_ref = @il;
+    il.copy(@f);
+
+    foo@ tmp = null;
+    bool result = il.get_var(@tmp);
+    assert(tmp is f);
+
+    return result;
+}
+)AngelScript";
+
+static void custom_factory_set_ints(std::vector<int>& out, void* list_buf)
+{
+    asbind20::script_init_list_repeat list(list_buf);
+    int* data = (int*)list.data();
+    EXPECT_EQ(list.size(), 2);
+    out.push_back(data[0] / 10);
+    EXPECT_EQ(out[0], 18);
+    out.push_back((data[0] % 10) * 10 + (data[1] / 100));
+    EXPECT_EQ(out[1], 23);
+    out.push_back(data[1] % 100);
+    EXPECT_EQ(out[2], 76);
+}
+
+static gc_init_list* gc_init_list_custom_list_factory_objfirst(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, void* list_buf)
+{
+    std::unique_ptr<gc_init_list> p(new gc_init_list);
+
+    custom_factory_set_ints(p->ints, list_buf);
+
+    ti->GetEngine()->NotifyGarbageCollectorOfNewObject(p.get(), ti);
+    return p.release();
+}
+
+static gc_init_list* gc_init_list_custom_list_factory_objlast(void* list_buf, AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+{
+    std::unique_ptr<gc_init_list> p(new gc_init_list);
+
+    custom_factory_set_ints(p->ints, list_buf);
+
+    ti->GetEngine()->NotifyGarbageCollectorOfNewObject(p.get(), ti);
+    return p.release();
+}
+
+template <bool Objfirst, bool UseGeneric>
+class basic_custom_function_suite : public ::testing::Test
+{
+public:
+    void SetUp() override
+    {
+        if constexpr(!UseGeneric)
+        {
+            if(asbind20::has_max_portability())
+                GTEST_SKIP() << "max portability";
+        }
+
+        m_engine = asbind20::make_script_engine();
+
+        asbind_test::setup_message_callback(m_engine, true);
+        asbind20::ext::register_script_assert(
+            m_engine,
+            [](std::string_view msg)
+            {
+                FAIL() << "initlist GC assertion failed: " << msg;
+            }
+        );
+
+        using namespace asbind20;
+        auto c = register_gc_init_list_basic_methods<UseGeneric>(m_engine);
+        if constexpr(Objfirst)
+        {
+            c.list_factory_function("repeat int", fp<&gc_init_list_custom_list_factory_objfirst>, auxiliary(this_type));
+        }
+        else // Objlast
+        {
+            c.list_factory_function("repeat int", fp<&gc_init_list_custom_list_factory_objlast>, auxiliary(this_type));
+        }
+    }
+
+    void TearDown() override
+    {
+        m_engine.reset();
+    }
+
+    auto build_script()
+        -> AS_NAMESPACE_QUALIFIER asIScriptModule*
+    {
+        auto* m = m_engine->GetModule(
+            "test_gc_initlist", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
+        );
+
+        m->AddScriptSection(
+            "test_gc_initlist",
+            test_custom_list_function
+        );
+        EXPECT_GE(m->Build(), 0);
+        return m;
+    }
+
+    int max_test_idx()
+    {
+        return 0;
+    }
+
+private:
+    asbind20::script_engine m_engine;
+};
+} // namespace test_gc
+
+using custom_list_function_objfirst_generic = test_gc::basic_custom_function_suite<true, true>;
+using custom_list_function_objfirst_native = test_gc::basic_custom_function_suite<true, false>;
+
+using custom_list_function_objlast_generic = test_gc::basic_custom_function_suite<false, true>;
+using custom_list_function_objlast_native = test_gc::basic_custom_function_suite<false, false>;
+
+TEST_F(custom_list_function_objfirst_native, run_script)
+{
+    AS_NAMESPACE_QUALIFIER asIScriptModule* m = build_script();
+    test_gc::run_initlist_gc_test(m, max_test_idx());
+}
+
+TEST_F(custom_list_function_objfirst_generic, run_script)
+{
+    AS_NAMESPACE_QUALIFIER asIScriptModule* m = build_script();
+    test_gc::run_initlist_gc_test(m, max_test_idx());
+}
+
+TEST_F(custom_list_function_objlast_native, run_script)
+{
+    AS_NAMESPACE_QUALIFIER asIScriptModule* m = build_script();
+    test_gc::run_initlist_gc_test(m, max_test_idx());
+}
+
+TEST_F(custom_list_function_objlast_generic, run_script)
+{
+    AS_NAMESPACE_QUALIFIER asIScriptModule* m = build_script();
+    test_gc::run_initlist_gc_test(m, max_test_idx());
+}

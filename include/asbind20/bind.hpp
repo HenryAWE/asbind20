@@ -18,6 +18,11 @@
 
 namespace asbind20
 {
+struct this_type_t
+{};
+
+inline constexpr this_type_t this_type{};
+
 template <typename T>
 class auxiliary_wrapper
 {
@@ -28,7 +33,7 @@ public:
     explicit constexpr auxiliary_wrapper(T* aux) noexcept
         : m_aux(aux) {}
 
-    void* to_address() const noexcept
+    void* obj_to_address() const noexcept
     {
         return (void*)m_aux;
     }
@@ -36,6 +41,27 @@ public:
 private:
     T* m_aux;
 };
+
+template <>
+class auxiliary_wrapper<this_type_t>
+{
+public:
+    auxiliary_wrapper() = delete;
+    constexpr auxiliary_wrapper(const auxiliary_wrapper&) noexcept = default;
+
+    explicit constexpr auxiliary_wrapper(this_type_t) noexcept {};
+};
+
+namespace detail
+{
+    template <typename T>
+    struct is_this_type_aux : public std::false_type
+    {};
+
+    template <>
+    struct is_this_type_aux<auxiliary_wrapper<this_type_t>> : public std::true_type
+    {};
+} // namespace detail
 
 template <typename T>
 constexpr auxiliary_wrapper<T> auxiliary(T& aux) noexcept
@@ -52,6 +78,11 @@ constexpr auxiliary_wrapper<T> auxiliary(T* aux) noexcept
 constexpr inline auxiliary_wrapper<void> auxiliary(std::nullptr_t) noexcept
 {
     return auxiliary_wrapper<void>(nullptr);
+}
+
+constexpr inline auxiliary_wrapper<this_type_t> auxiliary(this_type_t) noexcept
+{
+    return auxiliary_wrapper<this_type_t>(this_type);
 }
 
 template <typename T>
@@ -1824,6 +1855,18 @@ protected:
 
 namespace detail
 {
+    template <typename Auxiliary>
+    struct real_aux_type
+    {
+        using type = Auxiliary;
+    };
+
+    template <>
+    struct real_aux_type<this_type_t>
+    {
+        using type = AS_NAMESPACE_QUALIFIER asITypeInfo;
+    };
+
     template <typename FuncSig>
     requires(!std::is_member_function_pointer_v<FuncSig>)
     constexpr asECallConvTypes deduce_function_callconv()
@@ -1968,9 +2011,10 @@ namespace detail
                 using traits = function_traits<FuncSig>;
                 using first_arg_t = std::remove_cv_t<typename traits::first_arg_type>;
                 using last_arg_t = std::remove_cv_t<typename traits::last_arg_type>;
+                using aux_t = typename real_aux_type<Auxiliary>::type;
 
-                constexpr bool obj_first = is_this_arg<first_arg_t, Auxiliary>(false);
-                constexpr bool obj_last = is_this_arg<last_arg_t, Auxiliary>(false);
+                constexpr bool obj_first = is_this_arg<first_arg_t, aux_t>(false);
+                constexpr bool obj_last = is_this_arg<last_arg_t, aux_t>(false);
 
                 static_assert(obj_last || obj_first, "Missing auxiliary object parameter");
 
@@ -2009,6 +2053,19 @@ public:
 
     global(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         : my_base(engine) {}
+
+    template <typename Auxiliary>
+    void* get_auxiliary_address(auxiliary_wrapper<Auxiliary> aux) const
+    {
+        if constexpr(std::same_as<Auxiliary, this_type_t>)
+        {
+            static_assert(!sizeof(Auxiliary), "auxiliary(this_type) is invalid for a global function!");
+        }
+        else
+        {
+            return aux.obj_to_address();
+        }
+    }
 
     template <
         native_function Fn,
@@ -2200,7 +2257,7 @@ public:
             decl,
             to_asSFuncPtr(gfn),
             AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
-            aux.to_address()
+            get_auxiliary_address(aux)
         );
         assert(r >= 0);
 
@@ -2222,7 +2279,7 @@ public:
             decl,
             to_asSFuncPtr(fn),
             AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL,
-            aux.to_address()
+            get_auxiliary_address(aux)
         );
         assert(r >= 0);
 
@@ -2505,9 +2562,31 @@ class class_register_helper_base : public register_helper_base<ForceGeneric>
 {
     using my_base = register_helper_base<ForceGeneric>;
 
+public:
+    [[nodiscard]]
+    int get_type_id() const noexcept
+    {
+        assert(m_this_type_id > 0);
+        return m_this_type_id;
+    }
+
+    template <typename Auxiliary>
+    void* get_auxiliary_address(auxiliary_wrapper<Auxiliary> aux) const
+    {
+        if constexpr(std::same_as<Auxiliary, this_type_t>)
+        {
+            return m_engine->GetTypeInfoById(get_type_id());
+        }
+        else
+        {
+            return aux.obj_to_address();
+        }
+    }
+
 protected:
     using my_base::m_engine;
     const char* m_name;
+    int m_this_type_id = 0; // asTYPEID_VOID
 
     class_register_helper_base() = delete;
     class_register_helper_base(const class_register_helper_base&) = default;
@@ -2526,6 +2605,9 @@ protected:
             flags
         );
         assert(r >= 0);
+
+        if(r > 0)
+            m_this_type_id = r;
     }
 
     template <typename Fn, AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
@@ -3023,7 +3105,7 @@ private:
             decl,                                                \
             std::forward<Fn>(fn),                                \
             call_conv<CallConv>,                                 \
-            aux.to_address()                                     \
+            my_base::get_auxiliary_address(aux)                  \
         );                                                       \
         return *this;                                            \
     }                                                            \
@@ -3058,7 +3140,7 @@ private:
             decl,                                                \
             gfn,                                                 \
             generic_call_conv,                                   \
-            aux.to_address()                                     \
+            my_base::get_auxiliary_address(aux)                  \
         );                                                       \
         return *this;                                            \
     }
@@ -3144,7 +3226,7 @@ private:
             decl,                                                                  \
             to_asGENFUNC_t(fp<Method>, call_conv<CallConv>),                       \
             generic_call_conv,                                                     \
-            aux.to_address()                                                       \
+            my_base::get_auxiliary_address(aux)                                    \
         );                                                                         \
         return *this;                                                              \
     }                                                                              \
@@ -3162,7 +3244,7 @@ private:
             decl,                                                                  \
             to_asGENFUNC_t(fp<Method>, call_conv<conv>),                           \
             generic_call_conv,                                                     \
-            aux.to_address()                                                       \
+            my_base::get_auxiliary_address(aux)                                    \
         );                                                                         \
         return *this;                                                              \
     }                                                                              \
@@ -3364,7 +3446,7 @@ private:
             decl,                                                                                     \
             to_asGENFUNC_t(fp<Function>, call_conv<CallConv>, var_type<Is...>),                       \
             generic_call_conv,                                                                        \
-            aux.to_address()                                                                          \
+            my_base::get_auxiliary_address(aux)                                                       \
         );                                                                                            \
         return *this;                                                                                 \
     }                                                                                                 \
@@ -3389,7 +3471,7 @@ private:
                 decl,                                                                                 \
                 Function,                                                                             \
                 call_conv<CallConv>,                                                                  \
-                aux.to_address()                                                                      \
+                my_base::get_auxiliary_address(aux)                                                   \
             );                                                                                        \
         }                                                                                             \
         return *this;                                                                                 \
@@ -3439,7 +3521,7 @@ private:
                 decl,                                                                                 \
                 Function,                                                                             \
                 call_conv<conv>,                                                                      \
-                aux.to_address()                                                                      \
+                my_base::get_auxiliary_address(aux)                                                   \
             );                                                                                        \
         }                                                                                             \
         return *this;                                                                                 \
@@ -4997,7 +5079,7 @@ public:
             decl_factory(params).c_str(),
             fn,
             call_conv<CallConv>,
-            aux.to_address()
+            my_base::get_auxiliary_address(aux)
         );
 
         return *this;
@@ -5020,7 +5102,7 @@ public:
             decl_factory(params, use_explicit).c_str(),
             fn,
             call_conv<CallConv>,
-            aux.to_address()
+            my_base::get_auxiliary_address(aux)
         );
 
         return *this;
@@ -5118,7 +5200,7 @@ public:
             decl_factory(params).c_str(),
             gfn,
             generic_call_conv,
-            aux.to_address()
+            my_base::get_auxiliary_address(aux)
         );
 
         return *this;
@@ -5138,7 +5220,7 @@ public:
             decl_factory(params, use_explicit).c_str(),
             gfn,
             generic_call_conv,
-            aux.to_address()
+            my_base::get_auxiliary_address(aux)
         );
 
         return *this;
@@ -5404,7 +5486,7 @@ private:
 
         void* aux = nullptr;
         if constexpr(std::same_as<Policy, policies::notify_gc> && !Template)
-            aux = m_engine->GetTypeInfoByName(m_name);
+            aux = m_engine->GetTypeInfoById(this->get_type_id());
 
         if(explicit_)
         {
@@ -5437,7 +5519,7 @@ private:
             auto wrapper =
                 wrappers::factory<Class, Template, Policy, Args...>::generate(call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>);
 
-            AS_NAMESPACE_QUALIFIER asITypeInfo* ti = m_engine->GetTypeInfoByName(m_name);
+            AS_NAMESPACE_QUALIFIER asITypeInfo* ti = m_engine->GetTypeInfoById(this->get_type_id());
 
             if(explicit_)
             {
@@ -5626,7 +5708,7 @@ public:
             decl_list_factory(pattern).c_str(),
             ctor,
             call_conv<CallConv>,
-            aux.to_address()
+            my_base::get_auxiliary_address(aux)
         );
 
         return *this;
@@ -5645,7 +5727,7 @@ public:
             decl_list_factory(pattern).c_str(),
             ctor,
             generic_call_conv,
-            aux.to_address()
+            my_base::get_auxiliary_address(aux)
         );
 
         return *this;
@@ -5668,7 +5750,7 @@ public:
             decl_list_factory(pattern).c_str(),
             ctor,
             call_conv<conv>,
-            aux.to_address()
+            my_base::get_auxiliary_address(aux)
         );
 
         return *this;
@@ -5785,7 +5867,7 @@ public:
             decl_list_factory(pattern).c_str(),
             wrapper,
             generic_call_conv,
-            aux.to_address()
+            my_base::get_auxiliary_address(aux)
         );
 
         return *this;
@@ -5904,7 +5986,7 @@ public:
 
         void* aux = nullptr;
         if constexpr(std::same_as<FactoryPolicy, policies::notify_gc> && !Template)
-            aux = m_engine->GetTypeInfoByName(m_name);
+            aux = m_engine->GetTypeInfoById(this->get_type_id());
 
         this->list_factory_function(
             pattern,
@@ -5938,13 +6020,13 @@ public:
                         call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
                     );
 
-                AS_NAMESPACE_QUALIFIER asITypeInfo* ti = m_engine->GetTypeInfoByName(m_name);
+                AS_NAMESPACE_QUALIFIER asITypeInfo* ti = m_engine->GetTypeInfoById(this->get_type_id());
 
                 this->list_factory_function(
                     pattern,
                     wrapper,
                     auxiliary(ti),
-                    call_conv<asCALL_CDECL_OBJLAST>
+                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
                 );
             }
             else
