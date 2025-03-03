@@ -278,7 +278,7 @@ class basic_initlist_gc_test : public ::testing::Test
 public:
     void SetUp() override
     {
-        if constexpr(UseGeneric)
+        if constexpr(!UseGeneric)
         {
             if(asbind20::has_max_portability())
                 GTEST_SKIP() << "max portability";
@@ -384,7 +384,7 @@ class basic_initlist_gc_test<asbind20::policies::apply_to<Size>, UseGeneric> : p
 public:
     void SetUp() override
     {
-        if constexpr(UseGeneric)
+        if constexpr(!UseGeneric)
         {
             if(asbind20::has_max_portability())
                 GTEST_SKIP() << "max portability";
