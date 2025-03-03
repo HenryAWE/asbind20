@@ -5668,8 +5668,176 @@ public:
             decl_list_factory(pattern).c_str(),
             ctor,
             call_conv<conv>,
-            aux
+            aux.to_address()
         );
+
+        return *this;
+    }
+
+    template <
+        auto ListFactory,
+        typename Auxiliary,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    requires(
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL ||
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
+    )
+    basic_ref_class& list_factory_function(
+        use_generic_t,
+        std::string_view pattern,
+        fp_wrapper_t<ListFactory>,
+        auxiliary_wrapper<Auxiliary> aux,
+        call_conv_t<CallConv>
+    )
+    {
+        AS_NAMESPACE_QUALIFIER asGENFUNC_t wrapper = nullptr;
+
+        using traits = function_traits<std::decay_t<decltype(ListFactory)>>;
+        if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL)
+        {
+            wrapper = +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+            {
+                Class* ptr = std::invoke(
+                    ListFactory,
+                    get_generic_auxiliary<Auxiliary>(gen),
+                    *(void**)gen->GetAddressOfArg(0)
+                );
+                gen->SetReturnAddress(ptr);
+            };
+        }
+        else if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
+        {
+            using first_arg_type = typename traits::first_arg_type;
+            wrapper = +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+            {
+                Class* ptr = std::invoke(
+                    ListFactory,
+                    get_generic_auxiliary<first_arg_type>(gen),
+                    *(void**)gen->GetAddressOfArg(0)
+                );
+                gen->SetReturnAddress(ptr);
+            };
+        }
+        else // CallConv == asCALL_CDECL_OBJLAST
+        {
+            using last_arg_type = typename traits::last_arg_type;
+            wrapper = +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+            {
+                Class* ptr = std::invoke(
+                    ListFactory,
+                    *(void**)gen->GetAddressOfArg(0),
+                    get_generic_auxiliary<last_arg_type>(gen)
+                );
+                gen->SetReturnAddress(ptr);
+            };
+        }
+
+        this->behaviour_impl(
+            AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY,
+            decl_list_factory(pattern).c_str(),
+            wrapper,
+            generic_call_conv,
+            aux.to_address()
+        );
+
+        return *this;
+    }
+
+    template <
+        auto ListFactory,
+        typename Auxiliary,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    requires(
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL ||
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
+    )
+    basic_ref_class& list_factory_function(
+        std::string_view pattern,
+        fp_wrapper_t<ListFactory>,
+        auxiliary_wrapper<Auxiliary> aux,
+        call_conv_t<CallConv>
+    )
+    {
+        if(ForceGeneric)
+        {
+            this->list_factory_function(
+                use_generic,
+                pattern,
+                fp<ListFactory>,
+                aux,
+                call_conv<CallConv>
+            );
+        }
+        else
+        {
+            this->list_factory_function(
+                pattern,
+                ListFactory,
+                aux,
+                call_conv<CallConv>
+            );
+        }
+
+        return *this;
+    }
+
+    template <
+        auto ListFactory,
+        typename Auxiliary>
+    basic_ref_class& list_factory_function(
+        use_generic_t,
+        std::string_view pattern,
+        fp_wrapper_t<ListFactory>,
+        auxiliary_wrapper<Auxiliary> aux
+    )
+    {
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
+            detail::deduce_beh_callconv_aux<AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY, Class, std::decay_t<decltype(ListFactory)>, Auxiliary>();
+
+        this->list_factory_function(
+            use_generic,
+            pattern,
+            fp<ListFactory>,
+            aux,
+            call_conv<conv>
+        );
+
+        return *this;
+    }
+
+    template <
+        auto ListFactory,
+        typename Auxiliary>
+    basic_ref_class& list_factory_function(
+        std::string_view pattern,
+        fp_wrapper_t<ListFactory>,
+        auxiliary_wrapper<Auxiliary> aux
+    )
+    {
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
+            detail::deduce_beh_callconv_aux<AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY, Class, std::decay_t<decltype(ListFactory)>, Auxiliary>();
+
+        if constexpr(ForceGeneric)
+        {
+            this->list_factory_function(
+                use_generic,
+                pattern,
+                fp<ListFactory>,
+                aux,
+                call_conv<conv>
+            );
+        }
+        else
+        {
+            this->list_factory_function(
+                pattern,
+                fp<ListFactory>,
+                aux,
+                call_conv<conv>
+            );
+        }
 
         return *this;
     }
