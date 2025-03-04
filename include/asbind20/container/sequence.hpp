@@ -1,7 +1,7 @@
 /**
  * @file sequence.hpp
  * @author HenryAWE
- * @brief Sequence containers wrapper for AngelScript
+ * @brief Sequence containers for AngelScript
  */
 
 #ifndef ASBIND20_CONTAINER_SEQUENCE_HPP
@@ -389,6 +389,13 @@ namespace detail
     {};
 } // namespace detail
 
+/**
+ * @brief Sequence container of script object
+ *
+ * @tparam Container Underlying supported standard sequence container.
+ *                   Currently available options are: `std::vector` and `std::deque`.
+ * @tparam Alloc Allocator that can be rebound to primitive and internal proxy types.
+ */
 template <template <typename...> typename Container, typename Alloc = as_allocator<void>>
 requires(requires() { typename sequence_container_traits<Container>::sequence_container_tag; })
 class sequence final : public container_base
@@ -534,6 +541,57 @@ private:
         {
             return size() == 0;
         }
+
+        class seq_interface_iter
+        {
+        public:
+            virtual ~seq_interface_iter() = default;
+
+            virtual void* object_ref() const = 0;
+
+            virtual void inc() = 0;
+            virtual void dec() = 0;
+
+            virtual bool equal_to(const seq_interface_iter& other) const noexcept = 0;
+
+            virtual bool is_sentinel() const noexcept
+            {
+                return false;
+            }
+
+            virtual void copy_to(void* mem) const = 0;
+        };
+
+        class seq_iter_sentinel : public seq_interface_iter
+        {
+        public:
+            void* object_ref() const override
+            {
+                return nullptr;
+            }
+
+            void inc() override {}
+
+            void dec() override {}
+
+            bool equal_to(const seq_interface_iter& other) const noexcept override
+            {
+                return dynamic_cast<const seq_iter_sentinel*>(&other) != nullptr;
+            }
+
+            bool is_sentinel() const noexcept override
+            {
+                return true;
+            }
+
+            void copy_to(void* mem) const override
+            {
+                new(mem) seq_iter_sentinel();
+            }
+        };
+
+        virtual void new_proxy_begin(void* mem) const = 0;
+        virtual void new_proxy_end(void* mem) const = 0;
     };
 
     template <int TypeId>
@@ -637,6 +695,82 @@ private:
             if(it == end(m_container.c))
                 return nullptr;
             return (void*)std::addressof(*it);
+        }
+
+        class seq_primitive_iter final : public seq_interface::seq_interface_iter
+        {
+        public:
+            using pointer = typename container_type::pointer;
+
+            seq_primitive_iter(pointer p) noexcept
+                : m_ptr(p) {}
+
+            void* object_ref() const override
+            {
+                return m_ptr;
+            }
+
+            void inc() override
+            {
+                ++m_ptr;
+            }
+
+            void dec() override
+            {
+                --m_ptr;
+            }
+
+            bool equal_to(const seq_interface::seq_interface_iter& other) const noexcept override
+            {
+                if(other.is_sentinel())
+                    return false;
+
+                assert(dynamic_cast<const seq_primitive_iter*>(&other));
+                const auto& same_t_other = static_cast<const seq_primitive_iter&>(other);
+                return m_ptr == same_t_other.m_ptr;
+            }
+
+            void copy_to(void* mem) const override
+            {
+                new(mem) seq_primitive_iter(m_ptr);
+            }
+
+        private:
+            pointer m_ptr = nullptr;
+        };
+
+        using iterator_proxy = seq_primitive_iter;
+
+        void new_proxy_begin(void* mem) const override
+        {
+            if constexpr(vector_bool_workaround)
+            {
+                new(mem) iterator_proxy(
+                    const_cast<std::uint8_t*>(std::to_address(m_container.c.begin()))
+                );
+            }
+            else
+            {
+                new(mem) iterator_proxy(
+                    const_cast<value_type*>(std::to_address(m_container.c.begin()))
+                );
+            }
+        }
+
+        void new_proxy_end(void* mem) const override
+        {
+            if constexpr(vector_bool_workaround)
+            {
+                new(mem) iterator_proxy(
+                    const_cast<std::uint8_t*>(std::to_address(m_container.c.end()))
+                );
+            }
+            else
+            {
+                new(mem) iterator_proxy(
+                    const_cast<value_type*>(std::to_address(m_container.c.end()))
+                );
+            }
         }
 
     private:
@@ -882,6 +1016,64 @@ private:
             return (void*)it->data_address();
         }
 
+        class seq_object_iter final : public seq_interface::seq_interface_iter
+        {
+        public:
+            seq_object_iter(value_type* p) noexcept
+                : m_ptr(p) {}
+
+            void* object_ref() const override
+            {
+                if(!m_ptr) [[unlikely]]
+                    return nullptr;
+                return m_ptr->object_ref();
+            }
+
+            void inc() override
+            {
+                ++m_ptr;
+            }
+
+            void dec() override
+            {
+                --m_ptr;
+            }
+
+            bool equal_to(const seq_interface::seq_interface_iter& other) const noexcept override
+            {
+                if(other.is_sentinel())
+                    return false;
+
+                assert(dynamic_cast<const seq_object_iter*>(&other));
+                const auto& same_t_other = static_cast<const seq_object_iter&>(other);
+                return m_ptr == same_t_other.m_ptr;
+            }
+
+            void copy_to(void* mem) const override
+            {
+                new(mem) seq_object_iter(m_ptr);
+            }
+
+        private:
+            value_type* m_ptr = nullptr;
+        };
+
+        using iterator_proxy = seq_object_iter;
+
+        void new_proxy_begin(void* mem) const override
+        {
+            new(mem) iterator_proxy(
+                const_cast<value_type*>(std::to_address(m_container.c.begin()))
+            );
+        }
+
+        void new_proxy_end(void* mem) const override
+        {
+            new(mem) iterator_proxy(
+                const_cast<value_type*>(std::to_address(m_container.c.end()))
+            );
+        }
+
     private:
         int m_type_id;
 
@@ -967,6 +1159,179 @@ case AS_NAMESPACE_QUALIFIER as_type_id:                               \
     const seq_interface& impl() const noexcept
     {
         return *reinterpret_cast<const seq_interface*>(m_data);
+    }
+
+    class iterator_base
+    {
+    protected:
+        static constexpr std::size_t iter_storage_size = std::max(
+            sizeof(typename seq_enum::iterator_proxy),
+            sizeof(typename seq_object<false>::iterator_proxy)
+        );
+
+        std::byte iter_data[iter_storage_size];
+
+        iterator_base() noexcept
+        {
+            new(iter_data) seq_interface::seq_iter_sentinel();
+        }
+
+        iterator_base(const iterator_base& other)
+        {
+            other.impl().copy_to(iter_data);
+        }
+
+        ~iterator_base()
+        {
+            using iter_t = seq_interface::seq_interface_iter;
+            impl().~iter_t();
+        }
+
+        iterator_base& operator=(const iterator_base& rhs)
+        {
+            if(this == &rhs) [[unlikely]]
+                return *this;
+
+            reset_to(
+                [&](void* mem)
+                {
+                    rhs.impl().copy_to(mem);
+                }
+            );
+            return *this;
+        }
+
+        bool operator==(const iterator_base& rhs) const
+        {
+            return impl().equal_to(rhs.impl());
+        }
+
+        template <typename Fn>
+        void reset_to(Fn&& f)
+        {
+            using iter_t = seq_interface::seq_interface_iter;
+            impl().~iter_t();
+            f(static_cast<void*>(iter_data));
+        }
+
+        seq_interface::seq_interface_iter& impl() noexcept
+        {
+            return *reinterpret_cast<seq_interface::seq_interface_iter*>(iter_data);
+        }
+
+        const seq_interface::seq_interface_iter& impl() const noexcept
+        {
+            return *reinterpret_cast<const seq_interface::seq_interface_iter*>(iter_data);
+        }
+
+        void inc()
+        {
+            impl().inc();
+        }
+
+        void dec()
+        {
+            impl().dec();
+        }
+
+        void* object_ref() const
+        {
+            return impl().object_ref();
+        }
+
+        bool is_sentinel() const noexcept
+        {
+            return impl().is_sentinel();
+        }
+    };
+
+public:
+    class const_iterator : private iterator_base
+    {
+        friend sequence;
+
+    public:
+        using iterator_tag = std::bidirectional_iterator_tag;
+
+        const_iterator() = default;
+        const_iterator(const const_iterator&) = default;
+
+        const_iterator& operator=(const const_iterator&) = default;
+
+        bool operator==(const const_iterator& rhs) const
+        {
+            return iterator_base::operator==(rhs);
+        }
+
+        const_iterator& operator++()
+        {
+            this->inc();
+            return *this;
+        }
+
+        const_iterator& operator--()
+        {
+            this->dec();
+            return *this;
+        }
+
+        const_iterator operator++(int)
+        {
+            auto tmp = *this;
+            ++*this;
+            return tmp;
+        }
+
+        const_iterator operator--(int)
+        {
+            auto tmp = *this;
+            --*this;
+            return tmp;
+        }
+
+        const void* operator*() const
+        {
+            return this->object_ref();
+        }
+
+        operator bool() const noexcept
+        {
+            return !this->is_sentinel();
+        }
+    };
+
+    const_iterator cbegin() const
+    {
+        const_iterator it;
+        it.reset_to(
+            [&](void* mem)
+            {
+                impl().new_proxy_begin(mem);
+            }
+        );
+        return it;
+    }
+
+    const_iterator cend() const
+    {
+        const_iterator it;
+        it.reset_to(
+            [&](void* mem)
+            {
+                impl().new_proxy_end(mem);
+            }
+        );
+        return it;
+    }
+
+    const_iterator begin() const
+    {
+        return cbegin();
+    }
+
+    const_iterator end() const
+    {
+        return cend();
     }
 };
 

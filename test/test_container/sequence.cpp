@@ -70,53 +70,53 @@ class seq_wrapper : public refcounting_base
 {
 public:
     seq_wrapper(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
-        : m_vec(ti->GetEngine(), ti->GetSubTypeId())
+        : c(ti->GetEngine(), ti->GetSubTypeId())
     {}
 
     seq_wrapper(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, asbind20::script_init_list_repeat ilist)
-        : m_vec(ti->GetEngine(), ti->GetSubTypeId(), ilist)
+        : c(ti->GetEngine(), ti->GetSubTypeId(), ilist)
     {}
 
     using size_type = AS_NAMESPACE_QUALIFIER asUINT;
 
     size_type size() const noexcept
     {
-        return static_cast<size_type>(m_vec.size());
+        return static_cast<size_type>(c.size());
     }
 
     void clear() noexcept
     {
-        m_vec.clear();
+        c.clear();
     }
 
     bool empty() const noexcept
     {
-        return m_vec.empty();
+        return c.empty();
     }
 
     void push_front(const void* ref)
     {
-        m_vec.push_front(ref);
+        c.push_front(ref);
     }
 
     void push_back(const void* ref)
     {
-        m_vec.push_back(ref);
+        c.push_back(ref);
     }
 
     void pop_front()
     {
-        m_vec.pop_front();
+        c.pop_front();
     }
 
     void pop_back()
     {
-        m_vec.pop_back();
+        c.pop_back();
     }
 
     void* opIndex(size_type idx)
     {
-        void* ref = m_vec.address_at(idx);
+        void* ref = c.address_at(idx);
         if(!ref)
             throw std::out_of_range("out of range");
         return ref;
@@ -125,21 +125,20 @@ public:
     void enum_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     {
         (void)engine;
-        assert(engine == m_vec.get_engine());
-        m_vec.enum_refs();
+        assert(engine == c.get_engine());
+        c.enum_refs();
     }
 
     void release_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     {
         (void)engine;
-        assert(engine == m_vec.get_engine());
-        m_vec.clear();
+        assert(engine == c.get_engine());
+        c.clear();
     }
 
     using container_type = asbind20::container::sequence<Sequence, Allocator>;
 
-private:
-    container_type m_vec;
+    container_type c;
 };
 
 template <template <typename...> typename Sequence, bool UseGeneric>
@@ -312,6 +311,39 @@ void check_sequence_wrapper(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     }
 }
 
+template <template <typename...> typename Container>
+void check_seq_iterator(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
+    auto* ti = engine->GetTypeInfoByDecl("sequence<int>");
+    ASSERT_NE(ti, nullptr);
+    auto* seq = (seq_wrapper<Container>*)engine->CreateScriptObject(ti);
+    ASSERT_NE(seq, nullptr);
+    EXPECT_EQ(seq->c.element_type_id(), AS_NAMESPACE_QUALIFIER asTYPEID_INT32);
+
+    auto push_back_int = [seq](int val)
+    {
+        seq->c.push_back(&val);
+    };
+
+    push_back_int(10);
+    push_back_int(13);
+
+    ASSERT_EQ(seq->size(), 2);
+    int buf[2]{};
+    std::transform(
+        std::as_const(seq->c).begin(),
+        std::as_const(seq->c).end(),
+        std::begin(buf),
+        [](const void* ref) -> int
+        {
+            return *static_cast<const int*>(ref);
+        }
+    );
+
+    EXPECT_EQ(buf[0], 10);
+    EXPECT_EQ(buf[1], 13);
+}
+
 void setup_seq_test_env(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, bool use_generic)
 {
     using namespace asbind20;
@@ -342,6 +374,8 @@ TEST(sequence, vector_native)
 
     test_container::register_seq_wrapper<std::vector, false>(engine);
     test_container::check_sequence_wrapper(engine);
+
+    test_container::check_seq_iterator<std::vector>(engine);
 }
 
 TEST(sequence, vector_generic)
@@ -355,6 +389,8 @@ TEST(sequence, vector_generic)
 
     test_container::register_seq_wrapper<std::vector, true>(engine);
     test_container::check_sequence_wrapper(engine);
+
+    test_container::check_seq_iterator<std::vector>(engine);
 }
 
 TEST(sequence, deque_native)
@@ -369,6 +405,8 @@ TEST(sequence, deque_native)
 
     test_container::register_seq_wrapper<std::deque, false>(engine);
     test_container::check_sequence_wrapper(engine);
+
+    test_container::check_seq_iterator<std::deque>(engine);
 }
 
 TEST(sequence, deque_generic)
@@ -382,6 +420,8 @@ TEST(sequence, deque_generic)
 
     test_container::register_seq_wrapper<std::deque, true>(engine);
     test_container::check_sequence_wrapper(engine);
+
+    test_container::check_seq_iterator<std::deque>(engine);
 }
 
 #endif
