@@ -2,6 +2,9 @@
  * @file sequence.hpp
  * @author HenryAWE
  * @brief Sequence containers for AngelScript
+ *
+ * @warning THIS MODULE IS CURRENTLY EXPERIMENTAL!
+ * Interfaces will change rapidly in future versions. Use it at your own risk.
  */
 
 #ifndef ASBIND20_CONTAINER_SEQUENCE_HPP
