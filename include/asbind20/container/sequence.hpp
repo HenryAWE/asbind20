@@ -729,8 +729,10 @@ private:
         public:
             using underlying_type = typename container_type::iterator;
 
-            seq_primitive_iter(underlying_type it) noexcept
-                : underlying(it) {}
+            template <typename... Args>
+            seq_primitive_iter(Args&&... args) noexcept
+                : underlying(std::forward<Args>(args)...)
+            {}
 
             void* object_ref() const override
             {
@@ -1085,13 +1087,13 @@ private:
         public:
             using underlying_type = typename container_type::iterator;
 
-            seq_object_iter(underlying_type it) noexcept
-                : underlying(it) {}
+            template <typename... Args>
+            seq_object_iter(Args&&... args) noexcept
+                : underlying(std::forward<Args>(args)...)
+            {}
 
             void* object_ref() const override
             {
-                if(underlying == underlying_type()) [[unlikely]]
-                    return nullptr;
                 return underlying->object_ref();
             }
 
@@ -1293,6 +1295,12 @@ case AS_NAMESPACE_QUALIFIER as_type_id:                               \
             new(iter_data) seq_interface::seq_iter_sentinel();
         }
 
+        template <typename Fn>
+        iterator_base(std::in_place_t, Fn&& fn)
+        {
+            fn(static_cast<void*>(iter_data));
+        }
+
         iterator_base(const iterator_base& other)
         {
             other.impl().copy_to(iter_data);
@@ -1374,6 +1382,11 @@ public:
     {
         friend sequence;
 
+        template <typename Fn>
+        const_iterator(std::in_place_t, Fn&& fn)
+            : iterator_base(std::in_place, std::forward<Fn>(fn))
+        {}
+
     public:
         using value_type = void;
         using difference_type = std::ptrdiff_t;
@@ -1430,22 +1443,20 @@ public:
 
     const_iterator cbegin() const
     {
-        const_iterator it;
-        it.reset_to(
+        return const_iterator(
+            std::in_place,
             [&](void* mem)
             { impl().new_proxy_begin(mem); }
         );
-        return it;
     }
 
     const_iterator cend() const
     {
-        const_iterator it;
-        it.reset_to(
+        return const_iterator(
+            std::in_place,
             [&](void* mem)
             { impl().new_proxy_end(mem); }
         );
-        return it;
     }
 
     const_iterator begin() const
@@ -1460,20 +1471,20 @@ public:
 
     const_iterator erase(const_iterator it)
     {
-        it.reset_to(
+        return const_iterator(
+            std::in_place,
             [&](void* mem)
             { impl().erase_iter(mem, it.impl()); }
         );
-        return it;
     }
 
     const_iterator insert(const_iterator it, const void* ref)
     {
-        it.reset_to(
+        return const_iterator(
+            std::in_place,
             [&](void* mem)
             { impl().insert_iter(mem, it.impl(), ref); }
         );
-        return it;
     }
 };
 
