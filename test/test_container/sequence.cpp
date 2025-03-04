@@ -342,6 +342,8 @@ void check_seq_iterator(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 
     EXPECT_EQ(buf[0], 10);
     EXPECT_EQ(buf[1], 13);
+
+    engine->ReleaseScriptObject(seq, ti);
 }
 
 void setup_seq_test_env(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, bool use_generic)
