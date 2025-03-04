@@ -471,6 +471,16 @@ public:
         impl().push_back(ref);
     }
 
+    void emplace_front()
+    {
+        impl().emplace_front();
+    }
+
+    void emplace_back()
+    {
+        impl().emplace_back();
+    }
+
     void pop_front()
     {
         impl().pop_front();
@@ -535,6 +545,9 @@ private:
         virtual void pop_back() = 0;
         virtual void pop_front() = 0;
 
+        virtual void emplace_front() = 0;
+        virtual void emplace_back() = 0;
+
         virtual void* address_at(size_type idx) const = 0;
 
         bool empty() const
@@ -592,6 +605,10 @@ private:
 
         virtual void new_proxy_begin(void* mem) const = 0;
         virtual void new_proxy_end(void* mem) const = 0;
+
+        virtual void erase_iter(void* new_pos_mem, const seq_interface_iter& it) = 0;
+
+        virtual void insert_iter(void* new_pos_mem, const seq_interface_iter& it, const void* ref) = 0;
     };
 
     template <int TypeId>
@@ -676,6 +693,16 @@ private:
             m_container.emplace_front(ref_to_elem_val(ref));
         }
 
+        void emplace_front() override
+        {
+            m_container.emplace_front();
+        }
+
+        void emplace_back() override
+        {
+            m_container.emplace_back();
+        }
+
         void pop_back() override
         {
             if(!this->empty())
@@ -700,24 +727,24 @@ private:
         class seq_primitive_iter final : public seq_interface::seq_interface_iter
         {
         public:
-            using pointer = typename container_type::pointer;
+            using underlying_type = typename container_type::iterator;
 
-            seq_primitive_iter(pointer p) noexcept
-                : m_ptr(p) {}
+            seq_primitive_iter(underlying_type it) noexcept
+                : underlying(it) {}
 
             void* object_ref() const override
             {
-                return m_ptr;
+                return std::to_address(underlying);
             }
 
             void inc() override
             {
-                ++m_ptr;
+                ++underlying;
             }
 
             void dec() override
             {
-                --m_ptr;
+                --underlying;
             }
 
             bool equal_to(const seq_interface::seq_interface_iter& other) const noexcept override
@@ -727,49 +754,64 @@ private:
 
                 assert(dynamic_cast<const seq_primitive_iter*>(&other));
                 const auto& same_t_other = static_cast<const seq_primitive_iter&>(other);
-                return m_ptr == same_t_other.m_ptr;
+                return underlying == same_t_other.underlying;
             }
 
             void copy_to(void* mem) const override
             {
-                new(mem) seq_primitive_iter(m_ptr);
+                new(mem) seq_primitive_iter(underlying);
             }
 
-        private:
-            pointer m_ptr = nullptr;
+            underlying_type underlying;
         };
 
         using iterator_proxy = seq_primitive_iter;
 
         void new_proxy_begin(void* mem) const override
         {
-            if constexpr(vector_bool_workaround)
-            {
-                new(mem) iterator_proxy(
-                    const_cast<std::uint8_t*>(std::to_address(m_container.c.begin()))
-                );
-            }
-            else
-            {
-                new(mem) iterator_proxy(
-                    const_cast<value_type*>(std::to_address(m_container.c.begin()))
-                );
-            }
+            new(mem) iterator_proxy(
+                const_cast<seq_primitive&>(*this).m_container.c.begin()
+            );
         }
 
         void new_proxy_end(void* mem) const override
         {
-            if constexpr(vector_bool_workaround)
+            new(mem) iterator_proxy(
+                const_cast<seq_primitive&>(*this).m_container.c.end()
+            );
+        }
+
+        void erase_iter(void* new_pos_mem, const seq_interface::seq_interface_iter& it) override
+        {
+            if(this->empty() || it.is_sentinel()) [[unlikely]]
             {
-                new(mem) iterator_proxy(
-                    const_cast<std::uint8_t*>(std::to_address(m_container.c.end()))
-                );
+                new_proxy_end(new_pos_mem);
+                return;
             }
+
+            assert(dynamic_cast<const iterator_proxy*>(&it));
+            auto& same_t_it = static_cast<const iterator_proxy&>(it);
+            new(new_pos_mem) iterator_proxy(
+                m_container.c.erase(same_t_it.underlying)
+            );
+        }
+
+        void insert_iter(void* new_pos_mem, const seq_interface::seq_interface_iter& it, const void* ref) override
+        {
+            auto do_insert = [&](typename iterator_proxy::underlying_type pos)
+            {
+                new(new_pos_mem) iterator_proxy(
+                    m_container.c.emplace(pos, ref_to_elem_val(ref))
+                );
+            };
+
+            if(it.is_sentinel() || this->empty())
+                do_insert(m_container.c.end());
             else
             {
-                new(mem) iterator_proxy(
-                    const_cast<value_type*>(std::to_address(m_container.c.end()))
-                );
+                assert(dynamic_cast<const iterator_proxy*>(&it));
+                auto& same_t_it = static_cast<const iterator_proxy&>(it);
+                do_insert(same_t_it.underlying);
             }
         }
 
@@ -791,6 +833,7 @@ private:
         }
     };
 
+    // enums are stored as 32-bit integer
     class seq_enum final : public seq_primitive<AS_NAMESPACE_QUALIFIER asTYPEID_INT32>
     {
         using my_base = seq_primitive<AS_NAMESPACE_QUALIFIER asTYPEID_INT32>;
@@ -816,6 +859,17 @@ private:
     {
     public:
         using value_type = typename container_base::proxy_type<IsHandle>;
+
+        // Implementation Details for Future Maintenance:
+        //
+        // The custom allocator (`object_allocator`) will emulate an intrusive container.
+        // It stores an `asITypeInfo*` as its member and will pass it to element for construction/copying/destruction if necessary.
+        //
+        // The move assignment of proxy type (aka the `value_type` member alias of `seq_object`) will actually SWAP the stored object with incoming proxy.
+        // This can make sure its stored object can be correctly released by the customized allocator.
+        // See the above code containing definition of proxy type for details.
+        //
+        // The reference counter of `asITypeInfo` will be increased in the constructor of `seq_object` and released in the destructor.
 
         template <typename T>
         class object_allocator :
@@ -1007,6 +1061,16 @@ private:
                 m_container.pop_front();
         }
 
+        void emplace_front() override
+        {
+            m_container.emplace_front();
+        }
+
+        void emplace_back() override
+        {
+            m_container.emplace_back();
+        }
+
         void* address_at(size_type idx) const final
         {
             auto it = m_container.iterator_at(idx);
@@ -1019,24 +1083,26 @@ private:
         class seq_object_iter final : public seq_interface::seq_interface_iter
         {
         public:
-            seq_object_iter(value_type* p) noexcept
-                : m_ptr(p) {}
+            using underlying_type = typename container_type::iterator;
+
+            seq_object_iter(underlying_type it) noexcept
+                : underlying(it) {}
 
             void* object_ref() const override
             {
-                if(!m_ptr) [[unlikely]]
+                if(underlying == underlying_type()) [[unlikely]]
                     return nullptr;
-                return m_ptr->object_ref();
+                return underlying->object_ref();
             }
 
             void inc() override
             {
-                ++m_ptr;
+                ++underlying;
             }
 
             void dec() override
             {
-                --m_ptr;
+                --underlying;
             }
 
             bool equal_to(const seq_interface::seq_interface_iter& other) const noexcept override
@@ -1046,16 +1112,15 @@ private:
 
                 assert(dynamic_cast<const seq_object_iter*>(&other));
                 const auto& same_t_other = static_cast<const seq_object_iter&>(other);
-                return m_ptr == same_t_other.m_ptr;
+                return underlying == same_t_other.underlying;
             }
 
             void copy_to(void* mem) const override
             {
-                new(mem) seq_object_iter(m_ptr);
+                new(mem) seq_object_iter(underlying);
             }
 
-        private:
-            value_type* m_ptr = nullptr;
+            underlying_type underlying = nullptr;
         };
 
         using iterator_proxy = seq_object_iter;
@@ -1063,16 +1128,65 @@ private:
         void new_proxy_begin(void* mem) const override
         {
             new(mem) iterator_proxy(
-                const_cast<value_type*>(std::to_address(m_container.c.begin()))
+                const_cast<seq_object&>(*this).m_container.c.begin()
             );
         }
 
         void new_proxy_end(void* mem) const override
         {
             new(mem) iterator_proxy(
-                const_cast<value_type*>(std::to_address(m_container.c.end()))
+                const_cast<seq_object&>(*this).m_container.c.end()
             );
         }
+
+        void erase_iter(void* new_pos_mem, const seq_interface::seq_interface_iter& it) override
+        {
+            if(this->empty() || it.is_sentinel()) [[unlikely]]
+            {
+                new_proxy_end(new_pos_mem);
+                return;
+            }
+
+            assert(dynamic_cast<const iterator_proxy*>(&it));
+            auto& same_t_it = static_cast<const iterator_proxy&>(it);
+            new(new_pos_mem) iterator_proxy(
+                m_container.c.erase(same_t_it.underlying)
+            );
+        }
+
+        void insert_iter(void* new_pos_mem, const seq_interface::seq_interface_iter& it, const void* ref) override
+        {
+            auto do_insert = [&](typename iterator_proxy::underlying_type pos)
+            {
+                AS_NAMESPACE_QUALIFIER asITypeInfo* ti = this->element_type_info();
+                value_type tmp(ti, ref_to_ptr(ref));
+                try
+                {
+                    new(new_pos_mem) iterator_proxy(
+                        m_container.c.emplace(pos, std::move(tmp))
+                    );
+                }
+                catch(...)
+                {
+                    tmp.destroy(ti);
+                    tmp.~value_type();
+                    throw;
+                }
+
+                tmp.destroy(ti);
+                tmp.~value_type();
+            };
+
+            if(it.is_sentinel() || this->empty())
+                do_insert(m_container.c.end());
+            else
+            {
+                assert(dynamic_cast<const iterator_proxy*>(&it));
+                auto& same_t_it = static_cast<const iterator_proxy&>(it);
+                do_insert(same_t_it.underlying);
+            }
+        }
+
 
     private:
         int m_type_id;
@@ -1086,7 +1200,10 @@ private:
         static void* ref_to_ptr(const void* ref)
         {
             if constexpr(IsHandle)
+            {
+                assert(ref != nullptr);
                 return *static_cast<void* const*>(ref);
+            }
             else
                 return const_cast<void*>(ref);
         }
@@ -1246,12 +1363,23 @@ case AS_NAMESPACE_QUALIFIER as_type_id:                               \
     };
 
 public:
+    /**
+     * @brief Iterator
+     *
+     * @note DO NOT expose this to script directly!
+     *
+     * Many of the operations will invalidate the iterator. Using an invalid iterator will probably crash your application!
+     */
     class const_iterator : private iterator_base
     {
         friend sequence;
 
     public:
-        using iterator_tag = std::bidirectional_iterator_tag;
+        using value_type = void;
+        using difference_type = std::ptrdiff_t;
+        using iterator_category = std::bidirectional_iterator_tag;
+        using pointer = const void*;
+        using reference = const void*;
 
         const_iterator() = default;
         const_iterator(const const_iterator&) = default;
@@ -1305,9 +1433,7 @@ public:
         const_iterator it;
         it.reset_to(
             [&](void* mem)
-            {
-                impl().new_proxy_begin(mem);
-            }
+            { impl().new_proxy_begin(mem); }
         );
         return it;
     }
@@ -1317,9 +1443,7 @@ public:
         const_iterator it;
         it.reset_to(
             [&](void* mem)
-            {
-                impl().new_proxy_end(mem);
-            }
+            { impl().new_proxy_end(mem); }
         );
         return it;
     }
@@ -1332,6 +1456,24 @@ public:
     const_iterator end() const
     {
         return cend();
+    }
+
+    const_iterator erase(const_iterator it)
+    {
+        it.reset_to(
+            [&](void* mem)
+            { impl().erase_iter(mem, it.impl()); }
+        );
+        return it;
+    }
+
+    const_iterator insert(const_iterator it, const void* ref)
+    {
+        it.reset_to(
+            [&](void* mem)
+            { impl().insert_iter(mem, it.impl(), ref); }
+        );
+        return it;
     }
 };
 

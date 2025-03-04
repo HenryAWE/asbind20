@@ -104,6 +104,16 @@ public:
         c.push_back(ref);
     }
 
+    void emplace_front()
+    {
+        c.emplace_front();
+    }
+
+    void emplace_back()
+    {
+        c.emplace_back();
+    }
+
     void pop_front()
     {
         c.pop_front();
@@ -165,6 +175,8 @@ void register_seq_wrapper(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         .method("void push_back(const T&in)", fp<&seq_t::push_back>)
         .method("void pop_front()", fp<&seq_t::pop_front>)
         .method("void pop_back()", fp<&seq_t::pop_back>)
+        .method("void emplace_front()", fp<&seq_t::emplace_front>)
+        .method("void emplace_back()", fp<&seq_t::emplace_back>)
         .method("T& opIndex(uint)", fp<&seq_t::opIndex>)
         .method("const T& opIndex(uint) const", fp<&seq_t::opIndex>);
 }
@@ -230,6 +242,12 @@ bool test5()
     assert(v[0] == "world");
     assert(v[1] == "is");
     assert(v[2] == "beautiful");
+
+    v.emplace_back();
+    assert(v.size == 4);
+    assert(v[3] == "");
+    v.pop_back();
+
     return v.size == 3;
 }
 
@@ -312,7 +330,7 @@ void check_sequence_wrapper(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 }
 
 template <template <typename...> typename Container>
-void check_seq_iterator(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+void check_seq_iterator_int(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     auto* ti = engine->GetTypeInfoByDecl("sequence<int>");
     ASSERT_NE(ti, nullptr);
@@ -328,22 +346,195 @@ void check_seq_iterator(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     push_back_int(10);
     push_back_int(13);
 
-    ASSERT_EQ(seq->size(), 2);
-    int buf[2]{};
-    std::transform(
-        std::as_const(seq->c).begin(),
-        std::as_const(seq->c).end(),
-        std::begin(buf),
-        [](const void* ref) -> int
-        {
-            return *static_cast<const int*>(ref);
-        }
-    );
+    {
+        using iter_t = typename seq_wrapper<Container>::container_type::const_iterator;
+        static_assert(
+            std::convertible_to<typename std::iterator_traits<iter_t>::iterator_category, std::bidirectional_iterator_tag>
+        );
+    }
 
-    EXPECT_EQ(buf[0], 10);
-    EXPECT_EQ(buf[1], 13);
+    {
+        ASSERT_EQ(seq->size(), 2);
+        int buf[2]{};
+        std::transform(
+            std::as_const(seq->c).begin(),
+            std::as_const(seq->c).end(),
+            std::begin(buf),
+            [](const void* ref) -> int
+            {
+                return *static_cast<const int*>(ref);
+            }
+        );
+
+        EXPECT_EQ(buf[0], 10);
+        EXPECT_EQ(buf[1], 13);
+    }
+
+    {
+        auto it = seq->c.erase(seq->c.begin());
+        ASSERT_EQ(seq->size(), 1);
+        EXPECT_EQ(it, seq->c.begin());
+        EXPECT_EQ(*static_cast<const int*>(*it), 13);
+    }
+
+    {
+        int arg = 10;
+        auto it = seq->c.insert(seq->c.begin(), &arg);
+        EXPECT_EQ(it, seq->c.begin());
+
+        ASSERT_EQ(seq->size(), 2);
+        int buf[2]{};
+        std::transform(
+            std::as_const(seq->c).begin(),
+            std::as_const(seq->c).end(),
+            std::begin(buf),
+            [](const void* ref) -> int
+            {
+                return *static_cast<const int*>(ref);
+            }
+        );
+
+        EXPECT_EQ(buf[0], 10);
+        EXPECT_EQ(buf[1], 13);
+    }
+
+    {
+        seq->c.clear();
+        ASSERT_TRUE(seq->empty());
+
+        push_back_int(10);
+
+        int arg = 13;
+        auto it = seq->c.insert(seq->c.end(), &arg);
+        EXPECT_EQ(it, std::next(seq->c.begin()));
+        EXPECT_EQ(it, std::prev(seq->c.end()));
+
+        ASSERT_EQ(seq->size(), 2);
+        int buf[2]{};
+        std::transform(
+            std::as_const(seq->c).begin(),
+            std::as_const(seq->c).end(),
+            std::begin(buf),
+            [](const void* ref) -> int
+            {
+                return *static_cast<const int*>(ref);
+            }
+        );
+
+        EXPECT_EQ(buf[0], 10);
+        EXPECT_EQ(buf[1], 13);
+    }
 
     engine->ReleaseScriptObject(seq, ti);
+}
+
+template <template <typename...> typename Container>
+void check_seq_iterator_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
+    constexpr char group_name[] = "seq_iterator_test_cfg";
+
+    int counter = 0;
+
+    engine->BeginConfigGroup(group_name);
+    asbind20::global(engine)
+        .function(
+            "int seq_iterator_test_helper()",
+            [](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+            {
+                int result = asbind20::get_generic_auxiliary<int>(gen)++;
+                asbind20::set_generic_return<int>(gen, std::move(result));
+            },
+            asbind20::auxiliary(counter)
+        );
+    engine->EndConfigGroup();
+
+    auto* m = engine->GetModule(
+        "seq_iterator_test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
+    );
+    m->AddScriptSection(
+        "seq_iterator_test",
+        "class elem\n"
+        "{\n"
+        "    int data;\n"
+        "    elem() { data = seq_iterator_test_helper(); }\n"
+        "    int elem_val() const { return data; }\n"
+        "}"
+    );
+    ASSERT_GE(m->Build(), 0);
+    EXPECT_EQ(counter, 0);
+
+    auto* ti = m->GetTypeInfoByDecl("sequence<elem>");
+    ASSERT_NE(ti, nullptr);
+    auto* seq = (seq_wrapper<Container>*)engine->CreateScriptObject(ti);
+    ASSERT_NE(seq, nullptr);
+
+    SCOPED_TRACE("elem id: " + std::to_string(seq->c.element_type_id()));
+
+    for(int i = 0; i < 10; ++i)
+        seq->emplace_back();
+    EXPECT_EQ(counter, 10);
+
+    {
+        AS_NAMESPACE_QUALIFIER asITypeInfo* elem_ti = m->GetTypeInfoByDecl("elem");
+        ASSERT_NE(elem_ti, nullptr);
+        EXPECT_EQ(elem_ti->GetTypeId(), ti->GetSubTypeId());
+
+        auto* elem_val = elem_ti->GetMethodByDecl("int elem_val() const");
+        ASSERT_NE(elem_val, nullptr);
+
+        {
+            asbind20::request_context ctx(engine);
+            auto it = seq->c.begin();
+            for(int i = 0; i < 10; ++i)
+            {
+                auto result = asbind20::script_invoke<int>(ctx, *it, elem_val);
+                EXPECT_TRUE(asbind_test::result_has_value(result));
+                EXPECT_EQ(result.value(), i);
+
+                ++it;
+            }
+        }
+
+        {
+            auto* elem = (AS_NAMESPACE_QUALIFIER asIScriptObject*)engine->CreateScriptObject(elem_ti);
+            EXPECT_EQ(counter, 11);
+
+            const char* prop_name;
+            int off;
+            int prop_type_id;
+            elem_ti->GetProperty(
+                0, &prop_name, &prop_type_id, nullptr, nullptr, &off
+            );
+            EXPECT_STREQ(prop_name, "data");
+            ASSERT_EQ(prop_type_id, AS_NAMESPACE_QUALIFIER asTYPEID_INT32);
+            ASSERT_EQ(prop_type_id, elem->GetPropertyTypeId(0));
+
+            int* elem_data = (int*)elem->GetAddressOfProperty(0);
+            ASSERT_NE(elem_data, nullptr);
+            EXPECT_EQ(*elem_data, 10);
+            *elem_data = -1;
+
+            seq->c.insert(seq->c.begin(), elem);
+            elem->Release();
+
+            EXPECT_EQ(seq->size(), 11);
+            // The copy-constructor of script should not increase the counter
+            EXPECT_EQ(counter, 11);
+        }
+
+        // Check the previously inserted value
+        {
+            asbind20::request_context ctx(engine);
+            auto it = seq->c.begin();
+            auto result = asbind20::script_invoke<int>(ctx, *it, elem_val);
+            EXPECT_TRUE(asbind_test::result_has_value(result));
+            EXPECT_EQ(result.value(), -1);
+        }
+    }
+
+    engine->ReleaseScriptObject(seq, ti);
+
+    engine->RemoveConfigGroup(group_name);
 }
 
 void setup_seq_test_env(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, bool use_generic)
@@ -377,7 +568,8 @@ TEST(sequence, vector_native)
     test_container::register_seq_wrapper<std::vector, false>(engine);
     test_container::check_sequence_wrapper(engine);
 
-    test_container::check_seq_iterator<std::vector>(engine);
+    test_container::check_seq_iterator_int<std::vector>(engine);
+    test_container::check_seq_iterator_class<std::vector>(engine);
 }
 
 TEST(sequence, vector_generic)
@@ -392,7 +584,8 @@ TEST(sequence, vector_generic)
     test_container::register_seq_wrapper<std::vector, true>(engine);
     test_container::check_sequence_wrapper(engine);
 
-    test_container::check_seq_iterator<std::vector>(engine);
+    test_container::check_seq_iterator_int<std::vector>(engine);
+    test_container::check_seq_iterator_class<std::vector>(engine);
 }
 
 TEST(sequence, deque_native)
@@ -408,7 +601,8 @@ TEST(sequence, deque_native)
     test_container::register_seq_wrapper<std::deque, false>(engine);
     test_container::check_sequence_wrapper(engine);
 
-    test_container::check_seq_iterator<std::deque>(engine);
+    test_container::check_seq_iterator_int<std::deque>(engine);
+    test_container::check_seq_iterator_class<std::deque>(engine);
 }
 
 TEST(sequence, deque_generic)
@@ -423,7 +617,8 @@ TEST(sequence, deque_generic)
     test_container::register_seq_wrapper<std::deque, true>(engine);
     test_container::check_sequence_wrapper(engine);
 
-    test_container::check_seq_iterator<std::deque>(engine);
+    test_container::check_seq_iterator_int<std::deque>(engine);
+    test_container::check_seq_iterator_class<std::deque>(engine);
 }
 
 #endif
