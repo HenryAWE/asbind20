@@ -2208,15 +2208,15 @@ namespace meta
         template <typename T1, typename T2>
         consteval int select_compressed_pair_impl()
         {
-            if(!compressible<T1> && !compressible<T2>)
+            if constexpr(!compressible<T1> && !compressible<T2>)
             {
                 return 0; // Not compressible. Store them like the `std::pair`.
             }
-            else if(compressible<T1> && !compressible<T2>)
+            else if constexpr(compressible<T1> && !compressible<T2>)
             {
                 return 1; // First type is compressible.
             }
-            else if(!compressible<T1> && compressible<T2>)
+            else if constexpr(!compressible<T1> && compressible<T2>)
             {
                 return 2; // Second type is compressible.
             }
