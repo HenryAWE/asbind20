@@ -387,7 +387,7 @@ private:
             AS_NAMESPACE_QUALIFIER asITypeInfo* ti = this->elem_type_info();
             assert(ti != nullptr);
 
-            void* obj = *this->m_p_end;
+            void* obj = *(this->m_p_end - 1);
             if constexpr(IsHandle)
                 assert(obj != nullptr);
             if(obj)
@@ -496,13 +496,13 @@ public:
     auto get_type_info() const
         -> AS_NAMESPACE_QUALIFIER asITypeInfo*
     {
-        impl().get_type_info();
+        return impl().get_type_info();
     }
 
     auto element_type_info() const
         -> AS_NAMESPACE_QUALIFIER asITypeInfo*
     {
-        TypeInfoPolicy::get_type_info(get_type_info());
+        return TypeInfoPolicy::get_type_info(get_type_info());
     }
 
     int element_type_id() const
