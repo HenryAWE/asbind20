@@ -424,6 +424,8 @@ concept void_ptr = std::is_pointer_v<std::decay_t<T>> &&
 /**
  * @brief Dispatches pointer of primitive values to corresponding type. Similar to the `std::visit`.
  *
+ * @note This function disallows void type (`asTYPEID_VOID`)
+ *
  * @param Visitor Callable object that can accept all kind of pointer to primitive types
  * @param type_id AngelScript TypeId
  * @param args Pointers to primitive values
@@ -495,6 +497,42 @@ decltype(auto) visit_script_type(Visitor&& vis, int type_id, VoidPtrs... args)
             args...
         );
     }
+}
+
+/**
+ * @brief Convert primitive type ID to corresponding `std::in_place_type<T>`
+ *
+ * @tparam Visitor Callable that accepts the `std::in_place_type<T>`
+ */
+template <typename Visitor>
+decltype(auto) visit_primitive_type_id(Visitor&& vis, int type_id)
+{
+    assert(is_primitive_type(type_id));
+
+#define ASBIND20_UTILITY_VISIT_SCRIPT_TYPE_ID_CASE(as_type_id) \
+case as_type_id:                                               \
+    return std::invoke(                                        \
+        std::forward<Visitor>(vis),                            \
+        std::in_place_type<primitive_type_of_t<as_type_id>>    \
+    )
+
+    switch(type_id)
+    {
+        ASBIND20_UTILITY_VISIT_SCRIPT_TYPE_ID_CASE(asTYPEID_BOOL);
+        ASBIND20_UTILITY_VISIT_SCRIPT_TYPE_ID_CASE(asTYPEID_INT8);
+        ASBIND20_UTILITY_VISIT_SCRIPT_TYPE_ID_CASE(asTYPEID_INT16);
+    default: // enums
+        ASBIND20_UTILITY_VISIT_SCRIPT_TYPE_ID_CASE(asTYPEID_INT32);
+        ASBIND20_UTILITY_VISIT_SCRIPT_TYPE_ID_CASE(asTYPEID_INT64);
+        ASBIND20_UTILITY_VISIT_SCRIPT_TYPE_ID_CASE(asTYPEID_UINT8);
+        ASBIND20_UTILITY_VISIT_SCRIPT_TYPE_ID_CASE(asTYPEID_UINT16);
+        ASBIND20_UTILITY_VISIT_SCRIPT_TYPE_ID_CASE(asTYPEID_UINT32);
+        ASBIND20_UTILITY_VISIT_SCRIPT_TYPE_ID_CASE(asTYPEID_UINT64);
+        ASBIND20_UTILITY_VISIT_SCRIPT_TYPE_ID_CASE(asTYPEID_FLOAT);
+        ASBIND20_UTILITY_VISIT_SCRIPT_TYPE_ID_CASE(asTYPEID_DOUBLE);
+    }
+
+#undef ASBIND20_UTILITY_VISIT_SCRIPT_TYPE_ID_CASE
 }
 
 namespace detail
