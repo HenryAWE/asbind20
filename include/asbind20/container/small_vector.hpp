@@ -248,7 +248,7 @@ private:
             if(m_p_begin != get_static_storage())
             {
                 std::allocator_traits<allocator_type>::deallocate(
-                    m_alloc.second(), m_p_begin, current_size
+                    m_alloc.second(), m_p_begin, capacity()
                 );
             }
 
@@ -292,18 +292,47 @@ private:
                 return;
             }
 
-            // TODO: Optimize if current capacity is not enough
+            if(size() + 1 <= capacity())
+            {
+                pointer p_where = m_p_begin + where;
+                size_type elem_to_move = m_p_end - p_where;
+                std::memmove(
+                    p_where + 1,
+                    p_where,
+                    elem_to_move * sizeof(value_type)
+                );
+                ++m_p_end;
+                *p_where = *static_cast<const value_type*>(ref);
+            }
+            else
+            {
+                size_type new_cap = detail::accommodate(size() + 1, capacity());
+                size_type current_size = size();
+                pointer tmp = std::allocator_traits<allocator_type>::allocate(
+                    m_alloc.second(), new_cap
+                );
 
-            reserve(size() + 1);
-            pointer p_where = m_p_begin + where;
-            size_type elem_to_move = m_p_end - p_where;
-            std::memmove(
-                p_where + 1,
-                p_where,
-                elem_to_move * sizeof(value_type)
-            );
-            ++m_p_end;
-            *p_where = *static_cast<const value_type*>(ref);
+                std::memcpy(
+                    tmp, m_p_begin, where * sizeof(value_type)
+                );
+                *(tmp + where) = *static_cast<const value_type*>(ref);
+                std::memcpy(
+                    tmp + where + 1,
+                    m_p_begin + where,
+                    (current_size - where) * sizeof(value_type)
+                );
+
+                if(m_p_begin != get_static_storage())
+                {
+                    std::allocator_traits<allocator_type>::deallocate(
+                        m_alloc.second(), m_p_begin, capacity()
+                    );
+                }
+
+                m_p_begin = tmp;
+                m_p_end = m_p_begin + current_size + 1;
+                m_p_capacity = m_p_begin + new_cap;
+            }
         }
 
         void erase_n(size_type start, size_type n) override
@@ -368,6 +397,9 @@ private:
 
     public:
         using value_type = void*;
+        using pointer = void**;
+        using const_pointer = void* const*;
+        using allocator_type = my_base::allocator_type;
 
         using my_base::my_base;
 
@@ -446,18 +478,53 @@ private:
                 return;
             }
 
-            this->reserve(this->size() + 1);
-            void* obj = copy_obj(ref_to_obj(ref));
+            if(this->size() + 1 <= this->capacity())
+            {
+                void* obj = copy_obj(ref_to_obj(ref));
 
-            void** p_where = this->m_p_begin + where;
-            size_type elem_to_move = this->m_p_end - p_where;
-            std::memmove(
-                p_where + 1,
-                p_where,
-                elem_to_move * sizeof(void*)
-            );
-            ++this->m_p_end;
-            *p_where = obj;
+                pointer p_where = this->m_p_begin + where;
+                size_type elem_to_move = this->m_p_end - p_where;
+                std::memmove(
+                    p_where + 1,
+                    p_where,
+                    elem_to_move * sizeof(value_type)
+                );
+                ++this->m_p_end;
+                *p_where = obj;
+            }
+            else
+            {
+                void* obj = copy_obj(ref_to_obj(ref));
+                if(!obj) [[unlikely]] // exception in copy constructor
+                    return;
+
+                size_type new_cap = detail::accommodate(this->size() + 1, this->capacity());
+                size_type current_size = this->size();
+                pointer tmp = std::allocator_traits<allocator_type>::allocate(
+                    this->m_alloc.second(), new_cap
+                );
+
+                std::memcpy(
+                    tmp, this->m_p_begin, where * sizeof(value_type)
+                );
+                *(tmp + where) = obj;
+                std::memcpy(
+                    tmp + where + 1,
+                    this->m_p_begin + where,
+                    (current_size - where) * sizeof(value_type)
+                );
+
+                if(this->m_p_begin != this->get_static_storage())
+                {
+                    std::allocator_traits<allocator_type>::deallocate(
+                        this->m_alloc.second(), this->m_p_begin, this->capacity()
+                    );
+                }
+
+                this->m_p_begin = tmp;
+                this->m_p_end = this->m_p_begin + current_size + 1;
+                this->m_p_capacity = this->m_p_begin + new_cap;
+            }
         }
 
         void erase_n(size_type start, size_type n) override
@@ -506,14 +573,13 @@ private:
                 if(!obj)
                     return nullptr;
                 ti->GetEngine()->AddRefScriptObject(obj, ti);
+                return obj;
             }
             else
             {
                 assert(obj != nullptr);
-                ti->GetEngine()->CreateScriptObjectCopy(obj, ti);
+                return ti->GetEngine()->CreateScriptObjectCopy(obj, ti);
             }
-
-            return obj;
         }
 
         void release_obj_n(void** objs, size_type n) const noexcept

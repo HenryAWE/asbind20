@@ -35,6 +35,22 @@ TEST(small_vector, int)
     EXPECT_EQ(v.size(), 0);
     EXPECT_TRUE(v.empty());
 
+    for(int i = 0; i < 64; ++i)
+    {
+        insert_helper(v.begin(), i);
+        EXPECT_EQ(*(int*)v[0], i);
+        if(i != 0)
+            EXPECT_EQ(*(int*)v[1], i - 1);
+    }
+    ASSERT_EQ(v.size(), 64);
+    for(int i = 0; i < 64; ++i)
+    {
+        ASSERT_NE(v[i], nullptr) << "i = " << i;
+        EXPECT_EQ(*(int*)v[i], 64 - (i + 1)) << "i = " << i;
+    }
+    v.clear();
+    EXPECT_TRUE(v.empty());
+
     for(int i = 0; i < 128; ++i)
         push_back_helper(i);
     EXPECT_GE(v.capacity(), 128);
@@ -160,6 +176,56 @@ TEST(small_vector, script_object)
         v.erase(v.begin());
         EXPECT_EQ(v.size(), 1);
         expect_member_data_at(0, 5);
+    }
+
+    {
+        counter = 1013;
+        auto* special_foo = (AS_NAMESPACE_QUALIFIER asIScriptObject*)engine->CreateScriptObject(foo_ti);
+        ASSERT_NE(special_foo, nullptr);
+        EXPECT_EQ(*(int*)special_foo->GetAddressOfProperty(0), 1013);
+        EXPECT_EQ(counter, 1013 + 1);
+
+        counter = 0;
+        sv_type v(foo_ti);
+        for(int i = 0; i < 10; ++i)
+            v.emplace_back();
+        EXPECT_EQ(v.size(), 10);
+        EXPECT_EQ(counter, 10);
+        v.insert(v.begin(), special_foo);
+        special_foo->Release();
+        special_foo = nullptr;
+        EXPECT_EQ(v.size(), 11);
+
+        auto expect_member_data_at = [&v](std::size_t i, int expected)
+        {
+            SCOPED_TRACE(string_concat("v[i] is v[", std::to_string(i), ']'));
+
+            auto* obj = (AS_NAMESPACE_QUALIFIER asIScriptObject*)v[i];
+            ASSERT_NE(obj, nullptr);
+            int* data = (int*)obj->GetAddressOfProperty(0);
+            ASSERT_NE(data, nullptr);
+
+            EXPECT_EQ(*data, expected);
+        };
+
+        expect_member_data_at(0, 1013);
+        for(std::size_t i = 1; i < v.size(); ++i)
+            expect_member_data_at(i, i - 1);
+
+        counter = -1;
+        special_foo = (AS_NAMESPACE_QUALIFIER asIScriptObject*)engine->CreateScriptObject(foo_ti);
+        ASSERT_NE(special_foo, nullptr);
+        EXPECT_EQ(counter, -1 + 1);
+
+        v.insert(v.begin() + 1, special_foo);
+        special_foo->Release();
+        special_foo = nullptr;
+        EXPECT_EQ(v.size(), 12);
+
+        expect_member_data_at(0, 1013);
+        expect_member_data_at(1, -1);
+        for(std::size_t i = 2; i < v.size(); ++i)
+            expect_member_data_at(i, i - 2);
     }
 
     counter = 0;
