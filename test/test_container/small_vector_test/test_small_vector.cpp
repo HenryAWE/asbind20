@@ -40,7 +40,9 @@ TEST(small_vector, int)
         insert_helper(v.begin(), i);
         EXPECT_EQ(*(int*)v[0], i);
         if(i != 0)
+        {
             EXPECT_EQ(*(int*)v[1], i - 1);
+        }
     }
     ASSERT_EQ(v.size(), 64);
     for(int i = 0; i < 64; ++i)
@@ -210,7 +212,7 @@ TEST(small_vector, script_object)
 
         expect_member_data_at(0, 1013);
         for(std::size_t i = 1; i < v.size(); ++i)
-            expect_member_data_at(i, i - 1);
+            expect_member_data_at(i, static_cast<int>(i - 1));
 
         counter = -1;
         special_foo = (AS_NAMESPACE_QUALIFIER asIScriptObject*)engine->CreateScriptObject(foo_ti);
@@ -225,7 +227,7 @@ TEST(small_vector, script_object)
         expect_member_data_at(0, 1013);
         expect_member_data_at(1, -1);
         for(std::size_t i = 2; i < v.size(); ++i)
-            expect_member_data_at(i, i - 2);
+            expect_member_data_at(i, static_cast<int>(i - 2));
     }
 
     counter = 0;
@@ -234,6 +236,8 @@ TEST(small_vector, script_object)
         ASSERT_TRUE(is_objhandle(foo_handle_id));
 
         sv_type v(engine, foo_handle_id);
+        EXPECT_TRUE(is_objhandle(v.element_type_id()));
+
         for(int i = 0; i < 10; ++i)
             v.emplace_back();
         ASSERT_EQ(v.size(), 10);
@@ -244,5 +248,30 @@ TEST(small_vector, script_object)
             void* handle = *(void**)v[0];
             EXPECT_EQ(handle, nullptr);
         }
+
+        auto range_visitor = []<typename T>(T* start, T* stop)
+        {
+            if constexpr(std::same_as<T, void*>)
+            {
+                for(void** it = start; it != stop; ++it)
+                {
+                    void* handle = *it;
+                    EXPECT_EQ(handle, nullptr);
+                }
+            }
+            else
+                FAIL() << "unreachable";
+        };
+
+        v.visit(
+            range_visitor,
+            v.begin(),
+            v.end()
+        );
+        v.visit(
+            range_visitor,
+            0,
+            v.size()
+        );
     }
 }

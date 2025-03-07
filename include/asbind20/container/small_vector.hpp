@@ -96,7 +96,12 @@ private:
         virtual size_type capacity() const noexcept = 0;
         virtual size_type size() const noexcept = 0;
 
+        // Result will be address of referenced value for handle type
         virtual void* value_ref_at(size_type idx) const = 0;
+        // Raw address
+        virtual void* data_at(size_type idx) const = 0;
+
+        virtual void* data() const noexcept = 0;
 
         virtual void reserve(size_type new_cap) = 0;
         virtual void clear() noexcept = 0;
@@ -230,6 +235,16 @@ private:
             if(idx >= size())
                 return nullptr;
             return &m_p_begin[idx];
+        }
+
+        void* data_at(size_type idx) const noexcept final
+        {
+            return m_p_begin + idx;
+        }
+
+        void* data() const noexcept final
+        {
+            return m_p_begin;
         }
 
         void reserve(size_type new_cap) final
@@ -406,6 +421,14 @@ private:
         ~impl_object()
         {
             clear();
+        }
+
+        int elem_type_id() const override
+        {
+            int type_id = TypeInfoPolicy::get_type_id(this->get_type_info());
+            if constexpr(IsHandle)
+                type_id |= AS_NAMESPACE_QUALIFIER asTYPEID_OBJHANDLE;
+            return type_id;
         }
 
         void* value_ref_at(size_type idx) const override
@@ -725,6 +748,16 @@ public:
         return impl().empty();
     }
 
+    void* data() noexcept
+    {
+        return impl().data();
+    }
+
+    const void* data() const noexcept
+    {
+        return impl().data();
+    }
+
     void* operator[](size_type idx) noexcept
     {
         return impl().value_ref_at(idx);
@@ -796,13 +829,13 @@ public:
 
         const_iterator& operator++() noexcept
         {
-            this->advance(1);
+            this->inc();
             return *this;
         }
 
         const_iterator& operator--() noexcept
         {
-            this->advance(-1);
+            this->dec();
             return *this;
         }
 
@@ -936,6 +969,34 @@ public:
     {
         assert(this == where.get_container());
         this->erase(where.get_offset(), 1);
+    }
+
+    template <typename Visitor>
+    decltype(auto) visit(Visitor&& vis, size_type start, size_type count)
+    {
+        if(start >= size())
+            throw_out_of_range();
+        count = std::min(size() - count, count);
+        visit_script_type(
+            std::forward<Visitor>(vis),
+            element_type_id(),
+            impl().data_at(start),
+            impl().data_at(start + count)
+        );
+    }
+
+    template <typename Visitor>
+    decltype(auto) visit(Visitor&& vis, const_iterator start, const_iterator stop)
+    {
+        assert(this == start.get_container());
+        assert(this == stop.get_container());
+
+        visit_script_type(
+            std::forward<Visitor>(vis),
+            element_type_id(),
+            impl().data_at(start.get_offset()),
+            impl().data_at(stop.get_offset())
+        );
     }
 };
 } // namespace asbind20::container
