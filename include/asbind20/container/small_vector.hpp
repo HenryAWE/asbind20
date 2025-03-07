@@ -11,6 +11,7 @@
 
 #include <cstddef>
 #include <cstring>
+#include <stdexcept>
 #include "../utility.hpp"
 #include "helper.hpp"
 
@@ -27,6 +28,16 @@ namespace detail
 
         return new_cap;
     }
+
+    class small_vector_impl
+    {
+    protected:
+        [[noreturn]]
+        static void throw_out_of_range()
+        {
+            throw std::out_of_range("small vector out of range");
+        }
+    };
 } // namespace detail
 
 template <
@@ -34,7 +45,7 @@ template <
     std::size_t StaticCapacityBytes = 4 * sizeof(void*),
     typename Allocator = as_allocator<void>>
 requires(StaticCapacityBytes > 0)
-class small_vector
+class small_vector : detail::small_vector_impl
 {
 public:
     static_assert(
@@ -105,7 +116,12 @@ private:
         class iterator_interface
         {
         public:
-            ~iterator_interface() = default;
+            iterator_interface() noexcept = default;
+
+            iterator_interface(const iterator_interface&) noexcept = default;
+
+            iterator_interface(size_type off) noexcept
+                : m_off(off) {}
 
             void advance(difference_type diff) noexcept
             {
@@ -132,16 +148,13 @@ private:
                 return m_off;
             }
 
-            template <typename T>
-            requires(!std::is_void_v<T>)
-            T* ptr_to(T* base) const noexcept
-            {
-                return base + get_offset();
-            }
-
         private:
             size_type m_off = 0;
         };
+
+        virtual void insert_one(size_type where, const void* ref) = 0;
+
+        virtual void erase_n(size_type start, size_type n) = 0;
 
     private:
         // Although having a type info pointer is useless for a primitive element type,
@@ -162,9 +175,9 @@ private:
         }
     };
 
-    // Storage for primitive and enum types
+    // Element storage
     template <typename ValueType, typename Base>
-    class impl_primitive_storage : public Base
+    class impl_storage : public Base
     {
     public:
         using value_type = ValueType;
@@ -174,7 +187,7 @@ private:
         using allocator_type = typename std::allocator_traits<Allocator>::template rebind_alloc<value_type>;
 
         template <typename... Args>
-        impl_primitive_storage(Args&&... args)
+        impl_storage(Args&&... args)
             : Base(std::forward<Args>(args)...)
         {
             m_p_begin = get_static_storage();
@@ -182,7 +195,7 @@ private:
             m_p_capacity = m_p_begin + max_static_size();
         }
 
-        ~impl_primitive_storage()
+        ~impl_storage()
         {
             if(m_p_begin != get_static_storage())
             {
@@ -268,6 +281,56 @@ private:
             --m_p_end;
         }
 
+        void insert_one(size_type where, const void* ref) override
+        {
+            if(size_type current_size = size(); where > current_size)
+                throw_out_of_range();
+            else if(where == current_size)
+            {
+                reserve(size() + 1);
+                emplace_back_impl(*static_cast<const value_type*>(ref));
+                return;
+            }
+
+            // TODO: Optimize if current capacity is not enough
+
+            reserve(size() + 1);
+            pointer p_where = m_p_begin + where;
+            size_type elem_to_move = m_p_end - p_where;
+            std::memmove(
+                p_where + 1,
+                p_where,
+                elem_to_move * sizeof(value_type)
+            );
+            ++m_p_end;
+            *p_where = *static_cast<const value_type*>(ref);
+        }
+
+        void erase_n(size_type start, size_type n) override
+        {
+            if(start >= size())
+                throw_out_of_range();
+
+            n = std::min(size() - start, n);
+            if(n == 0) [[unlikely]]
+                return;
+            else if(n == size())
+            {
+                assert(start == 0);
+                clear();
+                return;
+            }
+
+            pointer p_start = m_p_begin + start;
+            size_type elem_to_move = size() - start - n;
+            std::memmove(
+                p_start,
+                p_start + n,
+                elem_to_move * sizeof(value_type)
+            );
+            m_p_end -= n;
+        }
+
     protected:
         pointer get_static_storage() noexcept
         {
@@ -294,14 +357,14 @@ private:
     };
 
     template <int TypeId>
-    using impl_primitive = impl_primitive_storage<primitive_type_of_t<TypeId>, impl_primitive_base<TypeId>>;
-    using impl_enum = impl_primitive_storage<int, impl_interface>;
+    using impl_primitive = impl_storage<primitive_type_of_t<TypeId>, impl_primitive_base<TypeId>>;
+    using impl_enum = impl_storage<int, impl_interface>;
 
     template <bool IsHandle>
     class impl_object final :
-        public impl_primitive_storage<void*, impl_interface>
+        public impl_storage<void*, impl_interface>
     {
-        using my_base = impl_primitive_storage<void*, impl_interface>;
+        using my_base = impl_storage<void*, impl_interface>;
 
     public:
         using value_type = void*;
@@ -325,39 +388,16 @@ private:
 
         void clear() noexcept final
         {
-            AS_NAMESPACE_QUALIFIER asITypeInfo* ti = this->elem_type_info();
-            assert(ti != nullptr);
-
-            for(value_type* it = this->m_p_begin; it != this->m_p_end; ++it)
-            {
-                void* obj = *it;
-
-                if(!obj)
-                    return;
-                ti->GetEngine()->ReleaseScriptObject(obj, ti);
-            }
-
-            my_base::clear();
+            release_obj_n(this->m_p_begin, this->size());
+            this->m_p_end = this->m_p_end;
         }
 
         void push_back(const void* ref) override
         {
             this->reserve(this->size() + 1);
-            AS_NAMESPACE_QUALIFIER asITypeInfo* ti = this->elem_type_info();
-            assert(ti != nullptr);
-            void* obj = ref_to_obj(ref);
 
-            if constexpr(IsHandle)
-            {
-                if(obj)
-                    ti->GetEngine()->AddRefScriptObject(obj, ti);
-                *this->m_p_end = obj;
-            }
-            else
-            {
-                assert(obj != nullptr);
-                *this->m_p_end = ti->GetEngine()->CreateScriptObjectCopy(obj, ti);
-            }
+            void* obj = copy_obj(ref_to_obj(ref));
+            *this->m_p_end = obj;
 
             ++this->m_p_end;
         }
@@ -396,6 +436,56 @@ private:
             --this->m_p_end;
         }
 
+        void insert_one(size_type where, const void* ref) override
+        {
+            if(size_type current_size = this->size(); where > current_size)
+                throw_out_of_range();
+            else if(where == current_size)
+            {
+                this->impl_object::push_back(ref);
+                return;
+            }
+
+            this->reserve(this->size() + 1);
+            void* obj = copy_obj(ref_to_obj(ref));
+
+            void** p_where = this->m_p_begin + where;
+            size_type elem_to_move = this->m_p_end - p_where;
+            std::memmove(
+                p_where + 1,
+                p_where,
+                elem_to_move * sizeof(void*)
+            );
+            ++this->m_p_end;
+            *p_where = obj;
+        }
+
+        void erase_n(size_type start, size_type n) override
+        {
+            if(start >= this->size()) [[unlikely]]
+                throw_out_of_range();
+
+            n = std::min(this->size() - start, n);
+            if(n == 0) [[unlikely]]
+                return;
+            else if(n == this->size())
+            {
+                assert(start == 0);
+                clear();
+                return;
+            }
+
+            void** p_start = this->m_p_begin + start;
+            release_obj_n(p_start, n);
+            size_type elem_to_move = this->size() - start - n;
+            std::memmove(
+                p_start,
+                p_start + n,
+                elem_to_move * sizeof(void*)
+            );
+            this->m_p_end -= n;
+        }
+
     private:
         static void* ref_to_obj(const void* ref) noexcept
         {
@@ -403,6 +493,40 @@ private:
                 return *static_cast<void* const*>(ref);
             else
                 return const_cast<void*>(ref);
+        }
+
+        // NOTE: Call ref_to_obj to convert the pointer at first!
+        void* copy_obj(void* obj) const
+        {
+            AS_NAMESPACE_QUALIFIER asITypeInfo* ti = this->elem_type_info();
+            assert(ti != nullptr);
+
+            if constexpr(IsHandle)
+            {
+                if(!obj)
+                    return nullptr;
+                ti->GetEngine()->AddRefScriptObject(obj, ti);
+            }
+            else
+            {
+                assert(obj != nullptr);
+                ti->GetEngine()->CreateScriptObjectCopy(obj, ti);
+            }
+
+            return obj;
+        }
+
+        void release_obj_n(void** objs, size_type n) const noexcept
+        {
+            AS_NAMESPACE_QUALIFIER asITypeInfo* ti = this->elem_type_info();
+            AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = ti->GetEngine();
+            for(size_type i = 0; i < n; ++i)
+            {
+                void* obj = objs[i];
+                if(!obj)
+                    continue;
+                engine->ReleaseScriptObject(obj, ti);
+            }
         }
     };
 
@@ -558,6 +682,194 @@ public:
     void pop_back() noexcept
     {
         return impl().pop_back();
+    }
+
+    class iterator;
+
+    class const_iterator : private impl_interface::iterator_interface
+    {
+        friend iterator;
+        friend small_vector;
+
+    public:
+        using value_type = const void*;
+        using iterator_category = std::random_access_iterator_tag;
+        using size_type = std::size_t;
+        using difference_type = std::ptrdiff_t;
+        using pointer = const void*;
+        using reference = const void*;
+        using const_reference = const void*;
+
+        const_iterator() noexcept = default;
+
+        const_iterator(const const_iterator&) noexcept = default;
+
+    private:
+        const_iterator(const small_vector* p_vec, size_type off) noexcept
+            : impl_interface::iterator_interface(off), m_p_vec(p_vec) {}
+
+    public:
+        reference operator*() const noexcept
+        {
+            if(!m_p_vec) [[unlikely]]
+                return nullptr;
+            return (*m_p_vec)[this->get_offset()];
+        }
+
+        bool operator==(const const_iterator& rhs) const noexcept
+        {
+            assert(this->get_container() == rhs.get_container());
+            return this->get_offset() == rhs.get_offset();
+        }
+
+        std::strong_ordering operator<=>(const const_iterator& rhs) const noexcept
+        {
+            assert(this->get_container() == rhs.get_container());
+            return this->get_offset() <=> rhs.get_offset();
+        }
+
+        const_iterator& operator++() noexcept
+        {
+            this->advance(1);
+            return *this;
+        }
+
+        const_iterator& operator--() noexcept
+        {
+            this->advance(-1);
+            return *this;
+        }
+
+        const_iterator& operator++(int) noexcept
+        {
+            const_iterator tmp(*this);
+            ++*this;
+            return tmp;
+        }
+
+        const_iterator& operator--(int) noexcept
+        {
+            const_iterator tmp(*this);
+            --*this;
+            return tmp;
+        }
+
+        const_iterator& operator+=(difference_type diff) noexcept
+        {
+            this->advance(diff);
+            return *this;
+        }
+
+        const_iterator& operator-=(difference_type diff) noexcept
+        {
+            this->advance(-diff);
+            return *this;
+        }
+
+        friend const_iterator operator+(const_iterator lhs, const_iterator rhs) noexcept
+        {
+            return lhs += rhs;
+        }
+
+        friend const_iterator operator+(const_iterator lhs, difference_type rhs) noexcept
+        {
+            return lhs += rhs;
+        }
+
+        friend const_iterator operator+(difference_type lhs, const_iterator rhs) noexcept
+        {
+            return rhs += lhs;
+        }
+
+        friend difference_type operator-(const_iterator lhs, const_iterator rhs) noexcept
+        {
+            assert(lhs.get_container() == rhs.get_container());
+            return static_cast<difference_type>(lhs.get_offset()) -
+                   static_cast<difference_type>(rhs.get_offset());
+        }
+
+        friend const_iterator operator-(const_iterator lhs, difference_type rhs) noexcept
+        {
+            return lhs -= rhs;
+        }
+
+        [[nodiscard]]
+        reference operator[](difference_type off) const noexcept
+        {
+            const_iterator tmp = *this + off;
+            return *tmp;
+        }
+
+        [[nodiscard]]
+        const small_vector* get_container() const noexcept
+        {
+            return m_p_vec;
+        }
+
+        explicit operator bool() const noexcept
+        {
+            return m_p_vec != nullptr;
+        }
+
+    private:
+        const small_vector* m_p_vec = nullptr;
+    };
+
+    const_iterator cbegin() const noexcept
+    {
+        return const_iterator(this, 0);
+    }
+
+    const_iterator cend() const noexcept
+    {
+        return const_iterator(this, size());
+    }
+
+    const_iterator begin() const noexcept
+    {
+        return cbegin();
+    }
+
+    const_iterator end() const noexcept
+    {
+        return cend();
+    }
+
+    void insert(size_type where, const void* ref)
+    {
+        impl().insert_one(where, ref);
+    }
+
+    void insert(const_iterator where, const void* ref)
+    {
+        assert(this == where.get_container());
+        this->insert(where.get_offset(), ref);
+    }
+
+    void erase(size_type where, size_type count)
+    {
+        impl().erase_n(where, count);
+    }
+
+    void erase(size_type where)
+    {
+        this->erase(where, 1);
+    }
+
+    void erase(const_iterator start, const_iterator stop)
+    {
+        assert(this == start.get_container());
+        assert(this == stop.get_container());
+        difference_type diff = stop - start;
+        if(diff < 0) [[unlikely]]
+            return;
+        this->erase(start.get_offset(), static_cast<size_type>(diff));
+    }
+
+    void erase(const_iterator where)
+    {
+        assert(this == where.get_container());
+        this->erase(where.get_offset(), 1);
     }
 };
 } // namespace asbind20::container

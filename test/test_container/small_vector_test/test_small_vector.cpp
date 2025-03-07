@@ -21,6 +21,10 @@ TEST(small_vector, int)
     {
         v.push_back(&val);
     };
+    auto insert_helper = [&v](auto where, int val)
+    {
+        v.insert(std::move(where), &val);
+    };
 
     push_back_helper(1013);
     EXPECT_GE(v.capacity(), v.static_capacity());
@@ -42,6 +46,12 @@ TEST(small_vector, int)
     v.clear();
     EXPECT_TRUE(v.empty());
     EXPECT_GE(v.capacity(), 128);
+
+    insert_helper(0, 13);
+    insert_helper(v.begin(), 10);
+    EXPECT_EQ(v.size(), 2);
+    EXPECT_EQ(*(int*)v[0], 10);
+    EXPECT_EQ(*(int*)v[1], 13);
 }
 
 TEST(small_vector, script_object)
@@ -93,17 +103,63 @@ TEST(small_vector, script_object)
         ASSERT_EQ(v.size(), 10);
         EXPECT_EQ(counter, 10);
 
-        for(std::size_t i = 0; i < v.size(); ++i)
+        const auto& cv = std::as_const(v);
+        for(auto it = cv.begin(); it != cv.end(); ++it)
         {
-            auto* obj = (AS_NAMESPACE_QUALIFIER asIScriptObject*)v[i];
+            static_assert(
+                std::convertible_to<
+                    std::iterator_traits<decltype(it)>::iterator_category,
+                    std::random_access_iterator_tag>
+            );
+
+            auto* obj = (AS_NAMESPACE_QUALIFIER asIScriptObject*)*it;
+            ASSERT_NE(obj, nullptr);
             int* data = (int*)obj->GetAddressOfProperty(0);
 
             ASSERT_NE(data, nullptr);
-            EXPECT_EQ(*data, i);
+            EXPECT_EQ(*data, it - cv.begin());
         }
 
         v.pop_back();
         EXPECT_EQ(v.size(), 9);
+
+        auto expect_member_data_at = [&v](std::size_t i, int expected)
+        {
+            SCOPED_TRACE(string_concat("v[i] is v[", std::to_string(i), ']'));
+
+            auto* obj = (AS_NAMESPACE_QUALIFIER asIScriptObject*)v[i];
+            ASSERT_NE(obj, nullptr);
+            int* data = (int*)obj->GetAddressOfProperty(0);
+            ASSERT_NE(data, nullptr);
+
+            EXPECT_EQ(*data, expected);
+        };
+
+        // Erase [1, 4)
+        v.erase(1, 3);
+        EXPECT_EQ(v.size(), 6);
+        EXPECT_EQ(std::distance(v.begin(), v.end()), 6);
+        expect_member_data_at(0, 0);
+        expect_member_data_at(1, 4);
+        expect_member_data_at(2, 5);
+
+        v.erase(0);
+        EXPECT_EQ(v.size(), 5);
+        expect_member_data_at(0, 4);
+        expect_member_data_at(1, 5);
+
+        // stop > start: should have no effect
+        v.erase(v.begin() + 2, v.begin() + 1);
+        EXPECT_EQ(v.size(), 5);
+
+        v.erase(v.begin() + 2, v.end());
+        EXPECT_EQ(v.size(), 2);
+        expect_member_data_at(0, 4);
+        expect_member_data_at(1, 5);
+
+        v.erase(v.begin());
+        EXPECT_EQ(v.size(), 1);
+        expect_member_data_at(0, 5);
     }
 
     counter = 0;
