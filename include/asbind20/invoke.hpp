@@ -665,7 +665,7 @@ script_invoke_result<R> script_invoke(
 class script_function_base
 {
 public:
-    using handle_type = asIScriptFunction*;
+    using handle_type = AS_NAMESPACE_QUALIFIER asIScriptFunction*;
 
     script_function_base() noexcept
         : m_fp(nullptr) {}
@@ -724,26 +724,22 @@ public:
         return target();
     }
 
-    int reset(std::nullptr_t = nullptr) noexcept
+    void reset(std::nullptr_t = nullptr) noexcept
     {
-        int prev_refcount = 0;
         if(m_fp)
         {
-            prev_refcount = m_fp->Release();
+            m_fp->Release();
             m_fp = nullptr;
         }
-
-        return prev_refcount;
     }
 
-    int reset(handle_type fp)
+    void reset(handle_type fp)
     {
-        int prev_refcount = reset(nullptr);
+        if(m_fp)
+            m_fp->Release();
         m_fp = fp;
         if(m_fp)
             m_fp->AddRef();
-
-        return prev_refcount;
     }
 
     void swap(script_function_base& other) noexcept
@@ -862,7 +858,7 @@ inline script_object instantiate_class(
 
     AS_NAMESPACE_QUALIFIER asIScriptFunction* factory = nullptr;
     if(AS_NAMESPACE_QUALIFIER asQWORD flags = class_info->GetFlags();
-       flags & (AS_NAMESPACE_QUALIFIER asOBJ_REF))
+       flags & (AS_NAMESPACE_QUALIFIER asOBJ_SCRIPT_OBJECT))
     {
         factory = get_default_factory(class_info);
     }

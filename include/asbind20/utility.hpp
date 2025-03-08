@@ -927,7 +927,7 @@ public:
 
     ~script_object()
     {
-        reset(nullptr);
+        reset();
     }
 
     handle_type get() const noexcept
@@ -952,6 +952,7 @@ public:
      *
      * @return Previously stored object
      */
+    [[nodiscard]]
     handle_type release() noexcept
     {
         return std::exchange(m_obj, nullptr);
@@ -959,43 +960,32 @@ public:
 
     /**
      * @brief Reset object the null pointer
-     *
-     * @return int Reference count after releasing the object
      */
-    int reset(std::nullptr_t = nullptr) noexcept
+    void reset(std::nullptr_t = nullptr) noexcept
     {
-        int prev_refcount = 0;
         if(m_obj)
         {
-            prev_refcount = m_obj->Release();
+            m_obj->Release();
             m_obj = nullptr;
         }
-
-        return prev_refcount;
     }
 
     /**
      * @brief Reset object
      *
      * @param obj New object to store
-     *
-     * @return Reference count after releasing the object
      */
-    int reset(handle_type obj)
+    void reset(handle_type obj)
     {
-        int prev_refcount = reset(nullptr);
-
+        if(m_obj)
+            m_obj->Release();
+        m_obj = obj;
         if(obj)
-        {
             obj->AddRef();
-            m_obj = obj;
-        }
-
-        return prev_refcount;
     }
 
 private:
-    asIScriptObject* m_obj = nullptr;
+    handle_type m_obj = nullptr;
 };
 
 /**
