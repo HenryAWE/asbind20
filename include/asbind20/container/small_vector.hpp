@@ -60,6 +60,13 @@ public:
     using const_pointer = const void*;
 
 private:
+#if defined(__GNUC__)
+#    pragma GCC diagnostic push
+#    if __GNUC__ >= 14
+#        pragma GCC diagnostic ignored "-Warray-bounds="
+#    endif
+#endif
+
     class impl_interface
     {
     public:
@@ -588,6 +595,10 @@ private:
             }
         }
     };
+
+#if defined(__GNUC__)
+#    pragma GCC diagnostic pop
+#endif
 
     static constexpr std::size_t impl_storage_size =
         std::max(sizeof(impl_enum), sizeof(impl_object<false>));
