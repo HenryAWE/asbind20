@@ -170,7 +170,7 @@ factory of reference type returns a pointer to an allocated and initialized obje
 
 Some tips for the factory of reference type:
 - For reference counted type, the reference counter should be set to `1` during initialization.
-- If your type involves GC, you need to notify the GC of a newly created object by `NotifyGarbageCollectorOfNewObject`, [as explained in AngelScript's official document](https://www.angelcode.com/angelscript/sdk/docs/manual/doc_gc_object.html#doc_reg_gcref_2).
+- If your type involves GC, you need to notify the GC of a newly created object by `NotifyGarbageCollectorOfNewObject`, [as explained in AngelScript's official document](https://www.angelcode.com/angelscript/sdk/docs/manual/doc_gc_object.html#doc_reg_gcref_2). The asbind20 also provides a policy called `policies::notify_gc` for (list) factory functions to automatically notify the GC after a new object created.
 
 ### Operators
 They are similar to binding operators for value type.  

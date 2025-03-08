@@ -200,7 +200,7 @@ asbind20::value_class<my_value_class>(...)
     )
     // For function with variable type argument
     // void*, int pair in C++ / ?& in AngelScript
-    // Use a helper (ver_type<>) to mark the position of those special arguments, i.e., the index of question mark (?).
+    // Use a helper (var_type<>) to mark the position of those special arguments, i.e., the index of question mark (?).
     .method(asbind20::use_generic, "void log(int level, const ?&in)", fp<&my_value_class::log>, var_type<1>);
 ```
 
@@ -284,7 +284,7 @@ Additionally, files under `io/` and `container/` are optional components. You ca
 #### About the `asbind20::ext`
 The extension part (under `ext/`) is not header-only. If you wish to use this part of library, you still need to build the asbind20 with extension (which is enabled by default).
 
-However, those extensions are mainly used for demonstrating & testing asbind20. **The extensions are not meant to be used in the final product**, which means they don't guarantee compatibility across versions. Please consider the official add-ons or implement by yourself. But these extensions might still be helpful for prototyping your application.
+However, those extensions are mainly used for demonstrating & testing asbind20. **The extensions are not meant to be used in the final product in current version**, which means they don't guarantee compatibility across versions. Please consider the official add-ons or implement by yourself. But these extensions might still be helpful for prototyping your application. The future version of asbind20 will provide some stable common tools in `asbind20::ext` such as script array/script string.
 
 ## B. Build and Install
 Build and install the library.
