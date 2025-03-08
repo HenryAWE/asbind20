@@ -25,8 +25,6 @@ class script_array
     template <bool UseGeneric>
     friend void detail::register_script_array_impl(asIScriptEngine* engine, bool as_default);
 
-    void notify_gc_for_this();
-
 public:
     using size_type = asUINT;
 

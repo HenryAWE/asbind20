@@ -24,12 +24,6 @@ static asUINT get_elem_size(asIScriptEngine* engine, int subtype_id)
         return engine->GetSizeOfPrimitiveType(subtype_id);
 }
 
-void script_array::notify_gc_for_this()
-{
-    assert(m_ti != nullptr);
-    if(m_ti->GetFlags() & asOBJ_GC)
-        m_ti->GetEngine()->NotifyGarbageCollectorOfNewObject(this, m_ti);
-}
 
 script_array::script_array(asITypeInfo* ti)
     : m_ti(ti), m_subtype_id(ti->GetSubTypeId())
@@ -40,8 +34,6 @@ script_array::script_array(asITypeInfo* ti)
     m_elem_size = get_elem_size(engine, m_subtype_id);
 
     cache_data();
-
-    notify_gc_for_this();
 }
 
 script_array::script_array(const script_array& other)
@@ -62,8 +54,6 @@ script_array::script_array(const script_array& other)
         );
         m_data.size = other.size();
     }
-
-    notify_gc_for_this();
 }
 
 script_array::script_array(asITypeInfo* ti, size_type n)
@@ -82,8 +72,6 @@ script_array::script_array(asITypeInfo* ti, size_type n)
         default_construct_n(m_data.ptr, n);
         m_data.size = n;
     }
-
-    notify_gc_for_this();
 }
 
 script_array::script_array(asITypeInfo* ti, size_type n, const void* value)
@@ -100,8 +88,6 @@ script_array::script_array(asITypeInfo* ti, size_type n, const void* value)
         value_construct_n(m_data.ptr, value, n);
         m_data.size = n;
     }
-
-    notify_gc_for_this();
 }
 
 script_array::script_array(asITypeInfo* ti, script_init_list_repeat list)
@@ -163,8 +149,6 @@ script_array::script_array(asITypeInfo* ti, script_init_list_repeat list)
 
         m_data.size = list.size();
     }
-
-    notify_gc_for_this();
 }
 
 script_array::~script_array()
@@ -1816,10 +1800,10 @@ namespace detail
         template_ref_class<script_array, UseGeneric> c(engine, "array<T>", asOBJ_GC);
         c
             .template_callback(fp<&array_template_callback>)
-            .default_factory()
-            .template factory<asUINT>("uint", use_explicit)
-            .template factory<asUINT, const void*>("uint, const T&in")
-            .template list_factory<void, policies::repeat_list_proxy>("repeat T")
+            .default_factory(use_policy<policies::notify_gc>)
+            .template factory<asUINT>("uint", use_explicit, use_policy<policies::notify_gc>)
+            .template factory<asUINT, const void*>("uint, const T&in", use_policy<policies::notify_gc>)
+            .template list_factory<void>("repeat T", use_policy<policies::repeat_list_proxy, policies::notify_gc>)
             .opAssign()
             .opEquals()
             .addref(fp<&script_array::addref>)
