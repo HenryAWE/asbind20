@@ -63,10 +63,10 @@ private:
     class impl_interface
     {
     public:
-        impl_interface(AS_NAMESPACE_QUALIFIER asITypeInfo* ti) noexcept
-            : m_ti(ti) {}
+        impl_interface(int type_id, AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+            : m_type_id(type_id), m_ti(ti) {}
 
-        virtual ~impl_interface() = default;
+        ~impl_interface() = default;
 
         auto get_engine() const
             -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
@@ -81,9 +81,9 @@ private:
             return m_ti;
         }
 
-        virtual int elem_type_id() const
+        int elem_type_id() const
         {
-            return TypeInfoPolicy::get_type_id(m_ti);
+            return m_type_id;
         }
 
         auto elem_type_info() const
@@ -91,29 +91,6 @@ private:
         {
             return TypeInfoPolicy::get_type_info(m_ti);
         }
-
-        virtual size_type static_capacity() const noexcept = 0;
-        virtual size_type capacity() const noexcept = 0;
-        virtual size_type size() const noexcept = 0;
-
-        // Result will be address of referenced value for handle type
-        virtual void* value_ref_at(size_type idx) const = 0;
-        // Raw address
-        virtual void* data_at(size_type idx) const = 0;
-
-        virtual void* data() const noexcept = 0;
-
-        virtual void reserve(size_type new_cap) = 0;
-        virtual void clear() noexcept = 0;
-
-        bool empty() const noexcept
-        {
-            return size() == 0;
-        }
-
-        virtual void push_back(const void* ref) = 0;
-        virtual void emplace_back() = 0;
-        virtual void pop_back() noexcept = 0;
 
         // The iterator interface only stores an unsigned offset value,
         // so an invalid iterator from script can be reported by host,
@@ -157,11 +134,12 @@ private:
             size_type m_off = 0;
         };
 
-        virtual void insert_one(size_type where, const void* ref) = 0;
-
-        virtual void erase_n(size_type start, size_type n) = 0;
-
     private:
+        // TODO: Optimize the memory layout if the element type is subtype.
+        // Note that GetTypeInfo APIs may ignore the handle bit, i.e. GetTypeInfoById(type_id)->GetTypeId() may not equal to type_id,
+        // so we need to store the type ID separately for typeinfo_identity.
+        // See: https://www.gamedev.net/forums/topic/718032-inconsistent-result-of-asiscriptmodule-gettypeinfobydecl-and-gettypeidbydecl/
+        int m_type_id;
         // Although having a type info pointer is useless for a primitive element type,
         // it can keep the interface consistent with other types.
         script_typeinfo m_ti;
@@ -173,7 +151,7 @@ private:
     public:
         using impl_interface::impl_interface;
 
-        int elem_type_id() const noexcept final
+        int elem_type_id() const noexcept
         {
             assert(impl_interface::elem_type_id() == TypeId);
             return TypeId;
@@ -210,44 +188,44 @@ private:
             }
         }
 
-        static consteval size_type max_static_size() noexcept
+        static consteval size_type max_static_size()
         {
             return StaticCapacityBytes / sizeof(value_type);
         }
 
-        size_type static_capacity() const noexcept final
+        size_type static_capacity() const
         {
             return max_static_size();
         }
 
-        size_type capacity() const noexcept final
+        size_type capacity() const
         {
             return m_p_capacity - m_p_begin;
         }
 
-        size_type size() const noexcept final
+        size_type size() const
         {
             return m_p_end - m_p_begin;
         }
 
-        void* value_ref_at(size_type idx) const override
+        void* value_ref_at(size_type idx) const
         {
             if(idx >= size())
                 return nullptr;
             return &m_p_begin[idx];
         }
 
-        void* data_at(size_type idx) const noexcept final
+        void* data_at(size_type idx) const noexcept
         {
             return m_p_begin + idx;
         }
 
-        void* data() const noexcept final
+        void* data() const noexcept
         {
             return m_p_begin;
         }
 
-        void reserve(size_type new_cap) final
+        void reserve(size_type new_cap)
         {
             if(new_cap <= capacity())
                 return;
@@ -272,31 +250,31 @@ private:
             m_p_capacity = m_p_begin + new_cap;
         }
 
-        void clear() noexcept override
+        void clear() noexcept
         {
             m_p_end = m_p_begin;
         }
 
-        void push_back(const void* ref) override
+        void push_back(const void* ref)
         {
             reserve(size() + 1);
             emplace_back_impl(*static_cast<const value_type*>(ref));
         }
 
-        void emplace_back() override
+        void emplace_back()
         {
             reserve(size() + 1);
             emplace_back_impl(value_type());
         }
 
-        void pop_back() noexcept override
+        void pop_back() noexcept
         {
-            if(this->empty())
+            if(this->size() == 0)
                 return;
             --m_p_end;
         }
 
-        void insert_one(size_type where, const void* ref) override
+        void insert_one(size_type where, const void* ref)
         {
             if(size_type current_size = size(); where > current_size)
                 throw_out_of_range();
@@ -350,7 +328,7 @@ private:
             }
         }
 
-        void erase_n(size_type start, size_type n) override
+        void erase_n(size_type start, size_type n)
         {
             if(start >= size())
                 throw_out_of_range();
@@ -405,7 +383,7 @@ private:
     using impl_enum = impl_storage<int, impl_interface>;
 
     template <bool IsHandle>
-    class impl_object final :
+    class impl_object :
         public impl_storage<void*, impl_interface>
     {
         using my_base = impl_storage<void*, impl_interface>;
@@ -423,15 +401,7 @@ private:
             clear();
         }
 
-        int elem_type_id() const override
-        {
-            int type_id = TypeInfoPolicy::get_type_id(this->get_type_info());
-            if constexpr(IsHandle)
-                type_id |= AS_NAMESPACE_QUALIFIER asTYPEID_OBJHANDLE;
-            return type_id;
-        }
-
-        void* value_ref_at(size_type idx) const override
+        void* value_ref_at(size_type idx) const
         {
             if(idx >= this->size())
                 return nullptr;
@@ -441,13 +411,13 @@ private:
                 return this->m_p_begin[idx];
         }
 
-        void clear() noexcept final
+        void clear() noexcept
         {
             release_obj_n(this->m_p_begin, this->size());
             this->m_p_end = this->m_p_end;
         }
 
-        void push_back(const void* ref) override
+        void push_back(const void* ref)
         {
             this->reserve(this->size() + 1);
 
@@ -457,7 +427,7 @@ private:
             ++this->m_p_end;
         }
 
-        void emplace_back() override
+        void emplace_back()
         {
             if constexpr(IsHandle)
             {
@@ -474,9 +444,9 @@ private:
             }
         }
 
-        void pop_back() noexcept override
+        void pop_back() noexcept
         {
-            if(this->empty())
+            if(this->size() == 0)
                 return;
 
             AS_NAMESPACE_QUALIFIER asITypeInfo* ti = this->elem_type_info();
@@ -491,7 +461,7 @@ private:
             --this->m_p_end;
         }
 
-        void insert_one(size_type where, const void* ref) override
+        void insert_one(size_type where, const void* ref)
         {
             if(size_type current_size = this->size(); where > current_size)
                 throw_out_of_range();
@@ -550,7 +520,7 @@ private:
             }
         }
 
-        void erase_n(size_type start, size_type n) override
+        void erase_n(size_type start, size_type n)
         {
             if(start >= this->size()) [[unlikely]]
                 throw_out_of_range();
@@ -634,6 +604,118 @@ private:
         return *reinterpret_cast<const impl_interface*>(m_impl_data);
     }
 
+    template <typename Visitor>
+    decltype(auto) visit_impl(Visitor&& vis)
+    {
+        int type_id = element_type_id();
+        auto& base = impl();
+
+        if(is_primitive_type(type_id))
+        {
+            assert(!is_void_type(type_id));
+
+            switch(type_id)
+            {
+#define ASBIND20_CONTAINER_SMALL_VECTOR_VISIT_CASE(as_type_id)                \
+case AS_NAMESPACE_QUALIFIER as_type_id:                                       \
+    return vis(                                                               \
+        static_cast<impl_primitive<AS_NAMESPACE_QUALIFIER as_type_id>&>(base) \
+    )
+
+                ASBIND20_CONTAINER_SMALL_VECTOR_VISIT_CASE(asTYPEID_BOOL);
+                ASBIND20_CONTAINER_SMALL_VECTOR_VISIT_CASE(asTYPEID_INT8);
+                ASBIND20_CONTAINER_SMALL_VECTOR_VISIT_CASE(asTYPEID_INT16);
+                ASBIND20_CONTAINER_SMALL_VECTOR_VISIT_CASE(asTYPEID_INT32);
+                ASBIND20_CONTAINER_SMALL_VECTOR_VISIT_CASE(asTYPEID_INT64);
+                ASBIND20_CONTAINER_SMALL_VECTOR_VISIT_CASE(asTYPEID_UINT8);
+                ASBIND20_CONTAINER_SMALL_VECTOR_VISIT_CASE(asTYPEID_UINT16);
+                ASBIND20_CONTAINER_SMALL_VECTOR_VISIT_CASE(asTYPEID_UINT32);
+                ASBIND20_CONTAINER_SMALL_VECTOR_VISIT_CASE(asTYPEID_UINT64);
+                ASBIND20_CONTAINER_SMALL_VECTOR_VISIT_CASE(asTYPEID_FLOAT);
+                ASBIND20_CONTAINER_SMALL_VECTOR_VISIT_CASE(asTYPEID_DOUBLE);
+
+#undef ASBIND20_CONTAINER_SMALL_VECTOR_VISIT_CASE
+
+            default:
+                assert(is_enum_type(type_id));
+                return vis(
+                    static_cast<impl_enum&>(base)
+                );
+            }
+        }
+        else
+        {
+            if(is_objhandle(type_id))
+            {
+                return vis(
+                    static_cast<impl_object<true>&>(base)
+                );
+            }
+            else
+            {
+                return vis(
+                    static_cast<impl_object<false>&>(base)
+                );
+            }
+        }
+    }
+
+    template <typename Visitor>
+    decltype(auto) visit_impl(Visitor&& vis) const
+    {
+        int type_id = element_type_id();
+        const auto& base = impl();
+
+        if(is_primitive_type(type_id))
+        {
+            assert(!is_void_type(type_id));
+
+            switch(type_id)
+            {
+#define ASBIND20_CONTAINER_SMALL_VECTOR_VISIT_CASE(as_type_id)                      \
+case AS_NAMESPACE_QUALIFIER as_type_id:                                             \
+    return vis(                                                                     \
+        static_cast<const impl_primitive<AS_NAMESPACE_QUALIFIER as_type_id>&>(base) \
+    )
+
+                ASBIND20_CONTAINER_SMALL_VECTOR_VISIT_CASE(asTYPEID_BOOL);
+                ASBIND20_CONTAINER_SMALL_VECTOR_VISIT_CASE(asTYPEID_INT8);
+                ASBIND20_CONTAINER_SMALL_VECTOR_VISIT_CASE(asTYPEID_INT16);
+                ASBIND20_CONTAINER_SMALL_VECTOR_VISIT_CASE(asTYPEID_INT32);
+                ASBIND20_CONTAINER_SMALL_VECTOR_VISIT_CASE(asTYPEID_INT64);
+                ASBIND20_CONTAINER_SMALL_VECTOR_VISIT_CASE(asTYPEID_UINT8);
+                ASBIND20_CONTAINER_SMALL_VECTOR_VISIT_CASE(asTYPEID_UINT16);
+                ASBIND20_CONTAINER_SMALL_VECTOR_VISIT_CASE(asTYPEID_UINT32);
+                ASBIND20_CONTAINER_SMALL_VECTOR_VISIT_CASE(asTYPEID_UINT64);
+                ASBIND20_CONTAINER_SMALL_VECTOR_VISIT_CASE(asTYPEID_FLOAT);
+                ASBIND20_CONTAINER_SMALL_VECTOR_VISIT_CASE(asTYPEID_DOUBLE);
+
+#undef ASBIND20_CONTAINER_SMALL_VECTOR_VISIT_CASE
+
+            default:
+                assert(is_enum_type(type_id));
+                return vis(
+                    static_cast<const impl_enum&>(base)
+                );
+            }
+        }
+        else
+        {
+            if(is_objhandle(type_id))
+            {
+                return vis(
+                    static_cast<const impl_object<true>&>(base)
+                );
+            }
+            else
+            {
+                return vis(
+                    static_cast<const impl_object<false>&>(base)
+                );
+            }
+        }
+    }
+
     template <typename... Args>
     void init_impl(int type_id, AS_NAMESPACE_QUALIFIER asITypeInfo* ti, Args&&... args)
     {
@@ -642,9 +724,9 @@ private:
         if(!is_primitive_type(type_id))
         {
             if(is_objhandle(type_id))
-                new(m_impl_data) impl_object<true>(ti, std::forward<Args>(args)...);
+                new(m_impl_data) impl_object<true>(type_id, ti, std::forward<Args>(args)...);
             else
-                new(m_impl_data) impl_object<false>(ti, std::forward<Args>(args)...);
+                new(m_impl_data) impl_object<false>(type_id, ti, std::forward<Args>(args)...);
             return;
         }
 
@@ -653,7 +735,7 @@ private:
 #define ASBIND20_SMALL_VECTOR_IMPL_CASE(as_type_id) \
 case AS_NAMESPACE_QUALIFIER as_type_id:             \
     new(m_impl_data) impl_primitive<as_type_id>(    \
-        ti, std::forward<Args>(args)...             \
+        type_id, ti, std::forward<Args>(args)...    \
     );                                              \
     break
 
@@ -671,7 +753,7 @@ case AS_NAMESPACE_QUALIFIER as_type_id:             \
 
         default:
             assert(is_enum_type(type_id));
-            new(m_impl_data) impl_enum(ti, std::forward<Args>(args)...);
+            new(m_impl_data) impl_enum(type_id, ti, std::forward<Args>(args)...);
             break;
 
 #undef ASBIND20_SMALL_VECTOR_IMPL_CASE
@@ -683,7 +765,12 @@ public:
 
     ~small_vector()
     {
-        impl().~impl_interface();
+        visit_impl(
+            []<typename ImplType>(ImplType& impl)
+            {
+                impl.~ImplType();
+            }
+        );
     }
 
     explicit small_vector(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
@@ -725,62 +812,95 @@ public:
 
     size_type static_capacity() const noexcept
     {
-        return impl().static_capacity();
+        return visit_impl(
+            [](auto& impl)
+            { return impl.static_capacity(); }
+        );
     }
 
     size_type capacity() const noexcept
     {
-        return impl().capacity();
+        return visit_impl(
+            [](auto& impl)
+            { return impl.capacity(); }
+        );
     }
 
     size_type size() const noexcept
     {
-        return impl().size();
+        return visit_impl(
+            [](auto& impl)
+            { return impl.size(); }
+        );
     }
 
     void clear() noexcept
     {
-        impl().clear();
+        return visit_impl(
+            [](auto& impl)
+            { return impl.clear(); }
+        );
     }
 
     bool empty() const noexcept
     {
-        return impl().empty();
+        return size() == 0;
     }
 
     void* data() noexcept
     {
-        return impl().data();
+        return visit_impl(
+            [](auto& impl)
+            { return impl.data(); }
+        );
     }
 
     const void* data() const noexcept
     {
-        return impl().data();
+        return visit_impl(
+            [](auto& impl)
+            { return impl.data(); }
+        );
     }
 
     void* operator[](size_type idx) noexcept
     {
-        return impl().value_ref_at(idx);
+        return visit_impl(
+            [idx](auto& impl)
+            { return impl.value_ref_at(idx); }
+        );
     }
 
     const void* operator[](size_type idx) const noexcept
     {
-        return impl().value_ref_at(idx);
+        return visit_impl(
+            [idx](auto& impl)
+            { return impl.value_ref_at(idx); }
+        );
     }
 
     void push_back(const void* ref)
     {
-        return impl().push_back(ref);
+        return visit_impl(
+            [ref](auto& impl)
+            { return impl.push_back(ref); }
+        );
     }
 
     void emplace_back()
     {
-        return impl().emplace_back();
+        return visit_impl(
+            [](auto& impl)
+            { return impl.emplace_back(); }
+        );
     }
 
     void pop_back() noexcept
     {
-        return impl().pop_back();
+        return visit_impl(
+            [](auto& impl)
+            { return impl.pop_back(); }
+        );
     }
 
     class iterator;
@@ -936,7 +1056,10 @@ public:
 
     void insert(size_type where, const void* ref)
     {
-        impl().insert_one(where, ref);
+        return visit_impl(
+            [where, ref](auto& impl)
+            { return impl.insert_one(where, ref); }
+        );
     }
 
     void insert(const_iterator where, const void* ref)
@@ -947,7 +1070,10 @@ public:
 
     void erase(size_type where, size_type count)
     {
-        impl().erase_n(where, count);
+        return visit_impl(
+            [where, count](auto& impl)
+            { return impl.erase_n(where, count); }
+        );
     }
 
     void erase(size_type where)
@@ -971,6 +1097,22 @@ public:
         this->erase(where.get_offset(), 1);
     }
 
+    void* data_at(size_type idx) noexcept
+    {
+        return visit_impl(
+            [idx](auto& impl)
+            { return impl.data_at(idx); }
+        );
+    }
+
+    const void* data_at(size_type idx) const noexcept
+    {
+        return visit_impl(
+            [idx](auto& impl)
+            { return impl.data_at(idx); }
+        );
+    }
+
     template <typename Visitor>
     decltype(auto) visit(Visitor&& vis, size_type start, size_type count)
     {
@@ -980,8 +1122,8 @@ public:
         visit_script_type(
             std::forward<Visitor>(vis),
             element_type_id(),
-            impl().data_at(start),
-            impl().data_at(start + count)
+            data_at(start),
+            data_at(start + count)
         );
     }
 
@@ -994,8 +1136,8 @@ public:
         visit_script_type(
             std::forward<Visitor>(vis),
             element_type_id(),
-            impl().data_at(start.get_offset()),
-            impl().data_at(stop.get_offset())
+            data_at(start.get_offset()),
+            data_at(stop.get_offset())
         );
     }
 };
