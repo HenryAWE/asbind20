@@ -4,27 +4,28 @@
 #include <asbind20/ext/stdstring.hpp>
 #include <asbind20/ext/assert.hpp>
 
-constexpr char vec2_test_script[] = R"AngelScript(void test0()
+constexpr char vec2_test_script[] = R"AngelScript(
+void test0()
 {
-    vec2 v1;
+    vec2<float> v1;
     assert(v1.x == 0);
     assert(v1.y == 0);
-    assert(v1 == vec2(0, 0));
-    vec2 v2 = v1 + vec2(1, 2);
-    assert(v2 == vec2(1, 2));
+    assert(v1 == vec2<float>(0, 0));
+    vec2<float> v2 = v1 + vec2<float>(1, 2);
+    assert(v2 == vec2<float>(1, 2));
 }
 
 void test1()
 {
-    vec2 v1(1, 0);
-    vec2 v2(0, 1);
+    vec2<float> v1(1, 0);
+    vec2<float> v2(0, 1);
     assert(v1 * v2 == 0);
 }
 
 void test2()
 {
-    vec2 v1 = {1, 0};
-    assert(v1 == vec2(1, 0));
+    vec2<float> v1 = {1, 0};
+    assert(v1 == vec2<float>(1, 0));
     assert(string(v1) == "(1, 0)");
 }
 )AngelScript";
@@ -89,21 +90,54 @@ static float& vec2_opIndex(vec2& v, asUINT i)
     return v[i];
 }
 
+struct vec2_holder
+{
+    vec2_holder(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+    {
+        (void)ti;
+        []()
+        {
+            // FAIL() cannot be directly called from a constructor
+            FAIL() << "unreachable";
+        }();
+    }
+
+    ~vec2_holder() = default;
+
+    static bool template_callback(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, bool&)
+    {
+        int subtype_id = ti->GetSubTypeId();
+        return subtype_id == AS_NAMESPACE_QUALIFIER asTYPEID_FLOAT;
+    }
+};
+
+static constexpr AS_NAMESPACE_QUALIFIER asQWORD vec2_type_flags =
+    AS_NAMESPACE_QUALIFIER asOBJ_POD |
+    AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_ALLFLOATS |
+    AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_MORE_CONSTRUCTORS;
+
 void register_vec2(asIScriptEngine* engine)
 {
     using namespace asbind20;
 
-    value_class<vec2>(
-        engine, "vec2", asOBJ_POD | asOBJ_APP_CLASS_ALLFLOATS | asOBJ_APP_CLASS_MORE_CONSTRUCTORS
+    template_value_class<vec2_holder>(
+        engine, "vec2<T>", AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_CD
     )
-        .behaviours_by_traits(asOBJ_POD | AS_NAMESPACE_QUALIFIER asGetTypeTraits<vec2>())
+        .default_constructor()
+        .destructor()
+        .template_callback(fp<&vec2_holder::template_callback>);
+
+    value_class<vec2>(
+        engine, "vec2<float>", vec2_type_flags
+    )
+        .behaviours_by_traits(vec2_type_flags | AS_NAMESPACE_QUALIFIER asGetTypeTraits<vec2>())
         .constructor<float, float>("float,float")
         .list_constructor<float, policies::apply_to<2>>("float,float")
         .opEquals()
         .opAdd()
         .opNeg()
         .method(
-            "float opMul(const vec2&in) const",
+            "float opMul(const vec2<float>&in) const",
             [](const vec2& lhs, const vec2& rhs) -> float
             { return lhs * rhs; }
         )
@@ -114,21 +148,26 @@ void register_vec2(asIScriptEngine* engine)
         .property("float y", sizeof(float));
 }
 
-void register_vec2(asbind20::use_generic_t, asIScriptEngine* engine)
+void register_vec2(asbind20::use_generic_t, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     using namespace asbind20;
 
+    template_value_class<vec2_holder, true>(engine, "vec2<T>", AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_CD)
+        .default_constructor()
+        .destructor()
+        .template_callback(fp<&vec2_holder::template_callback>);
+
     value_class<vec2, true>(
-        engine, "vec2", asOBJ_APP_CLASS_ALLFLOATS | asOBJ_APP_CLASS_MORE_CONSTRUCTORS
+        engine, "vec2<float>", vec2_type_flags
     )
-        .behaviours_by_traits()
+        .behaviours_by_traits(vec2_type_flags | AS_NAMESPACE_QUALIFIER asGetTypeTraits<vec2>())
         .constructor<float, float>("float,float")
         .list_constructor<float, policies::apply_to<2>>("float,float")
         .opEquals()
         .opAdd()
         .opNeg()
         .method(
-            "float opMul(const vec2&in) const",
+            "float opMul(const vec2<float>&in) const",
             [](const vec2& lhs, const vec2& rhs) -> float
             { return lhs * rhs; }
         )

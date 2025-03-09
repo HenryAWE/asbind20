@@ -58,7 +58,7 @@ public:
 
     void from_var_type(void* ref, int type_id)
     {
-        if(type_id == asTYPEID_VOID || !asbind20::is_primitive_type(type_id))
+        if(asbind20::is_void_type(type_id) || !asbind20::is_primitive_type(type_id))
             return;
 
         asbind20::visit_primitive_type(
@@ -74,15 +74,15 @@ public:
     int data = 0;
 
 private:
-    asUINT m_use_count = 1;
+    AS_NAMESPACE_QUALIFIER asUINT m_use_count = 1;
 };
 
-int exchange_data(my_ref_class& this_, int new_data)
+static int exchange_data(my_ref_class& this_, int new_data)
 {
     return std::exchange(this_.data, new_data);
 }
 
-void get_ref_class_data(asIScriptGeneric* gen)
+static void get_ref_class_data(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
 {
     using namespace asbind20;
 

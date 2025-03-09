@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <shared_test_lib.hpp>
 #include <asbind20/asbind.hpp>
+#include <asbind20/ext/assert.hpp>
 
 namespace test_bind
 {
@@ -133,6 +134,10 @@ static void mul_obj_first_ref(trivial_value_class& this_, int val)
     this_.value *= val;
 }
 
+constexpr AS_NAMESPACE_QUALIFIER asQWORD trivial_value_class_flags =
+    AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_MORE_CONSTRUCTORS |
+    AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_ALLINTS;
+
 void register_trivial_value_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     using namespace asbind20;
@@ -140,8 +145,7 @@ void register_trivial_value_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
     value_class<trivial_value_class> c(
         engine,
         "trivial_value_class",
-        AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_ALLINTS |
-            AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_MORE_CONSTRUCTORS
+        trivial_value_class_flags
     );
     c
         .behaviours_by_traits()
@@ -194,8 +198,7 @@ void register_trivial_value_class(asbind20::use_generic_t, AS_NAMESPACE_QUALIFIE
     value_class<trivial_value_class, true> c(
         engine,
         "trivial_value_class",
-        AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_ALLINTS |
-            AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_MORE_CONSTRUCTORS
+        trivial_value_class_flags
     );
     c
         .behaviours_by_traits()
@@ -241,10 +244,6 @@ void register_trivial_value_class(asbind20::use_generic_t, AS_NAMESPACE_QUALIFIE
     EXPECT_EQ(c.get_engine(), engine);
     EXPECT_TRUE(c.force_generic());
 }
-} // namespace test_bind
-
-using namespace test_bind;
-using namespace asbind_test;
 
 const char* trivial_value_class_test_script = R"(
 int test_0()
@@ -322,7 +321,6 @@ trivial_value_class test_8()
 {
     trivial_value_class val(2);
     assert(--val == trivial_value_class(1));
-    print(to_string(val.value));
     trivial_value_class tmp = val--;
     assert(tmp.value == 1);
     return val;
@@ -374,7 +372,7 @@ static void check_trivial_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 
         asbind20::request_context ctx(engine);
         auto result = test_case(ctx);
-        ASSERT_TRUE(result_has_value(result));
+        ASSERT_TRUE(asbind_test::result_has_value(result));
         EXPECT_EQ(*result, expected_val)
             << test_name;
     };
@@ -394,7 +392,7 @@ static void check_trivial_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 
         asbind20::request_context ctx(engine);
         auto result = test_case(ctx);
-        ASSERT_TRUE(result_has_value(result));
+        ASSERT_TRUE(asbind_test::result_has_value(result));
         EXPECT_EQ(result->get_val(), expected_val)
             << test_name;
     };
@@ -412,7 +410,7 @@ static void check_trivial_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 
         asbind20::request_context ctx(engine);
         auto result = test_case(ctx, std::forward<Args>(args)...);
-        ASSERT_TRUE(result_has_value(result));
+        ASSERT_TRUE(asbind_test::result_has_value(result));
         EXPECT_TRUE(*result)
             << test_name;
     };
@@ -420,23 +418,62 @@ static void check_trivial_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     check_bool_result(12, trivial_value_class(2));
 }
 
-TEST_F(asbind_test_suite, trivial_value_class)
+template <bool UseGeneric>
+class basic_trivial_value_class_suite : public ::testing::Test
 {
-    if(asbind20::has_max_portability())
-        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+public:
+    void SetUp() override
+    {
+        if constexpr(!UseGeneric)
+        {
+            if(asbind20::has_max_portability())
+                GTEST_SKIP() << "AS_MAX_PORTABILITY";
+        }
 
+        m_engine = asbind20::make_script_engine();
+        asbind_test::setup_message_callback(m_engine, true);
+        asbind20::ext::register_script_assert(
+            m_engine,
+            [](std::string_view msg)
+            {
+                FAIL() << "trivial_value_class assertion failed: " << msg;
+            }
+        );
+        if constexpr(UseGeneric)
+            register_trivial_value_class(asbind20::use_generic, m_engine);
+        else
+            register_trivial_value_class(m_engine);
+    }
+
+    void TearDown() override
+    {
+        m_engine.reset();
+    }
+
+    auto get_engine() const noexcept
+        -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
+    {
+        return m_engine.get();
+    }
+
+private:
+    asbind20::script_engine m_engine;
+};
+} // namespace test_bind
+
+using trivial_value_class_native = test_bind::basic_trivial_value_class_suite<false>;
+using trivial_value_class_generic = test_bind::basic_trivial_value_class_suite<true>;
+
+TEST_F(trivial_value_class_native, check_trivial_class)
+{
     auto* engine = get_engine();
-    register_trivial_value_class(engine);
-
-    check_trivial_class(engine);
+    test_bind::check_trivial_class(engine);
 }
 
-TEST_F(asbind_test_suite_generic, trivial_value_class)
+TEST_F(trivial_value_class_generic, check_trivial_class)
 {
     auto* engine = get_engine();
-    register_trivial_value_class(asbind20::use_generic, engine);
-
-    check_trivial_class(engine);
+    test_bind::check_trivial_class(engine);
 }
 
 namespace test_bind
@@ -523,7 +560,7 @@ static void register_friend_ops(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, 
     value_class<friend_ops, UseGeneric> c(
         engine,
         "friend_ops",
-        asOBJ_APP_CLASS_MORE_CONSTRUCTORS | asOBJ_APP_CLASS_ALLINTS
+        AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_MORE_CONSTRUCTORS | AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_ALLINTS
     );
 
     c
@@ -540,7 +577,6 @@ static void register_friend_ops(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, 
         .method("int by_functor_objlast_var(int, const ?&in)", fp<&friend_ops_helper::by_functor_objlast_var>, var_type<1>, auxiliary(helper))
         .property("int value", offsetof(friend_ops, value));
 }
-} // namespace test_bind
 
 const char* friend_ops_test_script = R"(
 int test_0()
@@ -615,7 +651,7 @@ static void check_friend_ops(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, fri
 
         asbind20::request_context ctx(engine);
         auto result = test_case(ctx);
-        ASSERT_TRUE(result_has_value(result));
+        ASSERT_TRUE(asbind_test::result_has_value(result));
         EXPECT_EQ(*result, expected_val)
             << test_name;
     };
@@ -640,25 +676,65 @@ static void check_friend_ops(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, fri
     EXPECT_EQ(helper.predefined_value, 0);
 }
 
-TEST_F(asbind_test_suite, friend_ops)
+template <bool UseGeneric>
+class basic_friend_ops_suite : public ::testing::Test
 {
-    if(asbind20::has_max_portability())
-        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+public:
+    void SetUp() override
+    {
+        if constexpr(!UseGeneric)
+        {
+            if(asbind20::has_max_portability())
+                GTEST_SKIP() << "AS_MAX_PORTABILITY";
+        }
 
+        m_engine = asbind20::make_script_engine();
+        m_helper = friend_ops_helper{};
+
+        asbind_test::setup_message_callback(m_engine, true);
+        asbind20::ext::register_script_assert(
+            m_engine,
+            [](std::string_view msg)
+            {
+                FAIL() << "friend_ops assertion failed: " << msg;
+            }
+        );
+        register_friend_ops<UseGeneric>(m_engine, m_helper);
+    }
+
+    void TearDown() override
+    {
+        m_engine.reset();
+    }
+
+    auto get_engine() const noexcept
+        -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
+    {
+        return m_engine.get();
+    }
+
+    friend_ops_helper& get_helper()
+    {
+        return m_helper;
+    }
+
+private:
+    asbind20::script_engine m_engine;
+    friend_ops_helper m_helper;
+};
+} // namespace test_bind
+
+using friend_ops_native = test_bind::basic_friend_ops_suite<false>;
+using friend_ops_generic = test_bind::basic_friend_ops_suite<true>;
+
+TEST_F(friend_ops_native, check_friend_ops)
+{
     auto* engine = get_engine();
-
-    friend_ops_helper helper;
-    register_friend_ops<false>(engine, helper);
-
-    check_friend_ops(engine, helper);
+    check_friend_ops(engine, get_helper());
 }
 
-TEST_F(asbind_test_suite_generic, friend_ops)
+TEST_F(friend_ops_generic, check_friend_ops)
 {
     auto* engine = get_engine();
-
-    friend_ops_helper helper;
-    register_friend_ops<true>(engine, helper);
-
-    check_friend_ops(engine, helper);
+    check_friend_ops(engine, get_helper());
 }
