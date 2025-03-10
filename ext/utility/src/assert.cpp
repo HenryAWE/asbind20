@@ -3,11 +3,11 @@
 
 namespace asbind20::ext
 {
-std::string extract_string(asIStringFactory* factory, void* str)
+std::string extract_string(AS_NAMESPACE_QUALIFIER asIStringFactory* factory, const void* str)
 {
     assert(factory);
 
-    asUINT sz = 0;
+    AS_NAMESPACE_QUALIFIER asUINT sz = 0;
     if(factory->GetRawStringData(str, nullptr, &sz) < 0)
     {
         throw std::runtime_error("failed to get raw string data");
@@ -39,36 +39,37 @@ public:
         }
     }
 
-    static void assert_msg_wrapper(asIScriptGeneric* gen)
+    static void assert_msg_wrapper(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
     {
         assert(gen->GetArgCount() == 2);
-        bool pred = gen->GetArgByte(0);
+        bool pred = get_generic_arg<bool>(gen, 0);
 
         if(!pred)
         {
-            auto* this_ = static_cast<script_assert_impl*>(gen->GetAuxiliary());
-            void* str = gen->GetArgAddress(1);
+            auto& this_ = get_generic_auxiliary<script_assert_impl>(gen);
+            const void* str = gen->GetArgAddress(1);
 
-            std::string msg = extract_string(this_->str_factory, str);
-            this_->on_failure(msg.c_str());
+            std::string msg = extract_string(this_.str_factory, str);
+            this_.on_failure(msg.c_str());
         }
     }
 
+private:
     void on_failure(const char* msg)
     {
-        asIScriptContext* ctx = asGetActiveContext();
-        if(callback)
-            callback(msg);
+        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx = current_context();
         if(set_ex)
             ctx->SetException(msg);
+        if(callback)
+            callback(msg);
     }
 };
 
-std::function<assert_handler_t> register_script_assert(
-    asIScriptEngine* engine,
+void register_script_assert(
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
     std::function<assert_handler_t> callback,
     bool set_ex,
-    asIStringFactory* str_factory
+    AS_NAMESPACE_QUALIFIER asIStringFactory* str_factory
 )
 {
     global<true> g(engine);
@@ -76,7 +77,7 @@ std::function<assert_handler_t> register_script_assert(
     static script_assert_impl impl;
 
     impl.set_ex = set_ex;
-    auto old = std::exchange(impl.callback, std::move(callback));
+    impl.callback = std::move(callback);
 
     g
         .function(
@@ -93,7 +94,7 @@ std::function<assert_handler_t> register_script_assert(
 #else
         int string_t_id = engine->GetStringFactoryReturnTypeId();
 #endif
-        if(string_t_id != asNO_FUNCTION)
+        if(string_t_id != AS_NAMESPACE_QUALIFIER asNO_FUNCTION)
         {
             assert(string_t_id >= 0);
 
@@ -103,13 +104,11 @@ std::function<assert_handler_t> register_script_assert(
 
             g
                 .function(
-                    string_concat("void assert(bool pred, const ", string_t_decl, " &in msg)").c_str(),
+                    string_concat("void assert(bool pred,const ", string_t_decl, "&in msg)").c_str(),
                     &script_assert_impl::assert_msg_wrapper,
                     auxiliary(impl)
                 );
         }
     }
-
-    return std::move(old);
 }
 } // namespace asbind20::ext

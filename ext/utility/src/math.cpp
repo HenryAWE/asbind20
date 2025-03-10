@@ -8,10 +8,10 @@
 namespace asbind20::ext
 {
 template <typename T>
-static constexpr T constant_INFINITY = std::numeric_limits<T>::infinity();
+static constexpr T constant_inf_v = std::numeric_limits<T>::infinity();
 
 template <typename T>
-static constexpr T constant_NAN = std::numeric_limits<T>::quiet_NaN();
+static constexpr T constant_nan_v = std::numeric_limits<T>::quiet_NaN();
 
 void register_math_constants(asIScriptEngine* engine, const char* ns)
 {
@@ -19,16 +19,18 @@ void register_math_constants(asIScriptEngine* engine, const char* ns)
 
     global g(engine);
 
-#define ASBIND20_EXT_MATH_REGISTER_CONSTANTS(register_class, float_t, suffix)                    \
-    register_class                                                                               \
-        .property("const float PI" suffix, std::numbers::pi_v<float_t>)                          \
-        .property("const float E" suffix, std::numbers::e_v<float_t>)                            \
-        .property("const float PHI" suffix, std::numbers::phi_v<float_t>) /* The golden ratio */ \
-        .property("const float NAN" suffix, constant_NAN<float_t>)                               \
-        .property("const float INFINITY" suffix, constant_INFINITY<float_t>)
+#define ASBIND20_EXT_MATH_REGISTER_CONSTANTS(float_t, suffix)                                           \
+    g                                                                                                   \
+        .property("const " #float_t " PI" suffix, std::numbers::pi_v<float_t>)                          \
+        .property("const " #float_t " E" suffix, std::numbers::e_v<float_t>)                            \
+        .property("const " #float_t " PHI" suffix, std::numbers::phi_v<float_t>) /* The golden ratio */ \
+        .property("const " #float_t " NAN" suffix, constant_nan_v<float_t>)                             \
+        .property("const " #float_t " INFINITY" suffix, constant_inf_v<float_t>)
 
-    ASBIND20_EXT_MATH_REGISTER_CONSTANTS(g, float, "_f");
-    ASBIND20_EXT_MATH_REGISTER_CONSTANTS(g, double, "_d");
+    ASBIND20_EXT_MATH_REGISTER_CONSTANTS(float, "_f");
+    ASBIND20_EXT_MATH_REGISTER_CONSTANTS(double, "_d");
+
+#undef ASBIND20_EXT_MATH_REGISTER_CONSTANTS
 }
 
 template <typename T>
@@ -62,7 +64,7 @@ static T script_math_lerp(T a, T b, T t)
 template <typename T>
 static bool script_close_to_simple(float a, float b)
 {
-    return close_to<T>(a, b, std::numeric_limits<T>::epsilon());
+    return math_close_to<T>(a, b, std::numeric_limits<T>::epsilon());
 }
 
 // Using following wrappers to avoid ICE on MSVC
@@ -82,7 +84,9 @@ static bool script_isinf(float x)
 }
 
 template <bool UseGeneric>
-void register_math_function_impl(asIScriptEngine* engine)
+void register_math_function_impl(
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
+)
 {
     global<UseGeneric> g(engine);
 
@@ -101,7 +105,7 @@ void register_math_function_impl(asIScriptEngine* engine)
 #define ASBIND20_EXT_MATH_REGISTER_FUNCS(register_class, float_t)                                                       \
     register_class                                                                                                      \
         .function("bool close_to(" #float_t " a, " #float_t " b)", fp<&script_close_to_simple<float_t>>)                \
-        .function("bool close_to(" #float_t " a, " #float_t " b, " #float_t " epsilon)", fp<&close_to<float_t>>)        \
+        .function("bool close_to(" #float_t " a, " #float_t " b, " #float_t " epsilon)", fp<&math_close_to<float_t>>)   \
         .function(#float_t " min(" #float_t " a, " #float_t " b)", fp<&script_math_min<float_t>>)                       \
         .function(#float_t " max(" #float_t " a, " #float_t " b)", fp<&script_math_max<float_t>>)                       \
         .function(#float_t " clamp(" #float_t " val, " #float_t " a, " #float_t " b)", fp<&script_math_clamp<float_t>>) \
@@ -146,18 +150,14 @@ void register_math_function_impl(asIScriptEngine* engine)
 #undef ASBIND20_EXT_MATH_REGISTER_FUNCS
 }
 
-void register_math_function(asIScriptEngine* engine, bool generic)
+void register_math_function(
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, bool generic
+)
 {
     if(generic)
         register_math_function_impl<true>(engine);
     else
         register_math_function_impl<false>(engine);
-}
-
-template <typename Float>
-void complex_list_constructor(void* mem, Float* list_buf)
-{
-    new(mem) std::complex<Float>{list_buf[0], list_buf[1]};
 }
 
 template <typename Float>
@@ -179,23 +179,29 @@ static Float complex_abs(const std::complex<Float>& c)
 }
 
 template <bool UseGeneric>
-void register_math_complex_impl(asIScriptEngine* engine)
+void register_math_complex_impl(
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
+)
 {
     using complex_t = std::complex<float>;
 
-    value_class<std::complex<float>, UseGeneric> c(
+    constexpr AS_NAMESPACE_QUALIFIER asQWORD complex_flags =
+        AS_NAMESPACE_QUALIFIER asOBJ_POD |
+        AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_MORE_CONSTRUCTORS |
+        AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_ALLFLOATS;
+
+    value_class<std::complex<float>, UseGeneric>(
         engine,
         "complex",
-        asOBJ_POD | asOBJ_APP_CLASS_MORE_CONSTRUCTORS | asOBJ_APP_CLASS_ALLFLOATS
-    );
-    c
+        complex_flags
+    )
         .constructor_function(
             "",
             [](void* mem)
             { new(mem) std::complex<float>(); }
         )
         .template constructor<float>("float r")
-        .template constructor<float, float>("float r, float i")
+        .template constructor<float, float>("float r,float i")
         .template list_constructor<float, policies::apply_to<2>>("float,float")
         .opEquals()
         .opAddAssign()
@@ -211,12 +217,13 @@ void register_math_complex_impl(asIScriptEngine* engine)
         .property("float real", 0)
         .property("float imag", sizeof(float));
 
-    global<UseGeneric> g(engine);
-    g
+    global<UseGeneric>(engine)
         .function("float abs(const complex&in)", fp<&complex_abs<float>>);
 }
 
-void register_math_complex(asIScriptEngine* engine, bool generic)
+void register_math_complex(
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, bool generic
+)
 {
     if(generic)
         register_math_complex_impl<true>(engine);

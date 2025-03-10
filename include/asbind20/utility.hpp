@@ -297,7 +297,10 @@ inline bool type_requires_gc(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
 
     if(flags & AS_NAMESPACE_QUALIFIER asOBJ_REF)
     {
-        return true;
+        if(flags & AS_NAMESPACE_QUALIFIER asOBJ_NOCOUNT)
+            return false;
+        else
+            return true;
     }
     else if((flags & AS_NAMESPACE_QUALIFIER asOBJ_VALUE) &&
             (flags & AS_NAMESPACE_QUALIFIER asOBJ_GC))
@@ -2059,6 +2062,8 @@ namespace container
         {
             return m_data.ptr;
         }
+
+        // TODO: API receiving asITypeInfo*
 
         void construct(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id)
         {

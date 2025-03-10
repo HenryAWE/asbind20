@@ -2,67 +2,59 @@
 
 namespace asbind20::ext
 {
-static bool optional_template_callback(asITypeInfo* ti, bool& no_gc)
+static bool optional_template_callback(
+    AS_NAMESPACE_QUALIFIER asITypeInfo* ti, bool& no_gc
+)
 {
     int subtype_id = ti->GetSubTypeId();
-    if(subtype_id == AS_NAMESPACE_QUALIFIER asTYPEID_VOID)
+    if(is_void_type(subtype_id))
         return false;
 
     if(is_primitive_type(subtype_id))
         no_gc = true;
     else
-    {
-        asQWORD subtype_flags = ti->GetSubType()->GetFlags();
-        if(subtype_flags & AS_NAMESPACE_QUALIFIER asOBJ_POD)
-            no_gc = true;
-        else if((subtype_flags & AS_NAMESPACE_QUALIFIER asOBJ_REF))
-        {
-            if(subtype_flags & AS_NAMESPACE_QUALIFIER asOBJ_NOCOUNT)
-                no_gc = true;
-            else
-                no_gc = false;
-        }
-        else if((subtype_flags & AS_NAMESPACE_QUALIFIER asOBJ_VALUE))
-        {
-            if(!(subtype_flags & AS_NAMESPACE_QUALIFIER asOBJ_GC))
-                no_gc = true;
-            else
-                no_gc = false;
-        }
-        else
-            no_gc = false;
-    }
+        no_gc = !type_requires_gc(ti->GetSubType());
 
     return true;
 }
 
-script_optional::script_optional(asITypeInfo* ti)
+script_optional::script_optional(const script_optional& other)
+    : m_ti(other.m_ti)
+{
+    if(other.has_value())
+    {
+        assign(other.m_data.data_address(other.element_type_id()));
+    }
+}
+
+script_optional::script_optional(
+    AS_NAMESPACE_QUALIFIER asITypeInfo* ti
+)
     : m_ti(ti)
 {
-    m_ti->AddRef();
     assert(m_has_value == false);
 }
 
-script_optional::script_optional(asITypeInfo* ti, const script_optional& other)
-    : m_ti(ti)
+script_optional::script_optional(
+    AS_NAMESPACE_QUALIFIER asITypeInfo* ti, const script_optional& other
+)
+    : script_optional(other)
 {
-    m_ti->AddRef();
-    assert(m_ti == other.m_ti);
-    if(other.has_value())
-        assign(other.m_data.data_address(other.subtype_id()));
+    (void)ti;
+    assert(m_ti == ti);
 }
 
-script_optional::script_optional(asITypeInfo* ti, const void* val)
+script_optional::script_optional(
+    AS_NAMESPACE_QUALIFIER asITypeInfo* ti, const void* val
+)
     : m_ti(ti)
 {
-    m_ti->AddRef();
     assign(val);
 }
 
 script_optional::~script_optional()
 {
     reset();
-    m_ti->Release();
 }
 
 script_optional& script_optional::operator=(const script_optional& other)
@@ -72,11 +64,19 @@ script_optional& script_optional::operator=(const script_optional& other)
 
     assert(m_ti == other.m_ti);
     if(other)
-        assign(other.m_data.data_address(other.subtype_id()));
+        assign(other.m_data.data_address(other.element_type_id()));
     else
         reset();
 
     return *this;
+}
+
+void script_optional::emplace()
+{
+    assert(m_ti != nullptr);
+    reset();
+    m_data.construct(m_ti->GetEngine(), element_type_id());
+    m_has_value = true;
 }
 
 void script_optional::assign(const void* val)
@@ -85,11 +85,11 @@ void script_optional::assign(const void* val)
 
     if(has_value())
     {
-        m_data.copy_assign_from(m_ti->GetEngine(), subtype_id(), val);
+        m_data.copy_assign_from(m_ti->GetEngine(), element_type_id(), val);
     }
     else
     {
-        m_data.copy_construct(m_ti->GetEngine(), subtype_id(), val);
+        m_data.copy_construct(m_ti->GetEngine(), element_type_id(), val);
         m_has_value = true;
     }
 }
@@ -102,7 +102,7 @@ void* script_optional::value()
         return nullptr;
     }
 
-    return m_data.data_address(subtype_id());
+    return m_data.data_address(element_type_id());
 }
 
 const void* script_optional::value() const
@@ -113,21 +113,21 @@ const void* script_optional::value() const
         return nullptr;
     }
 
-    return m_data.data_address(subtype_id());
+    return m_data.data_address(element_type_id());
 }
 
 void* script_optional::value_or(void* val)
 {
     assert(val != nullptr);
 
-    return m_has_value ? m_data.data_address(subtype_id()) : val;
+    return m_has_value ? m_data.data_address(element_type_id()) : val;
 }
 
 const void* script_optional::value_or(const void* val) const
 {
     assert(val != nullptr);
 
-    return m_has_value ? m_data.data_address(subtype_id()) : val;
+    return m_has_value ? m_data.data_address(element_type_id()) : val;
 }
 
 void script_optional::reset()
@@ -135,7 +135,7 @@ void script_optional::reset()
     if(!m_has_value)
         return;
 
-    m_data.destroy(m_ti->GetEngine(), subtype_id());
+    m_data.destroy(m_ti->GetEngine(), element_type_id());
     m_has_value = false;
 }
 
@@ -146,38 +146,23 @@ void script_optional::enum_refs(asIScriptEngine* engine)
     m_data.enum_refs(m_ti->GetSubType());
 }
 
-void script_optional::release_refs(asIScriptEngine* engine)
+void script_optional::release_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     (void)engine;
     assert(engine == m_ti->GetEngine());
     reset();
 }
 
-static void* optional_value(script_optional& this_)
+void register_script_optional(
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    bool use_generic
+)
 {
-    return this_.value();
-}
-
-static void* optional_value_or(script_optional& this_, void* val)
-{
-    return this_.value_or(val);
-}
-
-static script_optional& optional_opAssign_value(const void* val, script_optional& this_)
-{
-    this_.assign(val);
-    return this_;
-}
-
-namespace detail
-{
-    template <bool UseGeneric>
-    void register_script_optional_impl(asIScriptEngine* engine)
+    auto helper = [engine]<bool UseGeneric>(std::bool_constant<UseGeneric>)
     {
         constexpr AS_NAMESPACE_QUALIFIER asQWORD flags =
             AS_NAMESPACE_QUALIFIER asOBJ_GC |
             AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_CDAK |
-            AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_ALLINTS |
             AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_MORE_CONSTRUCTORS;
         template_value_class<script_optional, UseGeneric> c(
             engine,
@@ -186,7 +171,7 @@ namespace detail
         );
 
 #define ASBIND20_EXT_OPTIONAL_METHOD(name, ret, args) \
-        static_cast<ret(script_optional::*) args>(&script_optional::name)
+    static_cast<ret(script_optional::*) args>(&script_optional::name)
 
         c
             .template_callback(fp<&optional_template_callback>)
@@ -205,8 +190,8 @@ namespace detail
                     return this_;
                 }
             )
-            .method("bool get_has_value() const property", fp<&script_optional::has_value>)
-            .method("bool opConv() const", fp<&script_optional::has_value>)
+            .property("const bool has_value", &script_optional::m_has_value)
+            .template opConv<bool>()
             .method("void reset()", fp<&script_optional::reset>)
             .method("T& get_value() property", fp<ASBIND20_EXT_OPTIONAL_METHOD(value, void*, ())>)
             .method("const T& get_value() const property", fp<ASBIND20_EXT_OPTIONAL_METHOD(value, void*, ())>)
@@ -215,14 +200,11 @@ namespace detail
             .method("const T& value_or(const T&in val) const", fp<ASBIND20_EXT_OPTIONAL_METHOD(value_or, void*, (void*))>);
 
 #undef ASBIND20_EXT_OPTIONAL_METHOD
-    }
-} // namespace detail
+    };
 
-void register_script_optional(asIScriptEngine* engine, bool generic)
-{
-    if(generic)
-        detail::register_script_optional_impl<true>(engine);
+    if(use_generic)
+        helper(std::true_type{});
     else
-        detail::register_script_optional_impl<false>(engine);
+        helper(std::false_type{});
 }
 } // namespace asbind20::ext

@@ -5,7 +5,7 @@
 namespace asbind20::ext
 {
 int load_string(
-    asIScriptModule* m,
+    AS_NAMESPACE_QUALIFIER asIScriptModule* m,
     const char* section_name,
     std::string_view code,
     int line_offset
@@ -22,7 +22,7 @@ int load_string(
 }
 
 int load_file(
-    asIScriptModule* m,
+    AS_NAMESPACE_QUALIFIER asIScriptModule* m,
     const std::filesystem::path& filename,
     std::ios_base::openmode mode
 )
@@ -33,7 +33,7 @@ int load_file(
     {
         std::ifstream ifs(filename, std::ios_base::in | mode);
         if(!ifs.good())
-            return asERROR;
+            return AS_NAMESPACE_QUALIFIER asERROR;
         std::stringstream ss;
         ss << ifs.rdbuf();
         code = std::move(ss).str();
@@ -49,8 +49,8 @@ int load_file(
 namespace detail
 {
     int exec_impl(
-        asIScriptEngine* engine,
-        asIScriptContext* ctx,
+        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
         std::string_view code,
         const char* ret_decl = "void",
         const char* module_name = "asbind20_exec"
@@ -68,27 +68,45 @@ namespace detail
             "\n;}"
         );
 
-        asIScriptModule* m = engine->GetModule(module_name, asGM_ALWAYS_CREATE);
-        asIScriptFunction* f = nullptr;
-        r = m->CompileFunction(module_name, func_code.c_str(), -1, 0, &f);
+        auto* m = engine->GetModule(
+            module_name, AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
+        );
+        AS_NAMESPACE_QUALIFIER asIScriptFunction* f = nullptr;
+        r = m->CompileFunction(
+            module_name,
+            func_code.c_str(),
+            -1,
+            0,
+            &f
+        );
         if(r < 0)
             return r;
 
         assert(f);
-        auto result = script_invoke<void>(ctx, f);
-        f->Release();
+        try
+        {
+            auto result = script_invoke<void>(ctx, f);
+            f->Release();
+            f = nullptr;
 
-        if(!result)
-            return result.error();
-        else
-            return asSUCCESS;
+            if(!result)
+                return result.error();
+            else
+                return AS_NAMESPACE_QUALIFIER asSUCCESS;
+        }
+        catch(...)
+        {
+            if(f)
+                f->Release();
+            throw;
+        }
     }
 } // namespace detail
 
 int exec(
-    asIScriptEngine* engine,
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
     std::string_view code,
-    asIScriptContext* ctx
+    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx
 )
 {
     int r = 0;

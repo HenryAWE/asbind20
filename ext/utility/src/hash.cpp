@@ -4,16 +4,17 @@
 namespace asbind20::ext
 {
 template <typename T>
-static std::uint64_t std_hash_wrapper(T val)
+static std::uint64_t std_hash_wrapper(T val) noexcept
 {
     return std::hash<T>{}(val);
 }
 
 template <bool UseGeneric>
-static void register_script_hash_impl(asIScriptEngine* engine)
+static void register_script_hash_impl(
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
+)
 {
-    global<UseGeneric> g(engine);
-    g
+    global<UseGeneric>(engine)
         .typedef_("uint64", "hash_result_t")
         .function("uint64 hash(int8)", fp<&std_hash_wrapper<std::int8_t>>)
         .function("uint64 hash(int16)", fp<&std_hash_wrapper<std::int16_t>>)
@@ -27,7 +28,10 @@ static void register_script_hash_impl(asIScriptEngine* engine)
         .function("uint64 hash(double)", fp<&std_hash_wrapper<double>>);
 }
 
-void register_script_hash(asIScriptEngine* engine, bool generic)
+void register_script_hash(
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    bool generic
+)
 {
     if(generic)
         register_script_hash_impl<true>(engine);

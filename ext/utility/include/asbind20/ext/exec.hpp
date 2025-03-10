@@ -15,7 +15,7 @@ namespace asbind20::ext
  * @return int AngelScript error code
  */
 int load_string(
-    asIScriptModule* m,
+    AS_NAMESPACE_QUALIFIER asIScriptModule* m,
     const char* section_name,
     std::string_view code,
     int line_offset = 0
@@ -27,7 +27,7 @@ int load_string(
  * @return int AngelScript error code
  */
 int load_file(
-    asIScriptModule* m,
+    AS_NAMESPACE_QUALIFIER asIScriptModule* m,
     const std::filesystem::path& filename,
     std::ios_base::openmode mode = std::ios_base::in
 );
@@ -36,9 +36,9 @@ int load_file(
  * @brief Execute a piece of AngelScript code
  */
 int exec(
-    asIScriptEngine* engine,
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
     std::string_view code,
-    asIScriptContext* ctx = nullptr
+    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx = nullptr
 );
 } // namespace asbind20::ext
 

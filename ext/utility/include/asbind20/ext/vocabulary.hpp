@@ -7,28 +7,25 @@
 
 namespace asbind20::ext
 {
-namespace detail
-{
-    template <bool UseGeneric>
-    void register_script_optional_impl(asIScriptEngine* engine);
-}
-
-void register_script_optional(asIScriptEngine* engine, bool generic = has_max_portability());
+void register_script_optional(
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    bool use_generic = has_max_portability()
+);
 
 class script_optional
 {
-    template <bool UseGeneric>
-    friend void detail::register_script_optional_impl(asIScriptEngine* engine);
+    friend void register_script_optional(AS_NAMESPACE_QUALIFIER asIScriptEngine*, bool);
 
 public:
     script_optional() = delete;
-    script_optional(const script_optional&) = delete;
 
-    script_optional(asITypeInfo* ti);
+    script_optional(const script_optional& other);
 
-    script_optional(asITypeInfo* ti, const script_optional& other);
+    script_optional(AS_NAMESPACE_QUALIFIER asITypeInfo* ti);
 
-    script_optional(asITypeInfo* ti, const void* value);
+    script_optional(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, const script_optional& other);
+
+    script_optional(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, const void* value);
 
     ~script_optional();
 
@@ -36,8 +33,10 @@ public:
 
     bool operator==(const script_optional& rhs) const;
 
+    void emplace();
     void assign(const void* val);
 
+    [[nodiscard]]
     bool has_value() const noexcept
     {
         return m_has_value;
@@ -56,25 +55,51 @@ public:
         return has_value();
     }
 
-    asITypeInfo* get_type_info() const
+    [[nodiscard]]
+    auto get_type_info() const
+        -> AS_NAMESPACE_QUALIFIER asITypeInfo*
     {
-        return m_ti;
+        return m_ti.get();
     }
 
-    void enum_refs(asIScriptEngine* engine);
-    void release_refs(asIScriptEngine* engine);
+    void enum_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine);
+    void release_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine);
 
-    int subtype_id() const
+    [[nodiscard]]
+    int element_type_id() const
     {
         return m_ti->GetSubTypeId();
     }
 
 private:
-    asITypeInfo* m_ti = nullptr;
+    script_typeinfo m_ti;
 
     container::single m_data;
     bool m_has_value = false;
 };
+
+inline script_optional make_script_optional(
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    std::string_view elem_decl
+)
+{
+    auto* ti = engine->GetTypeInfoByDecl(
+        string_concat("optional<", elem_decl, '>').c_str()
+    );
+    return script_optional(ti);
+}
+
+inline script_optional make_script_optional(
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    std::string_view elem_decl,
+    const void* ref
+)
+{
+    auto* ti = engine->GetTypeInfoByDecl(
+        string_concat("optional<", elem_decl, '>').c_str()
+    );
+    return script_optional(ti, ref);
+}
 } // namespace asbind20::ext
 
 #endif

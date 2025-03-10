@@ -16,15 +16,24 @@ namespace asbind20::ext
  *
  * @return std::string Result string
  */
-std::string extract_string(asIStringFactory* factory, void* str);
+std::string extract_string(
+    AS_NAMESPACE_QUALIFIER asIStringFactory* factory, const void* str
+);
 
 using assert_handler_t = void(std::string_view);
 
-std::function<assert_handler_t> register_script_assert(
-    asIScriptEngine* engine,
+/**
+ * @brief Register script assertion support
+ *
+ * @param callback Callback for assertion failure
+ * @param set_ex Set script exception on assertion failure
+ * @param str_factory String factory for extracting assertion message
+ */
+void register_script_assert(
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
     std::function<assert_handler_t> callback,
     bool set_ex = true,
-    asIStringFactory* str_factory = nullptr
+    AS_NAMESPACE_QUALIFIER asIStringFactory* str_factory = nullptr
 );
 } // namespace asbind20::ext
 

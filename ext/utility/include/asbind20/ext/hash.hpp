@@ -10,7 +10,10 @@ namespace asbind20::ext
 /**
  * @brief Register hash support for primitive types
  */
-void register_script_hash(asIScriptEngine* engine, bool generic = has_max_portability());
+void register_script_hash(
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    bool generic = has_max_portability()
+);
 } // namespace asbind20::ext
 
 #endif

@@ -24,7 +24,6 @@ static asUINT get_elem_size(asIScriptEngine* engine, int subtype_id)
         return engine->GetSizeOfPrimitiveType(subtype_id);
 }
 
-
 script_array::script_array(asITypeInfo* ti)
     : m_ti(ti), m_subtype_id(ti->GetSubTypeId())
 {
@@ -663,18 +662,14 @@ script_array::size_type script_array::count(const void* value, size_type idx, si
 
 script_optional script_array::find_optional(const void* val, size_type idx)
 {
-    asIScriptEngine* engine = m_ti->GetEngine();
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = m_ti->GetEngine();
 
     size_type result = find(val, idx);
 
-    asITypeInfo* ret_ti = engine->GetTypeInfoByDecl("optional<uint>");
-    if(!ret_ti) [[unlikely]]
-        throw std::runtime_error("failed to get typeinfo of optional<uint>");
-
     if(result == -1)
-        return script_optional(ret_ti);
-
-    return script_optional(ret_ti, &result);
+        return make_script_optional(engine, "uint");
+    else
+        return make_script_optional(engine, "uint", &result);
 }
 
 void script_array::copy_construct_range(void* start, const void* input_start, size_type n)
@@ -882,8 +877,7 @@ void script_array::insert_range_impl(size_type idx, const void* src, size_type n
 void script_array::copy_assign_at(void* ptr, void* value)
 {
     visit_script_type(
-        meta::overloaded
-        {
+        meta::overloaded{
             // objhandle
             [this](void** ptr, void** value)
             {

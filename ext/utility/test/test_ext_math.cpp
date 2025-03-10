@@ -12,7 +12,7 @@ TEST(ext_math, close_to)
 {
     using namespace asbind20;
 
-    EXPECT_TRUE(ext::close_to<float>(
+    EXPECT_TRUE(ext::math_close_to<float>(
         std::numbers::pi_v<float>, 3.14f, 0.01f
     ));
 }

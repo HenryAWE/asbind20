@@ -7,19 +7,19 @@
 
 namespace asbind20::ext
 {
-class weakref
+class script_weakref
 {
 public:
-    weakref() = delete;
+    script_weakref() = delete;
 
-    weakref(AS_NAMESPACE_QUALIFIER asITypeInfo* ti);
-    weakref(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, void* ref);
+    script_weakref(AS_NAMESPACE_QUALIFIER asITypeInfo* ti);
+    script_weakref(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, void* ref);
 
-    ~weakref();
+    ~script_weakref();
 
-    weakref& operator=(const weakref& other);
+    script_weakref& operator=(const script_weakref& other);
 
-    bool operator==(const weakref& rhs) const;
+    bool operator==(const script_weakref& rhs) const;
 
     void reset(void* ref);
 
@@ -41,7 +41,10 @@ private:
     lockable_shared_bool m_flag;
 };
 
-void register_weakref(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, bool use_generic = has_max_portability());
+void register_weakref(
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    bool use_generic = has_max_portability()
+);
 } // namespace asbind20::ext
 
 #endif
