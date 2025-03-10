@@ -6,6 +6,7 @@
 #include <limits>
 #include <cmath>
 #include <concepts>
+#include <complex>
 #include <asbind20/asbind.hpp>
 
 namespace asbind20::ext
@@ -38,9 +39,24 @@ void register_math_function(
     bool generic = has_max_portability()
 );
 
+template <typename Float>
+constexpr Float complex_squared_length(const std::complex<Float>& c) noexcept
+{
+    return c.real() * c.real() + c.imag() * c.imag();
+}
+
+template <typename Float>
+constexpr Float complex_length(const std::complex<Float>& c) noexcept
+{
+    return std::sqrt(complex_squared_length<Float>(c));
+}
+
+/**
+ * @brief Register `std::complex<float>` and `std::complex<double>`
+ */
 void register_math_complex(
     AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
-    bool generic = has_max_portability()
+    bool use_generic = has_max_portability()
 );
 } // namespace asbind20::ext
 

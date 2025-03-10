@@ -160,22 +160,26 @@ void register_math_function(
         register_math_function_impl<false>(engine);
 }
 
-template <typename Float>
-static Float complex_squared_length(const std::complex<Float>& c)
+struct complex_placeholder
 {
-    return c.real() * c.real() + c.imag() * c.imag();
-}
+    complex_placeholder(AS_NAMESPACE_QUALIFIER asITypeInfo*)
+    {
+        assert(false && "unreachable");
+    }
 
-template <typename Float>
-static Float complex_length(const std::complex<Float>& c)
-{
-    return std::sqrt(complex_squared_length<Float>(c));
-}
+    ~complex_placeholder()
+    {
+        assert(false && "unreachable");
+    }
+};
 
-template <typename Float>
-static Float complex_abs(const std::complex<Float>& c)
+static bool complex_template_callback(
+    AS_NAMESPACE_QUALIFIER asITypeInfo* ti, bool&
+)
 {
-    return std::abs(c);
+    int subtype_id = ti->GetSubTypeId();
+    return subtype_id == AS_NAMESPACE_QUALIFIER asTYPEID_FLOAT ||
+           subtype_id == AS_NAMESPACE_QUALIFIER asTYPEID_DOUBLE;
 }
 
 template <bool UseGeneric>
@@ -183,49 +187,82 @@ void register_math_complex_impl(
     AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
 )
 {
-    using complex_t = std::complex<float>;
+    using std::complex;
+
+    template_value_class<complex_placeholder, UseGeneric>(
+        engine,
+        "complex<T>",
+        AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_CD
+    )
+        .template_callback(fp<&complex_template_callback>)
+        // Necessary placeholders
+        .default_constructor()
+        .destructor();
 
     constexpr AS_NAMESPACE_QUALIFIER asQWORD complex_flags =
         AS_NAMESPACE_QUALIFIER asOBJ_POD |
         AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_MORE_CONSTRUCTORS |
         AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_ALLFLOATS;
 
-    value_class<std::complex<float>, UseGeneric>(
+    value_class<std::complex<float>, UseGeneric> cf(
         engine,
-        "complex",
+        "complex<float>",
         complex_flags
-    )
-        .constructor_function(
-            "",
-            [](void* mem)
-            { new(mem) std::complex<float>(); }
-        )
-        .template constructor<float>("float r")
-        .template constructor<float, float>("float r,float i")
-        .template list_constructor<float, policies::apply_to<2>>("float,float")
-        .opEquals()
-        .opAddAssign()
-        .opSubAssign()
-        .opMulAssign()
-        .opDivAssign()
-        .opAdd()
-        .opSub()
-        .opMul()
-        .opDiv()
-        .method("float get_squared_length() const property", fp<&complex_squared_length<float>>)
-        .method("float get_length() const property", fp<&complex_length<float>>)
-        .property("float real", 0)
-        .property("float imag", sizeof(float));
+    );
+    value_class<std::complex<double>, UseGeneric> cd(
+        engine,
+        "complex<double>",
+        complex_flags
+    );
+
+#define ASBIND20_EXT_MATH_COMPLEX_MEMBERS(register_helper, float_t)                                    \
+    register_helper                                                                                    \
+        .default_constructor()                                                                         \
+        .template constructor<float_t>(#float_t)                                                       \
+        .template constructor<float_t, float_t>(#float_t "," #float_t)                                 \
+        .template list_constructor<float_t, policies::apply_to<2>>(#float_t "," #float_t)              \
+        .opEquals()                                                                                    \
+        .opAddAssign()                                                                                 \
+        .opSubAssign()                                                                                 \
+        .opMulAssign()                                                                                 \
+        .opDivAssign()                                                                                 \
+        .opAdd()                                                                                       \
+        .opSub()                                                                                       \
+        .opMul()                                                                                       \
+        .opDiv()                                                                                       \
+        .opNeg()                                                                                       \
+        .method(#float_t " get_squared_length() const property", fp<&complex_squared_length<float_t>>) \
+        .method(#float_t " get_length() const property", fp<&complex_length<float_t>>)                 \
+        .property(#float_t " real", 0)                                                                 \
+        .property(#float_t " imag", sizeof(float_t))
+
+    ASBIND20_EXT_MATH_COMPLEX_MEMBERS(cf, float);
+    ASBIND20_EXT_MATH_COMPLEX_MEMBERS(cd, double);
+
+#undef ASBIND20_EXT_MATH_COMPLEX_MEMBERS
+
+    // Interchanging data between different element types
+    cf.template constructor<const complex<double>&>("const complex<double>&in");
+    cd.template constructor<const complex<float>&>("const complex<float>&in");
 
     global<UseGeneric>(engine)
-        .function("float abs(const complex&in)", fp<&complex_abs<float>>);
+        .function(
+            "float abs(const complex<float>&in)",
+            [](const std::complex<float>& c) -> float
+            { return abs(c); }
+        )
+        .function(
+            "double abs(const complex<double>&in)",
+            [](const std::complex<double>& c) -> double
+            { return abs(c); }
+        );
 }
 
 void register_math_complex(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, bool generic
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, bool use_generic
 )
 {
-    if(generic)
+    if(use_generic)
         register_math_complex_impl<true>(engine);
     else
         register_math_complex_impl<false>(engine);
