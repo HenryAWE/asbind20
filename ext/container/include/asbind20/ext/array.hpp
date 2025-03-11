@@ -15,23 +15,15 @@ consteval auto default_script_array_user_id() noexcept
     return 2000;
 }
 
-template <
-    AS_NAMESPACE_QUALIFIER asPWORD UserDataID = default_script_array_user_id(),
-    std::size_t StaticCapacityFactor = 4>
-void register_script_array(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
-    bool as_default = true,
-    bool use_generic = has_max_portability()
-);
-
 namespace detail
 {
     class script_array_base
     {
-    protected:
+    public:
         void* operator new(std::size_t bytes);
         void operator delete(void* p);
 
+    protected:
         struct array_cache
         {
             AS_NAMESPACE_QUALIFIER asIScriptFunction* subtype_opCmp;
@@ -48,10 +40,12 @@ namespace detail
             const array_cache* cache
         );
 
+    public:
         static bool template_callback(
             AS_NAMESPACE_QUALIFIER asITypeInfo* ti, bool&
         );
 
+    protected:
         static void generate_cache(
             array_cache& out, int subtype_id, AS_NAMESPACE_QUALIFIER asITypeInfo* ti
         );
@@ -115,25 +109,23 @@ namespace detail
     };
 } // namespace detail
 
-template <
-    AS_NAMESPACE_QUALIFIER asPWORD UserDataID = default_script_array_user_id(),
-    std::size_t StaticCapacityFactor = 4>
 class script_array : private detail::script_array_base
 {
-    template <AS_NAMESPACE_QUALIFIER asPWORD, std::size_t>
     friend void register_script_array(AS_NAMESPACE_QUALIFIER asIScriptEngine*, bool, bool);
 
     using my_base = detail::script_array_base;
 
+    static constexpr AS_NAMESPACE_QUALIFIER asPWORD user_id = default_script_array_user_id();
+
     void setup_cache()
     {
         AS_NAMESPACE_QUALIFIER asITypeInfo* ti = get_type_info();
-        my_base::setup_cache<UserDataID>(ti->GetSubTypeId(), ti);
+        my_base::setup_cache<user_id>(ti->GetSubTypeId(), ti);
     }
 
     array_cache* get_cache() const
     {
-        return my_base::get_cache<UserDataID>(get_type_info());
+        return my_base::get_cache<user_id>(get_type_info());
     }
 
 public:
@@ -412,7 +404,7 @@ public:
 private:
     using container_type = container::small_vector<
         container::typeinfo_subtype<0>,
-        StaticCapacityFactor * sizeof(void*),
+        4 * sizeof(void*),
         as_allocator<void>>;
 
     container_type m_data;
@@ -533,16 +525,13 @@ private:
 #undef ASBIND20_EXT_ARRAY_CHECK_CALLBACK
 };
 
-template <
-    AS_NAMESPACE_QUALIFIER asPWORD UserDataID,
-    std::size_t StaticCapacityFactor>
-void register_script_array(
+inline void register_script_array(
     AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
-    bool as_default,
-    bool use_generic
+    bool as_default = true,
+    bool generic = has_max_portability()
 )
 {
-    using array_t = script_array<UserDataID, StaticCapacityFactor>;
+    using array_t = script_array;
 
 #define ASBIND_EXT_ARRAY_MFN(name, ret, args) \
     static_cast<ret(array_t::*) args>(&array_t::name)
@@ -585,14 +574,14 @@ void register_script_array(
             c.as_array();
     };
 
-    if(use_generic)
+    if(generic)
         helper(std::true_type{});
     else
         helper(std::false_type{});
 
     engine->SetTypeInfoUserDataCleanupCallback(
-        &array_t::template cache_cleanup_callback<UserDataID>,
-        UserDataID
+        &array_t::template cache_cleanup_callback<array_t::user_id>,
+        array_t::user_id
     );
 }
 } // namespace asbind20::ext

@@ -209,9 +209,9 @@ private:
             }
         }
 
-        void copy_from(impl_storage& other)
+        void copy_from(const impl_storage& other)
         {
-            assert(empty());
+            assert(this->size() == 0);
             assert(this != &other);
             reserve(other.size());
 
@@ -221,7 +221,7 @@ private:
                 other.m_p_begin,
                 new_size * sizeof(value_type)
             );
-            m_p_end = new_size;
+            m_p_end += new_size;
         }
 
         static consteval size_type max_static_size()
@@ -478,14 +478,14 @@ private:
             std::memset(ilist.data(), 0, ilist.size() * sizeof(void*));
         }
 
-        void copy_from(impl_object& other)
+        void copy_from(const impl_object& other)
         {
-            assert(empty());
+            assert(this->size() == 0);
             assert(this != &other);
-            reserve(other.size());
+            this->reserve(other.size());
 
             for(size_type i = 0; i < other.size(); ++i)
-                this->emplace_back_impl(other[i]);
+                this->emplace_back_impl(other.value_ref_at(i));
         }
 
         void* value_ref_at(size_type idx) const
