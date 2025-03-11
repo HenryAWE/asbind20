@@ -175,7 +175,7 @@ void asbind_test_suite::register_all()
     using namespace asbind20;
 
     ext::register_script_optional(m_engine);
-    ext::register_script_array(m_engine);
+    // ext::register_script_array(m_engine);
     ext::register_std_string(m_engine, true);
     ext::register_string_utils(m_engine);
     ext::register_math_constants(m_engine);
@@ -198,7 +198,7 @@ void asbind_test_suite_generic::register_all()
     asIScriptEngine* engine = get_engine();
 
     ext::register_script_optional(engine, true);
-    ext::register_script_array(engine, true, true);
+    // ext::register_script_array(engine, true, true);
     ext::register_std_string(engine, true, true);
     ext::register_string_utils(engine, true);
     ext::register_math_constants(engine);

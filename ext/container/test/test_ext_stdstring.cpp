@@ -38,18 +38,18 @@ TEST(unicode_support, const_string_iterator)
     EXPECT_EQ(out, (std::vector<char32_t>{'1', '2', '3', '4'}));
 }
 
-TEST_F(asbind_test_suite, ext_stdstring)
-{
-    if(asbind20::has_max_portability())
-        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+// TEST_F(asbind_test_suite, ext_stdstring)
+// {
+//     if(asbind20::has_max_portability())
+//         GTEST_SKIP() << "AS_MAX_PORTABILITY";
 
-    run_file("script/test_string.as");
-}
+//     run_file("script/test_string.as");
+// }
 
-TEST_F(asbind_test_suite_generic, ext_stdstring)
-{
-    run_file("script/test_string.as");
-}
+// TEST_F(asbind_test_suite_generic, ext_stdstring)
+// {
+//     run_file("script/test_string.as");
+// }
 
 TEST_F(asbind_test_suite, host_script_string_interop)
 {

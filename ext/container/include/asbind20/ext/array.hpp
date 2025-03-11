@@ -3,36 +3,158 @@
 
 #pragma once
 
-#include <mutex>
 #include <cstddef>
 #include <asbind20/asbind.hpp>
-#include <asbind20/ext/vocabulary.hpp>
+#include <asbind20/container/small_vector.hpp>
 
 namespace asbind20::ext
 {
-asPWORD script_array_cache_id();
+consteval auto default_script_array_user_id() noexcept
+    -> AS_NAMESPACE_QUALIFIER asPWORD
+{
+    return 2000;
+}
+
+template <
+    AS_NAMESPACE_QUALIFIER asPWORD UserDataID = default_script_array_user_id(),
+    std::size_t StaticCapacityFactor = 4>
+void register_script_array(
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    bool as_default = true,
+    bool use_generic = has_max_portability()
+);
 
 namespace detail
 {
-    template <bool UseGeneric>
-    void register_script_array_impl(asIScriptEngine* engine, bool as_default);
+    class script_array_base
+    {
+    protected:
+        void* operator new(std::size_t bytes);
+        void operator delete(void* p);
+
+        struct array_cache
+        {
+            AS_NAMESPACE_QUALIFIER asIScriptFunction* subtype_opCmp;
+            AS_NAMESPACE_QUALIFIER asIScriptFunction* subtype_opEquals;
+            int opCmp_status;
+            int opEquals_status;
+        };
+
+        static bool elem_opEquals(
+            int subtype_id,
+            const void* lhs,
+            const void* rhs,
+            AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
+            const array_cache* cache
+        );
+
+        static bool template_callback(
+            AS_NAMESPACE_QUALIFIER asITypeInfo* ti, bool&
+        );
+
+        static void generate_cache(
+            array_cache& out, int subtype_id, AS_NAMESPACE_QUALIFIER asITypeInfo* ti
+        );
+
+        // Setups cached methods for script array.
+        // This function must be called whenever a new script array has been constructed!
+        // According to the author of AngelScript, the template callback is not meant for caching data.
+        // See: https://www.gamedev.net/forums/topic/717709-about-caching-required-methods-in-template-callback/
+        template <AS_NAMESPACE_QUALIFIER asPWORD UserDataID>
+        static void setup_cache(
+            int subtype_id, AS_NAMESPACE_QUALIFIER asITypeInfo* ti
+        )
+        {
+            if(is_primitive_type(subtype_id))
+                return;
+
+            array_cache* cache = static_cast<array_cache*>(
+                ti->GetUserData(UserDataID)
+            );
+            if(cache)
+                return;
+
+            std::lock_guard guard(as_exclusive_lock);
+
+            // Double-check to prevent cache from being created by another thread
+            cache = static_cast<array_cache*>(ti->GetUserData(UserDataID));
+            if(cache) [[unlikely]]
+                return;
+
+            cache = reinterpret_cast<array_cache*>(
+                AS_NAMESPACE_QUALIFIER asAllocMem(sizeof(array_cache))
+            );
+            if(!cache) [[unlikely]]
+            {
+                set_script_exception("out of memory");
+                return;
+            }
+
+            std::memset(cache, 0, sizeof(array_cache));
+            generate_cache(*cache, subtype_id, ti);
+
+            ti->SetUserData(cache, UserDataID);
+        }
+
+        template <AS_NAMESPACE_QUALIFIER asPWORD UserDataID>
+        static void cache_cleanup_callback(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+        {
+            void* mem = ti->GetUserData(UserDataID);
+            if(mem)
+                AS_NAMESPACE_QUALIFIER asFreeMem(mem);
+        }
+
+        template <AS_NAMESPACE_QUALIFIER asPWORD UserDataID>
+        static array_cache* get_cache(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+        {
+            assert(ti != nullptr);
+            return static_cast<array_cache*>(
+                ti->GetUserData(UserDataID)
+            );
+        }
+    };
 } // namespace detail
 
-void register_script_array(asIScriptEngine* engine, bool as_default = true, bool generic = has_max_portability());
-
-class script_array
+template <
+    AS_NAMESPACE_QUALIFIER asPWORD UserDataID = default_script_array_user_id(),
+    std::size_t StaticCapacityFactor = 4>
+class script_array : private detail::script_array_base
 {
-    template <bool UseGeneric>
-    friend void detail::register_script_array_impl(asIScriptEngine* engine, bool as_default);
+    template <AS_NAMESPACE_QUALIFIER asPWORD, std::size_t>
+    friend void register_script_array(AS_NAMESPACE_QUALIFIER asIScriptEngine*, bool, bool);
+
+    using my_base = detail::script_array_base;
+
+    void setup_cache()
+    {
+        AS_NAMESPACE_QUALIFIER asITypeInfo* ti = get_type_info();
+        my_base::setup_cache<UserDataID>(ti->GetSubTypeId(), ti);
+    }
+
+    array_cache* get_cache() const
+    {
+        return my_base::get_cache<UserDataID>(get_type_info());
+    }
 
 public:
-    using size_type = asUINT;
+    using size_type = AS_NAMESPACE_QUALIFIER asUINT;
+    using index_type = std::make_signed_t<size_type>;
+
+    using my_base::operator new;
+    using my_base::operator delete;
 
     script_array() = delete;
 
-    script_array(asITypeInfo* ti);
+    script_array(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+        : m_data(ti)
+    {
+        setup_cache();
+    }
 
-    script_array(const script_array&);
+    script_array(const script_array& other)
+        : m_data(other.m_data)
+    {
+    }
 
     script_array(asITypeInfo* ti, size_type n);
 
@@ -41,64 +163,156 @@ public:
     script_array(asITypeInfo* ti, script_init_list_repeat list);
 
 private:
-    ~script_array();
+    ~script_array() = default;
 
 public:
+    auto get_engine() const
+        -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
+    {
+        return get_type_info()->GetEngine();
+    }
+
     script_array& operator=(const script_array& other);
 
-    void* operator new(std::size_t bytes);
-    void operator delete(void* p);
+    bool operator==(const script_array& other) const
+    {
+        if(get_type_info() != other.get_type_info()) [[unlikely]]
+        {
+            assert(false && "comparing different arrays with different element types");
+            return false;
+        }
 
-    bool operator==(const script_array& other) const;
+        if(size() != other.size())
+            return false;
+        if(empty())
+            return true;
 
-    void* operator[](size_type idx);
-    const void* operator[](size_type idx) const;
+        int subtype_id = m_data.element_type_id();
+        if(!is_primitive_type(m_data.element_type_id()))
+        {
+            array_cache* cache = get_cache();
+
+            reuse_active_context ctx(get_engine());
+            for(size_type i = 0; i < size(); ++i)
+            {
+                bool eq = elem_opEquals(
+                    subtype_id,
+                    (*this)[i],
+                    other[i],
+                    ctx,
+                    cache
+                );
+                if(!eq)
+                    return false;
+            }
+        }
+        else // Primitive types
+        {
+            assert(is_primitive_type(subtype_id));
+            for(size_type i = 0; i < size(); ++i)
+            {
+                bool eq = elem_opEquals(
+                    subtype_id,
+                    (*this)[i],
+                    other[i],
+                    nullptr,
+                    nullptr
+                );
+                if(!eq)
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    void* operator[](size_type idx)
+    {
+        return m_data[idx];
+    }
+
+    const void* operator[](size_type idx) const
+    {
+        return m_data[idx];
+    }
 
     void* data() noexcept
     {
-        return m_data.ptr;
+        return m_data.data();
     }
 
     const void* data() const noexcept
     {
-        return m_data.ptr;
+        return m_data.data();
     }
 
-    bool element_indirect() const;
+    void addref()
+    {
+        m_gc_flag = false;
+        ++m_counter;
+    }
 
-    void* pointer_to(size_type idx);
-    const void* pointer_to(size_type idx) const;
-
-    void addref();
-    void release();
+    void release() noexcept
+    {
+        m_gc_flag = false;
+        m_counter.dec_and_try_destroy(
+            [](auto* p)
+            { delete p; },
+            this
+        );
+    }
 
     size_type size() const noexcept
     {
-        return m_data.size;
+        return static_cast<size_type>(m_data.size());
     }
 
     size_type capacity() const noexcept
     {
-        return m_data.capacity;
+        return static_cast<size_type>(m_data.capacity());
     }
 
     bool empty() const noexcept
     {
-        return size() == 0;
+        return m_data.empty();
     }
 
-    void reserve(size_type new_cap);
-    void shrink_to_fit();
+    void reserve(size_type new_cap)
+    {
+        m_data.reserve(new_cap);
+    }
 
-    void clear();
+    void shrink_to_fit()
+    {
+        // TODO: shrinking
+    }
 
-    void push_back(const void* value);
+    void clear() noexcept
+    {
+        m_data.clear();
+    }
 
-    void pop_back();
+    void push_back(const void* value)
+    {
+        m_data.push_back(value);
+    }
+
+    void emplace_back()
+    {
+        m_data.emplace_back();
+    }
+
+    void pop_back()
+    {
+        m_data.pop_back();
+    }
 
     void append_range(const script_array& rng, size_type n = -1);
 
-    void insert(size_type idx, void* value);
+    void insert(size_type idx, void* value)
+    {
+        m_data.insert(idx, value);
+    }
 
     void insert_range(size_type idx, const script_array& rng, size_type n = -1);
 
@@ -116,65 +330,48 @@ public:
 
     size_type count(const void* value, size_type idx = 0, size_type n = -1) const;
 
-    script_optional find_optional(const void* val, size_type idx = 0);
-
     [[nodiscard]]
-    asITypeInfo* script_type_info() const noexcept
+    auto get_type_info() const noexcept
+        -> AS_NAMESPACE_QUALIFIER asITypeInfo*
     {
-        return m_ti;
-    }
-
-    asQWORD subtype_flags() const;
-
-    void lock()
-    {
-        m_mx.lock();
-    }
-
-    void unlock() noexcept
-    {
-        m_mx.unlock();
+        return m_data.get_type_info();
     }
 
 private:
-    struct array_data
+    using container_type = container::small_vector<
+        container::typeinfo_subtype<0>,
+        StaticCapacityFactor * sizeof(void*),
+        as_allocator<void>>;
+
+    container_type m_data;
+
+    void set_gc_flag()
     {
-        size_type capacity = 0;
-        size_type size = 0;
-        std::byte* ptr = nullptr;
-    };
+        m_gc_flag = true;
+    }
 
-    void copy_construct_range(void* start, const void* rng_start, size_type n);
-    void move_construct_range(void* start, void* rng_start, size_type n);
-    void move_construct_range_backward(void* start, void* rng_start, size_type n);
-    void copy_assign_range_backward(void* start, const void* rng_start, size_type n);
-
-    void insert_range_impl(size_type idx, const void* src, size_type n);
-
-    void copy_assign_at(void* ptr, void* value);
-
-    void destroy_n(void* start, size_type n);
-
-    struct array_cache
+    bool get_gc_flag() const
     {
-        asIScriptFunction* subtype_opCmp;
-        asIScriptFunction* subtype_opEquals;
-        int opCmp_status;
-        int opEquals_status;
-    };
+        return m_gc_flag;
+    }
 
-    bool elem_opEquals(const void* lhs, const void* rhs, asIScriptContext* ctx, const array_cache* cache) const;
+public:
+    int get_refcount() const
+    {
+        return m_counter;
+    }
 
-    void cache_data();
-    static void cache_cleanup_callback(asITypeInfo* ti);
+    void enum_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+    {
+        (void)engine;
+        // TODO: enum references
+    }
 
-    int get_refcount() const;
-    void set_gc_flag();
-    bool get_gc_flag() const;
-    void enum_refs(asIScriptEngine* engine);
-    void release_refs(asIScriptEngine* engine);
-
-    void* opIndex(size_type idx);
+    void release_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+    {
+        (void)engine;
+        clear();
+    }
 
     void* get_front();
     void* get_back();
@@ -182,14 +379,20 @@ private:
     void set_front(void* value);
     void set_back(void* value);
 
-    array_data m_data = array_data();
-    asITypeInfo* m_ti = nullptr;
-    atomic_counter m_refcount;
-    int m_subtype_id = 0;
-    size_type m_elem_size = 0;
+private:
+    void* opIndex(size_type idx)
+    {
+        if(idx >= size())
+        {
+            set_script_exception("out or range");
+            return nullptr;
+        }
+        return (*this)[idx];
+    }
+
+    atomic_counter m_counter;
     bool m_gc_flag = false;
     mutable bool m_within_callback = false;
-    std::mutex m_mx;
 
     class callback_guard
     {
@@ -201,27 +404,46 @@ private:
     private:
         const script_array& m_this;
     };
-
-    static void* allocate(std::size_t bytes);
-    static void deallocate(void* mem) noexcept;
-
-    void default_construct_n(void* start, size_type n);
-    void value_construct_n(void* start, const void* value, size_type n);
-
-    bool mem_resize_to(size_type new_cap);
-
-    void erase_impl(size_type idx, size_type n);
-
-    size_type script_find_if(asIScriptFunction* fn, size_type idx = 0) const;
-
-    size_type script_erase_if(asIScriptFunction* fn, size_type idx, size_type n);
-
-    void script_for_each(asIScriptFunction* fn, size_type idx = 0, size_type n = -1) const;
-
-    void script_sort_by(asIScriptFunction* fn, size_type idx = 0, size_type n = -1, bool stable = true);
-
-    size_type script_count_if(asIScriptFunction* fn, size_type idx = 0, size_type n = -1) const;
 };
+
+template <
+    AS_NAMESPACE_QUALIFIER asPWORD UserDataID,
+    std::size_t StaticCapacityFactor>
+void register_script_array(
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    bool as_default,
+    bool use_generic
+)
+{
+    using array_t = script_array<UserDataID, StaticCapacityFactor>;
+
+    auto helper = [engine, as_default]<bool UseGeneric>(std::bool_constant<UseGeneric>)
+    {
+        template_ref_class<array_t> c(
+            engine,
+            "array<T>",
+            AS_NAMESPACE_QUALIFIER asOBJ_GC
+        );
+        c
+            .template_callback(fp<&array_t::template_callback>)
+            .addref(fp<&array_t::addref>)
+            .release(fp<&array_t::release>)
+            .get_refcount(fp<&array_t::get_refcount>)
+            .get_gc_flag(fp<&array_t::get_gc_flag>)
+            .set_gc_flag(fp<&array_t::set_gc_flag>)
+            .enum_refs(fp<&array_t::enum_refs>)
+            .release_refs(fp<&array_t::release_refs>)
+            .default_factory();
+
+        if(as_default)
+            c.as_array();
+    };
+
+    if(use_generic)
+        helper(std::true_type{});
+    else
+        helper(std::false_type{});
+}
 } // namespace asbind20::ext
 
 #endif

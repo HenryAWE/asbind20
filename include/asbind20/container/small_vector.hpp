@@ -804,7 +804,7 @@ public:
         }
     }
 
-    auto get_type_info() const
+    auto get_type_info() const noexcept
         -> AS_NAMESPACE_QUALIFIER asITypeInfo*
     {
         return impl().get_type_info();
@@ -834,6 +834,14 @@ public:
         return visit_impl(
             [](auto& impl)
             { return impl.capacity(); }
+        );
+    }
+
+    void reserve(size_type new_cap)
+    {
+        return visit_impl(
+            [new_cap](auto& impl)
+            { return impl.reserve(new_cap); }
         );
     }
 
