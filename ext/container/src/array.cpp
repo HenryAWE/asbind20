@@ -19,7 +19,6 @@ namespace detail
         return AS_NAMESPACE_QUALIFIER asFreeMem(p);
     }
 
-    // TODO: Fix segfault
     bool script_array_base::elem_opEquals(
         int subtype_id,
         const void* lhs,

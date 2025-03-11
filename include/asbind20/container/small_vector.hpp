@@ -451,23 +451,31 @@ private:
         {
             assert(this->size() == 0);
 
-            auto flags = this->elem_type_info()->GetFlags();
-            if(!IsHandle && (flags & AS_NAMESPACE_QUALIFIER asOBJ_VALUE))
+            AS_NAMESPACE_QUALIFIER asITypeInfo* subtype_ti = this->elem_type_info();
+            auto flags = subtype_ti->GetFlags();
+            if constexpr(!IsHandle)
             {
-                this->reserve(ilist.size());
-                value_type* p_elem = static_cast<value_type*>(ilist.data());
-                for(size_type i = 0; i < static_cast<size_type>(ilist.size()); ++i)
+                if(flags & AS_NAMESPACE_QUALIFIER asOBJ_VALUE)
                 {
-                    this->emplace_back_impl(*p_elem);
-                    ++p_elem;
+                    this->reserve(ilist.size());
+
+                    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = subtype_ti->GetEngine();
+                    size_type elem_size = subtype_ti->GetSize();
+                    std::byte* p_elem = static_cast<std::byte*>(ilist.data());
+                    for(size_type i = 0; i < static_cast<size_type>(ilist.size()); ++i)
+                    {
+                        *this->m_p_end = engine->CreateScriptObjectCopy(p_elem, subtype_ti);
+                        ++this->m_p_end;
+                        p_elem += elem_size;
+                    }
+
+                    return;
                 }
             }
-            else
-            {
-                my_base::from_ilist(ilist);
-                // Set the original list to 0, preventing it from being double freed.
-                std::memset(ilist.data(), 0, ilist.size() * sizeof(void*));
-            }
+
+            my_base::from_ilist(ilist);
+            // Set the original list to 0, preventing it from being double freed.
+            std::memset(ilist.data(), 0, ilist.size() * sizeof(void*));
         }
 
         void copy_from(impl_object& other)

@@ -2,6 +2,7 @@
 #include <asbind20/container/small_vector.hpp>
 #include <shared_test_lib.hpp>
 #include <gtest/gtest.h>
+#include <asbind20/ext/stdstring.hpp>
 
 TEST(small_vector, int)
 {
@@ -274,4 +275,44 @@ TEST(small_vector, script_object)
             v.size()
         );
     }
+}
+
+TEST(small_vector, script_string)
+{
+    using namespace asbind20;
+    auto engine = make_script_engine();
+
+    ext::register_std_string(engine, true);
+    asbind_test::setup_message_callback(engine, true);
+
+    AS_NAMESPACE_QUALIFIER asITypeInfo* string_ti = engine->GetTypeInfoByName("string");
+    ASSERT_NE(string_ti, nullptr);
+
+    // Use std::allocator for debugging
+    using sv_type = container::small_vector<
+        container::typeinfo_identity,
+        4 * sizeof(void*),
+        std::allocator<void>>;
+
+    sv_type v(string_ti);
+    v.emplace_back();
+
+    EXPECT_EQ(v.size(), 1);
+    EXPECT_EQ(((std::string*)v[0])->size(), 0);
+    EXPECT_EQ(*(std::string*)v[0], "");
+
+    {
+        std::string str = "hello";
+        v.push_back(&str);
+    }
+    EXPECT_EQ(v.size(), 2);
+    EXPECT_EQ(((std::string*)v[1])->size(), 5);
+    EXPECT_EQ(*(std::string*)v[1], "hello");
+
+    v.reserve(128);
+    EXPECT_EQ(v.size(), 2);
+    EXPECT_EQ(((std::string*)v[0])->size(), 0);
+    EXPECT_EQ(*(std::string*)v[0], "");
+    EXPECT_EQ(((std::string*)v[1])->size(), 5);
+    EXPECT_EQ(*(std::string*)v[1], "hello");
 }

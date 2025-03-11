@@ -131,12 +131,11 @@ void check_list_factory(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     run_string(
         engine,
         "test_list_factory_string",
-        "int[] arr = {\"hello\", \"world\"};\n"
+        "string[] arr = {\"hello\", \"world\"};\n"
         "assert(!arr.empty());\n"
-        "assert(arr.size == 3);\n"
-        "assert(arr[0] == 0);\n"
-        "assert(arr[1] == 1);\n"
-        "assert(arr[2] == 2);"
+        "assert(arr.size == 2);\n"
+        "assert(arr[0] == \"hello\");\n"
+        "assert(arr[1] == \"world\");"
     );
 }
 } // namespace test_ext_array
@@ -145,12 +144,14 @@ TEST_F(ext_array_native, factory)
 {
     auto* engine = get_engine();
     test_ext_array::check_factory(engine);
+    test_ext_array::check_list_factory(engine);
 }
 
 TEST_F(ext_array_generic, factory)
 {
     auto* engine = get_engine();
     test_ext_array::check_factory(engine);
+    test_ext_array::check_list_factory(engine);
 }
 
 namespace test_ext_array
@@ -330,12 +331,12 @@ static void check_count(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         "assert(arr.count(2) == 3);"
     );
 
-    // run_string(
-    //     engine,
-    //     "test_count_string",
-    //     "string[] arr = {\"aaa\", \"abb\", \"aaa\"};\n"
-    //     "assert(arr.count(\"aaa\") == 2);"
-    // );
+    run_string(
+        engine,
+        "test_count_string",
+        "string[] arr = {\"aaa\", \"abb\", \"aaa\"};\n"
+        "assert(arr.count(\"aaa\") == 2);"
+    );
 }
 
 void check_count_if(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
