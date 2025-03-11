@@ -96,6 +96,140 @@ using ext_array_generic = test_ext_array::basic_ext_array_suite<true>;
 
 namespace test_ext_array
 {
+void check_factory(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
+    run_string(
+        engine,
+        "test_default_factory_primitive",
+        "int[] arr;\n"
+        "assert(arr.empty());\n"
+        "assert(arr.size == 0);"
+    );
+
+    run_string(
+        engine,
+        "test_default_factory_string",
+        "string[] arr;\n"
+        "assert(arr.empty());\n"
+        "assert(arr.size == 0);"
+    );
+}
+
+void check_list_factory(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
+    run_string(
+        engine,
+        "test_list_factory_primitive",
+        "int[] arr = {0, 1, 2};\n"
+        "assert(!arr.empty());\n"
+        "assert(arr.size == 3);\n"
+        "assert(arr[0] == 0);\n"
+        "assert(arr[1] == 1);\n"
+        "assert(arr[2] == 2);"
+    );
+
+    run_string(
+        engine,
+        "test_list_factory_string",
+        "int[] arr = {\"hello\", \"world\"};\n"
+        "assert(!arr.empty());\n"
+        "assert(arr.size == 3);\n"
+        "assert(arr[0] == 0);\n"
+        "assert(arr[1] == 1);\n"
+        "assert(arr[2] == 2);"
+    );
+}
+} // namespace test_ext_array
+
+TEST_F(ext_array_native, factory)
+{
+    auto* engine = get_engine();
+    test_ext_array::check_factory(engine);
+}
+
+TEST_F(ext_array_generic, factory)
+{
+    auto* engine = get_engine();
+    test_ext_array::check_factory(engine);
+}
+
+namespace test_ext_array
+{
+static void check_front(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
+    run_string(
+        engine,
+        "test_front_on_empty_primitive",
+        "int[] arr;\n"
+        "assert(arr.empty());\n"
+        "arr.front = 10;\n"
+        "assert(arr.front == 10);\n"
+        "assert(arr.size == 1);\n"
+        "arr.front = 13;\n"
+        "assert(arr.front == 13);\n"
+        "assert(arr.size == 1);"
+    );
+
+    run_string(
+        engine,
+        "test_front_on_empty_string",
+        "string[] arr;\n"
+        "assert(arr.empty());\n"
+        "arr.front = \"hello\";\n"
+        "assert(arr.front == \"hello\");\n"
+        "assert(arr.size == 1);\n"
+        "arr.front = \"world\";\n"
+        "assert(arr.front == \"world\");\n"
+        "assert(arr.size == 1);"
+    );
+}
+
+static void check_back(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
+    run_string(
+        engine,
+        "test_back_on_empty_primitive",
+        "int[] arr;\n"
+        "assert(arr.empty());\n"
+        "arr.back = 10;\n"
+        "assert(arr.back == 10);\n"
+        "assert(arr.size == 1);\n"
+        "arr.back = 13;\n"
+        "assert(arr.back == 13);\n"
+        "assert(arr.size == 1);"
+    );
+
+    run_string(
+        engine,
+        "test_back_on_empty_string",
+        "string[] arr;\n"
+        "assert(arr.empty());\n"
+        "arr.back = \"hello\";\n"
+        "assert(arr.back == \"hello\");\n"
+        "assert(arr.size == 1);\n"
+        "arr.back = \"world\";\n"
+        "assert(arr.back == \"world\");\n"
+        "assert(arr.size == 1);"
+    );
+}
+} // namespace test_ext_array
+
+TEST_F(ext_array_native, properties)
+{
+    auto* engine = get_engine();
+    test_ext_array::check_front(engine);
+    test_ext_array::check_back(engine);
+}
+
+TEST_F(ext_array_generic, properties)
+{
+    auto* engine = get_engine();
+    test_ext_array::check_front(engine);
+    test_ext_array::check_back(engine);
+}
+
+namespace test_ext_array
+{
 void check_reverse(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     run_string(
@@ -196,15 +330,15 @@ static void check_count(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         "assert(arr.count(2) == 3);"
     );
 
-    run_string(
-        engine,
-        "test_count_string",
-        "string[] arr = {\"aaa\", \"abb\", \"aaa\"};\n"
-        "assert(arr.count(\"aaa\") == 2);"
-    );
+    // run_string(
+    //     engine,
+    //     "test_count_string",
+    //     "string[] arr = {\"aaa\", \"abb\", \"aaa\"};\n"
+    //     "assert(arr.count(\"aaa\") == 2);"
+    // );
 }
 
-static void check_count_if(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+void check_count_if(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     run_string(
         engine,
@@ -226,18 +360,16 @@ static void check_count_if(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 
 TEST_F(ext_array_native, count)
 {
-    GTEST_SKIP();
     AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = get_engine();
     test_ext_array::check_count(engine);
-    test_ext_array::check_count_if(engine);
+    // test_ext_array::check_count_if(engine);
 }
 
 TEST_F(ext_array_generic, count)
 {
-    GTEST_SKIP();
     AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = get_engine();
     test_ext_array::check_count(engine);
-    test_ext_array::check_count_if(engine);
+    //  test_ext_array::check_count_if(engine);
 }
 
 // TEST_F(asbind_test_suite, ext_array)

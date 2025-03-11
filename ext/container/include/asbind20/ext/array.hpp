@@ -154,13 +154,18 @@ public:
     script_array(const script_array& other)
         : m_data(other.m_data)
     {
+        setup_cache();
     }
 
     script_array(asITypeInfo* ti, size_type n);
 
     script_array(asITypeInfo* ti, size_type n, const void* value);
 
-    script_array(asITypeInfo* ti, script_init_list_repeat list);
+    script_array(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, script_init_list_repeat ilist)
+        : m_data(ti, ilist)
+    {
+        setup_cache();
+    }
 
 private:
     ~script_array() = default;
@@ -287,23 +292,42 @@ public:
         // TODO: shrinking
     }
 
+#define ASBIND20_EXT_ARRAY_CHECK_CALLBACK(func_name, ret)        \
+    do {                                                         \
+        if(this->m_within_callback)                              \
+        {                                                        \
+            set_script_exception(                                \
+                #func_name "(): modifying array within callback" \
+            );                                                   \
+            return ret;                                          \
+        }                                                        \
+    } while(0)
+
     void clear() noexcept
     {
+        ASBIND20_EXT_ARRAY_CHECK_CALLBACK(clear, void());
+
         m_data.clear();
     }
 
     void push_back(const void* value)
     {
+        ASBIND20_EXT_ARRAY_CHECK_CALLBACK(push_back, void());
+
         m_data.push_back(value);
     }
 
     void emplace_back()
     {
+        ASBIND20_EXT_ARRAY_CHECK_CALLBACK(emplace_back, void());
+
         m_data.emplace_back();
     }
 
     void pop_back()
     {
+        ASBIND20_EXT_ARRAY_CHECK_CALLBACK(pop_back, void());
+
         m_data.pop_back();
     }
 
@@ -311,12 +335,62 @@ public:
 
     void insert(size_type idx, void* value)
     {
+        ASBIND20_EXT_ARRAY_CHECK_CALLBACK(insert, void());
+
         m_data.insert(idx, value);
     }
 
     void insert_range(size_type idx, const script_array& rng, size_type n = -1);
 
-    void erase(size_type idx, size_type n = 1);
+    void erase(size_type idx, size_type n = 1)
+    {
+        ASBIND20_EXT_ARRAY_CHECK_CALLBACK(erase, void());
+
+        m_data.erase(idx, n);
+    }
+
+    size_type count(const void* val, size_type start, size_type n = -1) const
+    {
+        if(start >= size())
+            return 0;
+
+        n = std::min(size() - start, n);
+
+        int subtype_id = m_data.element_type_id();
+        if(is_primitive_type(subtype_id))
+        {
+            return visit_primitive_type(
+                []<typename T>(const T* start, const T* stop, const T* val)
+                {
+                    return static_cast<size_type>(std::count(
+                        start,
+                        stop,
+                        *val
+                    ));
+                },
+                subtype_id,
+                m_data.data_at(start),
+                m_data.data_at(start + n),
+                val
+            );
+        }
+        else
+        {
+            array_cache* cache = get_cache();
+            reuse_active_context ctx(get_engine(), true);
+
+            size_type result = 0;
+            void** elems = (void**)m_data.data();
+            for(size_type i = 0; i < size(); ++i)
+            {
+                const void* elem = elems[i];
+                if(elem_opEquals(subtype_id, elem, val, ctx, cache))
+                    ++result;
+            }
+
+            return result;
+        }
+    }
 
     size_type erase_value(const void* val, size_type idx = 0, size_type n = -1);
 
@@ -327,8 +401,6 @@ public:
     size_type find(const void* value, size_type idx = 0) const;
 
     bool contains(const void* value, size_type idx = 0) const;
-
-    size_type count(const void* value, size_type idx = 0, size_type n = -1) const;
 
     [[nodiscard]]
     auto get_type_info() const noexcept
@@ -364,20 +436,64 @@ public:
     void enum_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     {
         (void)engine;
-        // TODO: enum references
+        assert(m_data.get_type_info()->GetEngine() == engine);
+        m_data.enum_refs();
     }
 
     void release_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     {
         (void)engine;
+        assert(m_data.get_type_info()->GetEngine() == engine);
         clear();
     }
 
-    void* get_front();
-    void* get_back();
+    void* get_front()
+    {
+        if(empty())
+        {
+            set_script_exception("get_front(): empty array");
+            return nullptr;
+        }
 
-    void set_front(void* value);
-    void set_back(void* value);
+        return m_data[0];
+    }
+
+    void* get_back()
+    {
+        if(empty())
+        {
+            set_script_exception("get_back(): empty array");
+            return nullptr;
+        }
+
+        return m_data[m_data.size() - 1];
+    }
+
+    void set_front(void* value)
+    {
+        if(empty())
+        {
+            ASBIND20_EXT_ARRAY_CHECK_CALLBACK(set_front, void());
+            m_data.insert(m_data.begin(), value);
+        }
+        else
+        {
+            m_data.assign(0, value);
+        }
+    }
+
+    void set_back(void* value)
+    {
+        if(empty())
+        {
+            ASBIND20_EXT_ARRAY_CHECK_CALLBACK(set_back, void());
+            m_data.push_back(value);
+        }
+        else
+        {
+            m_data.assign(m_data.size() - 1, value);
+        }
+    }
 
 private:
     void* opIndex(size_type idx)
@@ -397,13 +513,24 @@ private:
     class callback_guard
     {
     public:
-        callback_guard(const script_array& this_) noexcept;
+        callback_guard(const script_array* this_) noexcept
+            : m_guard(this_->m_within_callback)
+        {
+            assert(!m_guard);
+            m_guard = true;
+        }
 
-        ~callback_guard();
+        ~callback_guard()
+        {
+            assert(m_guard);
+            m_guard = false;
+        }
 
     private:
-        const script_array& m_this;
+        bool& m_guard;
     };
+
+#undef ASBIND20_EXT_ARRAY_CHECK_CALLBACK
 };
 
 template <
@@ -416,6 +543,9 @@ void register_script_array(
 )
 {
     using array_t = script_array<UserDataID, StaticCapacityFactor>;
+
+#define ASBIND_EXT_ARRAY_MFN(name, ret, args) \
+    static_cast<ret(array_t::*) args>(&array_t::name)
 
     auto helper = [engine, as_default]<bool UseGeneric>(std::bool_constant<UseGeneric>)
     {
@@ -433,7 +563,23 @@ void register_script_array(
             .set_gc_flag(fp<&array_t::set_gc_flag>)
             .enum_refs(fp<&array_t::enum_refs>)
             .release_refs(fp<&array_t::release_refs>)
-            .default_factory();
+            .default_factory(use_policy<policies::notify_gc>)
+            .list_factory("repeat T", use_policy<policies::repeat_list_proxy, policies::notify_gc>)
+            .opEquals()
+            .method("uint get_size() const property", fp<&array_t::size>)
+            .method("bool empty() const", fp<&array_t::empty>)
+            .method("T& opIndex(uint)", fp<&array_t::opIndex>)
+            .method("const T& opIndex(uint) const", fp<&array_t::opIndex>)
+            .method("void push_back(const T&in)", fp<&array_t::push_back>)
+            .method("void emplace_back()", fp<&array_t::emplace_back>)
+            .method("void pop_back()", fp<&array_t::pop_back>)
+            .method("void set_front(const T&in) property", fp<&array_t::set_front>)
+            .method("void set_back(const T&in) property", fp<&array_t::set_back>)
+            .method("T& get_front() property", fp<&array_t::get_front>)
+            .method("T& get_back() property", fp<&array_t::get_back>)
+            .method("const T& get_front() const property", fp<&array_t::get_front>)
+            .method("const T& get_back() const property", fp<&array_t::get_back>)
+            .method("uint count(const T&in, uint start=0,uint n=uint(-1)) const", fp<&array_t::count>);
 
         if(as_default)
             c.as_array();
@@ -443,6 +589,11 @@ void register_script_array(
         helper(std::true_type{});
     else
         helper(std::false_type{});
+
+    engine->SetTypeInfoUserDataCleanupCallback(
+        &array_t::template cache_cleanup_callback<UserDataID>,
+        UserDataID
+    );
 }
 } // namespace asbind20::ext
 

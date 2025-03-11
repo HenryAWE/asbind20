@@ -19,6 +19,7 @@ namespace detail
         return AS_NAMESPACE_QUALIFIER asFreeMem(p);
     }
 
+    // TODO: Fix segfault
     bool script_array_base::elem_opEquals(
         int subtype_id,
         const void* lhs,
@@ -50,12 +51,13 @@ namespace detail
             if(!cache) [[unlikely]]
                 return false;
 
+
             assert(ctx != nullptr);
             if(cache->subtype_opEquals) [[likely]]
             {
                 auto result = script_invoke<bool>(
                     ctx,
-                    *(void**)lhs,
+                    lhs,
                     cache->subtype_opEquals,
                     rhs
                 );
@@ -69,7 +71,7 @@ namespace detail
             {
                 auto result = script_invoke<int>(
                     ctx,
-                    *(void**)lhs,
+                    lhs,
                     cache->subtype_opCmp,
                     rhs
                 );
@@ -95,7 +97,7 @@ namespace detail
             ti->GetEngine()->GetTypeInfoById(subtype_id);
         assert(subtype_ti != nullptr);
 
-        for(asUINT i = 0; i < subtype_ti->GetMethodCount(); ++i)
+        for(AS_NAMESPACE_QUALIFIER asUINT i = 0; i < subtype_ti->GetMethodCount(); ++i)
         {
             AS_NAMESPACE_QUALIFIER asIScriptFunction* func = subtype_ti->GetMethodByIndex(i);
 

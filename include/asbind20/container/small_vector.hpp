@@ -195,6 +195,35 @@ private:
             }
         }
 
+        void from_ilist(script_init_list_repeat ilist)
+        {
+            assert(size() == 0);
+            reserve(ilist.size());
+
+            value_type* p_elem = static_cast<value_type*>(ilist.data());
+            for(size_type i = 0; i < static_cast<size_type>(ilist.size()); ++i)
+            {
+                *m_p_end = *p_elem;
+                ++m_p_end;
+                ++p_elem;
+            }
+        }
+
+        void copy_from(impl_storage& other)
+        {
+            assert(empty());
+            assert(this != &other);
+            reserve(other.size());
+
+            size_type new_size = other.size();
+            std::memcpy(
+                m_p_begin,
+                other.m_p_begin,
+                new_size * sizeof(value_type)
+            );
+            m_p_end = new_size;
+        }
+
         static consteval size_type max_static_size()
         {
             return StaticCapacityBytes / sizeof(value_type);
@@ -360,6 +389,16 @@ private:
             m_p_end -= n;
         }
 
+        void assign_one(size_type where, const void* ref)
+        {
+            if(where >= size())
+                throw_out_of_range();
+            m_p_begin[where] = *static_cast<const value_type*>(ref);
+        }
+
+        // Placeholder
+        void enum_refs() {}
+
     protected:
         pointer get_static_storage() noexcept
         {
@@ -406,6 +445,39 @@ private:
         ~impl_object()
         {
             clear();
+        }
+
+        void from_ilist(script_init_list_repeat ilist)
+        {
+            assert(this->size() == 0);
+
+            auto flags = this->elem_type_info()->GetFlags();
+            if(!IsHandle && (flags & AS_NAMESPACE_QUALIFIER asOBJ_VALUE))
+            {
+                this->reserve(ilist.size());
+                value_type* p_elem = static_cast<value_type*>(ilist.data());
+                for(size_type i = 0; i < static_cast<size_type>(ilist.size()); ++i)
+                {
+                    this->emplace_back_impl(*p_elem);
+                    ++p_elem;
+                }
+            }
+            else
+            {
+                my_base::from_ilist(ilist);
+                // Set the original list to 0, preventing it from being double freed.
+                std::memset(ilist.data(), 0, ilist.size() * sizeof(void*));
+            }
+        }
+
+        void copy_from(impl_object& other)
+        {
+            assert(empty());
+            assert(this != &other);
+            reserve(other.size());
+
+            for(size_type i = 0; i < other.size(); ++i)
+                this->emplace_back_impl(other[i]);
         }
 
         void* value_ref_at(size_type idx) const
@@ -553,6 +625,43 @@ private:
             this->m_p_end -= n;
         }
 
+        void assign_one(size_type where, const void* ref)
+        {
+            if(where >= this->size())
+                throw_out_of_range();
+
+            assign_obj(this->m_p_begin[where], ref_to_obj(ref));
+        }
+
+        void enum_refs()
+        {
+            AS_NAMESPACE_QUALIFIER asITypeInfo* ti = this->elem_type_info();
+            auto* engine = ti->GetEngine();
+
+            auto flags = ti->GetFlags();
+            if(flags & AS_NAMESPACE_QUALIFIER asOBJ_REF)
+            {
+                for(auto it = this->m_p_begin; it != this->m_p_end; ++it)
+                {
+                    void* obj = *it;
+                    if(!obj)
+                        continue;
+                    engine->GCEnumCallback(obj);
+                }
+            }
+            else if((flags & AS_NAMESPACE_QUALIFIER asOBJ_VALUE) &&
+                    (flags & AS_NAMESPACE_QUALIFIER asOBJ_GC))
+            {
+                for(auto it = this->m_p_begin; it != this->m_p_end; ++it)
+                {
+                    void* obj = *it;
+                    if(!obj)
+                        continue;
+                    engine->ForwardGCEnumReferences(obj, ti);
+                }
+            }
+        }
+
     private:
         static void* ref_to_obj(const void* ref) noexcept
         {
@@ -579,6 +688,40 @@ private:
             {
                 assert(obj != nullptr);
                 return ti->GetEngine()->CreateScriptObjectCopy(obj, ti);
+            }
+        }
+
+        // NOTE: Call ref_to_obj to convert the pointer at first!
+        void assign_obj(void*& dst, void* obj)
+        {
+            AS_NAMESPACE_QUALIFIER asITypeInfo* ti = this->elem_type_info();
+            AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = ti->GetEngine();
+
+            if(dst)
+            {
+                if constexpr(IsHandle)
+                {
+                    engine->ReleaseScriptObject(dst, ti);
+                    engine->AddRefScriptObject(obj, ti);
+                    dst = obj;
+                }
+                else
+                {
+                    engine->AssignScriptObject(dst, obj, ti);
+                }
+            }
+            else
+            {
+                if constexpr(IsHandle)
+                {
+                    engine->AddRefScriptObject(obj, ti);
+                    dst = obj;
+                }
+                else
+                {
+                    assert(obj != nullptr);
+                    dst = engine->CreateScriptObjectCopy(obj, ti);
+                }
             }
         }
 
@@ -728,26 +871,33 @@ case AS_NAMESPACE_QUALIFIER as_type_id:                                         
     }
 
     template <typename... Args>
-    void init_impl(int type_id, AS_NAMESPACE_QUALIFIER asITypeInfo* ti, Args&&... args)
+    void init_impl(
+        int type_id, AS_NAMESPACE_QUALIFIER asITypeInfo* ti, script_init_list_repeat* ilist = nullptr
+    )
     {
         assert(!is_void_type(type_id));
+
+        auto helper = [&]<typename ImplType>(std::in_place_type_t<ImplType>)
+        {
+            new(m_impl_data) ImplType(type_id, ti);
+            if(ilist)
+                reinterpret_cast<ImplType*>(m_impl_data)->from_ilist(*ilist);
+        };
 
         if(!is_primitive_type(type_id))
         {
             if(is_objhandle(type_id))
-                new(m_impl_data) impl_object<true>(type_id, ti, std::forward<Args>(args)...);
+                helper(std::in_place_type<impl_object<true>>);
             else
-                new(m_impl_data) impl_object<false>(type_id, ti, std::forward<Args>(args)...);
+                helper(std::in_place_type<impl_object<false>>);
             return;
         }
 
         switch(type_id)
         {
-#define ASBIND20_SMALL_VECTOR_IMPL_CASE(as_type_id) \
-case AS_NAMESPACE_QUALIFIER as_type_id:             \
-    new(m_impl_data) impl_primitive<as_type_id>(    \
-        type_id, ti, std::forward<Args>(args)...    \
-    );                                              \
+#define ASBIND20_SMALL_VECTOR_IMPL_CASE(as_type_id)         \
+case AS_NAMESPACE_QUALIFIER as_type_id:                     \
+    helper(std::in_place_type<impl_primitive<as_type_id>>); \
     break
 
             ASBIND20_SMALL_VECTOR_IMPL_CASE(asTYPEID_BOOL);
@@ -764,7 +914,7 @@ case AS_NAMESPACE_QUALIFIER as_type_id:             \
 
         default:
             assert(is_enum_type(type_id));
-            new(m_impl_data) impl_enum(type_id, ti, std::forward<Args>(args)...);
+            helper(std::in_place_type<impl_enum>);
             break;
 
 #undef ASBIND20_SMALL_VECTOR_IMPL_CASE
@@ -784,10 +934,28 @@ public:
         );
     }
 
+    small_vector(const small_vector& other)
+    {
+        init_impl(other.element_type_id(), other.get_type_info());
+        visit_impl(
+            [&]<typename ImplType>(ImplType& impl)
+            { impl.copy_from(static_cast<const ImplType&>(other.impl())); }
+        );
+    }
+
     explicit small_vector(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
     {
         init_impl(
             TypeInfoPolicy::get_type_id(ti), ti
+        );
+    }
+
+    explicit small_vector(
+        AS_NAMESPACE_QUALIFIER asITypeInfo* ti, script_init_list_repeat ilist
+    )
+    {
+        init_impl(
+            TypeInfoPolicy::get_type_id(ti), ti, &ilist
         );
     }
 
@@ -1116,6 +1284,19 @@ public:
         this->erase(where.get_offset(), 1);
     }
 
+    void assign(size_type where, const void* ref)
+    {
+        return visit_impl(
+            [where, ref](auto& impl)
+            { return impl.assign_one(where, ref); }
+        );
+    }
+
+    void assign(const_iterator where, const void* ref)
+    {
+        return assign(where.get_offset(), ref);
+    }
+
     void* data_at(size_type idx) noexcept
     {
         return visit_impl(
@@ -1157,6 +1338,14 @@ public:
             element_type_id(),
             data_at(start.get_offset()),
             data_at(stop.get_offset())
+        );
+    }
+
+    void enum_refs()
+    {
+        return visit_impl(
+            [](auto& impl)
+            { return impl.enum_refs(); }
         );
     }
 };
