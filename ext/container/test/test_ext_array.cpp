@@ -7,6 +7,32 @@
 
 namespace test_ext_array
 {
+constexpr char helper_module_name[] = "test_ext_array";
+
+constexpr char helper_module_script[] = R"AngelScript(class my_pair
+{
+    int x;
+    int y;
+
+    my_pair()
+    {
+        x = 0;
+        y = 0;
+    }
+
+    my_pair(int x, int y)
+    {
+        this.x = x;
+        this.y = y;
+    }
+
+    bool opEquals(const my_pair&in other) const
+    {
+        return this.x == other.x && this.y == other.y;
+    }
+};
+)AngelScript";
+
 template <bool UseGeneric>
 class basic_ext_array_suite : public ::testing::Test
 {
@@ -28,11 +54,21 @@ public:
             m_engine,
             [](std::string_view msg)
             {
-                FAIL() << "array assertion failed: " << msg;
+                auto* ctx = current_context();
+                if(ctx)
+                {
+                    FAIL() << "array assertion failed in \"" << ctx->GetFunction()->GetScriptSectionName() << "\": " << msg;
+                }
+                else
+                {
+                    FAIL() << "array assertion failed: " << msg;
+                }
             }
         );
         ext::register_script_array(m_engine, true, UseGeneric);
         ext::register_std_string(m_engine, true, UseGeneric);
+
+        build_helper_module();
     }
 
     void TearDown() override
@@ -48,6 +84,19 @@ public:
 
 private:
     asbind20::script_engine m_engine;
+
+    void build_helper_module()
+    {
+        auto* m = m_engine->GetModule(
+            helper_module_name, AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
+        );
+        ASSERT_NE(m, nullptr);
+        m->AddScriptSection(
+            "test_ext_array_helper_module",
+            helper_module_script
+        );
+        EXPECT_GE(m->Build(), 0);
+    }
 };
 
 template <typename R = void>
@@ -68,7 +117,7 @@ static void run_string(
     );
 
     auto* m = engine->GetModule(
-        "test_ext_array", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
+        helper_module_name, AS_NAMESPACE_QUALIFIER asGM_ONLY_IF_EXISTS
     );
     AS_NAMESPACE_QUALIFIER asIScriptFunction* f = nullptr;
     r = m->CompileFunction(
@@ -136,6 +185,27 @@ void check_list_factory(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         "assert(arr.size == 2);\n"
         "assert(arr[0] == \"hello\");\n"
         "assert(arr[1] == \"world\");"
+    );
+
+    run_string(
+        engine,
+        "test_list_my_pair",
+        "array<my_pair> pairs = {my_pair(1, 1), my_pair(2, 2)};\n"
+        "assert(pairs.size == 2);\n"
+        "assert(pairs[0] == my_pair(1, 1));\n"
+        "assert(pairs[1] == my_pair(2, 2));"
+    );
+
+    run_string(
+        engine,
+        "test_list_my_pair_ref",
+        "my_pair p1 = my_pair();\n"
+        "my_pair p2 = my_pair(1, 2);\n"
+        "array<my_pair@> pairs = {p1, p2, null};\n"
+        "assert(pairs.size == 3);\n"
+        "assert(pairs[0] is @p1);\n"
+        "assert(pairs[1] is @p2);\n"
+        "assert(pairs[2] is null);"
     );
 }
 } // namespace test_ext_array
@@ -212,6 +282,15 @@ static void check_back(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         "assert(arr.back == \"world\");\n"
         "assert(arr.size == 1);"
     );
+
+    run_string(
+        engine,
+        "test_back_my_pair",
+        "array<my_pair> pairs = {my_pair(1, 1), my_pair(2, 2)};\n"
+        "assert(pairs[0] == my_pair(1, 1));\n"
+        "pairs.front = my_pair(-1, -2);\n"
+        "assert(pairs[0] == my_pair(-1, -2));"
+    );
 }
 } // namespace test_ext_array
 
@@ -253,52 +332,50 @@ void check_reverse(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 
 TEST_F(ext_array_native, reverse)
 {
-    GTEST_SKIP();
     test_ext_array::check_reverse(get_engine());
 }
 
 TEST_F(ext_array_generic, reverse)
 {
-    GTEST_SKIP();
     test_ext_array::check_reverse(get_engine());
 }
 
 namespace test_ext_array
 {
-static void check_erase_value(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void check_remove(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     run_string(
         engine,
-        "test_erase_value_primitive",
+        "test_remove_primitive",
         "int[] arr = {1, 2, 2, 2, 5};\n"
-        "assert(arr.erase_value(2) == 3);\n"
+        "assert(arr.remove(2) == 3);\n"
         "assert(arr == {1, 5});"
     );
 
     run_string(
         engine,
-        "test_erase_value_string",
+        "test_remove_string",
         "string[] arr = {\"aaa\", \"abb\", \"aaa\"};\n"
-        "assert(arr.erase_value(\"aaa\") == 2);\n"
+        "assert(arr.remove(\"aaa\") == 2);\n"
         "assert(arr == {\"abb\"});"
     );
 }
 
-static void check_erase_if(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void check_remove_if(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     run_string(
         engine,
-        "test_erase_if_primitive",
+        "test_remove_if_primitive",
         "int[] arr = {1, 2, 3, 4, 5};\n"
-        "arr.erase_if(function(v) { return v > 2; });\n"
+        "arr.remove_if(function(v) { return v > 2; });\n"
         "assert(arr == {1, 2});"
     );
 
     run_string(
         engine,
-        "test_erase_if_string",
+        "test_remove_if_string",
         "string[] arr = {\"aaa\", \"aab\", \"abb\"};\n"
-        "arr.erase_if(function(v) { return v.starts_with(\"aa\"); });\n"
+        "arr.remove_if(function(v) { return v.starts_with(\"aa\"); });\n"
         "assert(arr == {\"abb\"});"
     );
 }
@@ -306,18 +383,16 @@ static void check_erase_if(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 
 TEST_F(ext_array_native, erase)
 {
-    GTEST_SKIP();
     auto* engine = get_engine();
-    test_ext_array::check_erase_value(engine);
-    test_ext_array::check_erase_if(engine);
+    test_ext_array::check_remove(engine);
+    test_ext_array::check_remove_if(engine);
 }
 
 TEST_F(ext_array_generic, erase)
 {
-    GTEST_SKIP();
     auto* engine = get_engine();
-    test_ext_array::check_erase_value(engine);
-    test_ext_array::check_erase_if(engine);
+    test_ext_array::check_remove(engine);
+    test_ext_array::check_remove_if(engine);
 }
 
 namespace test_ext_array
@@ -339,7 +414,7 @@ static void check_count(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     );
 }
 
-void check_count_if(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void check_count_if(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     run_string(
         engine,
@@ -363,14 +438,14 @@ TEST_F(ext_array_native, count)
 {
     AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = get_engine();
     test_ext_array::check_count(engine);
-    // test_ext_array::check_count_if(engine);
+    test_ext_array::check_count_if(engine);
 }
 
 TEST_F(ext_array_generic, count)
 {
     AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = get_engine();
     test_ext_array::check_count(engine);
-    //  test_ext_array::check_count_if(engine);
+    test_ext_array::check_count_if(engine);
 }
 
 // TEST_F(asbind_test_suite, ext_array)

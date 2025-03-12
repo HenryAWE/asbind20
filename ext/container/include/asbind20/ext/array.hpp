@@ -332,7 +332,116 @@ public:
         m_data.insert(idx, value);
     }
 
-    void insert_range(size_type idx, const script_array& rng, size_type n = -1);
+    /**
+     * @brief Remove matched elements
+     *
+     * @param val Value to remove
+     * @param start Start position. Return 0 if start position is out of ranage
+     * @param n Max checked elements
+     * @return size_type Removed element count
+     */
+    size_type remove(const void* val, size_type start = 0, size_type n = -1)
+    {
+        if(start >= size())
+            return 0;
+
+        ASBIND20_EXT_ARRAY_CHECK_CALLBACK(remove, 0);
+
+        size_type removed = 0;
+
+        int subtype_id = m_data.element_type_id();
+
+        n = std::min(size() - start, n);
+
+        if(is_primitive_type(subtype_id))
+        {
+            for(size_type i = start; i + removed < n;)
+            {
+                bool eq = elem_opEquals(
+                    subtype_id,
+                    (*this)[i],
+                    val,
+                    nullptr,
+                    nullptr
+                );
+                if(!eq)
+                {
+                    ++i;
+                    continue;
+                }
+                i = static_cast<size_type>(m_data.remove(i));
+                removed += 1;
+            }
+        }
+        else
+        {
+            AS_NAMESPACE_QUALIFIER asITypeInfo* ti = get_type_info();
+
+            reuse_active_context ctx(ti->GetEngine());
+            array_cache* cache = get_cache();
+            for(size_type i = start; i + removed < n;)
+            {
+                bool eq = elem_opEquals(
+                    subtype_id,
+                    (*this)[i],
+                    val,
+                    ctx,
+                    cache
+                );
+                if(!eq)
+                {
+                    ++i;
+                    continue;
+                }
+                i = static_cast<size_type>(m_data.remove(i));
+                removed += 1;
+            }
+        }
+
+        if(removed > 0)
+            m_data.erase(m_data.end() - removed, m_data.end());
+        return removed;
+    }
+
+    /**
+     * @brief Remove matched elements
+     *
+     * @param pred AngelScript signature: `bool pred(const T&in)`
+     * @param start Start position. Return 0 if start position is out of ranage
+     * @param n Max checked elements
+     * @return size_type Removed element count
+     */
+    size_type remove_if(AS_NAMESPACE_QUALIFIER asIScriptFunction* pred, size_type start = 0, size_type n = -1)
+    {
+        if(start >= size())
+            return 0;
+
+        ASBIND20_EXT_ARRAY_CHECK_CALLBACK(remove_if, 0);
+
+        size_type removed = 0;
+
+        n = std::min(size() - start, n);
+
+        AS_NAMESPACE_QUALIFIER asITypeInfo* ti = get_type_info();
+
+        callback_guard guard(this);
+        reuse_active_context ctx(ti->GetEngine());
+        for(size_type i = start; i + removed < n;)
+        {
+            auto eq = script_invoke<bool>(ctx, pred, m_data[i]);
+            if(!eq.has_value() || !*eq)
+            {
+                ++i;
+                continue;
+            }
+            i = static_cast<size_type>(m_data.remove(i));
+            removed += 1;
+        }
+
+        if(removed > 0)
+            m_data.erase(m_data.end() - removed, m_data.end());
+        return removed;
+    }
 
     void erase(size_type idx, size_type n = 1)
     {
@@ -341,9 +450,9 @@ public:
         m_data.erase(idx, n);
     }
 
-    size_type count(const void* val, size_type start, size_type n = -1) const
+    size_type count(const void* val, size_type start = 0, size_type n = -1) const
     {
-        if(start >= size())
+        if(start >= size()) [[unlikely]]
             return 0;
 
         n = std::min(size() - start, n);
@@ -372,11 +481,9 @@ public:
             reuse_active_context ctx(get_engine(), true);
 
             size_type result = 0;
-            void** elems = (void**)m_data.data();
-            for(size_type i = 0; i < size(); ++i)
+            for(size_type i = start; i < start + n; ++i)
             {
-                const void* elem = elems[i];
-                if(elem_opEquals(subtype_id, elem, val, ctx, cache))
+                if(elem_opEquals(subtype_id, m_data[i], val, ctx, cache))
                     ++result;
             }
 
@@ -384,11 +491,34 @@ public:
         }
     }
 
-    size_type erase_value(const void* val, size_type idx = 0, size_type n = -1);
+    size_type count_if(AS_NAMESPACE_QUALIFIER asIScriptFunction* pred, size_type start, size_type n = -1)
+    {
+        if(start >= size()) [[unlikely]]
+            return 0;
+
+        n = std::min(size() - start, n);
+
+        size_type result = 0;
+
+        // TODO: Deal with calling count_if within count_if
+        callback_guard guard(this);
+        reuse_active_context ctx(get_engine(), true);
+        for(size_type i = start; i < start + n; ++i)
+        {
+            auto eq = script_invoke<bool>(ctx, pred, m_data[i]);
+            if(eq.has_value() && *eq)
+                result += 1;
+        }
+
+        return result;
+    }
 
     void sort(size_type idx = 0, size_type n = -1, bool asc = true);
 
-    void reverse(size_type idx = 0, size_type n = -1);
+    void reverse(size_type start = 0, size_type n = -1)
+    {
+        m_data.reverse(start, n);
+    }
 
     size_type find(const void* value, size_type idx = 0) const;
 
@@ -568,7 +698,13 @@ inline void register_script_array(
             .method("T& get_back() property", fp<&array_t::get_back>)
             .method("const T& get_front() const property", fp<&array_t::get_front>)
             .method("const T& get_back() const property", fp<&array_t::get_back>)
-            .method("uint count(const T&in, uint start=0,uint n=uint(-1)) const", fp<&array_t::count>);
+            .method("void reverse(uint start=0,uint n=uint(-1))", fp<&array_t::reverse>)
+            .method("uint remove(const T&in, uint start=0,uint n=uint(-1)) const", fp<&array_t::remove>)
+            .funcdef("bool remove_if_callback(const T&in)")
+            .method("uint remove_if(remove_if_callback@, uint start=0,uint n=uint(-1)) const", fp<&array_t::remove_if>)
+            .method("uint count(const T&in, uint start=0,uint n=uint(-1)) const", fp<&array_t::count>)
+            .funcdef("bool count_if_callback(const T&in)")
+            .method("uint count_if(count_if_callback@, uint start=0,uint n=uint(-1)) const", fp<&array_t::count_if>);
 
         if(as_default)
             c.as_array();

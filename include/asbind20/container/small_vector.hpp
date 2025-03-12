@@ -12,6 +12,7 @@
 #include <cstddef>
 #include <cstring>
 #include <stdexcept>
+#include <algorithm>
 #include "../utility.hpp"
 #include "helper.hpp"
 
@@ -394,6 +395,36 @@ private:
             if(where >= size())
                 throw_out_of_range();
             m_p_begin[where] = *static_cast<const value_type*>(ref);
+        }
+
+        // Move element to the end of buffer for erasing it later
+        void remove_one(size_type where)
+        {
+            if(where >= size())
+                throw_out_of_range();
+
+            value_type tmp = m_p_begin[where];
+            size_type elem_to_move = size() - where - 1;
+            std::memmove(
+                m_p_begin + where,
+                m_p_begin + where + 1,
+                elem_to_move * sizeof(value_type)
+            );
+            *(m_p_end - 1) = tmp;
+        }
+
+        void reverse(size_type start, size_type n)
+        {
+            if(start >= size())
+                throw_out_of_range();
+            n = std::min(size() - start, n);
+            if(n == 0) [[unlikely]]
+                return;
+
+            std::reverse(
+                m_p_begin + start,
+                m_p_begin + start + n
+            );
         }
 
         // Placeholder
@@ -1292,6 +1323,15 @@ public:
         this->erase(where.get_offset(), 1);
     }
 
+    size_type remove(size_type where)
+    {
+        visit_impl(
+            [where](auto& impl)
+            { impl.remove_one(where); }
+        );
+        return where;
+    }
+
     void assign(size_type where, const void* ref)
     {
         return visit_impl(
@@ -1303,6 +1343,14 @@ public:
     void assign(const_iterator where, const void* ref)
     {
         return assign(where.get_offset(), ref);
+    }
+
+    void reverse(size_type start, size_type n = -1)
+    {
+        return visit_impl(
+            [start, n](auto& impl)
+            { return impl.reverse(start, n); }
+        );
     }
 
     void* data_at(size_type idx) noexcept
