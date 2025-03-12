@@ -701,10 +701,10 @@ inline void register_script_array(
             .method("void reverse(uint start=0,uint n=uint(-1))", fp<&array_t::reverse>)
             .method("uint remove(const T&in, uint start=0,uint n=uint(-1)) const", fp<&array_t::remove>)
             .funcdef("bool remove_if_callback(const T&in)")
-            .method("uint remove_if(remove_if_callback@, uint start=0,uint n=uint(-1)) const", fp<&array_t::remove_if>)
+            .method("uint remove_if(const remove_if_callback&in, uint start=0,uint n=uint(-1)) const", fp<&array_t::remove_if>)
             .method("uint count(const T&in, uint start=0,uint n=uint(-1)) const", fp<&array_t::count>)
             .funcdef("bool count_if_callback(const T&in)")
-            .method("uint count_if(count_if_callback@, uint start=0,uint n=uint(-1)) const", fp<&array_t::count_if>);
+            .method("uint count_if(const count_if_callback&in, uint start=0,uint n=uint(-1)) const", fp<&array_t::count_if>);
 
         if(as_default)
             c.as_array();
