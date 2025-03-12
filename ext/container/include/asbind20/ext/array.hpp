@@ -538,7 +538,7 @@ inline void register_script_array(
 
     auto helper = [engine, as_default]<bool UseGeneric>(std::bool_constant<UseGeneric>)
     {
-        template_ref_class<array_t> c(
+        template_ref_class<array_t, UseGeneric> c(
             engine,
             "array<T>",
             AS_NAMESPACE_QUALIFIER asOBJ_GC
