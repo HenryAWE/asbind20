@@ -274,16 +274,6 @@ public:
         return m_data.empty();
     }
 
-    void reserve(size_type new_cap)
-    {
-        m_data.reserve(new_cap);
-    }
-
-    void shrink_to_fit()
-    {
-        // TODO: shrinking
-    }
-
 #define ASBIND20_EXT_ARRAY_CHECK_CALLBACK(func_name, ret)        \
     do {                                                         \
         if(this->m_within_callback)                              \
@@ -294,6 +284,27 @@ public:
             return ret;                                          \
         }                                                        \
     } while(0)
+
+    void reserve(size_type new_cap)
+    {
+        ASBIND20_EXT_ARRAY_CHECK_CALLBACK(reserve, void());
+
+        m_data.reserve(new_cap);
+    }
+
+    void shrink_to_fit()
+    {
+        ASBIND20_EXT_ARRAY_CHECK_CALLBACK(shrink_to_fit, void());
+
+        // TODO: shrinking
+    }
+
+    void resize(size_type new_size)
+    {
+        ASBIND20_EXT_ARRAY_CHECK_CALLBACK(resize, void());
+
+        m_data.resize(new_size);
+    }
 
     void clear() noexcept
     {
@@ -686,6 +697,12 @@ inline void register_script_array(
             .list_factory("repeat T", use_policy<policies::repeat_list_proxy, policies::notify_gc>)
             .opEquals()
             .method("uint get_size() const property", fp<&array_t::size>)
+            .method("void set_size(uint) property", fp<&array_t::resize>)
+            .method("uint resize(uint new_size)", fp<&array_t::resize>)
+            .method("uint get_capacity() const property", fp<&array_t::capacity>)
+            .method("void set_capacity(uint) property", fp<&array_t::reserve>)
+            .method("void reserve(uint new_cap)", fp<&array_t::reserve>)
+            .method("void shrink_to_fit()", fp<&array_t::shrink_to_fit>)
             .method("bool empty() const", fp<&array_t::empty>)
             .method("T& opIndex(uint)", fp<&array_t::opIndex>)
             .method("const T& opIndex(uint) const", fp<&array_t::opIndex>)
@@ -698,13 +715,13 @@ inline void register_script_array(
             .method("T& get_back() property", fp<&array_t::get_back>)
             .method("const T& get_front() const property", fp<&array_t::get_front>)
             .method("const T& get_back() const property", fp<&array_t::get_back>)
-            .method("void reverse(uint start=0,uint n=uint(-1))", fp<&array_t::reverse>)
-            .method("uint remove(const T&in, uint start=0,uint n=uint(-1)) const", fp<&array_t::remove>)
+            .method("void reverse(uint start=0, uint n=uint(-1))", fp<&array_t::reverse>)
+            .method("uint remove(const T&in, uint start=0, uint n=uint(-1)) const", fp<&array_t::remove>)
             .funcdef("bool remove_if_callback(const T&in)")
-            .method("uint remove_if(const remove_if_callback&in, uint start=0,uint n=uint(-1)) const", fp<&array_t::remove_if>)
-            .method("uint count(const T&in, uint start=0,uint n=uint(-1)) const", fp<&array_t::count>)
+            .method("uint remove_if(const remove_if_callback&in, uint start=0, uint n=uint(-1)) const", fp<&array_t::remove_if>)
+            .method("uint count(const T&in, uint start=0, uint n=uint(-1)) const", fp<&array_t::count>)
             .funcdef("bool count_if_callback(const T&in)")
-            .method("uint count_if(const count_if_callback&in, uint start=0,uint n=uint(-1)) const", fp<&array_t::count_if>);
+            .method("uint count_if(const count_if_callback&in, uint start=0, uint n=uint(-1)) const", fp<&array_t::count_if>);
 
         if(as_default)
             c.as_array();

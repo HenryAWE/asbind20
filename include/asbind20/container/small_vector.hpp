@@ -287,6 +287,34 @@ private:
             m_p_capacity = m_p_begin + new_cap;
         }
 
+        void resize(size_type new_size)
+        {
+            size_type old_size = size();
+            if(new_size == old_size)
+                return;
+            else if(new_size == 0)
+            {
+                clear();
+                return;
+            }
+
+            if(new_size > old_size)
+            {
+                reserve(new_size);
+                size_type new_elems = new_size - old_size;
+                std::memset(
+                    m_p_end,
+                    0,
+                    new_elems * sizeof(value_type)
+                );
+                m_p_end += new_elems;
+            }
+            else
+            {
+                m_p_end = m_p_begin + new_size;
+            }
+        }
+
         void clear() noexcept
         {
             m_p_end = m_p_begin;
@@ -527,6 +555,50 @@ private:
                 return &this->m_p_begin[idx];
             else
                 return this->m_p_begin[idx];
+        }
+
+        void resize(size_type new_size)
+        {
+            size_type old_size = this->size();
+            if(new_size == old_size)
+                return;
+            else if(new_size == 0)
+            {
+                clear();
+                return;
+            }
+
+            if(new_size > old_size)
+            {
+                this->reserve(new_size);
+                size_type new_elems = new_size - old_size;
+
+                if constexpr(IsHandle)
+                {
+                    std::memset(
+                        this->m_p_end,
+                        0,
+                        new_elems * sizeof(value_type)
+                    );
+                    this->m_p_end += new_elems;
+                }
+                else
+                {
+                    AS_NAMESPACE_QUALIFIER asITypeInfo* ti = this->elem_type_info();
+                    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = ti->GetEngine();
+                    assert(ti != nullptr);
+
+                    for(size_type i = 0; i < new_elems; ++i)
+                    {
+                        *this->m_p_end = engine->CreateScriptObject(ti);
+                        ++this->m_p_end;
+                    }
+                }
+            }
+            else
+            {
+                erase_n(new_size, size_type(-1));
+            }
         }
 
         void clear() noexcept
@@ -1057,6 +1129,14 @@ public:
         return visit_impl(
             [](auto& impl)
             { return impl.size(); }
+        );
+    }
+
+    void resize(size_type new_size)
+    {
+        return visit_impl(
+            [new_size](auto& impl)
+            { return impl.resize(new_size); }
         );
     }
 

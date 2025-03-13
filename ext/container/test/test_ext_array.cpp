@@ -226,6 +226,54 @@ TEST_F(ext_array_generic, factory)
 
 namespace test_ext_array
 {
+void check_resize(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
+    run_string(
+        engine,
+        "test_resize_primitive",
+        "array<int> arr;\n"
+        "arr.resize(3);\n"
+        "assert(arr == {0, 0, 0});\n"
+        "arr.resize(2);\n"
+        "assert(arr == {0, 0});"
+    );
+
+    run_string(
+        engine,
+        "test_resize_string",
+        "array<string> arr;\n"
+        "arr.resize(3);\n"
+        "assert(arr == {\"\", \"\", \"\"});\n"
+        "arr.resize(2);\n"
+        "assert(arr == {\"\", \"\"});"
+    );
+
+    run_string(
+        engine,
+        "test_my_pair_ref_primitive",
+        "array<my_pair@> arr;\n"
+        "arr.resize(3);\n"
+        "assert(arr == {null, null, null});\n"
+        "arr.resize(2);\n"
+        "assert(arr == {null, null});"
+    );
+}
+} // namespace test_ext_array
+
+TEST_F(ext_array_native, resize)
+{
+    auto* engine = get_engine();
+    test_ext_array::check_resize(engine);
+}
+
+TEST_F(ext_array_generic, resize)
+{
+    auto* engine = get_engine();
+    test_ext_array::check_resize(engine);
+}
+
+namespace test_ext_array
+{
 static void check_front(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     run_string(
