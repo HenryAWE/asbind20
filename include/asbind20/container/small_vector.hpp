@@ -287,6 +287,46 @@ private:
             m_p_capacity = m_p_begin + new_cap;
         }
 
+        void shrink_to_fit()
+        {
+            if(m_p_begin == get_static_storage())
+                return;
+
+            size_type current_size = size();
+            if(current_size <= static_capacity())
+            {
+                std::memcpy(
+                    get_static_storage(),
+                    m_p_begin,
+                    current_size * sizeof(value_type)
+                );
+                std::allocator_traits<allocator_type>::deallocate(
+                    m_alloc.second(), m_p_begin, capacity()
+                );
+                m_p_begin = get_static_storage();
+                m_p_end = m_p_begin + current_size;
+                m_p_capacity = m_p_begin + static_capacity();
+            }
+            else
+            {
+                pointer tmp = std::allocator_traits<allocator_type>::allocate(
+                    m_alloc.second(), current_size
+                );
+                std::memcpy(
+                    tmp,
+                    m_p_begin,
+                    current_size * sizeof(value_type)
+                );
+                std::allocator_traits<allocator_type>::deallocate(
+                    m_alloc.second(), m_p_begin, capacity()
+                );
+
+                m_p_begin = tmp;
+                m_p_end = m_p_begin + current_size;
+                m_p_capacity = m_p_begin + current_size;
+            }
+        }
+
         void resize(size_type new_size)
         {
             size_type old_size = size();
@@ -1121,6 +1161,14 @@ public:
         return visit_impl(
             [new_cap](auto& impl)
             { return impl.reserve(new_cap); }
+        );
+    }
+
+    void shrink_to_fit()
+    {
+        return visit_impl(
+            [](auto& impl)
+            { return impl.shrink_to_fit(); }
         );
     }
 

@@ -305,7 +305,7 @@ public:
     {
         ASBIND20_EXT_ARRAY_CHECK_CALLBACK(shrink_to_fit, void());
 
-        // TODO: shrinking
+        m_data.shrink_to_fit();
     }
 
     void resize(size_type new_size)

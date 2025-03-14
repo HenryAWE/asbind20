@@ -29,6 +29,8 @@ TEST(small_vector, int)
 
     push_back_helper(1013);
     EXPECT_GE(v.capacity(), v.static_capacity());
+    v.shrink_to_fit();
+    EXPECT_GE(v.capacity(), v.static_capacity());
     EXPECT_FALSE(v.empty());
     ASSERT_EQ(v.size(), 1);
     EXPECT_EQ(*(int*)v[0], 1013);
@@ -62,9 +64,17 @@ TEST(small_vector, int)
     for(int i = 0; i < 128; ++i)
         EXPECT_EQ(*(int*)v[i], i);
 
+    v.shrink_to_fit();
+    EXPECT_EQ(v.capacity(), v.size());
+    ASSERT_EQ(v.size(), 128);
+    for(int i = 0; i < 128; ++i)
+        EXPECT_EQ(*(int*)v[i], i);
+
     v.clear();
     EXPECT_TRUE(v.empty());
     EXPECT_GE(v.capacity(), 128);
+    v.shrink_to_fit();
+    EXPECT_EQ(v.capacity(), v.static_capacity());
 
     insert_helper(0, 13);
     insert_helper(v.begin(), 10);
