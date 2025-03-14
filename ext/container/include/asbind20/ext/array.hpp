@@ -356,7 +356,7 @@ public:
      * @brief Remove matched elements
      *
      * @param val Value to remove
-     * @param start Start position. Return 0 if start position is out of ranage
+     * @param start Start position. Return 0 if start position is out of range
      * @param n Max checked elements
      * @return size_type Removed element count
      */
@@ -427,7 +427,7 @@ public:
      * @brief Remove matched elements
      *
      * @param pred AngelScript signature: `bool pred(const T&in)`
-     * @param start Start position. Return 0 if start position is out of ranage
+     * @param start Start position. Return 0 if start position is out of range
      * @param n Max checked elements
      * @return size_type Removed element count
      */
