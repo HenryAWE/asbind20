@@ -84,7 +84,7 @@ namespace detail
         return false;
     }
 
-    void script_array_base::generate_cache(
+    void script_array_base::find_required_elem_methods(
         array_cache& out, int subtype_id, AS_NAMESPACE_QUALIFIER asITypeInfo* ti
     )
     {
@@ -104,7 +104,7 @@ namespace detail
             {
                 using namespace std::string_view_literals;
 
-                asDWORD flags = 0;
+                AS_NAMESPACE_QUALIFIER asDWORD flags = 0;
                 int return_type_id = func->GetReturnTypeId(&flags);
                 if(flags != asTM_NONE)
                     continue;
@@ -175,6 +175,22 @@ namespace detail
             out.opEquals_status = AS_NAMESPACE_QUALIFIER asNO_FUNCTION;
         if(!out.subtype_opCmp && out.opCmp_status == 0)
             out.opCmp_status = AS_NAMESPACE_QUALIFIER asNO_FUNCTION;
+    }
+
+    void script_array_base::generate_cache(
+        array_cache& out, int subtype_id, AS_NAMESPACE_QUALIFIER asITypeInfo* ti
+    )
+    {
+        if(!is_primitive_type(subtype_id))
+            find_required_elem_methods(out, subtype_id, ti);
+
+        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = ti->GetEngine();
+        {
+            const char* subtype_decl = engine->GetTypeDeclaration(subtype_id, true);
+            out.iterator_ti = engine->GetTypeInfoByDecl(
+                string_concat("array_iterator<", subtype_decl, '>').c_str()
+            );
+        }
     }
 
     bool script_array_base::template_callback(

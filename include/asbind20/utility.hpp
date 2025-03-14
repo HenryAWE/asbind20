@@ -1511,6 +1511,13 @@ public:
             m_ti->AddRef();
     }
 
+    void reset(std::in_place_t, handle_type ti)
+    {
+        if(m_ti)
+            m_ti->Release();
+        m_ti = ti;
+    }
+
     int type_id() const
     {
         if(!m_ti) [[unlikely]]

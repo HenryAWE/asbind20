@@ -30,6 +30,10 @@ namespace detail
             AS_NAMESPACE_QUALIFIER asIScriptFunction* subtype_opEquals;
             int opCmp_status;
             int opEquals_status;
+
+            AS_NAMESPACE_QUALIFIER asITypeInfo* iterator_ti;
+
+            ~array_cache() = default;
         };
 
         static bool elem_opEquals(
@@ -43,6 +47,11 @@ namespace detail
     public:
         static bool template_callback(
             AS_NAMESPACE_QUALIFIER asITypeInfo* ti, bool&
+        );
+
+    private:
+        static void find_required_elem_methods(
+            array_cache& out, int subtype_id, AS_NAMESPACE_QUALIFIER asITypeInfo* ti
         );
 
     protected:
@@ -59,13 +68,10 @@ namespace detail
             int subtype_id, AS_NAMESPACE_QUALIFIER asITypeInfo* ti
         )
         {
-            if(is_primitive_type(subtype_id))
-                return;
-
             array_cache* cache = static_cast<array_cache*>(
                 ti->GetUserData(UserDataID)
             );
-            if(cache)
+            if(cache) [[likely]]
                 return;
 
             std::lock_guard guard(as_exclusive_lock);
@@ -84,7 +90,7 @@ namespace detail
                 return;
             }
 
-            std::memset(cache, 0, sizeof(array_cache));
+            new(cache) array_cache{};
             generate_cache(*cache, subtype_id, ti);
 
             ti->SetUserData(cache, UserDataID);
@@ -93,9 +99,12 @@ namespace detail
         template <AS_NAMESPACE_QUALIFIER asPWORD UserDataID>
         static void cache_cleanup_callback(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
         {
-            void* mem = ti->GetUserData(UserDataID);
+            array_cache* mem = get_cache<UserDataID>(ti);
             if(mem)
+            {
+                mem->~array_cache();
                 AS_NAMESPACE_QUALIFIER asFreeMem(mem);
+            }
         }
 
         template <AS_NAMESPACE_QUALIFIER asPWORD UserDataID>
@@ -274,15 +283,15 @@ public:
         return m_data.empty();
     }
 
-#define ASBIND20_EXT_ARRAY_CHECK_CALLBACK(func_name, ret)        \
-    do {                                                         \
-        if(this->m_within_callback)                              \
-        {                                                        \
-            set_script_exception(                                \
-                #func_name "(): modifying array within callback" \
-            );                                                   \
-            return ret;                                          \
-        }                                                        \
+#define ASBIND20_EXT_ARRAY_CHECK_CALLBACK(func_name, ret)                    \
+    do {                                                                     \
+        if(this->m_within_callback)                                          \
+        {                                                                    \
+            set_script_exception(                                            \
+                "array<T>." #func_name "(): modifying array within callback" \
+            );                                                               \
+            return ret;                                                      \
+        }                                                                    \
     } while(0)
 
     void reserve(size_type new_cap)
@@ -628,7 +637,150 @@ public:
         }
     }
 
+    // Proxy class for binding iterator to AngelScript
+    class script_array_iterator
+    {
+        friend script_array;
+
+    private:
+        script_array_iterator() = default;
+
+    public:
+        script_array_iterator(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+        {
+            (void)ti;
+        }
+
+        script_array_iterator(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, script_array* arr)
+            : m_arr(arr)
+        {
+            (void)ti;
+            assert(ti->GetSubTypeId() == arr->get_type_info()->GetSubTypeId());
+            if(arr)
+                m_arr->addref();
+        }
+
+        script_array_iterator(const script_array_iterator& other)
+            : m_arr(other.m_arr)
+        {
+            if(m_arr)
+                m_arr->addref();
+        }
+
+        script_array_iterator(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, const script_array_iterator& other)
+            : script_array_iterator(other)
+        {
+            (void)ti;
+            assert(ti->GetSubTypeId() == m_arr->get_type_info()->GetSubTypeId());
+        }
+
+        script_array_iterator(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, script_array* arr, size_type offset)
+            : m_arr(arr), m_offset(offset)
+        {
+            (void)ti;
+            assert(ti->GetSubTypeId() == m_arr->get_type_info()->GetSubTypeId());
+            if(m_arr)
+                m_arr->addref();
+        }
+
+        ~script_array_iterator()
+        {
+            if(m_arr)
+                m_arr->release();
+        }
+
+        script_array_iterator& operator=(const script_array_iterator& rhs)
+        {
+            if(this == &rhs) [[unlikely]]
+                return *this;
+
+            m_offset = rhs.m_offset;
+            if(m_arr)
+                m_arr->release();
+            m_arr = rhs.m_arr;
+            if(m_arr)
+                m_arr->addref();
+
+            return *this;
+        }
+
+        [[nodiscard]]
+        script_array* get_array() const noexcept
+        {
+            return m_arr;
+        }
+
+        void* value() const
+        {
+            if(!m_arr) [[unlikely]]
+            {
+                set_script_exception("array_iterator<T>: empty iterator");
+                return nullptr;
+            }
+            if(m_offset >= m_arr->size())
+            {
+                set_script_exception("array_iterator<T>: invalid position");
+                return nullptr;
+            }
+
+            return (*m_arr)[m_offset];
+        }
+
+        explicit operator bool() const noexcept
+        {
+            return m_arr != nullptr;
+        }
+
+        void enum_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+        {
+            if(!m_arr)
+                return;
+            engine->GCEnumCallback(m_arr);
+        }
+
+        void release_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+        {
+            (void)engine;
+
+            if(!m_arr)
+                return;
+            assert(engine == m_arr->get_engine());
+            m_arr->release();
+            m_arr = nullptr;
+        }
+
+    private:
+        script_array* m_arr = nullptr;
+        size_type m_offset = 0;
+    };
+
 private:
+    script_array_iterator script_begin()
+    {
+        array_cache* cache = get_cache();
+        if(!cache) [[unlikely]]
+        {
+            set_script_exception("array<T>: internal error");
+            return script_array_iterator();
+        }
+        return script_array_iterator(
+            cache->iterator_ti, this, 0
+        );
+    }
+
+    script_array_iterator script_end()
+    {
+        array_cache* cache = get_cache();
+        if(!cache) [[unlikely]]
+        {
+            set_script_exception("array<T>: internal error");
+            return script_array_iterator();
+        }
+        return script_array_iterator(
+            cache->iterator_ti, this, size()
+        );
+    }
+
     void* opIndex(size_type idx)
     {
         if(idx >= size())
@@ -673,6 +825,7 @@ inline void register_script_array(
 )
 {
     using array_t = script_array;
+    using iter_t = script_array::script_array_iterator;
 
 #define ASBIND_EXT_ARRAY_MFN(name, ret, args) \
     static_cast<ret(array_t::*) args>(&array_t::name)
@@ -684,6 +837,12 @@ inline void register_script_array(
             "array<T>",
             AS_NAMESPACE_QUALIFIER asOBJ_GC
         );
+        template_value_class<iter_t, UseGeneric> it(
+            engine,
+            "array_iterator<T>",
+            AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_CDAK | AS_NAMESPACE_QUALIFIER asOBJ_GC
+        );
+
         c
             .template_callback(fp<&array_t::template_callback>)
             .addref(fp<&array_t::addref>)
@@ -721,7 +880,21 @@ inline void register_script_array(
             .method("uint remove_if(const remove_if_callback&in, uint start=0, uint n=uint(-1)) const", fp<&array_t::remove_if>)
             .method("uint count(const T&in, uint start=0, uint n=uint(-1)) const", fp<&array_t::count>)
             .funcdef("bool count_if_callback(const T&in)")
-            .method("uint count_if(const count_if_callback&in, uint start=0, uint n=uint(-1)) const", fp<&array_t::count_if>);
+            .method("uint count_if(const count_if_callback&in, uint start=0, uint n=uint(-1)) const", fp<&array_t::count_if>)
+            .method("array_iterator<T> begin()", fp<&array_t::script_begin>)
+            .method("array_iterator<T> end()", fp<&array_t::script_end>);
+
+        it
+            .template_callback(fp<&array_t::template_callback>)
+            .default_constructor()
+            .copy_constructor()
+            .opAssign()
+            .destructor()
+            .method("T& get_value() property", fp<&iter_t::value>)
+            .method("const T& get_value() const property", fp<&iter_t::value>)
+            .template opConv<bool>()
+            .enum_refs(fp<&iter_t::enum_refs>)
+            .release_refs(fp<&iter_t::release_refs>);
 
         if(as_default)
             c.as_array();

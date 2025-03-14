@@ -134,7 +134,10 @@ static void run_string(
     auto result = asbind20::script_invoke<R>(ctx, f);
     f->Release();
 
-    ASSERT_TRUE(asbind_test::result_has_value(result));
+    if(result.error() == AS_NAMESPACE_QUALIFIER asEXECUTION_EXCEPTION)
+        FAIL() << "GetExceptionString: " << ctx->GetExceptionString();
+    else
+        ASSERT_TRUE(asbind_test::result_has_value(result));
     if constexpr(!std::is_void_v<R>)
         return result.value();
 }
@@ -174,7 +177,8 @@ void check_list_factory(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         "assert(arr.size == 3);\n"
         "assert(arr[0] == 0);\n"
         "assert(arr[1] == 1);\n"
-        "assert(arr[2] == 2);"
+        "assert(arr[2] == 2);\n"
+        "assert(arr.begin().value == 0);"
     );
 
     run_string(
@@ -184,7 +188,8 @@ void check_list_factory(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         "assert(!arr.empty());\n"
         "assert(arr.size == 2);\n"
         "assert(arr[0] == \"hello\");\n"
-        "assert(arr[1] == \"world\");"
+        "assert(arr[1] == \"world\");\n"
+        "assert(arr.begin().value == \"hello\");"
     );
 
     run_string(
