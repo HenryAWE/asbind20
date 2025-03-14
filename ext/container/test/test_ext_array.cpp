@@ -370,7 +370,13 @@ void check_reverse(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         "test_reverse_primitive",
         "int[] arr = {1, 2, 3, 4, 5};\n"
         "arr.reverse(1, 3);\n"
-        "assert(arr == {1, 4, 3, 2, 5});"
+        "assert(arr == {1, 4, 3, 2, 5});\n"
+        "arr.reverse(++arr.begin(), --arr.end());\n"
+        "assert(arr == {1, 2, 3, 4, 5});\n"
+        "arr.reverse(arr.begin());\n"
+        "assert(arr == {5, 4, 3, 2, 1});\n"
+        "arr.reverse(--arr.end(), arr.begin());\n" // stop >= start, should have no effect
+        "assert(arr == {5, 4, 3, 2, 1});"
     );
 
     run_string(
@@ -578,6 +584,48 @@ TEST_F(ext_array_generic, find)
 {
     AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = get_engine();
     test_ext_array::check_find(engine);
+}
+
+namespace test_ext_array
+{
+static void check_insert(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
+    run_string(
+        engine,
+        "test_insert_primitive",
+        "int[] arr = {3, 7};\n"
+        "arr.insert(arr.begin(), 1);\n"
+        "assert(arr == {1, 3 ,7});\n"
+        "arr.insert(++arr.find(3), 5);\n"
+        "assert(arr == {1, 3, 5, 7});\n"
+        "arr.insert(arr.end(), 9);\n"
+        "assert(arr == {1, 3, 5, 7, 9});"
+    );
+
+    run_string(
+        engine,
+        "test_insert_string",
+        "string[] arr = {\"B\", \"D\"};\n"
+        "arr.insert(arr.begin(), \"A\");\n"
+        "assert(arr == {\"A\", \"B\", \"D\"});\n"
+        "arr.insert(++arr.find(\"B\"), \"C\");\n"
+        "assert(arr == {\"A\", \"B\", \"C\", \"D\"});\n"
+        "arr.insert(arr.end(), \"E\");\n"
+        "assert(arr == {\"A\", \"B\", \"C\", \"D\", \"E\"});"
+    );
+}
+} // namespace test_ext_array
+
+TEST_F(ext_array_native, insert)
+{
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = get_engine();
+    test_ext_array::check_insert(engine);
+}
+
+TEST_F(ext_array_generic, insert)
+{
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = get_engine();
+    test_ext_array::check_insert(engine);
 }
 
 // TEST_F(asbind_test_suite, ext_array)

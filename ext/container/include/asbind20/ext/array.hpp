@@ -172,6 +172,225 @@ private:
     ~script_array() = default;
 
 public:
+    // Proxy class for binding iterator to AngelScript
+    class script_array_iterator
+    {
+        friend script_array;
+        friend void register_script_array(AS_NAMESPACE_QUALIFIER asIScriptEngine*, bool, bool);
+
+    private:
+        script_array_iterator() = default;
+
+    public:
+        using difference_type = std::make_signed_t<size_type>;
+
+        script_array_iterator(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+        {
+            (void)ti;
+        }
+
+        script_array_iterator(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, script_array* arr)
+            : m_arr(arr)
+        {
+            (void)ti;
+            assert(ti->GetSubTypeId() == arr->get_type_info()->GetSubTypeId());
+            if(arr)
+                m_arr->addref();
+        }
+
+        script_array_iterator(script_array_iterator&& other)
+            : m_arr(std::exchange(other.m_arr, nullptr)), m_offset(other.m_offset)
+        {}
+
+        script_array_iterator(const script_array_iterator& other)
+            : m_arr(other.m_arr), m_offset(other.m_offset)
+        {
+            if(m_arr)
+                m_arr->addref();
+        }
+
+        script_array_iterator(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, const script_array_iterator& other)
+            : script_array_iterator(other)
+        {
+            (void)ti;
+            assert(ti->GetSubTypeId() == m_arr->get_type_info()->GetSubTypeId());
+        }
+
+        script_array_iterator(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, script_array* arr, size_type offset)
+            : m_arr(arr), m_offset(offset)
+        {
+            (void)ti;
+            assert(ti->GetSubTypeId() == m_arr->get_type_info()->GetSubTypeId());
+            if(m_arr)
+                m_arr->addref();
+        }
+
+        ~script_array_iterator()
+        {
+            if(m_arr)
+                m_arr->release();
+        }
+
+        bool operator==(const script_array_iterator& rhs) const
+        {
+            if(m_arr != rhs.m_arr) [[unlikely]]
+            {
+                raise_incompatible_iterator();
+            }
+
+            return m_offset == rhs.m_offset;
+        }
+
+        std::weak_ordering operator<=>(const script_array_iterator& rhs) const
+        {
+            if(m_arr != rhs.m_arr) [[unlikely]]
+            {
+                raise_incompatible_iterator();
+            }
+
+            if(m_arr == nullptr) [[unlikely]]
+                return std::weak_ordering::equivalent;
+            else
+                return m_offset <=> rhs.m_offset;
+        }
+
+        script_array_iterator& operator=(const script_array_iterator& rhs)
+        {
+            if(this == &rhs) [[unlikely]]
+                return *this;
+
+            m_offset = rhs.m_offset;
+            if(m_arr)
+                m_arr->release();
+            m_arr = rhs.m_arr;
+            if(m_arr)
+                m_arr->addref();
+
+            return *this;
+        }
+
+        script_array_iterator& operator++() noexcept
+        {
+            ++m_offset;
+            return *this;
+        }
+
+        script_array_iterator& operator--() noexcept
+        {
+            if(m_offset == 0) [[unlikely]]
+                return *this;
+            --m_offset;
+            return *this;
+        }
+
+        script_array_iterator operator++(int) noexcept
+        {
+            script_array_iterator tmp = *this;
+            ++m_offset;
+            return tmp;
+        }
+
+        script_array_iterator operator--(int) noexcept
+        {
+            script_array_iterator tmp = *this;
+            if(m_offset == 0) [[unlikely]]
+                return tmp;
+            --m_offset;
+            return tmp;
+        }
+
+        script_array_iterator& operator+=(difference_type diff) noexcept
+        {
+            if(diff + static_cast<difference_type>(m_offset) < 0) [[unlikely]]
+                m_offset = 0;
+            else
+                m_offset += diff;
+
+            return *this;
+        }
+
+        script_array_iterator& operator-=(difference_type diff) noexcept
+        {
+            *this += -diff;
+            return *this;
+        }
+
+        difference_type operator-(const script_array_iterator& rhs) const
+        {
+            if(m_arr != rhs.m_arr) [[unlikely]]
+                raise_incompatible_iterator();
+
+            return static_cast<difference_type>(m_offset) -
+                   static_cast<difference_type>(rhs.m_offset);
+        }
+
+        [[nodiscard]]
+        script_array* get_array() const noexcept
+        {
+            return m_arr;
+        }
+
+        [[nodiscard]]
+        size_type get_offset() const noexcept
+        {
+            return m_offset;
+        }
+
+        void* value() const
+        {
+            if(!m_arr) [[unlikely]]
+            {
+                set_script_exception("array_iterator<T>: empty iterator");
+                return nullptr;
+            }
+            if(m_offset >= m_arr->size())
+            {
+                raise_invalid_position();
+                return nullptr;
+            }
+
+            return (*m_arr)[m_offset];
+        }
+
+        explicit operator bool() const noexcept
+        {
+            return m_arr != nullptr;
+        }
+
+        void enum_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+        {
+            if(!m_arr)
+                return;
+            engine->GCEnumCallback(m_arr);
+        }
+
+        void release_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+        {
+            (void)engine;
+
+            if(!m_arr)
+                return;
+            assert(engine == m_arr->get_engine());
+            m_arr->release();
+            m_arr = nullptr;
+        }
+
+    private:
+        script_array* m_arr = nullptr;
+        size_type m_offset = 0;
+
+        // Set script exception of invalid position
+        static void raise_invalid_position()
+        {
+            set_script_exception("array_iterator<T>: invalid position");
+        }
+
+        static void raise_incompatible_iterator()
+        {
+            set_script_exception("array_iterator<T>: incompatible iterator");
+        }
+    };
+
     auto get_engine() const
         -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
     {
@@ -344,13 +563,6 @@ public:
     }
 
     void append_range(const script_array& rng, size_type n = -1);
-
-    void insert(size_type idx, void* value)
-    {
-        ASBIND20_EXT_ARRAY_CHECK_CALLBACK(insert, void());
-
-        m_data.insert(idx, value);
-    }
 
     /**
      * @brief Remove matched elements
@@ -533,6 +745,47 @@ public:
         m_data.reverse(start, n);
     }
 
+    void reverse(script_array_iterator start)
+    {
+        if(start.get_array() != this) [[unlikely]]
+        {
+            start.raise_incompatible_iterator();
+            return;
+        }
+
+        size_type start_offset = start.get_offset();
+        if(start_offset >= size()) [[unlikely]]
+        {
+            start.raise_invalid_position();
+            return;
+        }
+
+        m_data.reverse(start_offset);
+    }
+
+    void reverse(script_array_iterator start, script_array_iterator stop)
+    {
+        if(start.get_array() != this || stop.get_array() != this) [[unlikely]]
+        {
+            start.raise_incompatible_iterator();
+            return;
+        }
+
+        size_type start_offset = start.get_offset();
+        if(start_offset >= size()) [[unlikely]]
+        {
+            start.raise_invalid_position();
+            return;
+        }
+
+        if(stop <= start)
+            return;
+
+        m_data.reverse(
+            start_offset, static_cast<size_type>(stop - start)
+        );
+    }
+
     bool contains(const void* value, size_type idx = 0) const;
 
     [[nodiscard]]
@@ -628,154 +881,6 @@ public:
         }
     }
 
-    // Proxy class for binding iterator to AngelScript
-    class script_array_iterator
-    {
-        friend script_array;
-        friend void register_script_array(AS_NAMESPACE_QUALIFIER asIScriptEngine*, bool, bool);
-
-    private:
-        script_array_iterator() = default;
-
-    public:
-        script_array_iterator(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
-        {
-            (void)ti;
-        }
-
-        script_array_iterator(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, script_array* arr)
-            : m_arr(arr)
-        {
-            (void)ti;
-            assert(ti->GetSubTypeId() == arr->get_type_info()->GetSubTypeId());
-            if(arr)
-                m_arr->addref();
-        }
-
-        script_array_iterator(script_array_iterator&& other)
-            : m_arr(std::exchange(other.m_arr, nullptr)), m_offset(other.m_offset)
-        {}
-
-        script_array_iterator(const script_array_iterator& other)
-            : m_arr(other.m_arr), m_offset(other.m_offset)
-        {
-            if(m_arr)
-                m_arr->addref();
-        }
-
-        script_array_iterator(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, const script_array_iterator& other)
-            : script_array_iterator(other)
-        {
-            (void)ti;
-            assert(ti->GetSubTypeId() == m_arr->get_type_info()->GetSubTypeId());
-        }
-
-        script_array_iterator(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, script_array* arr, size_type offset)
-            : m_arr(arr), m_offset(offset)
-        {
-            (void)ti;
-            assert(ti->GetSubTypeId() == m_arr->get_type_info()->GetSubTypeId());
-            if(m_arr)
-                m_arr->addref();
-        }
-
-        ~script_array_iterator()
-        {
-            if(m_arr)
-                m_arr->release();
-        }
-
-        bool operator==(const script_array_iterator& rhs) const noexcept = default;
-
-        script_array_iterator& operator=(const script_array_iterator& rhs)
-        {
-            if(this == &rhs) [[unlikely]]
-                return *this;
-
-            m_offset = rhs.m_offset;
-            if(m_arr)
-                m_arr->release();
-            m_arr = rhs.m_arr;
-            if(m_arr)
-                m_arr->addref();
-
-            return *this;
-        }
-
-        script_array_iterator& operator++() noexcept
-        {
-            ++m_offset;
-            return *this;
-        }
-
-        script_array_iterator& operator--() noexcept
-        {
-            --m_offset;
-            return *this;
-        }
-
-        [[nodiscard]]
-        script_array* get_array() const noexcept
-        {
-            return m_arr;
-        }
-
-        [[nodiscard]]
-        size_type get_offset() const noexcept
-        {
-            return m_offset;
-        }
-
-        void* value() const
-        {
-            if(!m_arr) [[unlikely]]
-            {
-                set_script_exception("array_iterator<T>: empty iterator");
-                return nullptr;
-            }
-            if(m_offset >= m_arr->size())
-            {
-                raise_invalid_position();
-                return nullptr;
-            }
-
-            return (*m_arr)[m_offset];
-        }
-
-        explicit operator bool() const noexcept
-        {
-            return m_arr != nullptr;
-        }
-
-        void enum_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
-        {
-            if(!m_arr)
-                return;
-            engine->GCEnumCallback(m_arr);
-        }
-
-        void release_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
-        {
-            (void)engine;
-
-            if(!m_arr)
-                return;
-            assert(engine == m_arr->get_engine());
-            m_arr->release();
-            m_arr = nullptr;
-        }
-
-    private:
-        script_array* m_arr = nullptr;
-        size_type m_offset = 0;
-
-        // Set script exception of invalid position
-        static void raise_invalid_position()
-        {
-            set_script_exception("array_iterator<T>: invalid position");
-        }
-    };
-
     script_array_iterator erase(script_array_iterator it)
     {
         ASBIND20_EXT_ARRAY_CHECK_CALLBACK(erase, script_array_iterator());
@@ -793,6 +898,26 @@ public:
         }
 
         m_data.erase(where);
+        return it; // The offset should be unchanged
+    }
+
+    script_array_iterator insert(script_array_iterator it, const void* value)
+    {
+        ASBIND20_EXT_ARRAY_CHECK_CALLBACK(insert, script_array_iterator());
+
+        if(this != it.m_arr) [[unlikely]]
+        {
+            set_script_exception("array<T>.insert(): incompatible iterator");
+            return script_array_iterator();
+        }
+        size_type where = it.m_offset;
+        if(where > size()) [[unlikely]]
+        {
+            it.raise_invalid_position();
+            return script_array_iterator();
+        }
+
+        m_data.insert(where, value);
         return it; // The offset should be unchanged
     }
 
@@ -891,7 +1016,7 @@ private:
     {
         if(idx >= size())
         {
-            set_script_exception("out or range");
+            set_script_exception("array<T>.opIndex(): out or range");
             return nullptr;
         }
         return (*this)[idx];
@@ -932,9 +1057,10 @@ inline void register_script_array(
 {
     using array_t = script_array;
     using iter_t = script_array::script_array_iterator;
+    using size_type = array_t::size_type;
 
 #define ASBIND_EXT_ARRAY_MFN(name, ret, args) \
-    static_cast<ret(array_t::*) args>(&array_t::name)
+    fp<static_cast<ret(array_t::*) args>(&array_t::name)>
 
     auto helper = [engine, as_default]<bool UseGeneric>(std::bool_constant<UseGeneric>)
     {
@@ -990,7 +1116,9 @@ inline void register_script_array(
             .method("T& get_back() property", fp<&array_t::get_back>)
             .method("const T& get_front() const property", fp<&array_t::get_front>)
             .method("const T& get_back() const property", fp<&array_t::get_back>)
-            .method("void reverse(uint start=0, uint n=uint(-1))", fp<&array_t::reverse>)
+            .method("void reverse(uint start=0, uint n=uint(-1))", ASBIND_EXT_ARRAY_MFN(reverse, void, (size_type, size_type)))
+            .method("void reverse(const_array_iterator<T> start)", ASBIND_EXT_ARRAY_MFN(reverse, void, (iter_t)))
+            .method("void reverse(const_array_iterator<T> start, const_array_iterator<T> stop)", ASBIND_EXT_ARRAY_MFN(reverse, void, (iter_t, iter_t)))
             .method("uint remove(const T&in, uint start=0, uint n=uint(-1)) const", fp<&array_t::remove>)
             .funcdef("bool remove_if_callback(const T&in)")
             .method("uint remove_if(const remove_if_callback&in, uint start=0, uint n=uint(-1)) const", fp<&array_t::remove_if>)
@@ -999,9 +1127,16 @@ inline void register_script_array(
             .method("uint count_if(const count_if_callback&in, uint start=0, uint n=uint(-1)) const", fp<&array_t::count_if>)
             .method("array_iterator<T> begin()", fp<&array_t::script_begin>)
             .method("array_iterator<T> end()", fp<&array_t::script_end>)
-            .method("array_iterator<T> erase(array_iterator<T> where)", fp<ASBIND_EXT_ARRAY_MFN(erase, iter_t, (iter_t))>)
+            .method("const_array_iterator<T> begin() const", fp<&array_t::script_begin>)
+            .method("const_array_iterator<T> end() const", fp<&array_t::script_end>)
+            .method("const_array_iterator<T> cbegin() const", fp<&array_t::script_begin>)
+            .method("const_array_iterator<T> cend() const", fp<&array_t::script_end>)
+            .method("array_iterator<T> erase(array_iterator<T> where)", ASBIND_EXT_ARRAY_MFN(erase, iter_t, (iter_t)))
+            .method("const_array_iterator<T> erase(const_array_iterator<T> where)", ASBIND_EXT_ARRAY_MFN(erase, iter_t, (iter_t)))
             .method("array_iterator<T> find(const T&in, uint start=0, uint n=uint(-1))", fp<&array_t::find>)
-            .method("const_array_iterator<T> find(const T&in, uint start=0, uint n=uint(-1)) const", fp<&array_t::find>);
+            .method("const_array_iterator<T> find(const T&in, uint start=0, uint n=uint(-1)) const", fp<&array_t::find>)
+            .method("array_iterator<T> insert(array_iterator<T> where, const T&in)", ASBIND_EXT_ARRAY_MFN(insert, iter_t, (iter_t, const void*)))
+            .method("const_array_iterator<T> insert(const_array_iterator<T> where, const T&in)", ASBIND_EXT_ARRAY_MFN(insert, iter_t, (iter_t, const void*)));
 
         auto iterator_common = [](auto& r)
         {
@@ -1012,6 +1147,11 @@ inline void register_script_array(
                 .opAssign()
                 .destructor()
                 .opEquals()
+                .opCmp()
+                .opPreInc()
+                .opPreDec()
+                .opPostInc()
+                .opPostDec()
                 .method("array<T>@+ get_arr() const property", fp<&iter_t::get_array>)
                 .property("const uint offset", &iter_t::m_offset)
                 .template opConv<bool>()
