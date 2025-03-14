@@ -372,6 +372,22 @@ private:
             emplace_back_impl(value_type());
         }
 
+        void push_back_n(size_type n, const void* ref)
+        {
+            reserve(size() + n);
+            m_p_end = std::fill_n(
+                m_p_end, n, *static_cast<const value_type*>(ref)
+            );
+        }
+
+        void emplace_back_n(size_type n)
+        {
+            reserve(size() + n);
+            m_p_end = std::fill_n(
+                m_p_end, n, value_type()
+            );
+        }
+
         void pop_back() noexcept
         {
             if(this->size() == 0)
@@ -674,6 +690,42 @@ private:
             }
         }
 
+        void push_back_n(size_type n, const void* ref)
+        {
+            this->reserve(this->size() + n);
+            AS_NAMESPACE_QUALIFIER asITypeInfo* ti = this->elem_type_info();
+            AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = ti->GetEngine();
+
+            for(size_type i = 0; i < n; ++i)
+            {
+                void* obj = copy_obj_impl(engine, ti, ref_to_obj(ref));
+                *this->m_p_end = obj;
+
+                ++this->m_p_end;
+            }
+        }
+
+        void emplace_back_n(size_type n)
+        {
+            if constexpr(IsHandle)
+            {
+                my_base::emplace_back_n(n);
+            }
+            else
+            {
+                this->reserve(this->size() + n);
+                AS_NAMESPACE_QUALIFIER asITypeInfo* ti = this->elem_type_info();
+                AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = ti->GetEngine();
+                assert(ti != nullptr);
+
+                for(size_type i = 0; i < n; ++i)
+                {
+                    *this->m_p_end = engine->CreateScriptObject(ti);
+                    ++this->m_p_end;
+                }
+            }
+        }
+
         void pop_back() noexcept
         {
             if(this->size() == 0)
@@ -823,23 +875,34 @@ private:
         }
 
         // NOTE: Call ref_to_obj to convert the pointer at first!
-        void* copy_obj(void* obj) const
+        static void* copy_obj_impl(
+            AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+            AS_NAMESPACE_QUALIFIER asITypeInfo* ti,
+            void* obj
+        )
         {
-            AS_NAMESPACE_QUALIFIER asITypeInfo* ti = this->elem_type_info();
-            assert(ti != nullptr);
-
             if constexpr(IsHandle)
             {
                 if(!obj)
                     return nullptr;
-                ti->GetEngine()->AddRefScriptObject(obj, ti);
+                engine->AddRefScriptObject(obj, ti);
                 return obj;
             }
             else
             {
                 assert(obj != nullptr);
-                return ti->GetEngine()->CreateScriptObjectCopy(obj, ti);
+                return engine->CreateScriptObjectCopy(obj, ti);
             }
+        }
+
+        // NOTE: Call ref_to_obj to convert the pointer at first!
+        void* copy_obj(void* obj) const
+        {
+            AS_NAMESPACE_QUALIFIER asITypeInfo* ti = this->elem_type_info();
+            AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = ti->GetEngine();
+            assert(ti != nullptr);
+
+            return copy_obj_impl(engine, ti, obj);
         }
 
         // NOTE: Call ref_to_obj to convert the pointer at first!
@@ -1101,7 +1164,7 @@ public:
         );
     }
 
-    explicit small_vector(
+    small_vector(
         AS_NAMESPACE_QUALIFIER asITypeInfo* ti, script_init_list_repeat ilist
     )
     {
@@ -1110,7 +1173,7 @@ public:
         );
     }
 
-    explicit small_vector(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id)
+    small_vector(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id)
     {
         if(is_primitive_type(type_id) && !is_enum_type(type_id))
             init_impl(type_id, nullptr);
@@ -1246,6 +1309,22 @@ public:
         return visit_impl(
             [](auto& impl)
             { return impl.emplace_back(); }
+        );
+    }
+
+    void push_back_n(size_type n, const void* ref)
+    {
+        return visit_impl(
+            [n, ref](auto& impl)
+            { return impl.push_back_n(n, ref); }
+        );
+    }
+
+    void emplace_back_n(size_type n)
+    {
+        return visit_impl(
+            [n](auto& impl)
+            { return impl.emplace_back_n(n); }
         );
     }
 

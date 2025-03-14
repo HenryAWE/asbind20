@@ -158,9 +158,19 @@ public:
         setup_cache();
     }
 
-    script_array(asITypeInfo* ti, size_type n);
+    script_array(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, size_type n)
+        : m_data(ti)
+    {
+        setup_cache();
+        m_data.emplace_back_n(n);
+    }
 
-    script_array(asITypeInfo* ti, size_type n, const void* value);
+    script_array(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, size_type n, const void* value)
+        : m_data(ti)
+    {
+        setup_cache();
+        m_data.push_back_n(n, value);
+    }
 
     script_array(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, script_init_list_repeat ilist)
         : m_data(ti, ilist)
@@ -1095,6 +1105,8 @@ inline void register_script_array(
             .enum_refs(fp<&array_t::enum_refs>)
             .release_refs(fp<&array_t::release_refs>)
             .default_factory(use_policy<policies::notify_gc>)
+            .template factory<size_type>("uint n", use_explicit, use_policy<policies::notify_gc>)
+            .template factory<size_type, const void*>("uint n, const T&in value", use_policy<policies::notify_gc>)
             .list_factory("repeat T", use_policy<policies::repeat_list_proxy, policies::notify_gc>)
             .opEquals()
             .method("uint get_size() const property", fp<&array_t::size>)

@@ -165,6 +165,56 @@ void check_factory(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         "assert(arr.empty());\n"
         "assert(arr.size == 0);"
     );
+
+    run_string(
+        engine,
+        "test_factory_size_primitive",
+        "int[] arr(n: 2);\n"
+        "assert(arr.size == 2);\n"
+        "assert(arr[0] == 0);\n"
+        "assert(arr[1] == 0);"
+    );
+
+    run_string(
+        engine,
+        "test_factory_size_string",
+        "string[] arr(n: 2);\n"
+        "assert(arr.size == 2);\n"
+        "assert(arr[0] == \"\");\n"
+        "assert(arr[1] == \"\");"
+    );
+
+    run_string(
+        engine,
+        "test_factory_copy_primitive",
+        "int[] arr(2, 1013);\n"
+        "assert(arr.size == 2);\n"
+        "assert(arr[0] == 1013);\n"
+        "assert(arr[1] == 1013);"
+    );
+
+    run_string(
+        engine,
+        "test_factory_copy_string",
+        "string[] arr(2, \"AAA\");\n"
+        "assert(arr.size == 2);\n"
+        "assert(arr[0] == \"AAA\");\n"
+        "assert(arr[1] == \"AAA\");"
+    );
+
+    run_string(
+        engine,
+        "test_factory_named_arg",
+        "int[] int_arr(value: 1013, n: 3);\n"
+        "assert(int_arr.size == 3);\n"
+        "assert(int_arr[0] == 1013);\n"
+        "assert(int_arr[1] == 1013);\n"
+        "assert(int_arr[2] == 1013);\n"
+        "string[] str_arr(value: \"AAA\", n: 2);\n"
+        "assert(str_arr.size == 2);\n"
+        "assert(str_arr[0] == \"AAA\");\n"
+        "assert(str_arr[1] == \"AAA\");"
+    );
 }
 
 void check_list_factory(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
