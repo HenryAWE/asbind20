@@ -604,7 +604,7 @@ private:
         void clear() noexcept
         {
             release_obj_n(this->m_p_begin, this->size());
-            this->m_p_end = this->m_p_end;
+            this->m_p_end = this->m_p_begin;
         }
 
         void push_back(const void* ref)

@@ -395,6 +395,37 @@ TEST_F(ext_array_generic, reverse)
 
 namespace test_ext_array
 {
+static void check_erase(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
+    run_string(
+        engine,
+        "test_erase_primitive",
+        "int[] arr = {1, 2};\n"
+        "assert(arr.size == 2);\n"
+        "assert(arr.begin().value == 1);"
+        "auto it = arr.erase(arr.begin());\n"
+        "assert(arr.size == 1);\n"
+        "assert(it.value == 2);\n"
+        "it = arr.erase(it);\n"
+        "assert(arr.empty());\n"
+        "assert(it == arr.end());"
+    );
+
+    run_string(
+        engine,
+        "test_erase_string",
+        "string[] arr = {\"hello\", \"world\"};\n"
+        "assert(arr.size == 2);\n"
+        "assert(arr.begin().value == \"hello\");"
+        "auto it = arr.erase(arr.begin());\n"
+        "assert(arr.size == 1);\n"
+        "assert(it.value == \"world\");\n"
+        "it = arr.erase(it);\n"
+        "assert(arr.empty());\n"
+        "assert(it == arr.end());"
+    );
+}
+
 static void check_remove(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     run_string(
@@ -434,16 +465,18 @@ static void check_remove_if(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 }
 } // namespace test_ext_array
 
-TEST_F(ext_array_native, erase)
+TEST_F(ext_array_native, erase_and_remove)
 {
     auto* engine = get_engine();
+    test_ext_array::check_erase(engine);
     test_ext_array::check_remove(engine);
     test_ext_array::check_remove_if(engine);
 }
 
-TEST_F(ext_array_generic, erase)
+TEST_F(ext_array_generic, erase_and_remove)
 {
     auto* engine = get_engine();
+    test_ext_array::check_erase(engine);
     test_ext_array::check_remove(engine);
     test_ext_array::check_remove_if(engine);
 }

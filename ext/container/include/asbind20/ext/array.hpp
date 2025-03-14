@@ -463,13 +463,6 @@ public:
         return removed;
     }
 
-    void erase(size_type idx, size_type n = 1)
-    {
-        ASBIND20_EXT_ARRAY_CHECK_CALLBACK(erase, void());
-
-        m_data.erase(idx, n);
-    }
-
     size_type count(const void* val, size_type start = 0, size_type n = -1) const
     {
         if(start >= size()) [[unlikely]]
@@ -641,6 +634,7 @@ public:
     class script_array_iterator
     {
         friend script_array;
+        friend void register_script_array(AS_NAMESPACE_QUALIFIER asIScriptEngine*, bool, bool);
 
     private:
         script_array_iterator() = default;
@@ -659,6 +653,10 @@ public:
             if(arr)
                 m_arr->addref();
         }
+
+        script_array_iterator(script_array_iterator&& other)
+            : m_arr(std::exchange(other.m_arr, nullptr)), m_offset(other.m_offset)
+        {}
 
         script_array_iterator(const script_array_iterator& other)
             : m_arr(other.m_arr)
@@ -689,6 +687,8 @@ public:
                 m_arr->release();
         }
 
+        bool operator==(const script_array_iterator& rhs) const noexcept = default;
+
         script_array_iterator& operator=(const script_array_iterator& rhs)
         {
             if(this == &rhs) [[unlikely]]
@@ -701,6 +701,18 @@ public:
             if(m_arr)
                 m_arr->addref();
 
+            return *this;
+        }
+
+        script_array_iterator& operator++() noexcept
+        {
+            ++m_offset;
+            return *this;
+        }
+
+        script_array_iterator& operator--() noexcept
+        {
+            --m_offset;
             return *this;
         }
 
@@ -719,7 +731,7 @@ public:
             }
             if(m_offset >= m_arr->size())
             {
-                set_script_exception("array_iterator<T>: invalid position");
+                raise_invalid_position();
                 return nullptr;
             }
 
@@ -752,7 +764,33 @@ public:
     private:
         script_array* m_arr = nullptr;
         size_type m_offset = 0;
+
+        // Set script exception of invalid position
+        static void raise_invalid_position()
+        {
+            set_script_exception("array_iterator<T>: invalid position");
+        }
     };
+
+    script_array_iterator erase(script_array_iterator it)
+    {
+        ASBIND20_EXT_ARRAY_CHECK_CALLBACK(erase, script_array_iterator());
+
+        if(this != it.m_arr) [[unlikely]]
+        {
+            set_script_exception("array<T>.erase(): incompatible iterator");
+            return script_array_iterator();
+        }
+        size_type where = it.m_offset;
+        if(where >= size()) [[unlikely]]
+        {
+            it.raise_invalid_position();
+            return script_array_iterator();
+        }
+
+        m_data.erase(where);
+        return it; // The offset should be unchanged
+    }
 
 private:
     script_array_iterator script_begin()
@@ -882,7 +920,8 @@ inline void register_script_array(
             .funcdef("bool count_if_callback(const T&in)")
             .method("uint count_if(const count_if_callback&in, uint start=0, uint n=uint(-1)) const", fp<&array_t::count_if>)
             .method("array_iterator<T> begin()", fp<&array_t::script_begin>)
-            .method("array_iterator<T> end()", fp<&array_t::script_end>);
+            .method("array_iterator<T> end()", fp<&array_t::script_end>)
+            .method("array_iterator<T> erase(array_iterator<T> where)", fp<ASBIND_EXT_ARRAY_MFN(erase, iter_t, (iter_t))>);
 
         it
             .template_callback(fp<&array_t::template_callback>)
@@ -890,6 +929,9 @@ inline void register_script_array(
             .copy_constructor()
             .opAssign()
             .destructor()
+            .opEquals()
+            .method("array<T>@+ get_arr() const property", fp<&iter_t::get_array>)
+            .property("const uint offset", &iter_t::m_offset)
             .method("T& get_value() property", fp<&iter_t::value>)
             .method("const T& get_value() const property", fp<&iter_t::value>)
             .template opConv<bool>()
@@ -898,6 +940,8 @@ inline void register_script_array(
 
         if(as_default)
             c.as_array();
+
+#undef ASBIND20_EXT_ARRAY_MFN
     };
 
     if(generic)
