@@ -533,8 +533,6 @@ public:
         m_data.reverse(start, n);
     }
 
-    size_type find(const void* value, size_type idx = 0) const;
-
     bool contains(const void* value, size_type idx = 0) const;
 
     [[nodiscard]]
@@ -659,7 +657,7 @@ public:
         {}
 
         script_array_iterator(const script_array_iterator& other)
-            : m_arr(other.m_arr)
+            : m_arr(other.m_arr), m_offset(other.m_offset)
         {
             if(m_arr)
                 m_arr->addref();
@@ -720,6 +718,12 @@ public:
         script_array* get_array() const noexcept
         {
             return m_arr;
+        }
+
+        [[nodiscard]]
+        size_type get_offset() const noexcept
+        {
+            return m_offset;
         }
 
         void* value() const
@@ -790,6 +794,70 @@ public:
 
         m_data.erase(where);
         return it; // The offset should be unchanged
+    }
+
+    script_array_iterator find(const void* value, size_type start = 0, size_type n = -1) const
+    {
+        assert(value != nullptr);
+
+        // Initial value is equivalent to the end() iterator
+        size_type result = size();
+        array_cache* cache = get_cache();
+        if(!cache) [[unlikely]]
+        {
+            set_script_exception("array<T>: internal error");
+            return script_array_iterator();
+        }
+
+        if(start >= size()) [[unlikely]]
+        {
+            goto result_found;
+        }
+
+        n = std::min(size() - start, n);
+
+        if(int subtype_id = m_data.element_type_id(); is_primitive_type(subtype_id))
+        {
+            result = visit_primitive_type(
+                []<typename T>(const T* start, const T* sentinel, const T* val) -> size_type
+                {
+                    return static_cast<size_type>(
+                        std::find(start, sentinel, *val) - start
+                    );
+                },
+                subtype_id,
+                m_data.data_at(start),
+                m_data.data_at(start + n),
+                value
+            );
+            result += start;
+            goto result_found;
+        }
+        else
+        {
+            reuse_active_context ctx(get_engine());
+            for(size_type i = start; i < start + n; ++i)
+            {
+                bool eq = elem_opEquals(
+                    subtype_id,
+                    (*this)[i],
+                    value,
+                    ctx,
+                    cache
+                );
+
+                if(eq)
+                {
+                    result = i;
+                    goto result_found;
+                }
+            }
+        }
+
+result_found:
+        return script_array_iterator(
+            cache->iterator_ti, const_cast<script_array*>(this), result
+        );
     }
 
 private:
@@ -875,10 +943,20 @@ inline void register_script_array(
             "array<T>",
             AS_NAMESPACE_QUALIFIER asOBJ_GC
         );
+
+        constexpr AS_NAMESPACE_QUALIFIER asQWORD iterator_flags =
+            AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_CDAK |
+            AS_NAMESPACE_QUALIFIER asOBJ_GC;
+
         template_value_class<iter_t, UseGeneric> it(
             engine,
             "array_iterator<T>",
-            AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_CDAK | AS_NAMESPACE_QUALIFIER asOBJ_GC
+            iterator_flags
+        );
+        template_value_class<iter_t, UseGeneric> cit(
+            engine,
+            "const_array_iterator<T>",
+            iterator_flags
         );
 
         c
@@ -921,22 +999,33 @@ inline void register_script_array(
             .method("uint count_if(const count_if_callback&in, uint start=0, uint n=uint(-1)) const", fp<&array_t::count_if>)
             .method("array_iterator<T> begin()", fp<&array_t::script_begin>)
             .method("array_iterator<T> end()", fp<&array_t::script_end>)
-            .method("array_iterator<T> erase(array_iterator<T> where)", fp<ASBIND_EXT_ARRAY_MFN(erase, iter_t, (iter_t))>);
+            .method("array_iterator<T> erase(array_iterator<T> where)", fp<ASBIND_EXT_ARRAY_MFN(erase, iter_t, (iter_t))>)
+            .method("array_iterator<T> find(const T&in, uint start=0, uint n=uint(-1))", fp<&array_t::find>)
+            .method("const_array_iterator<T> find(const T&in, uint start=0, uint n=uint(-1)) const", fp<&array_t::find>);
 
+        auto iterator_common = [](auto& r)
+        {
+            r
+                .template_callback(fp<&array_t::template_callback>) // Reuse the template callback
+                .default_constructor()
+                .copy_constructor()
+                .opAssign()
+                .destructor()
+                .opEquals()
+                .method("array<T>@+ get_arr() const property", fp<&iter_t::get_array>)
+                .property("const uint offset", &iter_t::m_offset)
+                .template opConv<bool>()
+                .enum_refs(fp<&iter_t::enum_refs>)
+                .release_refs(fp<&iter_t::release_refs>);
+        };
+
+        iterator_common(it);
         it
-            .template_callback(fp<&array_t::template_callback>)
-            .default_constructor()
-            .copy_constructor()
-            .opAssign()
-            .destructor()
-            .opEquals()
-            .method("array<T>@+ get_arr() const property", fp<&iter_t::get_array>)
-            .property("const uint offset", &iter_t::m_offset)
-            .method("T& get_value() property", fp<&iter_t::value>)
-            .method("const T& get_value() const property", fp<&iter_t::value>)
-            .template opConv<bool>()
-            .enum_refs(fp<&iter_t::enum_refs>)
-            .release_refs(fp<&iter_t::release_refs>);
+            .method("T& get_value() const property", fp<&iter_t::value>)
+            .template opImplConv<iter_t>("const_array_iterator<T>");
+
+        iterator_common(cit);
+        cit.method("const T& get_value() const property", fp<&iter_t::value>);
 
         if(as_default)
             c.as_array();

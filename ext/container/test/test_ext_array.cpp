@@ -534,6 +534,52 @@ TEST_F(ext_array_generic, count)
     test_ext_array::check_count_if(engine);
 }
 
+namespace test_ext_array
+{
+void check_find(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
+    run_string(
+        engine,
+        "test_find_primitive",
+        "int[] arr = {1, 2, 3, 4, 5};\n"
+        "auto it = arr.find(2);\n"
+        "assert(it.offset == 1);\n"
+        "assert(@it.arr is @arr);\n"
+        "assert(it.value == 2);\n"
+        "it = arr.find(2, start: 1);\n"
+        "assert(it.offset == 1);\n"
+        "it = arr.find(2, start: 2);\n"
+        "assert(it == arr.end());"
+    );
+
+    run_string(
+        engine,
+        "test_find_string",
+        "string[] arr = {\"aaa\", \"bbb\", \"ccc\"};\n"
+        "auto it = arr.find(\"bbb\");\n"
+        "assert(it.offset == 1);\n"
+        "assert(@it.arr is @arr);\n"
+        "assert(it.value == \"bbb\");\n"
+        "it = arr.find(\"bbb\", start: 1);\n"
+        "assert(it.offset == 1);\n"
+        "it = arr.find(\"bbb\", start: 2);\n"
+        "assert(it == arr.end());"
+    );
+}
+} // namespace test_ext_array
+
+TEST_F(ext_array_native, find)
+{
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = get_engine();
+    test_ext_array::check_find(engine);
+}
+
+TEST_F(ext_array_generic, find)
+{
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = get_engine();
+    test_ext_array::check_find(engine);
+}
+
 // TEST_F(asbind_test_suite, ext_array)
 // {
 //     if(asbind20::has_max_portability())
