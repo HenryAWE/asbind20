@@ -12,7 +12,11 @@ namespace asbind20::ext
 consteval auto default_script_array_user_id() noexcept
     -> AS_NAMESPACE_QUALIFIER asPWORD
 {
+#ifdef ASBIND20_EXT_SCRIPT_ARRAY_USER_ID
+    return ASBIND20_EXT_SCRIPT_ARRAY_USER_ID;
+#else
     return 2000;
+#endif
 }
 
 namespace detail
