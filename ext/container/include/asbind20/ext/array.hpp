@@ -1226,7 +1226,9 @@ private:
 
     atomic_counter m_counter;
     bool m_gc_flag = false;
+    // Prevents array from begin modified within a callback of functions like find_if
     mutable bool m_within_callback = false;
+    // TODO: Atomic flags for multithreading
 
     class callback_guard
     {

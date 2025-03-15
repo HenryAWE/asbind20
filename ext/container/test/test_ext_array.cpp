@@ -263,20 +263,51 @@ void check_list_factory(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         "assert(pairs[2] is null);"
     );
 }
+
+static void check_assignment(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
+    run_string(
+        engine,
+        "test_assignment_primitive",
+        "int[] arr1 = {-1, -2};\n"
+        "assert(arr1[0] == -1);\n"
+        "assert(arr1[1] == -2);\n"
+        "int[] arr2 = {1, 2};\n"
+        "arr1 = arr2;\n"
+        "assert(arr1[0] == 1);\n"
+        "assert(arr1[1] == 2);\n"
+        "assert(@arr1 !is @arr2);"
+    );
+
+    run_string(
+        engine,
+        "test_assignment_string",
+        "string[] arr1 = {\"aaa\", \"AAA\"};\n"
+        "assert(arr1[0] == \"aaa\");\n"
+        "assert(arr1[1] == \"AAA\");\n"
+        "string[] arr2 = {\"bbb\", \"BBB\"};\n"
+        "arr1 = arr2;\n"
+        "assert(arr1[0] == \"bbb\");\n"
+        "assert(arr1[1] == \"BBB\");\n"
+        "assert(@arr1 !is @arr2);"
+    );
+}
 } // namespace test_ext_array
 
-TEST_F(ext_array_native, factory)
+TEST_F(ext_array_native, factory_and_assignment)
 {
     auto* engine = get_engine();
     test_ext_array::check_factory(engine);
     test_ext_array::check_list_factory(engine);
+    test_ext_array::check_assignment(engine);
 }
 
-TEST_F(ext_array_generic, factory)
+TEST_F(ext_array_generic, factory_and_assignment)
 {
     auto* engine = get_engine();
     test_ext_array::check_factory(engine);
     test_ext_array::check_list_factory(engine);
+    test_ext_array::check_assignment(engine);
 }
 
 namespace test_ext_array
@@ -545,14 +576,19 @@ static void check_count(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         engine,
         "test_count_primitive",
         "int[] arr = {1, 2, 2, 2, 5};\n"
-        "assert(arr.count(2) == 3);"
+        "assert(arr.count(2) == 3);\n"
+        "assert(arr.count(4) == 0);\n"
+        "assert(arr.count(2, n: 3) == 2);\n"
+        "assert(arr.count(2, start: 2) == 2);"
     );
 
     run_string(
         engine,
         "test_count_string",
         "string[] arr = {\"aaa\", \"abb\", \"aaa\"};\n"
-        "assert(arr.count(\"aaa\") == 2);"
+        "assert(arr.count(\"aaa\") == 2);\n"
+        "assert(arr.count(\"bbb\") == 0);\n"
+        "assert(arr.count(\"abb\") == 1);"
     );
 }
 
@@ -563,15 +599,23 @@ static void check_count_if(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         "test_count_if_primitive",
         "int[] arr = {1, 2, 3, 4, 5};\n"
         "uint c = arr.count_if(function(v) { return v > 2; });\n"
-        "assert(c == 3);"
+        "assert(c == 3);\n"
+        "c = arr.count_if(function(v) { return v > 2; }, start: 3);\n"
+        "assert(c == 2);\n"
+        "c = arr.count_if(function(v) { return v > 2; }, n: 2);\n"
+        "assert(c == 0);"
     );
 
     run_string(
         engine,
         "test_count_if_string",
-        "string[] arr = {\"aaa\", \"aab\", \"abb\"};\n"
+        "string[] arr = {\"aaa\", \"aab\", \"abb\", \"ccb\"};\n"
         "uint c = arr.count_if(function(v) { return v.starts_with(\"aa\"); });\n"
-        "assert(c == 2);"
+        "assert(c == 2);\n"
+        "c = arr.count_if(function(v) { return v.ends_with(\"b\"); });\n"
+        "assert(c == 3);\n"
+        "c = arr.count_if(function(v) { return v.starts_with(\"b\"); });\n"
+        "assert(c == 0);"
     );
 }
 } // namespace test_ext_array
