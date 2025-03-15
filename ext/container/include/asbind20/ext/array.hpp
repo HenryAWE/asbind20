@@ -143,6 +143,7 @@ class script_array : private detail::script_array_base
 
 public:
     using size_type = AS_NAMESPACE_QUALIFIER asUINT;
+    // Negative value means reverse index
     using index_type = std::make_signed_t<size_type>;
 
     using my_base::operator new;
@@ -471,14 +472,39 @@ public:
         }
     }
 
-    void* operator[](size_type idx)
+    /**
+     * @brief Convert index to offset in array
+     *
+     * @param idx Index value. Negative value means reverse index.
+     * @return size_type Offset in array, or size_type(-1) for invalid index
+     */
+    size_type index_to_offset(index_type idx) const noexcept
     {
-        return m_data[idx];
+        size_type sz = size();
+        if(idx < 0)
+        {
+            size_type abs_idx = static_cast<size_type>(-idx);
+            if(abs_idx > sz) [[unlikely]]
+                return size_type(-1);
+            else
+                return sz - abs_idx;
+        }
+        else
+        {
+            if(static_cast<size_type>(idx) >= sz) [[unlikely]]
+                return size_type(-1);
+            return static_cast<size_type>(idx);
+        }
     }
 
-    const void* operator[](size_type idx) const
+    void* operator[](size_type off)
     {
-        return m_data[idx];
+        return m_data[off];
+    }
+
+    const void* operator[](size_type off) const
+    {
+        return m_data[off];
     }
 
     void* data() noexcept
@@ -609,10 +635,13 @@ public:
      * @param n Max checked elements
      * @return size_type Removed element count
      */
-    size_type remove(const void* val, size_type start = 0, size_type n = -1)
+    size_type remove(const void* val, index_type start = 0, size_type n = -1)
     {
-        if(start >= size())
+        size_type off = index_to_offset(start);
+        if(off == size_type(-1))
+        {
             return 0;
+        }
 
         ASBIND20_EXT_ARRAY_CHECK_CALLBACK(remove, 0);
 
@@ -620,16 +649,16 @@ public:
 
         int subtype_id = m_data.element_type_id();
 
-        n = std::min(size() - start, n);
+        n = std::min(size() - off, n);
 
         if(is_primitive_type(subtype_id))
         {
             visit_primitive_type(
-                [this, start, n, &removed]<typename T>(
+                [this, off, n, &removed]<typename T>(
                     const T* data, const T* val
                 )
                 {
-                    for(size_type i = start; i + removed < n;)
+                    for(size_type i = off; i + removed < n;)
                     {
                         if(data[i] != *val)
                         {
@@ -652,7 +681,9 @@ public:
 
             reuse_active_context ctx(ti->GetEngine());
             array_cache* cache = get_cache();
-            for(size_type i = start; i + removed < n;)
+            if(!cache) [[unlikely]]
+                return 0;
+            for(size_type i = off; i + removed < n;)
             {
                 bool eq = elem_opEquals(
                     subtype_id,
@@ -684,22 +715,23 @@ public:
      * @param n Max checked elements
      * @return size_type Removed element count
      */
-    size_type remove_if(AS_NAMESPACE_QUALIFIER asIScriptFunction* pred, size_type start = 0, size_type n = -1)
+    size_type remove_if(AS_NAMESPACE_QUALIFIER asIScriptFunction* pred, index_type start = 0, size_type n = -1)
     {
-        if(start >= size())
+        size_type off = index_to_offset(start);
+        if(off == size_type(-1)) [[unlikely]]
             return 0;
 
         ASBIND20_EXT_ARRAY_CHECK_CALLBACK(remove_if, 0);
 
         size_type removed = 0;
 
-        n = std::min(size() - start, n);
+        n = std::min(size() - off, n);
 
         AS_NAMESPACE_QUALIFIER asITypeInfo* ti = get_type_info();
 
         callback_guard guard(this);
         reuse_active_context ctx(ti->GetEngine());
-        for(size_type i = start; i + removed < n;)
+        for(size_type i = off; i + removed < n;)
         {
             auto eq = script_invoke<bool>(ctx, pred, m_data[i]);
             if(!eq.has_value() || !*eq)
@@ -716,12 +748,13 @@ public:
         return removed;
     }
 
-    size_type count(const void* val, size_type start = 0, size_type n = -1) const
+    size_type count(const void* val, index_type start = 0, size_type n = -1) const
     {
-        if(start >= size()) [[unlikely]]
+        size_type off = index_to_offset(start);
+        if(off >= size()) [[unlikely]]
             return 0;
 
-        n = std::min(size() - start, n);
+        n = std::min(size() - off, n);
 
         int subtype_id = m_data.element_type_id();
         if(is_primitive_type(subtype_id))
@@ -736,8 +769,8 @@ public:
                     ));
                 },
                 subtype_id,
-                m_data.data_at(start),
-                m_data.data_at(start + n),
+                m_data.data_at(off),
+                m_data.data_at(off + n),
                 val
             );
         }
@@ -747,7 +780,7 @@ public:
             reuse_active_context ctx(get_engine(), true);
 
             size_type result = 0;
-            for(size_type i = start; i < start + n; ++i)
+            for(size_type i = off; i < off + n; ++i)
             {
                 if(elem_opEquals(subtype_id, m_data[i], val, ctx, cache))
                     ++result;
@@ -757,23 +790,24 @@ public:
         }
     }
 
-    size_type count_if(AS_NAMESPACE_QUALIFIER asIScriptFunction* pred, size_type start, size_type n = -1)
+    size_type count_if(AS_NAMESPACE_QUALIFIER asIScriptFunction* pred, index_type start = 0, size_type n = -1) const
     {
-        if(start >= size()) [[unlikely]]
+        size_type off = index_to_offset(start);
+        if(off == size_type(-1)) [[unlikely]]
             return 0;
         if(m_within_callback) [[unlikely]]
         {
-            set_script_exception("array<T>.count_if: nested callback");
+            set_script_exception("array<T>.count_if(): nested callback");
             return 0;
         }
 
-        n = std::min(size() - start, n);
+        n = std::min(size() - off, n);
 
         size_type result = 0;
 
         callback_guard guard(this);
         reuse_active_context ctx(get_engine(), true);
-        for(size_type i = start; i < start + n; ++i)
+        for(size_type i = off; i < off + n; ++i)
         {
             auto eq = script_invoke<bool>(ctx, pred, m_data[i]);
             if(eq.has_value() && *eq)
@@ -785,13 +819,14 @@ public:
 
     void sort(size_type start = 0, size_type n = -1, bool asc = true)
     {
-        if(start >= size()) [[unlikely]]
+        size_type off = index_to_offset(start);
+        if(off == size_type(-1)) [[unlikely]]
         {
             set_script_exception("array<T>.sort(): out of range");
             return;
         }
 
-        n = std::min(size() - start, n);
+        n = std::min(size() - off, n);
 
         int subtype_id = element_type_id();
         if(is_primitive_type(subtype_id))
@@ -813,15 +848,15 @@ public:
                     }
                 },
                 subtype_id,
-                m_data.data_at(start),
-                m_data.data_at(start + n)
+                m_data.data_at(off),
+                m_data.data_at(off + n)
             );
         }
         else
         {
             auto helper = [&](auto&& f)
             {
-                void** data = static_cast<void**>(m_data.data_at(start));
+                void** data = static_cast<void**>(m_data.data_at(off));
                 std::sort(
                     data, data + n, std::move(f)
                 );
@@ -911,9 +946,15 @@ public:
         }
     }
 
-    void reverse(size_type start = 0, size_type n = -1)
+    void reverse(index_type start = 0, size_type n = -1)
     {
-        m_data.reverse(start, n);
+        size_type off = index_to_offset(start);
+        if(off == size_type(-1))
+        {
+            set_script_exception("array<T>.reverse(): out of range");
+            return;
+        }
+        m_data.reverse(off, n);
     }
 
     void reverse(script_array_iterator start)
@@ -1093,17 +1134,17 @@ public:
 private:
     // Returns size() if not found
     size_type find_impl(
-        const void* value, size_type start, size_type n, array_cache* cache
+        const void* value, size_type start_offset, size_type n, array_cache* cache
     ) const
     {
-        assert(start < size());
+        assert(start_offset < size());
 
-        n = std::min(size() - start, n);
+        n = std::min(size() - start_offset, n);
 
         if(int subtype_id = element_type_id(); is_primitive_type(subtype_id))
         {
             return visit_primitive_type(
-                [this, offset = start]<typename T>(
+                [this, start_offset]<typename T>(
                     const T* start, const T* sentinel, const T* val
                 ) -> size_type
                 {
@@ -1113,18 +1154,18 @@ private:
                         return size();
                     else
                         return static_cast<size_type>(found - start) +
-                               offset;
+                               start_offset;
                 },
                 subtype_id,
-                m_data.data_at(start),
-                m_data.data_at(start + n),
+                m_data.data_at(start_offset),
+                m_data.data_at(start_offset + n),
                 value
             );
         }
         else
         {
             reuse_active_context ctx(get_engine());
-            for(size_type i = start; i < start + n; ++i)
+            for(size_type i = start_offset; i < start_offset + n; ++i)
             {
                 bool eq = elem_opEquals(
                     subtype_id,
@@ -1143,7 +1184,7 @@ private:
     }
 
 public:
-    script_array_iterator find(const void* value, size_type start = 0, size_type n = -1) const
+    script_array_iterator find(const void* value, index_type start = 0, size_type n = -1) const
     {
         assert(value != nullptr);
 
@@ -1156,12 +1197,13 @@ public:
             return script_array_iterator();
         }
 
-        if(start >= size()) [[unlikely]]
+        size_type off = index_to_offset(start);
+        if(off == size_type(-1)) [[unlikely]]
         {
             goto result_found;
         }
 
-        result = find_impl(value, start, n, cache);
+        result = find_impl(value, off, n, cache);
 
 result_found:
         return script_array_iterator(
@@ -1169,7 +1211,7 @@ result_found:
         );
     }
 
-    bool contains(const void* value, size_type start, size_type n = -1) const
+    bool contains(const void* value, index_type start, size_type n = -1) const
     {
         assert(value != nullptr);
 
@@ -1180,10 +1222,11 @@ result_found:
             return false;
         }
 
-        if(start >= size())
+        size_type off = index_to_offset(start);
+        if(off == size_type(-1)) [[unlikely]]
             return false;
 
-        size_type found = find_impl(value, start, n, cache);
+        size_type found = find_impl(value, off, n, cache);
         return found != size();
     }
 
@@ -1214,20 +1257,24 @@ private:
         );
     }
 
-    void* opIndex(size_type idx)
+public:
+    void* opIndex(index_type idx)
     {
-        if(idx >= size())
+        size_type off = index_to_offset(idx);
+        if(off == size_type(-1)) [[unlikely]]
         {
             set_script_exception("array<T>.opIndex(): out or range");
             return nullptr;
         }
-        return (*this)[idx];
+        return (*this)[off];
     }
 
+private:
     atomic_counter m_counter;
     bool m_gc_flag = false;
     // Prevents array from begin modified within a callback of functions like find_if
     mutable bool m_within_callback = false;
+
     // TODO: Atomic flags for multithreading
 
     class callback_guard
@@ -1262,6 +1309,7 @@ inline void register_script_array(
     using array_t = script_array;
     using iter_t = script_array::script_array_iterator;
     using size_type = array_t::size_type;
+    using index_type = array_t::index_type;
 
 #define ASBIND_EXT_ARRAY_MFN(name, ret, args) \
     fp<static_cast<ret(array_t::*) args>(&array_t::name)>
@@ -1323,16 +1371,16 @@ inline void register_script_array(
             .method("T& get_back() property", fp<&array_t::get_back>)
             .method("const T& get_front() const property", fp<&array_t::get_front>)
             .method("const T& get_back() const property", fp<&array_t::get_back>)
-            .method("void sort(uint start=0, uint n=uint(-1), bool asc=true)", fp<&array_t::sort>)
-            .method("void reverse(uint start=0, uint n=uint(-1))", ASBIND_EXT_ARRAY_MFN(reverse, void, (size_type, size_type)))
+            .method("void sort(int start=0, uint n=uint(-1), bool asc=true)", fp<&array_t::sort>)
+            .method("void reverse(int start=0, uint n=uint(-1))", ASBIND_EXT_ARRAY_MFN(reverse, void, (index_type, size_type)))
             .method("void reverse(const_array_iterator<T> start)", ASBIND_EXT_ARRAY_MFN(reverse, void, (iter_t)))
             .method("void reverse(const_array_iterator<T> start, const_array_iterator<T> stop)", ASBIND_EXT_ARRAY_MFN(reverse, void, (iter_t, iter_t)))
-            .method("uint remove(const T&in, uint start=0, uint n=uint(-1)) const", fp<&array_t::remove>)
+            .method("uint remove(const T&in, int start=0, uint n=uint(-1)) const", ASBIND_EXT_ARRAY_MFN(remove, size_type, (const void*, index_type, size_type)))
             .funcdef("bool remove_if_callback(const T&in)")
-            .method("uint remove_if(const remove_if_callback&in, uint start=0, uint n=uint(-1)) const", fp<&array_t::remove_if>)
-            .method("uint count(const T&in, uint start=0, uint n=uint(-1)) const", fp<&array_t::count>)
+            .method("uint remove_if(const remove_if_callback&in, int start=0, uint n=uint(-1)) const", ASBIND_EXT_ARRAY_MFN(remove_if, size_type, (AS_NAMESPACE_QUALIFIER asIScriptFunction*, index_type, size_type)))
+            .method("uint count(const T&in, int start=0, uint n=uint(-1)) const", fp<&array_t::count>)
             .funcdef("bool count_if_callback(const T&in)")
-            .method("uint count_if(const count_if_callback&in, uint start=0, uint n=uint(-1)) const", fp<&array_t::count_if>)
+            .method("uint count_if(const count_if_callback&in, int start=0, uint n=uint(-1)) const", fp<&array_t::count_if>)
             .method("array_iterator<T> begin()", fp<&array_t::script_begin>)
             .method("array_iterator<T> end()", fp<&array_t::script_end>)
             .method("const_array_iterator<T> begin() const", fp<&array_t::script_begin>)
@@ -1341,9 +1389,9 @@ inline void register_script_array(
             .method("const_array_iterator<T> cend() const", fp<&array_t::script_end>)
             .method("array_iterator<T> erase(array_iterator<T> where)", ASBIND_EXT_ARRAY_MFN(erase, iter_t, (iter_t)))
             .method("const_array_iterator<T> erase(const_array_iterator<T> where)", ASBIND_EXT_ARRAY_MFN(erase, iter_t, (iter_t)))
-            .method("array_iterator<T> find(const T&in, uint start=0, uint n=uint(-1))", fp<&array_t::find>)
-            .method("const_array_iterator<T> find(const T&in, uint start=0, uint n=uint(-1)) const", fp<&array_t::find>)
-            .method("bool contains(const T&in, uint start=0, uint n=uint(-1)) const", ASBIND_EXT_ARRAY_MFN(contains, bool, (const void*, size_type, size_type) const))
+            .method("array_iterator<T> find(const T&in, int start=0, uint n=uint(-1))", fp<&array_t::find>)
+            .method("const_array_iterator<T> find(const T&in, int start=0, uint n=uint(-1)) const", fp<&array_t::find>)
+            .method("bool contains(const T&in, int start=0, uint n=uint(-1)) const", ASBIND_EXT_ARRAY_MFN(contains, bool, (const void*, index_type, size_type) const))
             .method("array_iterator<T> insert(array_iterator<T> where, const T&in)", ASBIND_EXT_ARRAY_MFN(insert, iter_t, (iter_t, const void*)))
             .method("const_array_iterator<T> insert(const_array_iterator<T> where, const T&in)", ASBIND_EXT_ARRAY_MFN(insert, iter_t, (iter_t, const void*)));
 

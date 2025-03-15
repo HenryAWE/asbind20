@@ -248,7 +248,9 @@ void check_list_factory(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         "array<my_pair> pairs = {my_pair(1, 1), my_pair(2, 2)};\n"
         "assert(pairs.size == 2);\n"
         "assert(pairs[0] == my_pair(1, 1));\n"
-        "assert(pairs[1] == my_pair(2, 2));"
+        "assert(pairs[1] == my_pair(2, 2));\n"
+        "assert(pairs[-2] == my_pair(1, 1));\n"
+        "assert(pairs[-1] == my_pair(2, 2));"
     );
 
     run_string(
@@ -602,6 +604,8 @@ static void check_count_if(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         "assert(c == 3);\n"
         "c = arr.count_if(function(v) { return v > 2; }, start: 3);\n"
         "assert(c == 2);\n"
+        "c = arr.count_if(function(v) { return v > 2; }, start: -2);\n"
+        "assert(c == 2);\n"
         "c = arr.count_if(function(v) { return v > 2; }, n: 2);\n"
         "assert(c == 0);"
     );
@@ -683,7 +687,9 @@ static void check_contains(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         "int[] arr = {1, 2, 3, 4, 5};\n"
         "assert(arr.contains(2));\n"
         "assert(arr.contains(2, start: 1));\n"
+        "assert(arr.contains(2, start: -4));\n"
         "assert(!arr.contains(2, start: 2));\n"
+        "assert(!arr.contains(2, start: -3));\n"
         "assert(arr.contains(5));\n"
         "assert(!arr.contains(5, n: 2));"
     );
@@ -694,7 +700,9 @@ static void check_contains(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         "string[] arr = {\"aaa\", \"bbb\", \"ccc\"};\n"
         "assert(arr.contains(\"bbb\"));\n"
         "assert(arr.contains(\"bbb\", start: 1));\n"
+        "assert(arr.contains(\"bbb\", start: -2));\n"
         "assert(!arr.contains(\"bbb\", start: 2));\n"
+        "assert(!arr.contains(\"bbb\", start: -1));\n"
         "assert(arr.contains(\"ccc\"));\n"
         "assert(!arr.contains(\"ccc\", n: 2));"
     );
