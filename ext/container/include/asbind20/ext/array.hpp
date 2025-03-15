@@ -953,8 +953,6 @@ public:
         );
     }
 
-    bool contains(const void* value, size_type idx = 0) const;
-
     [[nodiscard]]
     auto get_type_info() const noexcept
         -> AS_NAMESPACE_QUALIFIER asITypeInfo*
@@ -1088,6 +1086,59 @@ public:
         return it; // The offset should be unchanged
     }
 
+private:
+    // Returns size() if not found
+    size_type find_impl(
+        const void* value, size_type start, size_type n, array_cache* cache
+    ) const
+    {
+        assert(start < size());
+
+        n = std::min(size() - start, n);
+
+        if(int subtype_id = element_type_id(); is_primitive_type(subtype_id))
+        {
+            return visit_primitive_type(
+                [this, offset = start]<typename T>(
+                    const T* start, const T* sentinel, const T* val
+                ) -> size_type
+                {
+                    const T* found = std::find(start, sentinel, *val);
+
+                    if(found == sentinel)
+                        return size();
+                    else
+                        return static_cast<size_type>(found - start) +
+                               offset;
+                },
+                subtype_id,
+                m_data.data_at(start),
+                m_data.data_at(start + n),
+                value
+            );
+        }
+        else
+        {
+            reuse_active_context ctx(get_engine());
+            for(size_type i = start; i < start + n; ++i)
+            {
+                bool eq = elem_opEquals(
+                    subtype_id,
+                    (*this)[i],
+                    value,
+                    ctx,
+                    cache
+                );
+
+                if(eq)
+                    return i;
+            }
+
+            return size();
+        }
+    }
+
+public:
     script_array_iterator find(const void* value, size_type start = 0, size_type n = -1) const
     {
         assert(value != nullptr);
@@ -1106,50 +1157,30 @@ public:
             goto result_found;
         }
 
-        n = std::min(size() - start, n);
-
-        if(int subtype_id = m_data.element_type_id(); is_primitive_type(subtype_id))
-        {
-            result = visit_primitive_type(
-                []<typename T>(const T* start, const T* sentinel, const T* val) -> size_type
-                {
-                    return static_cast<size_type>(
-                        std::find(start, sentinel, *val) - start
-                    );
-                },
-                subtype_id,
-                m_data.data_at(start),
-                m_data.data_at(start + n),
-                value
-            );
-            result += start;
-            goto result_found;
-        }
-        else
-        {
-            reuse_active_context ctx(get_engine());
-            for(size_type i = start; i < start + n; ++i)
-            {
-                bool eq = elem_opEquals(
-                    subtype_id,
-                    (*this)[i],
-                    value,
-                    ctx,
-                    cache
-                );
-
-                if(eq)
-                {
-                    result = i;
-                    goto result_found;
-                }
-            }
-        }
+        result = find_impl(value, start, n, cache);
 
 result_found:
         return script_array_iterator(
             cache->iterator_ti, const_cast<script_array*>(this), result
         );
+    }
+
+    bool contains(const void* value, size_type start, size_type n = -1) const
+    {
+        assert(value != nullptr);
+
+        array_cache* cache = get_cache();
+        if(!cache) [[unlikely]]
+        {
+            set_script_exception("array<T>: internal error");
+            return false;
+        }
+
+        if(start >= size())
+            return false;
+
+        size_type found = find_impl(value, start, n, cache);
+        return found != size();
     }
 
 private:
@@ -1306,6 +1337,7 @@ inline void register_script_array(
             .method("const_array_iterator<T> erase(const_array_iterator<T> where)", ASBIND_EXT_ARRAY_MFN(erase, iter_t, (iter_t)))
             .method("array_iterator<T> find(const T&in, uint start=0, uint n=uint(-1))", fp<&array_t::find>)
             .method("const_array_iterator<T> find(const T&in, uint start=0, uint n=uint(-1)) const", fp<&array_t::find>)
+            .method("bool contains(const T&in, uint start=0, uint n=uint(-1)) const", ASBIND_EXT_ARRAY_MFN(contains, bool, (const void*, size_type, size_type) const))
             .method("array_iterator<T> insert(array_iterator<T> where, const T&in)", ASBIND_EXT_ARRAY_MFN(insert, iter_t, (iter_t, const void*)))
             .method("const_array_iterator<T> insert(const_array_iterator<T> where, const T&in)", ASBIND_EXT_ARRAY_MFN(insert, iter_t, (iter_t, const void*)));
 

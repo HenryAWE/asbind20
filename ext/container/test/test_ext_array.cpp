@@ -592,7 +592,7 @@ TEST_F(ext_array_generic, count)
 
 namespace test_ext_array
 {
-void check_find(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void check_find(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     run_string(
         engine,
@@ -605,6 +605,10 @@ void check_find(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         "it = arr.find(2, start: 1);\n"
         "assert(it.offset == 1);\n"
         "it = arr.find(2, start: 2);\n"
+        "assert(it == arr.end());\n"
+        "it = arr.find(5);\n"
+        "assert(it == --arr.end());\n"
+        "it = arr.find(5, n: 2);\n"
         "assert(it == arr.end());"
     );
 
@@ -619,21 +623,52 @@ void check_find(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         "it = arr.find(\"bbb\", start: 1);\n"
         "assert(it.offset == 1);\n"
         "it = arr.find(\"bbb\", start: 2);\n"
+        "assert(it == arr.end());\n"
+        "it = arr.find(\"ccc\");\n"
+        "assert(it == --arr.end());\n"
+        "it = arr.find(\"ccc\", n: 2);\n"
         "assert(it == arr.end());"
+    );
+}
+
+static void check_contains(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
+    run_string(
+        engine,
+        "test_contains_primitive",
+        "int[] arr = {1, 2, 3, 4, 5};\n"
+        "assert(arr.contains(2));\n"
+        "assert(arr.contains(2, start: 1));\n"
+        "assert(!arr.contains(2, start: 2));\n"
+        "assert(arr.contains(5));\n"
+        "assert(!arr.contains(5, n: 2));"
+    );
+
+    run_string(
+        engine,
+        "test_contains_string",
+        "string[] arr = {\"aaa\", \"bbb\", \"ccc\"};\n"
+        "assert(arr.contains(\"bbb\"));\n"
+        "assert(arr.contains(\"bbb\", start: 1));\n"
+        "assert(!arr.contains(\"bbb\", start: 2));\n"
+        "assert(arr.contains(\"ccc\"));\n"
+        "assert(!arr.contains(\"ccc\", n: 2));"
     );
 }
 } // namespace test_ext_array
 
-TEST_F(ext_array_native, find)
+TEST_F(ext_array_native, find_and_contains)
 {
     AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = get_engine();
     test_ext_array::check_find(engine);
+    test_ext_array::check_contains(engine);
 }
 
-TEST_F(ext_array_generic, find)
+TEST_F(ext_array_generic, find_and_contains)
 {
     AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = get_engine();
     test_ext_array::check_find(engine);
+    test_ext_array::check_contains(engine);
 }
 
 namespace test_ext_array
