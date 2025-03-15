@@ -407,7 +407,10 @@ public:
         return get_type_info()->GetEngine();
     }
 
-    script_array& operator=(const script_array& other);
+    int element_type_id() const
+    {
+        return m_data.element_type_id();
+    }
 
     bool operator==(const script_array& other) const
     {
@@ -422,8 +425,27 @@ public:
         if(empty())
             return true;
 
-        int subtype_id = m_data.element_type_id();
-        if(!is_primitive_type(m_data.element_type_id()))
+        int subtype_id = element_type_id();
+        if(is_primitive_type(subtype_id))
+        {
+            return visit_primitive_type(
+                []<typename T>(
+                    const T* lhs_start, const T* lhs_stop, const T* rhs_start
+                ) -> bool
+                {
+                    return std::equal(
+                        lhs_start,
+                        lhs_stop,
+                        rhs_start
+                    );
+                },
+                subtype_id,
+                m_data.data(),
+                m_data.data_at(m_data.size()),
+                other.m_data.data()
+            );
+        }
+        else
         {
             array_cache* cache = get_cache();
 
@@ -440,25 +462,9 @@ public:
                 if(!eq)
                     return false;
             }
-        }
-        else // Primitive types
-        {
-            assert(is_primitive_type(subtype_id));
-            for(size_type i = 0; i < size(); ++i)
-            {
-                bool eq = elem_opEquals(
-                    subtype_id,
-                    (*this)[i],
-                    other[i],
-                    nullptr,
-                    nullptr
-                );
-                if(!eq)
-                    return false;
-            }
-        }
 
-        return true;
+            return true;
+        }
     }
 
     void* operator[](size_type idx)
@@ -522,6 +528,23 @@ public:
             return ret;                                                      \
         }                                                                    \
     } while(0)
+
+    script_array& operator=(const script_array& other)
+    {
+        if(this == &other) [[unlikely]]
+            return *this;
+
+        ASBIND20_EXT_ARRAY_CHECK_CALLBACK(opAssign, *this);
+
+        m_data.clear();
+        m_data.reserve(other.size());
+        for(size_type i = 0; i < other.size(); ++i)
+        {
+            m_data.push_back(other[i]);
+        }
+
+        return *this;
+    }
 
     void reserve(size_type new_cap)
     {
@@ -597,23 +620,27 @@ public:
 
         if(is_primitive_type(subtype_id))
         {
-            for(size_type i = start; i + removed < n;)
-            {
-                bool eq = elem_opEquals(
-                    subtype_id,
-                    (*this)[i],
-                    val,
-                    nullptr,
-                    nullptr
-                );
-                if(!eq)
+            visit_primitive_type(
+                [this, start, n, &removed]<typename T>(
+                    const T* data, const T* val
+                )
                 {
-                    ++i;
-                    continue;
-                }
-                i = static_cast<size_type>(m_data.remove(i));
-                removed += 1;
-            }
+                    for(size_type i = start; i + removed < n;)
+                    {
+                        if(data[i] != *val)
+                        {
+                            ++i;
+                            continue;
+                        }
+
+                        i = static_cast<size_type>(m_data.remove(i));
+                        removed += 1;
+                    }
+                },
+                subtype_id,
+                m_data.data(),
+                val
+            );
         }
         else
         {
@@ -730,12 +757,16 @@ public:
     {
         if(start >= size()) [[unlikely]]
             return 0;
+        if(m_within_callback) [[unlikely]]
+        {
+            set_script_exception("array<T>.count_if: nested callback");
+            return 0;
+        }
 
         n = std::min(size() - start, n);
 
         size_type result = 0;
 
-        // TODO: Deal with calling count_if within count_if
         callback_guard guard(this);
         reuse_active_context ctx(get_engine(), true);
         for(size_type i = start; i < start + n; ++i)
@@ -748,7 +779,133 @@ public:
         return result;
     }
 
-    void sort(size_type idx = 0, size_type n = -1, bool asc = true);
+    void sort(size_type start = 0, size_type n = -1, bool asc = true)
+    {
+        if(start >= size()) [[unlikely]]
+        {
+            set_script_exception("array<T>.sort(): out of range");
+            return;
+        }
+
+        n = std::min(size() - start, n);
+
+        int subtype_id = element_type_id();
+        if(is_primitive_type(subtype_id))
+        {
+            visit_primitive_type(
+                [asc]<typename T>(T* start, T* stop)
+                {
+                    if(asc)
+                    {
+                        std::sort(
+                            start, stop, std::less<T>{}
+                        );
+                    }
+                    else
+                    {
+                        std::sort(
+                            start, stop, std::greater<T>{}
+                        );
+                    }
+                },
+                subtype_id,
+                m_data.data_at(start),
+                m_data.data_at(start + n)
+            );
+        }
+        else
+        {
+            auto helper = [&](auto&& f)
+            {
+                void** data = static_cast<void**>(m_data.data_at(start));
+                std::sort(
+                    data, data + n, std::move(f)
+                );
+            };
+
+            array_cache* cache = get_cache();
+            if(!cache) [[unlikely]]
+            {
+                set_script_exception("array<T>.sort(): internal error");
+                return;
+            }
+            if(!cache->subtype_opCmp) [[unlikely]]
+            {
+                if(cache->opCmp_status == AS_NAMESPACE_QUALIFIER asMULTIPLE_FUNCTIONS)
+                    set_script_exception("array<T>.sort(): multiple opCmp() functions");
+                else
+                    set_script_exception("array<T>.sort(): opCmp() function not found");
+                return;
+            }
+
+            reuse_active_context ctx(get_engine(), true);
+
+            auto comp = [cache, &ctx]<bool IsHandle, bool Asc>(
+                            std::bool_constant<IsHandle>,
+                            std::bool_constant<Asc>,
+                            void* lhs,
+                            void* rhs
+                        ) -> bool
+            {
+                if(lhs == nullptr || rhs == nullptr)
+                {
+                    if constexpr(!IsHandle)
+                        assert(false && "bad array");
+
+                    if constexpr(Asc)
+                        return lhs < rhs;
+                    else
+                        return lhs > rhs;
+                }
+
+                auto cmp = script_invoke<int>(
+                    ctx, lhs, cache->subtype_opCmp, rhs
+                );
+                if(!cmp.has_value())
+                    return false;
+
+                if constexpr(Asc)
+                    return *cmp < 0;
+                else
+                    return *cmp > 0;
+            };
+
+            if(is_objhandle(subtype_id))
+            {
+                if(asc)
+                {
+                    helper(
+                        [&comp](void* lhs, void* rhs)
+                        { return comp(std::true_type{}, std::true_type{}, lhs, rhs); }
+                    );
+                }
+                else
+                {
+                    helper(
+                        [&comp](void* lhs, void* rhs)
+                        { return comp(std::true_type{}, std::false_type{}, lhs, rhs); }
+                    );
+                }
+            }
+            else
+            {
+                if(asc)
+                {
+                    helper(
+                        [&comp](void* lhs, void* rhs)
+                        { return comp(std::false_type{}, std::true_type{}, lhs, rhs); }
+                    );
+                }
+                else
+                {
+                    helper(
+                        [&comp](void* lhs, void* rhs)
+                        { return comp(std::false_type{}, std::false_type{}, lhs, rhs); }
+                    );
+                }
+            }
+        }
+    }
 
     void reverse(size_type start = 0, size_type n = -1)
     {
@@ -1108,6 +1265,7 @@ inline void register_script_array(
             .template factory<size_type>("uint n", use_explicit, use_policy<policies::notify_gc>)
             .template factory<size_type, const void*>("uint n, const T&in value", use_policy<policies::notify_gc>)
             .list_factory("repeat T", use_policy<policies::repeat_list_proxy, policies::notify_gc>)
+            .opAssign()
             .opEquals()
             .method("uint get_size() const property", fp<&array_t::size>)
             .method("void set_size(uint) property", fp<&array_t::resize>)
@@ -1128,6 +1286,7 @@ inline void register_script_array(
             .method("T& get_back() property", fp<&array_t::get_back>)
             .method("const T& get_front() const property", fp<&array_t::get_front>)
             .method("const T& get_back() const property", fp<&array_t::get_back>)
+            .method("void sort(uint start=0, uint n=uint(-1), bool asc=true)", fp<&array_t::sort>)
             .method("void reverse(uint start=0, uint n=uint(-1))", ASBIND_EXT_ARRAY_MFN(reverse, void, (size_type, size_type)))
             .method("void reverse(const_array_iterator<T> start)", ASBIND_EXT_ARRAY_MFN(reverse, void, (iter_t)))
             .method("void reverse(const_array_iterator<T> start, const_array_iterator<T> stop)", ASBIND_EXT_ARRAY_MFN(reverse, void, (iter_t, iter_t)))

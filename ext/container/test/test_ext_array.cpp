@@ -678,6 +678,50 @@ TEST_F(ext_array_generic, insert)
     test_ext_array::check_insert(engine);
 }
 
+namespace test_ext_array
+{
+static void check_sort(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
+    run_string(
+        engine,
+        "test_sort_primitive",
+        "int[] arr = {1, 3, 4, 6, 7, 9, 8, 5, 2};\n"
+        "assert(arr.size == 9);\n"
+        "arr.sort();\n"
+        "assert(arr == {1, 2, 3, 4, 5, 6, 7, 8, 9});\n"
+        "assert(arr.size == 9);\n"
+        "arr.sort(0, uint(-1), false);\n"
+        "assert(arr == {9, 8, 7, 6, 5, 4, 3, 2, 1});\n"
+        "assert(arr.size == 9);"
+    );
+
+    run_string(
+        engine,
+        "test_sort_string",
+        "string[] arr = {\"aaa\", \"ccc\", \"bbb\"};\n"
+        "assert(arr.size == 3);\n"
+        "arr.sort();\n"
+        "assert(arr ==  {\"aaa\", \"bbb\", \"ccc\"});\n"
+        "assert(arr.size == 3);\n"
+        "arr.sort(asc: false);\n"
+        "assert(arr ==  {\"ccc\", \"bbb\", \"aaa\"});\n"
+        "assert(arr.size == 3);"
+    );
+}
+} // namespace test_ext_array
+
+TEST_F(ext_array_native, sort)
+{
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = get_engine();
+    test_ext_array::check_sort(engine);
+}
+
+TEST_F(ext_array_generic, sort)
+{
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = get_engine();
+    test_ext_array::check_sort(engine);
+}
+
 // TEST_F(asbind_test_suite, ext_array)
 // {
 //     if(asbind20::has_max_portability())

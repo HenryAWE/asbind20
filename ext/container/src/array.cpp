@@ -1,8 +1,6 @@
 #include <asbind20/ext/array.hpp>
 #include <cassert>
 #include <cstring>
-#include <algorithm>
-#include <stdexcept>
 #include <asbind20/invoke.hpp>
 
 namespace asbind20::ext
@@ -27,58 +25,44 @@ namespace detail
         const array_cache* cache
     )
     {
-        if(is_primitive_type(subtype_id))
+        assert(!is_primitive_type(subtype_id));
+
+        if(is_objhandle(subtype_id))
         {
-            return visit_primitive_type(
-                [](const auto* lhs, const auto* rhs) -> bool
-                {
-                    return *lhs == *rhs;
-                },
-                subtype_id,
+            if(*(const void* const*)lhs == *(const void* const*)rhs)
+                return true;
+        }
+
+        if(!cache) [[unlikely]]
+            return false;
+
+        assert(ctx != nullptr);
+        if(cache->subtype_opEquals) [[likely]]
+        {
+            auto result = script_invoke<bool>(
+                ctx,
                 lhs,
+                cache->subtype_opEquals,
                 rhs
             );
-        }
-        else
-        {
-            if(is_objhandle(subtype_id))
-            {
-                if(*(const void* const*)lhs == *(const void* const*)rhs)
-                    return true;
-            }
 
-            if(!cache) [[unlikely]]
+            if(!result.has_value())
                 return false;
+            return *result;
+        }
+        // Fallback to OpCmp() == 0
+        else if(cache->subtype_opCmp)
+        {
+            auto result = script_invoke<int>(
+                ctx,
+                lhs,
+                cache->subtype_opCmp,
+                rhs
+            );
 
-
-            assert(ctx != nullptr);
-            if(cache->subtype_opEquals) [[likely]]
-            {
-                auto result = script_invoke<bool>(
-                    ctx,
-                    lhs,
-                    cache->subtype_opEquals,
-                    rhs
-                );
-
-                if(!result.has_value())
-                    return false;
-                return *result;
-            }
-            // Fallback to OpCmp() == 0
-            else if(cache->subtype_opCmp)
-            {
-                auto result = script_invoke<int>(
-                    ctx,
-                    lhs,
-                    cache->subtype_opCmp,
-                    rhs
-                );
-
-                if(!result.has_value())
-                    return false;
-                return *result == 0;
-            }
+            if(!result.has_value())
+                return false;
+            return *result == 0;
         }
 
         return false;
