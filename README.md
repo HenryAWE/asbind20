@@ -331,5 +331,7 @@ Some feature of this library may not work on a broken compiler.
 
 3. If you are using clangd as your LSP, [it may crash when completing code for binding](https://github.com/llvm/llvm-project/issues/125500). You can restart clangd after you complete this part of code.
 
+4. GCC (at least for 14.2) may [not generate machine code of registered template class on rare occasion](https://gcc.gnu.org/bugzilla/show_bug.cgi?id=119233). If your encounter a linker error like [this example on Compiler Explorer](https://godbolt.org/z/oT9cP1rso), try to use explicit instantiation for your template class.
+
 # License
 [MIT License](./LICENSE)

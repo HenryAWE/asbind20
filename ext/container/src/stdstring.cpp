@@ -432,14 +432,14 @@ bool string_contains_ch(const std::string& this_, std::uint32_t ch)
 
 static script_array* new_string_array()
 {
-    asIScriptContext* ctx = asGetActiveContext();
+    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx = current_context();
     if(!ctx) [[unlikely]]
         return nullptr;
 
-    asIScriptEngine* engine = ctx->GetEngine();
-    asITypeInfo* ti = engine->GetTypeInfoByDecl("array<string>");
+    auto* engine = ctx->GetEngine();
 
-    return new script_array(ti);
+    using namespace meta;
+    return new_script_array(engine, fixed_string("string"));
 }
 
 static void string_split_impl(script_array& out, std::string_view str, std::string_view delimiter, bool skip_empty)

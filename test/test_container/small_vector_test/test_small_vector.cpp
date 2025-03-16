@@ -2,6 +2,7 @@
 #include <asbind20/container/small_vector.hpp>
 #include <shared_test_lib.hpp>
 #include <gtest/gtest.h>
+#include <asbind20/ext/stdstring.hpp>
 
 TEST(small_vector, int)
 {
@@ -27,6 +28,8 @@ TEST(small_vector, int)
     };
 
     push_back_helper(1013);
+    EXPECT_GE(v.capacity(), v.static_capacity());
+    v.shrink_to_fit();
     EXPECT_GE(v.capacity(), v.static_capacity());
     EXPECT_FALSE(v.empty());
     ASSERT_EQ(v.size(), 1);
@@ -61,9 +64,17 @@ TEST(small_vector, int)
     for(int i = 0; i < 128; ++i)
         EXPECT_EQ(*(int*)v[i], i);
 
+    v.shrink_to_fit();
+    EXPECT_EQ(v.capacity(), v.size());
+    ASSERT_EQ(v.size(), 128);
+    for(int i = 0; i < 128; ++i)
+        EXPECT_EQ(*(int*)v[i], i);
+
     v.clear();
     EXPECT_TRUE(v.empty());
     EXPECT_GE(v.capacity(), 128);
+    v.shrink_to_fit();
+    EXPECT_EQ(v.capacity(), v.static_capacity());
 
     insert_helper(0, 13);
     insert_helper(v.begin(), 10);
@@ -274,4 +285,44 @@ TEST(small_vector, script_object)
             v.size()
         );
     }
+}
+
+TEST(small_vector, script_string)
+{
+    using namespace asbind20;
+    auto engine = make_script_engine();
+
+    ext::register_std_string(engine, true);
+    asbind_test::setup_message_callback(engine, true);
+
+    AS_NAMESPACE_QUALIFIER asITypeInfo* string_ti = engine->GetTypeInfoByName("string");
+    ASSERT_NE(string_ti, nullptr);
+
+    // Use std::allocator for debugging
+    using sv_type = container::small_vector<
+        container::typeinfo_identity,
+        4 * sizeof(void*),
+        std::allocator<void>>;
+
+    sv_type v(string_ti);
+    v.emplace_back();
+
+    EXPECT_EQ(v.size(), 1);
+    EXPECT_EQ(((std::string*)v[0])->size(), 0);
+    EXPECT_EQ(*(std::string*)v[0], "");
+
+    {
+        std::string str = "hello";
+        v.push_back(&str);
+    }
+    EXPECT_EQ(v.size(), 2);
+    EXPECT_EQ(((std::string*)v[1])->size(), 5);
+    EXPECT_EQ(*(std::string*)v[1], "hello");
+
+    v.reserve(128);
+    EXPECT_EQ(v.size(), 2);
+    EXPECT_EQ(((std::string*)v[0])->size(), 0);
+    EXPECT_EQ(*(std::string*)v[0], "");
+    EXPECT_EQ(((std::string*)v[1])->size(), 5);
+    EXPECT_EQ(*(std::string*)v[1], "hello");
 }
