@@ -66,6 +66,9 @@ public:
             }
         );
         ext::register_script_array(m_engine, true, UseGeneric);
+        m_engine->SetEngineProperty(
+            AS_NAMESPACE_QUALIFIER asEP_USE_CHARACTER_LITERALS, true
+        );
         ext::register_std_string(m_engine, true, UseGeneric);
 
         build_helper_module();
@@ -795,18 +798,45 @@ static void check_sort(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         "assert(arr.size == 3);"
     );
 }
+
+static void check_sort_by(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
+    run_string(
+        engine,
+        "test_sort_by_primitive",
+        "int[] arr = {1, 2, 3, 4, 5, 6, 7, 8, 9};\n"
+        "assert(arr.size == 9);\n"
+        "arr.sort_by(function(l, r) { return l % 3 < r % 3; }, stable: true);\n"
+        "assert(arr == {3, 6, 9, 1, 4, 7, 2, 5, 8});\n"
+        "assert(arr.size == 9);"
+        "arr.sort_by(function(l, r) { return l > r; });\n"
+        "assert(arr == {9, 8, 7, 6, 5, 4, 3, 2, 1});"
+    );
+
+    run_string(
+        engine,
+        "test_sort_by_string",
+        "string[] arr = {\"aaa\", \"ccb\", \"ccc\", \"bbb\"};\n"
+        "assert(arr.size == 4);\n"
+        "arr.sort_by(function(l, r) { return l[0] > r[0]; }, stable: true);\n"
+        "assert(arr.size == 4);\n"
+        "assert(arr == {\"ccb\", \"ccc\", \"bbb\", \"aaa\"});"
+    );
+}
 } // namespace test_ext_array
 
 TEST_F(ext_array_native, sort)
 {
     AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = get_engine();
     test_ext_array::check_sort(engine);
+    test_ext_array::check_sort_by(engine);
 }
 
 TEST_F(ext_array_generic, sort)
 {
     AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = get_engine();
     test_ext_array::check_sort(engine);
+    test_ext_array::check_sort_by(engine);
 }
 
 // TEST_F(asbind_test_suite, ext_array)

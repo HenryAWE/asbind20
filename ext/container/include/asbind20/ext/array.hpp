@@ -817,8 +817,179 @@ public:
         return result;
     }
 
-    void sort(size_type start = 0, size_type n = -1, bool asc = true)
+private:
+    template <bool Stable, typename Compare>
+    void sort_by_impl(Compare&& comp, size_type off, size_type n)
     {
+        try
+        {
+            void** data = static_cast<void**>(m_data.data_at(off));
+            if constexpr(Stable)
+            {
+                std::stable_sort(
+                    data, data + n, std::forward<Compare>(comp)
+                );
+            }
+            else
+            {
+                std::sort(
+                    data, data + n, std::forward<Compare>(comp)
+                );
+            }
+        }
+        catch(const bad_script_invoke_result_access&)
+        {
+            // Exception caused by comparator.
+            // Exception should have already been set to script context
+            // by reuse_active_context
+        }
+    }
+
+    template <bool IsHandle, bool Ascending, bool IsMethod>
+    struct script_compare
+    {
+        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx;
+        AS_NAMESPACE_QUALIFIER asIScriptFunction* func;
+
+        bool operator()(void* lhs, void* rhs) const
+        {
+            if(lhs == nullptr || rhs == nullptr)
+            {
+                if constexpr(!IsHandle)
+                    assert(false && "bad array");
+
+                if constexpr(Ascending)
+                    return lhs < rhs;
+                else
+                    return lhs > rhs;
+            }
+
+            if constexpr(IsMethod) // opCmp of subtype
+            {
+                auto result = script_invoke<int>(
+                    ctx, lhs, func, rhs
+                );
+                // Exception will be caught by the outer function
+                int cmp = result.value();
+
+                if constexpr(Ascending)
+                    return cmp < 0;
+                else
+                    return cmp > 0;
+            }
+            else // callback function, whose signature is bool(const T&in, const T&in)
+            {
+                auto result = script_invoke<bool>(
+                    ctx, func, lhs, rhs
+                );
+                // Exception will be caught by the outer function
+                bool cmp = result.value();
+                if constexpr(Ascending)
+                    return cmp;
+                else
+                    return !cmp;
+            }
+        }
+    };
+
+    template <typename T>
+    struct script_compare_primitive
+    {
+        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx;
+        AS_NAMESPACE_QUALIFIER asIScriptFunction* func;
+
+        bool operator()(const T& lhs, const T& rhs) const
+        {
+            auto result = script_invoke<bool>(
+                ctx, func, std::cref(lhs), std::cref(rhs)
+            );
+            // Exception will be caught by the outer function
+            return result.value();
+        }
+    };
+
+    template <bool IsMethod, bool Stable>
+    void sort_by_script_compare_impl(
+        AS_NAMESPACE_QUALIFIER asIScriptFunction* func,
+        bool is_handle,
+        bool asc,
+        size_type off,
+        size_type n
+    )
+    {
+        reuse_active_context ctx(get_engine());
+        if(is_handle)
+        {
+            if(asc)
+            {
+                sort_by_impl<Stable>(
+                    script_compare<true, true, IsMethod>{ctx, func},
+                    off,
+                    n
+                );
+            }
+            else
+            {
+                sort_by_impl<Stable>(
+                    script_compare<true, false, IsMethod>{ctx, func},
+                    off,
+                    n
+                );
+            }
+        }
+        else
+        {
+            if(asc)
+            {
+                sort_by_impl<Stable>(
+                    script_compare<false, true, IsMethod>{ctx, func},
+                    off,
+                    n
+                );
+            }
+            else
+            {
+                sort_by_impl<Stable>(
+                    script_compare<false, false, IsMethod>{ctx, func},
+                    off,
+                    n
+                );
+            }
+        }
+    }
+
+    template <bool IsMethod>
+    void sort_by_script_compare(
+        AS_NAMESPACE_QUALIFIER asIScriptFunction* func,
+        bool is_handle,
+        bool asc,
+        bool stable,
+        size_type off,
+        size_type n
+    )
+    {
+        if(stable)
+        {
+            sort_by_script_compare_impl<IsMethod, true>(
+                func, is_handle, asc, off, n
+            );
+        }
+        else
+        {
+            sort_by_script_compare_impl<IsMethod, false>(
+                func, is_handle, asc, off, n
+            );
+        }
+    }
+
+public:
+    void sort(
+        index_type start = 0, size_type n = -1, bool asc = true, bool stable = false
+    )
+    {
+        ASBIND20_EXT_ARRAY_CHECK_CALLBACK(sort, void());
+        callback_guard guard(this);
+
         size_type off = index_to_offset(start);
         if(off == size_type(-1)) [[unlikely]]
         {
@@ -832,6 +1003,7 @@ public:
         if(is_primitive_type(subtype_id))
         {
             visit_primitive_type(
+                // Ignore `stable` for primitive types
                 [asc]<typename T>(T* start, T* stop)
                 {
                     if(asc)
@@ -854,14 +1026,6 @@ public:
         }
         else
         {
-            auto helper = [&](auto&& f)
-            {
-                void** data = static_cast<void**>(m_data.data_at(off));
-                std::sort(
-                    data, data + n, std::move(f)
-                );
-            };
-
             array_cache* cache = get_cache();
             if(!cache) [[unlikely]]
             {
@@ -877,72 +1041,77 @@ public:
                 return;
             }
 
-            reuse_active_context ctx(get_engine(), true);
+            sort_by_script_compare<true>(
+                cache->subtype_opCmp,
+                is_objhandle(subtype_id),
+                asc,
+                off,
+                stable,
+                n
+            );
+        }
+    }
 
-            auto comp = [cache, &ctx]<bool IsHandle, bool Asc>(
-                            std::bool_constant<IsHandle>,
-                            std::bool_constant<Asc>,
-                            void* lhs,
-                            void* rhs
-                        ) -> bool
-            {
-                if(lhs == nullptr || rhs == nullptr)
+    void sort_by(
+        AS_NAMESPACE_QUALIFIER asIScriptFunction* func,
+        index_type start = 0,
+        size_type n = -1,
+        bool stable = false
+    )
+    {
+        assert(func != nullptr);
+
+        ASBIND20_EXT_ARRAY_CHECK_CALLBACK(sort_by, void());
+        callback_guard guard(this);
+
+        size_type off = index_to_offset(start);
+        if(off == size_type(-1)) [[unlikely]]
+        {
+            set_script_exception("array<T>.sort_by(): out of range");
+            return;
+        }
+
+        n = std::min(size() - off, n);
+
+        int subtype_id = element_type_id();
+        if(is_primitive_type(subtype_id))
+        {
+            reuse_active_context ctx(get_engine());
+            visit_primitive_type(
+                [&ctx, func, stable]<typename T>(T* start, T* stop)
                 {
-                    if constexpr(!IsHandle)
-                        assert(false && "bad array");
-
-                    if constexpr(Asc)
-                        return lhs < rhs;
+                    if(stable)
+                    {
+                        std::stable_sort(
+                            start,
+                            stop,
+                            script_compare_primitive<T>{ctx, func}
+                        );
+                    }
                     else
-                        return lhs > rhs;
-                }
-
-                auto cmp = script_invoke<int>(
-                    ctx, lhs, cache->subtype_opCmp, rhs
-                );
-                if(!cmp.has_value())
-                    return false;
-
-                if constexpr(Asc)
-                    return *cmp < 0;
-                else
-                    return *cmp > 0;
-            };
-
-            if(is_objhandle(subtype_id))
-            {
-                if(asc)
-                {
-                    helper(
-                        [&comp](void* lhs, void* rhs)
-                        { return comp(std::true_type{}, std::true_type{}, lhs, rhs); }
-                    );
-                }
-                else
-                {
-                    helper(
-                        [&comp](void* lhs, void* rhs)
-                        { return comp(std::true_type{}, std::false_type{}, lhs, rhs); }
-                    );
-                }
-            }
-            else
-            {
-                if(asc)
-                {
-                    helper(
-                        [&comp](void* lhs, void* rhs)
-                        { return comp(std::false_type{}, std::true_type{}, lhs, rhs); }
-                    );
-                }
-                else
-                {
-                    helper(
-                        [&comp](void* lhs, void* rhs)
-                        { return comp(std::false_type{}, std::false_type{}, lhs, rhs); }
-                    );
-                }
-            }
+                    {
+                        std::sort(
+                            start,
+                            stop,
+                            script_compare_primitive<T>{ctx, func}
+                        );
+                    }
+                },
+                subtype_id,
+                m_data.data_at(off),
+                m_data.data_at(off + n)
+            );
+        }
+        else
+        {
+            sort_by_script_compare<false>(
+                func,
+                is_objhandle(subtype_id),
+                true,
+                stable,
+                off,
+                n
+            );
         }
     }
 
@@ -1191,7 +1360,7 @@ public:
         // Initial value is equivalent to the end() iterator
         size_type result = size();
         array_cache* cache = get_cache();
-        if(!cache) [[unlikely]]
+        if(!cache || !cache->iterator_ti) [[unlikely]]
         {
             set_script_exception("array<T>: internal error");
             return script_array_iterator();
@@ -1234,7 +1403,7 @@ private:
     script_array_iterator script_begin()
     {
         array_cache* cache = get_cache();
-        if(!cache) [[unlikely]]
+        if(!cache || !cache->iterator_ti) [[unlikely]]
         {
             set_script_exception("array<T>: internal error");
             return script_array_iterator();
@@ -1247,7 +1416,7 @@ private:
     script_array_iterator script_end()
     {
         array_cache* cache = get_cache();
-        if(!cache) [[unlikely]]
+        if(!cache || !cache->iterator_ti) [[unlikely]]
         {
             set_script_exception("array<T>: internal error");
             return script_array_iterator();
@@ -1371,7 +1540,9 @@ inline void register_script_array(
             .method("T& get_back() property", fp<&array_t::get_back>)
             .method("const T& get_front() const property", fp<&array_t::get_front>)
             .method("const T& get_back() const property", fp<&array_t::get_back>)
-            .method("void sort(int start=0, uint n=uint(-1), bool asc=true)", fp<&array_t::sort>)
+            .method("void sort(int start=0, uint n=uint(-1), bool asc=true, bool stable=false)", fp<&array_t::sort>)
+            .funcdef("bool sort_by_callback(const T&in, const T&in)")
+            .method("void sort_by(const sort_by_callback&in, int start=0, uint n=uint(-1), bool asc=true, bool stable=false)", fp<&array_t::sort_by>)
             .method("void reverse(int start=0, uint n=uint(-1))", ASBIND_EXT_ARRAY_MFN(reverse, void, (index_type, size_type)))
             .method("void reverse(const_array_iterator<T> start)", ASBIND_EXT_ARRAY_MFN(reverse, void, (iter_t)))
             .method("void reverse(const_array_iterator<T> start, const_array_iterator<T> stop)", ASBIND_EXT_ARRAY_MFN(reverse, void, (iter_t, iter_t)))
