@@ -839,19 +839,6 @@ TEST_F(ext_array_generic, sort)
     test_ext_array::check_sort_by(engine);
 }
 
-// TEST_F(asbind_test_suite, ext_array)
-// {
-//     if(asbind20::has_max_portability())
-//         GTEST_SKIP() << "AS_MAX_PORTABILITY";
-
-//     run_file("script/test_array.as");
-// }
-
-// TEST_F(asbind_test_suite_generic, ext_array)
-// {
-//     run_file("script/test_array.as");
-// }
-
 int main(int argc, char* argv[])
 {
     ::testing::InitGoogleTest(&argc, argv);

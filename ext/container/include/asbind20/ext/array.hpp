@@ -19,6 +19,11 @@ consteval auto default_script_array_user_id() noexcept
 #endif
 }
 
+// Implementation Note:
+// Keep the code related to script array in header file,
+// in order to support user customizing user data ID by defining macro.
+// It may cause ODR-violation to put code in a separated source file.
+
 namespace detail
 {
     class script_array_base
@@ -520,13 +525,13 @@ public:
     void addref()
     {
         m_gc_flag = false;
-        ++m_counter;
+        ++m_refcount;
     }
 
     void release() noexcept
     {
         m_gc_flag = false;
-        m_counter.dec_and_try_destroy(
+        m_refcount.dec_and_try_destroy(
             [](auto* p)
             { delete p; },
             this
@@ -624,8 +629,6 @@ public:
 
         m_data.pop_back();
     }
-
-    void append_range(const script_array& rng, size_type n = -1);
 
     /**
      * @brief Remove matched elements
@@ -1195,7 +1198,7 @@ private:
 public:
     int get_refcount() const
     {
-        return m_counter;
+        return m_refcount;
     }
 
     void enum_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
@@ -1439,7 +1442,7 @@ public:
     }
 
 private:
-    atomic_counter m_counter;
+    atomic_counter m_refcount;
     bool m_gc_flag = false;
     // Prevents array from begin modified within a callback of functions like find_if
     mutable bool m_within_callback = false;
@@ -1449,6 +1452,8 @@ private:
     class callback_guard
     {
     public:
+        callback_guard(const callback_guard&) = delete;
+
         callback_guard(const script_array* this_) noexcept
             : m_guard(this_->m_within_callback)
         {
