@@ -430,6 +430,62 @@ bool string_contains_ch(const std::string& this_, std::uint32_t ch)
     return this_.find(std::string_view(buf, size_bytes)) != this_.npos;
 }
 
+static script_array* new_string_array()
+{
+    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx = current_context();
+    if(!ctx) [[unlikely]]
+        return nullptr;
+
+    auto* engine = ctx->GetEngine();
+
+    using namespace meta;
+    return new_script_array(engine, fixed_string("string"));
+}
+
+static void string_split_impl(script_array& out, std::string_view str, std::string_view delimiter, bool skip_empty)
+{
+    auto result = str | std::views::split(delimiter);
+
+    for(auto&& i : result)
+    {
+        if(skip_empty && i.empty())
+            continue;
+        std::string s(i.begin(), i.end());
+        out.push_back(&s);
+    }
+}
+
+static script_array* string_split(const std::string& this_, const std::string& delimiter, bool skip_empty)
+{
+    script_array* arr = new_string_array();
+    if(!arr)
+        return nullptr;
+    string_split_impl(*arr, this_, delimiter, skip_empty);
+    return arr;
+}
+
+static script_array* string_split_ch(const std::string& this_, std::uint32_t ch, bool skip_empty)
+{
+    script_array* arr = new_string_array();
+    if(!arr)
+        return nullptr;
+
+    char buf[4];
+    unsigned int size_bytes = u8_int_to_bytes(ch, buf);
+
+    string_split_impl(*arr, this_, std::string_view(buf, size_bytes), skip_empty);
+    return arr;
+}
+
+static script_array* string_split_simple(const std::string& this_, bool skip_empty)
+{
+    script_array* arr = new_string_array();
+    if(!arr)
+        return nullptr;
+    string_split_impl(*arr, this_, " ", skip_empty);
+    return arr;
+}
+
 void string_for_each(asIScriptFunction* fn, const std::string& this_)
 {
     reuse_active_context ctx(fn->GetEngine());
@@ -495,13 +551,13 @@ static void register_string_impl(asIScriptEngine* engine, bool as_default)
 
     if(engine->GetDefaultArrayTypeId() >= 0)
     {
-        // c
-        //     .method("array<string>@ split(bool skip_empty=true) const", fp<&string_split_simple>)
-        //     .method("array<string>@ split(const string&in delimiter, bool skip_empty=true) const", fp<&string_split>);
-        // if(use_ch_api)
-        // {
-        //     c.method("array<string>@ split(uint delimiter, bool skip_empty=true) const", fp<&string_split_ch>);
-        // }
+        c
+            .method("array<string>@ split(bool skip_empty=true) const", fp<&string_split_simple>)
+            .method("array<string>@ split(const string&in delimiter, bool skip_empty=true) const", fp<&string_split>);
+        if(use_ch_api)
+        {
+            c.method("array<string>@ split(uint delimiter, bool skip_empty=true) const", fp<&string_split_ch>);
+        }
     }
 
     if(as_default)

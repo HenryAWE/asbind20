@@ -1616,6 +1616,28 @@ inline void register_script_array(
         array_t::user_id
     );
 }
+
+template <std::size_t Size>
+script_array* new_script_array(
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    meta::fixed_string<Size> subtype_decl
+)
+{
+    using meta::fixed_string;
+
+    auto full_decl = fixed_string("array<") + subtype_decl + fixed_string(">");
+    AS_NAMESPACE_QUALIFIER asITypeInfo* ti = engine->GetTypeInfoByDecl(
+        full_decl.c_str()
+    );
+    if(!ti) [[unlikely]]
+        return nullptr;
+    script_array* ptr = new script_array(ti);
+    if(ti->GetFlags() & AS_NAMESPACE_QUALIFIER asOBJ_GC)
+    {
+        engine->NotifyGarbageCollectorOfNewObject(ptr, ti);
+    }
+    return ptr;
+}
 } // namespace asbind20::ext
 
 #endif
