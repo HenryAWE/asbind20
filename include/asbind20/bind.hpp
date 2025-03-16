@@ -2683,8 +2683,9 @@ protected:
         assert(r >= 0);
     }
 
-    template <typename T, typename Class>
-    void property_impl(const char* decl, T Class::* mp)
+    template <typename MemberPointer>
+    requires(std::is_member_object_pointer_v<MemberPointer>)
+    void property_impl(const char* decl, MemberPointer mp)
     {
         property_impl(decl, member_offset(mp));
     }
@@ -4833,10 +4834,11 @@ public:
         return *this;
     }
 
-    template <typename T>
-    basic_value_class& property(const char* decl, T Class::* mp)
+    template <typename MemberPointer>
+    requires(std::is_member_object_pointer_v<MemberPointer>)
+    basic_value_class& property(const char* decl, MemberPointer mp)
     {
-        this->template property_impl<T, Class>(decl, mp);
+        this->template property_impl<MemberPointer>(decl, mp);
 
         return *this;
     }
@@ -6272,10 +6274,11 @@ public:
         return *this;
     }
 
-    template <typename T>
-    basic_ref_class& property(const char* decl, T Class::* mp)
+    template <typename MemberPointer>
+    requires(std::is_member_object_pointer_v<MemberPointer>)
+    basic_ref_class& property(const char* decl, MemberPointer mp)
     {
-        this->template property_impl<T, Class>(decl, mp);
+        this->template property_impl<MemberPointer>(decl, mp);
 
         return *this;
     }
