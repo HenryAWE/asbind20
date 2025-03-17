@@ -37,6 +37,10 @@ void setup_message_callback(
     bool propagate_error_to_gtest = false
 );
 
+void setup_exception_translator(
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
+);
+
 class asbind_test_suite : public ::testing::Test
 {
 public:

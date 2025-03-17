@@ -50,6 +50,7 @@ public:
         m_engine = make_script_engine();
 
         asbind_test::setup_message_callback(m_engine, true);
+        asbind_test::setup_exception_translator(m_engine);
         ext::register_script_assert(
             m_engine,
             [](std::string_view msg)
@@ -66,9 +67,8 @@ public:
             }
         );
         ext::register_script_array(m_engine, true, UseGeneric);
-        m_engine->SetEngineProperty(
-            AS_NAMESPACE_QUALIFIER asEP_USE_CHARACTER_LITERALS, true
-        );
+        ext::configure_engine_for_ext_string(m_engine);
+        ext::register_script_char(m_engine, UseGeneric);
         ext::register_std_string(m_engine, true, UseGeneric);
 
         build_helper_module();
@@ -138,7 +138,11 @@ static void run_string(
     f->Release();
 
     if(result.error() == AS_NAMESPACE_QUALIFIER asEXECUTION_EXCEPTION)
-        FAIL() << "GetExceptionString: " << ctx->GetExceptionString();
+    {
+        FAIL()
+            << "GetExceptionString: " << ctx->GetExceptionString() << '\n'
+            << "section: " << ctx->GetExceptionFunction()->GetScriptSectionName();
+    }
     else
         ASSERT_TRUE(asbind_test::result_has_value(result));
     if constexpr(!std::is_void_v<R>)

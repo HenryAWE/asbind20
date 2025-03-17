@@ -58,6 +58,30 @@ void setup_message_callback(
     }
 }
 
+void setup_exception_translator(
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
+)
+{
+    asbind20::global(engine)
+        .exception_translator(
+            +[](AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, void*)
+            {
+                try
+                {
+                    throw;
+                }
+                catch(std::exception& e)
+                {
+                    ctx->SetException(e.what());
+                }
+                catch(...)
+                {
+                    ctx->SetException("Caught unknown exception");
+                }
+            }
+        );
+}
+
 void asbind_test_suite::msg_callback(const AS_NAMESPACE_QUALIFIER asSMessageInfo* msg)
 {
     if(msg->type == AS_NAMESPACE_QUALIFIER asMSGTYPE_ERROR)
@@ -111,13 +135,15 @@ static void test_print(const std::string& msg)
 
 void asbind_test_suite::SetUp()
 {
-    m_engine = asbind20::make_script_engine();
-    asbind20::global g(m_engine);
+    using namespace asbind20;
+
+    m_engine = make_script_engine();
+    global g(m_engine);
     g
         .message_callback(&asbind_test_suite::msg_callback, *this)
         .exception_translator(&asbind_test_suite::ex_translator, *this);
 
-    m_engine->SetEngineProperty(AS_NAMESPACE_QUALIFIER asEP_USE_CHARACTER_LITERALS, true);
+    ext::configure_engine_for_ext_string(m_engine);
 
     register_all();
 }
@@ -176,6 +202,7 @@ void asbind_test_suite::register_all()
 
     ext::register_script_optional(m_engine);
     ext::register_script_array(m_engine);
+    ext::register_script_char(m_engine);
     ext::register_std_string(m_engine, true);
     ext::register_string_utils(m_engine);
     ext::register_math_constants(m_engine);
@@ -199,6 +226,7 @@ void asbind_test_suite_generic::register_all()
 
     ext::register_script_optional(engine, true);
     ext::register_script_array(engine, true, true);
+    ext::register_script_char(engine, true);
     ext::register_std_string(engine, true, true);
     ext::register_string_utils(engine, true);
     ext::register_math_constants(engine);

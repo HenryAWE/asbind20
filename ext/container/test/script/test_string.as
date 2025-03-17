@@ -1,3 +1,5 @@
+// asEP_USE_CHARACTER_LITERALS = true
+
 void check_unicode_str()
 {
     print("check Unicode string");
@@ -7,24 +9,26 @@ void check_unicode_str()
     assert(hello_cn.size == 4);
     assert(hello_cn.size_bytes == 4 * 3);
     assert(hello_cn.starts_with('你'));
+    assert(hello_cn[0] == '你');
     assert(hello_cn.ends_with('界'));
+    assert(hello_cn[-1] == '界');
     assert(hello_cn.substr(2) == "世界");
 
-    hello_cn.replace(0, 2, "向你问好！", 4);
+    hello_cn = hello_cn.replace(0, 2, "向你问好！", len: 4);
     print(hello_cn);
     print(to_string(hello_cn.size));
     assert(hello_cn.size == 6);
     assert(hello_cn == "向你问好世界");
-    hello_cn.insert(4, "，");
+    hello_cn = hello_cn.insert(4, "，");
     print(hello_cn);
     assert(hello_cn == "向你问好，世界");
-    hello_cn.erase(4);
+    hello_cn = hello_cn.erase(4);
     print(hello_cn);
     assert(hello_cn == "向你问好世界");
-    hello_cn.erase(4, 2);
+    hello_cn = hello_cn.erase(4, 2);
     print(hello_cn);
     assert(hello_cn == "向你问好");
-    hello_cn.prepend('我');
+    hello_cn = hello_cn.prepend('我');
     print(hello_cn);
     assert(hello_cn == "我向你问好");
 }
@@ -59,7 +63,7 @@ void main()
 
     string hello = "hello";
 
-    hello.append(' ');
+    hello = hello.append(' ');
     hello = hello + "world";
     assert(hello == "hello world");
 
@@ -67,21 +71,21 @@ void main()
     assert(hello.ends_with("world"));
     assert(hello.substr(7, 2) == "or");
 
-    hello[0] = 'H';
+    hello = hello.replace(0, 1, "H");
     print("hello[0] = " + chr(hello[0]));
 
     hello = hello + '!';
     print(hello);
     assert(hello == "Hello world!");
-    hello.remove_suffix(1);
+    hello = hello.remove_suffix(1);
     print(hello);
     assert(hello == "Hello world");
-    hello.remove_prefix(6);
+    hello = hello.remove_prefix(6);
     print(hello);
     assert(hello == "world");
 
-    hello.clear();
-    assert(hello.empty);
+    hello = string();
+    assert(hello.empty());
 
     check_unicode_str();
     check_utils();
