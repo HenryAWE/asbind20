@@ -5,6 +5,9 @@
 
 TEST(threading, auto_clean_up)
 {
+    if(!asbind20::has_threads())
+        GTEST_SKIP() << "AS_NO_THREADS";
+
     using namespace asbind20;
     using namespace std::chrono_literals;
     concurrent::prepare_multithread();

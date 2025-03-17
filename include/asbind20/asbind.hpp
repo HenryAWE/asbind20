@@ -58,6 +58,17 @@ inline bool has_exceptions(
 {
     return std::strstr(options, "AS_NO_EXCEPTIONS") == nullptr;
 }
+
+/**
+ * @brief Check if `asGetLibraryOptions()` doesn't return "AS_NO_THREADS"
+ */
+[[nodiscard]]
+inline bool has_threads(
+    const char* options = AS_NAMESPACE_QUALIFIER asGetLibraryOptions()
+)
+{
+    return std::strstr(options, "AS_NO_THREADS") == nullptr;
+}
 } // namespace asbind20
 
 #endif
