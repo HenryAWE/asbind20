@@ -32,6 +32,14 @@ script_optional::script_optional(
 )
     : m_ti(ti)
 {
+    m_data.construct(m_ti->GetEngine(), element_type_id());
+    m_has_value = true;
+}
+
+script_optional::script_optional(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, std::nullopt_t)
+    : m_ti(ti)
+{
+    assert(ti);
     assert(m_has_value == false);
 }
 
@@ -160,6 +168,13 @@ void register_script_optional(
 {
     auto helper = [engine]<bool UseGeneric>(std::bool_constant<UseGeneric>)
     {
+        value_class<std::nullopt_t, true>(
+            engine, "nullopt_t", AS_NAMESPACE_QUALIFIER asOBJ_POD
+        );
+
+        global<true>(engine)
+            .property("const nullopt_t nullopt", std::nullopt);
+
         constexpr AS_NAMESPACE_QUALIFIER asQWORD flags =
             AS_NAMESPACE_QUALIFIER asOBJ_GC |
             AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_CDAK |
@@ -178,6 +193,14 @@ void register_script_optional(
             .default_constructor()
             .copy_constructor()
             .template constructor<const void*>("const T&in")
+            .constructor_function(
+                "const nullopt_t&in",
+                [](void* mem, AS_NAMESPACE_QUALIFIER asITypeInfo* ti, const void*)
+                {
+                    new(mem) script_optional(ti, std::nullopt);
+                },
+                call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>
+            )
             .destructor()
             .opAssign()
             .enum_refs(fp<&script_optional::enum_refs>)

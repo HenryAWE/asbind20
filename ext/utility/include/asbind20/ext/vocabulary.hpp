@@ -4,6 +4,7 @@
 #pragma once
 
 #include <asbind20/asbind.hpp>
+#include <optional>
 
 namespace asbind20::ext
 {
@@ -22,6 +23,8 @@ public:
     script_optional(const script_optional& other);
 
     script_optional(AS_NAMESPACE_QUALIFIER asITypeInfo* ti);
+
+    script_optional(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, std::nullopt_t);
 
     script_optional(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, const script_optional& other);
 

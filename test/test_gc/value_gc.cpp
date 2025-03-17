@@ -6,22 +6,21 @@
 
 static constexpr char optional_gc_test_script[] = R"(bool test0()
 {
-    optional<int> o;
+    optional<int> o = nullopt;
     return !o.has_value;
+    return true;
 }
 
 class foo
 {
-    optional<foo> f;
-    optional<foo@> ref;
+    optional<foo@> ref = nullopt;
 }
 
 bool test1()
 {
     foo f;
-    f.f.value = foo();
-    @f.f.value.ref.value = @f;
-    return f.f.has_value;
+    @f.ref.value = @f;
+    return f.ref.has_value;
 }
 )";
 

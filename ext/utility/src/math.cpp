@@ -212,7 +212,7 @@ void register_math_complex_impl(
     value_class<std::complex<double>, UseGeneric> cd(
         engine,
         "complex<double>",
-        complex_flags
+        complex_flags | AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_ALIGN8
     );
 
 #define ASBIND20_EXT_MATH_COMPLEX_MEMBERS(register_helper, float_t)                                    \
