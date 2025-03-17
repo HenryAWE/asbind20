@@ -159,7 +159,7 @@ void asbind_test_suite::run_file(
 )
 {
     if(!std::filesystem::exists(filename))
-        GTEST_SKIP() << "File not found: " << filename;
+        FAIL() << "File not found: " << filename;
 
     asIScriptModule* m = m_engine->GetModule("run_file", asGM_ALWAYS_CREATE);
 
