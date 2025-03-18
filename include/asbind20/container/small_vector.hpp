@@ -14,7 +14,7 @@
 #include <stdexcept>
 #include <algorithm>
 #include "../utility.hpp"
-#include "helper.hpp"
+#include "options.hpp"
 
 namespace asbind20::container
 {
@@ -1186,23 +1186,27 @@ public:
         }
     }
 
+    [[nodiscard]]
     auto get_type_info() const noexcept
         -> AS_NAMESPACE_QUALIFIER asITypeInfo*
     {
         return impl().get_type_info();
     }
 
+    [[nodiscard]]
     auto element_type_info() const
         -> AS_NAMESPACE_QUALIFIER asITypeInfo*
     {
         return TypeInfoPolicy::get_type_info(get_type_info());
     }
 
+    [[nodiscard]]
     int element_type_id() const
     {
         return impl().elem_type_id();
     }
 
+    [[nodiscard]]
     size_type static_capacity() const noexcept
     {
         return visit_impl(
@@ -1211,6 +1215,7 @@ public:
         );
     }
 
+    [[nodiscard]]
     size_type capacity() const noexcept
     {
         return visit_impl(
@@ -1235,6 +1240,7 @@ public:
         );
     }
 
+    [[nodiscard]]
     size_type size() const noexcept
     {
         return visit_impl(
@@ -1259,11 +1265,13 @@ public:
         );
     }
 
+    [[nodiscard]]
     bool empty() const noexcept
     {
         return size() == 0;
     }
 
+    [[nodiscard]]
     void* data() noexcept
     {
         return visit_impl(
@@ -1272,6 +1280,7 @@ public:
         );
     }
 
+    [[nodiscard]]
     const void* data() const noexcept
     {
         return visit_impl(
@@ -1560,6 +1569,7 @@ public:
         );
     }
 
+    [[nodiscard]]
     void* data_at(size_type idx) noexcept
     {
         return visit_impl(
@@ -1568,6 +1578,7 @@ public:
         );
     }
 
+    [[nodiscard]]
     const void* data_at(size_type idx) const noexcept
     {
         return visit_impl(

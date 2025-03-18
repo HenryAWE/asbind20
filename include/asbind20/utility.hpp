@@ -1226,6 +1226,7 @@ private:
 /**
  * @brief Create an AngelScript engine
  */
+[[nodiscard]]
 inline script_engine make_script_engine(
     AS_NAMESPACE_QUALIFIER asDWORD version = ANGELSCRIPT_VERSION
 )

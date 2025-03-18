@@ -9,8 +9,8 @@
 
 #pragma once
 
+#include <concepts>
 #include "../detail/include_as.hpp"
-#include "../utility.hpp"
 
 namespace asbind20::container
 {

@@ -8,7 +8,6 @@ static constexpr char optional_gc_test_script[] = R"(bool test0()
 {
     optional<int> o = nullopt;
     return !o.has_value;
-    return true;
 }
 
 class foo
