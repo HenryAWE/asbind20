@@ -47,6 +47,24 @@ class script_invoke_result
 public:
     using value_type = R;
 
+    script_invoke_result(const script_invoke_result& other) noexcept(std::is_nothrow_copy_constructible_v<R>)
+        : m_r(other.m_r)
+    {
+        if(m_r == AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED)
+        {
+            construct_impl(*other);
+        }
+    }
+
+    script_invoke_result(script_invoke_result&& other) noexcept(std::is_nothrow_move_constructible_v<R>)
+        : m_r(other.m_r)
+    {
+        if(m_r == AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED)
+        {
+            construct_impl(std::move(*other));
+        }
+    }
+
     explicit script_invoke_result(const R& result)
         : m_r(AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED)
     {
@@ -62,13 +80,63 @@ public:
     script_invoke_result(bad_result_t, int r) noexcept
         : m_r(r)
     {
-        if(r == AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED)
+        if(r == AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED) [[unlikely]]
             m_r = AS_NAMESPACE_QUALIFIER asEXECUTION_ERROR;
+    }
+
+    script_invoke_result& operator=(script_invoke_result&& other)
+    {
+        if(this == &other) [[unlikely]]
+            return *this;
+
+        if(!other.has_value())
+        {
+            destroy_impl();
+            m_r = other.m_r;
+            return *this;
+        }
+
+        if(has_value())
+        {
+            **this = std::move(*other);
+        }
+        else
+        {
+            construct_impl(std::move(*other));
+            m_r = AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED;
+        }
+
+        return *this;
+    }
+
+    script_invoke_result& operator=(const script_invoke_result& other)
+    {
+        if(this == &other) [[unlikely]]
+            return *this;
+
+        if(!other.has_value())
+        {
+            destroy_impl();
+            m_r = other.m_r;
+            return *this;
+        }
+
+        if(has_value())
+        {
+            **this = *other;
+        }
+        else
+        {
+            construct_impl(*other);
+            m_r = AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED;
+        }
+
+        return *this;
     }
 
     ~script_invoke_result()
     {
-        ptr()->~R();
+        destroy_impl();
     }
 
     R* operator->() noexcept
@@ -95,13 +163,13 @@ public:
         return std::move(*ptr());
     }
 
-    R&& operator*() const& noexcept
+    const R& operator*() const& noexcept
     {
         assert(has_value());
         return *ptr();
     }
 
-    R&& operator*() const&& noexcept
+    const R&& operator*() const&& noexcept
     {
         assert(has_value());
         return std::move(*ptr());
@@ -176,6 +244,13 @@ private:
         new(m_data) R(std::forward<Args>(args)...);
     }
 
+    void destroy_impl() noexcept
+    {
+        if(!has_value()) [[unlikely]]
+            return;
+        ptr()->~R();
+    }
+
     [[noreturn]]
     void throw_bad_access() const
     {
@@ -192,6 +267,9 @@ class script_invoke_result<R&>
 public:
     using value_type = R&;
 
+    script_invoke_result(const script_invoke_result& other) noexcept
+        : m_r(other.m_r), m_ptr(other.m_ptr) {}
+
     explicit script_invoke_result(R& result) noexcept
         : m_ptr(std::addressof(result)),
           m_r(AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED)
@@ -200,11 +278,19 @@ public:
     script_invoke_result(bad_result_t, int r) noexcept
         : m_r(r)
     {
-        if(r == AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED)
+        if(r == AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED) [[unlikely]]
             m_r = AS_NAMESPACE_QUALIFIER asEXECUTION_ERROR;
     }
 
     ~script_invoke_result() = default;
+
+    script_invoke_result& operator=(const script_invoke_result& other) noexcept
+    {
+        m_r = other.m_r;
+        m_ptr = other.m_ptr;
+
+        return *this;
+    }
 
     R* operator->() noexcept
     {
@@ -312,14 +398,26 @@ class script_invoke_result<void>
 public:
     using value_type = void;
 
-    script_invoke_result()
+    script_invoke_result() noexcept
         : m_r(AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED) {}
+
+    script_invoke_result(const script_invoke_result& other) noexcept
+        : m_r(other.m_r) {}
 
     script_invoke_result(bad_result_t, int r)
         : m_r(r)
     {
-        if(r == AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED)
+        if(r == AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED) [[unlikely]]
             m_r = AS_NAMESPACE_QUALIFIER asEXECUTION_ERROR;
+    }
+
+    ~script_invoke_result() = default;
+
+    script_invoke_result& operator=(const script_invoke_result& other) noexcept
+    {
+        m_r = other.m_r;
+
+        return *this;
     }
 
     void operator*() noexcept {}
