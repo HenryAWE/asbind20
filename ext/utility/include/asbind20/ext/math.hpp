@@ -18,7 +18,7 @@ namespace asbind20::ext
  */
 void register_math_constants(
     AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
-    const char* ns = "numbers"
+    std::string_view ns = "numbers"
 );
 
 /**

@@ -142,35 +142,49 @@ public:
     namespace_(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         : m_engine(engine), m_prev(engine->GetDefaultNamespace())
     {
-        m_engine->SetDefaultNamespace("");
+        set_ns_impl("");
     }
 
     namespace_(
         AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
-        const char* ns,
+        std::string_view ns,
         bool nested = true
     )
         : m_engine(engine), m_prev(engine->GetDefaultNamespace())
     {
         if(nested)
         {
-            if(ns[0] != '\0') [[likely]]
+            if(!ns.empty()) [[likely]]
             {
                 if(m_prev.empty())
-                    m_engine->SetDefaultNamespace(ns);
+                {
+                    with_cstr(
+                        [this](const char* ns)
+                        { set_ns_impl(ns); },
+                        ns
+                    );
+                }
                 else
-                    m_engine->SetDefaultNamespace(string_concat(m_prev, "::", ns).c_str());
+                {
+                    set_ns_impl(
+                        string_concat(m_prev, "::", ns).c_str()
+                    );
+                }
             }
         }
         else
         {
-            m_engine->SetDefaultNamespace(ns);
+            with_cstr(
+                [this](const char* ns)
+                { set_ns_impl(ns); },
+                ns
+            );
         }
     }
 
     ~namespace_()
     {
-        m_engine->SetDefaultNamespace(m_prev.c_str());
+        set_ns_impl(m_prev.c_str());
     }
 
     [[nodiscard]]
@@ -183,6 +197,15 @@ public:
 private:
     AS_NAMESPACE_QUALIFIER asIScriptEngine* m_engine;
     std::string m_prev;
+
+    void set_ns_impl(const char* ns)
+    {
+        [[maybe_unused]]
+        int r = m_engine->SetDefaultNamespace(
+            ns
+        );
+        assert(r >= 0);
+    }
 };
 
 struct use_generic_t

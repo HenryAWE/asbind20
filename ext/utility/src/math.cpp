@@ -13,7 +13,9 @@ static constexpr T constant_inf_v = std::numeric_limits<T>::infinity();
 template <typename T>
 static constexpr T constant_nan_v = std::numeric_limits<T>::quiet_NaN();
 
-void register_math_constants(asIScriptEngine* engine, const char* ns)
+void register_math_constants(
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, std::string_view ns
+)
 {
     namespace_ ns_guard(engine, ns);
 
