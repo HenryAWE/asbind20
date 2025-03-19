@@ -241,6 +241,39 @@ TEST(meta, fixed_string)
     }
 }
 
+TEST(with_cstr, with_cstr)
+{
+    using namespace asbind20;
+    using namespace std::string_view_literals;
+
+    {
+        std::string result = with_cstr(
+            [](const char* a, char ch, const char* b)
+            {
+                return string_concat(a, ch, b);
+            },
+            "hello"sv,
+            ' ',
+            "hello world"sv.substr(0, 5)
+        );
+        EXPECT_EQ(result, "hello hello");
+    }
+
+    {
+        std::string result = with_cstr(
+            [](const char* a, char ch, const char* b, const char* c)
+            {
+                return std::string(a) + ch + std::string(b) + c;
+            },
+            "hello"sv,
+            ' ',
+            "hello world"sv.substr(0, 5),
+            std::string(" world")
+        );
+        EXPECT_EQ(result, "hello hello world");
+    }
+}
+
 TEST(compressed_pair, ordinary)
 {
     using asbind20::meta::compressed_pair;
