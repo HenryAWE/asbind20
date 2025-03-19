@@ -29,13 +29,14 @@ class script_assert_impl
 public:
     std::function<assert_handler_t> callback;
     bool set_ex = true;
-    asIStringFactory* str_factory = nullptr;
+    AS_NAMESPACE_QUALIFIER asIStringFactory* str_factory = nullptr;
 
     void assert_simple(bool pred)
     {
         if(!pred)
         {
-            on_failure("assertion failure");
+            using namespace std::string_view_literals;
+            on_failure("assertion failure"sv);
         }
     }
 
@@ -50,16 +51,23 @@ public:
             const void* str = gen->GetArgAddress(1);
 
             std::string msg = extract_string(this_.str_factory, str);
-            this_.on_failure(msg.c_str());
+            this_.on_failure(msg);
         }
     }
 
 private:
-    void on_failure(const char* msg)
+    void on_failure(std::string_view msg)
     {
         AS_NAMESPACE_QUALIFIER asIScriptContext* ctx = current_context();
         if(set_ex)
-            ctx->SetException(msg);
+        {
+            with_cstr(
+                &AS_NAMESPACE_QUALIFIER asIScriptContext::SetException,
+                ctx,
+                msg,
+                true // allow catch
+            );
+        }
         if(callback)
             callback(msg);
     }
@@ -104,7 +112,7 @@ void register_script_assert(
 
             g
                 .function(
-                    string_concat("void assert(bool pred,const ", string_t_decl, "&in msg)").c_str(),
+                    string_concat("void assert(bool pred,const ", string_t_decl, "&in msg)"),
                     &script_assert_impl::assert_msg_wrapper,
                     auxiliary(impl)
                 );
