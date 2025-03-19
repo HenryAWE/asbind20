@@ -26,8 +26,7 @@ void register_script_char(
 {
     constexpr AS_NAMESPACE_QUALIFIER asQWORD char_flags =
         AS_NAMESPACE_QUALIFIER asOBJ_APP_PRIMITIVE |
-        AS_NAMESPACE_QUALIFIER asOBJ_POD |
-        AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_MORE_CONSTRUCTORS;
+        AS_NAMESPACE_QUALIFIER asOBJ_POD;
 
     auto helper = [engine]<bool UseGeneric>(std::bool_constant<UseGeneric>)
     {
