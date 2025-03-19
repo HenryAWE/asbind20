@@ -3,7 +3,7 @@
 #include <limits>
 #include <numbers>
 #include <complex>
-#include <type_traits>
+#include <numeric>
 
 namespace asbind20::ext
 {
@@ -33,121 +33,247 @@ void register_math_constants(asIScriptEngine* engine, const char* ns)
 #undef ASBIND20_EXT_MATH_REGISTER_CONSTANTS
 }
 
-template <typename T>
-requires std::is_fundamental_v<T>
-static T script_math_min(T a, T b)
-{
-    return std::min(a, b);
+// Use wrapper function to avoid directly getting function addresses from standard library,
+// which may cause problems.
+
+// clang-format off
+
+#define ASBIND20_EXT_MATH_DEF_UNARY_F(name) \
+template <typename T>                       \
+static T math_##name##_1(T arg)             \
+{                                           \
+    return std::name(arg);                  \
 }
 
-template <typename T>
-requires std::is_fundamental_v<T>
-static T script_math_max(T a, T b)
-{
-    return std::max(a, b);
+#define ASBIND20_EXT_MATH_DEF_BINARY_F(name)     \
+template <typename T>                            \
+static T math_##name##_2(T arg1, T arg2)         \
+{                                                \
+    return std::name(arg1, arg2);                \
 }
 
-template <typename T>
-requires std::is_fundamental_v<T>
-static T script_math_clamp(T val, T a, T b)
-{
-    return std::clamp(val, a, b);
+#define ASBIND20_EXT_MATH_DEF_TRINARY_F(name)            \
+template <typename T>                                    \
+static T math_##name##_3(T arg1, T arg2, T arg3)         \
+{                                                        \
+    return std::name(arg1, arg2, arg3);                  \
 }
 
-template <typename T>
-requires std::is_fundamental_v<T>
-static T script_math_lerp(T a, T b, T t)
-{
-    return std::lerp(a, b, t);
+#define ASBIND20_EXT_MATH_DEF_BOOL_UNARY_F(name) \
+template <typename T>                            \
+static bool math_##name##_1(T arg)               \
+{                                                \
+    return std::name(arg);                       \
 }
 
-template <typename T>
-static bool script_close_to_simple(float a, float b)
-{
-    return math_close_to<T>(a, b, std::numeric_limits<T>::epsilon());
-}
+// clang-format on
 
-// Using following wrappers to avoid ICE on MSVC
-static bool script_isfinite(float x)
-{
-    return std::isfinite(x);
-}
+// Basic operations
+ASBIND20_EXT_MATH_DEF_UNARY_F(abs);
+ASBIND20_EXT_MATH_DEF_BINARY_F(min);
+ASBIND20_EXT_MATH_DEF_BINARY_F(max);
+// Nearest integer for floating points
+ASBIND20_EXT_MATH_DEF_UNARY_F(ceil)
+ASBIND20_EXT_MATH_DEF_UNARY_F(floor)
+ASBIND20_EXT_MATH_DEF_UNARY_F(trunc)
+ASBIND20_EXT_MATH_DEF_UNARY_F(round)
+ASBIND20_EXT_MATH_DEF_UNARY_F(nearbyint)
+// Factor operations
+ASBIND20_EXT_MATH_DEF_BINARY_F(gcd);
+ASBIND20_EXT_MATH_DEF_BINARY_F(lcm);
+// Interpolation
+ASBIND20_EXT_MATH_DEF_BINARY_F(midpoint);
+ASBIND20_EXT_MATH_DEF_TRINARY_F(lerp);
+// Exponential functions
+ASBIND20_EXT_MATH_DEF_UNARY_F(exp);
+ASBIND20_EXT_MATH_DEF_UNARY_F(exp2);
+ASBIND20_EXT_MATH_DEF_UNARY_F(expm1);
+ASBIND20_EXT_MATH_DEF_UNARY_F(log);
+ASBIND20_EXT_MATH_DEF_UNARY_F(log10);
+ASBIND20_EXT_MATH_DEF_UNARY_F(log2);
+ASBIND20_EXT_MATH_DEF_UNARY_F(log1p);
+// Power functions
+ASBIND20_EXT_MATH_DEF_BINARY_F(pow);
+ASBIND20_EXT_MATH_DEF_UNARY_F(sqrt);
+ASBIND20_EXT_MATH_DEF_UNARY_F(cbrt);
+ASBIND20_EXT_MATH_DEF_BINARY_F(hypot);
+ASBIND20_EXT_MATH_DEF_TRINARY_F(hypot);
+// Trigonometric functions
+ASBIND20_EXT_MATH_DEF_UNARY_F(sin);
+ASBIND20_EXT_MATH_DEF_UNARY_F(cos);
+ASBIND20_EXT_MATH_DEF_UNARY_F(tan);
+ASBIND20_EXT_MATH_DEF_UNARY_F(asin);
+ASBIND20_EXT_MATH_DEF_UNARY_F(acos);
+ASBIND20_EXT_MATH_DEF_UNARY_F(atan);
+ASBIND20_EXT_MATH_DEF_BINARY_F(atan2);
+// Hyperbolic functions
+ASBIND20_EXT_MATH_DEF_UNARY_F(sinh);
+ASBIND20_EXT_MATH_DEF_UNARY_F(cosh);
+ASBIND20_EXT_MATH_DEF_UNARY_F(tanh);
+ASBIND20_EXT_MATH_DEF_UNARY_F(asinh);
+ASBIND20_EXT_MATH_DEF_UNARY_F(acosh);
+ASBIND20_EXT_MATH_DEF_UNARY_F(atanh);
+// Floating-point classification
+ASBIND20_EXT_MATH_DEF_BOOL_UNARY_F(isfinite);
+ASBIND20_EXT_MATH_DEF_BOOL_UNARY_F(isinf);
+ASBIND20_EXT_MATH_DEF_BOOL_UNARY_F(isnan);
+ASBIND20_EXT_MATH_DEF_BOOL_UNARY_F(signbit);
 
-static bool script_isnan(float x)
-{
-    return std::isnan(x);
-}
+#undef ASBIND20_EXT_MATH_DEF_UNARY_F
+#undef ASBIND20_EXT_MATH_DEF_BINARY_F
+#undef ASBIND20_EXT_MATH_DEF_TRINARY_F
+#undef ASBIND20_EXT_MATH_DEF_BOOL_UNARY_F
 
-static bool script_isinf(float x)
+template <std::floating_point T>
+static bool close_to_simple(T a, T b) noexcept
 {
-    return std::isinf(x);
+    // Use the default epsilon value
+    return math_close_to(a, b);
 }
 
 template <bool UseGeneric>
-void register_math_function_impl(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
-)
+void register_math_func_integral(asIScriptEngine* engine)
 {
-    global<UseGeneric> g(engine);
+    static_assert(sizeof(int) == sizeof(std::int32_t), "AngelScript assumes int is 32-bit");
+    // Align type names between AS and C++
+    using uint = std::uint32_t;
+    using int64 = std::int64_t;
+    using uint64 = std::uint64_t;
 
-    g
-        .function("int min(int a, int b)", fp<&script_math_min<int>>)
-        .function("int max(int a, int b)", fp<&script_math_max<int>>)
-        .function("int clamp(int val, int a, int b)", fp<&script_math_clamp<int>>)
-        .function("int abs(int x)", fp<static_cast<int (*)(int)>(&std::abs)>);
+    // clang-format off
 
-#define ASBIND20_EXT_MATH_UNARY_FUNC(name, float_t) \
-    function(#float_t " " #name "(" #float_t " x)", fp<static_cast<float_t (*)(float_t)>(&std::name)>)
+#define ASBIND20_EXT_MATH_REG_UNARY_F(type, name) \
+    function(#type " " #name "(" #type " num)", fp<static_cast<type (*)(type)>(&math_##name##_1<type>)>)
 
-#define ASBIND20_EXT_MATH_BINARY_FUNC(name, float_t) \
-    function(#float_t " " #name "(" #float_t " x, " #float_t " y)", fp<static_cast<float_t (*)(float_t, float_t)>(&(std::name))>)
+#define ASBIND20_EXT_MATH_REG_BINARY_F(type, name, arg1, arg2) \
+    function(#type " " #name "(" #type " " #arg1 "," #type " " #arg2 ")", fp<static_cast<type (*)(type, type)>(&math_##name##_2<type>)>)
 
-#define ASBIND20_EXT_MATH_REGISTER_FUNCS(register_class, float_t)                                                       \
-    register_class                                                                                                      \
-        .function("bool close_to(" #float_t " a, " #float_t " b)", fp<&script_close_to_simple<float_t>>)                \
-        .function("bool close_to(" #float_t " a, " #float_t " b, " #float_t " epsilon)", fp<&math_close_to<float_t>>)   \
-        .function(#float_t " min(" #float_t " a, " #float_t " b)", fp<&script_math_min<float_t>>)                       \
-        .function(#float_t " max(" #float_t " a, " #float_t " b)", fp<&script_math_max<float_t>>)                       \
-        .function(#float_t " clamp(" #float_t " val, " #float_t " a, " #float_t " b)", fp<&script_math_clamp<float_t>>) \
-        .function(#float_t " lerp(" #float_t " a, " #float_t " b, " #float_t " t)", fp<&script_math_lerp<float_t>>)     \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(ceil, float_t)                                                                    \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(floor, float_t)                                                                   \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(round, float_t)                                                                   \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(trunc, float_t)                                                                   \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(abs, float_t)                                                                     \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(sqrt, float_t)                                                                    \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(cbrt, float_t)                                                                    \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(exp, float_t)                                                                     \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(exp2, float_t)                                                                    \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(log, float_t)                                                                     \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(log2, float_t)                                                                    \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(log10, float_t)                                                                   \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(cos, float_t)                                                                     \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(sin, float_t)                                                                     \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(tan, float_t)                                                                     \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(acos, float_t)                                                                    \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(asin, float_t)                                                                    \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(atan, float_t)                                                                    \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(cosh, float_t)                                                                    \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(sinh, float_t)                                                                    \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(tanh, float_t)                                                                    \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(acosh, float_t)                                                                   \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(asinh, float_t)                                                                   \
-        .ASBIND20_EXT_MATH_UNARY_FUNC(atanh, float_t)                                                                   \
-        .function("bool isfinite(" #float_t " x)", fp<&script_isfinite>)                                                \
-        .function("bool isnan(" #float_t " x)", fp<&script_isnan>)                                                      \
-        .function("bool isinf(" #float_t " x)", fp<&script_isinf>)                                                      \
-        .ASBIND20_EXT_MATH_BINARY_FUNC(pow, float_t)                                                                    \
-        .ASBIND20_EXT_MATH_BINARY_FUNC(atan2, float_t)                                                                  \
-        .ASBIND20_EXT_MATH_BINARY_FUNC(hypot, float_t)
+#define ASBIND20_EXT_MATH_REG_UNARY_F_SIGNED(name) \
+     ASBIND20_EXT_MATH_REG_UNARY_F(int, name)      \
+    .ASBIND20_EXT_MATH_REG_UNARY_F(int64, name)
 
-    ASBIND20_EXT_MATH_REGISTER_FUNCS(g, float);
-    ASBIND20_EXT_MATH_REGISTER_FUNCS(g, double);
+#define ASBIND20_EXT_MATH_REG_BINARY_F_SIGNED(name, arg1, arg2) \
+     ASBIND20_EXT_MATH_REG_BINARY_F(int, name, arg1, arg2)      \
+    .ASBIND20_EXT_MATH_REG_BINARY_F(int64, name, arg1, arg2)
 
-#undef ASBIND20_EXT_MATH_UNARY_FUNC
-#undef ASBIND20_EXT_MATH_BINARY_FUNC
+#define ASBIND20_EXT_MATH_REG_UNARY_F_UNSIGNED(name) \
+     ASBIND20_EXT_MATH_REG_UNARY_F(uint, name)       \
+    .ASBIND20_EXT_MATH_REG_UNARY_F(uint64, name)
 
-#undef ASBIND20_EXT_MATH_REGISTER_FUNCS
+#define ASBIND20_EXT_MATH_REG_BINARY_F_UNSIGNED(name, arg1, arg2) \
+     ASBIND20_EXT_MATH_REG_BINARY_F(uint, name, arg1, arg2)       \
+    .ASBIND20_EXT_MATH_REG_BINARY_F(uint64, name, arg1, arg2)
+
+#define ASBIND20_EXT_MATH_REG_UNARY_F_ALL(name) \
+     ASBIND20_EXT_MATH_REG_UNARY_F_SIGNED(name) \
+    .ASBIND20_EXT_MATH_REG_UNARY_F_UNSIGNED(name)
+
+#define ASBIND20_EXT_MATH_REG_BINARY_F_ALL(name, arg1, arg2) \
+     ASBIND20_EXT_MATH_REG_BINARY_F_SIGNED(name, arg1, arg2) \
+    .ASBIND20_EXT_MATH_REG_BINARY_F_UNSIGNED(name, arg1, arg2)
+
+    // clang-format on
+
+    asbind20::global<UseGeneric>(engine)
+        // Basic operations
+        .ASBIND20_EXT_MATH_REG_UNARY_F_SIGNED(abs)
+        .ASBIND20_EXT_MATH_REG_BINARY_F_ALL(min, a, b)
+        .ASBIND20_EXT_MATH_REG_BINARY_F_ALL(max, a, b)
+        // Factor operations
+        .ASBIND20_EXT_MATH_REG_BINARY_F_ALL(gcd, x, y)
+        .ASBIND20_EXT_MATH_REG_BINARY_F_ALL(lcm, x, y)
+        // Interpolation
+        .ASBIND20_EXT_MATH_REG_BINARY_F_ALL(midpoint, a, b);
+
+#undef ASBIND20_EXT_MATH_REG_UNARY_F_SIGNED
+#undef ASBIND20_EXT_MATH_REG_BINARY_F_SIGNED
+#undef ASBIND20_EXT_MATH_REG_UNARY_F_UNSIGNED
+#undef ASBIND20_EXT_MATH_REG_BINARY_F_UNSIGNED
+#undef ASBIND20_EXT_MATH_REG_UNARY_F_ALL
+#undef ASBIND20_EXT_MATH_REG_BINARY_F_ALL
+#undef ASBIND20_EXT_MATH_REG_UNARY_F
+#undef ASBIND20_EXT_MATH_REG_BINARY_F
+}
+
+template <bool UseGeneric>
+void register_math_func_float(asIScriptEngine* engine)
+{
+    // clang-format off
+
+#define ASBIND20_EXT_MATH_REG_UNARY_F(name)                              \
+     function("float " #name "(float num)", fp<&math_##name##_1<float>>) \
+    .function("double " #name "(double num)", fp<&math_##name##_1<double>>)
+
+#define ASBIND20_EXT_MATH_REG_BINARY_F(name, arg1, arg2)                                       \
+     function("float " #name "(float " #arg1 ",float " #arg2 ")", fp<&math_##name##_2<float>>) \
+    .function("double " #name "(double " #arg1 ",double " #arg2 ")", fp<&math_##name##_2<double>>)
+
+#define ASBIND20_EXT_MATH_REG_TRINARY_F(name, arg1, arg2, arg3)                                                \
+     function("float " #name "(float " #arg1 ",float " #arg2 ",float " #arg3 ")", fp<&math_##name##_3<float>>) \
+    .function("double " #name "(double " #arg1 ",double " #arg2 ",double " #arg3 ")", fp<&math_##name##_3<double>>)
+
+#define ASBIND20_EXT_MATH_REG_BOOL_UNARY_F(name)                        \
+     function("bool " #name "(float num)", fp<&math_##name##_1<float>>) \
+    .function("bool " #name "(double num)", fp<&math_##name##_1<double>>)
+
+    // clang-format on
+
+    asbind20::global<UseGeneric>(engine)
+        // Basic operations
+        .ASBIND20_EXT_MATH_REG_UNARY_F(abs)
+        .ASBIND20_EXT_MATH_REG_BINARY_F(min, a, b)
+        .ASBIND20_EXT_MATH_REG_BINARY_F(max, a, b)
+        .function("bool close_to(float a, float b)", fp<&close_to_simple<float>>)
+        .function("bool close_to(double a, double b)", fp<&close_to_simple<double>>)
+        .function("bool close_to(float a, float b, float epsilon)", fp<&math_close_to<float>>)
+        .function("bool close_to(double a, double b, double epsilon)", fp<&math_close_to<double>>)
+        // Nearest integer for floating points
+        .ASBIND20_EXT_MATH_REG_UNARY_F(ceil)
+        .ASBIND20_EXT_MATH_REG_UNARY_F(floor)
+        .ASBIND20_EXT_MATH_REG_UNARY_F(trunc)
+        .ASBIND20_EXT_MATH_REG_UNARY_F(round)
+        .ASBIND20_EXT_MATH_REG_UNARY_F(nearbyint)
+        // Interpolation
+        .ASBIND20_EXT_MATH_REG_BINARY_F(midpoint, a, b)
+        .ASBIND20_EXT_MATH_REG_TRINARY_F(lerp, a, b, t)
+        // Exponential functions
+        .ASBIND20_EXT_MATH_REG_UNARY_F(exp)
+        .ASBIND20_EXT_MATH_REG_UNARY_F(exp2)
+        .ASBIND20_EXT_MATH_REG_UNARY_F(expm1)
+        .ASBIND20_EXT_MATH_REG_UNARY_F(log)
+        .ASBIND20_EXT_MATH_REG_UNARY_F(log10)
+        .ASBIND20_EXT_MATH_REG_UNARY_F(log2)
+        .ASBIND20_EXT_MATH_REG_UNARY_F(log1p)
+        // Power functions
+        .ASBIND20_EXT_MATH_REG_BINARY_F(pow, x, y)
+        .ASBIND20_EXT_MATH_REG_UNARY_F(sqrt)
+        .ASBIND20_EXT_MATH_REG_UNARY_F(cbrt)
+        .ASBIND20_EXT_MATH_REG_BINARY_F(hypot, x, y)
+        .ASBIND20_EXT_MATH_REG_TRINARY_F(hypot, x, y, z)
+        // Trigonometric functions
+        .ASBIND20_EXT_MATH_REG_UNARY_F(sin)
+        .ASBIND20_EXT_MATH_REG_UNARY_F(cos)
+        .ASBIND20_EXT_MATH_REG_UNARY_F(tan)
+        .ASBIND20_EXT_MATH_REG_UNARY_F(asin)
+        .ASBIND20_EXT_MATH_REG_UNARY_F(acos)
+        .ASBIND20_EXT_MATH_REG_UNARY_F(atan)
+        .ASBIND20_EXT_MATH_REG_BINARY_F(atan2, y, x) // The order of parameters of atan2 is defined as (y, x)
+        // Hyperbolic functions
+        .ASBIND20_EXT_MATH_REG_UNARY_F(sinh)
+        .ASBIND20_EXT_MATH_REG_UNARY_F(cosh)
+        .ASBIND20_EXT_MATH_REG_UNARY_F(tanh)
+        .ASBIND20_EXT_MATH_REG_UNARY_F(asinh)
+        .ASBIND20_EXT_MATH_REG_UNARY_F(acosh)
+        .ASBIND20_EXT_MATH_REG_UNARY_F(atanh)
+        // Floating-point classification
+        .ASBIND20_EXT_MATH_REG_BOOL_UNARY_F(isfinite)
+        .ASBIND20_EXT_MATH_REG_BOOL_UNARY_F(isinf)
+        .ASBIND20_EXT_MATH_REG_BOOL_UNARY_F(isnan)
+        .ASBIND20_EXT_MATH_REG_BOOL_UNARY_F(signbit);
+
+#undef ASBIND20_EXT_MATH_REG_UNARY_F
+#undef ASBIND20_EXT_MATH_REG_BINARY_F
+#undef ASBIND20_EXT_MATH_REG_TRINARY_F
 }
 
 void register_math_function(
@@ -155,9 +281,15 @@ void register_math_function(
 )
 {
     if(generic)
-        register_math_function_impl<true>(engine);
+    {
+        register_math_func_integral<true>(engine);
+        register_math_func_float<true>(engine);
+    }
     else
-        register_math_function_impl<false>(engine);
+    {
+        register_math_func_integral<false>(engine);
+        register_math_func_float<false>(engine);
+    }
 }
 
 struct complex_placeholder
