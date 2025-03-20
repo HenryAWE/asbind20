@@ -2378,14 +2378,16 @@ public:
 
     template <typename T>
     global& property(
-        const char* decl,
+        std::string_view decl,
         T& val
     )
     {
         [[maybe_unused]]
-        int r = 0;
-        r = m_engine->RegisterGlobalProperty(
-            decl, (void*)std::addressof(val)
+        int r = with_cstr(
+            &AS_NAMESPACE_QUALIFIER asIScriptEngine::RegisterGlobalProperty,
+            m_engine,
+            decl,
+            (void*)std::addressof(val)
         );
         assert(r >= 0);
 
@@ -2393,74 +2395,46 @@ public:
     }
 
     global& funcdef(
-        const char* decl
+        std::string_view decl
     )
     {
         [[maybe_unused]]
-        int r = 0;
-        r = m_engine->RegisterFuncdef(decl);
+        int r = with_cstr(
+            &AS_NAMESPACE_QUALIFIER asIScriptEngine::RegisterFuncdef,
+            m_engine,
+            decl
+        );
         assert(r >= 0);
 
         return *this;
     }
 
     global& typedef_(
-        const char* type_decl,
-        const char* new_name
+        std::string_view type_decl,
+        std::string_view new_name
     )
     {
         [[maybe_unused]]
-        int r = 0;
-        r = m_engine->RegisterTypedef(new_name, type_decl);
+        int r = with_cstr(
+            &AS_NAMESPACE_QUALIFIER asIScriptEngine::RegisterTypedef,
+            m_engine,
+            new_name,
+            type_decl
+        );
         assert(r >= 0);
 
         return *this;
     }
 
-    // For those who feel more comfortable with the C++11 style `using alias = type`
+    /**
+     * @brief For those who feel more comfortable with the C++ 11 style `using alias = type`
+     */
     global& using_(
-        const char* new_name,
-        const char* type_decl
+        std::string_view new_name,
+        std::string_view type_decl
     )
     {
         typedef_(type_decl, new_name);
-
-        return *this;
-    }
-
-    global& enum_type(
-        const char* type
-    )
-    {
-        [[maybe_unused]]
-        int r = 0;
-        r = m_engine->RegisterEnum(type);
-        assert(r >= 0);
-
-        return *this;
-    }
-
-    template <typename Enum>
-    requires std::is_enum_v<Enum>
-    global& enum_value(
-        const char* type,
-        Enum val,
-        const char* name
-    )
-    {
-        static_assert(
-            sizeof(Enum) <= sizeof(int),
-            "Enum size too large"
-        );
-
-        [[maybe_unused]]
-        int r = 0;
-        r = m_engine->RegisterEnumValue(
-            type,
-            name,
-            static_cast<int>(val)
-        );
-        assert(r >= 0);
 
         return *this;
     }
@@ -2730,21 +2704,26 @@ protected:
         assert(r >= 0);
     }
 
-    void property_impl(const char* decl, std::size_t off)
+    void property_impl(std::string_view decl, std::size_t off)
     {
         [[maybe_unused]]
-        int r = 0;
-        r = m_engine->RegisterObjectProperty(
-            m_name.c_str(),
-            decl,
-            static_cast<int>(off)
+        int r = with_cstr(
+            [this, off](const char* decl)
+            {
+                return m_engine->RegisterObjectProperty(
+                    m_name.c_str(),
+                    decl,
+                    static_cast<int>(off)
+                );
+            },
+            decl
         );
         assert(r >= 0);
     }
 
     template <typename MemberPointer>
     requires(std::is_member_object_pointer_v<MemberPointer>)
-    void property_impl(const char* decl, MemberPointer mp)
+    void property_impl(std::string_view decl, MemberPointer mp)
     {
         property_impl(decl, member_offset(mp));
     }
@@ -4886,7 +4865,7 @@ public:
     ASBIND20_CLASS_WRAPPED_VAR_TYPE_METHOD_AUXILIARY(basic_value_class)
     ASBIND20_CLASS_WRAPPED_LAMBDA_VAR_TYPE_METHOD(basic_value_class)
 
-    basic_value_class& property(const char* decl, std::size_t off)
+    basic_value_class& property(std::string_view decl, std::size_t off)
     {
         this->property_impl(decl, off);
 
@@ -4895,7 +4874,7 @@ public:
 
     template <typename MemberPointer>
     requires(std::is_member_object_pointer_v<MemberPointer>)
-    basic_value_class& property(const char* decl, MemberPointer mp)
+    basic_value_class& property(std::string_view decl, MemberPointer mp)
     {
         this->template property_impl<MemberPointer>(decl, mp);
 
@@ -6326,7 +6305,7 @@ public:
 
 #undef ASBIND20_REFERENCE_CLASS_BEH
 
-    basic_ref_class& property(const char* decl, std::size_t off)
+    basic_ref_class& property(std::string_view decl, std::size_t off)
     {
         this->property_impl(decl, off);
 
@@ -6335,7 +6314,7 @@ public:
 
     template <typename MemberPointer>
     requires(std::is_member_object_pointer_v<MemberPointer>)
-    basic_ref_class& property(const char* decl, MemberPointer mp)
+    basic_ref_class& property(std::string_view decl, MemberPointer mp)
     {
         this->template property_impl<MemberPointer>(decl, mp);
 
@@ -6391,20 +6370,23 @@ public:
     interface() = delete;
     interface(const interface&) = default;
 
-    interface(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, const char* name)
-        : m_engine(engine), m_name(name)
+    interface(
+        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, std::string name
+    )
+        : m_engine(engine), m_name(std::move(name))
     {
         [[maybe_unused]]
         int r = 0;
-        r = m_engine->RegisterInterface(m_name);
+        r = m_engine->RegisterInterface(m_name.c_str());
         assert(r >= 0);
     }
 
-    interface& method(const char* decl)
+    interface& method(std::string_view decl)
     {
         [[maybe_unused]]
-        int r = 0;
-        r = m_engine->RegisterInterfaceMethod(
+        int r = with_cstr(
+            &AS_NAMESPACE_QUALIFIER asIScriptEngine::RegisterInterfaceMethod,
+            m_engine,
             m_name,
             decl
         );
@@ -6434,32 +6416,44 @@ public:
         return m_engine;
     }
 
+    [[nodiscard]]
+    const std::string& get_name() const noexcept
+    {
+        return m_name;
+    }
+
 private:
     AS_NAMESPACE_QUALIFIER asIScriptEngine* m_engine;
-    const char* m_name;
+    std::string m_name;
 };
 
 template <typename Enum>
-requires(std::is_enum_v<Enum>)
+requires(std::is_enum_v<Enum> || std::integral<Enum>)
 class enum_
 {
 public:
     using enum_type = Enum;
 
-    enum_(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, const char* name)
-        : m_engine(engine), m_name(name)
+    enum_() = delete;
+    enum_(const enum_&) = default;
+
+    enum_(
+        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, std::string name
+    )
+        : m_engine(engine), m_name(std::move(name))
     {
         [[maybe_unused]]
         int r = 0;
-        r = m_engine->RegisterEnum(m_name);
+        r = m_engine->RegisterEnum(m_name.c_str());
         assert(r >= 0);
     }
 
-    enum_& value(Enum val, const char* decl)
+    enum_& value(Enum val, std::string_view decl)
     {
         [[maybe_unused]]
-        int r = 0;
-        r = m_engine->RegisterEnumValue(
+        int r = with_cstr(
+            &AS_NAMESPACE_QUALIFIER asIScriptEngine::RegisterEnumValue,
+            m_engine,
             m_name,
             decl,
             static_cast<int>(val)
@@ -6477,12 +6471,18 @@ public:
      * @tparam Value Enum value
      */
     template <Enum Value>
+    requires(std::is_enum_v<Enum>)
     enum_& value()
     {
-        this->value(
-            Value,
-            meta::fixed_enum_name<Value>().c_str()
+        [[maybe_unused]]
+        int r = 0;
+        r = m_engine->RegisterEnumValue(
+            m_name.c_str(),
+            meta::fixed_enum_name<Value>().c_str(),
+            static_cast<int>(Value)
         );
+        assert(r >= 0);
+
         return *this;
     }
 
@@ -6493,9 +6493,15 @@ public:
         return m_engine;
     }
 
+    [[nodiscard]]
+    const std::string& get_name() const noexcept
+    {
+        return m_name;
+    }
+
 private:
     AS_NAMESPACE_QUALIFIER asIScriptEngine* m_engine;
-    const char* m_name;
+    std::string m_name;
 };
 } // namespace asbind20
 
