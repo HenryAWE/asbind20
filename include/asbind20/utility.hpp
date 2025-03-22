@@ -23,6 +23,14 @@
 
 namespace asbind20
 {
+struct this_type_t
+{};
+
+/**
+ * @brief Tag indicating current type. Its exact meaning depends on context.
+ */
+inline constexpr this_type_t this_type{};
+
 namespace detail
 {
     // std::is_constructible implicitly requires T to be destructible,
@@ -1898,15 +1906,18 @@ concept has_static_name =
 namespace meta
 {
     template <
+        bool IsValueType,
         typename T,
         AS_NAMESPACE_QUALIFIER asETypeModifiers RefMod>
     requires(has_static_name<std::remove_cvref_t<T>>)
     consteval auto full_fixed_name_of()
     {
+        constexpr bool is_const = std::is_const_v<std::remove_reference_t<T>>;
+
         constexpr auto type_name = []()
         {
             constexpr auto name = name_of<std::remove_cvref_t<T>>();
-            if constexpr(std::is_const_v<std::remove_reference_t<T>>)
+            if constexpr(is_const)
                 return fixed_string("const ") + name;
             else
                 return name;
@@ -1914,14 +1925,26 @@ namespace meta
 
         if constexpr(std::is_reference_v<T>)
         {
-            if constexpr(RefMod == AS_NAMESPACE_QUALIFIER asTM_INREF)
-                return type_name + fixed_string("&in");
-            else if constexpr(RefMod == AS_NAMESPACE_QUALIFIER asTM_OUTREF)
-                return type_name + fixed_string("&out");
-            else if constexpr(RefMod == AS_NAMESPACE_QUALIFIER asTM_INOUTREF)
-                return type_name + fixed_string("&inout");
+            static_assert(RefMod != AS_NAMESPACE_QUALIFIER asTM_NONE, "Reference modifier is required");
+
+            if constexpr(IsValueType)
+            {
+                if constexpr(is_const || RefMod == AS_NAMESPACE_QUALIFIER asTM_INREF)
+                    return type_name + fixed_string("&in");
+                else if constexpr(RefMod == AS_NAMESPACE_QUALIFIER asTM_OUTREF)
+                    return type_name + fixed_string("&out");
+                else // RefMod == asTM_INOUTREF
+                    static_assert(!sizeof(T), "&inout for value type is invalid");
+            }
             else
-                return type_name + fixed_string('&');
+            {
+                if constexpr(is_const || RefMod == AS_NAMESPACE_QUALIFIER asTM_INREF)
+                    return type_name + fixed_string("&in");
+                else if constexpr(RefMod == AS_NAMESPACE_QUALIFIER asTM_OUTREF)
+                    return type_name + fixed_string("&out");
+                else // RefMod == asTM_INOUTREF
+                    return type_name + fixed_string("&");
+            }
         }
         else
             return type_name;

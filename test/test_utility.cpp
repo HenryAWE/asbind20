@@ -1,5 +1,4 @@
 #include <gtest/gtest.h>
-#include <asbind20/operators.hpp>
 #include <asbind20/asbind.hpp>
 
 static consteval bool test_utility_concepts()
@@ -242,15 +241,13 @@ TEST(meta, fixed_string)
     }
 
     {
-        constexpr auto decl = meta::full_fixed_name_of<int&, AS_NAMESPACE_QUALIFIER asTM_NONE>();
-        static_assert(decl.view() == "int&");
-        static_assert(decl.size() == 4);
+        constexpr auto decl = meta::full_fixed_name_of<true, int&, AS_NAMESPACE_QUALIFIER asTM_OUTREF>();
+        static_assert(decl.view() == "int&out");
     }
 
     {
-        constexpr auto decl = meta::full_fixed_name_of<const int&, AS_NAMESPACE_QUALIFIER asTM_INREF>();
+        constexpr auto decl = meta::full_fixed_name_of<true, const int&, AS_NAMESPACE_QUALIFIER asTM_INREF>();
         static_assert(decl.view() == "const int&in");
-        static_assert(decl.size() == 12);
     }
 }
 
