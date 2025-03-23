@@ -103,13 +103,25 @@ static void setup_env(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     );
 }
 
+struct register_refcount_helper
+{
+    template <typename AutoRegister>
+    void operator()(AutoRegister& ar) const
+    {
+        using namespace asbind20;
+        using class_type = typename AutoRegister::class_type;
+        ar
+            .addref(fp<&class_type::addref>)
+            .release(fp<&class_type::release>);
+    }
+};
+
 template <bool UseGeneric>
 static auto register_test_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     using namespace asbind20;
     return asbind20::ref_class<test_aux_factory, UseGeneric>(engine, "test_aux_factory")
-        .addref(fp<&test_aux_factory::addref>)
-        .release(fp<&test_aux_factory::release>)
+        .use(register_refcount_helper{})
         .property("int val", &test_aux_factory::value);
 }
 
@@ -427,8 +439,7 @@ auto register_test_class_template(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
     using namespace asbind20;
     return asbind20::template_ref_class<test_aux_factory_template, UseGeneric>(engine, "test_aux_factory_template<T>")
         .template_callback(fp<&aux_factory_helper_template_callback>)
-        .addref(fp<&test_aux_factory_template::addref>)
-        .release(fp<&test_aux_factory_template::release>)
+        .use(register_refcount_helper{})
         .property("int val", &test_aux_factory_template::value);
 }
 

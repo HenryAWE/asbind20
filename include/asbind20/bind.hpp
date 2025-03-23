@@ -2061,6 +2061,14 @@ namespace detail
     }
 } // namespace detail
 
+namespace wrappers
+{
+    template <typename T, typename RegisterHelper>
+    concept auto_register = requires(T&& ar, RegisterHelper& c) {
+        ar(c);
+    };
+} // namespace wrappers
+
 template <bool ForceGeneric>
 class global final : public register_helper_base<ForceGeneric>
 {
@@ -4865,6 +4873,14 @@ public:
     ASBIND20_CLASS_WRAPPED_VAR_TYPE_METHOD_AUXILIARY(basic_value_class)
     ASBIND20_CLASS_WRAPPED_LAMBDA_VAR_TYPE_METHOD(basic_value_class)
 
+    template <wrappers::auto_register<basic_value_class> AutoRegister>
+    basic_value_class& use(AutoRegister&& ar)
+    {
+        ar(*this);
+
+        return *this;
+    }
+
     basic_value_class& property(std::string_view decl, std::size_t off)
     {
         this->property_impl(decl, off);
@@ -4979,6 +4995,14 @@ public:
     ASBIND20_CLASS_WRAPPED_VAR_TYPE_METHOD(basic_ref_class)
     ASBIND20_CLASS_WRAPPED_VAR_TYPE_METHOD_AUXILIARY(basic_ref_class)
     ASBIND20_CLASS_WRAPPED_LAMBDA_VAR_TYPE_METHOD(basic_ref_class)
+
+    template <wrappers::auto_register<basic_ref_class> AutoRegister>
+    basic_ref_class& use(AutoRegister&& ar)
+    {
+        ar(*this);
+
+        return *this;
+    }
 
 private:
     std::string decl_factory(std::string_view params) const
