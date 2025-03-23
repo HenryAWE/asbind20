@@ -247,10 +247,74 @@ namespace operators
         {
             return *this;
         }
+    };
 
-        template <this_type_t>
-        void return_() const
-        {}
+    template <typename Lhs, bool AutoDecl, bool RhsConst>
+    class opAdd<param_t<Lhs, AutoDecl>, this_placeholder<RhsConst>> :
+        private param_t<Lhs, AutoDecl>,
+        public binary_operator<this_type_t, Lhs>
+    {
+        using param_type = param_t<Lhs, AutoDecl>;
+
+    public:
+        static constexpr auto name = meta::fixed_string("opAdd_r");
+
+        opAdd(const param_type& param)
+            : param_type(param) {}
+
+        const opAdd* operator->() const noexcept
+        {
+            return this;
+        }
+
+        template <typename Return>
+        class return_proxy
+        {
+        public:
+            return_proxy(const opAdd& proxy)
+                : m_proxy(&proxy) {}
+
+            template <typename RegisterHelper>
+            void operator()(RegisterHelper& ar) const
+            {
+                using class_type = typename RegisterHelper::class_type;
+                using this_arg_type = std::conditional_t<
+                    RhsConst,
+                    std::add_const_t<class_type>,
+                    class_type>;
+
+                auto lhs_decl = m_proxy->param_type::get_decl();
+
+                std::string decl = string_concat(
+                    detail::get_return_decl<Return>(ar),
+                    ' ',
+                    name,
+                    '(',
+                    lhs_decl,
+                    ')',
+                    RhsConst ? "const" : ""
+                );
+
+                ar.method(
+                    decl,
+                    [](Lhs lhs, this_arg_type& rhs) -> Return
+                    {
+                        return lhs + rhs;
+                    },
+                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+                );
+            }
+
+        private:
+            const opAdd* m_proxy;
+        };
+
+        template <typename Return>
+        requires(has_static_name<std::remove_cvref_t<Return>>)
+        return_proxy<Return> return_() const
+        {
+            return *this;
+        }
     };
 } // namespace operators
 
@@ -259,6 +323,13 @@ constexpr auto operator+(this_placeholder<LhsConst>, const param_t<Rhs, AutoDecl
     -> operators::opAdd<this_placeholder<LhsConst>, param_t<Rhs, AutoDecl>>
 {
     return {rhs};
+}
+
+template <typename Lhs, bool AutoDecl, bool RhsConst>
+constexpr auto operator+(const param_t<Lhs, AutoDecl>& lhs, this_placeholder<RhsConst>)
+    -> operators::opAdd<param_t<Lhs, AutoDecl>, this_placeholder<RhsConst>>
+{
+    return {lhs};
 }
 } // namespace asbind20
 
