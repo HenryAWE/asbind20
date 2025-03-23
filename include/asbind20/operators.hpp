@@ -215,12 +215,6 @@ namespace operators
                     std::add_const_t<class_type>,
                     class_type>;
 
-                std::string lhs_decl;
-                if constexpr(LhsConst)
-                    lhs_decl = string_concat("const ", ar.get_name(), "&in");
-                else
-                    lhs_decl = string_concat(ar.get_name(), '&');
-
                 auto rhs_decl = m_proxy->param_type::get_decl();
 
                 std::string decl = string_concat(
@@ -228,10 +222,9 @@ namespace operators
                     ' ',
                     name,
                     '(',
-                    lhs_decl,
-                    ',',
                     rhs_decl,
-                    ')'
+                    ')',
+                    LhsConst ? "const" : ""
                 );
 
                 ar.method(

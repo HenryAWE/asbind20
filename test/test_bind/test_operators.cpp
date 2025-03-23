@@ -6,6 +6,12 @@ namespace test_bind
 class my_pair2i
 {
 public:
+    my_pair2i() = default;
+    my_pair2i(const my_pair2i&) = default;
+
+    my_pair2i(int a, int b)
+        : first(a), second(b) {}
+
     my_pair2i& operator+=(int val)
     {
         first += val;
@@ -28,6 +34,29 @@ public:
     int first;
     int second;
 };
+
+static void run_pair2i_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
+    auto* m = engine->GetModule(
+        "test_pair2i", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
+    );
+
+    m->AddScriptSection(
+        "test_pair2i",
+        "int test0() { pair2i p = {1, 2}; return p + 2; }"
+    );
+    ASSERT_GE(m->Build(), 0);
+
+    {
+        auto* f = m->GetFunctionByName("test0");
+        ASSERT_TRUE(f);
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<int>(ctx, f);
+        ASSERT_TRUE(asbind_test::result_has_value(result));
+
+        EXPECT_EQ(result.value(), 7);
+    }
+}
 } // namespace test_bind
 
 TEST(test_operators, my_pair2i_native)
@@ -40,9 +69,16 @@ TEST(test_operators, my_pair2i_native)
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine, true);
 
-    value_class<test_bind::my_pair2i>(engine, "pair2i")
+    value_class<test_bind::my_pair2i>(
+        engine,
+        "pair2i",
+        AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_ALLINTS
+    )
         .behaviours_by_traits()
+        .list_constructor<int>("int,int", use_policy<policies::apply_to<2>>)
         .use((const_this + param<int>)->return_<int>());
+
+    test_bind::run_pair2i_test_script(engine);
 }
 
 TEST(test_operators, my_pair2i_generic)
@@ -54,5 +90,8 @@ TEST(test_operators, my_pair2i_generic)
 
     value_class<test_bind::my_pair2i, true>(engine, "pair2i")
         .behaviours_by_traits()
+        .list_constructor<int>("int,int", use_policy<policies::apply_to<2>>)
         .use((const_this + param<int>)->return_<int>());
+
+    test_bind::run_pair2i_test_script(engine);
 }
