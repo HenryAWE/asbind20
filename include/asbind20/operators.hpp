@@ -12,6 +12,7 @@
 
 #pragma once
 
+#include "generic.hpp"
 #include "utility.hpp" // this_type
 
 namespace asbind20
@@ -94,10 +95,10 @@ struct param_t<T, true>
     constexpr param_t(const param_t&) = default;
 
     [[nodiscard]]
-    constexpr std::string_view get_decl() const noexcept
+    constexpr auto get_decl() const noexcept
         requires(has_static_name<std::remove_cvref_t<T>>)
     {
-        return meta::full_fixed_name_of<T>();
+        return meta::full_fixed_name_of<true, T, asETypeModifiers::asTM_INREF>();
     }
 
     constexpr param_t<T, false> operator()(std::string_view decl) const noexcept
@@ -108,6 +109,42 @@ struct param_t<T, true>
 
 template <typename T>
 constexpr inline param_t<T, true> param{};
+
+namespace detail
+{
+    template <typename T, typename RegisterHelper>
+    std::string get_return_decl(const RegisterHelper& c)
+    {
+        constexpr bool is_this_type =
+            std::same_as<std::remove_cvref_t<T>, typename RegisterHelper::class_type>;
+
+        constexpr bool is_const = std::is_const_v<std::remove_reference_t<T>>;
+        constexpr bool is_ref = std::is_reference_v<T>;
+
+        auto modifier_helper = [](auto type_decl) -> std::string
+        {
+            if constexpr(is_const && is_ref)
+                return string_concat("const ", type_decl, '&');
+            else if constexpr(is_ref)
+                return string_concat(type_decl, '&');
+            else
+                return std::string(type_decl);
+        };
+
+        if constexpr(is_this_type)
+        {
+            return modifier_helper(c.get_name());
+        }
+        else if constexpr(has_static_name<std::remove_cvref_t<T>>)
+        {
+            return modifier_helper(name_of<std::remove_cvref_t<T>>().view());
+        }
+        else
+        {
+            static_assert(!sizeof(T), "Cannot deduce declaration of return type");
+        }
+    }
+} // namespace detail
 
 namespace operators
 {
@@ -162,10 +199,61 @@ namespace operators
             return this;
         }
 
-        template <typename Result>
-        requires(has_static_name<std::remove_cvref_t<Result>>)
-        void return_() const
-        {}
+        template <typename Return>
+        class return_proxy
+        {
+        public:
+            return_proxy(const opAdd& proxy)
+                : m_proxy(&proxy) {}
+
+            template <typename RegisterHelper>
+            void operator()(RegisterHelper& ar) const
+            {
+                using class_type = typename RegisterHelper::class_type;
+                using this_arg_type = std::conditional_t<
+                    LhsConst,
+                    std::add_const_t<class_type>,
+                    class_type>;
+
+                std::string lhs_decl;
+                if constexpr(LhsConst)
+                    lhs_decl = string_concat("const ", ar.get_name(), "&in");
+                else
+                    lhs_decl = string_concat(ar.get_name(), '&');
+
+                auto rhs_decl = m_proxy->param_type::get_decl();
+
+                std::string decl = string_concat(
+                    detail::get_return_decl<Return>(ar),
+                    ' ',
+                    name,
+                    '(',
+                    lhs_decl,
+                    ',',
+                    rhs_decl,
+                    ')'
+                );
+
+                ar.method(
+                    decl,
+                    [](this_arg_type& lhs, Rhs rhs) -> Return
+                    {
+                        return lhs + rhs;
+                    },
+                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>
+                );
+            }
+
+        private:
+            const opAdd* m_proxy;
+        };
+
+        template <typename Return>
+        requires(has_static_name<std::remove_cvref_t<Return>>)
+        return_proxy<Return> return_() const
+        {
+            return *this;
+        }
 
         template <this_type_t>
         void return_() const

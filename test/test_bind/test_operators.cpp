@@ -13,14 +13,7 @@ public:
         return *this;
     }
 
-    friend my_pair2i operator+(const my_pair2i& lhs, int val)
-    {
-        my_pair2i tmp = lhs;
-        tmp += val;
-        return tmp;
-    }
-
-    friend int operator+(my_pair2i& lhs, int val)
+    friend int operator+(const my_pair2i& lhs, int val)
     {
         my_pair2i tmp = lhs;
         tmp += val;
@@ -41,6 +34,10 @@ TEST(test_operators, declaration)
 {
     using namespace asbind20;
 
-    (void)(const_this + param<int>)->return_<this_type>();
-    (void)(_this + param<int>)->return_<int>();
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine, true);
+
+    value_class<test_bind::my_pair2i>(engine, "pair2i")
+        .behaviours_by_traits()
+        .use((const_this + param<int>)->return_<int>());
 }
