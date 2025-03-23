@@ -30,14 +30,29 @@ public:
 };
 } // namespace test_bind
 
-TEST(test_operators, declaration)
+TEST(test_operators, my_pair2i_native)
+{
+    using namespace asbind20;
+
+    if(has_max_portability())
+        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine, true);
+
+    value_class<test_bind::my_pair2i>(engine, "pair2i")
+        .behaviours_by_traits()
+        .use((const_this + param<int>)->return_<int>());
+}
+
+TEST(test_operators, my_pair2i_generic)
 {
     using namespace asbind20;
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine, true);
 
-    value_class<test_bind::my_pair2i>(engine, "pair2i")
+    value_class<test_bind::my_pair2i, true>(engine, "pair2i")
         .behaviours_by_traits()
         .use((const_this + param<int>)->return_<int>());
 }
