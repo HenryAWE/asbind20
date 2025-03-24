@@ -20,11 +20,13 @@ namespace asbind20
 template <bool IsConst>
 struct this_placeholder
 {
+    [[nodiscard]]
     static constexpr this_placeholder<true> as_const() noexcept
     {
         return {};
     }
 
+    [[nodiscard]]
     static constexpr bool is_const() noexcept
     {
         return IsConst;
@@ -72,12 +74,12 @@ namespace detail
 } // namespace detail
 
 template <typename T, bool AutoDecl = false>
-struct param_t;
+struct param_placeholder;
 
 template <typename T>
-struct param_t<T, false>
+struct param_placeholder<T, false>
 {
-    constexpr param_t(const param_t&) = default;
+    constexpr param_placeholder(const param_placeholder&) = default;
 
     std::string_view declaration;
 
@@ -89,26 +91,27 @@ struct param_t<T, false>
 };
 
 template <typename T>
-struct param_t<T, true>
+struct param_placeholder<T, true>
 {
-    constexpr param_t() = default;
-    constexpr param_t(const param_t&) = default;
+    constexpr param_placeholder() = default;
+    constexpr param_placeholder(const param_placeholder&) = default;
 
     [[nodiscard]]
     constexpr auto get_decl() const noexcept
         requires(has_static_name<std::remove_cvref_t<T>>)
     {
-        return meta::full_fixed_name_of<true, T, asETypeModifiers::asTM_INREF>();
+        return meta::full_fixed_name_of<T>();
     }
 
-    constexpr param_t<T, false> operator()(std::string_view decl) const noexcept
+    [[nodiscard]]
+    constexpr param_placeholder<T, false> operator()(std::string_view decl) const noexcept
     {
-        return param_t<T, false>{decl};
+        return param_placeholder<T, false>{decl};
     }
 };
 
 template <typename T>
-constexpr inline param_t<T, true> param{};
+constexpr inline param_placeholder<T, true> param{};
 
 namespace detail
 {
@@ -232,6 +235,7 @@ namespace operators
 
         template <typename Return>
         requires(has_static_name<std::remove_cvref_t<Return>>)
+        [[nodiscard]]
         return_proxy<Return> return_() const
         {
             return *this;
@@ -239,11 +243,11 @@ namespace operators
     };
 
     template <bool LhsConst, typename Rhs, bool AutoDecl>
-    class opAdd<this_placeholder<LhsConst>, param_t<Rhs, AutoDecl>> :
-        private param_t<Rhs, AutoDecl>,
+    class opAdd<this_placeholder<LhsConst>, param_placeholder<Rhs, AutoDecl>> :
+        private param_placeholder<Rhs, AutoDecl>,
         public binary_operator<this_type_t, Rhs>
     {
-        using param_type = param_t<Rhs, AutoDecl>;
+        using param_type = param_placeholder<Rhs, AutoDecl>;
 
     public:
         static constexpr auto name = meta::fixed_string("opAdd");
@@ -300,6 +304,7 @@ namespace operators
 
         template <typename Return>
         requires(has_static_name<std::remove_cvref_t<Return>>)
+        [[nodiscard]]
         return_proxy<Return> return_() const
         {
             return *this;
@@ -307,11 +312,11 @@ namespace operators
     };
 
     template <typename Lhs, bool AutoDecl, bool RhsConst>
-    class opAdd<param_t<Lhs, AutoDecl>, this_placeholder<RhsConst>> :
-        private param_t<Lhs, AutoDecl>,
+    class opAdd<param_placeholder<Lhs, AutoDecl>, this_placeholder<RhsConst>> :
+        private param_placeholder<Lhs, AutoDecl>,
         public binary_operator<this_type_t, Lhs>
     {
-        using param_type = param_t<Lhs, AutoDecl>;
+        using param_type = param_placeholder<Lhs, AutoDecl>;
 
     public:
         static constexpr auto name = meta::fixed_string("opAdd_r");
@@ -368,6 +373,7 @@ namespace operators
 
         template <typename Return>
         requires(has_static_name<std::remove_cvref_t<Return>>)
+        [[nodiscard]]
         return_proxy<Return> return_() const
         {
             return *this;
@@ -383,15 +389,15 @@ constexpr auto operator+(this_placeholder<LhsConst>, this_placeholder<RhsConst>)
 }
 
 template <bool LhsConst, typename Rhs, bool AutoDecl>
-constexpr auto operator+(this_placeholder<LhsConst>, const param_t<Rhs, AutoDecl>& rhs)
-    -> operators::opAdd<this_placeholder<LhsConst>, param_t<Rhs, AutoDecl>>
+constexpr auto operator+(this_placeholder<LhsConst>, const param_placeholder<Rhs, AutoDecl>& rhs)
+    -> operators::opAdd<this_placeholder<LhsConst>, param_placeholder<Rhs, AutoDecl>>
 {
     return {rhs};
 }
 
 template <typename Lhs, bool AutoDecl, bool RhsConst>
-constexpr auto operator+(const param_t<Lhs, AutoDecl>& lhs, this_placeholder<RhsConst>)
-    -> operators::opAdd<param_t<Lhs, AutoDecl>, this_placeholder<RhsConst>>
+constexpr auto operator+(const param_placeholder<Lhs, AutoDecl>& lhs, this_placeholder<RhsConst>)
+    -> operators::opAdd<param_placeholder<Lhs, AutoDecl>, this_placeholder<RhsConst>>
 {
     return {lhs};
 }

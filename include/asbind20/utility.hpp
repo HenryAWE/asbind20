@@ -1905,10 +1905,7 @@ concept has_static_name =
 
 namespace meta
 {
-    template <
-        bool IsValueType,
-        typename T,
-        AS_NAMESPACE_QUALIFIER asETypeModifiers RefMod>
+    template <typename T>
     requires(has_static_name<std::remove_cvref_t<T>>)
     consteval auto full_fixed_name_of()
     {
@@ -1925,26 +1922,10 @@ namespace meta
 
         if constexpr(std::is_reference_v<T>)
         {
-            static_assert(RefMod != AS_NAMESPACE_QUALIFIER asTM_NONE, "Reference modifier is required");
-
-            if constexpr(IsValueType)
-            {
-                if constexpr(is_const || RefMod == AS_NAMESPACE_QUALIFIER asTM_INREF)
-                    return type_name + fixed_string("&in");
-                else if constexpr(RefMod == AS_NAMESPACE_QUALIFIER asTM_OUTREF)
-                    return type_name + fixed_string("&out");
-                else // RefMod == asTM_INOUTREF
-                    static_assert(!sizeof(T), "&inout for value type is invalid");
-            }
+            if constexpr(is_const)
+                return type_name + fixed_string("&in");
             else
-            {
-                if constexpr(is_const || RefMod == AS_NAMESPACE_QUALIFIER asTM_INREF)
-                    return type_name + fixed_string("&in");
-                else if constexpr(RefMod == AS_NAMESPACE_QUALIFIER asTM_OUTREF)
-                    return type_name + fixed_string("&out");
-                else // RefMod == asTM_INOUTREF
-                    return type_name + fixed_string("&");
-            }
+                return type_name + fixed_string("&");
         }
         else
             return type_name;

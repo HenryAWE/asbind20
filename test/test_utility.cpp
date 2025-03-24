@@ -241,12 +241,12 @@ TEST(meta, fixed_string)
     }
 
     {
-        constexpr auto decl = meta::full_fixed_name_of<true, int&, AS_NAMESPACE_QUALIFIER asTM_OUTREF>();
-        static_assert(decl.view() == "int&out");
+        constexpr auto decl = meta::full_fixed_name_of<int&>();
+        static_assert(decl.view() == "int&"); // Only for testing
     }
 
     {
-        constexpr auto decl = meta::full_fixed_name_of<true, const int&, AS_NAMESPACE_QUALIFIER asTM_INREF>();
+        constexpr auto decl = meta::full_fixed_name_of<const int&>();
         static_assert(decl.view() == "const int&in");
     }
 }
