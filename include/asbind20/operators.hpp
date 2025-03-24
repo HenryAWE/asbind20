@@ -81,6 +81,9 @@ struct param_placeholder<T, false>
 {
     constexpr param_placeholder(const param_placeholder&) = default;
 
+    constexpr param_placeholder(std::string_view decl) noexcept
+        : declaration(decl) {}
+
     std::string_view declaration;
 
     [[nodiscard]]
@@ -234,11 +237,67 @@ namespace operators
         };
 
         template <typename Return>
+        class return_proxy_with_decl
+        {
+        public:
+            return_proxy_with_decl(const opAdd& proxy, std::string_view ret_decl)
+                : m_proxy(&proxy), m_ret_decl(ret_decl) {}
+
+            template <typename RegisterHelper>
+            void operator()(RegisterHelper& ar) const
+            {
+                using class_type = typename RegisterHelper::class_type;
+                using this_arg_type = std::conditional_t<
+                    LhsConst,
+                    std::add_const_t<class_type>,
+                    class_type>;
+                using rhs_arg_type = std::conditional_t<
+                    RhsConst,
+                    std::add_const_t<class_type>,
+                    class_type>;
+
+                auto rhs_decl = ar.get_name();
+
+                std::string decl = string_concat(
+                    m_ret_decl,
+                    ' ',
+                    name,
+                    '(',
+                    RhsConst ? "const " : "",
+                    rhs_decl,
+                    RhsConst ? "&in" : "&",
+                    ')',
+                    LhsConst ? "const" : ""
+                );
+
+                ar.method(
+                    decl,
+                    [](this_arg_type& lhs, rhs_arg_type& rhs) -> Return
+                    {
+                        return lhs + rhs;
+                    },
+                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>
+                );
+            }
+
+        private:
+            const opAdd* m_proxy;
+            std::string_view m_ret_decl;
+        };
+
+        template <typename Return>
         requires(has_static_name<std::remove_cvref_t<Return>>)
         [[nodiscard]]
         return_proxy<Return> return_() const
         {
             return *this;
+        }
+
+        template <typename Return>
+        [[nodiscard]]
+        return_proxy_with_decl<Return> return_(std::string_view ret_decl) const
+        {
+            return {*this, ret_decl};
         }
     };
 
@@ -303,11 +362,61 @@ namespace operators
         };
 
         template <typename Return>
+        class return_proxy_with_decl
+        {
+        public:
+            return_proxy_with_decl(const opAdd& proxy, std::string_view ret_decl)
+                : m_proxy(&proxy), m_ret_decl(ret_decl) {}
+
+            template <typename RegisterHelper>
+            void operator()(RegisterHelper& ar) const
+            {
+                using class_type = typename RegisterHelper::class_type;
+                using this_arg_type = std::conditional_t<
+                    LhsConst,
+                    std::add_const_t<class_type>,
+                    class_type>;
+
+                auto rhs_decl = m_proxy->param_type::get_decl();
+
+                std::string decl = string_concat(
+                    m_ret_decl,
+                    ' ',
+                    name,
+                    '(',
+                    rhs_decl,
+                    ')',
+                    LhsConst ? "const" : ""
+                );
+
+                ar.method(
+                    decl,
+                    [](this_arg_type& lhs, Rhs rhs) -> Return
+                    {
+                        return lhs + rhs;
+                    },
+                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>
+                );
+            }
+
+        private:
+            const opAdd* m_proxy;
+            std::string_view m_ret_decl;
+        };
+
+        template <typename Return>
         requires(has_static_name<std::remove_cvref_t<Return>>)
         [[nodiscard]]
         return_proxy<Return> return_() const
         {
             return *this;
+        }
+
+        template <typename Return>
+        [[nodiscard]]
+        return_proxy_with_decl<Return> return_(std::string_view ret_decl) const
+        {
+            return {*this, ret_decl};
         }
     };
 
@@ -372,11 +481,61 @@ namespace operators
         };
 
         template <typename Return>
+        class return_proxy_with_decl
+        {
+        public:
+            return_proxy_with_decl(const opAdd& proxy, std::string_view ret_decl)
+                : m_proxy(&proxy), m_ret_decl(ret_decl) {}
+
+            template <typename RegisterHelper>
+            void operator()(RegisterHelper& ar) const
+            {
+                using class_type = typename RegisterHelper::class_type;
+                using this_arg_type = std::conditional_t<
+                    RhsConst,
+                    std::add_const_t<class_type>,
+                    class_type>;
+
+                auto lhs_decl = m_proxy->param_type::get_decl();
+
+                std::string decl = string_concat(
+                    m_ret_decl,
+                    ' ',
+                    name,
+                    '(',
+                    lhs_decl,
+                    ')',
+                    RhsConst ? "const" : ""
+                );
+
+                ar.method(
+                    decl,
+                    [](Lhs lhs, this_arg_type& rhs) -> Return
+                    {
+                        return lhs + rhs;
+                    },
+                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+                );
+            }
+
+        private:
+            const opAdd* m_proxy;
+            std::string_view m_ret_decl;
+        };
+
+        template <typename Return>
         requires(has_static_name<std::remove_cvref_t<Return>>)
         [[nodiscard]]
         return_proxy<Return> return_() const
         {
             return *this;
+        }
+
+        template <typename Return>
+        [[nodiscard]]
+        return_proxy_with_decl<Return> return_(std::string_view ret_decl) const
+        {
+            return {*this, ret_decl};
         }
     };
 } // namespace operators

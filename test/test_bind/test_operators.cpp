@@ -137,3 +137,40 @@ TEST(test_operators, my_pair2i_generic)
 
     test_bind::run_pair2i_test_script(engine);
 }
+
+TEST(test_operators, my_pair2i_native_with_decl)
+{
+    using namespace asbind20;
+
+    if(has_max_portability())
+        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine, true);
+
+    value_class<test_bind::my_pair2i>(engine, "pair2i")
+        .behaviours_by_traits()
+        .list_constructor<int>("int,int", use_policy<policies::apply_to<2>>)
+        .use((const_this + param<int>("int"))->return_<int>("int"))
+        .use((param<int>("int") + const_this)->return_<int>("int"))
+        .use((const_this + const_this)->return_<int>("int"));
+
+    test_bind::run_pair2i_test_script(engine);
+}
+
+TEST(test_operators, my_pair2i_generic_with_decl)
+{
+    using namespace asbind20;
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine, true);
+
+    value_class<test_bind::my_pair2i, true>(engine, "pair2i")
+        .behaviours_by_traits()
+        .list_constructor<int>("int,int", use_policy<policies::apply_to<2>>)
+        .use((const_this + param<int>("int"))->return_<int>("int"))
+        .use((param<int>("int") + const_this)->return_<int>("int"))
+        .use((const_this + const_this)->return_<int>("int"));
+
+    test_bind::run_pair2i_test_script(engine);
+}
