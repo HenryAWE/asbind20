@@ -35,6 +35,13 @@ public:
         return tmp.first + tmp.second;
     }
 
+    friend int operator+(const my_pair2i& lhs, const my_pair2i& rhs)
+    {
+        my_pair2i tmp = lhs;
+        tmp += rhs.first + rhs.second;
+        return tmp.first + tmp.second;
+    }
+
     friend int operator*(const my_pair2i& lhs, const my_pair2i& rhs)
     {
         return lhs.first * rhs.first + lhs.second * rhs.second;
@@ -54,6 +61,7 @@ static void run_pair2i_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engin
         "test_pair2i",
         "int test0() { pair2i p = {1, 2}; return p + 2; }\n"
         "int test1() { pair2i p = {1, 2}; return 2 + p; }"
+        "int test2() { pair2i p1 = {1, 2}; pair2i p2 = {3, 4}; return p1 + p2; }"
     );
     ASSERT_GE(m->Build(), 0);
 
@@ -76,6 +84,16 @@ static void run_pair2i_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engin
 
         EXPECT_EQ(result.value(), 9);
     }
+
+    {
+        auto* f = m->GetFunctionByName("test2");
+        ASSERT_TRUE(f);
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<int>(ctx, f);
+        ASSERT_TRUE(asbind_test::result_has_value(result));
+
+        EXPECT_EQ(result.value(), 17);
+    }
 }
 } // namespace test_bind
 
@@ -97,7 +115,8 @@ TEST(test_operators, my_pair2i_native)
         .behaviours_by_traits()
         .list_constructor<int>("int,int", use_policy<policies::apply_to<2>>)
         .use((const_this + param<int>)->return_<int>())
-        .use((param<int> + const_this)->return_<int>());
+        .use((param<int> + const_this)->return_<int>())
+        .use((const_this + const_this)->return_<int>());
 
     test_bind::run_pair2i_test_script(engine);
 }
@@ -113,7 +132,8 @@ TEST(test_operators, my_pair2i_generic)
         .behaviours_by_traits()
         .list_constructor<int>("int,int", use_policy<policies::apply_to<2>>)
         .use((const_this + param<int>)->return_<int>())
-        .use((param<int> + const_this)->return_<int>());
+        .use((param<int> + const_this)->return_<int>())
+        .use((const_this + const_this)->return_<int>());
 
     test_bind::run_pair2i_test_script(engine);
 }
