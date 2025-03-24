@@ -159,7 +159,6 @@ namespace operators
         typename T::operator_proxy_tag;
     };
 
-    template <typename Lhs, typename Rhs>
     class binary_operator
     {
     public:
@@ -167,10 +166,139 @@ namespace operators
 
         static constexpr std::size_t operand_count = 2;
 
-        using lhs_type = Lhs;
-        using rhs_type = Rhs;
+    protected:
+        // The parameter needs to generate full declaration from a plain type name
+        template <bool ParamRef, bool ParamConst>
+        constexpr static std::string gen_name_for_auto_decl(
+            std::string_view ret_decl,
+            std::string_view op_name,
+            std::string_view param_name,
+            bool is_const
+        )
+        {
+            if constexpr(ParamConst && ParamRef)
+            {
+                return string_concat(
+                    ret_decl,
+                    ' ',
+                    op_name,
+                    "(const ",
+                    param_name,
+                    "&in)",
+                    is_const ? "const" : ""
+                );
+            }
+            else if(ParamRef)
+            {
+                return string_concat(
+                    ret_decl,
+                    ' ',
+                    op_name,
+                    '(',
+                    param_name,
+                    "&)",
+                    is_const ? "const" : ""
+                );
+            }
+            else
+            {
+                return string_concat(
+                    ret_decl,
+                    ' ',
+                    op_name,
+                    '(',
+                    param_name,
+                    ')',
+                    is_const ? "const" : ""
+                );
+            }
+        }
+
+        // User has already provided full declaration of the parameter
+        constexpr static std::string gen_name_for_user_decl(
+            std::string_view ret_decl,
+            std::string_view op_name,
+            std::string_view param_decl,
+            bool is_const
+        )
+        {
+            return string_concat(
+                ret_decl,
+                ' ',
+                op_name,
+                '(',
+                param_decl,
+                ')',
+                is_const ? "const" : ""
+            );
+        }
+
+        template <bool AutoDecl, bool ParamRef, bool ParamConst>
+        static constexpr std::string gen_name(
+            std::string_view ret_decl,
+            std::string_view op_name,
+            std::string_view param_decl_or_name,
+            bool is_const
+        )
+        {
+            if constexpr(AutoDecl)
+            {
+                return gen_name_for_auto_decl<ParamRef, ParamConst>(
+                    ret_decl, op_name, param_decl_or_name, is_const
+                );
+            }
+            else
+            {
+                return gen_name_for_user_decl(
+                    ret_decl, op_name, param_decl_or_name, is_const
+                );
+            }
+        }
+
+        template <bool AutoDecl, typename T>
+        static constexpr std::string gen_name_for(
+            std::string_view ret_decl,
+            std::string_view op_name,
+            std::string_view param_decl_or_name,
+            bool is_const
+        )
+        {
+            if constexpr(AutoDecl)
+            {
+                constexpr bool param_const =
+                    std::is_const_v<std::remove_reference_t<T>>;
+                return gen_name_for_auto_decl<std::is_reference_v<T>, param_const>(
+                    ret_decl, op_name, param_decl_or_name, is_const
+                );
+            }
+            else
+            {
+                return gen_name_for_user_decl(
+                    ret_decl, op_name, param_decl_or_name, is_const
+                );
+            }
+        }
     };
 } // namespace operators
+
+#define ASBIND20_OPERATOR_RETURN_PROXY_FUNC(op_name)                        \
+    const op_name* operator->() const noexcept                              \
+    {                                                                       \
+        return this;                                                        \
+    }                                                                       \
+    template <typename Return>                                              \
+    requires(has_static_name<std::remove_cvref_t<Return>>)                  \
+    [[nodiscard]]                                                           \
+    return_proxy<Return> return_() const                                    \
+    {                                                                       \
+        return *this;                                                       \
+    }                                                                       \
+    template <typename Return>                                              \
+    [[nodiscard]]                                                           \
+    return_proxy_with_decl<Return> return_(std::string_view ret_decl) const \
+    {                                                                       \
+        return {*this, ret_decl};                                           \
+    }
 
 namespace operators
 {
@@ -178,16 +306,9 @@ namespace operators
     class opAdd;
 
     template <bool LhsConst, bool RhsConst>
-    class opAdd<this_placeholder<LhsConst>, this_placeholder<RhsConst>> : public binary_operator<this_type_t, this_type_t>
+    class opAdd<this_placeholder<LhsConst>, this_placeholder<RhsConst>> : public binary_operator
     {
     public:
-        static constexpr auto name = meta::fixed_string("opAdd");
-
-        const opAdd* operator->() const noexcept
-        {
-            return this;
-        }
-
         template <typename Return>
         class return_proxy
         {
@@ -207,23 +328,13 @@ namespace operators
                     RhsConst,
                     std::add_const_t<class_type>,
                     class_type>;
-
-                auto rhs_decl = ar.get_name();
-
-                std::string decl = string_concat(
-                    detail::get_return_decl<Return>(ar),
-                    ' ',
-                    name,
-                    '(',
-                    RhsConst ? "const " : "",
-                    rhs_decl,
-                    RhsConst ? "&in" : "&",
-                    ')',
-                    LhsConst ? "const" : ""
-                );
-
                 ar.method(
-                    decl,
+                    gen_name<true, true, RhsConst>(
+                        detail::get_return_decl<Return>(ar),
+                        "opAdd",
+                        ar.get_name(),
+                        LhsConst
+                    ),
                     [](this_arg_type& lhs, rhs_arg_type& rhs) -> Return
                     {
                         return lhs + rhs;
@@ -255,23 +366,13 @@ namespace operators
                     RhsConst,
                     std::add_const_t<class_type>,
                     class_type>;
-
-                auto rhs_decl = ar.get_name();
-
-                std::string decl = string_concat(
-                    m_ret_decl,
-                    ' ',
-                    name,
-                    '(',
-                    RhsConst ? "const " : "",
-                    rhs_decl,
-                    RhsConst ? "&in" : "&",
-                    ')',
-                    LhsConst ? "const" : ""
-                );
-
                 ar.method(
-                    decl,
+                    gen_name<true, true, RhsConst>(
+                        m_ret_decl,
+                        "opAdd",
+                        ar.get_name(),
+                        LhsConst
+                    ),
                     [](this_arg_type& lhs, rhs_arg_type& rhs) -> Return
                     {
                         return lhs + rhs;
@@ -285,26 +386,13 @@ namespace operators
             std::string_view m_ret_decl;
         };
 
-        template <typename Return>
-        requires(has_static_name<std::remove_cvref_t<Return>>)
-        [[nodiscard]]
-        return_proxy<Return> return_() const
-        {
-            return *this;
-        }
-
-        template <typename Return>
-        [[nodiscard]]
-        return_proxy_with_decl<Return> return_(std::string_view ret_decl) const
-        {
-            return {*this, ret_decl};
-        }
+        ASBIND20_OPERATOR_RETURN_PROXY_FUNC(opAdd)
     };
 
     template <bool LhsConst, typename Rhs, bool AutoDecl>
     class opAdd<this_placeholder<LhsConst>, param_placeholder<Rhs, AutoDecl>> :
         private param_placeholder<Rhs, AutoDecl>,
-        public binary_operator<this_type_t, Rhs>
+        public binary_operator
     {
         using param_type = param_placeholder<Rhs, AutoDecl>;
 
@@ -314,11 +402,6 @@ namespace operators
         opAdd(const param_type& param)
             : param_type(param) {}
 
-        const opAdd* operator->() const noexcept
-        {
-            return this;
-        }
-
         template <typename Return>
         class return_proxy
         {
@@ -334,21 +417,13 @@ namespace operators
                     LhsConst,
                     std::add_const_t<class_type>,
                     class_type>;
-
-                auto rhs_decl = m_proxy->param_type::get_decl();
-
-                std::string decl = string_concat(
-                    detail::get_return_decl<Return>(ar),
-                    ' ',
-                    name,
-                    '(',
-                    rhs_decl,
-                    ')',
-                    LhsConst ? "const" : ""
-                );
-
                 ar.method(
-                    decl,
+                    gen_name_for<AutoDecl, Rhs>(
+                        detail::get_return_decl<Return>(ar),
+                        "opAdd",
+                        m_proxy->param_type::get_decl(),
+                        LhsConst
+                    ),
                     [](this_arg_type& lhs, Rhs rhs) -> Return
                     {
                         return lhs + rhs;
@@ -376,21 +451,13 @@ namespace operators
                     LhsConst,
                     std::add_const_t<class_type>,
                     class_type>;
-
-                auto rhs_decl = m_proxy->param_type::get_decl();
-
-                std::string decl = string_concat(
-                    m_ret_decl,
-                    ' ',
-                    name,
-                    '(',
-                    rhs_decl,
-                    ')',
-                    LhsConst ? "const" : ""
-                );
-
                 ar.method(
-                    decl,
+                    gen_name_for<AutoDecl, Rhs>(
+                        m_ret_decl,
+                        "opAdd",
+                        m_proxy->param_type::get_decl(),
+                        LhsConst
+                    ),
                     [](this_arg_type& lhs, Rhs rhs) -> Return
                     {
                         return lhs + rhs;
@@ -404,26 +471,13 @@ namespace operators
             std::string_view m_ret_decl;
         };
 
-        template <typename Return>
-        requires(has_static_name<std::remove_cvref_t<Return>>)
-        [[nodiscard]]
-        return_proxy<Return> return_() const
-        {
-            return *this;
-        }
-
-        template <typename Return>
-        [[nodiscard]]
-        return_proxy_with_decl<Return> return_(std::string_view ret_decl) const
-        {
-            return {*this, ret_decl};
-        }
+        ASBIND20_OPERATOR_RETURN_PROXY_FUNC(opAdd)
     };
 
     template <typename Lhs, bool AutoDecl, bool RhsConst>
     class opAdd<param_placeholder<Lhs, AutoDecl>, this_placeholder<RhsConst>> :
         private param_placeholder<Lhs, AutoDecl>,
-        public binary_operator<this_type_t, Lhs>
+        public binary_operator
     {
         using param_type = param_placeholder<Lhs, AutoDecl>;
 
@@ -433,11 +487,6 @@ namespace operators
         opAdd(const param_type& param)
             : param_type(param) {}
 
-        const opAdd* operator->() const noexcept
-        {
-            return this;
-        }
-
         template <typename Return>
         class return_proxy
         {
@@ -453,21 +502,13 @@ namespace operators
                     RhsConst,
                     std::add_const_t<class_type>,
                     class_type>;
-
-                auto lhs_decl = m_proxy->param_type::get_decl();
-
-                std::string decl = string_concat(
-                    detail::get_return_decl<Return>(ar),
-                    ' ',
-                    name,
-                    '(',
-                    lhs_decl,
-                    ')',
-                    RhsConst ? "const" : ""
-                );
-
                 ar.method(
-                    decl,
+                    gen_name_for<AutoDecl, Lhs>(
+                        detail::get_return_decl<Return>(ar),
+                        "opAdd_r",
+                        m_proxy->param_type::get_decl(),
+                        RhsConst
+                    ),
                     [](Lhs lhs, this_arg_type& rhs) -> Return
                     {
                         return lhs + rhs;
@@ -495,21 +536,13 @@ namespace operators
                     RhsConst,
                     std::add_const_t<class_type>,
                     class_type>;
-
-                auto lhs_decl = m_proxy->param_type::get_decl();
-
-                std::string decl = string_concat(
-                    m_ret_decl,
-                    ' ',
-                    name,
-                    '(',
-                    lhs_decl,
-                    ')',
-                    RhsConst ? "const" : ""
-                );
-
                 ar.method(
-                    decl,
+                    gen_name_for<AutoDecl, Lhs>(
+                        m_ret_decl,
+                        "opAdd_r",
+                        m_proxy->param_type::get_decl(),
+                        RhsConst
+                    ),
                     [](Lhs lhs, this_arg_type& rhs) -> Return
                     {
                         return lhs + rhs;
@@ -523,20 +556,7 @@ namespace operators
             std::string_view m_ret_decl;
         };
 
-        template <typename Return>
-        requires(has_static_name<std::remove_cvref_t<Return>>)
-        [[nodiscard]]
-        return_proxy<Return> return_() const
-        {
-            return *this;
-        }
-
-        template <typename Return>
-        [[nodiscard]]
-        return_proxy_with_decl<Return> return_(std::string_view ret_decl) const
-        {
-            return {*this, ret_decl};
-        }
+        ASBIND20_OPERATOR_RETURN_PROXY_FUNC(opAdd)
     };
 } // namespace operators
 
@@ -560,6 +580,9 @@ constexpr auto operator+(const param_placeholder<Lhs, AutoDecl>& lhs, this_place
 {
     return {lhs};
 }
+
+#undef ASBIND20_OPERATOR_RETURN_PROXY_FUNC
+
 } // namespace asbind20
 
 #endif
