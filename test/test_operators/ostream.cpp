@@ -3,6 +3,14 @@
 #include <asbind20/operators.hpp>
 #include <iostream>
 
+#if defined(__GNUC__)
+#    if __GNUC__ >= 12 && __GNUC__ < 13 // GCC 12 has some problems
+#        define ASBIND20_TEST_NO_OSTREAM
+#    endif
+#endif
+
+#ifndef ASBIND20_TEST_NO_OSTREAM
+
 namespace test_operators
 {
 template <bool UseGeneric>
@@ -95,3 +103,5 @@ TEST(test_operators, ostream_generic)
     test_operators::register_ostream<true>(std::cout, engine);
     test_operators::run_ostream_test_script(engine);
 }
+
+#endif
