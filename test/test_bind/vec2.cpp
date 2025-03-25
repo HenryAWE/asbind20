@@ -1,6 +1,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <shared_test_lib.hpp>
+#include <asbind20/operators.hpp>
 #include <asbind20/ext/stdstring.hpp>
 #include <asbind20/ext/assert.hpp>
 
@@ -136,10 +137,8 @@ void register_vec2(asIScriptEngine* engine)
         .opEquals()
         .opAdd()
         .opNeg()
-        .method(
-            "float opMul(const vec2<float>&in) const",
-            [](const vec2& lhs, const vec2& rhs) -> float
-            { return lhs * rhs; }
+        .use(
+            (const_this * const_this)->return_<float>()
         )
         .method("float& opIndex(uint)", &vec2_opIndex)
         .method("const float& opIndex(uint) const", &vec2_opIndex)

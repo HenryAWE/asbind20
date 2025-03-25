@@ -2,7 +2,7 @@
 #include <asbind20/operators.hpp>
 #include <asbind20/ext/stdstring.hpp>
 
-namespace test_bind
+namespace test_operators
 {
 class my_pair2i
 {
@@ -208,7 +208,7 @@ static void run_pair2i_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engin
         EXPECT_EQ(result.value(), -3);
     }
 }
-} // namespace test_bind
+} // namespace test_operators
 
 using std::string;
 
@@ -223,7 +223,7 @@ TEST(test_operators, my_pair2i_native)
     asbind_test::setup_message_callback(engine, true);
     ext::register_std_string(engine);
 
-    value_class<test_bind::my_pair2i>(
+    value_class<test_operators::my_pair2i>(
         engine,
         "pair2i",
         AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_ALLINTS
@@ -240,7 +240,7 @@ TEST(test_operators, my_pair2i_native)
         .use((const_this + param<const string&>("const string&in"))->return_<string>("string"))
         .use((param<const string&>("const string&in") + const_this)->return_<string>("string"));
 
-    test_bind::run_pair2i_test_script(engine);
+    test_operators::run_pair2i_test_script(engine);
 }
 
 TEST(test_operators, my_pair2i_generic)
@@ -251,7 +251,7 @@ TEST(test_operators, my_pair2i_generic)
     asbind_test::setup_message_callback(engine, true);
     ext::register_std_string(engine);
 
-    value_class<test_bind::my_pair2i, true>(engine, "pair2i")
+    value_class<test_operators::my_pair2i, true>(engine, "pair2i")
         .behaviours_by_traits()
         .list_constructor<int>("int,int", use_policy<policies::apply_to<2>>)
         .use((-_this)->return_<int>())
@@ -264,7 +264,7 @@ TEST(test_operators, my_pair2i_generic)
         .use((const_this + param<const string&>("const string&in"))->return_<string>("string"))
         .use((param<const string&>("const string&in") + const_this)->return_<string>("string"));
 
-    test_bind::run_pair2i_test_script(engine);
+    test_operators::run_pair2i_test_script(engine);
 }
 
 TEST(test_operators, my_pair2i_native_with_decl)
@@ -278,7 +278,7 @@ TEST(test_operators, my_pair2i_native_with_decl)
     asbind_test::setup_message_callback(engine, true);
     ext::register_std_string(engine);
 
-    value_class<test_bind::my_pair2i>(engine, "pair2i")
+    value_class<test_operators::my_pair2i>(engine, "pair2i")
         .behaviours_by_traits()
         .list_constructor<int>("int,int", use_policy<policies::apply_to<2>>)
         .use((-_this)->return_<int>("int"))
@@ -291,7 +291,7 @@ TEST(test_operators, my_pair2i_native_with_decl)
         .use((const_this + param<const string&>("const string&in"))->return_<string>("string"))
         .use((param<const string&>("const string&in") + const_this)->return_<string>("string"));
 
-    test_bind::run_pair2i_test_script(engine);
+    test_operators::run_pair2i_test_script(engine);
 }
 
 TEST(test_operators, my_pair2i_generic_with_decl)
@@ -302,7 +302,7 @@ TEST(test_operators, my_pair2i_generic_with_decl)
     asbind_test::setup_message_callback(engine, true);
     ext::register_std_string(engine);
 
-    value_class<test_bind::my_pair2i, true>(engine, "pair2i")
+    value_class<test_operators::my_pair2i, true>(engine, "pair2i")
         .behaviours_by_traits()
         .list_constructor<int>("int,int", use_policy<policies::apply_to<2>>)
         .use((-_this)->return_<int>("int"))
@@ -315,5 +315,5 @@ TEST(test_operators, my_pair2i_generic_with_decl)
         .use((const_this + param<const string&>("const string&in"))->return_<string>("string"))
         .use((param<const string&>("const string&in") + const_this)->return_<string>("string"));
 
-    test_bind::run_pair2i_test_script(engine);
+    test_operators::run_pair2i_test_script(engine);
 }
