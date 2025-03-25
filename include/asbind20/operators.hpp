@@ -160,11 +160,10 @@ namespace operators
         return this;                                                        \
     }                                                                       \
     template <typename Return>                                              \
-    requires(has_static_name<std::remove_cvref_t<Return>>)                  \
     [[nodiscard]]                                                           \
     return_proxy<Return> return_() const                                    \
     {                                                                       \
-        return *this;                                                       \
+        return {*this};                                                     \
     }                                                                       \
     template <typename Return>                                              \
     [[nodiscard]]                                                           \
@@ -244,7 +243,6 @@ namespace operators
                     ThisConst,                                                      \
                     std::add_const_t<class_type>,                                   \
                     class_type>;                                                    \
-                                                                                    \
                 ar.method(                                                          \
                     gen_name(                                                       \
                         m_ret_decl,                                                 \

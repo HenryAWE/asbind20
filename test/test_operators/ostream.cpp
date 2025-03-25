@@ -26,9 +26,9 @@ void register_ostream(std::ostream& os, AS_NAMESPACE_QUALIFIER asIScriptEngine* 
         "ostream",
         AS_NAMESPACE_QUALIFIER asOBJ_NOCOUNT
     )
-        .use((_this << param<bool>)->return_<ostream&>("ostream&"))
-        .use((_this << param<int>)->return_<ostream&>("ostream&"))
-        .use((_this << param<float>)->return_<ostream&>("ostream&"));
+        .use((_this << param<bool>)->return_<ostream&>())
+        .use((_this << param<int>)->return_<ostream&>())
+        .use((_this << param<float>)->return_<ostream&>());
 
     global<UseGeneric>(engine)
         .function(
