@@ -25,6 +25,11 @@ public:
         return -2; // To distinguish with the previous one (non-const version)
     }
 
+    int operator~() const
+    {
+        return -3;
+    }
+
     std::string to_str() const
     {
         return asbind20::string_concat(
@@ -74,6 +79,16 @@ public:
         return tmp.first + tmp.second;
     }
 
+    int operator++(int) const
+    {
+        return *this + 1;
+    }
+
+    int operator++(int)
+    {
+        return *this + 2; // To distinguish with the previous one (const version)
+    }
+
     friend int operator*(const my_pair2i& lhs, const my_pair2i& rhs)
     {
         return lhs.first * rhs.first + lhs.second * rhs.second;
@@ -97,7 +112,9 @@ static void run_pair2i_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engin
         "string test3() { pair2i p = {1, 2}; return p + \"str\"; }\n"
         "string test4() { pair2i p = {1, 2}; return \"str\" + p; }"
         "int test5() { pair2i p1 = {1, 2}; pair2i p2 = {3, 4}; return p1 * p2; }\n"
-        "int test6() { pair2i p = {1, 2}; return -p; }"
+        "int test6() { pair2i p = {1, 2}; return -p; }\n"
+        "int test7() { pair2i p = {1, 2}; return p++; }\n"
+        "int test8() { pair2i p = {1, 2}; return ~p; }"
     );
     ASSERT_GE(m->Build(), 0);
 
@@ -170,6 +187,26 @@ static void run_pair2i_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engin
 
         EXPECT_EQ(result.value(), -1);
     }
+
+    {
+        auto* f = m->GetFunctionByName("test7");
+        ASSERT_TRUE(f);
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<int>(ctx, f);
+        ASSERT_TRUE(asbind_test::result_has_value(result));
+
+        EXPECT_EQ(result.value(), 5);
+    }
+
+    {
+        auto* f = m->GetFunctionByName("test8");
+        ASSERT_TRUE(f);
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<int>(ctx, f);
+        ASSERT_TRUE(asbind_test::result_has_value(result));
+
+        EXPECT_EQ(result.value(), -3);
+    }
 }
 } // namespace test_bind
 
@@ -194,6 +231,8 @@ TEST(test_operators, my_pair2i_native)
         .behaviours_by_traits()
         .list_constructor<int>("int,int", use_policy<policies::apply_to<2>>)
         .use((-_this)->return_<int>())
+        .use((~const_this)->return_<int>())
+        .use((const_this++)->return_<int>())
         .use((const_this + param<int>)->return_<int>())
         .use((param<int> + const_this)->return_<int>())
         .use((const_this + const_this)->return_<int>())
@@ -216,6 +255,8 @@ TEST(test_operators, my_pair2i_generic)
         .behaviours_by_traits()
         .list_constructor<int>("int,int", use_policy<policies::apply_to<2>>)
         .use((-_this)->return_<int>())
+        .use((~const_this)->return_<int>())
+        .use((const_this++)->return_<int>())
         .use((const_this + param<int>)->return_<int>())
         .use((param<int> + const_this)->return_<int>())
         .use((const_this + const_this)->return_<int>())
@@ -241,6 +282,8 @@ TEST(test_operators, my_pair2i_native_with_decl)
         .behaviours_by_traits()
         .list_constructor<int>("int,int", use_policy<policies::apply_to<2>>)
         .use((-_this)->return_<int>("int"))
+        .use((~const_this)->return_<int>("int"))
+        .use((const_this++)->return_<int>("int"))
         .use((const_this + param<int>("int"))->return_<int>("int"))
         .use((param<int>("int") + const_this)->return_<int>("int"))
         .use((const_this + const_this)->return_<int>("int"))
@@ -263,6 +306,8 @@ TEST(test_operators, my_pair2i_generic_with_decl)
         .behaviours_by_traits()
         .list_constructor<int>("int,int", use_policy<policies::apply_to<2>>)
         .use((-_this)->return_<int>("int"))
+        .use((~const_this)->return_<int>("int"))
+        .use((const_this++)->return_<int>("int"))
         .use((const_this + param<int>("int"))->return_<int>("int"))
         .use((param<int>("int") + const_this)->return_<int>("int"))
         .use((const_this + const_this)->return_<int>("int"))

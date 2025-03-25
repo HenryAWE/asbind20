@@ -194,81 +194,158 @@ namespace operators
         }
     };
 
-    template <bool ThisConst>
-    class opNeg : public unary_operator
-    {
-    public:
-        template <typename Return>
-        class return_proxy
-        {
-        public:
-            return_proxy(const opNeg& proxy)
-                : m_proxy(&proxy) {}
-
-            template <typename RegisterHelper>
-            void operator()(RegisterHelper& ar) const
-            {
-                using class_type = typename RegisterHelper::class_type;
-                using this_arg_type = std::conditional_t<
-                    ThisConst,
-                    std::add_const_t<class_type>,
-                    class_type>;
-
-                ar.method(
-                    gen_name(
-                        detail::get_return_decl<Return>(ar),
-                        "opNeg",
-                        ThisConst
-                    ),
-                    [](this_arg_type& this_) -> Return
-                    {
-                        return -std::move(this_);
-                    },
-                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
-                );
-            }
-
-        private:
-            const opNeg* m_proxy;
-        };
-
-        template <typename Return>
-        class return_proxy_with_decl
-        {
-        public:
-            return_proxy_with_decl(const opNeg& proxy, std::string_view ret_decl)
-                : m_proxy(&proxy), m_ret_decl(ret_decl) {}
-
-            template <typename RegisterHelper>
-            void operator()(RegisterHelper& ar) const
-            {
-                using class_type = typename RegisterHelper::class_type;
-                using this_arg_type = std::conditional_t<
-                    ThisConst,
-                    std::add_const_t<class_type>,
-                    class_type>;
-
-                ar.method(
-                    gen_name(
-                        m_ret_decl,
-                        "opNeg",
-                        ThisConst
-                    ),
-                    [](this_arg_type& this_) -> Return
-                    {
-                        return -std::move(this_);
-                    },
-                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
-                );
-            }
-
-        private:
-            const opNeg* m_proxy;
-            std::string_view m_ret_decl;
-        };
-
-        ASBIND20_OPERATOR_RETURN_PROXY_FUNC(opNeg)
+#define ASBIND20_PREFIX_UNARY_OPERATOR(op_name, cpp_op)                             \
+    template <bool ThisConst>                                                       \
+    class op_name : public unary_operator                                           \
+    {                                                                               \
+    public:                                                                         \
+        template <typename Return>                                                  \
+        class return_proxy                                                          \
+        {                                                                           \
+        public:                                                                     \
+            return_proxy(const op_name& proxy)                                      \
+                : m_proxy(&proxy) {}                                                \
+            template <typename RegisterHelper>                                      \
+            void operator()(RegisterHelper& ar) const                               \
+            {                                                                       \
+                using class_type = typename RegisterHelper::class_type;             \
+                using this_arg_type = std::conditional_t<                           \
+                    ThisConst,                                                      \
+                    std::add_const_t<class_type>,                                   \
+                    class_type>;                                                    \
+                ar.method(                                                          \
+                    gen_name(                                                       \
+                        detail::get_return_decl<Return>(ar),                        \
+                        #op_name,                                                   \
+                        ThisConst                                                   \
+                    ),                                                              \
+                    [](this_arg_type& this_) -> Return                              \
+                    {                                                               \
+                        return cpp_op std::move(this_);                             \
+                    },                                                              \
+                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>          \
+                );                                                                  \
+            }                                                                       \
+                                                                                    \
+        private:                                                                    \
+            const op_name* m_proxy;                                                 \
+        };                                                                          \
+        template <typename Return>                                                  \
+        class return_proxy_with_decl                                                \
+        {                                                                           \
+        public:                                                                     \
+            return_proxy_with_decl(const op_name& proxy, std::string_view ret_decl) \
+                : m_proxy(&proxy), m_ret_decl(ret_decl) {}                          \
+            template <typename RegisterHelper>                                      \
+            void operator()(RegisterHelper& ar) const                               \
+            {                                                                       \
+                using class_type = typename RegisterHelper::class_type;             \
+                using this_arg_type = std::conditional_t<                           \
+                    ThisConst,                                                      \
+                    std::add_const_t<class_type>,                                   \
+                    class_type>;                                                    \
+                                                                                    \
+                ar.method(                                                          \
+                    gen_name(                                                       \
+                        m_ret_decl,                                                 \
+                        #op_name,                                                   \
+                        ThisConst                                                   \
+                    ),                                                              \
+                    [](this_arg_type& this_) -> Return                              \
+                    {                                                               \
+                        return cpp_op std::move(this_);                             \
+                    },                                                              \
+                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>          \
+                );                                                                  \
+            }                                                                       \
+                                                                                    \
+        private:                                                                    \
+            const op_name* m_proxy;                                                 \
+            std::string_view m_ret_decl;                                            \
+        };                                                                          \
+        ASBIND20_OPERATOR_RETURN_PROXY_FUNC(op_name)                                \
     };
+
+#define ASBIND20_SUFFIX_UNARY_OPERATOR(op_name, cpp_op)                             \
+    template <bool ThisConst>                                                       \
+    class op_name : public unary_operator                                           \
+    {                                                                               \
+    public:                                                                         \
+        template <typename Return>                                                  \
+        class return_proxy                                                          \
+        {                                                                           \
+        public:                                                                     \
+            return_proxy(const op_name& proxy)                                      \
+                : m_proxy(&proxy) {}                                                \
+            template <typename RegisterHelper>                                      \
+            void operator()(RegisterHelper& ar) const                               \
+            {                                                                       \
+                using class_type = typename RegisterHelper::class_type;             \
+                using this_arg_type = std::conditional_t<                           \
+                    ThisConst,                                                      \
+                    std::add_const_t<class_type>,                                   \
+                    class_type>;                                                    \
+                ar.method(                                                          \
+                    gen_name(                                                       \
+                        detail::get_return_decl<Return>(ar),                        \
+                        #op_name,                                                   \
+                        ThisConst                                                   \
+                    ),                                                              \
+                    [](this_arg_type& this_) -> Return                              \
+                    {                                                               \
+                        return std::move(this_) cpp_op;                             \
+                    },                                                              \
+                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>          \
+                );                                                                  \
+            }                                                                       \
+                                                                                    \
+        private:                                                                    \
+            const op_name* m_proxy;                                                 \
+        };                                                                          \
+        template <typename Return>                                                  \
+        class return_proxy_with_decl                                                \
+        {                                                                           \
+        public:                                                                     \
+            return_proxy_with_decl(const op_name& proxy, std::string_view ret_decl) \
+                : m_proxy(&proxy), m_ret_decl(ret_decl) {}                          \
+            template <typename RegisterHelper>                                      \
+            void operator()(RegisterHelper& ar) const                               \
+            {                                                                       \
+                using class_type = typename RegisterHelper::class_type;             \
+                using this_arg_type = std::conditional_t<                           \
+                    ThisConst,                                                      \
+                    std::add_const_t<class_type>,                                   \
+                    class_type>;                                                    \
+                                                                                    \
+                ar.method(                                                          \
+                    gen_name(                                                       \
+                        m_ret_decl,                                                 \
+                        #op_name,                                                   \
+                        ThisConst                                                   \
+                    ),                                                              \
+                    [](this_arg_type& this_) -> Return                              \
+                    {                                                               \
+                        return std::move(this_) cpp_op;                             \
+                    },                                                              \
+                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>          \
+                );                                                                  \
+            }                                                                       \
+                                                                                    \
+        private:                                                                    \
+            const op_name* m_proxy;                                                 \
+            std::string_view m_ret_decl;                                            \
+        };                                                                          \
+        ASBIND20_OPERATOR_RETURN_PROXY_FUNC(op_name)                                \
+    };
+
+    ASBIND20_PREFIX_UNARY_OPERATOR(opNeg, -);
+    ASBIND20_PREFIX_UNARY_OPERATOR(opCom, ~);
+    ASBIND20_PREFIX_UNARY_OPERATOR(opPreInc, ++);
+    ASBIND20_PREFIX_UNARY_OPERATOR(opPreDec, --);
+    ASBIND20_SUFFIX_UNARY_OPERATOR(opPostInc, ++);
+    ASBIND20_SUFFIX_UNARY_OPERATOR(opPostDec, --);
+
+#undef ASBIND20_PREFIX_UNARY_OPERATOR
 
     class binary_operator
     {
@@ -646,12 +723,31 @@ namespace operators
 #undef ASBIND20_BINARY_OPERATOR_HELPER
 } // namespace operators
 
-template <bool ThisConst>
-constexpr auto operator-(this_placeholder<ThisConst>)
-    -> operators::opNeg<ThisConst>
-{
-    return {};
-}
+#define ASBIND20_PREFIX_UNARY_OPERATOR_OVERLOAD(op_name, cpp_op) \
+    template <bool ThisConst>                                    \
+    constexpr auto operator cpp_op(this_placeholder<ThisConst>)  \
+        ->operators::op_name<ThisConst>                          \
+    {                                                            \
+        return {};                                               \
+    }
+
+#define ASBIND20_SUFFIX_UNARY_OPERATOR_OVERLOAD(op_name, cpp_op)     \
+    template <bool ThisConst>                                        \
+    constexpr auto operator cpp_op(this_placeholder<ThisConst>, int) \
+        ->operators::op_name<ThisConst>                              \
+    {                                                                \
+        return {};                                                   \
+    }
+
+ASBIND20_PREFIX_UNARY_OPERATOR_OVERLOAD(opNeg, -);
+ASBIND20_PREFIX_UNARY_OPERATOR_OVERLOAD(opCom, ~);
+ASBIND20_PREFIX_UNARY_OPERATOR_OVERLOAD(opPreInc, ++);
+ASBIND20_PREFIX_UNARY_OPERATOR_OVERLOAD(opPreDec, --);
+ASBIND20_SUFFIX_UNARY_OPERATOR_OVERLOAD(opPostInc, ++);
+ASBIND20_SUFFIX_UNARY_OPERATOR_OVERLOAD(opPostDec, --);
+
+#undef ASBIND20_PREFIX_UNARY_OPERATOR_OVERLOAD
+#undef ASBIND20_SUFFIX_UNARY_OPERATOR_OVERLOAD
 
 #define ASBIND20_BINARY_OPERATOR_OVERLOAD(op_name, cpp_op)                                                  \
     template <bool LhsConst, bool RhsConst>                                                                 \
