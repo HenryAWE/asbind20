@@ -44,6 +44,11 @@ public:
         return *this;
     }
 
+    int operator-=(int val) const
+    {
+        return -val;
+    }
+
     friend int operator+(const my_pair2i& lhs, int val)
     {
         my_pair2i tmp = lhs;
@@ -114,7 +119,9 @@ static void run_pair2i_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engin
         "int test5() { pair2i p1 = {1, 2}; pair2i p2 = {3, 4}; return p1 * p2; }\n"
         "int test6() { pair2i p = {1, 2}; return -p; }\n"
         "int test7() { pair2i p = {1, 2}; return p++; }\n"
-        "int test8() { pair2i p = {1, 2}; return ~p; }"
+        "int test8() { pair2i p = {1, 2}; return ~p; }\n"
+        "pair2i test9() { pair2i p = {1, 2}; return p += 1; }\n"
+        "int test10() { pair2i p = {1, 2}; return p -= -42; }"
     );
     ASSERT_GE(m->Build(), 0);
 
@@ -207,6 +214,27 @@ static void run_pair2i_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engin
 
         EXPECT_EQ(result.value(), -3);
     }
+
+    {
+        auto* f = m->GetFunctionByName("test9");
+        ASSERT_TRUE(f);
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<my_pair2i>(ctx, f);
+        ASSERT_TRUE(asbind_test::result_has_value(result));
+
+        EXPECT_EQ(result.value().first, 2);
+        EXPECT_EQ(result.value().second, 3);
+    }
+
+    {
+        auto* f = m->GetFunctionByName("test10");
+        ASSERT_TRUE(f);
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<int>(ctx, f);
+        ASSERT_TRUE(asbind_test::result_has_value(result));
+
+        EXPECT_EQ(result.value(), 42);
+    }
 }
 } // namespace test_operators
 
@@ -233,6 +261,8 @@ TEST(test_operators, my_pair2i_native)
         .use(-_this)
         .use(~const_this)
         .use(const_this++)
+        .use(_this += param<int>)
+        .use(_this -= param<int>)
         .use(const_this + param<int>)
         .use(param<int> + const_this)
         .use(const_this + const_this)
@@ -257,6 +287,8 @@ TEST(test_operators, my_pair2i_generic)
         .use(-_this)
         .use(~const_this)
         .use(const_this++)
+        .use(_this += param<int>)
+        .use(_this -= param<int>)
         .use(const_this + param<int>)
         .use(param<int> + const_this)
         .use(const_this + const_this)
@@ -284,6 +316,8 @@ TEST(test_operators, my_pair2i_native_with_decl)
         .use((-_this)->return_<int>("int"))
         .use((~const_this)->return_<int>("int"))
         .use((const_this++)->return_<int>("int"))
+        .use((_this += param<int>)->return_<test_operators::my_pair2i&>("pair2i&"))
+        .use((_this -= param<int>)->return_<int>("int"))
         .use((const_this + param<int>("int"))->return_<int>("int"))
         .use((param<int>("int") + const_this)->return_<int>("int"))
         .use((const_this + const_this)->return_<int>("int"))
@@ -308,6 +342,8 @@ TEST(test_operators, my_pair2i_generic_with_decl)
         .use((-_this)->return_<int>("int"))
         .use((~const_this)->return_<int>("int"))
         .use((const_this++)->return_<int>("int"))
+        .use((_this += param<int>)->return_<test_operators::my_pair2i&>("pair2i&"))
+        .use((_this -= param<int>)->return_<int>("int"))
         .use((const_this + param<int>("int"))->return_<int>("int"))
         .use((param<int>("int") + const_this)->return_<int>("int"))
         .use((const_this + const_this)->return_<int>("int"))
