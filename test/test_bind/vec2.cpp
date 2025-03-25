@@ -29,6 +29,13 @@ void test2()
     assert(v1 == vec2<float>(1, 0));
     assert(string(v1) == "(1, 0)");
 }
+
+void test3()
+{
+    vec2<float> v1 = {1, 0};
+    v1 += 1.0f;
+    assert(string(v1) == "(2, 1)");
+}
 )AngelScript";
 
 namespace test_bind
@@ -38,6 +45,9 @@ class vec2
 public:
     vec2() noexcept
         : elements{0, 0} {}
+
+    vec2(float scalar) noexcept
+        : elements{scalar, scalar} {}
 
     vec2(float x, float y) noexcept
         : elements{x, y} {}
@@ -55,6 +65,16 @@ public:
     friend vec2 operator+(const vec2& lhs, const vec2& rhs)
     {
         return vec2{lhs[0] + rhs[0], lhs[1] + rhs[1]};
+    }
+
+    vec2& operator+=(const vec2& rhs)
+    {
+        return *this = *this + rhs;
+    }
+
+    vec2& operator+=(float scalar)
+    {
+        return *this = *this + vec2(scalar);
     }
 
     friend vec2 operator-(const vec2& lhs, const vec2& rhs)
@@ -133,13 +153,14 @@ void register_vec2(asIScriptEngine* engine)
     )
         .behaviours_by_traits(vec2_type_flags | AS_NAMESPACE_QUALIFIER asGetTypeTraits<vec2>())
         .constructor<float, float>("float,float")
-        .list_constructor<float, policies::apply_to<2>>("float,float")
+        .list_constructor<float>("float,float", use_policy<policies::apply_to<2>>)
         .opEquals()
         .opAdd()
+        .opSub()
         .opNeg()
-        .use(
-            (const_this * const_this)->return_<float>()
-        )
+        .use(const_this * const_this)
+        .opAddAssign()
+        .use(_this += param<float>)
         .method("float& opIndex(uint)", &vec2_opIndex)
         .method("const float& opIndex(uint) const", &vec2_opIndex)
         .opConv<std::string>("string")
@@ -161,15 +182,14 @@ void register_vec2(asbind20::use_generic_t, AS_NAMESPACE_QUALIFIER asIScriptEngi
     )
         .behaviours_by_traits(vec2_type_flags | AS_NAMESPACE_QUALIFIER asGetTypeTraits<vec2>())
         .constructor<float, float>("float,float")
-        .list_constructor<float, policies::apply_to<2>>("float,float")
+        .list_constructor<float>("float,float", use_policy<policies::apply_to<2>>)
         .opEquals()
         .opAdd()
+        .opSub()
         .opNeg()
-        .method(
-            "float opMul(const vec2<float>&in) const",
-            [](const vec2& lhs, const vec2& rhs) -> float
-            { return lhs * rhs; }
-        )
+        .use(const_this * const_this)
+        .opAddAssign()
+        .use(_this += param<float>)
         .method("float& opIndex(uint)", fp<&vec2_opIndex>)
         .method("const float& opIndex(uint) const", fp<&vec2_opIndex>)
         .opConv<std::string>("string")
@@ -207,7 +227,7 @@ static void run_vec2_test_script(asIScriptEngine* engine)
     m->AddScriptSection("vec2_test_script.as", vec2_test_script);
     ASSERT_GE(m->Build(), 0);
 
-    for(int idx : {0, 1, 2})
+    for(int idx : {0, 1, 2, 3})
     {
         auto f = m->GetFunctionByDecl(
             asbind20::string_concat("void test", std::to_string(idx), "()").c_str()
