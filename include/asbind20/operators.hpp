@@ -154,16 +154,125 @@ namespace detail
 
 namespace operators
 {
-    template <typename T>
-    concept proxy = requires() {
-        typename T::operator_proxy_tag;
+#define ASBIND20_OPERATOR_RETURN_PROXY_FUNC(op_name)                        \
+    const op_name* operator->() const noexcept                              \
+    {                                                                       \
+        return this;                                                        \
+    }                                                                       \
+    template <typename Return>                                              \
+    requires(has_static_name<std::remove_cvref_t<Return>>)                  \
+    [[nodiscard]]                                                           \
+    return_proxy<Return> return_() const                                    \
+    {                                                                       \
+        return *this;                                                       \
+    }                                                                       \
+    template <typename Return>                                              \
+    [[nodiscard]]                                                           \
+    return_proxy_with_decl<Return> return_(std::string_view ret_decl) const \
+    {                                                                       \
+        return {*this, ret_decl};                                           \
+    }
+
+    class unary_operator
+    {
+    public:
+        static constexpr std::size_t operand_count = 1;
+
+    protected:
+        constexpr static std::string gen_name(
+            std::string_view ret_decl,
+            std::string_view op_name,
+            bool is_const
+        )
+        {
+            return string_concat(
+                ret_decl,
+                ' ',
+                op_name,
+                is_const ? "()const" : "()"
+            );
+        }
+    };
+
+    template <bool ThisConst>
+    class opNeg : public unary_operator
+    {
+    public:
+        template <typename Return>
+        class return_proxy
+        {
+        public:
+            return_proxy(const opNeg& proxy)
+                : m_proxy(&proxy) {}
+
+            template <typename RegisterHelper>
+            void operator()(RegisterHelper& ar) const
+            {
+                using class_type = typename RegisterHelper::class_type;
+                using this_arg_type = std::conditional_t<
+                    ThisConst,
+                    std::add_const_t<class_type>,
+                    class_type>;
+
+                ar.method(
+                    gen_name(
+                        detail::get_return_decl<Return>(ar),
+                        "opNeg",
+                        ThisConst
+                    ),
+                    [](this_arg_type& this_) -> Return
+                    {
+                        return -std::move(this_);
+                    },
+                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+                );
+            }
+
+        private:
+            const opNeg* m_proxy;
+        };
+
+        template <typename Return>
+        class return_proxy_with_decl
+        {
+        public:
+            return_proxy_with_decl(const opNeg& proxy, std::string_view ret_decl)
+                : m_proxy(&proxy), m_ret_decl(ret_decl) {}
+
+            template <typename RegisterHelper>
+            void operator()(RegisterHelper& ar) const
+            {
+                using class_type = typename RegisterHelper::class_type;
+                using this_arg_type = std::conditional_t<
+                    ThisConst,
+                    std::add_const_t<class_type>,
+                    class_type>;
+
+                ar.method(
+                    gen_name(
+                        m_ret_decl,
+                        "opNeg",
+                        ThisConst
+                    ),
+                    [](this_arg_type& this_) -> Return
+                    {
+                        return -std::move(this_);
+                    },
+                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+                );
+            }
+
+        private:
+            const opNeg* m_proxy;
+            std::string_view m_ret_decl;
+        };
+
+        ASBIND20_OPERATOR_RETURN_PROXY_FUNC(opNeg)
     };
 
     class binary_operator
     {
     public:
-        using operator_proxy_tag = void;
-
         static constexpr std::size_t operand_count = 2;
 
     protected:
@@ -279,29 +388,7 @@ namespace operators
             }
         }
     };
-} // namespace operators
 
-#define ASBIND20_BINARY_OPERATOR_RETURN_PROXY_FUNC(op_name)                 \
-    const op_name* operator->() const noexcept                              \
-    {                                                                       \
-        return this;                                                        \
-    }                                                                       \
-    template <typename Return>                                              \
-    requires(has_static_name<std::remove_cvref_t<Return>>)                  \
-    [[nodiscard]]                                                           \
-    return_proxy<Return> return_() const                                    \
-    {                                                                       \
-        return *this;                                                       \
-    }                                                                       \
-    template <typename Return>                                              \
-    [[nodiscard]]                                                           \
-    return_proxy_with_decl<Return> return_(std::string_view ret_decl) const \
-    {                                                                       \
-        return {*this, ret_decl};                                           \
-    }
-
-namespace operators
-{
 #define ASBIND20_BINARY_OPERATOR_HELPER(op_name, cpp_op)                            \
     template <typename Lhs, typename Rhs>                                           \
     class op_name;                                                                  \
@@ -384,7 +471,7 @@ namespace operators
             const op_name* m_proxy;                                                 \
             std::string_view m_ret_decl;                                            \
         };                                                                          \
-        ASBIND20_BINARY_OPERATOR_RETURN_PROXY_FUNC(op_name)                         \
+        ASBIND20_OPERATOR_RETURN_PROXY_FUNC(op_name)                                \
     };                                                                              \
                                                                                     \
     template <bool LhsConst, typename Rhs, bool AutoDecl>                           \
@@ -462,7 +549,7 @@ namespace operators
             const op_name* m_proxy;                                                 \
             std::string_view m_ret_decl;                                            \
         };                                                                          \
-        ASBIND20_BINARY_OPERATOR_RETURN_PROXY_FUNC(op_name)                         \
+        ASBIND20_OPERATOR_RETURN_PROXY_FUNC(op_name)                                \
     };                                                                              \
                                                                                     \
     template <typename Lhs, bool AutoDecl, bool RhsConst>                           \
@@ -540,7 +627,7 @@ namespace operators
             const op_name* m_proxy;                                                 \
             std::string_view m_ret_decl;                                            \
         };                                                                          \
-        ASBIND20_BINARY_OPERATOR_RETURN_PROXY_FUNC(op_name)                         \
+        ASBIND20_OPERATOR_RETURN_PROXY_FUNC(op_name)                                \
     };
 
     // Skip opPow (**) and opUShr/l (>>>/<<<) because their C++ counterparts are not existed
@@ -555,9 +642,16 @@ namespace operators
     ASBIND20_BINARY_OPERATOR_HELPER(opShl, <<)
     ASBIND20_BINARY_OPERATOR_HELPER(opShr, >>)
 
-#undef ASBIND20_BINARY_OPERATOR_RETURN_PROXY_FUNC
+#undef ASBIND20_OPERATOR_RETURN_PROXY_FUNC
 #undef ASBIND20_BINARY_OPERATOR_HELPER
 } // namespace operators
+
+template <bool ThisConst>
+constexpr auto operator-(this_placeholder<ThisConst>)
+    -> operators::opNeg<ThisConst>
+{
+    return {};
+}
 
 #define ASBIND20_BINARY_OPERATOR_OVERLOAD(op_name, cpp_op)                                                  \
     template <bool LhsConst, bool RhsConst>                                                                 \

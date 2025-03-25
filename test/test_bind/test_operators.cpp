@@ -15,6 +15,16 @@ public:
 
     my_pair2i& operator=(const my_pair2i&) = default;
 
+    int operator-()
+    {
+        return -1;
+    }
+
+    int operator-() const
+    {
+        return -2; // To distinguish with the previous one (non-const version)
+    }
+
     std::string to_str() const
     {
         return asbind20::string_concat(
@@ -86,7 +96,8 @@ static void run_pair2i_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engin
         "int test2() { pair2i p1 = {1, 2}; pair2i p2 = {3, 4}; return p1 + p2; }\n"
         "string test3() { pair2i p = {1, 2}; return p + \"str\"; }\n"
         "string test4() { pair2i p = {1, 2}; return \"str\" + p; }"
-        "int test5() { pair2i p1 = {1, 2}; pair2i p2 = {3, 4}; return p1 * p2; }"
+        "int test5() { pair2i p1 = {1, 2}; pair2i p2 = {3, 4}; return p1 * p2; }\n"
+        "int test6() { pair2i p = {1, 2}; return -p; }"
     );
     ASSERT_GE(m->Build(), 0);
 
@@ -149,6 +160,16 @@ static void run_pair2i_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engin
 
         EXPECT_EQ(result.value(), 11);
     }
+
+    {
+        auto* f = m->GetFunctionByName("test6");
+        ASSERT_TRUE(f);
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<int>(ctx, f);
+        ASSERT_TRUE(asbind_test::result_has_value(result));
+
+        EXPECT_EQ(result.value(), -1);
+    }
 }
 } // namespace test_bind
 
@@ -172,6 +193,7 @@ TEST(test_operators, my_pair2i_native)
     )
         .behaviours_by_traits()
         .list_constructor<int>("int,int", use_policy<policies::apply_to<2>>)
+        .use((-_this)->return_<int>())
         .use((const_this + param<int>)->return_<int>())
         .use((param<int> + const_this)->return_<int>())
         .use((const_this + const_this)->return_<int>())
@@ -193,6 +215,7 @@ TEST(test_operators, my_pair2i_generic)
     value_class<test_bind::my_pair2i, true>(engine, "pair2i")
         .behaviours_by_traits()
         .list_constructor<int>("int,int", use_policy<policies::apply_to<2>>)
+        .use((-_this)->return_<int>())
         .use((const_this + param<int>)->return_<int>())
         .use((param<int> + const_this)->return_<int>())
         .use((const_this + const_this)->return_<int>())
@@ -217,6 +240,7 @@ TEST(test_operators, my_pair2i_native_with_decl)
     value_class<test_bind::my_pair2i>(engine, "pair2i")
         .behaviours_by_traits()
         .list_constructor<int>("int,int", use_policy<policies::apply_to<2>>)
+        .use((-_this)->return_<int>("int"))
         .use((const_this + param<int>("int"))->return_<int>("int"))
         .use((param<int>("int") + const_this)->return_<int>("int"))
         .use((const_this + const_this)->return_<int>("int"))
@@ -238,6 +262,7 @@ TEST(test_operators, my_pair2i_generic_with_decl)
     value_class<test_bind::my_pair2i, true>(engine, "pair2i")
         .behaviours_by_traits()
         .list_constructor<int>("int,int", use_policy<policies::apply_to<2>>)
+        .use((-_this)->return_<int>("int"))
         .use((const_this + param<int>("int"))->return_<int>("int"))
         .use((param<int>("int") + const_this)->return_<int>("int"))
         .use((const_this + const_this)->return_<int>("int"))
