@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <shared_test_lib.hpp>
 #include <asbind20/operators.hpp>
+#include <asbind20/ext/stdstring.hpp>
 #include <iostream>
 
 #if defined(__GNUC__)
@@ -26,9 +27,10 @@ void register_ostream(std::ostream& os, AS_NAMESPACE_QUALIFIER asIScriptEngine* 
         "ostream",
         AS_NAMESPACE_QUALIFIER asOBJ_NOCOUNT
     )
-        .use((_this << param<bool>)->return_<ostream&>())
-        .use((_this << param<int>)->return_<ostream&>())
-        .use((_this << param<float>)->return_<ostream&>());
+        .use(_this << param<bool>)
+        .use(_this << param<int>)
+        .use(_this << param<float>)
+        .use(_this << param<const std::string&>("const string&in"));
 
     global<UseGeneric>(engine)
         .function(
@@ -54,6 +56,7 @@ void run_ostream_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         "    newline(cout);"
         "    cout << 3.14f;"
         "    newline(cout);"
+        "    cout << \"hello\";"
         "}"
     );
     ASSERT_GE(m->Build(), 0);
@@ -75,6 +78,7 @@ void run_ostream_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         "true\n"
         "1013\n"
         "3.14\n"
+        "hello"
     );
 }
 } // namespace test_operators
@@ -88,6 +92,7 @@ TEST(test_operators, ostream_native)
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine, true);
+    ext::register_std_string(engine, true, false);
 
     test_operators::register_ostream<false>(std::cout, engine);
     test_operators::run_ostream_test_script(engine);
@@ -99,6 +104,7 @@ TEST(test_operators, ostream_generic)
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine, true);
+    ext::register_std_string(engine, true, true);
 
     test_operators::register_ostream<true>(std::cout, engine);
     test_operators::run_ostream_test_script(engine);
