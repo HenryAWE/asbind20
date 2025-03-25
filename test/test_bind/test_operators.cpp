@@ -86,6 +86,7 @@ static void run_pair2i_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engin
         "int test2() { pair2i p1 = {1, 2}; pair2i p2 = {3, 4}; return p1 + p2; }\n"
         "string test3() { pair2i p = {1, 2}; return p + \"str\"; }\n"
         "string test4() { pair2i p = {1, 2}; return \"str\" + p; }"
+        "int test5() { pair2i p1 = {1, 2}; pair2i p2 = {3, 4}; return p1 * p2; }"
     );
     ASSERT_GE(m->Build(), 0);
 
@@ -138,6 +139,16 @@ static void run_pair2i_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engin
 
         EXPECT_EQ(result.value(), "str: (1, 2)");
     }
+
+    {
+        auto* f = m->GetFunctionByName("test5");
+        ASSERT_TRUE(f);
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<int>(ctx, f);
+        ASSERT_TRUE(asbind_test::result_has_value(result));
+
+        EXPECT_EQ(result.value(), 11);
+    }
 }
 } // namespace test_bind
 
@@ -164,6 +175,7 @@ TEST(test_operators, my_pair2i_native)
         .use((const_this + param<int>)->return_<int>())
         .use((param<int> + const_this)->return_<int>())
         .use((const_this + const_this)->return_<int>())
+        .use((const_this * const_this)->return_<int>())
         .use((const_this + param<const string&>("const string&in"))->return_<string>("string"))
         .use((param<const string&>("const string&in") + const_this)->return_<string>("string"));
 
@@ -184,6 +196,7 @@ TEST(test_operators, my_pair2i_generic)
         .use((const_this + param<int>)->return_<int>())
         .use((param<int> + const_this)->return_<int>())
         .use((const_this + const_this)->return_<int>())
+        .use((const_this * const_this)->return_<int>())
         .use((const_this + param<const string&>("const string&in"))->return_<string>("string"))
         .use((param<const string&>("const string&in") + const_this)->return_<string>("string"));
 
@@ -207,6 +220,7 @@ TEST(test_operators, my_pair2i_native_with_decl)
         .use((const_this + param<int>("int"))->return_<int>("int"))
         .use((param<int>("int") + const_this)->return_<int>("int"))
         .use((const_this + const_this)->return_<int>("int"))
+        .use((const_this * const_this)->return_<int>("int"))
         .use((const_this + param<const string&>("const string&in"))->return_<string>("string"))
         .use((param<const string&>("const string&in") + const_this)->return_<string>("string"));
 
@@ -227,6 +241,7 @@ TEST(test_operators, my_pair2i_generic_with_decl)
         .use((const_this + param<int>("int"))->return_<int>("int"))
         .use((param<int>("int") + const_this)->return_<int>("int"))
         .use((const_this + const_this)->return_<int>("int"))
+        .use((const_this * const_this)->return_<int>("int"))
         .use((const_this + param<const string&>("const string&in"))->return_<string>("string"))
         .use((param<const string&>("const string&in") + const_this)->return_<string>("string"));
 
