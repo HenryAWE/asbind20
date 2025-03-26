@@ -3655,6 +3655,13 @@ private:
         return *this;                                                                        \
     }
 
+/**
+ * @brief Register helper for value class
+ *
+ * @tparam Class Class to be registered
+ * @tparam Template True if the class is a templated type
+ * @tparam ForceGeneric Force all registered methods and behaviors to use the generic calling convention
+ */
 template <typename Class, bool Template = false, bool ForceGeneric = false>
 class basic_value_class final : public class_register_helper_base<ForceGeneric>
 {

@@ -23,6 +23,8 @@ project(
     LANGUAGES CXX
 )
 
+set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+
 find_package(Threads REQUIRED)
 find_package(Angelscript 2.37.0 CONFIG REQUIRED)
 
@@ -32,6 +34,7 @@ add_library(asbind20 INTERFACE)
 add_library(asbind20::asbind20 ALIAS asbind20)
 
 option(asbind_build_ext "Build extensions" ON)
+option(asbind_build_doc "Build documentation" OFF)
 
 include(GNUInstallDirs)
 
@@ -57,6 +60,10 @@ endif()
 
 if(${asbind_build_ext})
     add_subdirectory(ext)
+endif()
+
+if(${asbind_build_doc})
+    add_subdirectory(doc)
 endif()
 
 target_include_directories(asbind20 INTERFACE
