@@ -1627,12 +1627,12 @@ inline void register_script_array(
         iterator_common(it);
         it
             .method("T& get_value() const property", fp<&iter_t::value>)
-            .use(const_this[param<difference_type>]->return_<void*>("T&"))
+            .use(const_this[param<difference_type>]->template return_<void*>("T&"))
             .template opImplConv<iter_t>("const_array_iterator<T>");
 
         iterator_common(cit);
         cit
-            .use(const_this[param<difference_type>]->return_<void*>("const T&"))
+            .use(const_this[param<difference_type>]->template return_<void*>("const T&"))
             .method("const T& get_value() const property", fp<&iter_t::value>);
 
         if(as_default)

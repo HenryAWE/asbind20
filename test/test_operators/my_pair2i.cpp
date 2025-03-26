@@ -280,6 +280,7 @@ using std::string;
 static const AS_NAMESPACE_QUALIFIER asQWORD pair2i_flags =
     AS_NAMESPACE_QUALIFIER asOBJ_POD |
     AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_ALLINTS |
+    AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_MORE_CONSTRUCTORS |
     AS_NAMESPACE_QUALIFIER asGetTypeTraits<test_operators::my_pair2i>();
 
 TEST(test_operators, my_pair2i_native)
