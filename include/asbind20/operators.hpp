@@ -473,6 +473,303 @@ namespace operators
     ASBIND20_ASSIGNMENT_OPERATOR_HELPER(opAssignShr, >>=)
 
 #undef ASBIND20_ASSIGNMENT_OPERATOR_HELPER
+
+    class index_operator
+    {
+    protected:
+        // The parameter needs to generate full declaration from a plain type name
+        template <bool ParamRef, bool ParamConst>
+        constexpr static std::string gen_name_for_auto_decl(
+            std::string_view ret_decl,
+            std::string_view param_name,
+            bool is_const
+        )
+        {
+            if constexpr(ParamConst && ParamRef)
+            {
+                return string_concat(
+                    ret_decl,
+                    " opIndex(const ",
+                    param_name,
+                    "&in)",
+                    is_const ? "const" : ""
+                );
+            }
+            else if(ParamRef)
+            {
+                return string_concat(
+                    ret_decl,
+                    " opIndex(",
+                    param_name,
+                    "&)",
+                    is_const ? "const" : ""
+                );
+            }
+            else
+            {
+                return string_concat(
+                    ret_decl,
+                    " opIndex(",
+                    param_name,
+                    ')',
+                    is_const ? "const" : ""
+                );
+            }
+        }
+
+        // User has already provided full declaration of the parameter
+        constexpr static std::string gen_name_for_user_decl(
+            std::string_view ret_decl,
+            std::string_view param_decl,
+            bool is_const
+        )
+        {
+            return string_concat(
+                ret_decl,
+                " opIndex(",
+                param_decl,
+                ')',
+                is_const ? "const" : ""
+            );
+        }
+
+        template <bool AutoDecl, bool ParamRef, bool ParamConst>
+        static constexpr std::string gen_name(
+            std::string_view ret_decl,
+            std::string_view param_decl_or_name,
+            bool is_const
+        )
+        {
+            if constexpr(AutoDecl)
+            {
+                return gen_name_for_auto_decl<ParamRef, ParamConst>(
+                    ret_decl, param_decl_or_name, is_const
+                );
+            }
+            else
+            {
+                return gen_name_for_user_decl(
+                    ret_decl, param_decl_or_name, is_const
+                );
+            }
+        }
+
+        template <bool AutoDecl, typename T>
+        static constexpr std::string gen_name_for(
+            std::string_view ret_decl,
+            std::string_view param_decl_or_name,
+            bool is_const
+        )
+        {
+            if constexpr(AutoDecl)
+            {
+                constexpr bool param_const =
+                    std::is_const_v<std::remove_reference_t<T>>;
+                return gen_name_for_auto_decl<std::is_reference_v<T>, param_const>(
+                    ret_decl, param_decl_or_name, is_const
+                );
+            }
+            else
+            {
+                return gen_name_for_user_decl(
+                    ret_decl, param_decl_or_name, is_const
+                );
+            }
+        }
+    };
+
+    template <bool ThisConst, typename Index>
+    class opIndex;
+
+    template <bool ThisConst, bool IndexConst>
+    class opIndex<ThisConst, this_placeholder<IndexConst>> : public index_operator
+    {
+    public:
+        template <typename Return>
+        class return_proxy
+        {
+        public:
+            return_proxy(const opIndex& proxy)
+                : m_proxy(&proxy) {}
+
+            template <typename RegisterHelper>
+            void operator()(RegisterHelper& ar) const
+            {
+                using class_type = typename RegisterHelper::class_type;
+                using this_arg_type = std::conditional_t<
+                    ThisConst,
+                    std::add_const_t<class_type>,
+                    class_type>;
+                using index_arg_type = std::conditional_t<
+                    IndexConst,
+                    std::add_const_t<class_type>,
+                    class_type>;
+                ar.method(
+                    gen_name_for_auto_decl<true, IndexConst>(
+                        detail::get_return_decl<Return>(ar),
+                        ar.get_name(),
+                        ThisConst
+                    ),
+                    [](this_arg_type& this_, index_arg_type& idx) -> Return
+                    {
+                        return this_[idx];
+                    },
+                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>
+                );
+            }
+
+        private:
+            const opIndex* m_proxy;
+        };
+
+        template <typename Return>
+        class return_proxy_with_decl
+        {
+        public:
+            return_proxy_with_decl(const opIndex& proxy, std::string_view ret_decl)
+                : m_proxy(&proxy), m_ret_decl(ret_decl) {}
+
+            template <typename RegisterHelper>
+            void operator()(RegisterHelper& ar) const
+            {
+                using class_type = typename RegisterHelper::class_type;
+                using this_arg_type = std::conditional_t<
+                    ThisConst,
+                    std::add_const_t<class_type>,
+                    class_type>;
+                using index_arg_type = std::conditional_t<
+                    IndexConst,
+                    std::add_const_t<class_type>,
+                    class_type>;
+                ar.method(
+                    gen_name_for_auto_decl<true, IndexConst>(
+                        m_ret_decl,
+                        ar.get_name(),
+                        ThisConst
+                    ),
+                    [](this_arg_type& this_, index_arg_type& idx) -> Return
+                    {
+                        return this_[idx];
+                    },
+                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>
+                );
+            }
+
+        private:
+            const opIndex* m_proxy;
+            std::string_view m_ret_decl;
+        };
+        ASBIND20_OPERATOR_RETURN_PROXY_FUNC(opIndex)
+
+        template <typename RegisterHelper>
+        void operator()(RegisterHelper& ar) const
+        {
+            using class_type = typename RegisterHelper::class_type;
+            using this_arg_type = std::conditional_t<
+                ThisConst,
+                std::add_const_t<class_type>,
+                class_type>;
+            using index_arg_type = std::conditional_t<
+                IndexConst,
+                std::add_const_t<class_type>,
+                class_type>;
+            using return_type = decltype(std::declval<this_arg_type&>()[std::declval<index_arg_type&>()]);
+            ar.use(this->return_<return_type>());
+        }
+    };
+
+    template <bool ThisConst, typename Index, bool AutoDecl>
+    class opIndex<ThisConst, param_placeholder<Index, AutoDecl>> :
+        private param_placeholder<Index, AutoDecl>,
+        public index_operator
+    {
+    public:
+        using param_type = param_placeholder<Index, AutoDecl>;
+
+    public:
+        opIndex(const param_type& param)
+            : param_type(param) {}
+
+        template <typename Return>
+        class return_proxy
+        {
+        public:
+            return_proxy(const opIndex& proxy)
+                : m_proxy(&proxy) {}
+
+            template <typename RegisterHelper>
+            void operator()(RegisterHelper& ar) const
+            {
+                using class_type = typename RegisterHelper::class_type;
+                using this_arg_type = std::conditional_t<
+                    ThisConst,
+                    std::add_const_t<class_type>,
+                    class_type>;
+                ar.method(
+                    gen_name_for<AutoDecl, Index>(
+                        detail::get_return_decl<Return>(ar),
+                        m_proxy->param_type::get_decl(),
+                        ThisConst
+                    ),
+                    [](this_arg_type& this_, Index idx) -> Return
+                    {
+                        return this_[idx];
+                    },
+                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>
+                );
+            }
+
+        private:
+            const opIndex* m_proxy;
+        };
+
+        template <typename Return>
+        class return_proxy_with_decl
+        {
+        public:
+            return_proxy_with_decl(const opIndex& proxy, std::string_view ret_decl)
+                : m_proxy(&proxy), m_ret_decl(ret_decl) {}
+
+            template <typename RegisterHelper>
+            void operator()(RegisterHelper& ar) const
+            {
+                using class_type = typename RegisterHelper::class_type;
+                using this_arg_type = std::conditional_t<
+                    ThisConst,
+                    std::add_const_t<class_type>,
+                    class_type>;
+                ar.method(
+                    gen_name_for_user_decl(
+                        m_ret_decl,
+                        m_proxy->param_type::get_decl(),
+                        ThisConst
+                    ),
+                    [](this_arg_type& this_, Index idx) -> Return
+                    {
+                        return this_[idx];
+                    },
+                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>
+                );
+            }
+
+        private:
+            const opIndex* m_proxy;
+            std::string_view m_ret_decl;
+        };
+        ASBIND20_OPERATOR_RETURN_PROXY_FUNC(opIndex)
+
+        template <typename RegisterHelper>
+        void operator()(RegisterHelper& ar) const
+        {
+            using class_type = typename RegisterHelper::class_type;
+            using this_arg_type = std::conditional_t<
+                ThisConst,
+                std::add_const_t<class_type>,
+                class_type>;
+            using return_type = decltype(std::declval<this_arg_type&>()[std::declval<Index>()]);
+            ar.use(this->return_<return_type>());
+        }
+    };
 } // namespace operators
 
 template <bool IsConst>
@@ -510,6 +807,20 @@ struct this_placeholder
     ASBIND20_ASSIGNMENT_OPERATOR_OVERLOAD(opAssignShr, >>=)
 
 #undef ASBIND20_ASSIGNMENT_OPERATOR_OVERLOAD
+
+    template <bool IndexConst>
+    auto operator[](this_placeholder<IndexConst>) const
+        -> operators::opIndex<IsConst, this_placeholder<IndexConst>>
+    {
+        return {};
+    }
+
+    template <typename Index, bool AutoDecl>
+    auto operator[](const param_placeholder<Index, AutoDecl>& idx) const
+        -> operators::opIndex<IsConst, param_placeholder<Index, AutoDecl>>
+    {
+        return {idx};
+    }
 };
 
 inline constexpr this_placeholder<false> _this;

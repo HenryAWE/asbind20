@@ -99,6 +99,20 @@ public:
         return lhs.first * rhs.first + lhs.second * rhs.second;
     }
 
+    int operator[](int idx) const
+    {
+        return idx;
+    }
+
+    my_pair2i operator[](const my_pair2i& p)
+    {
+        my_pair2i result = *this;
+        result.first += p.first;
+        result.second += p.second;
+
+        return result;
+    }
+
     int first;
     int second;
 };
@@ -121,7 +135,9 @@ static void run_pair2i_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engin
         "int test7() { pair2i p = {1, 2}; return p++; }\n"
         "int test8() { pair2i p = {1, 2}; return ~p; }\n"
         "pair2i test9() { pair2i p = {1, 2}; return p += 1; }\n"
-        "int test10() { pair2i p = {1, 2}; return p -= -42; }"
+        "int test10() { pair2i p = {1, 2}; return p -= -42; }\n"
+        "int test11() { const pair2i p = {1, 2}; return p[1013]; }\n"
+        "pair2i test12() { pair2i p1 = {1, 2}; pair2i p2 = {3, 4}; return p1[p2]; }"
     );
     ASSERT_GE(m->Build(), 0);
 
@@ -235,10 +251,36 @@ static void run_pair2i_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engin
 
         EXPECT_EQ(result.value(), 42);
     }
+
+    {
+        auto* f = m->GetFunctionByName("test11");
+        ASSERT_TRUE(f);
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<int>(ctx, f);
+        ASSERT_TRUE(asbind_test::result_has_value(result));
+
+        EXPECT_EQ(result.value(), 1013);
+    }
+
+    {
+        auto* f = m->GetFunctionByName("test12");
+        ASSERT_TRUE(f);
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<my_pair2i>(ctx, f);
+        ASSERT_TRUE(asbind_test::result_has_value(result));
+
+        EXPECT_EQ(result.value().first, 4);
+        EXPECT_EQ(result.value().second, 6);
+    }
 }
 } // namespace test_operators
 
 using std::string;
+
+static const AS_NAMESPACE_QUALIFIER asQWORD pair2i_flags =
+    AS_NAMESPACE_QUALIFIER asOBJ_POD |
+    AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_ALLINTS |
+    AS_NAMESPACE_QUALIFIER asGetTypeTraits<test_operators::my_pair2i>();
 
 TEST(test_operators, my_pair2i_native)
 {
@@ -254,15 +296,17 @@ TEST(test_operators, my_pair2i_native)
     value_class<test_operators::my_pair2i>(
         engine,
         "pair2i",
-        AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_ALLINTS
+        pair2i_flags
     )
-        .behaviours_by_traits()
+        .behaviours_by_traits(pair2i_flags)
         .list_constructor<int>("int,int", use_policy<policies::apply_to<2>>)
         .use(-_this)
         .use(~const_this)
         .use(const_this++)
         .use(_this += param<int>)
         .use(_this -= param<int>)
+        .use(const_this[param<int>])
+        .use(_this[const_this])
         .use(const_this + param<int>)
         .use(param<int> + const_this)
         .use(const_this + const_this)
@@ -281,14 +325,16 @@ TEST(test_operators, my_pair2i_generic)
     asbind_test::setup_message_callback(engine, true);
     ext::register_std_string(engine);
 
-    value_class<test_operators::my_pair2i, true>(engine, "pair2i")
-        .behaviours_by_traits()
+    value_class<test_operators::my_pair2i, true>(engine, "pair2i", pair2i_flags)
+        .behaviours_by_traits(pair2i_flags)
         .list_constructor<int>("int,int", use_policy<policies::apply_to<2>>)
         .use(-_this)
         .use(~const_this)
         .use(const_this++)
         .use(_this += param<int>)
         .use(_this -= param<int>)
+        .use(const_this[param<int>])
+        .use(_this[const_this])
         .use(const_this + param<int>)
         .use(param<int> + const_this)
         .use(const_this + const_this)
@@ -310,14 +356,16 @@ TEST(test_operators, my_pair2i_native_with_decl)
     asbind_test::setup_message_callback(engine, true);
     ext::register_std_string(engine);
 
-    value_class<test_operators::my_pair2i>(engine, "pair2i")
-        .behaviours_by_traits()
+    value_class<test_operators::my_pair2i>(engine, "pair2i", pair2i_flags)
+        .behaviours_by_traits(pair2i_flags)
         .list_constructor<int>("int,int", use_policy<policies::apply_to<2>>)
         .use((-_this)->return_<int>("int"))
         .use((~const_this)->return_<int>("int"))
         .use((const_this++)->return_<int>("int"))
         .use((_this += param<int>)->return_<test_operators::my_pair2i&>("pair2i&"))
         .use((_this -= param<int>)->return_<int>("int"))
+        .use(const_this[param<int>("int")]->return_<int>("int"))
+        .use(_this[const_this]->return_<test_operators::my_pair2i>("pair2i"))
         .use((const_this + param<int>("int"))->return_<int>("int"))
         .use((param<int>("int") + const_this)->return_<int>("int"))
         .use((const_this + const_this)->return_<int>("int"))
@@ -336,14 +384,16 @@ TEST(test_operators, my_pair2i_generic_with_decl)
     asbind_test::setup_message_callback(engine, true);
     ext::register_std_string(engine);
 
-    value_class<test_operators::my_pair2i, true>(engine, "pair2i")
-        .behaviours_by_traits()
+    value_class<test_operators::my_pair2i, true>(engine, "pair2i", pair2i_flags)
+        .behaviours_by_traits(pair2i_flags)
         .list_constructor<int>("int,int", use_policy<policies::apply_to<2>>)
         .use((-_this)->return_<int>("int"))
         .use((~const_this)->return_<int>("int"))
         .use((const_this++)->return_<int>("int"))
         .use((_this += param<int>)->return_<test_operators::my_pair2i&>("pair2i&"))
         .use((_this -= param<int>)->return_<int>("int"))
+        .use(const_this[param<int>("int")]->return_<int>("int"))
+        .use(_this[const_this]->return_<test_operators::my_pair2i>("pair2i"))
         .use((const_this + param<int>("int"))->return_<int>("int"))
         .use((param<int>("int") + const_this)->return_<int>("int"))
         .use((const_this + const_this)->return_<int>("int"))
