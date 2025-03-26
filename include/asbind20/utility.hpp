@@ -322,6 +322,7 @@ inline bool type_requires_gc(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
 /**
  * @brief Get the size of a script type
  *
+ * @param engine Script engine
  * @param type_id AngelScript type id
  */
 inline auto sizeof_script_type(
@@ -437,7 +438,7 @@ concept void_ptr = std::is_pointer_v<std::decay_t<T>> &&
  *
  * @note This function disallows void type (`asTYPEID_VOID`)
  *
- * @param Visitor Callable object that can accept all kind of pointer to primitive types
+ * @param vis Callable object that can accept all kinds of pointers to primitive types
  * @param type_id AngelScript TypeId
  * @param args Pointers to primitive values
  */
@@ -484,7 +485,7 @@ case as_type_id:                                               \
  *
  * @note The object handle will be converted to `void**`, while script class and registered type will retain as `void*`
  *
- * @param Visitor Callable object that can accept all kind of pointer
+ * @param vis Callable object that can accept all kind of pointer
  * @param type_id AngelScript TypeId
  * @param args Pointers to values
  */
@@ -1718,6 +1719,7 @@ public:
     /**
      * @brief Create a wrapper for script initialization list from for generic calling convention
      *
+     * @param gen The interface for the generic calling convention
      * @param idx The parameter index of the list. Usually, this should be 0 for ordinary types and 1 for template classes.
      */
     explicit script_init_list_repeat(

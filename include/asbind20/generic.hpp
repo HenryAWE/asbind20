@@ -264,7 +264,9 @@ void set_generic_return(
  *
  * @tparam Return Return type
  *
+ * @param gen The interface for the generic calling convention
  * @param fn Function to invoke
+ * @param args Arguments for the function
  */
 template <typename Return, typename Fn, typename... Args>
 void set_generic_return_by(

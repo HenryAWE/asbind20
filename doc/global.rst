@@ -37,8 +37,13 @@ Registering:
         .function("int f()", &my_class::f, asbind20::auxiliary(instance))
         .property("int global_var", global_var);
 
-Type Aliases and Enumerations
------------------------------
+Type Aliases
+------------
+
+.. doxygenclass:: asbind20::global
+    :members: funcdef, typedef_, using_
+
+Example code:
 
 .. code-block:: c++
 
@@ -46,8 +51,14 @@ Type Aliases and Enumerations
     asbind20::global(engine)
         .funcdef("bool callback(int, int)")
         .typedef_("float", "real32")
-        // For those who feel more comfortable with the C++11 style `using alias = type`
+        // For those who feel more comfortable with the C++11 style
+        // "using alias = type;"
         .using_("float32", "float");
+
+Enumerations
+------------
+
+.. code-block:: c++
 
     enum class my_enum : int
     {
@@ -90,11 +101,19 @@ Message Callback
 ~~~~~~~~~~~~~~~~
 
 Registered by ``message_callback``.
+
+.. doxygenclass:: asbind20::global
+    :members: message_callback
+
 See `AngelScript documentation <https://www.angelcode.com/angelscript/sdk/docs/manual/doc_compile_script.html#doc_compile_script_msg>`_ for details.
 
 Exception Translator
 ~~~~~~~~~~~~~~~~~~~~
 
 Registered by ``exception_translator``.
+
+.. doxygenclass:: asbind20::global
+    :members: exception_translator
+
 NOTE: If your AngelScript is built without exception support (``asGetLibraryOptions()`` reports ``AS_NO_EXCEPTIONS``), this function will fail to register the translator.
 See `AngelScript documentation about C++ exceptions <https://www.angelcode.com/angelscript/sdk/docs/manual/doc_cpp_exceptions.html>`_ for details.
