@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <asbind20/asbind.hpp>
 #include <asbind20/container/small_vector.hpp>
+#include <asbind20/operators.hpp>
 
 namespace asbind20::ext
 {
@@ -329,12 +330,31 @@ public:
             return *this;
         }
 
+        friend script_array_iterator operator+(const script_array_iterator& lhs, difference_type rhs) noexcept
+        {
+            script_array_iterator result = lhs;
+            return result += rhs;
+        }
+
+        friend script_array_iterator operator+(difference_type lhs, const script_array_iterator& rhs) noexcept
+        {
+            script_array_iterator result = rhs;
+            return result += lhs;
+        }
+
         script_array_iterator& operator-=(difference_type diff) noexcept
         {
             *this += -diff;
             return *this;
         }
 
+        friend script_array_iterator operator-(const script_array_iterator& lhs, difference_type rhs) noexcept
+        {
+            script_array_iterator result = lhs;
+            return result -= rhs;
+        }
+
+        // Calculate distance between two iterators
         difference_type operator-(const script_array_iterator& rhs) const
         {
             if(m_arr != rhs.m_arr) [[unlikely]]
@@ -370,6 +390,11 @@ public:
             }
 
             return (*m_arr)[m_offset];
+        }
+
+        void* operator[](difference_type off) const
+        {
+            return (*this + off).value();
         }
 
         explicit operator bool() const noexcept
@@ -1571,6 +1596,7 @@ inline void register_script_array(
             .method("array_iterator<T> insert(array_iterator<T> where, const T&in)", ASBIND20_EXT_ARRAY_MFN(insert, iter_t, (iter_t, const void*)))
             .method("const_array_iterator<T> insert(const_array_iterator<T> where, const T&in)", ASBIND20_EXT_ARRAY_MFN(insert, iter_t, (iter_t, const void*)));
 
+        using difference_type = iter_t::difference_type;
         auto iterator_common = [](auto& r)
         {
             r
@@ -1585,6 +1611,12 @@ inline void register_script_array(
                 .opPreDec()
                 .opPostInc()
                 .opPostDec()
+                .use(const_this + param<difference_type>)
+                .use(param<difference_type> + const_this)
+                .use(const_this - param<int>)
+                .use(const_this - const_this)
+                .use(_this += param<difference_type>)
+                .use(_this -= param<difference_type>)
                 .method("array<T>@+ get_arr() const property", fp<&iter_t::get_array>)
                 .property("const uint offset", &iter_t::m_offset)
                 .template opConv<bool>()
@@ -1595,10 +1627,13 @@ inline void register_script_array(
         iterator_common(it);
         it
             .method("T& get_value() const property", fp<&iter_t::value>)
+            .use(const_this[param<difference_type>]->template return_<void*>("T&"))
             .template opImplConv<iter_t>("const_array_iterator<T>");
 
         iterator_common(cit);
-        cit.method("const T& get_value() const property", fp<&iter_t::value>);
+        cit
+            .use(const_this[param<difference_type>]->template return_<void*>("const T&"))
+            .method("const T& get_value() const property", fp<&iter_t::value>);
 
         if(as_default)
             c.as_array();

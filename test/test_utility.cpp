@@ -239,6 +239,16 @@ TEST(meta, fixed_string)
         EXPECT_EQ(result.size(), 11);
         EXPECT_STREQ(result.c_str(), "hello world");
     }
+
+    {
+        constexpr auto decl = meta::full_fixed_name_of<int&>();
+        static_assert(decl.view() == "int&"); // Only for testing
+    }
+
+    {
+        constexpr auto decl = meta::full_fixed_name_of<const int&>();
+        static_assert(decl.view() == "const int&in");
+    }
 }
 
 TEST(with_cstr, with_cstr)

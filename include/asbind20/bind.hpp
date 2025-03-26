@@ -18,11 +18,6 @@
 
 namespace asbind20
 {
-struct this_type_t
-{};
-
-inline constexpr this_type_t this_type{};
-
 template <typename T>
 class auxiliary_wrapper
 {
