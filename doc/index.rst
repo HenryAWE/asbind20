@@ -10,18 +10,12 @@ Welcome to asbind20's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-
-
 Indices and tables
 ==================
 
+* :doc:`Registering Object Types <object_type>`
+* :doc:`Registering Global Entities <global>`
+* :doc:`Customizing Type Conversion Rules <custom_conv_rule>`: Customize how data are interchanged between AngelScript and C++ for special user-defined types.
+* :doc:`Troubleshooting <troubleshooting>`: Solutions for common errors.
 * :ref:`genindex`
-* :ref:`modindex`
 * :ref:`search`
-
-Docs
-====
-
-.. doxygenclass:: asbind20::basic_value_class
-   :members:
-   :undoc-members:
