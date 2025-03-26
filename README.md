@@ -315,12 +315,7 @@ target_link_libraries(main PRIVATE asbind20::asbind20)
 You can find a detailed example in `test/test_subdir/`.
 
 # Documentation
-Detailed explanation of asbind20.
-
-1. [Registering Object Types](./doc/object_type.md)
-2. [Registering Global Entities](./doc/global.md)
-3. [Customize Type Conversion Rules](./doc/custom_conv_rule.md): Customize how data are interchanged between AngelScript and C++ for special user-defined types.
-4. [Troubleshooting](./doc/troubleshooting.md): Solutions for common errors.
+Full documentation is available on [Read the Docs](https://asbind20.readthedocs.io/en/).
 
 # Known Limitations
 Some feature of this library may not work on a broken compiler.
