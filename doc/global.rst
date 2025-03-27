@@ -4,7 +4,10 @@ Registering Global Entities
 Global Functions and Properties
 -------------------------------
 
-C++ code:
+Global Functions
+~~~~~~~~~~~~~~~~
+
+C++ Declarations:
 
 .. code-block:: c++
 
@@ -12,30 +15,47 @@ C++ code:
 
     void func_gen(asIScriptGeneric* gen);
 
+Registering:
+
+.. code-block:: c++
+
+    asbind20::global(engine)
+        // Ordinary function (native)
+        .function("void func(int arg)", &func)
+        // Ordinary function (generic)
+        .function("void func_gen(int arg)", &func_gen);
+
+Synthesize global function by member function and an instance:
+
+.. code-block:: c++
+
     class my_class
     {
         int f();
     };
 
-    my_class instance{...};
-
-    int global_var = ...;
-
-Registering:
+    my_class instance{};
 
 .. code-block:: c++
 
-    asIScriptEngine* engine = ...;
     asbind20::global(engine)
-        // Ordinary function (native)
-        .function("void func(int arg)", &func)
-        // Ordinary function (generic)
-        .function("void func_gen(int arg)", &func_gen)
-        // asCALL_THISCALL_ASGLOBAL
-        // Equivalent to `instance.f()`
-        // The instance will be stored in the auxiliary pointer.
-        .function("int f()", &my_class::f, asbind20::auxiliary(instance))
-        .property("int global_var", global_var);
+        .function("int f()", &my_class::f, asbind20::auxiliary(instance));
+
+When the `f()` is called by script, it's equivalent to `instance.f()` in C++.
+
+Global Properties
+~~~~~~~~~~~~~~~~~
+
+.. code-block:: c++
+
+    int global_var = 42;
+    const int const_global_var = 42;
+
+.. code-block:: c++
+
+    asbind20::global(engine)
+        .property("int global_var", global_var)
+        .property("const int const_global_var", const_global_var);
 
 Type Aliases
 ------------
@@ -47,7 +67,6 @@ Example code:
 
 .. code-block:: c++
 
-    asIScriptEngine* engine = ...;
     asbind20::global(engine)
         .funcdef("bool callback(int, int)")
         .typedef_("float", "real32")
@@ -72,14 +91,16 @@ Enumerations
 
 Besides, the library provides tool for generating string representation of enum value at compile-time.
 
+The following code is equivalent to the above one:
+
 .. code-block:: c++
 
-    // The following code is equivalent to the above one
     asbind20::enum_<my_enum>(engine, "my_enum")
         .value<my_enum::A>()
         .value<my_enum::B>();
 
-However, as static reflection is still waiting for the C++26, this feature relies on compiler extension and is platform dependent. **It has some limitations**. For example, it cannot generate string representation for enums with same value.
+However, as static reflection is still waiting for the C++26, this feature relies on compiler extension and is platform dependent.
+**It has some limitations**. For example, it cannot generate string representation for enums with same value.
 
 .. code-block:: c++
 

@@ -1,4 +1,45 @@
 import subprocess, os
+from pygments.lexer import RegexLexer
+from pygments import token
+from sphinx.highlighting import lexers
+
+# TODO: Update this syntax highlighter
+class AngelScriptLexer(RegexLexer):
+    name = 'AngelScript'
+
+    tokens = {
+        'root': [
+            (r'int', token.Keyword),
+            (r'float', token.Keyword),
+            (r'double', token.Keyword),
+            (r'const', token.Keyword),
+            (r'return', token.Keyword),
+            (r'null', token.Literal),
+            (r'\+', token.Operator),
+            (r'-', token.Operator),
+            (r'\*', token.Operator),
+            (r'/', token.Operator),
+            (r'<', token.Operator),
+            (r'>', token.Operator),
+            (r'&', token.Operator),
+            (r'@', token.Operator),
+            (r'\(', token.Punctuation),
+            (r'\)', token.Punctuation),
+            (r'\[', token.Punctuation),
+            (r'\]', token.Punctuation),
+            (r'\{', token.Punctuation),
+            (r'\}', token.Punctuation),
+            (r'"', token.Punctuation),
+            (r"'", token.Punctuation),
+            (r';', token.Punctuation),
+            (r',', token.Punctuation),
+            (r'[a-zA-Z]', token.Name),
+            (r'\s', token.Text)
+        ]
+    }
+
+lexers["AngelScript"] = AngelScriptLexer(startinline=True)
+lexers["AngelScript"].aliases = ["as", "angelscript"]
 
 # Configuration file for the Sphinx documentation builder.
 #

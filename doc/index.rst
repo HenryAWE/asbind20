@@ -1,19 +1,23 @@
-.. asbind20 documentation master file, created by
-   sphinx-quickstart on Wed Mar 26 20:08:31 2025.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 Welcome to asbind20's documentation!
 ====================================
 
+Contents:
+
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Registering Application Interface
 
-Indices and tables
-==================
+   object_type
+   global
 
-* :doc:`Registering Object Types <object_type>`
-* :doc:`Registering Global Entities <global>`
-* :doc:`Customizing Type Conversion Rules <custom_conv_rule>`: Customize how data are interchanged between AngelScript and C++ for special user-defined types.
-* :doc:`Troubleshooting <troubleshooting>`: Solutions for common errors.
+.. toctree::
+   :maxdepth: 1
+   :caption: Advanced Topics
+
+   custom_conv_rule
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Extra Resource
+
+   troubleshooting
