@@ -1,8 +1,8 @@
 Registering an Object Type
 ==========================
 
-Register a Reference Type
--------------------------
+Registering a Reference Type
+----------------------------
 
 The basic reference type will be instantiated by factory function and managed by reference counting.
 

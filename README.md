@@ -5,6 +5,8 @@ C++20 [AngelScript](https://www.angelcode.com/angelscript/) binding library powe
 
 The name and API design are inspired by the famous [pybind11 library](https://github.com/pybind/pybind11).
 
+Full documentation is available on [Read the Docs](https://asbind20.readthedocs.io/en/).
+
 # Brief Examples
 ## 1. Binding Application Interfaces
 ```c++
@@ -102,7 +104,6 @@ asbind20::value_class<my_value_class>(
     .property("int another_value", offsetof(my_value_class, another_value));
 ```
 The binding helpers also support registering a reference type, an interface, or global functions, etc. to the AngelScript engine.  
-You can find more examples in `ext/container/src/array.cpp`, `ext/container/src/stdstring.cpp`, and tests under `test/test_bind/` directory.
 
 ## 2. Invoking a Script Function
 The library can automatically convert arguments in C++ for invoking an AngelScript function. Besides, the library provides RAII classes for easily managing lifetime of AngelScript object like `asIScriptContext`.
@@ -134,7 +135,6 @@ auto result = asbind20::script_invoke<std::string>(
 assert(result.value() == "test");
 assert(val == 2);
 ```
-You can find more examples in `test/test_invoke.cpp`.
 
 ## 3. Using a Script Class
 The library provides tools for instantiating a script class. The `script_invoke` also supports invoking a method, a.k.a., member function.
@@ -223,7 +223,6 @@ void register_my_class(asIScriptEngine* engine)
 }
 ```
 
-
 ## 2. Dispatching Function Calls Based on Type Ids
 This feature is similar to how `std::visit` and `std::variant` works. It can be used for developing templated container for AngelScript.
 
@@ -250,83 +249,6 @@ asbind20::visit_primitive_type(
     ptr_to_val // (const) void* to value
 );
 ```
-You can find example usage in `ext/container/src/array.cpp`.
-
-# Supported Platforms
-- CMake >= 3.20
-- AngelScript >= 2.37.0
-- Any C++ compiler that supports C++20.
-
-Currently, the following platforms and compilers are officially supported and tested by CI.
-
-| Platform    | Compiler        |
-| ----------- | --------------- |
-| Windows x64 | MSVC 19.41      |
-| Linux x64   | GCC 12, 13, 14  |
-| Linux x64   | Clang 18        |
-| Linux x64   | Clang 18 (ASan) |
-| Emscripten  | emsdk 4.0.1     |
-
-Please note that some advanced features are only available on newer compilers.
-
-You can find detailed build and test status in the GitHub Actions.
-
-# How to Use
-Follow the tutorial of AngelScript to build and install it at first, or use a package manager like [vcpkg](https://github.com/microsoft/vcpkg).  
-You can also find example for installing AngelScript in the GitHub Actions script of asbind20.
-
-## A. Copy into Your Project
-asbind20 is a header-only library. You can directly copy all the files under `include/` into your project.
-If your project has a custom location of `<angelscript.h>`, you can include it before asbind20. This library will not include the AngelScript library for the second time.
-
-Additionally, files under `io/` and `container/` are optional components. You can omit those files if they are unnecessary for your project.
-
-#### About the `asbind20::ext`
-The extension part (under `ext/`) is not header-only. If you wish to use this part of library, you still need to build the asbind20 with extension (which is enabled by default).
-
-However, those extensions are mainly used for demonstrating & testing asbind20. **The extensions are not meant to be used in the final product in current version**, which means they don't guarantee compatibility across versions. Please consider the official add-ons or implement by yourself. But these extensions might still be helpful for prototyping your application. The future version of asbind20 will provide some stable common tools in `asbind20::ext` such as script array/script string.
-
-## B. Build and Install
-Build and install the library.
-```sh
-cmake -GNinja -DCMAKE_BUILD_TYPE=Release -S . -B build
-cmake --build build
-cmake --install build
-```
-Use the library in a `CMakeLists.txt`.
-```cmake
-find_package(asbind20 REQUIRED)
-
-target_link_libraries(main PRIVATE asbind20::asbind20)
-```
-You can find a detailed example in `test/test_install/`.
-
-## C. As Submodule
-Clone the library into your project.
-```sh
-git clone https://github.com/HenryAWE/asbind20.git
-```
-Use the library in a `CMakeLists.txt`.
-```cmake
-add_subdirectory(asbind20)
-
-target_link_libraries(main PRIVATE asbind20::asbind20)
-```
-You can find a detailed example in `test/test_subdir/`.
-
-# Documentation
-Full documentation is available on [Read the Docs](https://asbind20.readthedocs.io/en/).
-
-# Known Limitations
-Some feature of this library may not work on a broken compiler.
-
-1. Some utilities are implemented by non-standard C++, but they are guaranteed to have correct result on supported platforms, which are tested by CI.
-
-2. If you bind an overloaded function using syntax like `static_cast<return_type(*)()>(&func)` on MSVC, it may crash the compiler. The workaround is to write a standalone wrapper function with no overloading, then bind this wrapper using asbind20.
-
-3. If you are using clangd as your LSP, [it may crash when completing code for binding](https://github.com/llvm/llvm-project/issues/125500). You can restart clangd after you complete this part of code.
-
-4. GCC (at least for 14.2) may [not generate machine code of registered template class on rare occasion](https://gcc.gnu.org/bugzilla/show_bug.cgi?id=119233). If your encounter a linker error like [this example on Compiler Explorer](https://godbolt.org/z/oT9cP1rso), try to use explicit instantiation for your template class.
 
 # License
 [MIT License](./LICENSE)

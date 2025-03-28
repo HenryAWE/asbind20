@@ -7,6 +7,7 @@ Type Aliases
 .. doxygenclass:: asbind20::global
     :members: funcdef, typedef_, using_
     :members-only:
+    :no-link:
 
 Example code:
 

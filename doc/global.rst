@@ -79,6 +79,7 @@ Registered by ``message_callback``.
 .. doxygenclass:: asbind20::global
     :members: message_callback
     :members-only:
+    :no-link:
 
 See `AngelScript documentation <https://www.angelcode.com/angelscript/sdk/docs/manual/doc_compile_script.html#doc_compile_script_msg>`_ for details.
 
@@ -90,6 +91,7 @@ Registered by ``exception_translator``.
 .. doxygenclass:: asbind20::global
     :members: exception_translator
     :members-only:
+    :no-link:
 
 .. note::
    If your AngelScript is built without exception support (``asGetLibraryOptions()`` reports ``AS_NO_EXCEPTIONS``),
