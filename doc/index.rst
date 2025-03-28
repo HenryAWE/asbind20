@@ -67,6 +67,19 @@ Contents:
    misc_type
 
 .. toctree::
+   :maxdepth: 2
+   :caption: Using Script Interfaces
+
+   invoke
+   container
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Utilities
+
+   utility
+
+.. toctree::
    :maxdepth: 1
    :caption: Advanced Topics
 

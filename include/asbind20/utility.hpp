@@ -701,8 +701,8 @@ constexpr std::string string_concat(Args&&... args)
  *
  * @param state Context state
  * @return std::string String representation of the state.
- *                     If the state value is invalid, the result will be "asEContextState({state})",
- *                     e.g. "asEContextState(-1)".
+ *                     If the state value is invalid, the result will be `"asEContextState({state})"`,
+ *                     e.g. `"asEContextState(-1)"`.
  */
 inline std::string to_string(AS_NAMESPACE_QUALIFIER asEContextState state)
 {
@@ -1322,9 +1322,7 @@ public:
 
     /**
      * @warning If you get the lockable shared bool by `GetWeakRefFlagOfScriptObject()`,
-     *          you should @b not use this function! Because that function won't increase the reference count.
-     *
-     * @sa reset(inplace_addref_t, handle_type)
+     *          you should @b not use this function! Because it won't increase the reference count.
      */
     void reset(std::in_place_t, handle_type bool_) noexcept
     {
@@ -1357,12 +1355,18 @@ public:
         return *this;
     }
 
+    /**
+     * @brief Lock the flag
+     */
     void lock()
     {
         assert(*this);
         m_bool->Lock();
     }
 
+    /**
+     * @brief Unlock the flag
+     */
     void unlock() noexcept
     {
         assert(*this);
