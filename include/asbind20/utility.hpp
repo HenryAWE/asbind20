@@ -436,7 +436,7 @@ concept void_ptr = std::is_pointer_v<std::decay_t<T>> &&
 /**
  * @brief Dispatches pointer of primitive values to corresponding type. Similar to the `std::visit`.
  *
- * @note This function disallows void type (`asTYPEID_VOID`)
+ * @warning This function disallows void type (`asTYPEID_VOID`)
  *
  * @param vis Callable object that can accept all kinds of pointers to primitive types
  * @param type_id AngelScript TypeId
@@ -483,6 +483,7 @@ case as_type_id:                                               \
 /**
  * @brief Dispatches pointer of values to corresponding type. Similar to the `std::visit`.
  *
+ * @warning This function disallows void type (`asTYPEID_VOID`)
  * @note The object handle will be converted to `void**`, while script class and registered type will retain as `void*`
  *
  * @param vis Callable object that can accept all kind of pointer
