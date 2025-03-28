@@ -54,8 +54,67 @@ Just put the tag right after the parameter list.
 Factory with Auxiliary Object
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+It might be useful to call the factory with a helper object.
+
+.. code-block:: c++
+
+    struct helper
+    {
+        my_ref_class* create_from_bool(bool arg);
+    };
+
+    my_ref_class* create_from_int(helper* aux, int arg);
+    my_ref_class* create_from_float(float arg, helper* aux);
+
+.. code-block:: c++
+
+    using asbind20::auxiliary;
+    // It needs an instance
+    helper instance{};
+
+    // ...
+        .factory_function("bool", &helper::create_from_bool, auxiliary(instance))
+        .factory_function("int", &create_from_int, auxiliary(instance))
+        .factory_function("float", &create_from_float, auxiliary(instance));
+
+.. note::
+  If the factory function with an auxiliary object is not a member function,
+  the parameter for receiving pointer to auxiliary object will be located by the following logic:
+
+  1. Check if the first/last parameter is a reference/pointer to the helper object
+  2. If both first and last parameters satisfy the condition, asbind20 will prefer the first one.
+
+  If this is not the desired behavior, you can manually specify the position of that special parameter.
+
+  .. code-block:: c++
+
+    using namespace asbind20;
+    // ...
+        .factory_function("int", &create_from_int, auxiliary(instance), call_conv<asCALL_CDECL_OBJFIRST>)
+        .factory_function("float", &create_from_float, auxiliary(instance), call_conv<asCALL_CDECL_OBJLAST>);
+
+Specially, the auxiliary object can be the ``asITypeInfo*`` of type being registered.
+This can be done by the tag ``this_type``.
+
+This might be helpful when dealing with garbage collected types.
+
+.. code-block:: c++
+
+    my_ref_class* create_with_typeinfo(asITypeInfo* ti, int arg);
+
+
+.. code-block:: c++
+
+    using namespace asbind20;
+    // ...
+        .factory_function("int", &create_with_typeinfo, auxiliary(this_type));
+
 List Factory
 ^^^^^^^^^^^^
+
+List factory allows the reference type to be created from an initialization list.
+
+:doc:`It will be discussed in a separated page. <advanced/init_list>`
 
 Behaviors for Reference Counting
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -226,6 +285,13 @@ Just put the tag right after the parameter list.
         .constructor_function("int", &init_by_int, asbind20::call_conv<asCALL_CDECL_OBJFIRST>)
         .constructor_function("float", &init_by_float, asbind20::call_conv<asCALL_CDECL_OBJLAST>);
 
+List Constructor
+^^^^^^^^^^^^^^^^
+
+The list constructor allows the value type to be initialized from an initialization list.
+
+:doc:`It will be discussed in a separated page. <advanced/init_list>`
+
 Destructor
 ^^^^^^^^^^
 
@@ -240,6 +306,10 @@ Automatically Registering Required Behaviors
 You can call the ``.behaviours_by_traits()`` to automatically register type behaviors required by the type flags.
 It will register default constructor, copy constructor, destructor,
 and assignment operator (``operator=``/``opAssign``) according to the type flags.
+
+.. warning::
+   Be careful not to register those behaviors again by standalone helpers,
+   otherwise you will get an error message about duplicated things.
 
 This helper function uses flags provided by ``asGetTypeTraits<T>()`` by default.
 
@@ -262,7 +332,7 @@ Object methods are registered by ``.method()``.
 Both non-virtual and virtual methods are registered the same way.
 
 Static member functions of a class are actually global functions,
-so those should be registered as global functions and not as object methods.
+so those should be registered as :doc:`global functions and not as object methods <global>`.
 
 Member Function
 ~~~~~~~~~~~~~~~

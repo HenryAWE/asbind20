@@ -15,7 +15,8 @@ Contents:
    :maxdepth: 1
    :caption: Advanced Topics
 
-   custom_conv_rule
+   advanced/custom_conv_rule
+   advanced/init_list
 
 .. toctree::
    :maxdepth: 1
