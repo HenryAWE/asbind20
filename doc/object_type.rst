@@ -531,7 +531,7 @@ Member Aliases
 --------------
 You can register a member ``funcdef``.
 
-Here use a the ``script_array`` from asbind20 extension as an example.
+Here use the ``script_array`` from asbind20 extension as an example.
 The same logic also applies to other classes.
 
 .. code-block:: c++
