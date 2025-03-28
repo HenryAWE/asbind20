@@ -1,112 +1,423 @@
-Registering a Value Class
-=========================
+Registering an Object Type
+==========================
 
-Given a C++ class,
+Register a Reference Type
+-------------------------
+
+The basic reference type will be instantiated by factory function and managed by reference counting.
+
+Factory
+~~~~~~~
+
+Factory Functions
+^^^^^^^^^^^^^^^^^
+
+Factory functions can be automatically generated from constructors of C++ type.
+The memory for new object will be allocated using ``new``,
+so if an allocation function provided by user is required, you can create a custom overload of ``operator new``.
+
+If you already have a function for instantiating the class, you can register it by ``.factory_function``.
 
 .. code-block:: c++
 
-    class val_class
+    class my_ref_class
     {
-        val_class();
-        val_class(const val_class&);
+    public:
+        my_ref_class();
+        my_ref_class(float);
+        my_ref_class(int, int);
 
-        val_class(const std::string& str);
+        static my_ref_class* new_class_by_int(int);
 
-        val_class& operator=(const val_class&);
-
-        ~val_class();
-
-        int method();
-
-        std::string value;
-
-        bool operator==(const val_class&) const;
-        std::strong_ordering operator<=>(const val_class&) const;
+        // ...
     };
 
-Register the interface with asbind20
+You need to provide a parameter list for factories other than the default factory.
 
 .. code-block:: c++
 
-    using namespace asbind20;
+    asbind20::ref_class<my_ref_class>(engine, "my_ref_class")
+        .default_factory()
+        .factory<float>("float")
+        .factory<int, int>("int, int")
+        .factory_function("int", use_explicit, &new_class_by_int)
 
-    value_class<val_class>(
-        engine,
-        "val_class",
-        asOBJ_APP_CLASS_MORE_CONSTRUCTORS
-    ) c;
+If you want certain factories to be marked with ``explicit``, you can use the tag ``use_explicit``.
+Just put the tag right after the parameter list.
 
-    c
-        .behaviours_by_traits()
-        // Register std::string before register this class
-        .constructor<const std::string&>("const string&in")
-        .destructor()
-        .method("int method()", &val_class:method)
-        .property("string value", &val_class::value)
-        .opEquals()
-        .opCmp();
+.. code-block:: c++
 
-You can find detailed example in extension for registering the ``std::string``.
+    asbind20::ref_class<my_ref_class>(engine, "my_ref_class")
+        .factory<float>("float", asbind20::use_explicit)
+        .factory_function("int", asbind20::use_explicit, &new_class_by_int);
 
-Notes
------
+Factory with Auxiliary Object
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-1. The type flags cannot be retrieved by ``asGetTypeTraits<T>()`` like ``asOBJ_APP_CLASS_MORE_CONSTRUCTORS`` or ``asOBJ_APP_CLASS_ALLINTS`` needs to be set manually.
-   **If you cannot provide the correct flags, you will probably get some runtime errors like stack corruption!**
+List Factory
+^^^^^^^^^^^^
 
-2. If a wrapper function satisfies both ``asCALL_CDECL_OBJFIRST`` and ``asCALL_CDECL_OBJLAST``, the binding generator will prefer the ``asCALL_CDECL_OBJFIRST``, i.e., treating the first argument as ``this``. If you need ``asCALL_CDECL_OBJLAST`` for this kind of functions, you can specify the calling convention manually using a tag as the last argument.
+Behaviors for Reference Counting
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-   .. code-block:: c++
+The basic reference type uses reference counting to manage its lifetime.
 
-       // Declaration of C++ side
-       void do_something(my_value_class* other, my_value_class* this_);
+.. code-block:: c++
 
-       // Registering
-       asbind20::value_class<my_value_class>(...)
-           .method("void do_something(my_value_class& other)", &do_something, asbind20::call_conv<asCALL_CDECL_OBJLAST>);
+    class my_ref_class
+    {
+    public:
+        void addref()
+        {
+            ++m_refcount;
+        }
 
-3. If you want to register a templated value class, please read the following sections.
+        void release()
+        {
+            if(--m_refcount == 0)
+                delete this;
+        }
 
-Generating Wrappers
--------------------
+    private:
+        int m_refcount = 1;
+    };
 
-asbind20 has support for generating wrappers for common usage.
+.. code-block:: c++
 
-Default Constructor and Copy Constructor
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Registered by ``constructor()`` and ``copy_constructor()``.
+    // ...
+        .addref(&my_ref_class::addref)
+        .release(&my_ref_class::release);
 
-Custom constructor
-~~~~~~~~~~~~~~~~~~
-Registered by ``constructor<Args...>("params")``.
-The ``params`` string should only contains declarations of parameters such as ``int val`` or ``float, float``.
-If you want to register an explicit constructor, you can use the ``use_explicit`` tag. For example, ``constructor<Args...>("params", asbind20::use_explicit)``.
+Tips for Reference Types
+~~~~~~~~~~~~~~~~~~~~~~~~
 
-If you already have a wrapper for constructor, you can register it with ``constructor_function()``. The supported calling conventions of this helper are ``GENERIC``, ``CDECL_OBJLAST``, and ``CDECL_OBJFIRST``.
+- For reference counted type, the reference counter should be set to ``1`` during initialization.
 
-NOTE: When deducing calling convention for constructors, if the convention cannot be deduced by the pointer to class in parameters, asbind20 will fallback to treat ``void*`` as valid parameter that emulates ``this``, because some libraries use ``void*`` directly for placement new.
+- If your type involves GC, you need to notify the GC of a newly instantiated object by ``NotifyGarbageCollectorOfNewObject``,
+  `as explained in AngelScript's official document <https://www.angelcode.com/angelscript/sdk/docs/manual/doc_gc_object.html#doc_reg_gcref_2>`_.
 
-**WARNING: Remember to set the ``asOBJ_APP_CLASS_MORE_CONSTRUCTORS`` flag when registering a custom constructor (constructor other than default/copy constructor), otherwise you may get strange runtime error.**
+  The asbind20 also provides a policy called ``policies::notify_gc`` for (list) factory functions to automatically notify the GC after a new object created.
+
+Registering a Value Type
+------------------------
+
+Flags of Value Type
+~~~~~~~~~~~~~~~~~~~~
+
+If the type doesn't require any special treatment,
+i.e. doesn't contain any pointers or other resource references that must be maintained,
+then the type can be registered with the flag ``asOBJ_POD``.
+In this case AngelScript doesn't require the default constructor, assignment behavior, or destructor,
+as it will be able to automatically handle these cases the same way it handles built-in primitives.
+
+If you plan on passing or returning the type by value to registered functions that uses native calling convention,
+you also need to inform how the type is implemented in the application.
+But if you only plan on using generic calling conventions,
+or don't pass these types by value then you don't need to worry about that.
+
+The asbind20 will handle common flags for you.
+However, due to limitation of C++, the following flags still need user to provide them manually.
+
+.. list-table::
+   :widths: 25 75
+   :header-rows: 1
+
+   * - Flag
+     - Description
+
+   * - ``asOBJ_APP_CLASS_MORE_CONSTRUCTORS``
+     - The C++ class has additional constructors beyond the default/copy constructor
+
+   * - ``asOBJ_APP_CLASS_ALLINTS``
+     - The C++ class members can be treated as if all integers
+
+   * - ``asOBJ_APP_CLASS_ALLFLOATS``
+     - The C++ class members can be treated as if all ``float``\ s or ``double``\ s
+
+   * - ``asOBJ_APP_CLASS_ALIGN8``
+     - The C++ class contains members that may require 8-byte alignment.
+
+       For example, a ``double``
+
+   * - ``asOBJ_APP_CLASS_UNION``
+     - The C++ class contains unions as members
+
+.. note::
+   C++ compiler may provide some functions automatically if one of the members is of a type that requires it.
+   So even if the type you want to register doesn't have a declared default constructor,
+   it may still be necessary to register the type with the flag ``asOBJ_APP_CLASS_MORE_CONSTRUCTORS``.
+
+.. warning::
+   Be careful to inform the correct flags,
+   because if the wrong flags are used you may get unexpected behavior when calling registered functions that receives or returns these types by value.
+   Common problems are stack corruptions or invalid memory accesses.
+   In some cases you may face more silent errors that may be difficult to detect,
+   e.g., the function is not returning the expected values.
+
+You can also read the official documentation about
+`value types and native calling convention <https://www.angelcode.com/angelscript/sdk/docs/manual/doc_register_val_type.html#doc_reg_val_2>`_ .
+
+Constructors and Destructor
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Constructor Functions
+^^^^^^^^^^^^^^^^^^^^^
+
+The memory of value types are allocated by AngelScript,
+then the memory needs to be initialized using the placement ``new``.
+
+If you already have a function for initializing the class, you can register it by ``.constructor_function``.
+You can also use a lambda to create a constructor function in-place.
+
+.. code-block:: c++
+
+    struct my_val_class
+    {
+        my_val_class() = default;
+        my_val_class(const my_val_class&) = default;
+
+        my_val_class(bool val);
+
+        static void init_by_int(my_val_class* mem, int val);
+        static void init_by_float(float val, my_val_class* mem);
+
+        static my_val_class get_val(int arg0, int arg1);
+    };
+
+You need to provide a parameter list for constructors other than the default/copy constructor.
+
+.. code-block:: c++
+
+    asbind20::value_class<my_val_class>(
+        engine, "my_val_class", asOBJ_APP_CLASS_MORE_CONSTRUCTORS
+    )
+        .default_constructor()
+        .copy_constructor()
+        .constructor<bool>("bool")
+        .constructor_function("int", &init_by_int)
+        .constructor_function("float", &init_by_float)
+        .constructor_function(
+            "int, int",
+           [](void* mem, int arg0, int arg1)
+           { new(mem) my_val_class(get_val(arg0, arg1)); }
+        );
+
+If you want certain factories to be marked with ``explicit``, you can use the tag ``use_explicit``.
+Just put the tag right after the parameter list.
+
+.. code-block:: c++
+
+    // ...
+        .constructor<float>("bool", asbind20::use_explicit)
+        .constructor_function("int", asbind20::use_explicit, &init_by_int);
+
+.. note::
+  The parameter for receiving pointer to allocated memory will be located by the following logic:
+
+  1. Check if the first/last parameter is a reference/pointer to the type being registered
+  2. Check if the type of first/last parameter is ``void*``
+  3. If both first and last parameters satisfy the condition, asbind20 will prefer the first one.
+
+  If this is not the desired behavior, you can manually specify the position of that special parameter.
+
+  .. code-block:: c++
+
+    // ...
+        .constructor_function("int", &init_by_int, asbind20::call_conv<asCALL_CDECL_OBJFIRST>)
+        .constructor_function("float", &init_by_float, asbind20::call_conv<asCALL_CDECL_OBJLAST>);
 
 Destructor
-~~~~~~~~~~
-Registered by ``destructor()``.
-It will generated a wrapper for calling the destructor (``~type()``) of the registered type.
+^^^^^^^^^^
 
-List Constructor
-~~~~~~~~~~~~~~~~
-Registered by ``list_constructor<ListElementType>("pattern")``. This helper expects the registered type is constructible with ``ListElementType*``.
-If your pattern is repeated or contains variable type (``?``) which cannot have a consistent element type, you can ignore this template argument. The ``ListElementType`` will be set to ``void`` by default.
+.. code-block:: c++
 
-If you have a constructor that satisfies some common C++ paradigm, you can use a policy type as the second template argument. For example, if your class accept an iterator range of ``int``, whose declaration is ``template <typename Iterator> type(Iterator start, Iterator stop)``, you can register it by ``.list_constructor<int, asbind20::policies::as_iterators>("repeat int")``. You can check the ``namespace asbind20::policies`` for more list constructor policies.
+    // ...
+        .destructor();
 
-If you already have a wrapper, you can register it with ``list_constructor_function()``. The supported calling convention of this helper are ``GENERIC``, ``CDECL_OBJLAST``, and ``CDECL_OBJFIRST``.
+Automatically Registering Required Behaviors
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-NOTE: When deducing calling convention for list constructors, asbind20 will treat ``void*`` as valid parameter that emulates ``this``, because some libraries use ``void*`` directly for placement new.
+You can call the ``.behaviours_by_traits()`` to automatically register type behaviors required by the type flags.
+It will register default constructor, copy constructor, destructor,
+and assignment operator (``operator=``/``opAssign``) according to the type flags.
 
-Operators
-~~~~~~~~~
-Given constant C++ references ``a`` and ``b``, as well as a variable ``val`` of registered type ``T``,
+This helper function uses flags provided by ``asGetTypeTraits<T>()`` by default.
+
+.. code-block:: c++
+
+    // ...
+        .behaviours_by_traits();
+
+You can also provide the flags manually:
+
+.. code-block:: c++
+
+    // ...
+        .behaviours_by_traits(asOBJ_APP_CLASS_CDAK);
+
+Object Methods
+--------------
+
+Object methods are registered by ``.method()``.
+Both non-virtual and virtual methods are registered the same way.
+
+Static member functions of a class are actually global functions,
+so those should be registered as global functions and not as object methods.
+
+Member Function
+~~~~~~~~~~~~~~~
+
+.. code-block:: c++
+
+    class my_class
+    {
+    public:
+        int foo(bool arg);
+
+        void bar() const;
+    };
+
+.. code-block:: c++
+
+    // ...
+        .method("int foo(bool arg)", &my_class::foo)
+        .method("void bar() const", &my_class::bar);
+
+
+Extend Class Interface Without Changing Its Implementation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Global Functions Taking an Object Parameter
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+It is possible to register a global function that takes a pointer or a reference to the object as a class method.
+This can be used to extend the functionality of a class when accessed via AngelScript,
+without actually changing the C++ implementation of the class.
+
+.. code-block:: c++
+
+    void foobar_0(my_class& this_, int arg);
+    float foobar_1(float arg, const my_class& this_);
+
+.. code-block:: c++
+
+    // ...
+        .method("void foobar_0(int arg)", &foobar_0)
+        .method("float foobar_1(float arg) const", &foobar_1);
+
+Member Functions from a Helper Object
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Similar to global functions taking an object parameter,
+member functions taking an object parameter from a helper object can also be registered as class methods.
+
+.. code-block:: c++
+
+    struct helper
+    {
+        void foobar_3(my_class& this_, int arg);
+        float foobar_4(float arg, const my_class& this_);
+    };
+
+.. code-block:: c++
+
+    // It needs an instance
+    helper instance{};
+
+    // ...
+        .method("void foobar_3(int arg)", &helper::foobar_3, asbind20::auxiliary(instance))
+        .method("float foobar_4(float arg) const", &helper::foobar_4, asbind20::auxiliary(instance));
+
+.. note::
+  The parameter for receiving object will be located by the following logic:
+
+  1. Check if the first/last parameter is a reference/pointer to the type being registered
+  2. If both first and last parameters satisfy the condition, asbind20 will prefer the first one.
+
+     This is designed to keep consistency with existing C++ paradigm,
+     such as how ``std::invoke`` deals with a member function pointer.
+
+  If this is not the desired behavior, you can manually specify the position of that special parameter.
+
+  .. code-block:: c++
+
+    // Instance of the helper object
+    helper instance{};
+    // Using namespace to simplify code
+    using namespace asbind20;
+
+    // ...
+        .method("void foobar_0(int arg)", &foobar_0, call_conv<asCALL_CDECL_OBJFIRST>)
+        .method("float foobar_1(float arg) const", &foobar_1, call_conv<asCALL_CDECL_OBJLAST>)
+        .method("void foobar_3(int arg)", &helper::foobar_3, call_conv<asCALL_THISCALL_OBJFIRST>, auxiliary(instance))
+        .method("float foobar_4(float arg) const", &helper::foobar_4, call_conv<asCALL_THISCALL_OBJLAST>, auxiliary(instance));
+
+Function Receiving ``asIScriptGeneric*``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: c++
+
+    void gfn(asIScriptGeneric* gen);
+    void gfn_using_aux(asIScriptGeneric* gen);
+
+.. code-block:: c++
+
+    // ...
+        .method("float gfn()", &gfn)
+        .method("int gfn_using_aux()", &gfn_using_aux, asbind20::auxiliary(/* some auxiliary data */));
+
+.. note::
+   Make sure the method declaration matches what the registered function does with the ``asIScriptGeneric``!
+
+Methods Using Composite Members
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+*Not implemented yet*
+
+Object Properties
+-----------------
+
+Class member variables can be registered,
+so that they can be directly accessed by the script without the need for any method calls.
+
+Ordinary Member Variables
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: c++
+
+    struct my_class
+    {
+        int a;
+        int b;
+    };
+
+.. code-block:: c++
+
+    // ...
+        // Via a member pointer
+        .property("int a", &my_class::a)
+        // Via offset
+        .property("int b", offsetof(my_class, b));
+
+Composite Members
+~~~~~~~~~~~~~~~~~
+
+*Not implemented yet*
+
+Operator Overloads
+------------------
+
+Operator overloads are registered by `special method names <https://www.angelcode.com/angelscript/sdk/docs/manual/doc_script_class_ops.html>`_ in AngelScript.
+You can just register them like ordinary methods.
+
+However, the tools introduced in this section may help you register operators more easily.
+
+Predefined Operator Helpers
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+There are predefined helpers that have the same name as AngelScript declaration.
+
+Given constant C++ references ``a`` and ``b``, as well as a variable ``val`` of the type being registered ``T``,
 
 +----------------------------------------+-----------------------------------+
 | AngelScript Declaration                | Equivalent C++ Code               |
@@ -116,140 +427,119 @@ Given constant C++ references ``a`` and ``b``, as well as a variable ``val`` of 
 | ``bool opEquals(const T&in) const``    | ``a == b``                        |
 +----------------------------------------+-----------------------------------+
 | ``int opCmp(const T&in) const``        | ``translate_three_way(a <=> b)``  |
-|                                        | *(See Note 2)*                    |
+|                                        | *(see note)*                      |
 +----------------------------------------+-----------------------------------+
 | ``T& opAddAssign(const T&in)``         | ``val += a``                      |
 +----------------------------------------+-----------------------------------+
-| ``T& opSub/Div/MulAssign(const T&in)`` | Similar to above                  |
-+----------------------------------------+-----------------------------------+
-| ``T opAdd(const T&in) const``          | ``a + b``                         |
-+----------------------------------------+-----------------------------------+
-| ``T opSub/Div/Mul(const T&in) const``  | Similar to above                  |
+| ``T& opSub/Div/MulAssign(const T&in)`` | Similar to the above one          |
 +----------------------------------------+-----------------------------------+
 | ``T& opPreInc/Dec()``                  | ``++val`` / ``--val``             |
 +----------------------------------------+-----------------------------------+
-| ``T opPostInc/Dec()``                  | ``val++`` / ``val++``             |
+
+The operators with ``T&`` as return type will return reference to the object being used,
+so multiple assignment can be chained.
+
+.. note::
+    .. doxygenfunction:: asbind20::translate_three_way
+
+    The wrapper requires ``operator<=>`` returns ``std::weak_ordering`` at least,
+    i.e., **no** ``std::partial_ordering`` support.
+    The result of three way comparison will be translated to integral value recognized by AngelScript.
+
+If the type is registered as value type, there will be some additional predefined helpers.
+These helpers will return result by value, so they cannot be used by a reference class.
+
++----------------------------------------+-----------------------------------+
+| AngelScript Declaration                | Equivalent C++ Code               |
++========================================+===================================+
+| ``T opAdd(const T&in) const``          | ``a + b``                         |
++----------------------------------------+-----------------------------------+
+| ``T opSub/Div/Mul(const T&in) const``  | Similar to the above one          |
++----------------------------------------+-----------------------------------+
+| ``T opPostInc/Dec()``                  | ``val++`` / ``val--``             |
 +----------------------------------------+-----------------------------------+
 | ``T opNeg() const``                    | ``-a``                            |
 +----------------------------------------+-----------------------------------+
 
-**Notes:**
-1. In native mode, the binding generator will try to use the member version at first, then fallback to a lambda for using friend operators. The generic mode will directly use lambda for all operators.
-2. The wrapper requires ``operator<=>`` returns ``std::weak_ordering`` at least, i.e., **no** ``std::partial_ordering`` support. The result of three way comparison will be translated to integral value recognized by AngelScript.
-3. Returning by value using native calling convention of AngelScript needs you set the type flags carefully, otherwise you might get error when receiving value from these functions. Besides, some types cannot be passed/returned by value in native calling convention on some platforms. If you encounter such situation, you can force asbind20 to use generic calling convention for the specific generated wrappers using the tag ``use_generic``. For example, ``c.opPostInc(asbind20::use_generic)``.
+Example code:
 
-If your operators are not included in the above list, you can register them by ``method()`` with a lambda for choosing the correct operator overload.
+.. code-block:: c++
 
-Garbage Collected Value Types
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Value types are normally not thought of as being part of circular references as they themselves cannot be referenced, however if a value type can hold a reference to a type, and then that type can have the value type as a member then a circular reference can be established preventing the reference type from being released.
+    struct my_class
+    {
+        my_class& operator=(const my_class&);
 
-To solve these situations the value types can also be registered with the following of the garbage collector behaviours.
+        bool operator==(const my_class&) const;
 
-+--------------------+--------------------------+--------------------+
-| Registering Helper | ``asEBehaviours``        | Script Declaration |
-+====================+==========================+====================+
-| ``enum_refs()``    | ``asBEHAVE_ENUMREFS``    | ``void f(int&in)`` |
-+--------------------+--------------------------+--------------------+
-| ``release_refs()`` | ``asBEHAVE_RELEASEREFS`` | ``void f(int&in)`` |
-+--------------------+--------------------------+--------------------+
+        std::weak_ordering operator<=>(const my_class&) const;
+
+        my_class& operator+=(const my_class&);
+        friend my_class operator+(const my_class& lhs, const my_class& rhs);
+
+        my_class& operator++();
+
+        my_class operator--(int); // the postfix one
+
+        my_class operator-() const;
+    };
+
+.. code-block:: c++
+
+    // ...
+        .opAssign()
+        .opEquals()
+        .opCmp()
+        .opAddAssign()
+        .opPreInc()
+        // For value types:
+        .opAdd()
+        .opPostInc()
+        .opNeg();
+
+Type Conversion Operators
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The type conversion operators can be used to convert types without a conversion constructor.
+`This official document <https://www.angelcode.com/angelscript/sdk/docs/manual/doc_script_class_ops.html#doc_script_class_conv>`_ has explained the logic of type conversion in AngelScript
+
+.. code-block:: c++
+
+    struct my_class
+    {
+        operator bool() const;
+
+        explicit operator std::string() const
+    };
+
+The generated conversion operators will use the expression ``static_cast<T>(val)`` internally.
+
+.. code-block:: c++
+
+    // ...
+        // Type declaration can be omitted for primitive types
+        .opImplConv<bool>()
+        // Remember to register support of string at first
+        .opConv<std::string>("string");
+
+More Complex Operators
+~~~~~~~~~~~~~~~~~~~~~~
+
+If you want to register an operator overload whose signature is not listed above,
+you can try the tools in header ``asbind20/operators.hpp``.
 
 Member Aliases
 --------------
 You can register a member ``funcdef``.
-Here use a template class as example, but the same logic also applies to value class.
+
+Here use a the ``script_array`` from asbind20 extension as an example.
+The same logic also applies to other classes.
 
 .. code-block:: c++
 
-    template_class<script_array>(engine, "array<T>", asOBJ_GC);
+    // ...
         .funcdef("bool erase_if_callback(const T&in if_handle_then_const)")
-        .method("void erase_if(const erase_if_callback&in fn, uint idx=0, uint n=-1)", &script_array::script_erase_if);
+        .method("void erase_if(const erase_if_callback&in fn, uint idx=0, uint n=-1)", /* ... */);
 
-NOTE: Since the AngelScript doesn't provide an API for registering a member ``funcdef`` directly (as for 2.37), the binding generator will insert ``class-name::`` into the function signature and then register it with underlying interface.
-
-Utilities
----------
-
-Automatically Register Common Behaviours
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The ``behaviours_by_traits()`` will use ``asGetTypeTraits<T>()`` to register default constructor, copy constructor, assignment operator (``operator=`` / ``opAssign``) and destructor accordingly.
-
-**NOTE: DO NOT register those function manually again after using this helper! Otherwise, you will get an error of duplicated function.**
-
-Generic Wrapper for Ordinary Methods
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Register with advanced API ``c.method(use_generic, "method decl", fp<&val_class:member_fun>)``. This will create a generic wrapper for the ``val_class::member_fun`` and register it with ``asCALL_GENERIC`` convention.
-
-Registering a Reference Class
-=============================
-For non-template reference class, register it with ``ref_class`` helper. This is similar to registering a value class. But the constructor is replaced by factory function. Thus, you need to register special behaviours for AngelScript to handle lifetime of the registered object type, e.g., ``addref()`` and ``release()``. Additionally, you can `check the official document for other memory management ways <https://www.angelcode.com/angelscript/sdk/docs/manual/doc_reg_basicref.html#doc_reg_nocount>`_ for reference type.
-
-Generating Wrappers
--------------------
-
-Behaviors for handling lifetime:
-For ordinary reference types, you only need to support reference counting by registering ``addref()`` and ``release()``.
-However, if you are registering types involving circular reference, you may need to register behaviours for GC. Please `read the official document explaining GC <https://www.angelcode.com/angelscript/sdk/docs/manual/doc_gc_object.html>`_. For garbage collected types with reference counting, you should be aware of that ``addref()`` and ``release()`` should clear GC flag according to `the official document <https://www.angelcode.com/angelscript/sdk/docs/manual/doc_gc_object.html#doc_reg_gcref_3>`_.
-
-+--------------------+--------------------------+--------------------+
-| Registering Helper |    ``asEBehaviours``     | Script Declaration |
-+====================+==========================+====================+
-| ``addref()``       | ``asBEHAVE_ADDREF``      | ``void f()``       |
-+--------------------+--------------------------+--------------------+
-| ``release()``      | ``asBEHAVE_RELEASE``     | ``void f()``       |
-+--------------------+--------------------------+--------------------+
-| ``get_refcount()`` | ``asBEHAVE_GETREFCOUNT`` | ``int f()``        |
-+--------------------+--------------------------+--------------------+
-| ``set_gc_flag()``  | ``asBEHAVE_SETGCFLAG``   | ``void f()``       |
-+--------------------+--------------------------+--------------------+
-| ``get_gc_flag()``  | ``asBEHAVE_GETGCFLAG``   | ``bool f()``       |
-+--------------------+--------------------------+--------------------+
-| ``enum_refs()``    | ``asBEHAVE_ENUMREFS``    | ``void f(int&in)`` |
-+--------------------+--------------------------+--------------------+
-| ``release_refs()`` | ``asBEHAVE_RELEASEREFS`` | ``void f(int&in)`` |
-+--------------------+--------------------------+--------------------+
-
-Factory
-~~~~~~~
-Similar to ``constructor(_function)()`` / ``list_constructor(_function)()``, they can be registered by ``factory(_function)()`` / ``list_factory(_function)()``. The only difference is that, while constructor of value class uses placement ``new`` on uninitialized memory preallocated by AngelScript,
-factory of reference type returns a pointer to an allocated and initialized object.
-
-Some tips for the factory of reference type:
-- For reference counted type, the reference counter should be set to ``1`` during initialization.
-- If your type involves GC, you need to notify the GC of a newly created object by ``NotifyGarbageCollectorOfNewObject``, `as explained in AngelScript's official document <https://www.angelcode.com/angelscript/sdk/docs/manual/doc_gc_object.html#doc_reg_gcref_2>`_. The asbind20 also provides a policy called ``policies::notify_gc`` for (list) factory functions to automatically notify the GC after a new object created.
-
-Operators
-~~~~~~~~~
-They are similar to binding operators for value type.
-However, the generated operator wrappers don't support function that may return a reference class by value, e.g. ``T opAdd(const T&in) const``, which can easily cause an issue related to lifetime.
-You can use a lambda expression to convert value to pointer/reference by your desired conversion logic.
-
-Methods
-~~~~~~~
-Similar to that for value class. But you should deal with ownership/lifetime of returned object carefully. Use a lambda wrapper if necessary.
-
-Templated Value/Reference Class
-===============================
-The template class is special value/reference class. It can be registered with ``template_value_class``/``template_ref_class``. The binding generator will automatically handle the hidden type information (``asITypeInfo*``, passed by ``int&in`` in AngelScript) as the first argument when generating constructor/factory function from C++ constructors.
-
-The template validation callback (``asBEHAVE_TEMPLATE_CALLBACK``) can be registered with ``template_callback``. The C++ signature of the callback should be ``bool(asITypeInfo*, bool&)``. You can read the `official document explaining template callback <https://www.angelcode.com/angelscript/sdk/docs/manual/doc_adv_template.html#doc_adv_template_4>`_.
-
-You can find detailed example in extension for registering script array.
-
-Notice for returning/receiving templated value class by value using generic wrapper
------------------------------------------------------------------------------------
-Usually, the copy constructor of templated value class is declared as ``(asITypeInfo*, const Class& other)``, so the class may not have a ordinary copy/move constructor in C++,
-thus the generic wrapper will try to use `NRVO <https://en.cppreference.com/w/cpp/language/copy_elision>`_ for those non-copyable/non-moveable types to directly construct them at the return location.
-However, if this is not your desired behavior, you `need to tell asbind20 how to convert those values for generic wrapper <./custom_conv_rule.md>`_.
-
-Registering an Interface
-========================
-
-.. code-block:: c++
-
-    asIScriptEngine* engine = ...;
-    asbind20::interface(engine, "my_interface")
-        // Declaration only
-        .method("int get() const")
-        .funcdef("int callback(int)")
-        .method("int invoke(callback@ cb) const");
+.. note::
+   Unlike the raw AngelScript interface,
+   you don't need to add the class name into the declaration of member ``funcdef`` for asbind20.

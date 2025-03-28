@@ -9,6 +9,7 @@ Contents:
 
    object_type
    global
+   misc_type
 
 .. toctree::
    :maxdepth: 1
