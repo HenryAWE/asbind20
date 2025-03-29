@@ -111,3 +111,6 @@ Atomic Reference Counting
 .. doxygenclass:: asbind20::atomic_counter
    :members:
    :undoc-members:
+
+For garbage collected types,
+`please read the official document about thread safety and GC <https://www.angelcode.com/angelscript/sdk/docs/manual/doc_gc_object.html#doc_reg_gcref_4>`_.

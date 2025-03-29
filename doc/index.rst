@@ -86,6 +86,7 @@ Contents:
    advanced/custom_conv_rule
    advanced/init_list
    advanced/script_type
+   advanced/gc
    advanced/generic
    advanced/threading
 
