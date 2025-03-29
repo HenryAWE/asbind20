@@ -444,6 +444,50 @@ Methods Using Composite Members
 
 *Not implemented yet*
 
+Tips for Registering Methods
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Registering Argument-Dependent Interfaces
+
+   The member functions you want to register may have default arguments.
+   Besides, some C++ libraries use the `argument-dependent lookup (ADL) <https://en.cppreference.com/w/cpp/language/adl>`_ to extend their interfaces.
+
+   You need a wrapper function for this kind of interface.
+   For convenience, you can also register them by lambda expressions.
+
+   .. code-block:: c++
+
+    value_class<math_lib_3rd::int128_t>(engine, "int128", /* ... */)
+        .method(
+            "int128 abs() const",
+            [](const math_lib_3rd::int128& val)
+                -> math_lib_3rd::int128_t
+            {
+                // No need to explicitly specify the namespace for abs(int128_t)
+                return abs(val);
+            }
+        );
+
+2. Overloaded Member Functions in C++
+
+   It will be ambiguous to take address of overloaded functions,
+   you need to use ``static_cast`` with an exact declaration to choose the function you want.
+
+   .. code-block:: c++
+
+    class my_class
+    {
+    public:
+        void foo(int);
+        void foo(float) const;
+    };
+
+   .. code-block:: c++
+
+    // ...
+        .method("void foo(int)", static_cast<void (my_class::*)(int)>(&my_class::foo))
+        .method("void foo(int)", static_cast<void (my_class::*)(float) const>(&my_class::foo));
+
 Object Properties
 -----------------
 
