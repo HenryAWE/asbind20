@@ -1,8 +1,32 @@
-Miscellaneous Types
-===================
+Auxiliary Interfaces
+====================
+
+Registering an Interface
+------------------------
+
+Class interfaces can be registered if you want to guarantee that script classes implement a specific set of class methods.
+Interfaces can be easier to use when working with script classes from the application,
+but they are not necessary as the application can easily enumerate available methods and properties even without the interfaces.
+
+.. code-block:: c++
+
+    asbind20::interface(engine, "my_interface")
+        // Declarations only
+        .method("int get() const")
+        .funcdef("int callback(int)")
+        .method("int invoke(callback@ cb) const");
+
+.. note::
+   Unlike the raw AngelScript interface,
+   you don't need to add the class name into the declaration of member ``funcdef`` for asbind20.
 
 Type Aliases
 ------------
+
+Function definitions can be registered when you wish to allow the script to pass function pointers to the application,
+e.g. to implement callback routines.
+
+Enumeration types and ``typedef``\ s can also be registered to improve readability of the scripts.
 
 .. doxygenclass:: asbind20::global
     :members: funcdef, typedef_, using_
@@ -66,22 +90,3 @@ The following code is equivalent to the above one:
 
    If you are interested in how this is achieved, you can read `this article written by YKIKO (Chinese) <https://zhuanlan.zhihu.com/p/680412313>`_,
    or author's `English translation <https://ykiko.me/en/articles/680412313/>`_.
-
-Registering an Interface
-------------------------
-
-Class interfaces can be registered if you want to guarantee that script classes implement a specific set of class methods.
-Interfaces can be easier to use when working with script classes from the application,
-but they are not necessary as the application can easily enumerate available methods and properties even without the interfaces.
-
-.. code-block:: c++
-
-    asbind20::interface(engine, "my_interface")
-        // Declarations only
-        .method("int get() const")
-        .funcdef("int callback(int)")
-        .method("int invoke(callback@ cb) const");
-
-.. note::
-   Unlike the raw AngelScript interface,
-   you don't need to add the class name into the declaration of member ``funcdef`` for asbind20.

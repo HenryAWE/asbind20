@@ -64,7 +64,7 @@ Contents:
 
    object_type
    global
-   misc_type
+   aux_interface
 
 .. toctree::
    :maxdepth: 2

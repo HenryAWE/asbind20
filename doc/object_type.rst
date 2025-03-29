@@ -474,6 +474,36 @@ Composite Members
 
 *Not implemented yet*
 
+Registering Types with Similar Interfaces
+-----------------------------------------
+
+Sometimes you may want to reuse code for binding similar type.
+The binding generators of classes provide ``.use`` for reusing a certain set of registering code.
+
+.. code-block:: c++
+
+    struct register_refcount_helper
+    {
+        template <typename AutoRegister>
+        void operator()(AutoRegister& ar) const
+        {
+            using class_type = typename AutoRegister::class_type;
+
+            // Assuming those types have the same interfaces for reference counting
+            ar
+                .addref(class_type::addref)
+                .release(class_type::release);
+        }
+    };
+
+.. code-block:: c++
+
+    asbind20::ref_class<my_ref_class_0>(/* ... */)
+        .use(register_refcount_helper{});
+
+    asbind20::ref_class<my_ref_class_1>(/* ... */)
+        .use(register_refcount_helper{});
+
 Operator Overloads
 ------------------
 
@@ -512,7 +542,7 @@ so multiple assignment can be chained.
 .. note::
     .. doxygenfunction:: asbind20::translate_three_way
 
-    The wrapper requires ``operator<=>`` returns ``std::weak_ordering`` at least,
+    This wrapper requires ``operator<=>`` returns ``std::weak_ordering`` at least,
     i.e., **no** ``std::partial_ordering`` support.
     The result of three way comparison will be translated to integral value recognized by AngelScript.
 
@@ -595,7 +625,27 @@ More Complex Operators
 ~~~~~~~~~~~~~~~~~~~~~~
 
 If you want to register an operator overload whose signature is not listed above,
-you can try the tools in header ``asbind20/operators.hpp``.
+you can try the tools in the external header ``asbind20/operators.hpp``.
+
+Here is a brief example:
+
+.. code-block:: c++
+
+    //
+        .use(-_this)
+        .use(~const_this)
+        .use(--_this)
+        .use(_this++)
+        // If the operator* doesn't return the type being registered,
+        // e.g., dot product of a math vector which returns a scalar type.
+        // It can also be more explicitly ".use((const_this * const_this)->return_<float>())"
+        .use(const_this * const_this)
+        .use(_this += param<int>)
+        .use(const_this[param<int>])
+        // If the type involves in the operator is not the class type being registered or primitive types,
+        // you may need to manually pass the script parameter declaration.
+        .use((const_this + param<const string&>("const string&in"))->return_<string>("string"))
+        .use((param<const string&>("const string&in") + const_this)->return_<string>("string"));
 
 Member Aliases
 --------------
@@ -613,3 +663,19 @@ The same logic also applies to other classes.
 .. note::
    Unlike the raw AngelScript interface,
    you don't need to add the class name into the declaration of member ``funcdef`` for asbind20.
+
+Template Types
+--------------
+
+A template type in AngelScript works similarly to how templates work in C++.
+The scripts will be able to instantiate different forms of the template type by specifying which subtype that should be used.
+The methods for the instance will then be adapted to this subtype,
+so that the correct handling of parameters and return types will be applied.
+
+It is quite complex to implement a template class for AngelScript,
+so they are described in a separated page.
+
+.. toctree::
+   :maxdepth: 2
+
+   template_type
