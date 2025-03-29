@@ -700,9 +700,9 @@ constexpr std::string string_concat(Args&&... args)
  * @brief Convert context state enum to string
  *
  * @param state Context state
- * @return std::string String representation of the state.
- *                     If the state value is invalid, the result will be `"asEContextState({state})"`,
- *                     e.g. `"asEContextState(-1)"`.
+ * @return String representation of the state.
+ *         If the state value is invalid, the result will be `"asEContextState({state})"`,
+ *         e.g. `"asEContextState(-1)"`.
  */
 inline std::string to_string(AS_NAMESPACE_QUALIFIER asEContextState state)
 {
@@ -739,6 +739,11 @@ inline std::string to_string(AS_NAMESPACE_QUALIFIER asEContextState state)
 
 /**
  * @brief Convert return code to string
+ *
+ * @param ret Return code
+ * @return String representation of the return code.
+ *         If the value is invalid, the result will be `"asERetCodes({ret})"`,
+ *         e.g. `"asERetCodes(1)"`.
  */
 inline std::string to_string(AS_NAMESPACE_QUALIFIER asERetCodes ret)
 {
@@ -823,11 +828,11 @@ namespace meta
         using size_type = std::size_t;
 
         /**
-         * @brief INTERNAL DATA. DO NOT USE!
+         * @brief **INTERNAL DATA. DO NOT USE!**
          *
          * This member is exposed for satisfying the NTTP requirements of C++.
          *
-         * @note It includes '\0'
+         * @note It includes `\0` at the end.
          */
         char internal_data[Size + 1] = {};
 
@@ -1307,7 +1312,7 @@ public:
      * @param obj Object to connect
      * @param ti Type information
      *
-     * @note If failed to connect, this helper will be reset to nullptr.
+     * @note If it failed to connect, this helper will be reset to nullptr.
      */
     void connect_object(void* obj, AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
     {
@@ -1323,6 +1328,8 @@ public:
     /**
      * @warning If you get the lockable shared bool by `GetWeakRefFlagOfScriptObject()`,
      *          you should @b not use this function! Because it won't increase the reference count.
+     *
+     * @sa connect_object
      */
     void reset(std::in_place_t, handle_type bool_) noexcept
     {
@@ -1612,8 +1619,13 @@ public:
         return m_val;
     }
 
-    // Even prefix increment / decrement will return int value directly,
-    // which is similar to how the `std::atomic<T>` does.
+    /**
+     * @name Increment and decrement operators
+     *
+     * Even the prefix increment / decrement will return `int` value directly,
+     * which is similar to how the `std::atomic<T>` does.
+     */
+    /// @{
 
     int operator++() noexcept
     {
@@ -1624,6 +1636,8 @@ public:
     {
         return dec();
     }
+
+    /// @}
 
     /**
      * @brief Decrease reference count. It will call the destroyer if the count reaches 0.
@@ -1641,7 +1655,7 @@ public:
     }
 
     /**
-     * @brief Decrease reference count. It will delete the pointer if the count reaches 0.
+     * @brief Decrease reference count. It will `delete` the pointer if the count reaches 0.
      */
     template <typename T>
     requires(requires(T* ptr) { delete ptr; })

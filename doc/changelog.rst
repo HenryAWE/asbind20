@@ -29,5 +29,5 @@ Rewrite and migrate to Read the Docs.
 Bug Fix
 ~~~~~~~
 
-- Crash when returning some kind of value type by value
+- Generic wrapper may crash when returning some kinds of value type by value
 - Fix several bugs in ``small_vector``

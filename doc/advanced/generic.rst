@@ -1,6 +1,8 @@
 Generic Wrappers
 ================
 
+.. doxygenfunction:: asbind20::has_max_portability
+
 Wrap a Specific Method, Function, Behavior
 ------------------------------------------
 
@@ -105,5 +107,7 @@ Trying to register functions by native calling convention with ``ForceGeneric`` 
         {
             asbind20::value_class<my_value_class, UseGeneric>(engine, "my_value_class")
                 .template constructor<int>("int")
-                .template opConv<int>();
+                .template opConv<int>()
+                // The interfaces that don't need template parameters can be used as usual
+                .method("int f()", asbind20::fp<&my_value_class::f>);
         }

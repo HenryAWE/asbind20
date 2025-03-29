@@ -1,5 +1,7 @@
-RAII Utilities
-==============
+RAII Helpers
+============
+
+`RAII <https://en.cppreference.com/w/cpp/language/raii>`_ helpers for managing lifetime of AngelScript objects.
 
 ``asIScriptEngine*``
 --------------------
@@ -23,6 +25,13 @@ RAII Utilities
    :members:
    :undoc-members:
 
+``asIScriptObject*``
+--------------------
+
+.. doxygenclass:: asbind20::script_object
+   :members:
+   :undoc-members:
+
 ``asILockableSharedBool*``
 --------------------------
 
@@ -30,30 +39,7 @@ RAII Utilities
    :members:
    :undoc-members:
 
-Multithreading Utilities
-========================
-
-Locks
------
-
-.. doxygenvariable:: asbind20::as_shared_lock
-.. doxygenvariable:: asbind20::as_exclusive_lock
-
-The weak reference flag (``asILockableSharedBool*``) is also lockable.
-
-.. doxygenclass:: asbind20::lockable_shared_bool
-   :members: lock, unlock
-   :no-link:
-
-Example code:
-
-.. code-block:: c++
-
-    {
-        std::lock_guard guard(asbind20::as_exclusive_lock);
-        // Do something...
-    }
-
+.. doxygenfunction:: asbind20::make_lockable_shared_bool
 
 Miscellaneous Utilities
 =======================
@@ -63,3 +49,11 @@ Miscellaneous Utilities
 
 .. doxygenfunction:: asbind20::string_concat
 .. doxygenfunction:: asbind20::with_cstr
+
+.. doxygenclass:: asbind20::meta::fixed_string
+   :members:
+   :undoc-members:
+
+.. doxygenclass:: asbind20::meta::compressed_pair
+   :members:
+   :undoc-members:

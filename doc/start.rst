@@ -22,8 +22,8 @@ Currently, the following platforms and compilers are officially supported and te
 .. note::
    Some advanced features are only available on newer compilers.
 
-How to Use This Library
-=======================
+Integrate into Your Project
+===========================
 
 Please follow the `tutorial of AngelScript to build and install it <https://www.angelcode.com/angelscript/sdk/docs/manual/doc_compile_lib.html>`_ at first,
 or use a package manager like `vcpkg <https://github.com/microsoft/vcpkg>`_.

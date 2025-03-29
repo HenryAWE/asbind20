@@ -132,7 +132,7 @@ Please read the documentation for more information.
 
 ### 2. Using AngelScript Objects from C++ Side
 #### Invoking a Script Function
-This library can automatically convert arguments in C++ for invoking an AngelScript function. Besides, the library provides RAII classes for easily managing lifetime of AngelScript objects like `asIScriptContext*`.
+This library can automatically convert arguments in C++ for invoking an AngelScript function. Besides, the library provides RAII helpers for easily managing lifetime of AngelScript objects like `asIScriptContext*`.
 
 AngelScript function:
 ```angelscript
@@ -151,7 +151,7 @@ asIScriptFunction* func = m->GetFunctionByName("test");
 if(!func)
     /* Error handling */
 
-// Manage script context using RAII
+// Manage script context using the RAII helper
 asbind20::request_context ctx(engine);
 
 int val = 0;
@@ -166,11 +166,12 @@ assert(val == 2);
 #### Using a Script Class
 The library provides tools for instantiating a script class. The `script_invoke` also supports invoking a method, a.k.a., member function.
 
-The script defined in AngelScript:
+The script class defined in AngelScript:
 ```angelscript
 class my_class
 {
     int m_val;
+
     void set_val(int new_val) { m_val = new_val; }
     int get_val() const { return m_val; }
     int& get_val_ref() { return m_val; }

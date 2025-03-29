@@ -60,7 +60,7 @@ Contents:
 
 .. toctree::
    :maxdepth: 2
-   :caption: Registering the Application Interface
+   :caption: Registering Application Interfaces
 
    object_type
    global
@@ -87,6 +87,7 @@ Contents:
    advanced/init_list
    advanced/script_type
    advanced/generic
+   advanced/threading
 
 .. toctree::
    :maxdepth: 1
