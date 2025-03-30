@@ -7,7 +7,8 @@ namespace asbind20::concurrent
 {
 /**
  * @brief Mark this thread needs to clean up AngelScript data before terminating.
- * @note Remember to call this function in any thread other than main thread to prevent memory leak.
+ *
+ * @note Remember to call this function **in any thread other than main thread** to prevent memory leak.
  *
  * @details It's safe to call this function for the second time in the same thread.
  */
@@ -25,7 +26,7 @@ inline void auto_thread_cleanup() noexcept
 }
 
 /**
- * @brief Call this function in the @b main thread to prepare multithreading
+ * @brief Call this function in the @b main thread to prepare for multithreading
  *
  * @warning Call this function @b before any script engine is created,
  *          and make sure global variables don't contain any script engine that may be released

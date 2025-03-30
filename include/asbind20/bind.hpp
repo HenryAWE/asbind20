@@ -2379,6 +2379,9 @@ public:
         return *this;
     }
 
+    /**
+     * @brief Register a global property
+     */
     template <typename T>
     global& property(
         std::string_view decl,
@@ -2397,6 +2400,11 @@ public:
         return *this;
     }
 
+    /**
+     * @brief Register a funcdef
+     *
+     * @param decl Function declaration
+     */
     global& funcdef(
         std::string_view decl
     )
@@ -2412,6 +2420,12 @@ public:
         return *this;
     }
 
+    /**
+     * @brief Register a typedef
+     *
+     * @param type_decl Type declaration
+     * @param new_name Aliased type name
+     */
     global& typedef_(
         std::string_view type_decl,
         std::string_view new_name
@@ -2430,7 +2444,10 @@ public:
     }
 
     /**
-     * @brief For those who feel more comfortable with the C++ 11 style `using alias = type`
+     * @brief Register a typedef in C++11 style
+     *
+     * @param new_name Aliased type name
+     * @param type_decl Type declaration
      */
     global& using_(
         std::string_view new_name,
@@ -2443,13 +2460,16 @@ public:
     }
 
     /**
-     * Generic calling convention for message callback is not supported.
+     * @brief Generic calling convention for message callback is not supported.
      */
     global& message_callback(
         AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
         void* obj = nullptr
     ) = delete;
 
+    /**
+     * @brief Set the message callback.
+     */
     template <native_function Callback>
     requires(!std::is_member_function_pointer_v<std::decay_t<Callback>>)
     global& message_callback(Callback fn, void* obj = nullptr)
@@ -2466,6 +2486,9 @@ public:
         return *this;
     }
 
+    /**
+     * @brief Set a member function as the message callback.
+     */
     template <native_function Callback, typename T>
     requires(std::is_member_function_pointer_v<std::decay_t<Callback>>)
     global& message_callback(Callback fn, T& obj)
@@ -2483,13 +2506,16 @@ public:
     }
 
     /**
-     * Generic calling convention for exception translator is not supported.
+     * @brief Generic calling convention for exception translator is not supported.
      */
     global& exception_translator(
         AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
         void* obj = nullptr
     ) = delete;
 
+    /**
+     * @brief Set the exception translator.
+     */
     template <native_function Callback>
     requires(!std::is_member_function_pointer_v<std::decay_t<Callback>>)
     global& exception_translator(Callback fn, void* obj = nullptr)
@@ -2506,6 +2532,9 @@ public:
         return *this;
     }
 
+    /**
+     * @brief Set a member function as the exception translator.
+     */
     template <native_function Callback, typename T>
     requires(std::is_member_function_pointer_v<std::decay_t<Callback>>)
     global& exception_translator(Callback fn, T& obj)
@@ -3655,6 +3684,13 @@ private:
         return *this;                                                                        \
     }
 
+/**
+ * @brief Register helper for value class
+ *
+ * @tparam Class Class to be registered
+ * @tparam Template True if the class is a templated type
+ * @tparam ForceGeneric Force all registered methods and behaviors to use the generic calling convention
+ */
 template <typename Class, bool Template = false, bool ForceGeneric = false>
 class basic_value_class final : public class_register_helper_base<ForceGeneric>
 {

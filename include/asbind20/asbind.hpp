@@ -38,7 +38,7 @@ inline const char* library_version() noexcept
 }
 
 /**
- * @brief Check if `asGetLibraryOptions()` returns "AS_MAX_PORTABILITY"
+ * @brief Check if `asGetLibraryOptions()` returns `"AS_MAX_PORTABILITY"`
  */
 [[nodiscard]]
 inline bool has_max_portability(
@@ -49,7 +49,7 @@ inline bool has_max_portability(
 }
 
 /**
- * @brief Check if `asGetLibraryOptions()` doesn't return "AS_NO_EXCEPTIONS"
+ * @brief Check if `asGetLibraryOptions()` doesn't return `"AS_NO_EXCEPTIONS"`
  */
 [[nodiscard]]
 inline bool has_exceptions(
@@ -60,7 +60,7 @@ inline bool has_exceptions(
 }
 
 /**
- * @brief Check if `asGetLibraryOptions()` doesn't return "AS_NO_THREADS"
+ * @brief Check if `asGetLibraryOptions()` doesn't return `"AS_NO_THREADS"`
  */
 [[nodiscard]]
 inline bool has_threads(

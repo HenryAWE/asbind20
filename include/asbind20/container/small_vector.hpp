@@ -41,17 +41,31 @@ namespace detail
     };
 } // namespace detail
 
+/**
+ * @brief Sequential container for AngelScript objects with small size optimization (SSO)
+ *
+ * @tparam TypeInfoPolicy Type information policy for element type
+ * @tparam StaticCapcityBytes Static capacity in bytes.
+ *                            Must be aligned with the size of pointer, e.g. `4 * sizeof(void*)`.
+ * @tparam Allocator Allocator type which is able to rebind to multiple types.
+ *                   Its member `pointer_type` must be compatible with raw pointers.
+ *
+ * @details Most members have the same meaning as member functions of the same name in `std::vector`
+ */
 template <
     typeinfo_policy TypeInfoPolicy,
     std::size_t StaticCapacityBytes = 4 * sizeof(void*),
     typename Allocator = as_allocator<void>>
 requires(StaticCapacityBytes > 0)
-class small_vector : detail::small_vector_impl
+class small_vector
+#ifndef ASBIND20_DOXYGEN
+    : private detail::small_vector_impl
+#endif
 {
 public:
     static_assert(
         StaticCapacityBytes % sizeof(void*) == 0,
-        "static storage size must be aligned with size of pointer"
+        "static storage size must be aligned with the size of pointer"
     );
 
     using size_type = std::size_t;
@@ -1186,6 +1200,12 @@ public:
         }
     }
 
+    /**
+     * @name Type information
+     */
+
+    /// @{
+
     [[nodiscard]]
     auto get_type_info() const noexcept
         -> AS_NAMESPACE_QUALIFIER asITypeInfo*
@@ -1205,6 +1225,14 @@ public:
     {
         return impl().elem_type_id();
     }
+
+    /// @}
+
+    /**
+     * @name Capacity
+     */
+
+    /// @{
 
     [[nodiscard]]
     size_type static_capacity() const noexcept
@@ -1249,27 +1277,19 @@ public:
         );
     }
 
-    void resize(size_type new_size)
-    {
-        return visit_impl(
-            [new_size](auto& impl)
-            { return impl.resize(new_size); }
-        );
-    }
-
-    void clear() noexcept
-    {
-        return visit_impl(
-            [](auto& impl)
-            { return impl.clear(); }
-        );
-    }
-
     [[nodiscard]]
     bool empty() const noexcept
     {
         return size() == 0;
     }
+
+    /// @}
+
+    /**
+     * @name Element access
+     */
+
+    /// @{
 
     [[nodiscard]]
     void* data() noexcept
@@ -1305,49 +1325,23 @@ public:
         );
     }
 
-    void push_back(const void* ref)
-    {
-        return visit_impl(
-            [ref](auto& impl)
-            { return impl.push_back(ref); }
-        );
-    }
+    /// @}
 
-    void emplace_back()
-    {
-        return visit_impl(
-            [](auto& impl)
-            { return impl.emplace_back(); }
-        );
-    }
+    /**
+     * @name Iterators of small vector
+     */
 
-    void push_back_n(size_type n, const void* ref)
-    {
-        return visit_impl(
-            [n, ref](auto& impl)
-            { return impl.push_back_n(n, ref); }
-        );
-    }
-
-    void emplace_back_n(size_type n)
-    {
-        return visit_impl(
-            [n](auto& impl)
-            { return impl.emplace_back_n(n); }
-        );
-    }
-
-    void pop_back() noexcept
-    {
-        return visit_impl(
-            [](auto& impl)
-            { return impl.pop_back(); }
-        );
-    }
+    /// @{
 
     class iterator;
 
-    class const_iterator : private impl_interface::iterator_interface
+    /**
+     * @brief Const iterator of small vector
+     */
+    class const_iterator
+#ifndef ASBIND20_DOXYGEN
+        : private impl_interface::iterator_interface
+#endif
     {
         friend iterator;
         friend small_vector;
@@ -1496,6 +1490,70 @@ public:
         return cend();
     }
 
+    /// @}
+
+    /**
+     * @name Modifiers
+     */
+
+    /// @{
+
+    void resize(size_type new_size)
+    {
+        return visit_impl(
+            [new_size](auto& impl)
+            { return impl.resize(new_size); }
+        );
+    }
+
+    void clear() noexcept
+    {
+        return visit_impl(
+            [](auto& impl)
+            { return impl.clear(); }
+        );
+    }
+
+    void push_back(const void* ref)
+    {
+        return visit_impl(
+            [ref](auto& impl)
+            { return impl.push_back(ref); }
+        );
+    }
+
+    void emplace_back()
+    {
+        return visit_impl(
+            [](auto& impl)
+            { return impl.emplace_back(); }
+        );
+    }
+
+    void push_back_n(size_type n, const void* ref)
+    {
+        return visit_impl(
+            [n, ref](auto& impl)
+            { return impl.push_back_n(n, ref); }
+        );
+    }
+
+    void emplace_back_n(size_type n)
+    {
+        return visit_impl(
+            [n](auto& impl)
+            { return impl.emplace_back_n(n); }
+        );
+    }
+
+    void pop_back() noexcept
+    {
+        return visit_impl(
+            [](auto& impl)
+            { return impl.pop_back(); }
+        );
+    }
+
     void insert(size_type where, const void* ref)
     {
         return visit_impl(
@@ -1587,6 +1645,14 @@ public:
         );
     }
 
+    /// @}
+
+    /**
+     * @name Visiting members
+     */
+
+    /// @{
+
     template <typename Visitor>
     decltype(auto) visit(Visitor&& vis, size_type start, size_type count)
     {
@@ -1615,6 +1681,11 @@ public:
         );
     }
 
+    /// @}
+
+    /**
+     * @brief Enumerate references for GC
+     */
     void enum_refs()
     {
         return visit_impl(
