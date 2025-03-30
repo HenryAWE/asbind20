@@ -1510,9 +1510,6 @@ inline void register_script_array(
     using size_type = array_t::size_type;
     using index_type = array_t::index_type;
 
-#define ASBIND20_EXT_ARRAY_MFN(name, ret, args) \
-    fp<static_cast<ret(array_t::*) args>(&array_t::name)>
-
     auto helper = [engine, as_default]<bool UseGeneric>(std::bool_constant<UseGeneric>)
     {
         template_ref_class<array_t, UseGeneric> c(
@@ -1573,12 +1570,12 @@ inline void register_script_array(
             .method("void sort(int start=0, uint n=uint(-1), bool asc=true, bool stable=false)", fp<&array_t::sort>)
             .funcdef("bool sort_by_callback(const T&in, const T&in)")
             .method("void sort_by(const sort_by_callback&in, int start=0, uint n=uint(-1), bool asc=true, bool stable=false)", fp<&array_t::sort_by>)
-            .method("void reverse(int start=0, uint n=uint(-1))", ASBIND20_EXT_ARRAY_MFN(reverse, void, (index_type, size_type)))
-            .method("void reverse(const_array_iterator<T> start)", ASBIND20_EXT_ARRAY_MFN(reverse, void, (iter_t)))
-            .method("void reverse(const_array_iterator<T> start, const_array_iterator<T> stop)", ASBIND20_EXT_ARRAY_MFN(reverse, void, (iter_t, iter_t)))
-            .method("uint remove(const T&in, int start=0, uint n=uint(-1)) const", ASBIND20_EXT_ARRAY_MFN(remove, size_type, (const void*, index_type, size_type)))
+            .method("void reverse(int start=0, uint n=uint(-1))", fp<overload_cast<index_type, size_type>(&array_t::reverse)>)
+            .method("void reverse(const_array_iterator<T> start)", fp<overload_cast<iter_t>(&array_t::reverse)>)
+            .method("void reverse(const_array_iterator<T> start, const_array_iterator<T> stop)", fp<overload_cast<iter_t, iter_t>(&array_t::reverse)>)
+            .method("uint remove(const T&in, int start=0, uint n=uint(-1)) const", fp<&array_t::remove>)
             .funcdef("bool remove_if_callback(const T&in)")
-            .method("uint remove_if(const remove_if_callback&in, int start=0, uint n=uint(-1)) const", ASBIND20_EXT_ARRAY_MFN(remove_if, size_type, (AS_NAMESPACE_QUALIFIER asIScriptFunction*, index_type, size_type)))
+            .method("uint remove_if(const remove_if_callback&in, int start=0, uint n=uint(-1)) const", fp<&array_t::remove_if>)
             .method("uint count(const T&in, int start=0, uint n=uint(-1)) const", fp<&array_t::count>)
             .funcdef("bool count_if_callback(const T&in)")
             .method("uint count_if(const count_if_callback&in, int start=0, uint n=uint(-1)) const", fp<&array_t::count_if>)
@@ -1588,13 +1585,13 @@ inline void register_script_array(
             .method("const_array_iterator<T> end() const", fp<&array_t::script_end>)
             .method("const_array_iterator<T> cbegin() const", fp<&array_t::script_begin>)
             .method("const_array_iterator<T> cend() const", fp<&array_t::script_end>)
-            .method("array_iterator<T> erase(array_iterator<T> where)", ASBIND20_EXT_ARRAY_MFN(erase, iter_t, (iter_t)))
-            .method("const_array_iterator<T> erase(const_array_iterator<T> where)", ASBIND20_EXT_ARRAY_MFN(erase, iter_t, (iter_t)))
+            .method("array_iterator<T> erase(array_iterator<T> where)", fp<&array_t::erase>)
+            .method("const_array_iterator<T> erase(const_array_iterator<T> where)", fp<&array_t::erase>)
             .method("array_iterator<T> find(const T&in, int start=0, uint n=uint(-1))", fp<&array_t::find>)
             .method("const_array_iterator<T> find(const T&in, int start=0, uint n=uint(-1)) const", fp<&array_t::find>)
-            .method("bool contains(const T&in, int start=0, uint n=uint(-1)) const", ASBIND20_EXT_ARRAY_MFN(contains, bool, (const void*, index_type, size_type) const))
-            .method("array_iterator<T> insert(array_iterator<T> where, const T&in)", ASBIND20_EXT_ARRAY_MFN(insert, iter_t, (iter_t, const void*)))
-            .method("const_array_iterator<T> insert(const_array_iterator<T> where, const T&in)", ASBIND20_EXT_ARRAY_MFN(insert, iter_t, (iter_t, const void*)));
+            .method("bool contains(const T&in, int start=0, uint n=uint(-1)) const", fp<&array_t::contains>)
+            .method("array_iterator<T> insert(array_iterator<T> where, const T&in)", fp<&array_t::insert>)
+            .method("const_array_iterator<T> insert(const_array_iterator<T> where, const T&in)", fp<&array_t::insert>);
 
         using difference_type = iter_t::difference_type;
         auto iterator_common = [](auto& r)

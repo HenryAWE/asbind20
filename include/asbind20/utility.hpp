@@ -192,6 +192,47 @@ concept noncapturing_lambda = requires() {
     { +Lambda{} } -> native_function;
 } && std::is_empty_v<Lambda>;
 
+namespace detail
+{
+    template <typename... Args>
+    struct overload_cast_impl
+    {
+        template <typename Return>
+        constexpr auto operator()(Return (*pfn)(Args...)) const noexcept
+            -> decltype(pfn)
+        {
+            return pfn;
+        }
+
+        template <typename Return, typename Class>
+        constexpr auto operator()(Return (Class::*mp)(Args...), std::false_type = {}) const noexcept
+            -> decltype(mp)
+        {
+            return mp;
+        }
+
+        template <typename Return, typename Class>
+        constexpr auto operator()(Return (Class::*mp)(Args...) const, std::true_type) const noexcept
+            -> decltype(mp)
+        {
+            return mp;
+        }
+    };
+} // namespace detail
+
+/**
+ * @brief Tag for indicating const member
+ */
+constexpr inline std::true_type const_;
+
+/**
+ * @brief Helper for choosing overloaded function
+ *
+ * @tparam Args Parameters of the desired function
+ */
+template <typename... Args>
+constexpr inline detail::overload_cast_impl<Args...> overload_cast{};
+
 /**
  * @brief Wrap NTTP function pointer as type
  *
