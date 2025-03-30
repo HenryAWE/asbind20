@@ -93,7 +93,7 @@ asbind20::value_class<my_value_class>(
     .method("void mul(int val)", &mul_obj_first) // asCALL_CDECL_OBJFIRST
     .method("void add(int val)", &add_obj_last)  // asCALL_CDECL_OBJLAST
     .method("void my_op(int)", &set_val_gen)     // asCALL_GENERIC
-    // Use lambda to bind a function found by ADL
+    // Use lambda for a function which is designed to be found by ADL
     .method(
         "void process()",
         [](my_value_class& val) -> void { process(val); }

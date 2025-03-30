@@ -68,7 +68,7 @@ Contents:
 
 .. toctree::
    :maxdepth: 2
-   :caption: Using Script Interfaces
+   :caption: Using AngelScript Interfaces
 
    invoke
    container

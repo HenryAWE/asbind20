@@ -14,6 +14,24 @@
 
 namespace asbind20::container
 {
+/**
+ * @brief Concept of type information policies
+ */
+template <typename T>
+concept typeinfo_policy = requires(AS_NAMESPACE_QUALIFIER asITypeInfo* ti) {
+    typename T::typeinfo_policy_tag;
+    { T::get_type_info(ti) } -> std::same_as<AS_NAMESPACE_QUALIFIER asITypeInfo*>;
+    { T::get_type_id(ti) } -> std::same_as<int>;
+};
+
+/**
+ * @defgroup TypeInfoPolicies Policies for how containers deal with the type information
+ */
+///@{
+
+/**
+ * @brief The type information itself is for the element
+ */
 struct typeinfo_identity
 {
     using typeinfo_policy_tag = void;
@@ -32,6 +50,11 @@ struct typeinfo_identity
     }
 };
 
+/**
+ * @brief The subtype of type information is for the element
+ *
+ * @tparam Idx Index of the subtype
+ */
 template <AS_NAMESPACE_QUALIFIER asUINT Idx>
 struct typeinfo_subtype :
     public std::integral_constant<AS_NAMESPACE_QUALIFIER asUINT, Idx>
@@ -54,12 +77,7 @@ struct typeinfo_subtype :
     }
 };
 
-template <typename T>
-concept typeinfo_policy = requires(AS_NAMESPACE_QUALIFIER asITypeInfo* ti) {
-    typename T::typeinfo_policy_tag;
-    { T::get_type_info(ti) } -> std::same_as<AS_NAMESPACE_QUALIFIER asITypeInfo*>;
-    { T::get_type_id(ti) } -> std::same_as<int>;
-};
+/// @}
 } // namespace asbind20::container
 
 #endif

@@ -1,5 +1,5 @@
-Using Script Interfaces
-=======================
+Invoking Script Interfaces
+==========================
 
 Invoking a Script Function
 --------------------------
@@ -44,6 +44,8 @@ Using a Script Class
 --------------------
 
 The library provides tools for instantiating a script class.
+
+.. doxygenfunction:: asbind20::instantiate_class
 
 The ``script_invoke`` also supports invoking a method, a.k.a., member function.
 You need to put the script object in front of the script function in arguments,

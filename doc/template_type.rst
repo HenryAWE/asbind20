@@ -87,7 +87,7 @@ which will make AngelScript clear the ``asOBJ_GC`` flag for the object type.
 If the template instance cannot form any circular references, then it doesn't need to be garbage collected,
 which reduces the work that has to be done by the garbage collector.
 
-:doc:`The tools for handling type IDs can help you to deal with validation. <advanced/script_type>`
+:doc:`The tools for handling AngelScript types can help you to deal with validation. <advanced/script_type>`
 
 Example code from the validator of ``script_optional``:
 
