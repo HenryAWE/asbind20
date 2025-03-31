@@ -6,6 +6,8 @@ Changelog since the version 1.5.0.
 1.5.0
 -----
 
+2025-3-31
+
 What's New
 ~~~~~~~~~~
 
@@ -21,6 +23,9 @@ Extension Library
 ^^^^^^^^^^^^^^^^^
 
 First stable version of extension library released!
+
+Please check the comment in source code of extension for their documentation.
+Full documentation for extension library is coming soon.
 
 Documentation
 ~~~~~~~~~~~~~
