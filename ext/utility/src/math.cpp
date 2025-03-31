@@ -145,10 +145,10 @@ void register_math_func_integral(asIScriptEngine* engine)
     // clang-format off
 
 #define ASBIND20_EXT_MATH_REG_UNARY_F(type, name) \
-    function(#type " " #name "(" #type " num)", fp<static_cast<type (*)(type)>(&math_##name##_1<type>)>)
+    function(#type " " #name "(" #type " num)", fp<overload_cast<type>(&math_##name##_1<type>)>)
 
 #define ASBIND20_EXT_MATH_REG_BINARY_F(type, name, arg1, arg2) \
-    function(#type " " #name "(" #type " " #arg1 "," #type " " #arg2 ")", fp<static_cast<type (*)(type, type)>(&math_##name##_2<type>)>)
+    function(#type " " #name "(" #type " " #arg1 "," #type " " #arg2 ")", fp<overload_cast<type, type>(&math_##name##_2<type>)>)
 
 #define ASBIND20_EXT_MATH_REG_UNARY_F_SIGNED(name) \
      ASBIND20_EXT_MATH_REG_UNARY_F(int, name)      \
@@ -176,7 +176,7 @@ void register_math_func_integral(asIScriptEngine* engine)
 
     // clang-format on
 
-    asbind20::global<UseGeneric>(engine)
+    global<UseGeneric>(engine)
         // Basic operations
         .ASBIND20_EXT_MATH_REG_UNARY_F_SIGNED(abs)
         .ASBIND20_EXT_MATH_REG_BINARY_F_ALL(min, a, b)

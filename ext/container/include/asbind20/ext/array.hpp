@@ -1634,8 +1634,6 @@ inline void register_script_array(
 
         if(as_default)
             c.as_array();
-
-#undef ASBIND20_EXT_ARRAY_MFN
     };
 
     if(generic)

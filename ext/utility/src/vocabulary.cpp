@@ -185,9 +185,6 @@ void register_script_optional(
             flags
         );
 
-#define ASBIND20_EXT_OPTIONAL_MFN(name, ret, args) \
-    fp<static_cast<ret(script_optional::*) args>(&script_optional::name)>
-
         c
             .template_callback(fp<&optional_template_callback>)
             .default_constructor()
@@ -216,13 +213,11 @@ void register_script_optional(
             .property("const bool has_value", &script_optional::m_has_value)
             .template opConv<bool>()
             .method("void reset()", fp<&script_optional::reset>)
-            .method("T& get_value() property", ASBIND20_EXT_OPTIONAL_MFN(value, void*, ()))
-            .method("const T& get_value() const property", ASBIND20_EXT_OPTIONAL_MFN(value, void*, ()))
+            .method("T& get_value() property", fp<overload_cast<>(&script_optional::value)>)
+            .method("const T& get_value() const property", fp<overload_cast<>(&script_optional::value, const_)>)
             .method("void set_value(const T&in) property", fp<&script_optional::assign>)
-            .method("T& value_or(T&in val)", ASBIND20_EXT_OPTIONAL_MFN(value_or, void*, (void*)))
-            .method("const T& value_or(const T&in val) const", ASBIND20_EXT_OPTIONAL_MFN(value_or, void*, (void*)));
-
-#undef ASBIND20_EXT_OPTIONAL_MFN
+            .method("T& value_or(T&in val)", fp<overload_cast<void*>(&script_optional::value_or)>)
+            .method("const T& value_or(const T&in val) const", fp<overload_cast<const void*>(&script_optional::value_or, const_)>);
     };
 
     if(use_generic)
