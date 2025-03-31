@@ -735,7 +735,7 @@ int set_script_object(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, Object&& obj
 }
 
 /**
- * @brief Calling a method on script class
+ * @brief Call a method on script object
  */
 template <typename R, script_object_handle Object, typename... Args>
 script_invoke_result<R> script_invoke(
@@ -941,7 +941,7 @@ public:
  * @param ctx Script context
  * @param class_info Script class type information
  *
- * @return object Instantiated script object, or empty object if failed
+ * @return Instantiated script object, or empty object if failed
  *
  * @note This function requires the class to be default constructible
  */

@@ -34,7 +34,7 @@ Extension Library
 -----------------
 
 The extension library contains some tools that are less flexible than those in the core library.
-It also contains demonstration for how to register some common types like array or string by asbind.
+It also contains demonstration for how to register some common types like array or string by asbind20.
 
 The extension library was developed for personal project at first
 (actually, the whole asbind20 was a submodule of personal project long time ago),

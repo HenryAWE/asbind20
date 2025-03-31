@@ -526,6 +526,10 @@ Registering Types with Similar Interfaces
 Sometimes you may want to reuse code for binding similar type.
 The binding generators of classes provide ``.use`` for reusing a certain set of registering code.
 
+For example,
+if your reference classes all use ``addref`` and ``release`` for reference counting,
+you can create a helper to register those behaviors.
+
 .. code-block:: c++
 
     struct register_refcount_helper
@@ -535,10 +539,10 @@ The binding generators of classes provide ``.use`` for reusing a certain set of 
         {
             using class_type = typename AutoRegister::class_type;
 
-            // Assuming those types have the same interfaces for reference counting
+            // Assuming those types have the same interfaces
             ar
-                .addref(class_type::addref)
-                .release(class_type::release);
+                .addref(&class_type::addref)
+                .release(&class_type::release);
         }
     };
 
@@ -673,25 +677,90 @@ More Complex Operators
 If you want to register an operator overload whose signature is not listed above,
 you can try the tools in the external header ``asbind20/operators.hpp``.
 
-Here is a brief example:
+The operator tools use ``_this`` or ``const_this`` as a placeholder,
+and use ``param<T>`` for parameters.
+
+If you want to specify the return type, you can use ``->return_<T>()``,
+which is designed to simulate the trailing return type ``auto f() -> Return`` since C++11.
 
 .. code-block:: c++
 
-    //
+    struct my_class
+    {
+        int operator-();
+        float operator~() const;
+
+        int operator--();
+        int operator++(int);
+
+        my_class& operator+=(int val);
+
+        int operator[](int idx) const;
+    };
+
+.. code-block:: c++
+
+    value_class<my_class>(engine, "my_class", /* ... */)
+        // int my_class::operator-()
         .use(-_this)
+        // float my_class::operator~() const
         .use(~const_this)
+        // Unlike the predefined helpers,
+        // this doesn't require the return type to be the same with the type being registered.
         .use(--_this)
         .use(_this++)
-        // If the operator* doesn't return the type being registered,
-        // e.g., dot product of a math vector which returns a scalar type.
-        // It can also be more explicitly ".use((const_this * const_this)->return_<float>())"
-        .use(const_this * const_this)
         .use(_this += param<int>)
-        .use(const_this[param<int>])
-        // If the type involves in the operator is not the class type being registered or primitive types,
-        // you may need to manually pass the script parameter declaration.
+        // Also supports the index operator
+        .use(const_this[param<int>]);
+
+.. note::
+   In some libraries like the STL, the ``operator[]`` doesn't have a boundary check.
+   You still need a wrapper function with checks for registering it.
+   Otherwise bad script can directly crash your application, instead of giving an clear error message.
+
+If the ``operator*`` doesn't return the type being registered,
+e.g., dot product of a math vector which returns a scalar type,
+the predefined helpers will fail to deal with this kind of operator overloads,
+but this tool can be your best friend.
+
+.. code-block:: c++
+
+    value_class<vec2f>(engine, "vec2f", /* ... */)
+        // It can also be more explicitly ".use((const_this * const_this)->return_<float>())"
+        .use(const_this * const_this);
+
+
+If the type involves in the operator is neither the class type being registered nor primitive types,
+you may need to manually pass the script parameter declaration.
+
+.. code-block:: c++
+
+    // ...
         .use((const_this + param<const string&>("const string&in"))->return_<string>("string"))
         .use((param<const string&>("const string&in") + const_this)->return_<string>("string"));
+
+With the power of this tool, you can even register the ``<iostream>`` to AngelScript.
+Here is an example from the unit test of asbind20.
+
+.. code-block:: c++
+
+    ref_class<std::ostream>(
+        engine,
+        "ostream",
+        asOBJ_NOCOUNT
+    )
+        .use(_this << param<bool>)
+        .use(_this << param<int>)
+        .use(_this << param<float>)
+        .use(_this << param<const std::string&>("const string&in"));
+
+    global(engine)
+        .function(
+            "void newline(ostream& os)",
+            [](std::ostream& os)
+            { os << std::endl; }
+        )
+        .property("ostream cout", std::cout);
 
 Member Aliases
 --------------
