@@ -30,6 +30,22 @@ Registering:
 .. note::
    Make sure the script function declaration matches what the registered function does with the ``asIScriptGeneric``!
 
+For overloaded functions,
+you need to use ``overload_cast`` with arguments to choose the function you want.
+
+.. code-block:: c++
+
+    void func(int, int);
+    void func(float);
+
+.. code-block:: c++
+
+    using namespace asbind20;
+
+    global(engine)
+        .function("void func(int, int)", overload_cast<int, int>(&func))
+        .function("void func(float)", overload_cast<float>(&func));
+
 Member Function as Global Function
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

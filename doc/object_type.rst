@@ -471,22 +471,24 @@ Tips for Registering Methods
 2. Overloaded Member Functions in C++
 
    It will be ambiguous to take address of overloaded functions,
-   you need to use ``static_cast`` with an exact declaration to choose the function you want.
+   you need to use ``overload_cast`` with arguments to choose the function you want.
 
    .. code-block:: c++
 
     class my_class
     {
     public:
-        void foo(int);
-        void foo(float) const;
+        void foo(int a, int b);
+        void foo(float f) const;
     };
 
    .. code-block:: c++
 
+    using namespace asbind20;
     // ...
-        .method("void foo(int)", static_cast<void (my_class::*)(int)>(&my_class::foo))
-        .method("void foo(int)", static_cast<void (my_class::*)(float) const>(&my_class::foo));
+        .method("void foo(int a, int b)", overload_cast<int, int>(&my_class::foo))
+        // Use the tag "const_" for a const member function
+        .method("void foo(float f) const", overload_cast<float>(&my_class::foo, const_));
 
 Object Properties
 -----------------

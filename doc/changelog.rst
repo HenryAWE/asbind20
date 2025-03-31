@@ -15,6 +15,7 @@ Core Library
 - New tools for binding complex operator overloads
 - Interfaces of binding generator now all take ``std::string`` / ``std::string_view`` instead of ``const char*`` for convenience and consistency
 - Tools for multithreading with AngelScript
+- New tool named ``overload_cast`` for choosing desired overloaded functions
 
 Extension Library
 ^^^^^^^^^^^^^^^^^
