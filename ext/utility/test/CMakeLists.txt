@@ -13,3 +13,5 @@ endif()
 add_executable(test_ext_weakref test_ext_weakref.cpp)
 target_link_libraries(test_ext_weakref PRIVATE shared_test_lib)
 gtest_discover_tests(test_ext_math)
+
+add_subdirectory("test_ext_vocabulary")

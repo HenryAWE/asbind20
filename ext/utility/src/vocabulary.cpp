@@ -19,21 +19,35 @@ static bool optional_template_callback(
 }
 
 script_optional::script_optional(const script_optional& other)
-    : m_ti(other.m_ti)
 {
     if(other.has_value())
     {
-        assign(other.m_data.data_address(other.element_type_id()));
+        int type_id = other.element_type_id();
+        bool no_ex = m_data.copy_construct(
+            other.m_ti->GetEngine(),
+            type_id,
+            other.m_data.data_address(type_id)
+        );
+        if(!no_ex) [[unlikely]]
+            return;
+        m_has_value = no_ex;
+        m_ti.reset(other.m_ti);
     }
+    else
+        m_ti.reset(other.m_ti);
 }
 
 script_optional::script_optional(
     AS_NAMESPACE_QUALIFIER asITypeInfo* ti
 )
-    : m_ti(ti)
 {
-    m_data.construct(m_ti->GetEngine(), element_type_id());
-    m_has_value = true;
+    bool no_ex = m_data.construct(
+        ti->GetEngine(), ti->GetSubTypeId()
+    );
+    if(!no_ex) [[unlikely]]
+        return;
+    m_has_value = no_ex;
+    m_ti.reset(ti);
 }
 
 script_optional::script_optional(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, std::nullopt_t)
@@ -55,9 +69,16 @@ script_optional::script_optional(
 script_optional::script_optional(
     AS_NAMESPACE_QUALIFIER asITypeInfo* ti, const void* val
 )
-    : m_ti(ti)
 {
-    assign(val);
+    bool no_ex = m_data.copy_construct(
+        ti->GetEngine(),
+        ti->GetSubTypeId(),
+        val
+    );
+    if(!no_ex) [[unlikely]]
+        return;
+    m_has_value = no_ex;
+    m_ti.reset(ti);
 }
 
 script_optional::~script_optional()
@@ -83,8 +104,9 @@ void script_optional::emplace()
 {
     assert(m_ti != nullptr);
     reset();
-    m_data.construct(m_ti->GetEngine(), element_type_id());
-    m_has_value = true;
+    m_has_value = m_data.construct(
+        m_ti->GetEngine(), element_type_id()
+    );
 }
 
 void script_optional::assign(const void* val)
@@ -97,8 +119,9 @@ void script_optional::assign(const void* val)
     }
     else
     {
-        m_data.copy_construct(m_ti->GetEngine(), element_type_id(), val);
-        m_has_value = true;
+        m_has_value = m_data.copy_construct(
+            m_ti->GetEngine(), element_type_id(), val
+        );
     }
 }
 
@@ -213,6 +236,7 @@ void register_script_optional(
             .property("const bool has_value", &script_optional::m_has_value)
             .template opConv<bool>()
             .method("void reset()", fp<&script_optional::reset>)
+            .method("void emplace()", fp<&script_optional::emplace>)
             .method("T& get_value() property", fp<overload_cast<>(&script_optional::value)>)
             .method("const T& get_value() const property", fp<overload_cast<>(&script_optional::value, const_)>)
             .method("void set_value(const T&in) property", fp<&script_optional::assign>)

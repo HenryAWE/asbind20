@@ -2281,8 +2281,10 @@ namespace container
          *
          * @param engine Script engine
          * @param type_id Type ID. Must @b NOT be void (`asTYPEID_VOID`)
+         *
+         * @return True if successful
          */
-        void construct(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id)
+        bool construct(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id)
         {
             assert(!is_void_type(type_id));
 
@@ -2296,10 +2298,15 @@ namespace container
             }
             else
             {
-                m_data.ptr = engine->CreateScriptObject(
+                void* ptr = engine->CreateScriptObject(
                     engine->GetTypeInfoById(type_id)
                 );
+                if(!ptr) [[unlikely]]
+                    return false;
+                m_data.ptr = ptr;
             }
+
+            return true;
         }
 
         /**
@@ -2309,9 +2316,11 @@ namespace container
          * @param type_id Type ID. Must @b NOT be void (`asTYPEID_VOID`)
          * @param ref Address of the value. Must @b NOT be `nullptr`
          *
+         * @return True if successful
+         *
          * @note Make sure this helper doesn't contain a constructed object previously!
          */
-        void copy_construct(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id, const void* ref)
+        bool copy_construct(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id, const void* ref)
         {
             assert(!is_void_type(type_id));
 
@@ -2333,11 +2342,16 @@ namespace container
             }
             else
             {
-                m_data.ptr = engine->CreateScriptObjectCopy(
+                void* ptr = engine->CreateScriptObjectCopy(
                     const_cast<void*>(ref),
                     engine->GetTypeInfoById(type_id)
                 );
+                if(!ptr) [[unlikely]]
+                    return false;
+                m_data.ptr = ptr;
             }
+
+            return true;
         }
 
         /**
@@ -2347,9 +2361,11 @@ namespace container
          * @param type_id Type ID. Must @b NOT be void (`asTYPEID_VOID`)
          * @param ref Address of the value. Must @b NOT be `nullptr`
          *
+         * @return True if successful
+         *
          * @note Make sure the stored value is valid!
          */
-        void copy_assign_from(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id, const void* ref)
+        bool copy_assign_from(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id, const void* ref)
         {
             assert(!is_void_type(type_id));
 
@@ -2373,12 +2389,15 @@ namespace container
             }
             else
             {
-                engine->AssignScriptObject(
+                int r = engine->AssignScriptObject(
                     m_data.ptr,
                     const_cast<void*>(ref),
                     engine->GetTypeInfoById(type_id)
                 );
+                return r >= 0;
             }
+
+            return true;
         }
 
         /**
@@ -2388,9 +2407,11 @@ namespace container
          * @param type_id Type ID. Must @b NOT be void (`asTYPEID_VOID`)
          * @param out Address of the destination. Must @b NOT be `nullptr`
          *
+         * @return True if successful
+         *
          * @note Make sure the stored value is valid!
          */
-        void copy_assign_to(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id, void* out) const
+        bool copy_assign_to(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id, void* out) const
         {
             assert(!is_void_type(type_id));
             assert(out != nullptr);
@@ -2416,12 +2437,16 @@ namespace container
             }
             else
             {
-                engine->AssignScriptObject(
+                int r = engine->AssignScriptObject(
                     out,
                     m_data.ptr,
                     engine->GetTypeInfoById(type_id)
                 );
+
+                return r >= 0;
             }
+
+            return true;
         }
 
         /**
