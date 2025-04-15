@@ -63,6 +63,15 @@ namespace detail
     }
 } // namespace detail
 
+#ifdef _MSC_VER
+#    pragma warning(push)
+/*
+* When binding functions that may directly thorw an exception,
+* MSVC will report warning of unreachable code.
+*/
+#    pragma warning(disable : 4702)
+#endif
+
 /**
  * @brief Get pointer/reference to the object
  *
@@ -803,6 +812,10 @@ namespace detail
             return generic_wrapper_nontype<Function, OriginalCallConv>::generate();
     }
 } // namespace detail
+
+#ifdef _MSC_VER
+#    pragma warning(pop)
+#endif
 
 template <
     noncapturing_lambda Lambda,
