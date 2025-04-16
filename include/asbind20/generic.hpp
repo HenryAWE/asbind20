@@ -66,7 +66,7 @@ namespace detail
 #ifdef _MSC_VER
 #    pragma warning(push)
 /*
-* When binding functions that may directly thorw an exception,
+* When binding functions that may directly throw an exception,
 * MSVC will report warning of unreachable code.
 */
 #    pragma warning(disable : 4702)
