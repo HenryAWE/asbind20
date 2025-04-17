@@ -3,6 +3,20 @@ Changelog
 
 Changelog since the version 1.5.0.
 
+1.5.1
+-----
+
+Update
+~~~~~~
+
+- Some interfaces  of ``container::single`` will return a ``bool`` value for checking result
+
+Bug fix
+~~~~~~~
+
+- Exception guarantee for ``small_vector``
+- Fix memory leaks if any exception occurs in the constructors of ``ext::script_optional``
+
 1.5.0
 -----
 
