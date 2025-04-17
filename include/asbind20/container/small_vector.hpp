@@ -660,7 +660,10 @@ private:
 
                     for(size_type i = 0; i < new_elems; ++i)
                     {
-                        *this->m_p_end = engine->CreateScriptObject(ti);
+                        void* obj = engine->CreateScriptObject(ti);
+                        if(!obj) [[unlikely]]
+                            break; // exception
+                        *this->m_p_end = obj;
                         ++this->m_p_end;
                     }
                 }
@@ -682,8 +685,13 @@ private:
             this->reserve(this->size() + 1);
 
             void* obj = copy_obj(ref_to_obj(ref));
-            *this->m_p_end = obj;
+            if constexpr(!IsHandle)
+            {
+                if(!obj) [[unlikely]]
+                    return; // exception
+            }
 
+            *this->m_p_end = obj;
             ++this->m_p_end;
         }
 
@@ -699,7 +707,10 @@ private:
                 AS_NAMESPACE_QUALIFIER asITypeInfo* ti = this->elem_type_info();
                 assert(ti != nullptr);
 
-                *this->m_p_end = ti->GetEngine()->CreateScriptObject(ti);
+                void* obj = ti->GetEngine()->CreateScriptObject(ti);
+                if(!obj) [[unlikely]]
+                    return; // exception
+                *this->m_p_end = obj;
                 ++this->m_p_end;
             }
         }
@@ -713,6 +724,11 @@ private:
             for(size_type i = 0; i < n; ++i)
             {
                 void* obj = copy_obj_impl(engine, ti, ref_to_obj(ref));
+                if constexpr(!IsHandle)
+                {
+                    if(!obj) [[unlikely]]
+                        break; // exception
+                }
                 *this->m_p_end = obj;
 
                 ++this->m_p_end;
@@ -734,7 +750,10 @@ private:
 
                 for(size_type i = 0; i < n; ++i)
                 {
-                    *this->m_p_end = engine->CreateScriptObject(ti);
+                    void* obj = engine->CreateScriptObject(ti);
+                    if(!obj) [[unlikely]]
+                        return; // exception
+                    *this->m_p_end = obj;
                     ++this->m_p_end;
                 }
             }

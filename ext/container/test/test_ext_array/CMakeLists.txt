@@ -1,0 +1,3 @@
+add_executable(test_ext_array test_ext_array.cpp array_ex_guarantee.cpp)
+target_link_libraries(test_ext_array PRIVATE shared_test_lib)
+gtest_discover_tests(test_ext_array)
