@@ -786,10 +786,15 @@ private:
                 return;
             }
 
+            void* obj = copy_obj(ref_to_obj(ref));
+            if(!IsHandle)
+            {
+                if(!obj) [[unlikely]] // exception in copy constructor
+                    return;
+            }
+
             if(this->size() + 1 <= this->capacity())
             {
-                void* obj = copy_obj(ref_to_obj(ref));
-
                 pointer p_where = this->m_p_begin + where;
                 size_type elem_to_move = this->m_p_end - p_where;
                 std::memmove(
@@ -802,10 +807,6 @@ private:
             }
             else
             {
-                void* obj = copy_obj(ref_to_obj(ref));
-                if(!obj) [[unlikely]] // exception in copy constructor
-                    return;
-
                 size_type new_cap = detail::accommodate(this->size() + 1, this->capacity());
                 size_type current_size = this->size();
                 pointer tmp = std::allocator_traits<allocator_type>::allocate(

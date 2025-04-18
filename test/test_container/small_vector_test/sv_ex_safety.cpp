@@ -45,5 +45,8 @@ TEST(small_vector, ex_safety)
 
         sv.push_back(&val);
         EXPECT_EQ(sv.size(), 2);
+
+        sv.insert(0, &val);
+        EXPECT_EQ(sv.size(), 2);
     }
 }
