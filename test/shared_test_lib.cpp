@@ -19,19 +19,25 @@ void setup_message_callback(
             .message_callback(
                 +[](const AS_NAMESPACE_QUALIFIER asSMessageInfo* msg, void*)
                 {
+#define ASBIND_TEST_MSG_CALLBACK_WRITE_SRC() \
+    " (" << msg->section                     \
+         << ":" << msg->row                  \
+         << ":" << msg->col << "): "
                     switch(msg->type)
                     {
                     case AS_NAMESPACE_QUALIFIER asMSGTYPE_ERROR:
-                        FAIL() << "ERROR: " << msg->message;
+                        FAIL() << "ERROR" << ASBIND_TEST_MSG_CALLBACK_WRITE_SRC() << msg->message;
                         // FAIL() contains return statement
 
                     case AS_NAMESPACE_QUALIFIER asMSGTYPE_WARNING:
-                        std::cerr << "WARNING: ";
+                        std::cerr << "WARNING" << ASBIND_TEST_MSG_CALLBACK_WRITE_SRC();
                         break;
                     case AS_NAMESPACE_QUALIFIER asMSGTYPE_INFORMATION:
-                        std::cerr << "INFO: ";
+                        std::cerr << "INFO" << ASBIND_TEST_MSG_CALLBACK_WRITE_SRC();
                     }
                     std::cerr << msg->message << std::endl;
+
+#undef ASBIND_TEST_MSG_CALLBACK_WRITE_SRC
                 }
             );
     }
