@@ -14,6 +14,7 @@ Update
 Bug fix
 ~~~~~~~
 
+- Exception guarantee for ``notify_gc`` policy
 - Exception guarantee for ``small_vector``
 - Fix memory leaks if any exception occurs in the constructors of ``ext::script_optional``
 

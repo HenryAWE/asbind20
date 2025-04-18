@@ -1135,6 +1135,15 @@ namespace wrappers
                             )...
                         );
                         assert(ti->GetEngine() == gen->GetEngine());
+                        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx = current_context();
+                        assert(ctx != nullptr);
+
+                        if(ctx->GetState() == AS_NAMESPACE_QUALIFIER asEXECUTION_EXCEPTION) [[unlikely]]
+                        {
+                            delete ptr;
+                            return;
+                        }
+
                         gen->GetEngine()->NotifyGarbageCollectorOfNewObject(ptr, ti);
 
                         gen->SetReturnAddress(ptr);
@@ -1146,6 +1155,14 @@ namespace wrappers
                 return +[](Args... args, AS_NAMESPACE_QUALIFIER asITypeInfo* ti) -> Class*
                 {
                     Class* ptr = new Class(std::forward<Args>(args)...);
+                    auto* ctx = current_context();
+                    assert(ctx != nullptr);
+                    if(ctx->GetState() == AS_NAMESPACE_QUALIFIER asEXECUTION_EXCEPTION) [[unlikely]]
+                    {
+                        delete ptr;
+                        return nullptr; // placeholder
+                    }
+
                     ti->GetEngine()->NotifyGarbageCollectorOfNewObject(ptr, ti);
 
                     return ptr;
