@@ -6,6 +6,8 @@ Changelog since the version 1.5.0.
 1.5.1
 -----
 
+2025-4-21
+
 Update
 ~~~~~~
 
@@ -16,7 +18,7 @@ Bug fix
 
 - Exception guarantee for ``notify_gc`` policy
 - Exception guarantee for ``small_vector``
-- Fix memory leaks if any exception occurs in the constructors of ``ext::script_optional``
+- Fix memory leaks if any exception occurs in generated constructors / factories
 
 1.5.0
 -----
