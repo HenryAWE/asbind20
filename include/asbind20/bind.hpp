@@ -391,9 +391,31 @@ namespace policies
  */
 namespace wrappers
 {
-    template <typename Class, bool Template, typename... Args>
-    class constructor
+    template <typename Class, bool Noexcept = false>
+    class constructor_base
     {
+    protected:
+        // Destroy the constructed object if there is any script exception,
+        // because AngelScript won't call the destructor under this situation.
+        static void destroy_if_ex(Class* obj)
+        {
+            constexpr bool no_guard =
+                Noexcept ||
+                std::is_trivially_destructible_v<Class>;
+
+            if constexpr(!no_guard)
+            {
+                if(has_script_exception())
+                    obj->~Class();
+            }
+        }
+    };
+
+    template <typename Class, bool Template, typename... Args>
+    class constructor : public constructor_base<Class>
+    {
+        using my_base = constructor_base<Class>;
+
     public:
         static constexpr bool is_acceptable_native_call_conv(
             AS_NAMESPACE_QUALIFIER asECallConvTypes conv
@@ -442,6 +464,8 @@ namespace wrappers
                                     gen, (AS_NAMESPACE_QUALIFIER asUINT)Is + 1
                                 )...
                             );
+
+                            my_base::destroy_if_ex(static_cast<Class*>(mem));
                         }(std::index_sequence_for<Args...>());
                     };
                 }
@@ -457,6 +481,8 @@ namespace wrappers
                                     gen, (AS_NAMESPACE_QUALIFIER asUINT)Is
                                 )...
                             );
+
+                            my_base::destroy_if_ex(static_cast<Class*>(mem));
                         }(std::index_sequence_for<Args...>());
                     };
                 }
@@ -468,6 +494,8 @@ namespace wrappers
                     return +[](AS_NAMESPACE_QUALIFIER asITypeInfo* ti, Args... args, void* mem) -> void
                     {
                         new(mem) Class(ti, std::forward<Args>(args)...);
+
+                        my_base::destroy_if_ex(static_cast<Class*>(mem));
                     };
                 }
                 else
@@ -475,6 +503,8 @@ namespace wrappers
                     return +[](Args... args, void* mem) -> void
                     {
                         new(mem) Class(std::forward<Args>(args)...);
+
+                        my_base::destroy_if_ex(static_cast<Class*>(mem));
                     };
                 }
             }
@@ -1135,10 +1165,7 @@ namespace wrappers
                             )...
                         );
                         assert(ti->GetEngine() == gen->GetEngine());
-                        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx = current_context();
-                        assert(ctx != nullptr);
-
-                        if(ctx->GetState() == AS_NAMESPACE_QUALIFIER asEXECUTION_EXCEPTION) [[unlikely]]
+                        if(has_script_exception()) [[unlikely]]
                         {
                             delete ptr;
                             return;
@@ -1155,9 +1182,7 @@ namespace wrappers
                 return +[](Args... args, AS_NAMESPACE_QUALIFIER asITypeInfo* ti) -> Class*
                 {
                     Class* ptr = new Class(std::forward<Args>(args)...);
-                    auto* ctx = current_context();
-                    assert(ctx != nullptr);
-                    if(ctx->GetState() == AS_NAMESPACE_QUALIFIER asEXECUTION_EXCEPTION) [[unlikely]]
+                    if(has_script_exception()) [[unlikely]]
                     {
                         delete ptr;
                         return nullptr; // placeholder
@@ -1223,6 +1248,12 @@ namespace wrappers
                             )...
                         );
 
+                        if(has_script_exception()) [[unlikely]]
+                        {
+                            delete ptr;
+                            return;
+                        }
+
                         auto flags = ti->GetFlags();
                         if(flags & AS_NAMESPACE_QUALIFIER asOBJ_GC)
                         {
@@ -1239,6 +1270,12 @@ namespace wrappers
                 return +[](AS_NAMESPACE_QUALIFIER asITypeInfo* ti, Args... args) -> Class*
                 {
                     Class* ptr = new Class(ti, std::forward<Args>(args)...);
+
+                    if(has_script_exception())
+                    {
+                        delete ptr;
+                        return nullptr;
+                    }
 
                     auto flags = ti->GetFlags();
                     if(flags & AS_NAMESPACE_QUALIFIER asOBJ_GC)

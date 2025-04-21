@@ -189,7 +189,6 @@ public:
         setup_cache();
     }
 
-private:
     ~script_array() = default;
 
 public:

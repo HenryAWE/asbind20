@@ -19,6 +19,7 @@ static bool optional_template_callback(
 }
 
 script_optional::script_optional(const script_optional& other)
+    : m_ti(other.m_ti)
 {
     if(other.has_value())
     {
@@ -31,15 +32,13 @@ script_optional::script_optional(const script_optional& other)
         if(!no_ex) [[unlikely]]
             return;
         m_has_value = no_ex;
-        m_ti.reset(other.m_ti);
     }
-    else
-        m_ti.reset(other.m_ti);
 }
 
 script_optional::script_optional(
     AS_NAMESPACE_QUALIFIER asITypeInfo* ti
 )
+    : m_ti(ti)
 {
     bool no_ex = m_data.construct(
         ti->GetEngine(), ti->GetSubTypeId()
@@ -47,7 +46,6 @@ script_optional::script_optional(
     if(!no_ex) [[unlikely]]
         return;
     m_has_value = no_ex;
-    m_ti.reset(ti);
 }
 
 script_optional::script_optional(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, std::nullopt_t)
@@ -69,6 +67,7 @@ script_optional::script_optional(
 script_optional::script_optional(
     AS_NAMESPACE_QUALIFIER asITypeInfo* ti, const void* val
 )
+    : m_ti(ti)
 {
     bool no_ex = m_data.copy_construct(
         ti->GetEngine(),
@@ -78,7 +77,6 @@ script_optional::script_optional(
     if(!no_ex) [[unlikely]]
         return;
     m_has_value = no_ex;
-    m_ti.reset(ti);
 }
 
 script_optional::~script_optional()

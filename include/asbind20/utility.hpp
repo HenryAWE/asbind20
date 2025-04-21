@@ -1060,6 +1060,18 @@ inline auto current_context()
     return AS_NAMESPACE_QUALIFIER asGetActiveContext();
 }
 
+[[nodiscard]]
+inline bool has_script_exception(
+    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx = current_context()
+)
+{
+    if(!ctx) [[unlikely]]
+        return false;
+
+    return ctx->GetState() ==
+           AS_NAMESPACE_QUALIFIER asEXECUTION_EXCEPTION;
+}
+
 /**
  * @brief RAII helper for reusing active script context.
  *
