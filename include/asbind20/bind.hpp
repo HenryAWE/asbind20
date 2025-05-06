@@ -1077,7 +1077,7 @@ namespace wrappers
                         {
                             Class* ptr = new Class(
                                 *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
-                                get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (asUINT)Is + 1)...
+                                get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (AS_NAMESPACE_QUALIFIER asUINT)Is + 1)...
                             );
                             gen->SetReturnAddress(ptr);
                         }(std::index_sequence_for<Args...>());
@@ -1091,7 +1091,7 @@ namespace wrappers
 
                         [gen]<std::size_t... Is>(std::index_sequence<Is...>)
                         {
-                            Class* ptr = new Class(get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (asUINT)Is)...);
+                            Class* ptr = new Class(get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (AS_NAMESPACE_QUALIFIER asUINT)Is)...);
                             gen->SetReturnAddress(ptr);
                         }(std::index_sequence_for<Args...>());
                     };
@@ -1330,7 +1330,7 @@ namespace wrappers
                                 FactoryFunc,
                                 get_generic_auxiliary<typename traits::class_type>(gen),
                                 *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
-                                get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(gen, (asUINT)Is + 1)...
+                                get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(gen, (AS_NAMESPACE_QUALIFIER asUINT)Is + 1)...
                             );
                         }
                         else if constexpr(OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
@@ -1339,7 +1339,7 @@ namespace wrappers
                                 FactoryFunc,
                                 get_generic_auxiliary<auxiliary_type>(gen),
                                 *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
-                                get_generic_arg<std::tuple_element_t<Is + 2, args_tuple>>(gen, (asUINT)Is + 1)...
+                                get_generic_arg<std::tuple_element_t<Is + 2, args_tuple>>(gen, (AS_NAMESPACE_QUALIFIER asUINT)Is + 1)...
                             );
                         }
                         else // OriginalCallConv == asCALL_CDECL_OBJLAST
@@ -1347,7 +1347,7 @@ namespace wrappers
                             ptr = std::invoke(
                                 FactoryFunc,
                                 *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
-                                get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(gen, (asUINT)Is + 1)...,
+                                get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(gen, (AS_NAMESPACE_QUALIFIER asUINT)Is + 1)...,
                                 get_generic_auxiliary<auxiliary_type>(gen)
                             );
                         }
@@ -1374,7 +1374,7 @@ namespace wrappers
                             ptr = std::invoke(
                                 FactoryFunc,
                                 get_generic_auxiliary<typename traits::class_type>(gen),
-                                get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (asUINT)Is)...
+                                get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (AS_NAMESPACE_QUALIFIER asUINT)Is)...
                             );
                         }
                         else if constexpr(OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
@@ -1382,14 +1382,14 @@ namespace wrappers
                             ptr = std::invoke(
                                 FactoryFunc,
                                 get_generic_auxiliary<auxiliary_type>(gen),
-                                get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(gen, (asUINT)Is)...
+                                get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(gen, (AS_NAMESPACE_QUALIFIER asUINT)Is)...
                             );
                         }
                         else // OriginalCallConv == asCALL_CDECL_OBJLAST
                         {
                             ptr = std::invoke(
                                 FactoryFunc,
-                                get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (asUINT)Is)...,
+                                get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (AS_NAMESPACE_QUALIFIER asUINT)Is)...,
                                 get_generic_auxiliary<auxiliary_type>(gen)
                             );
                         }
@@ -1852,10 +1852,10 @@ namespace wrappers
 
         using native_function_type = To (*)(Class&);
 
-        template <asECallConvTypes CallConv>
+        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         requires(is_acceptable_call_conv(CallConv))
         using wrapper_type = std::conditional_t<
-            CallConv == asCALL_GENERIC,
+            CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
             AS_NAMESPACE_QUALIFIER asGENFUNC_t,
             native_function_type>;
 
@@ -1939,7 +1939,7 @@ namespace detail
 
     template <typename FuncSig>
     requires(!std::is_member_function_pointer_v<FuncSig>)
-    constexpr asECallConvTypes deduce_function_callconv()
+    constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes deduce_function_callconv()
     {
         // TODO: Check stdcall
 
@@ -1975,7 +1975,7 @@ namespace detail
     {
         if constexpr(std::is_member_function_pointer_v<FuncSig>)
             return AS_NAMESPACE_QUALIFIER asCALL_THISCALL;
-        else if constexpr(std::convertible_to<FuncSig, asGENFUNC_t>)
+        else if constexpr(std::convertible_to<FuncSig, AS_NAMESPACE_QUALIFIER asGENFUNC_t>)
             return AS_NAMESPACE_QUALIFIER asCALL_GENERIC;
         else
         {
@@ -2216,7 +2216,7 @@ public:
 
     template <
         auto Function,
-        asECallConvTypes CallConv>
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
     global& function(
         use_generic_t,
         std::string_view decl,
@@ -3437,7 +3437,7 @@ private:
     }                                                                       \
     template <                                                              \
         noncapturing_lambda Lambda,                                         \
-        asECallConvTypes CallConv>                                          \
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>                   \
     register_type& method(                                                  \
         std::string_view decl,                                              \
         const Lambda&,                                                      \
@@ -4643,7 +4643,7 @@ public:
             static_assert(std::is_pointer_v<list_buf_t>);
             list_constructor_function(
                 pattern,
-                +[](asIScriptGeneric* gen) -> void
+                +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
                 {
                     ListConstructor(
                         get_generic_object<Class*>(gen),
@@ -4659,7 +4659,7 @@ public:
             static_assert(std::is_pointer_v<list_buf_t>);
             list_constructor_function(
                 pattern,
-                +[](asIScriptGeneric* gen) -> void
+                +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
                 {
                     ListConstructor(
                         *(list_buf_t*)gen->GetAddressOfArg(0),
@@ -5131,7 +5131,7 @@ private:
             if constexpr(std::tuple_size_v<args_tuple> >= 1)
             {
                 return std::convertible_to<
-                    asITypeInfo*,
+                    AS_NAMESPACE_QUALIFIER asITypeInfo*,
                     std::tuple_element_t<0, args_tuple>>;
             }
             else
@@ -5496,8 +5496,8 @@ public:
         return *this;
     }
 
-    template <auto Factory, asECallConvTypes CallConv>
-    requires(CallConv == asCALL_CDECL)
+    template <auto Factory, AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    requires(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL)
     basic_ref_class& factory_function(
         std::string_view params,
         fp_wrapper_t<Factory>,
@@ -5512,8 +5512,8 @@ public:
         return *this;
     }
 
-    template <auto Factory, asECallConvTypes CallConv>
-    requires(CallConv == asCALL_CDECL)
+    template <auto Factory, AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    requires(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL)
     basic_ref_class& factory_function(
         std::string_view params,
         use_explicit_t,
