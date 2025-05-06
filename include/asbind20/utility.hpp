@@ -499,7 +499,7 @@ decltype(auto) visit_primitive_type(Visitor&& vis, int type_id, VoidPtrs... args
     };
 
 #define ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(as_type_id) \
-case as_type_id:                                               \
+case AS_NAMESPACE_QUALIFIER as_type_id:                        \
     return wrapper(std::in_place_type<primitive_type_of_t<AS_NAMESPACE_QUALIFIER as_type_id>>)
 
     switch(type_id)
@@ -563,11 +563,11 @@ decltype(auto) visit_primitive_type_id(Visitor&& vis, int type_id)
 {
     assert(is_primitive_type(type_id));
 
-#define ASBIND20_UTILITY_VISIT_SCRIPT_TYPE_ID_CASE(as_type_id) \
-case as_type_id:                                               \
-    return std::invoke(                                        \
-        std::forward<Visitor>(vis),                            \
-        std::in_place_type<primitive_type_of_t<as_type_id>>    \
+#define ASBIND20_UTILITY_VISIT_SCRIPT_TYPE_ID_CASE(as_type_id)                     \
+case AS_NAMESPACE_QUALIFIER as_type_id:                                            \
+    return std::invoke(                                                            \
+        std::forward<Visitor>(vis),                                                \
+        std::in_place_type<primitive_type_of_t<AS_NAMESPACE_QUALIFIER as_type_id>> \
     )
 
     switch(type_id)
@@ -1080,7 +1080,7 @@ inline bool has_script_exception(
 class [[nodiscard]] reuse_active_context
 {
 public:
-    using handle_type = asIScriptContext*;
+    using handle_type = AS_NAMESPACE_QUALIFIER asIScriptContext*;
 
     reuse_active_context() = delete;
     reuse_active_context(const reuse_active_context&) = delete;

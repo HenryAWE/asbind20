@@ -130,7 +130,7 @@ T get_generic_arg(
         if constexpr(std::same_as<value_t, AS_NAMESPACE_QUALIFIER asIScriptObject>)
         {
             void* ptr = gen->GetArgObject(idx);
-            return static_cast<asIScriptObject*>(ptr);
+            return static_cast<AS_NAMESPACE_QUALIFIER asIScriptObject*>(ptr);
         }
         else if constexpr(std::same_as<value_t, AS_NAMESPACE_QUALIFIER asITypeInfo>)
         {
@@ -212,8 +212,8 @@ void set_generic_return(
         void* ptr = (void*)ret;
 
         if constexpr(
-            std::same_as<std::remove_cv_t<Return>, asIScriptObject*> ||
-            std::same_as<std::remove_cv_t<Return>, const asIScriptObject*>
+            std::same_as<std::remove_cv_t<Return>, AS_NAMESPACE_QUALIFIER asIScriptObject*> ||
+            std::same_as<std::remove_cv_t<Return>, const AS_NAMESPACE_QUALIFIER asIScriptObject*>
         )
             gen->SetReturnObject(ptr);
         else
@@ -820,7 +820,7 @@ namespace detail
 template <
     noncapturing_lambda Lambda,
     AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv>
-requires(OriginalCallConv != asCALL_GENERIC)
+requires(OriginalCallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
 consteval auto to_asGENFUNC_t(const Lambda&, call_conv_t<OriginalCallConv>)
     -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
 {
@@ -830,7 +830,7 @@ consteval auto to_asGENFUNC_t(const Lambda&, call_conv_t<OriginalCallConv>)
 template <
     native_function auto Function,
     AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv>
-requires(OriginalCallConv != asCALL_GENERIC)
+requires(OriginalCallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
 consteval auto to_asGENFUNC_t(fp_wrapper_t<Function>, call_conv_t<OriginalCallConv>)
     -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
 {

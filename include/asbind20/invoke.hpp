@@ -600,10 +600,10 @@ namespace detail
     template <typename Tuple>
     void set_args(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, Tuple&& tp)
     {
-        [&]<asUINT... Idx>(std::integer_sequence<asUINT, Idx...>)
+        [&]<AS_NAMESPACE_QUALIFIER asUINT... Idx>(std::integer_sequence<AS_NAMESPACE_QUALIFIER asUINT, Idx...>)
         {
             (set_script_arg(ctx, Idx, std::get<Idx>(tp)), ...);
-        }(std::make_integer_sequence<asUINT, std::tuple_size_v<Tuple>>());
+        }(std::make_integer_sequence<AS_NAMESPACE_QUALIFIER asUINT, std::tuple_size_v<Tuple>>());
     }
 
     template <typename T>
