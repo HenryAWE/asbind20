@@ -126,9 +126,10 @@ public:
         return m_weakref_flag.get();
     }
 
-private:
+protected:
     ~host_weakref_support() = default;
 
+private:
     int m_counter = 1;
     asbind20::lockable_shared_bool m_weakref_flag;
 };
@@ -213,6 +214,88 @@ TEST(ext_weakref, host_weakref_generic)
     ext::register_weakref(engine, true);
 
     test_ext_weakref::check_host_class(engine);
+}
+
+namespace test_ext_weakref
+{
+// Throws an exception when trying to obtain the flag
+class host_weakref_ex : public host_weakref_support
+{
+public:
+    AS_NAMESPACE_QUALIFIER asILockableSharedBool* get_weakref_flag()
+    {
+        throw asbind_test::expected_ex{};
+    }
+};
+
+template <bool UseGeneric>
+void register_host_weakref_ex(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
+    using namespace asbind20;
+
+    ref_class<host_weakref_ex, UseGeneric>(engine, "host_weakref_ex")
+        .default_factory()
+        .addref(fp<&host_weakref_ex::addref>)
+        .release(fp<&host_weakref_ex::release>)
+        .get_weakref_flag(fp<&host_weakref_ex::get_weakref_flag>);
+}
+
+static void check_host_weakref_ex(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
+    auto* m = engine->GetModule("test_host_weakref_ex", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
+
+    m->AddScriptSection(
+        "test_host_weakref_ex",
+        "weakref<host_weakref_ex> r;\n"
+        "host_weakref_ex@ get()\n"
+        "{\n"
+        "    host_weakref_ex@ host_class;\n"
+        "    @host_class = host_weakref_ex();\n"
+        "    assert(host_class !is null);\n"
+        "    @r = @host_class;\n"
+        "    assert(false);\n"
+        "    return host_class;\n"
+        "}"
+    );
+    ASSERT_GE(m->Build(), 0);
+
+    auto* f = m->GetFunctionByName("get");
+    ASSERT_NE(f, nullptr);
+
+    {
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<void*>(ctx, f);
+        EXPECT_FALSE(asbind_test::result_has_value(result));
+        EXPECT_EQ(result.error(), AS_NAMESPACE_QUALIFIER asEXECUTION_EXCEPTION);
+    }
+}
+} // namespace test_ext_weakref
+
+TEST(ext_weakref, host_weakref_ex_native)
+{
+    using namespace asbind20;
+
+    if(has_max_portability())
+        GTEST_SKIP() << "max portability";
+
+    auto engine = make_script_engine();
+    test_ext_weakref::setup_env(engine);
+    test_ext_weakref::register_host_weakref_ex<false>(engine);
+    ext::register_weakref(engine, false);
+
+    test_ext_weakref::check_host_weakref_ex(engine);
+}
+
+TEST(ext_weakref, host_weakref_ex_generic)
+{
+    using namespace asbind20;
+
+    auto engine = make_script_engine();
+    test_ext_weakref::setup_env(engine);
+    test_ext_weakref::register_host_weakref_ex<true>(engine);
+    ext::register_weakref(engine, true);
+
+    test_ext_weakref::check_host_weakref_ex(engine);
 }
 
 int main(int argc, char* argv[])
