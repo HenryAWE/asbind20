@@ -9,11 +9,11 @@
 
 #define ASBIND20_VERSION_MAJOR 1
 #define ASBIND20_VERSION_MINOR 5
-#define ASBIND20_VERSION_PATCH 1
+#define ASBIND20_VERSION_PATCH 2
 
 // clang-format on
 
-#define ASBIND20_VERSION_STRING "1.5.1"
+#define ASBIND20_VERSION_STRING "1.5.2"
 
 // IWYU pragma: begin_exports
 

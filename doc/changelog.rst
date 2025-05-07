@@ -3,6 +3,14 @@ Changelog
 
 Changelog since the version 1.5.0.
 
+1.5.2
+-----
+
+Update
+~~~~~~
+
+Complete support of using AngelScript interfaces within ``AngelScript::`` namespace. (Thanks `GitHub @sashi0034 <https://github.com/sashi0034>`_)
+
 1.5.1
 -----
 
