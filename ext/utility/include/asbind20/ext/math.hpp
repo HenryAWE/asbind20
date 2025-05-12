@@ -26,12 +26,13 @@ void register_math_constants(
  *
  * @param epsilon Epsilon value
  */
-template <std::floating_point Float>
+template <typename Float>
 constexpr bool math_close_to(
     Float a, Float b, Float epsilon = std::numeric_limits<Float>::epsilon()
 ) noexcept
 {
-    return std::abs(a - b) < epsilon;
+    using std::abs;
+    return abs(a - b) < epsilon;
 }
 
 void register_math_function(

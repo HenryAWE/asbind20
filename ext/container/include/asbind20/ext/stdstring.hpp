@@ -130,7 +130,7 @@ public:
             return AS_NAMESPACE_QUALIFIER asERROR;
 
         if(length)
-            *length = static_cast<asUINT>(ptr->size());
+            *length = static_cast<AS_NAMESPACE_QUALIFIER asUINT>(ptr->size());
         if(data)
             ptr->copy(data, ptr->size());
         return AS_NAMESPACE_QUALIFIER asSUCCESS;
