@@ -364,10 +364,19 @@ TEST(compressed_pair, optimized)
 int main(int argc, char* argv[])
 {
     ::testing::InitGoogleTest(&argc, argv);
+
+    if(asbind20::has_max_portability())
+        std::cerr << "AS_MAX_PORTABILITY" << std::endl;
+
+#ifdef AS_USE_NAMESPACE
+    std::cerr << "AS_USE_NAMESPACE defined" << std::endl;
+#endif
+
 #ifdef ASBIND20_HAS_STATIC_ENUM_NAME
     std::cerr << "ASBIND20_HAS_STATIC_ENUM_NAME: "
               << ASBIND20_HAS_STATIC_ENUM_NAME
               << std::endl;
 #endif
+
     return RUN_ALL_TESTS();
 }
