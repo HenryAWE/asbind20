@@ -87,8 +87,8 @@ TEST(script_invoke_result, void)
 
 TEST_F(asbind_test_suite, invoke)
 {
-    asIScriptEngine* engine = get_engine();
-    asIScriptModule* m = engine->GetModule("test_invoke", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
+    auto* engine = get_engine();
+    auto* m = engine->GetModule("test_invoke", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
 
     m->AddScriptSection(
         "test_invoke.as",
@@ -101,7 +101,7 @@ TEST_F(asbind_test_suite, invoke)
     ASSERT_GE(m->Build(), 0);
 
     {
-        asIScriptFunction* fp = m->GetFunctionByName("add_1");
+        auto* fp = m->GetFunctionByName("add_1");
         ASSERT_NE(fp, nullptr);
 
         asbind20::request_context ctx(engine);
@@ -111,7 +111,7 @@ TEST_F(asbind_test_suite, invoke)
     }
 
     {
-        asIScriptFunction* fp = m->GetFunctionByName("add_ref_1");
+        auto* fp = m->GetFunctionByName("add_ref_1");
         ASSERT_NE(fp, nullptr);
 
         asbind20::request_context ctx(engine);
@@ -122,7 +122,7 @@ TEST_F(asbind_test_suite, invoke)
     }
 
     {
-        asIScriptFunction* fp = m->GetFunctionByName("flt_identity");
+        auto* fp = m->GetFunctionByName("flt_identity");
         ASSERT_NE(fp, nullptr);
 
         asbind20::request_context ctx(engine);
@@ -133,7 +133,7 @@ TEST_F(asbind_test_suite, invoke)
     }
 
     {
-        asIScriptFunction* fp = m->GetFunctionByName("dbl_identity");
+        auto* fp = m->GetFunctionByName("dbl_identity");
         ASSERT_NE(fp, nullptr);
 
         asbind20::request_context ctx(engine);
@@ -144,7 +144,7 @@ TEST_F(asbind_test_suite, invoke)
     }
 
     {
-        asIScriptFunction* fp = m->GetFunctionByName("test");
+        auto* fp = m->GetFunctionByName("test");
         ASSERT_NE(fp, nullptr);
 
         asbind20::request_context ctx(engine);
@@ -159,8 +159,8 @@ TEST_F(asbind_test_suite, invoke)
 
 TEST_F(asbind_test_suite, custom_rule)
 {
-    asIScriptEngine* engine = get_engine();
-    asIScriptModule* m = engine->GetModule("test_custom_rule", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
+    auto* engine = get_engine();
+    auto* m = engine->GetModule("test_custom_rule", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
 
     m->AddScriptSection(
         "test_custom_rule.as",
@@ -169,7 +169,7 @@ TEST_F(asbind_test_suite, custom_rule)
     ASSERT_GE(m->Build(), 0);
 
     {
-        asIScriptFunction* add_1 = m->GetFunctionByName("add_1");
+        auto* add_1 = m->GetFunctionByName("add_1");
 
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<std::byte>(ctx, add_1, std::byte(0x1));
@@ -181,8 +181,8 @@ TEST_F(asbind_test_suite, custom_rule)
 
 TEST_F(asbind_test_suite, script_class)
 {
-    asIScriptEngine* engine = get_engine();
-    asIScriptModule* m = engine->GetModule("test_script_class", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
+    auto* engine = get_engine();
+    auto* m = engine->GetModule("test_script_class", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
 
     m->AddScriptSection(
         "test_invoke.as",

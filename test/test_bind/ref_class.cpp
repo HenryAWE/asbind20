@@ -51,7 +51,7 @@ public:
             delete this;
     }
 
-    asUINT use_count() const
+    AS_NAMESPACE_QUALIFIER asUINT use_count() const
     {
         return m_use_count;
     }
@@ -90,7 +90,7 @@ static void get_ref_class_data(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
     set_generic_return<int>(gen, (int)this_->data);
 }
 
-void register_ref_class(asIScriptEngine* engine)
+void register_ref_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     using namespace asbind20;
 
@@ -119,7 +119,7 @@ void register_ref_class(asIScriptEngine* engine)
     EXPECT_FALSE(c.force_generic());
 }
 
-void register_ref_class(asbind20::use_generic_t, asIScriptEngine* engine)
+void register_ref_class(asbind20::use_generic_t, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     using namespace asbind20;
 

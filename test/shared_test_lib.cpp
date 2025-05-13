@@ -125,7 +125,7 @@ void asbind_test_suite::ex_translator(AS_NAMESPACE_QUALIFIER asIScriptContext* c
 
 static void assert_callback(std::string_view sv)
 {
-    asIScriptContext* ctx = asGetActiveContext();
+    auto* ctx = asbind20::current_context();
 
     const char* section;
     int line = ctx->GetLineNumber(0, nullptr, &section);
@@ -167,7 +167,9 @@ void asbind_test_suite::run_file(
     if(!std::filesystem::exists(filename))
         FAIL() << "File not found: " << filename;
 
-    asIScriptModule* m = m_engine->GetModule("run_file", asGM_ALWAYS_CREATE);
+    auto* m = m_engine->GetModule(
+        "run_file", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
+    );
 
     int r = asbind20::ext::load_file(
         m,
@@ -179,14 +181,15 @@ void asbind_test_suite::run_file(
     if(r < 0)
         FAIL() << "Failed to build, r = " << r;
 
-    asIScriptFunction* entry = m->GetFunctionByDecl(entry_decl);
+    auto* entry = m->GetFunctionByDecl(entry_decl);
     if(!entry)
         FAIL() << "Entry not found, decl = " << entry_decl;
 
-    asIScriptContext* ctx = m_engine->CreateContext();
+    auto* ctx = m_engine->CreateContext();
     auto run_file_result = asbind20::script_invoke<void>(ctx, entry);
 
-    if(!run_file_result.has_value() && run_file_result.error() == asEXECUTION_EXCEPTION)
+    if(!run_file_result.has_value() &&
+       run_file_result.error() == AS_NAMESPACE_QUALIFIER asEXECUTION_EXCEPTION)
     {
         int column;
         const char* section;
@@ -228,7 +231,7 @@ void asbind_test_suite_generic::register_all()
 {
     using namespace asbind20;
 
-    asIScriptEngine* engine = get_engine();
+    auto* engine = get_engine();
 
     ext::register_script_optional(engine, true);
     ext::register_script_array(engine, true, true);

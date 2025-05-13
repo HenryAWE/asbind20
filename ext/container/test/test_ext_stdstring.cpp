@@ -275,7 +275,9 @@ TEST_F(asbind_test_suite_generic, ext_stdstring)
 TEST_F(asbind_test_suite, host_script_string_interop)
 {
     auto* engine = get_engine();
-    auto* m = engine->GetModule("host_script_string_interop", asGM_ALWAYS_CREATE);
+    auto* m = engine->GetModule(
+        "host_script_string_interop", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
+    );
 
     m->AddScriptSection(
         "test_script_string.as",

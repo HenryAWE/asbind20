@@ -90,7 +90,7 @@ namespace detail
 
                 AS_NAMESPACE_QUALIFIER asDWORD flags = 0;
                 int return_type_id = func->GetReturnTypeId(&flags);
-                if(flags != asTM_NONE)
+                if(flags != AS_NAMESPACE_QUALIFIER asTM_NONE)
                     continue;
 
                 bool is_opEquals = false;

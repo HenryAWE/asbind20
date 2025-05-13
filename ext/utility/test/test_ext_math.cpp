@@ -33,7 +33,7 @@ TEST_F(asbind_test_suite_generic, ext_math)
 
 namespace test_ext_math
 {
-static void check_math_complex(asIScriptEngine* engine)
+static void check_math_complex(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     auto* m = engine->GetModule(
         "math_complex", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
@@ -128,7 +128,7 @@ static void check_math_complex(asIScriptEngine* engine)
         SCOPED_TRACE("func_name: " + func_name);
 
         asbind20::request_context ctx(engine);
-        asIScriptFunction* f = m->GetFunctionByName(func_name.c_str());
+        auto* f = m->GetFunctionByName(func_name.c_str());
         ASSERT_TRUE(f);
 
         auto result = asbind20::script_invoke<void>(ctx, f);

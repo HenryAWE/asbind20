@@ -91,7 +91,7 @@ public:
             return AS_NAMESPACE_QUALIFIER asERROR;
         auto ptr = (ref_string*)str;
         if(length)
-            *length = (asUINT)ptr->str.size();
+            *length = static_cast<AS_NAMESPACE_QUALIFIER asUINT>(ptr->str.size());
         if(data)
             ptr->str.copy(data, ptr->str.size());
         return AS_NAMESPACE_QUALIFIER asSUCCESS;
@@ -135,7 +135,7 @@ static void register_ref_string(asbind20::use_generic_t, AS_NAMESPACE_QUALIFIER 
         .method(
             "uint get_size() const property",
             [](ref_string* ref)
-            { return asUINT(ref->str.size()); }
+            { return static_cast<AS_NAMESPACE_QUALIFIER asUINT>(ref->str.size()); }
         )
         .as_string(&ref_string_factory::get());
 }
@@ -161,7 +161,7 @@ static void setup_bind_ref_string_env(
     );
 }
 
-static void run_script(asIScriptEngine* engine)
+static void run_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     using asbind_test::result_has_value;
 

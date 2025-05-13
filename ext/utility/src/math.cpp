@@ -134,7 +134,7 @@ static bool close_to_simple(T a, T b) noexcept
 }
 
 template <bool UseGeneric>
-void register_math_func_integral(asIScriptEngine* engine)
+void register_math_func_integral(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     static_assert(sizeof(int) == sizeof(std::int32_t), "AngelScript assumes int is 32-bit");
     // Align type names between AS and C++
@@ -198,7 +198,7 @@ void register_math_func_integral(asIScriptEngine* engine)
 }
 
 template <bool UseGeneric>
-void register_math_func_float(asIScriptEngine* engine)
+void register_math_func_float(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     // clang-format off
 

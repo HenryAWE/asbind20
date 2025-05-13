@@ -59,7 +59,9 @@ TEST_F(asbind_test_suite, interface)
         EXPECT_EQ(i.get_engine(), engine);
     }
 
-    auto* m = engine->GetModule("test_interface", asGM_ALWAYS_CREATE);
+    auto* m = engine->GetModule(
+        "test_interface", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
+    );
 
     m->AddScriptSection(
         "test_interface.as",
@@ -338,7 +340,7 @@ TEST_F(asbind_test_suite, generic_wrapper)
         .function("void my_to_str2(int prefix_num, const ?&in, string&out)", my_to_str2_gen);
 
     value_class<member_var_type, true>(
-        engine, "member_var_type", asOBJ_APP_CLASS_ALLINTS
+        engine, "member_var_type", AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_ALLINTS
     )
         .behaviours_by_traits()
         .method("string to_str1(const ?&in)", mem_to_str1)

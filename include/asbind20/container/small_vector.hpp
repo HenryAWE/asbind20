@@ -1143,9 +1143,9 @@ case AS_NAMESPACE_QUALIFIER as_type_id:                                         
 
         switch(type_id)
         {
-#define ASBIND20_SMALL_VECTOR_IMPL_CASE(as_type_id)         \
-case AS_NAMESPACE_QUALIFIER as_type_id:                     \
-    helper(std::in_place_type<impl_primitive<as_type_id>>); \
+#define ASBIND20_SMALL_VECTOR_IMPL_CASE(as_type_id)                                \
+case AS_NAMESPACE_QUALIFIER as_type_id:                                            \
+    helper(std::in_place_type<impl_primitive<AS_NAMESPACE_QUALIFIER as_type_id>>); \
     break
 
             ASBIND20_SMALL_VECTOR_IMPL_CASE(asTYPEID_BOOL);

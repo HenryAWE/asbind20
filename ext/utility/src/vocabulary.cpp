@@ -168,7 +168,7 @@ void script_optional::reset()
     m_has_value = false;
 }
 
-void script_optional::enum_refs(asIScriptEngine* engine)
+void script_optional::enum_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     assert(m_ti->GetFlags() & AS_NAMESPACE_QUALIFIER asOBJ_GC);
 

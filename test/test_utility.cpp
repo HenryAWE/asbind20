@@ -178,7 +178,7 @@ TEST(utility, version)
     }
 
     {
-        std::string_view sv = asGetLibraryOptions();
+        std::string_view sv = AS_NAMESPACE_QUALIFIER asGetLibraryOptions();
         bool max_portability_found = sv.find("AS_MAX_PORTABILITY") != sv.npos;
 
         EXPECT_EQ(asbind20::has_max_portability(), max_portability_found);

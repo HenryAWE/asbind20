@@ -57,7 +57,7 @@ public:
 
     void from_var_type(void* ref, int type_id)
     {
-        if(type_id == asTYPEID_VOID || !asbind20::is_primitive_type(type_id))
+        if(asbind20::is_void_type(type_id) || !asbind20::is_primitive_type(type_id))
             return;
 
         asbind20::visit_primitive_type(
@@ -356,7 +356,9 @@ bool test_12(trivial_value_class val)
 
 static void check_trivial_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
-    asIScriptModule* m = engine->GetModule("test_value_class", asGM_ALWAYS_CREATE);
+    auto* m = engine->GetModule(
+        "test_value_class", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
+    );
     ASSERT_TRUE(m);
 
     m->AddScriptSection(
@@ -635,7 +637,9 @@ int test_7()
 
 static void check_friend_ops(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, friend_ops_helper& helper)
 {
-    asIScriptModule* m = engine->GetModule("test_value_class", asGM_ALWAYS_CREATE);
+    auto* m = engine->GetModule(
+        "test_value_class", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
+    );
     ASSERT_TRUE(m);
 
     m->AddScriptSection(
