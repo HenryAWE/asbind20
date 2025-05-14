@@ -8,12 +8,12 @@
 // clang-format off: Used by CMakeLists.txt for parsing version
 
 #define ASBIND20_VERSION_MAJOR 1
-#define ASBIND20_VERSION_MINOR 5
-#define ASBIND20_VERSION_PATCH 2
+#define ASBIND20_VERSION_MINOR 6
+#define ASBIND20_VERSION_PATCH 0
 
 // clang-format on
 
-#define ASBIND20_VERSION_STRING "1.5.2"
+#define ASBIND20_VERSION_STRING "1.6.0"
 
 // IWYU pragma: begin_exports
 
