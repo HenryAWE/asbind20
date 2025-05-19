@@ -3780,6 +3780,19 @@ public:
         this->template register_object_type<Class>(flags);
     }
 
+    template <std::convertible_to<std::string_view> StringView>
+    basic_value_class(
+        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+        StringView name,
+        AS_NAMESPACE_QUALIFIER asQWORD flags = 0
+    )
+        : basic_value_class(
+              engine,
+              std::string(static_cast<std::string_view>(name)),
+              flags
+          )
+    {}
+
 private:
     template <typename Method>
     static consteval auto method_callconv() noexcept
@@ -5036,6 +5049,19 @@ public:
 
         this->template register_object_type<Class>(flags);
     }
+
+    template <std::convertible_to<std::string_view> StringView>
+    basic_ref_class(
+        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+        StringView name,
+        AS_NAMESPACE_QUALIFIER asQWORD flags = 0
+    )
+        : basic_ref_class(
+              engine,
+              std::string(static_cast<std::string_view>(name)),
+              flags
+          )
+    {}
 
 private:
     template <typename Method>
@@ -6490,6 +6516,17 @@ public:
         assert(r >= 0);
     }
 
+    template <std::convertible_to<std::string_view> StringView>
+    interface(
+        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+        StringView name
+    )
+        : interface(
+              engine,
+              std::string(static_cast<std::string_view>(name))
+          )
+    {}
+
     interface& method(std::string_view decl)
     {
         [[maybe_unused]]
@@ -6556,6 +6593,17 @@ public:
         r = m_engine->RegisterEnum(m_name.c_str());
         assert(r >= 0);
     }
+
+    template <std::convertible_to<std::string_view> StringView>
+    enum_(
+        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+        StringView name
+    )
+        : enum_(
+              engine,
+              std::string(static_cast<std::string_view>(name))
+          )
+    {}
 
     enum_& value(Enum val, std::string_view decl)
     {
