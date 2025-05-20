@@ -10,7 +10,7 @@ Update
 ~~~~~~
 
 - Composite property support
-
+- Official arm64 support. Previously, it works theoretically but not actually tested.
 
 Bug fix
 ~~~~~~~
