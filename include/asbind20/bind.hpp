@@ -6536,6 +6536,46 @@ public:
         return *this;
     }
 
+    basic_ref_class& property(
+        std::string_view decl, std::size_t comp_off, std::size_t base_off
+    )
+    {
+        this->comp_property_impl(decl, comp_off, base_off);
+
+        return *this;
+    }
+
+    template <typename MemberPointer>
+    requires(std::is_member_object_pointer_v<MemberPointer>)
+    basic_ref_class& property(std::string_view decl, MemberPointer mp, std::size_t base_off)
+    {
+        this->comp_property_impl(decl, mp, base_off);
+
+        return *this;
+    }
+
+    template <typename CompMemberPointer>
+    requires(std::is_member_object_pointer_v<CompMemberPointer>)
+    basic_ref_class& property(
+        std::string_view decl, std::size_t off, CompMemberPointer comp_mp
+    )
+    {
+        this->comp_property_impl(decl, off, comp_mp);
+
+        return *this;
+    }
+
+    template <typename MemberPointer, typename CompMemberPointer>
+    requires(std::is_member_object_pointer_v<MemberPointer> && std::is_member_object_pointer_v<CompMemberPointer>)
+    basic_ref_class& property(
+        std::string_view decl, MemberPointer mp, CompMemberPointer comp_mp
+    )
+    {
+        this->comp_property_impl(decl, mp, comp_mp);
+
+        return *this;
+    }
+
     basic_ref_class& funcdef(std::string_view decl)
     {
         this->member_funcdef_impl(decl);
