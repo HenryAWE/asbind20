@@ -2814,6 +2814,46 @@ protected:
         property_impl(decl, member_offset(mp));
     }
 
+    void comp_property_impl(std::string_view decl, std::size_t off, std::size_t comp_off)
+    {
+        [[maybe_unused]]
+        int r = with_cstr(
+            [this, off, comp_off](const char* decl)
+            {
+                return m_engine->RegisterObjectProperty(
+                    m_name.c_str(),
+                    decl,
+                    static_cast<int>(off),
+                    static_cast<int>(comp_off),
+                    true
+                );
+            },
+            decl
+        );
+        assert(r >= 0);
+    }
+
+    template <typename CompMemberPointer>
+    requires(std::is_member_object_pointer_v<CompMemberPointer>)
+    void comp_property_impl(std::string_view decl, std::size_t off, CompMemberPointer comp_mp)
+    {
+        comp_property_impl(decl, off, member_offset(comp_mp));
+    }
+
+    template <typename MemberPointer>
+    requires(std::is_member_object_pointer_v<MemberPointer>)
+    void comp_property_impl(std::string_view decl, MemberPointer mp, std::size_t comp_off)
+    {
+        comp_property_impl(decl, member_offset(mp), comp_off);
+    }
+
+    template <typename CompMemberPointer, typename MemberPointer>
+    requires(std::is_member_object_pointer_v<MemberPointer> && std::is_member_object_pointer_v<CompMemberPointer>)
+    void comp_property_impl(std::string_view decl, MemberPointer mp, CompMemberPointer comp_mp)
+    {
+        comp_property_impl(decl, member_offset(mp), member_offset(comp_mp));
+    }
+
 #define ASBIND20_CLASS_UNARY_PREFIX_OP(as_op_sig, cpp_op, decl_arg_list, return_type, const_)      \
     std::string as_op_sig##_decl() const                                                           \
     {                                                                                              \
@@ -4995,6 +5035,46 @@ public:
         return *this;
     }
 
+    basic_value_class& property(
+        std::string_view decl, std::size_t comp_off, std::size_t base_off
+    )
+    {
+        this->comp_property_impl(decl, comp_off, base_off);
+
+        return *this;
+    }
+
+    template <typename MemberPointer>
+    requires(std::is_member_object_pointer_v<MemberPointer>)
+    basic_value_class& property(std::string_view decl, MemberPointer mp, std::size_t base_off)
+    {
+        this->comp_property_impl(decl, mp, base_off);
+
+        return *this;
+    }
+
+    template <typename CompMemberPointer>
+    requires(std::is_member_object_pointer_v<CompMemberPointer>)
+    basic_value_class& property(
+        std::string_view decl, std::size_t off, CompMemberPointer comp_mp
+    )
+    {
+        this->comp_property_impl(decl, off, comp_mp);
+
+        return *this;
+    }
+
+    template <typename MemberPointer, typename CompMemberPointer>
+    requires(std::is_member_object_pointer_v<MemberPointer> && std::is_member_object_pointer_v<CompMemberPointer>)
+    basic_value_class& property(
+        std::string_view decl, MemberPointer mp, CompMemberPointer comp_mp
+    )
+    {
+        this->comp_property_impl(decl, mp, comp_mp);
+
+        return *this;
+    }
+
     basic_value_class& funcdef(std::string_view decl)
     {
         this->member_funcdef_impl(decl);
@@ -6452,6 +6532,46 @@ public:
     basic_ref_class& property(std::string_view decl, MemberPointer mp)
     {
         this->template property_impl<MemberPointer>(decl, mp);
+
+        return *this;
+    }
+
+    basic_ref_class& property(
+        std::string_view decl, std::size_t comp_off, std::size_t base_off
+    )
+    {
+        this->comp_property_impl(decl, comp_off, base_off);
+
+        return *this;
+    }
+
+    template <typename MemberPointer>
+    requires(std::is_member_object_pointer_v<MemberPointer>)
+    basic_ref_class& property(std::string_view decl, MemberPointer mp, std::size_t base_off)
+    {
+        this->comp_property_impl(decl, mp, base_off);
+
+        return *this;
+    }
+
+    template <typename CompMemberPointer>
+    requires(std::is_member_object_pointer_v<CompMemberPointer>)
+    basic_ref_class& property(
+        std::string_view decl, std::size_t off, CompMemberPointer comp_mp
+    )
+    {
+        this->comp_property_impl(decl, off, comp_mp);
+
+        return *this;
+    }
+
+    template <typename MemberPointer, typename CompMemberPointer>
+    requires(std::is_member_object_pointer_v<MemberPointer> && std::is_member_object_pointer_v<CompMemberPointer>)
+    basic_ref_class& property(
+        std::string_view decl, MemberPointer mp, CompMemberPointer comp_mp
+    )
+    {
+        this->comp_property_impl(decl, mp, comp_mp);
 
         return *this;
     }

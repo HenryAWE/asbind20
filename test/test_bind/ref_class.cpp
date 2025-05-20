@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <shared_test_lib.hpp>
 #include <asbind20/asbind.hpp>
+#include <asbind20/ext/assert.hpp>
 
 namespace test_bind
 {
@@ -406,4 +407,217 @@ TEST_F(asbind_test_suite_generic, ref_class_for_helper)
     test_bind::register_ref_class_for_helper<true>(engine, helper);
 
     test_bind::check_ref_class_for_helper(engine, helper);
+}
+
+namespace test_bind
+{
+struct ref_class_comp_data
+{
+    int comp_a;
+    int comp_b;
+};
+
+class base_ref_class
+{
+public:
+    base_ref_class()
+        : a(0), indirect(new ref_class_comp_data{1, 2}), b(3) {}
+
+    ~base_ref_class()
+    {
+        delete indirect;
+    }
+
+    void addref()
+    {
+        ++counter;
+    }
+
+    void release()
+    {
+        --counter;
+        if(counter == 0)
+            delete this;
+    }
+
+    int a;
+    ref_class_comp_data* const indirect;
+    int b;
+
+    int counter = 1;
+};
+
+template <bool UseGeneric, bool UseMP, bool CompUseMP>
+static void register_base_ref_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
+    using asbind20::fp;
+
+    asbind20::ref_class<base_ref_class, UseGeneric> c(engine, "base_ref_class");
+    c
+        .default_factory()
+        .addref(fp<&base_ref_class::addref>)
+        .release(fp<&base_ref_class::release>)
+        .property("int a", &base_ref_class::a)
+        .property("int b", &base_ref_class::b);
+
+    if constexpr(UseMP && CompUseMP)
+    {
+        c
+            .property("int comp_a", &ref_class_comp_data::comp_a, &base_ref_class::indirect)
+            .property("int comp_b", &ref_class_comp_data::comp_b, &base_ref_class::indirect);
+    }
+    else if constexpr(UseMP)
+    {
+        c
+            .property("int comp_a", &ref_class_comp_data::comp_a, offsetof(base_ref_class, indirect))
+            .property("int comp_b", &ref_class_comp_data::comp_b, offsetof(base_ref_class, indirect));
+    }
+    else if constexpr(CompUseMP)
+    {
+        c
+            .property("int comp_a", offsetof(ref_class_comp_data, comp_a), &base_ref_class::indirect)
+            .property("int comp_b", offsetof(ref_class_comp_data, comp_b), &base_ref_class::indirect);
+    }
+    else // Both are represented by offset
+    {
+        c
+            .property("int comp_a", offsetof(ref_class_comp_data, comp_a), offsetof(base_ref_class, indirect))
+            .property("int comp_b", offsetof(ref_class_comp_data, comp_b), offsetof(base_ref_class, indirect));
+    }
+}
+
+static void check_ref_class_comp_property(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
+    auto* m = engine->GetModule(
+        "ref_class_comp_prop", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
+    );
+    ASSERT_TRUE(m);
+
+    m->AddScriptSection(
+        "test_comp_prop",
+        "base_ref_class@ create_val() { return base_ref_class(); }\n"
+        "void test()\n"
+        "{\n"
+        "    base_ref_class c;\n"
+        "    assert(c.a == 0);\n"
+        "    assert(c.comp_a == 1);\n"
+        "    assert(c.comp_b == 2);\n"
+        "    assert(c.b == 3);\n"
+        "}"
+    );
+    ASSERT_GE(m->Build(), 0);
+
+    {
+        auto* f = m->GetFunctionByName("create_val");
+
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<base_ref_class*>(ctx, f);
+        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASSERT_NE(*result, nullptr);
+        EXPECT_EQ((*result)->a, 0);
+        EXPECT_EQ((*result)->indirect->comp_a, 1);
+        EXPECT_EQ((*result)->indirect->comp_b, 2);
+        EXPECT_EQ((*result)->b, 3);
+    }
+
+    {
+        auto* f = m->GetFunctionByName("test");
+
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<void>(ctx, f);
+        EXPECT_TRUE(asbind_test::result_has_value(result));
+    }
+}
+
+template <bool UseGeneric, bool UseMP, bool CompUseMP>
+static void setup_ref_class_comp_prop_test(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
+    using namespace asbind20;
+
+    ext::register_script_assert(
+        engine,
+        [](std::string_view msg)
+        {
+            FAIL() << "ref_class_comp_prop failed: " << msg;
+        }
+    );
+
+    register_base_ref_class<UseGeneric, UseMP, CompUseMP>(engine);
+}
+} // namespace test_bind
+
+TEST(ref_class_comp_prop, native_off_off)
+{
+    if(asbind20::has_max_portability())
+        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+
+    using namespace test_bind;
+    auto engine = asbind20::make_script_engine();
+    setup_ref_class_comp_prop_test<false, false, false>(engine);
+    check_ref_class_comp_property(engine);
+}
+
+TEST(ref_class_comp_prop, generic_off_off)
+{
+    using namespace test_bind;
+    auto engine = asbind20::make_script_engine();
+    setup_ref_class_comp_prop_test<true, false, false>(engine);
+    check_ref_class_comp_property(engine);
+}
+
+TEST(ref_class_comp_prop, native_mp_off)
+{
+    if(asbind20::has_max_portability())
+        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+
+    using namespace test_bind;
+    auto engine = asbind20::make_script_engine();
+    setup_ref_class_comp_prop_test<false, true, false>(engine);
+    check_ref_class_comp_property(engine);
+}
+
+TEST(ref_class_comp_prop, generic_mp_off)
+{
+    using namespace test_bind;
+    auto engine = asbind20::make_script_engine();
+    setup_ref_class_comp_prop_test<true, true, false>(engine);
+    check_ref_class_comp_property(engine);
+}
+
+TEST(ref_class_comp_prop, native_off_mp)
+{
+    if(asbind20::has_max_portability())
+        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+
+    using namespace test_bind;
+    auto engine = asbind20::make_script_engine();
+    setup_ref_class_comp_prop_test<false, false, true>(engine);
+    check_ref_class_comp_property(engine);
+}
+
+TEST(ref_class_comp_prop, generic_off_mp)
+{
+    using namespace test_bind;
+    auto engine = asbind20::make_script_engine();
+    setup_ref_class_comp_prop_test<true, false, false>(engine);
+    check_ref_class_comp_property(engine);
+}
+
+TEST(ref_class_comp_prop, native_mp_mp)
+{
+    if(asbind20::has_max_portability())
+        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+
+    using namespace test_bind;
+    auto engine = asbind20::make_script_engine();
+    setup_ref_class_comp_prop_test<false, true, true>(engine);
+    check_ref_class_comp_property(engine);
+}
+
+TEST(ref_class_comp_prop, generic_mp_mp)
+{
+    using namespace test_bind;
+    auto engine = asbind20::make_script_engine();
+    setup_ref_class_comp_prop_test<true, true, true>(engine);
+    check_ref_class_comp_property(engine);
 }

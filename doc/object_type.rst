@@ -518,7 +518,31 @@ Ordinary Member Variables
 Composite Members
 ~~~~~~~~~~~~~~~~~
 
-*Not implemented yet*
+If the application class that is being registered uses composition,
+then it is possible to register the properties of the composite members without wrapper functions.
+
+.. code-block:: c++
+
+    struct comp_data
+    {
+        int comp_a;
+        int comp_b;
+    };
+
+    struct my_class
+    {
+        int a;
+        comp_data* indirect;
+        int b;
+    };
+
+.. code-block:: c++
+
+    // ...
+        // Via a member pointer
+        .property("int comp_a", &comp_data::comp_a, &my_class::indirect)
+        // Via offset
+        .property("int comp_b", offsetof(comp_data, comp_b), offsetof(my_class, indirect));
 
 Registering Types with Similar Interfaces
 -----------------------------------------
