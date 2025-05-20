@@ -742,3 +742,212 @@ TEST_F(friend_ops_generic, check_friend_ops)
     auto* engine = get_engine();
     check_friend_ops(engine, get_helper());
 }
+
+namespace test_bind
+{
+struct comp_data
+{
+    int comp_a;
+    int comp_b;
+};
+
+class base_val_class
+{
+public:
+    base_val_class()
+        : a(0), indirect(new comp_data{1, 2}), b(3) {}
+
+    base_val_class(const base_val_class& other)
+        : a(other.a), indirect(new comp_data(*other.indirect)), b(3) {}
+
+    ~base_val_class()
+    {
+        delete indirect;
+    }
+
+    base_val_class& operator=(const base_val_class& rhs)
+    {
+        if(this == &rhs)
+            return *this;
+
+        a = rhs.a;
+        *indirect = *rhs.indirect;
+        b = rhs.b;
+
+        return *this;
+    }
+
+    int a;
+    comp_data* const indirect;
+    int b;
+};
+
+template <bool UseGeneric, bool UseMP, bool CompUseMP>
+void register_base_val_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
+    asbind20::value_class<base_val_class, UseGeneric> c(engine, "base_val_class");
+    c
+        .behaviours_by_traits()
+        .property("int a", &base_val_class::a)
+        .property("int b", &base_val_class::b);
+
+    if constexpr(UseMP && CompUseMP)
+    {
+        c
+            .property("int comp_a", &comp_data::comp_a, &base_val_class::indirect)
+            .property("int comp_b", &comp_data::comp_b, &base_val_class::indirect);
+    }
+    else if constexpr(UseMP)
+    {
+        c
+            .property("int comp_a", &comp_data::comp_a, offsetof(base_val_class, indirect))
+            .property("int comp_b", &comp_data::comp_b, offsetof(base_val_class, indirect));
+    }
+    else if constexpr(CompUseMP)
+    {
+        c
+            .property("int comp_a", offsetof(comp_data, comp_a), &base_val_class::indirect)
+            .property("int comp_b", offsetof(comp_data, comp_b), &base_val_class::indirect);
+    }
+    else // Both are represented by offset
+    {
+        c
+            .property("int comp_a", offsetof(comp_data, comp_a), offsetof(base_val_class, indirect))
+            .property("int comp_b", offsetof(comp_data, comp_b), offsetof(base_val_class, indirect));
+    }
+}
+
+void check_val_class_comp_property(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
+    auto* m = engine->GetModule(
+        "val_class_comp_prop", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
+    );
+    ASSERT_TRUE(m);
+
+    m->AddScriptSection(
+        "test_comp_prop",
+        "base_val_class create_val() { return base_val_class(); }\n"
+        "void test()\n"
+        "{\n"
+        "    base_val_class c;\n"
+        "    assert(c.a == 0);\n"
+        "    assert(c.comp_a == 1);\n"
+        "    assert(c.comp_b == 2);\n"
+        "    assert(c.b == 3);\n"
+        "}"
+    );
+    ASSERT_GE(m->Build(), 0);
+
+    {
+        auto* f = m->GetFunctionByName("create_val");
+
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<base_val_class>(ctx, f);
+        ASSERT_TRUE(asbind_test::result_has_value(result));
+        EXPECT_EQ(result.value().a, 0);
+        EXPECT_EQ(result.value().indirect->comp_a, 1);
+        EXPECT_EQ(result.value().indirect->comp_b, 2);
+        EXPECT_EQ(result.value().b, 3);
+    }
+
+    {
+        auto* f = m->GetFunctionByName("test");
+
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<void>(ctx, f);
+        EXPECT_TRUE(asbind_test::result_has_value(result));
+    }
+}
+
+template <bool UseGeneric, bool UseMP, bool CompUseMP>
+void setup_val_class_comp_prop_test(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
+    using namespace asbind20;
+
+    ext::register_script_assert(
+        engine,
+        [](std::string_view msg)
+        {
+            FAIL() << "val_class_comp_prop failed: " << msg;
+        }
+    );
+
+    register_base_val_class<UseGeneric, UseMP, CompUseMP>(engine);
+}
+} // namespace test_bind
+
+TEST(val_class_comp_prop, native_off_off)
+{
+    if(asbind20::has_max_portability())
+        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+
+    using namespace test_bind;
+    auto engine = asbind20::make_script_engine();
+    setup_val_class_comp_prop_test<false, false, false>(engine);
+    check_val_class_comp_property(engine);
+}
+
+TEST(val_class_comp_prop, generic_off_off)
+{
+    using namespace test_bind;
+    auto engine = asbind20::make_script_engine();
+    setup_val_class_comp_prop_test<true, false, false>(engine);
+    check_val_class_comp_property(engine);
+}
+
+TEST(val_class_comp_prop, native_mp_off)
+{
+    if(asbind20::has_max_portability())
+        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+
+    using namespace test_bind;
+    auto engine = asbind20::make_script_engine();
+    setup_val_class_comp_prop_test<false, true, false>(engine);
+    check_val_class_comp_property(engine);
+}
+
+TEST(val_class_comp_prop, generic_mp_off)
+{
+    using namespace test_bind;
+    auto engine = asbind20::make_script_engine();
+    setup_val_class_comp_prop_test<true, true, false>(engine);
+    check_val_class_comp_property(engine);
+}
+
+TEST(val_class_comp_prop, native_off_mp)
+{
+    if(asbind20::has_max_portability())
+        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+
+    using namespace test_bind;
+    auto engine = asbind20::make_script_engine();
+    setup_val_class_comp_prop_test<false, false, true>(engine);
+    check_val_class_comp_property(engine);
+}
+
+TEST(val_class_comp_prop, generic_off_mp)
+{
+    using namespace test_bind;
+    auto engine = asbind20::make_script_engine();
+    setup_val_class_comp_prop_test<true, false, false>(engine);
+    check_val_class_comp_property(engine);
+}
+
+TEST(val_class_comp_prop, native_mp_mp)
+{
+    if(asbind20::has_max_portability())
+        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+
+    using namespace test_bind;
+    auto engine = asbind20::make_script_engine();
+    setup_val_class_comp_prop_test<false, true, true>(engine);
+    check_val_class_comp_property(engine);
+}
+
+TEST(val_class_comp_prop, generic_mp_mp)
+{
+    using namespace test_bind;
+    auto engine = asbind20::make_script_engine();
+    setup_val_class_comp_prop_test<true, true, true>(engine);
+    check_val_class_comp_property(engine);
+}
