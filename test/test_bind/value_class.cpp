@@ -783,7 +783,7 @@ public:
 };
 
 template <bool UseGeneric, bool UseMP, bool CompUseMP>
-void register_base_val_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void register_base_val_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     asbind20::value_class<base_val_class, UseGeneric> c(engine, "base_val_class");
     c
@@ -817,7 +817,7 @@ void register_base_val_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     }
 }
 
-void check_val_class_comp_property(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void check_val_class_comp_property(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     auto* m = engine->GetModule(
         "val_class_comp_prop", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
@@ -860,7 +860,7 @@ void check_val_class_comp_property(AS_NAMESPACE_QUALIFIER asIScriptEngine* engin
 }
 
 template <bool UseGeneric, bool UseMP, bool CompUseMP>
-void setup_val_class_comp_prop_test(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void setup_val_class_comp_prop_test(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     using namespace asbind20;
 
