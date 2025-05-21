@@ -24,6 +24,11 @@ Bug fix
 
 - Update compatibility with ``string_view`` of binding generators.
 
+Documentation
+~~~~~~~~~~~~~
+
+- Fix typo and wrong link.
+
 1.5.2
 -----
 

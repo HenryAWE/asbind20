@@ -19,7 +19,7 @@ Please check carefully the function signature in AngelScript and C++ are perfect
 ------------------------------------
 
 AngelScript needs a precise type information to use a value type in native calling convention. Please check the official document for details. A common mistake is forgetting to set ``asOBJ_APP_CLASS_MORE_CONSTRUCTORS`` before registering constructors other than default/copy constructor.
-If you think the problem is caused by the native calling convention and is hard to fix, you can try to force ``asbind20`` to register all things in generic mode, as described in the `main README.md <../README.md>`_. If switching to generic mode fix your problem, you can be 90% sure the problem is caused by invalid type flags.
+If you think the problem is caused by the native calling convention and is hard to fix, you can try to force ``asbind20`` to register all things in generic mode, as described at :ref:`here <group-force-generic>`. If switching to generic mode fix your problem, you can be 90% sure the problem is caused by invalid type flags.
 
 Note for Windows + MSVC User
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
