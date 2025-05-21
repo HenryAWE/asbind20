@@ -760,33 +760,145 @@ script_invoke_result<R> script_invoke(
     return detail::execute_context<R>(ctx);
 }
 
-class script_function_base
+namespace detail
+{
+    [[noreturn]]
+    inline void throw_bad_call()
+    {
+        throw std::bad_function_call();
+    }
+} // namespace detail
+
+template <typename T>
+class script_function_ref;
+
+/**
+ * @brief Script function wrapper without ownership, i.e., no reference counting support
+ */
+template <typename R, typename... Args>
+class script_function_ref<R(Args...)>
+{
+public:
+    using handle_type = AS_NAMESPACE_QUALIFIER asIScriptFunction*;
+    using result_type = script_invoke_result<R>;
+
+    script_function_ref() noexcept
+        : script_function_ref(nullptr) {}
+
+    script_function_ref(handle_type fp) noexcept
+        : m_fp(fp) {}
+
+    void reset(std::nullptr_t = nullptr) noexcept
+    {
+        m_fp = nullptr;
+    }
+
+    void reset(handle_type fp) noexcept
+    {
+        m_fp = fp;
+    }
+
+    handle_type target() const noexcept
+    {
+        return m_fp;
+    }
+
+    result_type operator()(
+        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, Args&&... args
+    ) const
+    {
+        handle_type fp = target();
+        if(!fp) [[unlikely]]
+            detail::throw_bad_call();
+
+        return script_invoke<R>(ctx, fp, std::forward<Args>(args)...);
+    }
+
+private:
+    handle_type m_fp;
+};
+
+template <typename T>
+class script_method_ref;
+
+/**
+ * @brief Script method wrapper without ownership, i.e., no reference counting support
+ */
+template <typename R, typename... Args>
+class script_method_ref<R(Args...)>
+{
+public:
+    using handle_type = AS_NAMESPACE_QUALIFIER asIScriptFunction*;
+    using result_type = script_invoke_result<R>;
+
+    script_method_ref() noexcept
+        : script_method_ref(nullptr) {}
+
+    script_method_ref(handle_type fp) noexcept
+        : m_fp(fp) {}
+
+    void reset(std::nullptr_t = nullptr) noexcept
+    {
+        m_fp = nullptr;
+    }
+
+    void reset(handle_type fp) noexcept
+    {
+        m_fp = fp;
+    }
+
+    handle_type target() const noexcept
+    {
+        return m_fp;
+    }
+
+    template <script_object_handle Object>
+    result_type operator()(
+        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, Object&& obj, Args&&... args
+    ) const
+    {
+        handle_type fp = target();
+        if(!fp)
+            detail::throw_bad_call();
+
+        return script_invoke<R>(ctx, std::forward<Object>(obj), fp, std::forward<Args>(args)...);
+    }
+
+private:
+    handle_type m_fp;
+};
+
+template <typename T>
+class script_function;
+
+template <>
+class script_function<void>
 {
 public:
     using handle_type = AS_NAMESPACE_QUALIFIER asIScriptFunction*;
 
-    script_function_base() noexcept
+    script_function() noexcept
         : m_fp(nullptr) {}
 
-    script_function_base(const script_function_base& other)
-        : script_function_base(other.target()) {}
+    script_function(const script_function& other)
+        : script_function(other.target()) {}
 
-    script_function_base(script_function_base&& other) noexcept
+    script_function(script_function&& other) noexcept
         : m_fp(std::exchange(other.m_fp, nullptr)) {}
 
-    script_function_base(handle_type fp)
+    script_function(handle_type fp)
         : m_fp(fp)
     {
         if(m_fp)
             m_fp->AddRef();
     }
 
-    ~script_function_base()
+    ~script_function()
     {
         reset();
     }
 
-    script_function_base& operator=(const script_function_base& other)
+    script_function& operator=(const script_function& other)
     {
         if(this == &other)
             return *this;
@@ -796,9 +908,9 @@ public:
         return *this;
     }
 
-    script_function_base& operator=(script_function_base&& other) noexcept
+    script_function& operator=(script_function&& other) noexcept
     {
-        script_function_base(std::move(other)).swap(*this);
+        script_function(std::move(other)).swap(*this);
         return *this;
     }
 
@@ -840,31 +952,23 @@ public:
             m_fp->AddRef();
     }
 
-    void swap(script_function_base& other) noexcept
+    void swap(script_function& other) noexcept
     {
         std::swap(m_fp, other.m_fp);
-    }
-
-protected:
-    [[noreturn]]
-    static void throw_bad_call()
-    {
-        throw std::bad_function_call();
     }
 
 private:
     handle_type m_fp;
 };
 
-template <typename... Ts>
-class script_function;
-
 /**
  * @brief Wrapper of script function
  */
 template <typename R, typename... Args>
-class script_function<R(Args...)> : public script_function_base
+class script_function<R(Args...)> : public script_function<void>
 {
+    using my_base = script_function<void>;
+
 public:
     using result_type = script_invoke_result<R>;
 
@@ -873,7 +977,7 @@ public:
     script_function(script_function&&) noexcept = default;
 
     explicit script_function(handle_type fp)
-        : script_function_base(fp) {}
+        : my_base(fp) {}
 
     script_function& operator=(const script_function&) = default;
     script_function& operator=(script_function&&) noexcept = default;
@@ -884,26 +988,28 @@ public:
     {
         handle_type fp = target();
         if(!fp)
-            throw_bad_call();
+            detail::throw_bad_call();
 
         return script_invoke<R>(ctx, fp, std::forward<Args>(args)...);
     }
 
     void swap(script_function& other) noexcept
     {
-        script_function_base::swap(other);
+        my_base::swap(other);
     }
 };
 
-template <typename... Ts>
+template <typename T>
 class script_method;
 
 /**
  * @brief Wrapper of script method, a.k.a member function
  */
 template <typename R, typename... Args>
-class script_method<R(Args...)> : public script_function_base
+class script_method<R(Args...)> : public script_function<void>
 {
+    using my_base = script_function<void>;
+
 public:
     using result_type = script_invoke_result<R>;
 
@@ -912,7 +1018,7 @@ public:
     script_method(script_method&&) noexcept = default;
 
     explicit script_method(handle_type fp)
-        : script_function_base(fp) {}
+        : my_base(fp) {}
 
     script_method& operator=(const script_method&) = default;
     script_method& operator=(script_method&&) noexcept = default;
@@ -924,14 +1030,14 @@ public:
     {
         handle_type fp = target();
         if(!fp)
-            throw_bad_call();
+            detail::throw_bad_call();
 
         return script_invoke<R>(ctx, std::forward<Object>(obj), fp, std::forward<Args>(args)...);
     }
 
     void swap(script_method& other) noexcept
     {
-        script_function_base::swap(other);
+        my_base::swap(other);
     }
 };
 

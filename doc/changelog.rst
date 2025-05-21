@@ -11,6 +11,13 @@ Update
 
 - Composite property support
 - Official arm64 support. Previously, it works theoretically but not actually tested.
+- New tools for managing script function without increasing its reference count.
+  It's useful when the programmer has deep understanding about the lifetime and want to write zero overhead code.
+
+Breaking Change
+~~~~~~~~~~~~~~~
+
+- Removed ``script_function_base``. Use ``script_function<void>`` instead.
 
 Bug fix
 ~~~~~~~
