@@ -4,6 +4,8 @@ Vocabulary Types
 Script Optional
 ---------------
 
+.. doxygenfunction:: asbind20::ext::register_script_optional
+
 Weak Reference
 --------------
 
