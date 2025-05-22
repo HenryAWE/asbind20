@@ -7,17 +7,22 @@ Supported Platforms
 
 Currently, the following platforms and compilers are officially supported and tested by CI.
 
-+-------------+---------------------+
-| Platform    | Compiler            |
-+=============+=====================+
-| Windows x64 | MSVC 19.41+         |
-+-------------+---------------------+
-| Linux x64   | GCC 12, 13, 14      |
-+-------------+---------------------+
-| Linux x64   | Clang 18, 18 (ASan) |
-+-------------+---------------------+
-| Emscripten  | emsdk latest        |
-+-------------+---------------------+
+.. list-table::
+   :widths: auto
+   :header-rows: 1
+
+   * - Platform
+     - Compiler
+   * - Windows x64
+     - MSVC 19.41+
+   * - Linux x64
+     - | GCC 12, 13, 14
+       | Clang 18
+       | Clang 18 (ASan)
+   * - Linux arm64
+     - Clang 18
+   * - Emscripten
+     - emsdk latest
 
 .. note::
    Some advanced features are only available on newer compilers.
