@@ -23,6 +23,9 @@ namespace asbind20::ext
 {
 /**
  * @brief Set engine properties for string extension
+ *
+ * This will configure the script engine to use UTF-8 everywhere,
+ * and enable char literal, which means 'a' is an integral value instead of a string.
  */
 void configure_engine_for_ext_string(
     AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
@@ -33,6 +36,9 @@ void register_script_char(
     bool generic = has_max_portability()
 );
 
+/**
+ * @brief String factory for std::string
+ */
 class string_factory : public AS_NAMESPACE_QUALIFIER asIStringFactory
 {
 public:

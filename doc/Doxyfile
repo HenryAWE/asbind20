@@ -1,5 +1,5 @@
 PROJECT_NAME = asbind20
-INPUT = ../include/asbind20
+INPUT = ../include/asbind20 ../ext/container/include/ ../ext/utility/include
 RECURSIVE = YES
 
 GENERATE_HTML = NO
