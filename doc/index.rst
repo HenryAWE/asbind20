@@ -96,3 +96,9 @@ Contents:
 
    extra/troubleshooting
    extra/known_issue
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Extension Library
+
+   ext/ext

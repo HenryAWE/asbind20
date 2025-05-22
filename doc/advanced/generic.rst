@@ -81,6 +81,8 @@ Example code:
             var_type<0>
         );
 
+.. _group-force-generic:
+
 Wrap a Group of Methods, Functions, or Behaviors
 ------------------------------------------------
 
@@ -88,6 +90,7 @@ If you want to force a group of registered functions to be generic, you can set 
 You can use this flag to avoid the code for registering the application interface being flooded by ``use_generic``.
 
 Trying to register functions by native calling convention with ``ForceGeneric`` enabled will trigger a compile-time error.
+If you are targeting a platform without native calling convention support by AngelScript, this flag can be helpful to discover bugs early.
 
 .. code-block:: c++
 
@@ -108,6 +111,6 @@ Trying to register functions by native calling convention with ``ForceGeneric`` 
             asbind20::value_class<my_value_class, UseGeneric>(engine, "my_value_class")
                 .template constructor<int>("int")
                 .template opConv<int>()
-                // The interfaces that don't need template parameters can be used as usual
+                // The interfaces that don't need template arguments can be used as usual
                 .method("int f()", asbind20::fp<&my_value_class::f>);
         }

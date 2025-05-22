@@ -18,9 +18,19 @@
 namespace asbind20::ext::utf8
 {
 /**
- * @brief Get offset in byte of a UTF-8 string's nth character
+ * @defgroup UTF-8 UTF-8 library
  *
- * @return Offset in bytes, or -1 if `n` is out of range
+ * Functions for handling UTF-8 encoded string
+ */
+/// @{
+
+/**
+ * @brief Get the byte offset of the nth character in a UTF-8 string
+ *
+ * @param str The UTF-8 encoded string to search
+ * @param n The character index to find
+ *
+ * @return Byte offset of the nth character, or -1 if out of range
  */
 constexpr std::size_t u8_index(std::string_view str, std::size_t n) noexcept
 {
@@ -49,6 +59,14 @@ constexpr std::size_t u8_index(std::string_view str, std::size_t n) noexcept
     return std::size_t(-1);
 }
 
+/**
+ * @brief Get the byte offset of the nth character from the end of a UTF-8 string
+ *
+ * @param str The UTF-8 encoded string to search
+ * @param n The character index from the end to find
+ *
+ * @return Byte offset of the nth character from end, or -1 if out of range
+ */
 constexpr std::size_t u8_index_r(std::string_view str, std::size_t n) noexcept
 {
     if(str.empty())
@@ -78,6 +96,13 @@ constexpr std::size_t u8_index_r(std::string_view str, std::size_t n) noexcept
     return std::size_t(-1);
 }
 
+/**
+ * @brief Determine the number of bytes in a UTF-8 character from its first byte
+ *
+ * @param first The first byte of a UTF-8 character
+ *
+ * @return Number of bytes in the character (1-4)
+ */
 constexpr unsigned int u8_bytes(char first) noexcept
 {
     if((first & 0b1111'1000) == 0b1111'0000)
@@ -90,6 +115,13 @@ constexpr unsigned int u8_bytes(char first) noexcept
         return 1;
 }
 
+/**
+ * @brief Count the number of UTF-8 characters in a string
+ *
+ * @param str The UTF-8 encoded string to measure
+ *
+ * @return Number of characters in the string
+ */
 constexpr std::size_t u8_strlen(std::string_view str) noexcept
 {
     std::size_t i = 0;
@@ -114,6 +146,13 @@ constexpr std::size_t u8_strlen(std::string_view str) noexcept
     return result;
 }
 
+/**
+ * @brief Convert a sequence of UTF-8 bytes to a Unicode code point
+ *
+ * @param str Pointer to the start of a UTF-8 character sequence
+ *
+ * @return The decoded Unicode code point
+ */
 inline char32_t u8_bytes_to_int(const char* str) noexcept
 {
     assert(str != nullptr);
@@ -165,6 +204,14 @@ inline char32_t u8_bytes_to_int(const char* str) noexcept
     return U'\0';
 }
 
+/**
+ * @brief Convert a Unicode code point to UTF-8 bytes
+ *
+ * @param ch The Unicode code point to encode
+ * @param buf Buffer to store the UTF-8 bytes (must have space for 4 bytes)
+ *
+ * @return Number of bytes written to the buffer (1-4)
+ */
 constexpr unsigned int u8_int_to_bytes(char32_t ch, char* buf)
 {
     if(ch <= 0x7F)
@@ -197,6 +244,15 @@ constexpr unsigned int u8_int_to_bytes(char32_t ch, char* buf)
     return 0;
 }
 
+/**
+ * @brief Extract a substring from a UTF-8 string by character position
+ *
+ * @param sv The UTF-8 encoded string view
+ * @param pos Starting character position
+ * @param n Number of characters to extract (or npos for remainder)
+ *
+ * @return Substring view
+ */
 constexpr std::string_view u8_substr(
     std::string_view sv, std::size_t pos, std::size_t n = std::string_view::npos
 )
@@ -212,6 +268,15 @@ constexpr std::string_view u8_substr(
     return sv.substr(0, idx);
 }
 
+/**
+ * @brief Extract a substring from a UTF-8 string by character position from end
+ *
+ * @param sv The UTF-8 encoded string view
+ * @param pos Starting character position from end
+ * @param n Number of characters to extract (or npos for remainder)
+ *
+ * @return Substring view
+ */
 constexpr std::string_view u8_substr_r(
     std::string_view sv, std::size_t pos, std::size_t n = std::string_view::npos
 )
@@ -227,6 +292,14 @@ constexpr std::string_view u8_substr_r(
     return sv.substr(0, idx);
 }
 
+/**
+ * @brief Remove the first n characters from a UTF-8 string
+ *
+ * @param str The UTF-8 encoded string view
+ * @param n Number of characters to remove from start
+ *
+ * @return String view with prefix removed
+ */
 constexpr std::string_view u8_remove_prefix(std::string_view str, std::size_t n)
 {
     std::size_t idx = u8_index(str, n);
@@ -236,6 +309,14 @@ constexpr std::string_view u8_remove_prefix(std::string_view str, std::size_t n)
     return str.substr(idx);
 }
 
+/**
+ * @brief Remove the last n characters from a UTF-8 string
+ *
+ * @param str The UTF-8 encoded string view
+ * @param n Number of characters to remove from end
+ *
+ * @return String view with suffix removed
+ */
 constexpr std::string_view u8_remove_suffix(std::string_view str, std::size_t n)
 {
     std::size_t idx = u8_index_r(str, n);
@@ -245,6 +326,16 @@ constexpr std::string_view u8_remove_suffix(std::string_view str, std::size_t n)
     return str.substr(0, idx);
 }
 
+/**
+ * @brief Replace a range of characters in a UTF-8 string
+ *
+ * @param target The string to modify
+ * @param idx Starting character index
+ * @param n Number of characters to replace
+ * @param str Replacement string
+ *
+ * @throws std::out_of_range if idx is invalid
+ */
 inline void u8_replace_inplace(std::string& target, std::size_t idx, std::size_t n, std::string_view str)
 {
     std::string_view view(target);
@@ -265,6 +356,16 @@ inline void u8_replace_inplace(std::string& target, std::size_t idx, std::size_t
     );
 }
 
+/**
+ * @brief Replace a range of characters in a UTF-8 string from the end
+ *
+ * @param target The string to modify
+ * @param idx Starting character index from end
+ * @param n Number of characters to replace
+ * @param str Replacement string
+ *
+ * @throws std::out_of_range if idx is invalid
+ */
 inline void u8_replace_inplace_r(std::string& target, std::size_t idx, std::size_t n, std::string_view str)
 {
     std::string_view view(target);
@@ -285,6 +386,14 @@ inline void u8_replace_inplace_r(std::string& target, std::size_t idx, std::size
     );
 }
 
+/// @}
+
+/**
+ * @brief Bidirectional iterator for UTF-8 encoded strings
+ *
+ * Provides character-by-character iteration over a UTF-8 string,
+ * returning Unicode code points.
+ */
 class const_string_iterator
 {
 public:
@@ -360,11 +469,25 @@ private:
     std::size_t m_offset;
 };
 
+/**
+ * @brief Get an iterator to the beginning of a UTF-8 string
+ *
+ * @param str The UTF-8 encoded string view
+ *
+ * @return Iterator to the first character
+ */
 inline const_string_iterator string_cbegin(std::string_view str)
 {
     return const_string_iterator(str, 0);
 }
 
+/**
+ * @brief Get an iterator to the end of a UTF-8 string
+ *
+ * @param str The UTF-8 encoded string view
+ *
+ * @return Iterator to the position after the last character
+ */
 inline const_string_iterator string_cend(std::string_view str)
 {
     return const_string_iterator(str, str.size());
