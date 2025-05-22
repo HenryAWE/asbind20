@@ -11,4 +11,13 @@ There source code are located inside the ``ext/`` directory of repository.
    :maxdepth: 1
    :caption: Container Library
 
+   container/array
    container/stdstring
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Utilities
+
+   utility/math
+   utility/vocabulary
+   utility/misc
