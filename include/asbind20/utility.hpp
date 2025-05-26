@@ -319,6 +319,46 @@ constexpr bool is_enum_type(int type_id) noexcept
            type_id > AS_NAMESPACE_QUALIFIER asTYPEID_DOUBLE;
 }
 
+[[nodiscard]]
+constexpr bool is_floating_point(int type_id) noexcept
+{
+    return type_id == AS_NAMESPACE_QUALIFIER asTYPEID_FLOAT ||
+           type_id == AS_NAMESPACE_QUALIFIER asTYPEID_DOUBLE;
+}
+
+[[nodiscard]]
+constexpr bool is_integral(int type_id) noexcept
+{
+    return (type_id >= AS_NAMESPACE_QUALIFIER asTYPEID_BOOL &&
+            type_id <= AS_NAMESPACE_QUALIFIER asTYPEID_UINT64) ||
+           is_enum_type(type_id);
+}
+
+[[nodiscard]]
+constexpr bool is_bool_type(int type_id) noexcept
+{
+    return type_id == AS_NAMESPACE_QUALIFIER asTYPEID_BOOL;
+}
+
+[[nodiscard]]
+constexpr bool is_unsigned(int type_id) noexcept
+{
+    return type_id == AS_NAMESPACE_QUALIFIER asTYPEID_BOOL ||
+           type_id == AS_NAMESPACE_QUALIFIER asTYPEID_UINT8 ||
+           type_id == AS_NAMESPACE_QUALIFIER asTYPEID_UINT16 ||
+           type_id == AS_NAMESPACE_QUALIFIER asTYPEID_UINT32 ||
+           type_id == AS_NAMESPACE_QUALIFIER asTYPEID_UINT64;
+}
+
+[[nodiscard]]
+constexpr bool is_signed(int type_id) noexcept
+{
+    return type_id == AS_NAMESPACE_QUALIFIER asTYPEID_INT8 ||
+           type_id == AS_NAMESPACE_QUALIFIER asTYPEID_INT16 ||
+           type_id == AS_NAMESPACE_QUALIFIER asTYPEID_INT32 ||
+           type_id == AS_NAMESPACE_QUALIFIER asTYPEID_INT64;
+}
+
 /**
  * @brief Check if a type id refers to an object handle
  */

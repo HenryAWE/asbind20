@@ -361,6 +361,51 @@ TEST(compressed_pair, optimized)
     EXPECT_EQ(counter_1, 5);
 }
 
+TEST(utility, script_type_traits)
+{
+    using namespace asbind20;
+
+    EXPECT_FALSE(is_floating_point(AS_NAMESPACE_QUALIFIER asTYPEID_VOID));
+    EXPECT_FALSE(is_floating_point(AS_NAMESPACE_QUALIFIER asTYPEID_BOOL));
+    EXPECT_TRUE(is_floating_point(AS_NAMESPACE_QUALIFIER asTYPEID_FLOAT));
+    EXPECT_TRUE(is_floating_point(AS_NAMESPACE_QUALIFIER asTYPEID_DOUBLE));
+
+    EXPECT_EQ(
+        is_integral(AS_NAMESPACE_QUALIFIER asTYPEID_BOOL),
+        std::is_integral_v<bool>
+    );
+    EXPECT_EQ(
+        is_signed(AS_NAMESPACE_QUALIFIER asTYPEID_BOOL),
+        std::is_signed_v<bool> // false
+    );
+    EXPECT_EQ(
+        is_unsigned(AS_NAMESPACE_QUALIFIER asTYPEID_BOOL),
+        std::is_unsigned_v<bool> // true
+    );
+    EXPECT_TRUE(is_integral(AS_NAMESPACE_QUALIFIER asTYPEID_INT32));
+    EXPECT_TRUE(is_integral(AS_NAMESPACE_QUALIFIER asTYPEID_UINT32));
+    EXPECT_FALSE(is_integral(AS_NAMESPACE_QUALIFIER asTYPEID_FLOAT));
+    EXPECT_FALSE(is_integral(AS_NAMESPACE_QUALIFIER asTYPEID_DOUBLE));
+
+    EXPECT_TRUE(is_signed(AS_NAMESPACE_QUALIFIER asTYPEID_INT8));
+    EXPECT_TRUE(is_signed(AS_NAMESPACE_QUALIFIER asTYPEID_INT16));
+    EXPECT_TRUE(is_signed(AS_NAMESPACE_QUALIFIER asTYPEID_INT32));
+    EXPECT_TRUE(is_signed(AS_NAMESPACE_QUALIFIER asTYPEID_INT64));
+    EXPECT_FALSE(is_signed(AS_NAMESPACE_QUALIFIER asTYPEID_UINT8));
+    EXPECT_FALSE(is_signed(AS_NAMESPACE_QUALIFIER asTYPEID_UINT16));
+    EXPECT_FALSE(is_signed(AS_NAMESPACE_QUALIFIER asTYPEID_UINT32));
+    EXPECT_FALSE(is_signed(AS_NAMESPACE_QUALIFIER asTYPEID_UINT64));
+
+    EXPECT_TRUE(is_unsigned(AS_NAMESPACE_QUALIFIER asTYPEID_UINT8));
+    EXPECT_TRUE(is_unsigned(AS_NAMESPACE_QUALIFIER asTYPEID_UINT16));
+    EXPECT_TRUE(is_unsigned(AS_NAMESPACE_QUALIFIER asTYPEID_UINT32));
+    EXPECT_TRUE(is_unsigned(AS_NAMESPACE_QUALIFIER asTYPEID_UINT64));
+    EXPECT_FALSE(is_unsigned(AS_NAMESPACE_QUALIFIER asTYPEID_INT8));
+    EXPECT_FALSE(is_unsigned(AS_NAMESPACE_QUALIFIER asTYPEID_INT16));
+    EXPECT_FALSE(is_unsigned(AS_NAMESPACE_QUALIFIER asTYPEID_INT32));
+    EXPECT_FALSE(is_unsigned(AS_NAMESPACE_QUALIFIER asTYPEID_INT64));
+}
+
 int main(int argc, char* argv[])
 {
     ::testing::InitGoogleTest(&argc, argv);
