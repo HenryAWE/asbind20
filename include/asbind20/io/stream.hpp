@@ -46,6 +46,12 @@ namespace io
                 return AS_NAMESPACE_QUALIFIER asERROR;
         }
 
+        [[nodiscard]]
+        std::ostream& get() const noexcept
+        {
+            return *m_os;
+        }
+
     private:
         std::ostream* m_os;
     };
@@ -72,6 +78,12 @@ namespace io
             (void)ptr;
             (void)size;
             return AS_NAMESPACE_QUALIFIER asERROR;
+        }
+
+        [[nodiscard]]
+        std::istream& get() const noexcept
+        {
+            return *m_is;
         }
 
     private:
@@ -145,15 +157,35 @@ namespace io
             return AS_NAMESPACE_QUALIFIER asERROR;
         }
 
+        [[nodiscard]]
+        const std::byte* get() const noexcept
+        {
+            return m_ptr;
+        }
+
+        [[nodiscard]]
+        std::size_t available() const noexcept
+        {
+            return m_avail;
+        }
+
     private:
         const std::byte* m_ptr;
         std::size_t m_avail;
     };
 
+    /**
+     * @brief Result of loading byte code
+     */
     struct load_byte_code_result
     {
         int r;
         bool debug_info_stripped;
+
+        explicit operator bool() const noexcept
+        {
+            return r >= 0;
+        }
     };
 } // namespace io
 

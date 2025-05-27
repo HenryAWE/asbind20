@@ -36,12 +36,14 @@ struct typeinfo_identity
 {
     using typeinfo_policy_tag = void;
 
+    [[nodiscard]]
     static auto get_type_info(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
         -> AS_NAMESPACE_QUALIFIER asITypeInfo*
     {
         return ti;
     }
 
+    [[nodiscard]]
     static int get_type_id(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
     {
         if(!ti) [[unlikely]]
@@ -61,6 +63,7 @@ struct typeinfo_subtype :
 {
     using typeinfo_policy_tag = void;
 
+    [[nodiscard]]
     static auto get_type_info(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
         -> AS_NAMESPACE_QUALIFIER asITypeInfo*
     {
@@ -69,6 +72,7 @@ struct typeinfo_subtype :
         return ti->GetSubType(Idx);
     }
 
+    [[nodiscard]]
     static int get_type_id(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
     {
         if(!ti) [[unlikely]]
