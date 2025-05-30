@@ -33,7 +33,19 @@ static consteval bool test_utility_concepts()
     return true;
 }
 
+static consteval bool test_utility_meta_helpers()
+{
+    using namespace asbind20;
+
+    static_assert(!meta::contains<void, std::tuple<>>::value);
+    static_assert(!meta::contains<void, std::tuple<int, float>>::value);
+    static_assert(meta::contains<void, std::tuple<int, float, void>>::value);
+
+    return true;
+}
+
 static_assert(test_utility_concepts());
+static_assert(test_utility_meta_helpers());
 
 namespace test_utility
 {

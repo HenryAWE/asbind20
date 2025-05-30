@@ -53,6 +53,30 @@ struct is_only_constructible :
 template <typename T, typename... Args>
 constexpr inline bool is_only_constructible_v = is_only_constructible<T, Args...>::value;
 
+template <typename FirstPolicy = void, typename... Policies>
+struct use_policy_t
+{
+    using first_policy = FirstPolicy;
+    using policies_tuple = std::tuple<FirstPolicy, Policies...>;
+};
+
+template <typename FirstPolicy = void, typename... Policies>
+constexpr inline use_policy_t<FirstPolicy, Policies...> use_policy{};
+
+namespace meta
+{
+    template <typename Target, typename Tuple>
+    struct contains;
+
+    template <typename Target, typename... Ts>
+    struct contains<Target, std::tuple<Ts...>> :
+        std::bool_constant<false || (std::same_as<Target, Ts> || ...)>
+    {};
+
+    template <typename Target, typename Tuple>
+    constexpr inline bool contains_v = contains<Target, Tuple>::value;
+} // namespace meta
+
 namespace detail
 {
     template <typename T>

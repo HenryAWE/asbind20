@@ -1884,16 +1884,6 @@ namespace wrappers
     };
 } // namespace wrappers
 
-template <typename FirstPolicy = void, typename... Policies>
-struct use_policy_t
-{
-    using first_policy = FirstPolicy;
-    using policies_tuple = std::tuple<FirstPolicy, Policies...>;
-};
-
-template <typename FirstPolicy = void, typename... Policies>
-constexpr inline use_policy_t<FirstPolicy, Policies...> use_policy{};
-
 template <bool ForceGeneric>
 class register_helper_base
 {
