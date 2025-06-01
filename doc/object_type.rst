@@ -538,11 +538,13 @@ then it is possible to register the properties of the composite members without 
 
 .. code-block:: c++
 
+    using asbind20::composite;
+
     // ...
         // Via a member pointer
-        .property("int comp_a", &comp_data::comp_a, &my_class::indirect)
+        .property("int comp_a", &comp_data::comp_a, composite(&my_class::indirect))
         // Via offset
-        .property("int comp_b", offsetof(comp_data, comp_b), offsetof(my_class, indirect));
+        .property("int comp_b", offsetof(comp_data, comp_b), composite(offsetof(my_class, indirect)));
 
 Registering Types with Similar Interfaces
 -----------------------------------------

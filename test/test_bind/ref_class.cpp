@@ -450,6 +450,7 @@ public:
 template <bool UseGeneric, bool UseMP, bool CompUseMP>
 static void register_base_ref_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
+    using asbind20::composite;
     using asbind20::fp;
 
     asbind20::ref_class<base_ref_class, UseGeneric> c(engine, "base_ref_class");
@@ -463,26 +464,26 @@ static void register_base_ref_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engi
     if constexpr(UseMP && CompUseMP)
     {
         c
-            .property("int comp_a", &ref_class_comp_data::comp_a, &base_ref_class::indirect)
-            .property("int comp_b", &ref_class_comp_data::comp_b, &base_ref_class::indirect);
+            .property("int comp_a", &ref_class_comp_data::comp_a, composite(&base_ref_class::indirect))
+            .property("int comp_b", &ref_class_comp_data::comp_b, composite(&base_ref_class::indirect));
     }
     else if constexpr(UseMP)
     {
         c
-            .property("int comp_a", &ref_class_comp_data::comp_a, offsetof(base_ref_class, indirect))
-            .property("int comp_b", &ref_class_comp_data::comp_b, offsetof(base_ref_class, indirect));
+            .property("int comp_a", &ref_class_comp_data::comp_a, composite(offsetof(base_ref_class, indirect)))
+            .property("int comp_b", &ref_class_comp_data::comp_b, composite(offsetof(base_ref_class, indirect)));
     }
     else if constexpr(CompUseMP)
     {
         c
-            .property("int comp_a", offsetof(ref_class_comp_data, comp_a), &base_ref_class::indirect)
-            .property("int comp_b", offsetof(ref_class_comp_data, comp_b), &base_ref_class::indirect);
+            .property("int comp_a", offsetof(ref_class_comp_data, comp_a), composite(&base_ref_class::indirect))
+            .property("int comp_b", offsetof(ref_class_comp_data, comp_b), composite(&base_ref_class::indirect));
     }
     else // Both are represented by offset
     {
         c
-            .property("int comp_a", offsetof(ref_class_comp_data, comp_a), offsetof(base_ref_class, indirect))
-            .property("int comp_b", offsetof(ref_class_comp_data, comp_b), offsetof(base_ref_class, indirect));
+            .property("int comp_a", offsetof(ref_class_comp_data, comp_a), composite(offsetof(base_ref_class, indirect)))
+            .property("int comp_b", offsetof(ref_class_comp_data, comp_b), composite(offsetof(base_ref_class, indirect)));
     }
 }
 

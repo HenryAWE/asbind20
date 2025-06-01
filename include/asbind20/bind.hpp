@@ -98,6 +98,39 @@ constexpr auxiliary_wrapper<void> aux_value(std::intptr_t val) noexcept
     return auxiliary_wrapper<void>(std::bit_cast<void*>(val));
 }
 
+class composite_wrapper
+{
+public:
+    composite_wrapper() = delete;
+    constexpr composite_wrapper(const composite_wrapper&) noexcept = default;
+
+    constexpr composite_wrapper(std::size_t off) noexcept
+        : m_off(off) {}
+
+    constexpr composite_wrapper& operator=(const composite_wrapper&) noexcept = default;
+
+    [[nodiscard]]
+    constexpr std::size_t get_offset() const noexcept
+    {
+        return m_off;
+    }
+
+private:
+    std::size_t m_off;
+};
+
+constexpr composite_wrapper composite(std::size_t off) noexcept
+{
+    return composite_wrapper(off);
+}
+
+template <typename MemberPointer>
+requires(std::is_member_object_pointer_v<MemberPointer>)
+composite_wrapper composite(MemberPointer mp) noexcept
+{
+    return composite_wrapper(member_offset(mp));
+}
+
 class [[nodiscard]] access_mask
 {
 public:
@@ -5032,41 +5065,19 @@ public:
     }
 
     basic_value_class& property(
-        std::string_view decl, std::size_t comp_off, std::size_t base_off
+        std::string_view decl, std::size_t off, composite_wrapper comp
     )
     {
-        this->comp_property_impl(decl, comp_off, base_off);
+        this->comp_property_impl(decl, off, comp.get_offset());
 
         return *this;
     }
 
     template <typename MemberPointer>
     requires(std::is_member_object_pointer_v<MemberPointer>)
-    basic_value_class& property(std::string_view decl, MemberPointer mp, std::size_t base_off)
+    basic_value_class& property(std::string_view decl, MemberPointer mp, composite_wrapper comp)
     {
-        this->comp_property_impl(decl, mp, base_off);
-
-        return *this;
-    }
-
-    template <typename CompMemberPointer>
-    requires(std::is_member_object_pointer_v<CompMemberPointer>)
-    basic_value_class& property(
-        std::string_view decl, std::size_t off, CompMemberPointer comp_mp
-    )
-    {
-        this->comp_property_impl(decl, off, comp_mp);
-
-        return *this;
-    }
-
-    template <typename MemberPointer, typename CompMemberPointer>
-    requires(std::is_member_object_pointer_v<MemberPointer> && std::is_member_object_pointer_v<CompMemberPointer>)
-    basic_value_class& property(
-        std::string_view decl, MemberPointer mp, CompMemberPointer comp_mp
-    )
-    {
-        this->comp_property_impl(decl, mp, comp_mp);
+        this->comp_property_impl(decl, mp, comp.get_offset());
 
         return *this;
     }
@@ -6533,41 +6544,19 @@ public:
     }
 
     basic_ref_class& property(
-        std::string_view decl, std::size_t comp_off, std::size_t base_off
+        std::string_view decl, std::size_t off, composite_wrapper comp
     )
     {
-        this->comp_property_impl(decl, comp_off, base_off);
+        this->comp_property_impl(decl, off, comp.get_offset());
 
         return *this;
     }
 
     template <typename MemberPointer>
     requires(std::is_member_object_pointer_v<MemberPointer>)
-    basic_ref_class& property(std::string_view decl, MemberPointer mp, std::size_t base_off)
+    basic_ref_class& property(std::string_view decl, MemberPointer mp, composite_wrapper comp)
     {
-        this->comp_property_impl(decl, mp, base_off);
-
-        return *this;
-    }
-
-    template <typename CompMemberPointer>
-    requires(std::is_member_object_pointer_v<CompMemberPointer>)
-    basic_ref_class& property(
-        std::string_view decl, std::size_t off, CompMemberPointer comp_mp
-    )
-    {
-        this->comp_property_impl(decl, off, comp_mp);
-
-        return *this;
-    }
-
-    template <typename MemberPointer, typename CompMemberPointer>
-    requires(std::is_member_object_pointer_v<MemberPointer> && std::is_member_object_pointer_v<CompMemberPointer>)
-    basic_ref_class& property(
-        std::string_view decl, MemberPointer mp, CompMemberPointer comp_mp
-    )
-    {
-        this->comp_property_impl(decl, mp, comp_mp);
+        this->comp_property_impl(decl, mp, comp.get_offset());
 
         return *this;
     }
