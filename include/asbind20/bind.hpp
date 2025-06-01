@@ -3066,6 +3066,9 @@ protected:
     ASBIND20_CLASS_BINARY_OP_IMPL(
         opDivAssign, /=, (m_name, "& opDivAssign(const ", m_name, " &in)"), Class&, , const Class&
     )
+    ASBIND20_CLASS_BINARY_OP_IMPL(
+        opModAssign, %=, (m_name, "& opModAssign(const ", m_name, " &in)"), Class&, , const Class&
+    )
 
     // Comparison operators
 
@@ -3122,6 +3125,9 @@ protected:
     )
     ASBIND20_CLASS_BINARY_OP_IMPL(
         opDiv, /, (m_name, " opDiv(const ", m_name, " &in) const"), Class, const, const Class&
+    )
+    ASBIND20_CLASS_BINARY_OP_IMPL(
+        opMod, %, (m_name, " opMod(const ", m_name, " &in) const"), Class, const, const Class&
     )
 
 #undef ASBIND20_CLASS_BINARY_OP_GENERIC
@@ -4892,6 +4898,7 @@ public:
     ASBIND20_VALUE_CLASS_OP(opSubAssign);
     ASBIND20_VALUE_CLASS_OP(opMulAssign);
     ASBIND20_VALUE_CLASS_OP(opDivAssign);
+    ASBIND20_VALUE_CLASS_OP(opModAssign);
 
     ASBIND20_VALUE_CLASS_OP(opEquals);
     ASBIND20_VALUE_CLASS_OP(opCmp);
@@ -4900,6 +4907,7 @@ public:
     ASBIND20_VALUE_CLASS_OP(opSub);
     ASBIND20_VALUE_CLASS_OP(opMul);
     ASBIND20_VALUE_CLASS_OP(opDiv);
+    ASBIND20_VALUE_CLASS_OP(opMod);
 
 #undef ASBIND20_VALUE_CLASS_OP
 
@@ -6389,12 +6397,15 @@ public:
     ASBIND20_REFERENCE_CLASS_OP(opSubAssign);
     ASBIND20_REFERENCE_CLASS_OP(opMulAssign);
     ASBIND20_REFERENCE_CLASS_OP(opDivAssign);
+    ASBIND20_REFERENCE_CLASS_OP(opModAssign);
 
     ASBIND20_REFERENCE_CLASS_OP(opEquals);
     ASBIND20_REFERENCE_CLASS_OP(opCmp);
 
     ASBIND20_REFERENCE_CLASS_OP(opPreInc);
     ASBIND20_REFERENCE_CLASS_OP(opPreDec);
+
+    // TODO: Operators returning by value for reference type
 
 #undef ASBIND20_REFERENCE_CLASS_OP
 

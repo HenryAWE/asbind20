@@ -9,6 +9,7 @@ Changelog since the version 1.5.0.
 Update
 ~~~~~~
 
+- Helper for registering modulo operator.
 - Composite property support
 - Official arm64 support. Previously, it works theoretically but not actually tested.
 - New tools for managing script function without increasing its reference count.
