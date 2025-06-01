@@ -1,3 +1,9 @@
+/**
+ * @file asbind.hpp
+ * @author HenryAWE
+ * @brief C++20 AngelScript binding library
+ */
+
 #ifndef ASBIND20_ASBIND_HPP
 #define ASBIND20_ASBIND_HPP
 
@@ -27,6 +33,9 @@
 
 namespace asbind20
 {
+/**
+ * @brief Get the string representing library version and configuration
+ */
 [[nodiscard]]
 inline const char* library_version() noexcept
 {

@@ -1,5 +1,5 @@
 /**
- * @file include_as.hpp
+ * @file detail/include_as.hpp
  * @author HenryAWE
  *
  * @brief Helper header for including AngelScript

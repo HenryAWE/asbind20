@@ -1,3 +1,9 @@
+/**
+ * @file bind.hpp
+ * @author HenryAWE
+ * @brief Binding generators
+ */
+
 #ifndef ASBIND20_BIND_HPP
 #define ASBIND20_BIND_HPP
 

@@ -13,7 +13,7 @@
 #pragma once
 
 #include "generic.hpp"
-#include "utility.hpp" // this_type
+#include "utility.hpp"
 
 namespace asbind20
 {

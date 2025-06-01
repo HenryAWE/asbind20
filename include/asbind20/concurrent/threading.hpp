@@ -1,3 +1,9 @@
+/**
+ * @file concurrent/threading.hpp
+ * @author HenryAWE
+ * @brief Tools for multithreading
+ */
+
 #ifndef ASBIND20_CONCURRENT_THREADING_HPP
 #define ASBIND20_CONCURRENT_THREADING_HPP
 
