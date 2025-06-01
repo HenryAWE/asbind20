@@ -45,6 +45,18 @@ public:
         return *this;
     }
 
+    trivial_value_class operator%(const trivial_value_class& rhs) const
+    {
+        int result = value % rhs.value;
+        return trivial_value_class(result);
+    }
+
+    trivial_value_class& operator%=(const trivial_value_class& rhs)
+    {
+        value %= rhs.value;
+        return *this;
+    }
+
     int get_val() const
     {
         return value;
@@ -158,8 +170,10 @@ void register_trivial_value_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
         .opPostInc()
         .opPostDec()
         .opAddAssign()
+        .opModAssign()
         .opAdd()
         .opNeg()
+        .opMod()
         .opConv<bool>()
         .opImplConv<int>()
         .method("void set_val(int)", &trivial_value_class::set_val)
@@ -212,6 +226,8 @@ void register_trivial_value_class(asbind20::use_generic_t, AS_NAMESPACE_QUALIFIE
         .opPostDec()
         .opAdd()
         .opAddAssign()
+        .opMod()
+        .opModAssign()
         .opNeg()
         .opConv<bool>()
         .opImplConv<int>()
@@ -352,6 +368,18 @@ bool test_12(trivial_value_class val)
     val += trivial_value_class(1);
     return val.value == 3;
 }
+bool test_13(trivial_value_class val)
+{
+    assert(val.value == 4);
+    val %= trivial_value_class(3);
+    return val.value == 1;
+}
+bool test_14(trivial_value_class val)
+{
+    assert(val.value == 4);
+    trivial_value_class result = val % trivial_value_class(3);
+    return result.value == 1;
+}
 )";
 
 static void check_trivial_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
@@ -418,6 +446,8 @@ static void check_trivial_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     };
 
     check_bool_result(12, trivial_value_class(2));
+    check_bool_result(13, trivial_value_class(4));
+    check_bool_result(14, trivial_value_class(4));
 }
 
 template <bool UseGeneric>

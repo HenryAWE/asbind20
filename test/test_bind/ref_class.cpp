@@ -28,6 +28,12 @@ public:
         return *this;
     }
 
+    my_ref_class& operator%=(const my_ref_class& rhs)
+    {
+        data %= rhs.data;
+        return *this;
+    }
+
     operator int() const
     {
         return data;
@@ -103,6 +109,7 @@ void register_ref_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         .addref(&my_ref_class::addref)
         .release(&my_ref_class::release)
         .opAddAssign()
+        .opModAssign()
         .opConv<bool>()
         .opImplConv<int>()
         .method("uint use_count() const", &my_ref_class::use_count)
@@ -132,6 +139,7 @@ void register_ref_class(asbind20::use_generic_t, AS_NAMESPACE_QUALIFIER asIScrip
         .addref(fp<&my_ref_class::addref>)
         .release(fp<&my_ref_class::release>)
         .opAddAssign()
+        .opModAssign()
         .opConv<bool>()
         .opImplConv<int>()
         .method("uint use_count() const", fp<&my_ref_class::use_count>)
@@ -206,6 +214,14 @@ int test_7()
     val.from_var_type(true);
     return val.data;
 }
+int test_8()
+{
+    my_ref_class val1(3);
+    my_ref_class val2(4);
+    my_ref_class@ ref = val2 %= val1;
+    assert(ref is @val2);
+    return val2.data;
+}
 )";
 
 static void check_ref_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
@@ -240,6 +256,7 @@ static void check_ref_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     check_int_result(5, 3);
     check_int_result(6, 1013);
     check_int_result(7, 1);
+    check_int_result(8, 1);
 }
 
 TEST_F(asbind_test_suite, ref_class)
