@@ -126,3 +126,90 @@ TEST(val_comp, native_mp)
     asbind_test::setup_message_callback(engine);
     test_bind::register_val_comp<true>(engine);
 }
+
+namespace test_bind
+{
+class ref_comp
+{
+public:
+    ref_comp()
+        : ref_comp(0) {}
+
+    ref_comp(int data)
+        : indirect(new comp_helper(data)) {}
+
+    ref_comp(const ref_comp&) = delete;
+
+    ~ref_comp()
+    {
+        delete indirect;
+    }
+
+    comp_helper* const indirect;
+
+    void addref()
+    {
+        ++m_counter;
+    }
+
+    void release()
+    {
+        assert(m_counter != 0);
+        --m_counter;
+        if(m_counter == 0)
+            delete this;
+    }
+
+private:
+    int m_counter = 1;
+};
+
+void register_ref_comp(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
+    using namespace asbind20;
+
+    ref_class<ref_comp>(engine, "ref_comp")
+        .default_factory()
+        .factory<int>("int")
+        .addref(fp<&ref_comp::addref>)
+        .release(fp<&ref_comp::release>)
+        .method("int exec() const", &comp_helper::exec, composite(&ref_comp::indirect));
+}
+
+static void check_ref_comp(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
+    auto* m = engine->GetModule(
+        "check_ref_comp", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
+    );
+    m->AddScriptSection(
+        "check_ref_comp",
+        "int test(int arg)\n"
+        "{\n"
+        "    ref_comp val(arg);\n"
+        "    return val.exec();\n"
+        "}"
+    );
+    ASSERT_GE(m->Build(), 0);
+
+    auto* f = m->GetFunctionByName("test");
+
+    asbind20::request_context ctx(engine);
+    auto result = asbind20::script_invoke<int>(ctx, f, 21);
+
+    EXPECT_TRUE(asbind_test::result_has_value(result));
+    EXPECT_EQ(result.value(), 42);
+}
+} // namespace test_bind
+
+TEST(ref_comp, native_mp)
+{
+    using namespace asbind20;
+
+    if(has_max_portability())
+        GTEST_SKIP();
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine);
+    test_bind::register_ref_comp(engine);
+    test_bind::check_ref_comp(engine);
+}

@@ -5277,6 +5277,24 @@ public:
     ASBIND20_CLASS_WRAPPED_VAR_TYPE_METHOD_AUXILIARY(basic_ref_class)
     ASBIND20_CLASS_WRAPPED_LAMBDA_VAR_TYPE_METHOD(basic_ref_class)
 
+    template <native_function Fn>
+    requires(std::is_member_function_pointer_v<Fn>)
+    basic_ref_class& method(
+        std::string_view decl,
+        Fn fn,
+        composite_wrapper comp,
+        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_THISCALL> = {}
+    ) requires(!ForceGeneric)
+    {
+        this->method_impl_comp(
+            decl,
+            fn,
+            call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>,
+            comp
+        );
+        return *this;
+    }
+
     template <wrappers::auto_register<basic_ref_class> AutoRegister>
     basic_ref_class& use(AutoRegister&& ar)
     {
