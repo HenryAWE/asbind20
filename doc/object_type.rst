@@ -442,7 +442,34 @@ Function Receiving ``asIScriptGeneric*``
 Methods Using Composite Members
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-*Not implemented yet*
+If the application class that is being registered uses composition,
+then it is possible to register the methods of the composite members without wrapper functions.
+
+.. code-block:: c++
+
+    struct comp_helper
+    {
+        int exec() const;
+        void set(int arg);
+    };
+
+    struct my_class
+    {
+        comp_helper* indirect;
+    };
+
+.. code-block:: c++
+
+    using asbind20::composite;
+
+    // ...
+        // Via a member pointer
+        .method("int exec() const", &comp_helper::exec, composite(&my_class::indirect))
+        // Via offset
+        .method("void set(int arg)", &comp_helper::set, composite(offsetof(my_class, indirect)));
+
+.. note::
+   Currently, the composite methods only allow ``THISCALL`` calling convention. Besides, the generic wrapper doesn't support it.
 
 Tips for Registering Methods
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

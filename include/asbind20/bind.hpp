@@ -104,7 +104,7 @@ public:
     composite_wrapper() = delete;
     constexpr composite_wrapper(const composite_wrapper&) noexcept = default;
 
-    constexpr composite_wrapper(std::size_t off) noexcept
+    constexpr explicit composite_wrapper(std::size_t off) noexcept
         : m_off(off) {}
 
     constexpr composite_wrapper& operator=(const composite_wrapper&) noexcept = default;
@@ -2795,6 +2795,61 @@ protected:
         assert(r >= 0);
     }
 
+    template <typename Fn, AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    void method_impl_comp(
+        std::string_view decl,
+        Fn&& fn,
+        call_conv_t<CallConv>,
+        composite_wrapper comp,
+        void* aux = nullptr
+    ) requires(!ForceGeneric)
+    {
+        [[maybe_unused]]
+        int r = with_cstr(
+            [this, &fn, &aux, &comp](const char* decl)
+            {
+                return m_engine->RegisterObjectMethod(
+                    m_name.c_str(),
+                    decl,
+                    to_asSFuncPtr(fn),
+                    CallConv,
+                    aux,
+                    static_cast<int>(comp.get_offset()),
+                    true
+                );
+            },
+            decl
+        );
+        assert(r >= 0);
+    }
+
+    void method_impl_comp(
+        std::string_view decl,
+        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
+        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>,
+        composite_wrapper comp,
+        void* aux = nullptr
+    )
+    {
+        [[maybe_unused]]
+        int r = with_cstr(
+            [this, &gfn, &aux, &comp](const char* decl)
+            {
+                return m_engine->RegisterObjectMethod(
+                    m_name.c_str(),
+                    decl,
+                    to_asSFuncPtr(gfn),
+                    AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
+                    aux,
+                    static_cast<int>(comp.get_offset()),
+                    true
+                );
+            },
+            decl
+        );
+        assert(r >= 0);
+    }
+
     template <
         typename Fn,
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
@@ -5048,6 +5103,26 @@ public:
     ASBIND20_CLASS_WRAPPED_VAR_TYPE_METHOD_AUXILIARY(basic_value_class)
     ASBIND20_CLASS_WRAPPED_LAMBDA_VAR_TYPE_METHOD(basic_value_class)
 
+    template <native_function Fn>
+    requires(std::is_member_function_pointer_v<Fn>)
+    basic_value_class& method(
+        std::string_view decl,
+        Fn fn,
+        composite_wrapper comp,
+        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_THISCALL> = {}
+    ) requires(!ForceGeneric)
+    {
+        this->method_impl_comp(
+            decl,
+            fn,
+            call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>,
+            comp
+        );
+        return *this;
+    }
+
+    // TODO: Generic wrapper for composite methods
+
     template <wrappers::auto_register<basic_value_class> AutoRegister>
     basic_value_class& use(AutoRegister&& ar)
     {
@@ -5201,6 +5276,24 @@ public:
     ASBIND20_CLASS_WRAPPED_VAR_TYPE_METHOD(basic_ref_class)
     ASBIND20_CLASS_WRAPPED_VAR_TYPE_METHOD_AUXILIARY(basic_ref_class)
     ASBIND20_CLASS_WRAPPED_LAMBDA_VAR_TYPE_METHOD(basic_ref_class)
+
+    template <native_function Fn>
+    requires(std::is_member_function_pointer_v<Fn>)
+    basic_ref_class& method(
+        std::string_view decl,
+        Fn fn,
+        composite_wrapper comp,
+        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_THISCALL> = {}
+    ) requires(!ForceGeneric)
+    {
+        this->method_impl_comp(
+            decl,
+            fn,
+            call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>,
+            comp
+        );
+        return *this;
+    }
 
     template <wrappers::auto_register<basic_ref_class> AutoRegister>
     basic_ref_class& use(AutoRegister&& ar)
