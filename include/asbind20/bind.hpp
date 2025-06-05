@@ -2814,7 +2814,7 @@ protected:
                     to_asSFuncPtr(fn),
                     CallConv,
                     aux,
-                    comp.get_offset(),
+                    static_cast<int>(comp.get_offset()),
                     true
                 );
             },
@@ -2841,7 +2841,7 @@ protected:
                     to_asSFuncPtr(gfn),
                     AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
                     aux,
-                    comp.get_offset(),
+                    static_cast<int>(comp.get_offset()),
                     true
                 );
             },
