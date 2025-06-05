@@ -23,7 +23,12 @@ public:
 private:
     int m_data;
 };
+} // namespace test_bind
 
+// Testing for value types
+
+namespace test_bind
+{
 class val_comp
 {
 public:
@@ -51,7 +56,7 @@ public:
 };
 
 template <bool UseMP>
-void register_val_comp(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void register_val_comp(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     using namespace asbind20;
 
@@ -78,7 +83,7 @@ void register_val_comp(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     }
 }
 
-void check_val_comp(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void check_val_comp(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     auto* m = engine->GetModule(
         "check_val_comp", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
@@ -113,6 +118,7 @@ TEST(val_comp, native_offset)
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
     test_bind::register_val_comp<false>(engine);
+    test_bind::check_val_comp(engine);
 }
 
 TEST(val_comp, native_mp)
@@ -125,7 +131,10 @@ TEST(val_comp, native_mp)
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
     test_bind::register_val_comp<true>(engine);
+    test_bind::check_val_comp(engine);
 }
+
+// Testing for reference types
 
 namespace test_bind
 {
@@ -164,7 +173,7 @@ private:
     int m_counter = 1;
 };
 
-void register_ref_comp(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void register_ref_comp(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     using namespace asbind20;
 
