@@ -227,67 +227,6 @@ TEST_F(asbind_test_suite, script_class)
     }
 }
 
-// TEST_F(asbind_test_suite, non_copyable)
-// {
-//     auto* engine = get_engine();
-//     auto* m = engine->GetModule("test_invoke", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
-
-//     m->AddScriptSection(
-//         "test_invoke.as",
-//         "array<string> strs = {\"aaa\", \"bbb\"};\n"
-//         "optional<uint> test(const string&in s) { return strs.find_optional(s); }"
-//     );
-//     ASSERT_GE(m->Build(), 0);
-
-
-//     auto* f = m->GetFunctionByName("test");
-//     ASSERT_NE(f, nullptr);
-
-//     using asbind20::ext::script_optional;
-//     using namespace std::string_literals;
-
-//     // Use reference for the non-copyable / non-moveable type.
-//     // The result is available as long as the context is alive.
-
-//     {
-//         asbind20::request_context ctx(engine);
-//         auto result = asbind20::script_invoke<script_optional&>(ctx, f, "aaa"s);
-//         EXPECT_TRUE(result_has_value(result));
-
-//         EXPECT_TRUE(result.value().has_value());
-//         EXPECT_EQ(
-//             result.value().get_type_info()->GetSubTypeId(),
-//             AS_NAMESPACE_QUALIFIER asTYPEID_UINT32
-//         );
-//         EXPECT_EQ(*(std::uint32_t*)result.value().value(), 0);
-//     }
-
-//     {
-//         asbind20::request_context ctx(engine);
-//         auto result = asbind20::script_invoke<script_optional&>(ctx, f, "bbb"s);
-//         EXPECT_TRUE(result_has_value(result));
-
-//         EXPECT_TRUE(result.value().has_value());
-//         EXPECT_EQ(
-//             result.value().get_type_info()->GetSubTypeId(),
-//             AS_NAMESPACE_QUALIFIER asTYPEID_UINT32
-//         );
-//         EXPECT_EQ(*(std::uint32_t*)result.value().value(), 1);
-//     }
-
-//     {
-//         asbind20::request_context ctx(engine);
-//         auto result = asbind20::script_invoke<script_optional&>(ctx, f, "not found"s);
-//         EXPECT_TRUE(result_has_value(result));
-
-//         EXPECT_FALSE(result.value().has_value());
-//         EXPECT_EQ(
-//             result.value().get_type_info()->GetSubTypeId(),
-//             AS_NAMESPACE_QUALIFIER asTYPEID_UINT32
-//         );
-//     }
-// }
-
 int main(int argc, char* argv[])
 {
     ::testing::InitGoogleTest(&argc, argv);
