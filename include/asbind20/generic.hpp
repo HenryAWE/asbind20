@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <array>
 #include <algorithm>
 #include "detail/include_as.hpp"
@@ -888,6 +889,91 @@ namespace detail
         else
             return generic_wrapper_nontype<Function, OriginalCallConv>::generate();
     }
+
+    template <typename Class, auto Composite>
+    struct comp_accessor;
+
+    template <typename Class, std::size_t Offset>
+    struct comp_accessor<Class, Offset>
+    {
+        static Class* get(void* base) noexcept
+        {
+            Class* ptr = *(Class**)((std::byte*)base + Offset);
+            return ptr;
+        }
+    };
+
+    template <typename Class, auto MemberObject>
+    requires(std::is_member_object_pointer_v<decltype(MemberObject)>)
+    struct comp_accessor<Class, MemberObject>
+    {
+        static Class* get(void* base) noexcept
+        {
+            std::size_t offset = member_offset(MemberObject);
+            Class* ptr = *(Class**)((std::byte*)base + offset);
+            return ptr;
+        }
+    };
+
+    template <
+        auto Function,
+        typename CompositeWrapper>
+    class generic_wrapper_composite;
+
+    template <
+        auto Function,
+        auto Composite>
+    class generic_wrapper_composite<Function, composite_wrapper_nontype<Composite>>
+    {
+    private:
+        using function_type = std::decay_t<decltype(Function)>;
+        using traits = function_traits<function_type>;
+
+        static decltype(auto) this_(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        {
+            using class_type = std::conditional_t<
+                traits::is_const_v,
+                typename traits::class_type,
+                std::add_const_t<typename traits::class_type>>;
+
+            return comp_accessor<class_type, Composite>::get(gen->GetObject());
+        }
+
+        static void wrapper_comp(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        {
+            [gen]<std::size_t... Is>(std::index_sequence<Is...>)
+            {
+                set_generic_return_by<typename traits::return_type>(
+                    gen,
+                    Function,
+                    this_(gen),
+                    get_generic_arg<typename traits::template arg_type<Is>>(
+                        gen, static_cast<AS_NAMESPACE_QUALIFIER asUINT>(Is)
+                    )...
+                );
+            }(std::make_index_sequence<traits::arg_count::value>());
+        }
+
+    public:
+        static constexpr auto generate() noexcept
+            -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
+        {
+            return &wrapper_comp;
+        }
+    };
+
+    template <
+        native_function auto Function,
+        auto Composite,
+        std::size_t... Is>
+    constexpr auto fp_to_asGENFUNC_t_impl_comp()
+        -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
+    {
+        if constexpr(sizeof...(Is))
+            return generic_wrapper_composite<Function, composite_wrapper_nontype<Composite>>::generate(var_type<Is...>);
+        else
+            return generic_wrapper_composite<Function, composite_wrapper_nontype<Composite>>::generate();
+    }
 } // namespace detail
 
 #ifdef _MSC_VER
@@ -932,6 +1018,19 @@ consteval auto to_asGENFUNC_t(fp_wrapper_t<Function>, call_conv_t<OriginalCallCo
     -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
 {
     return detail::fp_to_asGENFUNC_t_impl<Function, OriginalCallConv, Is...>();
+}
+
+template <
+    native_function auto Function,
+    auto Composite>
+consteval auto to_asGENFUNC_t(
+    fp_wrapper_t<Function>,
+    call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>, // Calling convention parameter reserved for the future
+    composite_wrapper_nontype<Composite>
+)
+    -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
+{
+    return detail::fp_to_asGENFUNC_t_impl_comp<Function, Composite>();
 }
 
 template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>

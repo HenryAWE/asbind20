@@ -5090,6 +5090,55 @@ public:
 
     // TODO: Generic wrapper for composite methods
 
+    template <auto Fn, auto Composite>
+    requires(std::is_member_function_pointer_v<decltype(Fn)>)
+    basic_value_class& method(
+        use_generic_t,
+        std::string_view decl,
+        fp_wrapper_t<Fn>,
+        composite_wrapper_nontype<Composite>,
+        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_THISCALL> = {}
+    )
+    {
+        this->method_impl(
+            decl,
+            to_asGENFUNC_t(fp<Fn>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>, composite_wrapper_nontype<Composite>{}),
+            generic_call_conv
+        );
+        return *this;
+    }
+
+    template <auto Fn, auto Composite>
+    requires(std::is_member_function_pointer_v<decltype(Fn)>)
+    basic_value_class& method(
+        std::string_view decl,
+        fp_wrapper_t<Fn>,
+        composite_wrapper_nontype<Composite>,
+        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_THISCALL> = {}
+    )
+    {
+        if constexpr(ForceGeneric)
+        {
+            this->method(
+                use_generic,
+                decl,
+                fp<Fn>,
+                composite_wrapper_nontype<Composite>{},
+                call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>
+            );
+        }
+        else
+        {
+            this->method(
+                decl,
+                Fn,
+                composite(Composite),
+                call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>
+            );
+        }
+        return *this;
+    }
+
     template <wrappers::auto_register<basic_value_class> AutoRegister>
     basic_value_class& use(AutoRegister&& ar)
     {

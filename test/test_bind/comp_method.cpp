@@ -105,6 +105,58 @@ static void register_val_comp(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     }
 }
 
+template <bool UseMP, bool Explicitly>
+static void register_val_comp(asbind20::use_generic_t, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
+    using namespace asbind20;
+
+    value_class<val_comp, true> c(engine, "val_comp");
+    c
+        .behaviours_by_traits()
+        .constructor<int>("int");
+
+    if constexpr(UseMP)
+    {
+        if constexpr(Explicitly)
+        {
+            c.method(
+                use_generic,
+                "int exec() const",
+                fp<&comp_helper::exec>,
+                composite<&val_comp::indirect>()
+            );
+        }
+        else
+        {
+            c.method(
+                "int exec() const",
+                fp<&comp_helper::exec>,
+                composite<&val_comp::indirect>()
+            );
+        }
+    }
+    else
+    {
+        if constexpr(Explicitly)
+        {
+            c.method(
+                use_generic,
+                "int exec() const",
+                fp<&comp_helper::exec>,
+                composite<offsetof(val_comp, indirect)>()
+            );
+        }
+        else
+        {
+            c.method(
+                "int exec() const",
+                fp<&comp_helper::exec>,
+                composite<offsetof(val_comp, indirect)>()
+            );
+        }
+    }
+}
+
 static void check_val_comp(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     auto* m = engine->GetModule(
@@ -179,6 +231,49 @@ TEST(val_comp, native_mp_nontype)
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
     test_bind::register_val_comp<true, true>(engine);
+    test_bind::check_val_comp(engine);
+}
+
+TEST(val_comp, generic_offset)
+{
+    using namespace asbind20;
+
+    if(has_max_portability())
+        GTEST_SKIP();
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine);
+    test_bind::register_val_comp<false, false>(use_generic, engine);
+    test_bind::check_val_comp(engine);
+}
+
+TEST(val_comp, generic_mp)
+{
+    using namespace asbind20;
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine);
+    test_bind::register_val_comp<true, false>(use_generic, engine);
+    test_bind::check_val_comp(engine);
+}
+
+TEST(val_comp, generic_offset_explicitly)
+{
+    using namespace asbind20;
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine);
+    test_bind::register_val_comp<false, true>(use_generic, engine);
+    test_bind::check_val_comp(engine);
+}
+
+TEST(val_comp, generic_mp_explicitly)
+{
+    using namespace asbind20;
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine);
+    test_bind::register_val_comp<true, true>(use_generic, engine);
     test_bind::check_val_comp(engine);
 }
 
