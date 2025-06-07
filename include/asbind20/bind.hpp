@@ -98,39 +98,6 @@ constexpr auxiliary_wrapper<void> aux_value(std::intptr_t val) noexcept
     return auxiliary_wrapper<void>(std::bit_cast<void*>(val));
 }
 
-class composite_wrapper
-{
-public:
-    composite_wrapper() = delete;
-    constexpr composite_wrapper(const composite_wrapper&) noexcept = default;
-
-    constexpr explicit composite_wrapper(std::size_t off) noexcept
-        : m_off(off) {}
-
-    constexpr composite_wrapper& operator=(const composite_wrapper&) noexcept = default;
-
-    [[nodiscard]]
-    constexpr std::size_t get_offset() const noexcept
-    {
-        return m_off;
-    }
-
-private:
-    std::size_t m_off;
-};
-
-constexpr composite_wrapper composite(std::size_t off) noexcept
-{
-    return composite_wrapper(off);
-}
-
-template <typename MemberPointer>
-requires(std::is_member_object_pointer_v<MemberPointer>)
-composite_wrapper composite(MemberPointer mp) noexcept
-{
-    return composite_wrapper(member_offset(mp));
-}
-
 class [[nodiscard]] access_mask
 {
 public:

@@ -33,6 +33,77 @@ struct var_type_t : public std::index_sequence<Is...>
 template <std::size_t... Is>
 inline constexpr var_type_t<Is...> var_type{};
 
+class composite_wrapper
+{
+public:
+    using composite_wrapper_tag = void;
+
+    composite_wrapper() = delete;
+    constexpr composite_wrapper(const composite_wrapper&) noexcept = default;
+
+    constexpr explicit composite_wrapper(std::size_t off) noexcept
+        : m_off(off) {}
+
+    constexpr composite_wrapper& operator=(const composite_wrapper&) noexcept = default;
+
+    [[nodiscard]]
+    constexpr std::size_t get_offset() const noexcept
+    {
+        return m_off;
+    }
+
+private:
+    std::size_t m_off;
+};
+
+template <auto Composite>
+class composite_wrapper_nontype;
+
+template <auto MemberObject>
+requires(std::is_member_object_pointer_v<decltype(MemberObject)>)
+class composite_wrapper_nontype<MemberObject>
+{
+public:
+    using composite_wrapper_tag = void;
+
+    operator composite_wrapper() const noexcept
+    {
+        // The implementation of member_offset is not constexpr-friendly,
+        // so this function should not be constexpr.
+        return composite_wrapper(member_offset(MemberObject));
+    }
+};
+
+template <std::size_t Offset>
+class composite_wrapper_nontype<Offset>
+{
+public:
+    using composite_wrapper_tag = void;
+
+    constexpr operator composite_wrapper() const noexcept
+    {
+        return composite_wrapper(Offset);
+    }
+};
+
+constexpr composite_wrapper composite(std::size_t off) noexcept
+{
+    return composite_wrapper(off);
+}
+
+template <typename MemberPointer>
+requires(std::is_member_object_pointer_v<MemberPointer>)
+composite_wrapper composite(MemberPointer mp) noexcept
+{
+    return composite_wrapper(member_offset(mp));
+}
+
+template <auto Composite>
+constexpr composite_wrapper_nontype<Composite> composite() noexcept
+{
+    return {};
+}
+
 namespace detail
 {
     template <std::size_t RawArgCount, std::size_t... Is>
