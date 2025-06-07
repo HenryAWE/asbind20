@@ -145,6 +145,13 @@ public:
         destroy_impl();
     }
 
+    /**
+     * @name Unchecked Accessors
+     *
+     * @note Please check the status of object before directly accessing the value!
+     */
+    /// @{
+
     R* operator->() noexcept
     {
         assert(has_value());
@@ -181,6 +188,15 @@ public:
         return std::move(*ptr());
     }
 
+    /// @}
+
+    /**
+     * @name Checked Accessors
+     *
+     * @brief Throws an exception when the object does not contain a returned value
+     */
+    /// @{
+
     [[nodiscard]]
     R& value() &
     {
@@ -213,6 +229,14 @@ public:
         return std::move(**this);
     }
 
+    /// @}
+
+    /**
+     * @name Value Status
+     * @brief Checks whether the object contains a returned value
+     */
+    /// @{
+
     [[nodiscard]]
     bool has_value() const noexcept
     {
@@ -224,6 +248,14 @@ public:
         return has_value();
     }
 
+    /// @}
+
+    /**
+     * @brief Returns the error code
+     *
+     * @return The AngelScript error code.
+     *         If the object contains a returned value, it will be `asEXECUTION_FINISHED`
+     */
     [[nodiscard]]
     int error() const noexcept
     {
