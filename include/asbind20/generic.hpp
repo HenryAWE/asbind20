@@ -933,8 +933,8 @@ namespace detail
         {
             using class_type = std::conditional_t<
                 traits::is_const_v,
-                typename traits::class_type,
-                std::add_const_t<typename traits::class_type>>;
+                std::add_const_t<typename traits::class_type>,
+                typename traits::class_type>;
 
             return comp_accessor<class_type, Composite>::get(gen->GetObject());
         }
@@ -954,11 +954,38 @@ namespace detail
             }(std::make_index_sequence<traits::arg_count::value>());
         }
 
+        template <typename VarType>
+        static void var_type_wrapper_comp(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        {
+            static constexpr auto indices = detail::gen_script_arg_idx<traits::arg_count_v>(VarType{});
+            [gen]<std::size_t... Is>(std::index_sequence<Is...>)
+            {
+                set_generic_return_by<typename traits::return_type>(
+                    gen,
+                    Function,
+                    this_(gen),
+                    detail::var_type_helper<typename traits::template arg_type<Is>>(
+                        detail::var_type_tag<VarType, Is>{},
+                        gen,
+                        static_cast<AS_NAMESPACE_QUALIFIER asUINT>(indices[Is])
+                    )...
+                );
+            }(std::make_index_sequence<indices.size()>());
+        }
+
     public:
         static constexpr auto generate() noexcept
             -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
         {
             return &wrapper_comp;
+        }
+
+        template <std::size_t... Is>
+        static constexpr auto generate(var_type_t<Is...>) noexcept
+            -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
+        {
+            using my_var_type = var_type_t<Is...>;
+            return &var_type_wrapper_comp<my_var_type>;
         }
     };
 
@@ -1031,6 +1058,21 @@ consteval auto to_asGENFUNC_t(
     -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
 {
     return detail::fp_to_asGENFUNC_t_impl_comp<Function, Composite>();
+}
+
+template <
+    native_function auto Function,
+    auto Composite,
+    std::size_t... Is>
+consteval auto to_asGENFUNC_t(
+    fp_wrapper_t<Function>,
+    call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>, // Calling convention parameter reserved for the future
+    composite_wrapper_nontype<Composite>,
+    var_type_t<Is...>
+)
+    -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
+{
+    return detail::fp_to_asGENFUNC_t_impl_comp<Function, Composite, Is...>();
 }
 
 template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>

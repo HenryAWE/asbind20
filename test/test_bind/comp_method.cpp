@@ -20,6 +20,15 @@ public:
         return m_data * 2;
     }
 
+    bool vexec(void* ref, int type_id)
+    {
+        if(type_id != AS_NAMESPACE_QUALIFIER asTYPEID_INT32)
+            return false;
+
+        int arg = *static_cast<const int*>(ref);
+        return m_data == arg;
+    }
+
 private:
     int m_data;
 };
@@ -69,38 +78,62 @@ static void register_val_comp(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     {
         if constexpr(Nontype)
         {
-            c.method(
-                "int exec() const",
-                &comp_helper::exec,
-                composite<&val_comp::indirect>()
-            );
+            c
+                .method(
+                    "int exec() const",
+                    &comp_helper::exec,
+                    composite<&val_comp::indirect>()
+                )
+                .method(
+                    "bool vexec(const?&in)",
+                    &comp_helper::vexec,
+                    composite<&val_comp::indirect>()
+                );
         }
         else
         {
-            c.method(
-                "int exec() const",
-                &comp_helper::exec,
-                composite(&val_comp::indirect)
-            );
+            c
+                .method(
+                    "int exec() const",
+                    &comp_helper::exec,
+                    composite(&val_comp::indirect)
+                )
+                .method(
+                    "bool vexec(const?&in)",
+                    &comp_helper::vexec,
+                    composite(&val_comp::indirect)
+                );
         }
     }
     else
     {
         if constexpr(Nontype)
         {
-            c.method(
-                "int exec() const",
-                &comp_helper::exec,
-                composite<offsetof(val_comp, indirect)>()
-            );
+            c
+                .method(
+                    "int exec() const",
+                    &comp_helper::exec,
+                    composite<offsetof(val_comp, indirect)>()
+                )
+                .method(
+                    "bool vexec(const?&in)",
+                    &comp_helper::vexec,
+                    composite<offsetof(val_comp, indirect)>()
+                );
         }
         else
         {
-            c.method(
-                "int exec() const",
-                &comp_helper::exec,
-                composite(offsetof(val_comp, indirect))
-            );
+            c
+                .method(
+                    "int exec() const",
+                    &comp_helper::exec,
+                    composite(offsetof(val_comp, indirect))
+                )
+                .method(
+                    "bool vexec(const?&in)",
+                    &comp_helper::vexec,
+                    composite<offsetof(val_comp, indirect)>()
+                );
         }
     }
 }
@@ -119,40 +152,70 @@ static void register_val_comp(asbind20::use_generic_t, AS_NAMESPACE_QUALIFIER as
     {
         if constexpr(Explicitly)
         {
-            c.method(
-                use_generic,
-                "int exec() const",
-                fp<&comp_helper::exec>,
-                composite<&val_comp::indirect>()
-            );
+            c
+                .method(
+                    use_generic,
+                    "int exec() const",
+                    fp<&comp_helper::exec>,
+                    composite<&val_comp::indirect>()
+                )
+                .method(
+                    use_generic,
+                    "bool vexec(const?&in)",
+                    fp<&comp_helper::vexec>,
+                    composite<&val_comp::indirect>(),
+                    var_type<0>
+                );
         }
         else
         {
-            c.method(
-                "int exec() const",
-                fp<&comp_helper::exec>,
-                composite<&val_comp::indirect>()
-            );
+            c
+                .method(
+                    "int exec() const",
+                    fp<&comp_helper::exec>,
+                    composite<&val_comp::indirect>()
+                )
+                .method(
+                    "bool vexec(const?&in)",
+                    fp<&comp_helper::vexec>,
+                    composite<&val_comp::indirect>(),
+                    var_type<0>
+                );
         }
     }
     else
     {
         if constexpr(Explicitly)
         {
-            c.method(
-                use_generic,
-                "int exec() const",
-                fp<&comp_helper::exec>,
-                composite<offsetof(val_comp, indirect)>()
-            );
+            c
+                .method(
+                    use_generic,
+                    "int exec() const",
+                    fp<&comp_helper::exec>,
+                    composite<offsetof(val_comp, indirect)>()
+                )
+                .method(
+                    use_generic,
+                    "bool vexec(const?&in)",
+                    fp<&comp_helper::vexec>,
+                    composite<offsetof(val_comp, indirect)>(),
+                    var_type<0>
+                );
         }
         else
         {
-            c.method(
-                "int exec() const",
-                fp<&comp_helper::exec>,
-                composite<offsetof(val_comp, indirect)>()
-            );
+            c
+                .method(
+                    "int exec() const",
+                    fp<&comp_helper::exec>,
+                    composite<offsetof(val_comp, indirect)>()
+                )
+                .method(
+                    "bool vexec(const?&in)",
+                    fp<&comp_helper::vexec>,
+                    composite<offsetof(val_comp, indirect)>(),
+                    var_type<0>
+                );
         }
     }
 }
@@ -164,21 +227,38 @@ static void check_val_comp(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     );
     m->AddScriptSection(
         "check_val_comp",
-        "int test(int arg)\n"
+        "int test0(int arg)\n"
         "{\n"
         "    val_comp val(arg);\n"
         "    return val.exec();\n"
+        "}\n"
+        "bool test1()\n"
+        "{\n"
+        "    val_comp val(21);\n"
+        "    return val.vexec(21);\n"
         "}"
     );
     ASSERT_GE(m->Build(), 0);
 
-    auto* f = m->GetFunctionByName("test");
+    {
+        auto* f = m->GetFunctionByName("test0");
 
-    asbind20::request_context ctx(engine);
-    auto result = asbind20::script_invoke<int>(ctx, f, 21);
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<int>(ctx, f, 21);
 
-    EXPECT_TRUE(asbind_test::result_has_value(result));
-    EXPECT_EQ(result.value(), 42);
+        EXPECT_TRUE(asbind_test::result_has_value(result));
+        EXPECT_EQ(result.value(), 42);
+    }
+
+    {
+        auto* f = m->GetFunctionByName("test1");
+
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<bool>(ctx, f);
+
+        EXPECT_TRUE(asbind_test::result_has_value(result));
+        EXPECT_TRUE(result.value());
+    }
 }
 } // namespace test_bind
 
