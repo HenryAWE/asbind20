@@ -316,16 +316,17 @@ private:
     int m_counter = 1;
 };
 
+template <bool UseGeneric>
 static void register_ref_comp(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     using namespace asbind20;
 
-    ref_class<ref_comp>(engine, "ref_comp")
+    ref_class<ref_comp, UseGeneric>(engine, "ref_comp")
         .default_factory()
-        .factory<int>("int")
+        .template factory<int>("int")
         .addref(fp<&ref_comp::addref>)
         .release(fp<&ref_comp::release>)
-        .method("int exec() const", &comp_helper::exec, composite(&ref_comp::indirect));
+        .method("int exec() const", fp<&comp_helper::exec>, composite<&ref_comp::indirect>());
 }
 
 static void check_ref_comp(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
@@ -362,6 +363,16 @@ TEST(ref_comp, native_mp)
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
-    test_bind::register_ref_comp(engine);
+    test_bind::register_ref_comp<false>(engine);
+    test_bind::check_ref_comp(engine);
+}
+
+TEST(ref_comp, generic_mp)
+{
+    using namespace asbind20;
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine);
+    test_bind::register_ref_comp<true>(engine);
     test_bind::check_ref_comp(engine);
 }
