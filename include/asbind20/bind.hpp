@@ -3884,6 +3884,64 @@ private:
         return *this;                                                                                                          \
     }
 
+#define ASBIND20_CLASS_WRAPPED_COMPOSITE_VAR_TYPE_METHOD(register_type)      \
+    template <auto Fn, auto Composite, std::size_t... Is>                    \
+    requires(std::is_member_function_pointer_v<decltype(Fn)>)                \
+    register_type& method(                                                   \
+        use_generic_t,                                                       \
+        std::string_view decl,                                               \
+        fp_wrapper_t<Fn>,                                                    \
+        composite_wrapper_nontype<Composite>,                                \
+        var_type_t<Is...>,                                                   \
+        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_THISCALL> = {}             \
+    )                                                                        \
+    {                                                                        \
+        this->method_impl(                                                   \
+            decl,                                                            \
+            to_asGENFUNC_t(                                                  \
+                fp<Fn>,                                                      \
+                call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>,           \
+                composite_wrapper_nontype<Composite>{},                      \
+                var_type<Is...>                                              \
+            ),                                                               \
+            generic_call_conv                                                \
+        );                                                                   \
+        return *this;                                                        \
+    }                                                                        \
+    template <auto Fn, auto Composite, std::size_t... Is>                    \
+    requires(std::is_member_function_pointer_v<decltype(Fn)>)                \
+    register_type& method(                                                   \
+        std::string_view decl,                                               \
+        fp_wrapper_t<Fn>,                                                    \
+        composite_wrapper_nontype<Composite>,                                \
+        var_type_t<Is...>,                                                   \
+        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_THISCALL> = {}             \
+    )                                                                        \
+    {                                                                        \
+        if constexpr(ForceGeneric)                                           \
+        {                                                                    \
+            this->method(                                                    \
+                use_generic,                                                 \
+                decl,                                                        \
+                fp<Fn>,                                                      \
+                composite_wrapper_nontype<Composite>{},                      \
+                var_type<Is...>,                                             \
+                call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>            \
+            );                                                               \
+        }                                                                    \
+        else                                                                 \
+        {                                                                    \
+            /* Native calling convention doesn't need the `var_type` tag. */ \
+            this->method(                                                    \
+                decl,                                                        \
+                Fn,                                                          \
+                composite(Composite),                                        \
+                call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>            \
+            );                                                               \
+        }                                                                    \
+        return *this;                                                        \
+    }
+
 /**
  * @brief Register helper for value class
  *
@@ -5138,64 +5196,7 @@ public:
     }
 
     ASBIND20_CLASS_WRAPPED_COMPOSITE_METHOD(basic_value_class)
-
-    template <auto Fn, auto Composite, std::size_t... Is>
-    requires(std::is_member_function_pointer_v<decltype(Fn)>)
-    basic_value_class& method(
-        use_generic_t,
-        std::string_view decl,
-        fp_wrapper_t<Fn>,
-        composite_wrapper_nontype<Composite>,
-        var_type_t<Is...>,
-        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_THISCALL> = {}
-    )
-    {
-        this->method_impl(
-            decl,
-            to_asGENFUNC_t(
-                fp<Fn>,
-                call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>,
-                composite_wrapper_nontype<Composite>{},
-                var_type<Is...>
-            ),
-            generic_call_conv
-        );
-        return *this;
-    }
-
-    template <auto Fn, auto Composite, std::size_t... Is>
-    requires(std::is_member_function_pointer_v<decltype(Fn)>)
-    basic_value_class& method(
-        std::string_view decl,
-        fp_wrapper_t<Fn>,
-        composite_wrapper_nontype<Composite>,
-        var_type_t<Is...>,
-        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_THISCALL> = {}
-    )
-    {
-        if constexpr(ForceGeneric)
-        {
-            this->method(
-                use_generic,
-                decl,
-                fp<Fn>,
-                composite_wrapper_nontype<Composite>{},
-                var_type<Is...>,
-                call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>
-            );
-        }
-        else
-        {
-            // Native calling convention doesn't need the var_type tag
-            this->method(
-                decl,
-                Fn,
-                composite(Composite),
-                call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>
-            );
-        }
-        return *this;
-    }
+    ASBIND20_CLASS_WRAPPED_COMPOSITE_VAR_TYPE_METHOD(basic_value_class)
 
     template <wrappers::auto_register<basic_value_class> AutoRegister>
     basic_value_class& use(AutoRegister&& ar)
@@ -5370,6 +5371,7 @@ public:
     }
 
     ASBIND20_CLASS_WRAPPED_COMPOSITE_METHOD(basic_ref_class)
+    ASBIND20_CLASS_WRAPPED_COMPOSITE_VAR_TYPE_METHOD(basic_ref_class)
 
     template <wrappers::auto_register<basic_ref_class> AutoRegister>
     basic_ref_class& use(AutoRegister&& ar)
@@ -6778,6 +6780,7 @@ public:
 #undef ASBIND20_CLASS_WRAPPED_VAR_TYPE_METHOD_AUXILIARY
 #undef ASBIND20_CLASS_WRAPPED_LAMBDA_VAR_TYPE_METHOD
 #undef ASBIND20_CLASS_WRAPPED_COMPOSITE_METHOD
+#undef ASBIND20_CLASS_WRAPPED_COMPOSITE_VAR_TYPE_METHOD
 
 template <typename Class, bool UseGeneric = false>
 using ref_class = basic_ref_class<Class, false, UseGeneric>;

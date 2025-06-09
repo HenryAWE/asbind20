@@ -406,7 +406,8 @@ static void register_ref_comp(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         .template factory<int>("int")
         .addref(fp<&ref_comp::addref>)
         .release(fp<&ref_comp::release>)
-        .method("int exec() const", fp<&comp_helper::exec>, composite<&ref_comp::indirect>());
+        .method("int exec() const", fp<&comp_helper::exec>, composite<&ref_comp::indirect>())
+        .method("bool vexec(const?&in)", fp<&comp_helper::vexec>, composite<&ref_comp::indirect>(), var_type<0>);
 }
 
 static void check_ref_comp(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
@@ -416,21 +417,38 @@ static void check_ref_comp(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     );
     m->AddScriptSection(
         "check_ref_comp",
-        "int test(int arg)\n"
+        "int test0(int arg)\n"
         "{\n"
         "    ref_comp val(arg);\n"
         "    return val.exec();\n"
+        "}\n"
+        "bool test1()\n"
+        "{\n"
+        "    ref_comp val(21);\n"
+        "    return val.vexec(21);\n"
         "}"
     );
     ASSERT_GE(m->Build(), 0);
 
-    auto* f = m->GetFunctionByName("test");
+    {
+        auto* f = m->GetFunctionByName("test0");
 
-    asbind20::request_context ctx(engine);
-    auto result = asbind20::script_invoke<int>(ctx, f, 21);
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<int>(ctx, f, 21);
 
-    EXPECT_TRUE(asbind_test::result_has_value(result));
-    EXPECT_EQ(result.value(), 42);
+        EXPECT_TRUE(asbind_test::result_has_value(result));
+        EXPECT_EQ(result.value(), 42);
+    }
+
+    {
+        auto* f = m->GetFunctionByName("test1");
+
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<bool>(ctx, f);
+
+        EXPECT_TRUE(asbind_test::result_has_value(result));
+        EXPECT_TRUE(result.value());
+    }
 }
 } // namespace test_bind
 
