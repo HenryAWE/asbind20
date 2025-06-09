@@ -469,7 +469,7 @@ then it is possible to register the methods of the composite members without wra
         .method("void set(int arg)", &comp_helper::set, composite(offsetof(my_class, indirect)));
 
 .. note::
-   Currently, the composite methods only allow ``THISCALL`` calling convention. Besides, the generic wrapper doesn't support it.
+   The usage of the ``composite`` helper is :ref:`different <generic-composite>` when you want to create generic wrapper for composite methods
 
 Tips for Registering Methods
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

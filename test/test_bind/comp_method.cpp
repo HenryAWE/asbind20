@@ -20,6 +20,15 @@ public:
         return m_data * 2;
     }
 
+    bool vexec(void* ref, int type_id)
+    {
+        if(type_id != AS_NAMESPACE_QUALIFIER asTYPEID_INT32)
+            return false;
+
+        int arg = *static_cast<const int*>(ref);
+        return m_data == arg;
+    }
+
 private:
     int m_data;
 };
@@ -55,7 +64,7 @@ public:
     comp_helper* const indirect;
 };
 
-template <bool UseMP>
+template <bool UseMP, bool Nontype>
 static void register_val_comp(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     using namespace asbind20;
@@ -67,19 +76,147 @@ static void register_val_comp(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 
     if constexpr(UseMP)
     {
-        c.method(
-            "int exec() const",
-            &comp_helper::exec,
-            composite(&val_comp::indirect)
-        );
+        if constexpr(Nontype)
+        {
+            c
+                .method(
+                    "int exec() const",
+                    &comp_helper::exec,
+                    composite<&val_comp::indirect>()
+                )
+                .method(
+                    "bool vexec(const?&in)",
+                    &comp_helper::vexec,
+                    composite<&val_comp::indirect>()
+                );
+        }
+        else
+        {
+            c
+                .method(
+                    "int exec() const",
+                    &comp_helper::exec,
+                    composite(&val_comp::indirect)
+                )
+                .method(
+                    "bool vexec(const?&in)",
+                    &comp_helper::vexec,
+                    composite(&val_comp::indirect)
+                );
+        }
     }
     else
     {
-        c.method(
-            "int exec() const",
-            &comp_helper::exec,
-            composite(offsetof(val_comp, indirect))
-        );
+        if constexpr(Nontype)
+        {
+            c
+                .method(
+                    "int exec() const",
+                    &comp_helper::exec,
+                    composite<offsetof(val_comp, indirect)>()
+                )
+                .method(
+                    "bool vexec(const?&in)",
+                    &comp_helper::vexec,
+                    composite<offsetof(val_comp, indirect)>()
+                );
+        }
+        else
+        {
+            c
+                .method(
+                    "int exec() const",
+                    &comp_helper::exec,
+                    composite(offsetof(val_comp, indirect))
+                )
+                .method(
+                    "bool vexec(const?&in)",
+                    &comp_helper::vexec,
+                    composite<offsetof(val_comp, indirect)>()
+                );
+        }
+    }
+}
+
+template <bool UseMP, bool Explicitly>
+static void register_val_comp(asbind20::use_generic_t, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
+    using namespace asbind20;
+
+    value_class<val_comp, true> c(engine, "val_comp");
+    c
+        .behaviours_by_traits()
+        .constructor<int>("int");
+
+    if constexpr(UseMP)
+    {
+        if constexpr(Explicitly)
+        {
+            c
+                .method(
+                    use_generic,
+                    "int exec() const",
+                    fp<&comp_helper::exec>,
+                    composite<&val_comp::indirect>()
+                )
+                .method(
+                    use_generic,
+                    "bool vexec(const?&in)",
+                    fp<&comp_helper::vexec>,
+                    composite<&val_comp::indirect>(),
+                    var_type<0>
+                );
+        }
+        else
+        {
+            c
+                .method(
+                    "int exec() const",
+                    fp<&comp_helper::exec>,
+                    composite<&val_comp::indirect>()
+                )
+                .method(
+                    "bool vexec(const?&in)",
+                    fp<&comp_helper::vexec>,
+                    composite<&val_comp::indirect>(),
+                    var_type<0>
+                );
+        }
+    }
+    else
+    {
+        if constexpr(Explicitly)
+        {
+            c
+                .method(
+                    use_generic,
+                    "int exec() const",
+                    fp<&comp_helper::exec>,
+                    composite<offsetof(val_comp, indirect)>()
+                )
+                .method(
+                    use_generic,
+                    "bool vexec(const?&in)",
+                    fp<&comp_helper::vexec>,
+                    composite<offsetof(val_comp, indirect)>(),
+                    var_type<0>
+                );
+        }
+        else
+        {
+            c
+                .method(
+                    "int exec() const",
+                    fp<&comp_helper::exec>,
+                    composite<offsetof(val_comp, indirect)>()
+                )
+                .method(
+                    "bool vexec(const?&in)",
+                    fp<&comp_helper::vexec>,
+                    composite<offsetof(val_comp, indirect)>(),
+                    var_type<0>
+                );
+        }
     }
 }
 
@@ -90,21 +227,38 @@ static void check_val_comp(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     );
     m->AddScriptSection(
         "check_val_comp",
-        "int test(int arg)\n"
+        "int test0(int arg)\n"
         "{\n"
         "    val_comp val(arg);\n"
         "    return val.exec();\n"
+        "}\n"
+        "bool test1()\n"
+        "{\n"
+        "    val_comp val(21);\n"
+        "    return val.vexec(21);\n"
         "}"
     );
     ASSERT_GE(m->Build(), 0);
 
-    auto* f = m->GetFunctionByName("test");
+    {
+        auto* f = m->GetFunctionByName("test0");
 
-    asbind20::request_context ctx(engine);
-    auto result = asbind20::script_invoke<int>(ctx, f, 21);
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<int>(ctx, f, 21);
 
-    EXPECT_TRUE(asbind_test::result_has_value(result));
-    EXPECT_EQ(result.value(), 42);
+        EXPECT_TRUE(asbind_test::result_has_value(result));
+        EXPECT_EQ(result.value(), 42);
+    }
+
+    {
+        auto* f = m->GetFunctionByName("test1");
+
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<bool>(ctx, f);
+
+        EXPECT_TRUE(asbind_test::result_has_value(result));
+        EXPECT_TRUE(result.value());
+    }
 }
 } // namespace test_bind
 
@@ -117,7 +271,7 @@ TEST(val_comp, native_offset)
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
-    test_bind::register_val_comp<false>(engine);
+    test_bind::register_val_comp<false, false>(engine);
     test_bind::check_val_comp(engine);
 }
 
@@ -130,7 +284,76 @@ TEST(val_comp, native_mp)
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
-    test_bind::register_val_comp<true>(engine);
+    test_bind::register_val_comp<true, false>(engine);
+    test_bind::check_val_comp(engine);
+}
+
+TEST(val_comp, native_offset_nontype)
+{
+    using namespace asbind20;
+
+    if(has_max_portability())
+        GTEST_SKIP();
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine);
+    test_bind::register_val_comp<false, true>(engine);
+    test_bind::check_val_comp(engine);
+}
+
+TEST(val_comp, native_mp_nontype)
+{
+    using namespace asbind20;
+
+    if(has_max_portability())
+        GTEST_SKIP();
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine);
+    test_bind::register_val_comp<true, true>(engine);
+    test_bind::check_val_comp(engine);
+}
+
+TEST(val_comp, generic_offset)
+{
+    using namespace asbind20;
+
+    if(has_max_portability())
+        GTEST_SKIP();
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine);
+    test_bind::register_val_comp<false, false>(use_generic, engine);
+    test_bind::check_val_comp(engine);
+}
+
+TEST(val_comp, generic_mp)
+{
+    using namespace asbind20;
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine);
+    test_bind::register_val_comp<true, false>(use_generic, engine);
+    test_bind::check_val_comp(engine);
+}
+
+TEST(val_comp, generic_offset_explicitly)
+{
+    using namespace asbind20;
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine);
+    test_bind::register_val_comp<false, true>(use_generic, engine);
+    test_bind::check_val_comp(engine);
+}
+
+TEST(val_comp, generic_mp_explicitly)
+{
+    using namespace asbind20;
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine);
+    test_bind::register_val_comp<true, true>(use_generic, engine);
     test_bind::check_val_comp(engine);
 }
 
@@ -173,16 +396,18 @@ private:
     int m_counter = 1;
 };
 
+template <bool UseGeneric>
 static void register_ref_comp(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     using namespace asbind20;
 
-    ref_class<ref_comp>(engine, "ref_comp")
+    ref_class<ref_comp, UseGeneric>(engine, "ref_comp")
         .default_factory()
-        .factory<int>("int")
+        .template factory<int>("int")
         .addref(fp<&ref_comp::addref>)
         .release(fp<&ref_comp::release>)
-        .method("int exec() const", &comp_helper::exec, composite(&ref_comp::indirect));
+        .method("int exec() const", fp<&comp_helper::exec>, composite<&ref_comp::indirect>())
+        .method("bool vexec(const?&in)", fp<&comp_helper::vexec>, composite<&ref_comp::indirect>(), var_type<0>);
 }
 
 static void check_ref_comp(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
@@ -192,21 +417,38 @@ static void check_ref_comp(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     );
     m->AddScriptSection(
         "check_ref_comp",
-        "int test(int arg)\n"
+        "int test0(int arg)\n"
         "{\n"
         "    ref_comp val(arg);\n"
         "    return val.exec();\n"
+        "}\n"
+        "bool test1()\n"
+        "{\n"
+        "    ref_comp val(21);\n"
+        "    return val.vexec(21);\n"
         "}"
     );
     ASSERT_GE(m->Build(), 0);
 
-    auto* f = m->GetFunctionByName("test");
+    {
+        auto* f = m->GetFunctionByName("test0");
 
-    asbind20::request_context ctx(engine);
-    auto result = asbind20::script_invoke<int>(ctx, f, 21);
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<int>(ctx, f, 21);
 
-    EXPECT_TRUE(asbind_test::result_has_value(result));
-    EXPECT_EQ(result.value(), 42);
+        EXPECT_TRUE(asbind_test::result_has_value(result));
+        EXPECT_EQ(result.value(), 42);
+    }
+
+    {
+        auto* f = m->GetFunctionByName("test1");
+
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<bool>(ctx, f);
+
+        EXPECT_TRUE(asbind_test::result_has_value(result));
+        EXPECT_TRUE(result.value());
+    }
 }
 } // namespace test_bind
 
@@ -219,6 +461,16 @@ TEST(ref_comp, native_mp)
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
-    test_bind::register_ref_comp(engine);
+    test_bind::register_ref_comp<false>(engine);
+    test_bind::check_ref_comp(engine);
+}
+
+TEST(ref_comp, generic_mp)
+{
+    using namespace asbind20;
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine);
+    test_bind::register_ref_comp<true>(engine);
     test_bind::check_ref_comp(engine);
 }

@@ -81,6 +81,44 @@ Example code:
             var_type<0>
         );
 
+.. _generic-composite:
+
+Wrapping Composite Methods
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The interface of AngelScript only accepts ``THISCALL`` for the composite methods,
+which means the generic wrapper should take the composite offset into consideration at compile-time.
+If you want to generate generic wrapper for composite methods,
+you need to tell the generator how to access the composite data.
+
+The major difference from the native one is how to use the ``composite`` helper.
+
+.. code-block:: c++
+
+    // ...
+        // Member pointer
+        .method(
+            use_generic,
+            "void foo(int arg)",
+            fp<&comp_type::foo>,
+            composite<&base_type::indirect>()
+        )
+        // Or offset value
+        .method(
+            use_generic,
+            "void bar(int arg)",
+            fp<&comp_type::foo>,
+            composite<offsetof(base_type, indirect)>()
+        )
+        // It can be combined with variable type argument
+        .method(
+            use_generic,
+            "void va_func(const ?&in)",
+            fp<&comp_type::va_func>,
+            composite<&base_type::indirect>(),
+            var_type<0>
+        );
+
 .. _group-force-generic:
 
 Wrap a Group of Methods, Functions, or Behaviors
