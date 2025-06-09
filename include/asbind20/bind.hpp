@@ -6563,18 +6563,18 @@ public:
         return *this;                                      \
     }
 
-    ASBIND20_REFERENCE_CLASS_OP(opAssign);
-    ASBIND20_REFERENCE_CLASS_OP(opAddAssign);
-    ASBIND20_REFERENCE_CLASS_OP(opSubAssign);
-    ASBIND20_REFERENCE_CLASS_OP(opMulAssign);
-    ASBIND20_REFERENCE_CLASS_OP(opDivAssign);
-    ASBIND20_REFERENCE_CLASS_OP(opModAssign);
+    ASBIND20_REFERENCE_CLASS_OP(opAssign)
+    ASBIND20_REFERENCE_CLASS_OP(opAddAssign)
+    ASBIND20_REFERENCE_CLASS_OP(opSubAssign)
+    ASBIND20_REFERENCE_CLASS_OP(opMulAssign)
+    ASBIND20_REFERENCE_CLASS_OP(opDivAssign)
+    ASBIND20_REFERENCE_CLASS_OP(opModAssign)
 
-    ASBIND20_REFERENCE_CLASS_OP(opEquals);
-    ASBIND20_REFERENCE_CLASS_OP(opCmp);
+    ASBIND20_REFERENCE_CLASS_OP(opEquals)
+    ASBIND20_REFERENCE_CLASS_OP(opCmp)
 
-    ASBIND20_REFERENCE_CLASS_OP(opPreInc);
-    ASBIND20_REFERENCE_CLASS_OP(opPreDec);
+    ASBIND20_REFERENCE_CLASS_OP(opPreInc)
+    ASBIND20_REFERENCE_CLASS_OP(opPreDec)
 
     // TODO: Operators returning by value for reference type
 

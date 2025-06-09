@@ -834,9 +834,8 @@ inline std::string to_string(AS_NAMESPACE_QUALIFIER asEContextState state)
         return "asEXECUTION_DESERIALIZATION";
 
     [[unlikely]] default:
-        using namespace std::literals;
         return string_concat(
-            "asEContextState("sv,
+            "asEContextState(",
             std::to_string(static_cast<int>(state)),
             ')'
         );
@@ -915,9 +914,8 @@ inline std::string to_string(AS_NAMESPACE_QUALIFIER asERetCodes ret)
         return "asMODULE_IS_IN_USE";
 
     [[unlikely]] default:
-        using namespace std::literals;
         return string_concat(
-            "asERetCodes("sv,
+            "asERetCodes(",
             std::to_string(static_cast<int>(ret)),
             ')'
         );
