@@ -58,9 +58,9 @@ You can synthesize global function by member function and an instance:
         int f();
     };
 
-    my_class instance{};
-
 .. code-block:: c++
+
+    my_class instance{};
 
     asbind20::global(engine)
         .function("int f()", &my_class::f, asbind20::auxiliary(instance));

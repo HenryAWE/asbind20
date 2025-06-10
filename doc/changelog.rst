@@ -10,7 +10,7 @@ Update
 ~~~~~~
 
 - Helper for registering modulo operator.
-- Composite property support
+- Composite property support.
 - Composite methods support including generic wrapper with or without variable types.
 - Official arm64 support. Previously, it works theoretically but not actually tested.
 - New tools for managing script function without increasing its reference count.

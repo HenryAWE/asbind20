@@ -26,9 +26,9 @@ Core Features
 - Generating generic wrapper for functions of any parameter count at compile-time,
   without using any macro.
 
-- RAII tools for managing lifetime
+- RAII tools for managing lifetime of script objects.
 
-- Container for storing script objects
+- Container for storing script objects.
 
 Extension Library
 -----------------
