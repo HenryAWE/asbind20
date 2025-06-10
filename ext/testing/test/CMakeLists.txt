@@ -1,0 +1,6 @@
+include(GoogleTest)
+
+add_executable(test_ext_testing test_ext_testing.cpp)
+target_link_libraries(test_ext_testing PRIVATE asbind20_testing)
+target_link_libraries(test_ext_testing PRIVATE shared_test_lib)
+gtest_discover_tests(test_ext_testing)
