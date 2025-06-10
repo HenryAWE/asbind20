@@ -1122,6 +1122,9 @@ inline auto current_context()
     return AS_NAMESPACE_QUALIFIER asGetActiveContext();
 }
 
+/**
+ * @brief Check if the script context has exception
+ */
 [[nodiscard]]
 inline bool has_script_exception(
     AS_NAMESPACE_QUALIFIER asIScriptContext* ctx = current_context()
@@ -1209,9 +1212,17 @@ public:
         }
     }
 
+    [[nodiscard]]
     handle_type get() const noexcept
     {
         return m_ctx;
+    }
+
+    [[nodiscard]]
+    auto get_engine() const noexcept
+        -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
+    {
+        return m_engine;
     }
 
     operator handle_type() const noexcept
@@ -1227,11 +1238,13 @@ public:
     /**
      * @brief Returns true if current context is reused.
      */
+    [[nodiscard]]
     bool is_nested() const noexcept
     {
         return m_is_nested;
     }
 
+    [[nodiscard]]
     bool will_propagate_error() const noexcept
     {
         return m_propagate_error;
@@ -1270,9 +1283,17 @@ public:
             m_engine->ReturnContext(m_ctx);
     }
 
+    [[nodiscard]]
     handle_type get() const noexcept
     {
         return m_ctx;
+    }
+
+    [[nodiscard]]
+    auto get_engine() const noexcept
+        -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
+    {
+        return m_engine;
     }
 
     operator handle_type() const noexcept
