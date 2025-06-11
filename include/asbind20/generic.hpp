@@ -325,8 +325,8 @@ void set_generic_return(
             gen->SetReturnDWord(static_cast<AS_NAMESPACE_QUALIFIER asDWORD>(ret));
         else if constexpr(sizeof(Return) == sizeof(AS_NAMESPACE_QUALIFIER asQWORD))
             gen->SetReturnQWord(static_cast<AS_NAMESPACE_QUALIFIER asQWORD>(ret));
-        else
-            static_assert(!sizeof(Return), "Integer size too large");
+        else // Compiler extension like __int128
+            new(gen->GetAddressOfReturnLocation()) Return(ret);
     }
     else if constexpr(std::floating_point<Return>)
     {

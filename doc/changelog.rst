@@ -25,6 +25,8 @@ Bug fix
 ~~~~~~~
 
 - Update compatibility with ``string_view`` of binding generators.
+- Fix compilation error when using an integer bigger than 4 bytes,
+  such as ``__int128`` extension provided by Clang and GCC.
 
 Documentation
 ~~~~~~~~~~~~~

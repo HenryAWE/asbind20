@@ -700,6 +700,8 @@ T get_script_return(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx)
                 return static_cast<T>(ctx->GetReturnDWord());
             else if constexpr(sizeof(primitive_t) == 8)
                 return static_cast<T>(ctx->GetReturnQWord());
+            else // Compiler extensions like __int128
+                return *(T*)ctx->GetAddressOfReturnValue();
         }
         else if constexpr(std::same_as<primitive_t, float>)
         {
