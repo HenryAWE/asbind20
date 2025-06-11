@@ -5114,6 +5114,42 @@ public:
         return *this;
     }
 
+    template <typename OtherClass, bool OtherUseGeneric>
+    requires(!std::same_as<Class, OtherClass>)
+    basic_value_class& opConv(use_generic_t, const basic_value_class<OtherClass, false, OtherUseGeneric>& other)
+    {
+        assert(this->get_engine() == other.get_engine());
+        this->opConv<OtherClass>(use_generic, other.get_name());
+        return *this;
+    }
+
+    template <typename OtherClass, bool OtherUseGeneric>
+    requires(!std::same_as<Class, OtherClass>)
+    basic_value_class& opConv(const basic_value_class<OtherClass, false, OtherUseGeneric>& other)
+    {
+        assert(this->get_engine() == other.get_engine());
+        this->opConv<OtherClass>(other.get_name());
+        return *this;
+    }
+
+    template <typename OtherClass, bool OtherUseGeneric>
+    requires(!std::same_as<Class, OtherClass>)
+    basic_value_class& opImplConv(use_generic_t, const basic_value_class<OtherClass, false, OtherUseGeneric>& other)
+    {
+        assert(this->get_engine() == other.get_engine());
+        this->opImplConv<OtherClass>(use_generic, other.get_name());
+        return *this;
+    }
+
+    template <typename OtherClass, bool OtherUseGeneric>
+    requires(!std::same_as<Class, OtherClass>)
+    basic_value_class& opImplConv(const basic_value_class<OtherClass, false, OtherUseGeneric>& other)
+    {
+        assert(this->get_engine() == other.get_engine());
+        this->opImplConv<OtherClass>(other.get_name());
+        return *this;
+    }
+
 #define ASBIND20_VALUE_CLASS_BEH(func_name, as_beh, as_decl)                             \
     template <native_function Fn>                                                        \
     basic_value_class& func_name(Fn&& fn) requires(!ForceGeneric)                        \

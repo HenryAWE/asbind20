@@ -88,8 +88,8 @@ void register_int128(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         .opNeg()
         .template opImplConv<std::uint64_t>();
 
-    i128.template opImplConv<uint128_t>(u128.get_name());
-    u128.template opImplConv<int128_t>(i128.get_name());
+    i128.opImplConv(u128);
+    u128.opImplConv(i128);
 }
 
 static void check_int128(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
