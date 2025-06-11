@@ -8,24 +8,49 @@
 #include <asbind20/asbind.hpp>
 #include <asbind20/ext/exec.hpp>
 
-#ifdef __GNUC__
 
+#ifdef __GNUC__
+namespace test_bind
+{
 // Ignoring "ISO C++ does not support '__int128' for 'type name'"
 #    pragma GCC diagnostic ignored "-Wpedantic"
 
-namespace test_bind
-{
 using int128_t = __int128;
 using uint128_t = unsigned __int128;
 
+#    define ASBIND20_TEST_HAS_INT128           1
+#    define ASBIND20_TEST_HAS_PRIMITIVE_INT128 1
+} // namespace test_bind
+
+#elif defined _MSC_VER
+
+#    include <__msvc_int128.hpp>
+
+namespace test_bind
+{
+using int128_t = std::_Signed128;
+using uint128_t = std::_Unsigned128;
+
+#    define ASBIND20_TEST_HAS_INT128 1
+} // namespace test_bind
+
+#endif
+
+#ifdef ASBIND20_TEST_HAS_INT128
+
+namespace test_bind
+{
 template <bool UseGeneric>
 void register_int128(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     using namespace asbind20;
 
-    constexpr AS_NAMESPACE_QUALIFIER asQWORD flags =
-        AS_NAMESPACE_QUALIFIER asOBJ_POD |
-        AS_NAMESPACE_QUALIFIER asOBJ_APP_PRIMITIVE;
+    AS_NAMESPACE_QUALIFIER asQWORD flags = AS_NAMESPACE_QUALIFIER asOBJ_POD;
+#    ifdef ASBIND20_TEST_HAS_PRIMITIVE_INT128
+    flags |= AS_NAMESPACE_QUALIFIER asOBJ_APP_PRIMITIVE;
+#    else
+    flags |= AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_ALLINTS;
+#    endif
 
     auto i128 = value_class<int128_t, UseGeneric>(
         engine, "int128", flags
