@@ -13,10 +13,6 @@ target_compile_options(shared_test_lib PUBLIC
 )
 target_include_directories(shared_test_lib PUBLIC .)
 
-add_executable(test_invoke test_invoke.cpp)
-target_link_libraries(test_invoke PRIVATE shared_test_lib)
-gtest_discover_tests(test_invoke)
-
 add_executable(test_utility test_utility.cpp)
 target_link_libraries(test_utility PRIVATE shared_test_lib)
 gtest_discover_tests(test_utility)
@@ -26,6 +22,8 @@ target_link_libraries(test_io PRIVATE shared_test_lib)
 gtest_discover_tests(test_io)
 
 add_subdirectory(test_bind)
+
+add_subdirectory(test_invoke)
 
 add_subdirectory(test_container)
 

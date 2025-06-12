@@ -2,6 +2,7 @@
 #include <shared_test_lib.hpp>
 #include <asbind20/asbind.hpp>
 #include <asbind20/ext/vocabulary.hpp>
+#include <asbind20/ext/stdstring.hpp>
 
 using namespace asbind_test;
 
@@ -85,10 +86,17 @@ TEST(script_invoke_result, void)
     }
 }
 
-TEST_F(asbind_test_suite, invoke)
+TEST(test_invoke, common_types)
 {
-    auto* engine = get_engine();
-    auto* m = engine->GetModule("test_invoke", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
+    using namespace asbind20;
+    using asbind_test::result_has_value;
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine);
+    ext::register_std_string(engine);
+    auto* m = engine->GetModule(
+        "test_invoke", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
+    );
 
     m->AddScriptSection(
         "test_invoke.as",
@@ -157,10 +165,16 @@ TEST_F(asbind_test_suite, invoke)
     }
 }
 
-TEST_F(asbind_test_suite, custom_rule)
+TEST(test_invoke, custom_rule_byte)
 {
-    auto* engine = get_engine();
-    auto* m = engine->GetModule("test_custom_rule", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
+    using namespace asbind20;
+    using asbind_test::result_has_value;
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine);
+    auto* m = engine->GetModule(
+        "test_custom_rule", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
+    );
 
     m->AddScriptSection(
         "test_custom_rule.as",
@@ -176,54 +190,6 @@ TEST_F(asbind_test_suite, custom_rule)
 
         ASSERT_TRUE(result_has_value(result));
         EXPECT_EQ(result.value(), std::byte(0x2));
-    }
-}
-
-TEST_F(asbind_test_suite, script_class)
-{
-    auto* engine = get_engine();
-    auto* m = engine->GetModule("test_script_class", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
-
-    m->AddScriptSection(
-        "test_invoke.as",
-        "class my_class"
-        "{"
-        "int m_val;"
-        "void set_val(int new_val) { m_val = new_val; }"
-        "int get_val() const { return m_val; }"
-        "int& get_val_ref() { return m_val; }"
-        "};"
-    );
-    ASSERT_GE(m->Build(), 0);
-
-    AS_NAMESPACE_QUALIFIER asITypeInfo* my_class_t = m->GetTypeInfoByName("my_class");
-    ASSERT_NE(my_class_t, nullptr);
-
-    {
-        asbind20::request_context ctx(engine);
-
-        auto my_class = asbind20::instantiate_class(ctx, my_class_t);
-
-        AS_NAMESPACE_QUALIFIER asIScriptFunction* set_val = my_class_t->GetMethodByDecl("void set_val(int)");
-        asbind20::script_invoke<void>(ctx, my_class, set_val, 182375);
-
-        AS_NAMESPACE_QUALIFIER asIScriptFunction* get_val = my_class_t->GetMethodByDecl("int get_val() const");
-        auto val = asbind20::script_invoke<int>(ctx, my_class, get_val);
-
-        ASSERT_TRUE(result_has_value(val));
-        EXPECT_EQ(val.value(), 182375);
-
-        AS_NAMESPACE_QUALIFIER asIScriptFunction* get_val_ref = my_class_t->GetMethodByDecl("int& get_val_ref()");
-        auto val_ref = asbind20::script_invoke<int&>(ctx, my_class, get_val_ref);
-
-        ASSERT_TRUE(result_has_value(val_ref));
-        EXPECT_EQ(val_ref.value(), 182375);
-
-        *val_ref = 182376;
-
-        val = asbind20::script_invoke<int>(ctx, my_class, get_val);
-        ASSERT_TRUE(result_has_value(val));
-        EXPECT_EQ(val.value(), 182376);
     }
 }
 
