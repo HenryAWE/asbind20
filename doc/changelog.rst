@@ -22,6 +22,7 @@ Breaking Change
 
 - Removed ``script_function_base``. Use ``script_function<void>`` instead.
 - ``asbind20::meta::compressed_pair`` changed to ``asbind20::compressed_pair``
+- ``asbind20::meta::overloaded`` changed to ``asbind20::overloaded``
 
 Bug fix
 ~~~~~~~

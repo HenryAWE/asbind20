@@ -13,6 +13,7 @@
 #include <tuple>
 #include <concepts>
 #include <type_traits>
+#include "utility.hpp"
 
 namespace asbind20
 {
@@ -278,6 +279,109 @@ public:
 
     using last_arg_type = arg_type_optional<arg_count_v - 1>;
 };
+
+template <typename T>
+requires(std::is_arithmetic_v<T> && !std::same_as<std::remove_cv_t<T>, char>)
+consteval auto name_of() noexcept
+{
+    if constexpr(std::same_as<T, bool>)
+        return meta::fixed_string("bool");
+    else if constexpr(std::integral<T>)
+    {
+        if constexpr(std::is_unsigned_v<T>)
+        {
+            if constexpr(sizeof(T) == 1)
+                return meta::fixed_string("uint8");
+            else if constexpr(sizeof(T) == 2)
+                return meta::fixed_string("uint16");
+            else if constexpr(sizeof(T) == 4)
+                return meta::fixed_string("uint");
+            else if constexpr(sizeof(T) == 8)
+                return meta::fixed_string("uint64");
+            else
+                static_assert(!sizeof(T), "Invalid integral");
+        }
+        else if constexpr(std::is_signed_v<T>)
+        {
+            if constexpr(sizeof(T) == 1)
+                return meta::fixed_string("int8");
+            else if constexpr(sizeof(T) == 2)
+                return meta::fixed_string("int16");
+            else if constexpr(sizeof(T) == 4)
+                return meta::fixed_string("int");
+            else if constexpr(sizeof(T) == 8)
+                return meta::fixed_string("int64");
+            else
+                static_assert(!sizeof(T), "Invalid integral");
+        }
+        else // Neither signed nor unsigned
+            static_assert(!sizeof(T), "Invalid integral");
+    }
+    else if constexpr(std::floating_point<T>)
+    {
+        if constexpr(std::same_as<T, float>)
+            return meta::fixed_string("float");
+        else if constexpr(std::same_as<T, double>)
+            return meta::fixed_string("double");
+        else
+            static_assert(!sizeof(T), "Invalid floating point");
+    }
+    else
+        static_assert(!sizeof(T), "Invalid arithmetic");
+}
+
+template <typename T>
+concept has_static_name =
+    std::is_arithmetic_v<T> &&
+    !std::same_as<std::remove_cv_t<T>, char>;
+
+namespace meta
+{
+    template <typename T>
+    requires(has_static_name<std::remove_cvref_t<T>>)
+    consteval auto full_fixed_name_of()
+    {
+        constexpr bool is_const = std::is_const_v<std::remove_reference_t<T>>;
+
+        constexpr auto type_name = []()
+        {
+            constexpr auto name = name_of<std::remove_cvref_t<T>>();
+            if constexpr(is_const)
+                return fixed_string("const ") + name;
+            else
+                return name;
+        }();
+
+        if constexpr(std::is_reference_v<T>)
+        {
+            if constexpr(is_const)
+                return type_name + fixed_string("&in");
+            else
+                return type_name + fixed_string("&");
+        }
+        else
+            return type_name;
+    }
+
+    /**
+     * @brief Get string representation of an enum value in fixed string
+     *
+     * @note This function has limitations. @sa static_enum_name
+     *
+     * @tparam Value Enum value
+     */
+    template <auto Value>
+    auto fixed_enum_name() noexcept
+    {
+        constexpr std::string_view name_view = static_enum_name<Value>();
+        constexpr std::size_t size = name_view.size();
+
+        return [&]<std::size_t... Is>(std::index_sequence<Is...>)
+        {
+            return fixed_string<size>(name_view[Is]...);
+        }(std::make_index_sequence<size>());
+    }
+} // namespace meta
 } // namespace asbind20
 
 #endif
