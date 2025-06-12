@@ -2,12 +2,10 @@
  * @file memory.hpp
  * @author HenryAWE
  * @brief Tools for memory management
- *
  */
 
 #ifndef ASBIND20_MEMORY_HPP
 #define ASBIND20_MEMORY_HPP
-
 
 #pragma once
 
@@ -103,12 +101,12 @@ public:
     }
 
     /**
-      * @brief Release without decreasing reference count
-      *
-      * @warning USE WITH CAUTION!
-      *
-      * @return Previously stored object
-      */
+     * @brief Release without decreasing reference count
+     *
+     * @warning USE WITH CAUTION!
+     *
+     * @return Previously stored object
+     */
     [[nodiscard]]
     handle_type release() noexcept
     {
@@ -116,8 +114,8 @@ public:
     }
 
     /**
-      * @brief Reset object the null pointer
-      */
+     * @brief Reset object the null pointer
+     */
     void reset(std::nullptr_t = nullptr) noexcept
     {
         if(m_obj)
@@ -128,10 +126,10 @@ public:
     }
 
     /**
-      * @brief Reset object
-      *
-      * @param obj New object to store
-      */
+     * @brief Reset object
+     *
+     * @param obj New object to store
+     */
     void reset(handle_type obj)
     {
         if(m_obj)
@@ -146,10 +144,10 @@ private:
 };
 
 /**
-  * @brief RAII helper for reusing active script context.
-  *
-  * It will fallback to request context from the engine.
-  */
+ * @brief RAII helper for reusing active script context.
+ *
+ * It will fallback to request context from the engine.
+ */
 class [[nodiscard]] reuse_active_context
 {
 public:
@@ -244,8 +242,8 @@ public:
     }
 
     /**
-      * @brief Returns true if current context is reused.
-      */
+     * @brief Returns true if current context is reused.
+     */
     [[nodiscard]]
     bool is_nested() const noexcept
     {
@@ -266,8 +264,8 @@ private:
 };
 
 /**
-  * @brief RAII helper for requesting script context from the engine
-  */
+ * @brief RAII helper for requesting script context from the engine
+ */
 class [[nodiscard]] request_context
 {
 public:
@@ -320,8 +318,8 @@ private:
 };
 
 /**
-  * @brief Script engine manager
-  */
+ * @brief Script engine manager
+ */
 class script_engine
 {
 public:
@@ -384,8 +382,8 @@ private:
 };
 
 /**
-  * @brief Create an AngelScript engine
-  */
+ * @brief Create an AngelScript engine
+ */
 [[nodiscard]]
 inline script_engine make_script_engine(
     AS_NAMESPACE_QUALIFIER asDWORD version = ANGELSCRIPT_VERSION
@@ -471,11 +469,11 @@ public:
     }
 
     /**
-      * @warning If you get the lockable shared bool by `GetWeakRefFlagOfScriptObject()`,
-      *          you should @b not use this function! Because it won't increase the reference count.
-      *
-      * @sa connect_object
-      */
+     * @warning If you get the lockable shared bool by `GetWeakRefFlagOfScriptObject()`,
+     *          you should @b not use this function! Because it won't increase the reference count.
+     *
+     * @sa connect_object
+     */
     void reset(std::in_place_t, handle_type bool_) noexcept
     {
         if(m_bool)
@@ -508,8 +506,8 @@ public:
     }
 
     /**
-      * @brief Lock the flag
-      */
+     * @brief Lock the flag
+     */
     void lock()
     {
         assert(*this);
@@ -517,8 +515,8 @@ public:
     }
 
     /**
-      * @brief Unlock the flag
-      */
+     * @brief Unlock the flag
+     */
     void unlock() noexcept
     {
         assert(*this);
@@ -566,10 +564,10 @@ private:
 };
 
 /**
-  * @brief Create a lockable shared bool for implementing weak reference
-  *
-  * @note Lock the exclusive lock in multithreading enviornment
-  */
+ * @brief Create a lockable shared bool for implementing weak reference
+ *
+ * @note Lock the exclusive lock in multithreading enviornment
+ */
 [[nodiscard]]
 inline lockable_shared_bool make_lockable_shared_bool()
 {
@@ -579,8 +577,8 @@ inline lockable_shared_bool make_lockable_shared_bool()
 }
 
 /**
-  * @brief RAII helper for `asITypeInfo*`.
-  */
+ * @brief RAII helper for `asITypeInfo*`.
+ */
 class script_typeinfo
 {
 public:
@@ -589,20 +587,20 @@ public:
     script_typeinfo() noexcept = default;
 
     /**
-      * @brief Assign a type info object. It @b won't increase the reference count!
-      * @sa script_typeinfo(inplace_addref_t, handle_type)
-      *
-      * @warning DON'T use this constructor unless you know what you are doing!
-      *
-      * @note Generally, the AngelScript APIs for getting type info won't increase reference count,
-      *       such as being the hidden first argument of template class constructor/factory.
-      */
+     * @brief Assign a type info object. It @b won't increase the reference count!
+     * @sa script_typeinfo(inplace_addref_t, handle_type)
+     *
+     * @warning DON'T use this constructor unless you know what you are doing!
+     *
+     * @note Generally, the AngelScript APIs for getting type info won't increase reference count,
+     *       such as being the hidden first argument of template class constructor/factory.
+     */
     explicit script_typeinfo(std::in_place_t, handle_type ti) noexcept
         : m_ti(ti) {}
 
     /**
-      * @brief Assign a type info object, and increase reference count
-      */
+     * @brief Assign a type info object, and increase reference count
+     */
     script_typeinfo(handle_type ti) noexcept
         : m_ti(ti)
     {

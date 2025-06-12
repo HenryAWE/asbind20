@@ -7,6 +7,8 @@
 #ifndef ASBIND20_CONCURRENT_THREADING_HPP
 #define ASBIND20_CONCURRENT_THREADING_HPP
 
+#pragma once
+
 #include "../detail/include_as.hpp"
 
 namespace asbind20::concurrent
