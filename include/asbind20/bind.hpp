@@ -389,14 +389,10 @@ namespace policies
         };
 } // namespace policies
 
-/**
- * @brief Wrapper generators for special functions like constructor
- *
- * @note DO NOT directly use anything in this namespace unless you have really special requirement!
- *       The interfaces in this namespace are not guaranteed to keep compatibility between versions.
- */
-namespace wrappers
+namespace detail
 {
+    // Wrapper generators for special functions like constructor
+
     template <typename Class, bool Noexcept = false>
     class constructor_base
     {
@@ -1888,7 +1884,7 @@ namespace wrappers
             }
         }
     };
-} // namespace wrappers
+} // namespace detail
 
 template <bool ForceGeneric>
 class register_helper_base
@@ -2106,13 +2102,13 @@ namespace detail
     }
 } // namespace detail
 
-namespace wrappers
+namespace detail
 {
     template <typename T, typename RegisterHelper>
     concept auto_register = requires(T&& ar, RegisterHelper& c) {
         ar(c);
     };
-} // namespace wrappers
+} // namespace detail
 
 template <bool ForceGeneric>
 class global final : public register_helper_base<ForceGeneric>
@@ -3174,7 +3170,7 @@ protected:
     template <typename Class, typename To>
     void opConv_impl_native(std::string_view ret, bool implicit)
     {
-        auto wrapper = wrappers::opConv<std::add_const_t<Class>, To>::generate(
+        auto wrapper = detail::opConv<std::add_const_t<Class>, To>::generate(
             call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
         );
 
@@ -3188,7 +3184,7 @@ protected:
     template <typename Class, typename To>
     void opConv_impl_generic(std::string_view ret, bool implicit)
     {
-        auto wrapper = wrappers::opConv<std::add_const_t<Class>, To>::generate(generic_call_conv);
+        auto wrapper = detail::opConv<std::add_const_t<Class>, To>::generate(generic_call_conv);
 
         method_impl(
             decl_opConv(ret, implicit).c_str(),
@@ -4196,7 +4192,7 @@ public:
     {
         this->constructor_function(
             params,
-            wrappers::constructor_function<Constructor, Class, Template, CallConv>::generate(generic_call_conv),
+            detail::constructor_function<Constructor, Class, Template, CallConv>::generate(generic_call_conv),
             generic_call_conv
         );
 
@@ -4221,7 +4217,7 @@ public:
         this->constructor_function(
             params,
             use_explicit,
-            wrappers::constructor_function<Constructor, Class, Template, CallConv>::generate(generic_call_conv),
+            detail::constructor_function<Constructor, Class, Template, CallConv>::generate(generic_call_conv),
             generic_call_conv
         );
 
@@ -4342,7 +4338,7 @@ public:
     {
         this->constructor_function(
             params,
-            wrappers::constructor_lambda<Constructor, Class, Template, CallConv>::generate(generic_call_conv),
+            detail::constructor_lambda<Constructor, Class, Template, CallConv>::generate(generic_call_conv),
             generic_call_conv
         );
 
@@ -4364,7 +4360,7 @@ public:
         this->constructor_function(
             params,
             use_explicit,
-            wrappers::constructor_lambda<Constructor, Class, Template, CallConv>::generate(generic_call_conv),
+            detail::constructor_lambda<Constructor, Class, Template, CallConv>::generate(generic_call_conv),
             generic_call_conv
         );
 
@@ -4516,7 +4512,7 @@ private:
     template <typename... Args>
     void constructor_impl_generic(std::string_view params, bool explicit_)
     {
-        wrappers::constructor<Class, Template, Args...> wrapper;
+        detail::constructor<Class, Template, Args...> wrapper;
         if(explicit_)
         {
             constructor_function(
@@ -4539,7 +4535,7 @@ private:
     template <typename... Args>
     void constructor_impl_native(std::string_view params, bool explicit_)
     {
-        wrappers::constructor<Class, Template, Args...> wrapper;
+        detail::constructor<Class, Template, Args...> wrapper;
         if(explicit_)
         {
             constructor_function(
@@ -4563,9 +4559,9 @@ private:
     static consteval bool check_constructible()
     {
         if constexpr(Template)
-            return is_only_constructible_v<Class, AS_NAMESPACE_QUALIFIER asITypeInfo*, Args...>;
+            return meta::is_constructible_at_v<Class, AS_NAMESPACE_QUALIFIER asITypeInfo*, Args...>;
         else
-            return is_only_constructible_v<Class, Args...>;
+            return meta::is_constructible_at_v<Class, Args...>;
     }
 
 public:
@@ -4705,7 +4701,7 @@ public:
     {
         if(traits & (AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_C))
         {
-            if constexpr(is_only_constructible_v<Class>)
+            if constexpr(meta::is_constructible_at_v<Class>)
                 default_constructor(use_generic);
             else
                 assert(false && "missing default constructor");
@@ -4726,7 +4722,7 @@ public:
         }
         if(traits & (AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_K))
         {
-            if constexpr(is_only_constructible_v<Class, const Class&>)
+            if constexpr(meta::is_constructible_at_v<Class, const Class&>)
                 copy_constructor(use_generic);
             else
                 assert(false && "missing copy constructor");
@@ -4746,7 +4742,7 @@ public:
     {
         if(traits & (AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_C))
         {
-            if constexpr(is_only_constructible_v<Class>)
+            if constexpr(meta::is_constructible_at_v<Class>)
                 default_constructor();
             else
                 assert(false && "missing default constructor");
@@ -4767,7 +4763,7 @@ public:
         }
         if(traits & (AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_K))
         {
-            if constexpr(is_only_constructible_v<Class, const Class&>)
+            if constexpr(meta::is_constructible_at_v<Class, const Class&>)
                 copy_constructor();
             else
                 assert(false && "missing copy constructor");
@@ -4963,7 +4959,7 @@ public:
     {
         list_constructor_function(
             pattern,
-            wrappers::list_constructor<Class, Template, ListElementType, Policy>::generate(generic_call_conv),
+            detail::list_constructor<Class, Template, ListElementType, Policy>::generate(generic_call_conv),
             generic_call_conv
         );
 
@@ -4990,7 +4986,7 @@ public:
         {
             list_constructor_function(
                 pattern,
-                wrappers::list_constructor<Class, Template, ListElementType, Policy>::generate(
+                detail::list_constructor<Class, Template, ListElementType, Policy>::generate(
                     call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
                 ),
                 call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
@@ -5234,7 +5230,7 @@ public:
     ASBIND20_CLASS_WRAPPED_COMPOSITE_METHOD(basic_value_class)
     ASBIND20_CLASS_WRAPPED_COMPOSITE_VAR_TYPE_METHOD(basic_value_class)
 
-    template <wrappers::auto_register<basic_value_class> AutoRegister>
+    template <detail::auto_register<basic_value_class> AutoRegister>
     basic_value_class& use(AutoRegister&& ar)
     {
         ar(*this);
@@ -5409,7 +5405,7 @@ public:
     ASBIND20_CLASS_WRAPPED_COMPOSITE_METHOD(basic_ref_class)
     ASBIND20_CLASS_WRAPPED_COMPOSITE_VAR_TYPE_METHOD(basic_ref_class)
 
-    template <wrappers::auto_register<basic_ref_class> AutoRegister>
+    template <detail::auto_register<basic_ref_class> AutoRegister>
     basic_ref_class& use(AutoRegister&& ar)
     {
         ar(*this);
@@ -5763,7 +5759,7 @@ public:
     {
         factory_function(
             params,
-            wrappers::factory_function_auxiliary<Factory, Template, CallConv>::generate(generic_call_conv),
+            detail::factory_function_auxiliary<Factory, Template, CallConv>::generate(generic_call_conv),
             aux,
             generic_call_conv
         );
@@ -5787,7 +5783,7 @@ public:
         factory_function(
             params,
             use_explicit,
-            wrappers::factory_function_auxiliary<Factory, Template, CallConv>::generate(generic_call_conv),
+            detail::factory_function_auxiliary<Factory, Template, CallConv>::generate(generic_call_conv),
             aux,
             generic_call_conv
         );
@@ -5969,7 +5965,7 @@ private:
     )
     {
         AS_NAMESPACE_QUALIFIER asGENFUNC_t wrapper =
-            wrappers::factory<Class, Template, Policy, Args...>::generate(generic_call_conv);
+            detail::factory<Class, Template, Policy, Args...>::generate(generic_call_conv);
 
         void* aux = nullptr;
         if constexpr(std::same_as<Policy, policies::notify_gc> && !Template)
@@ -6004,7 +6000,7 @@ private:
         if constexpr(std::same_as<Policy, policies::notify_gc> && !Template)
         {
             auto wrapper =
-                wrappers::factory<Class, Template, Policy, Args...>::generate(call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>);
+                detail::factory<Class, Template, Policy, Args...>::generate(call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>);
 
             AS_NAMESPACE_QUALIFIER asITypeInfo* ti = m_engine->GetTypeInfoById(this->get_type_id());
 
@@ -6031,7 +6027,7 @@ private:
         else
         {
             auto wrapper =
-                wrappers::factory<Class, Template, Policy, Args...>::generate(call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>);
+                detail::factory<Class, Template, Policy, Args...>::generate(call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>);
 
             if(explicit_)
             {
@@ -6469,7 +6465,7 @@ public:
     )
     {
         AS_NAMESPACE_QUALIFIER asGENFUNC_t wrapper =
-            wrappers::list_factory<Class, Template, ListElementType, ListPolicy, FactoryPolicy>::generate(generic_call_conv);
+            detail::list_factory<Class, Template, ListElementType, ListPolicy, FactoryPolicy>::generate(generic_call_conv);
 
         void* aux = nullptr;
         if constexpr(std::same_as<FactoryPolicy, policies::notify_gc> && !Template)
@@ -6503,7 +6499,7 @@ public:
             if constexpr(std::same_as<FactoryPolicy, policies::notify_gc> && !Template)
             {
                 auto wrapper =
-                    wrappers::list_factory<Class, Template, ListElementType, ListPolicy, FactoryPolicy>::generate(
+                    detail::list_factory<Class, Template, ListElementType, ListPolicy, FactoryPolicy>::generate(
                         call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
                     );
 
@@ -6519,7 +6515,7 @@ public:
             else
             {
                 auto wrapper =
-                    wrappers::list_factory<Class, Template, ListElementType, ListPolicy, FactoryPolicy>::generate(
+                    detail::list_factory<Class, Template, ListElementType, ListPolicy, FactoryPolicy>::generate(
                         call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
                     );
 
@@ -6544,7 +6540,7 @@ public:
     )
     {
         AS_NAMESPACE_QUALIFIER asGENFUNC_t wrapper =
-            wrappers::list_factory<Class, Template, ListElementType, Policy>::generate(generic_call_conv);
+            detail::list_factory<Class, Template, ListElementType, Policy>::generate(generic_call_conv);
 
         list_factory_function(
             pattern,
@@ -6570,7 +6566,7 @@ public:
         else
         {
             auto wrapper =
-                wrappers::list_factory<Class, Template, ListElementType, Policy>::generate(
+                detail::list_factory<Class, Template, ListElementType, Policy>::generate(
                     call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
                 );
 

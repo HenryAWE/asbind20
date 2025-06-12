@@ -15,11 +15,14 @@ Update
 - Official arm64 support. Previously, it works theoretically but not actually tested.
 - New tools for managing script function without increasing its reference count.
   It's useful when the programmer has deep understanding about the lifetime and want to write zero overhead code.
+- Adjust file structure for maintenance.
 
 Breaking Change
 ~~~~~~~~~~~~~~~
 
 - Removed ``script_function_base``. Use ``script_function<void>`` instead.
+- ``asbind20::meta::compressed_pair`` changed to ``asbind20::compressed_pair``
+- ``asbind20::meta::overloaded`` changed to ``asbind20::overloaded``
 
 Bug fix
 ~~~~~~~
