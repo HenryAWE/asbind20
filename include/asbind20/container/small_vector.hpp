@@ -14,6 +14,7 @@
 #include <stdexcept>
 #include <algorithm>
 #include "../utility.hpp"
+#include "../memory.hpp"
 #include "options.hpp"
 
 namespace asbind20::container
@@ -550,7 +551,7 @@ private:
         pointer m_p_end;
         pointer m_p_capacity;
 
-        alignas(value_type) meta::compressed_pair<std::byte[StaticCapacityBytes], allocator_type> m_alloc;
+        alignas(value_type) compressed_pair<std::byte[StaticCapacityBytes], allocator_type> m_alloc;
     };
 
     template <int TypeId>

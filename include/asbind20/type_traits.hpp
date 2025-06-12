@@ -10,7 +10,7 @@
 #pragma once
 
 #include "detail/include_as.hpp"
-#include "utility.hpp"
+#include "memory.hpp"
 
 namespace asbind20
 {

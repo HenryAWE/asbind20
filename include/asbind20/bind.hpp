@@ -4563,9 +4563,9 @@ private:
     static consteval bool check_constructible()
     {
         if constexpr(Template)
-            return is_only_constructible_v<Class, AS_NAMESPACE_QUALIFIER asITypeInfo*, Args...>;
+            return meta::is_constructible_at_v<Class, AS_NAMESPACE_QUALIFIER asITypeInfo*, Args...>;
         else
-            return is_only_constructible_v<Class, Args...>;
+            return meta::is_constructible_at_v<Class, Args...>;
     }
 
 public:
@@ -4705,7 +4705,7 @@ public:
     {
         if(traits & (AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_C))
         {
-            if constexpr(is_only_constructible_v<Class>)
+            if constexpr(meta::is_constructible_at_v<Class>)
                 default_constructor(use_generic);
             else
                 assert(false && "missing default constructor");
@@ -4726,7 +4726,7 @@ public:
         }
         if(traits & (AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_K))
         {
-            if constexpr(is_only_constructible_v<Class, const Class&>)
+            if constexpr(meta::is_constructible_at_v<Class, const Class&>)
                 copy_constructor(use_generic);
             else
                 assert(false && "missing copy constructor");
@@ -4746,7 +4746,7 @@ public:
     {
         if(traits & (AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_C))
         {
-            if constexpr(is_only_constructible_v<Class>)
+            if constexpr(meta::is_constructible_at_v<Class>)
                 default_constructor();
             else
                 assert(false && "missing default constructor");
@@ -4767,7 +4767,7 @@ public:
         }
         if(traits & (AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_K))
         {
-            if constexpr(is_only_constructible_v<Class, const Class&>)
+            if constexpr(meta::is_constructible_at_v<Class, const Class&>)
                 copy_constructor();
             else
                 assert(false && "missing copy constructor");

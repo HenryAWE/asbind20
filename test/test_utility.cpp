@@ -298,7 +298,7 @@ TEST(with_cstr, with_cstr)
 
 TEST(compressed_pair, ordinary)
 {
-    using asbind20::meta::compressed_pair;
+    using asbind20::compressed_pair;
 
     compressed_pair<int, int> p_1{0, 1};
     static_assert(sizeof(p_1) == sizeof(int) * 2);
@@ -344,8 +344,8 @@ class empty_2
 
 TEST(compressed_pair, optimized)
 {
-    using asbind20::meta::compressed_pair;
-    using asbind20::meta::detail::select_compressed_pair_impl;
+    using asbind20::compressed_pair;
+    using asbind20::detail::select_compressed_pair_impl;
     using namespace test_utility;
 
     EXPECT_EQ(counter_1, 0);

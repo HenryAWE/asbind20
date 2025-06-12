@@ -54,6 +54,6 @@ Miscellaneous Utilities
    :members:
    :undoc-members:
 
-.. doxygenclass:: asbind20::meta::compressed_pair
+.. doxygenclass:: asbind20::compressed_pair
    :members:
    :undoc-members:

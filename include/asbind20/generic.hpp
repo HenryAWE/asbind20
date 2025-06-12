@@ -12,12 +12,49 @@
 #include <cstddef>
 #include <array>
 #include <algorithm>
+#include <functional>
 #include "detail/include_as.hpp"
+#include "meta.hpp"
 #include "utility.hpp"
 #include "type_traits.hpp"
 
 namespace asbind20
 {
+namespace detail
+{
+    template <typename T>
+    concept is_native_function_helper = std::is_function_v<T> ||
+                                        std::is_function_v<std::remove_pointer_t<T>> ||
+                                        std::is_member_function_pointer_v<T>;
+} // namespace detail
+
+template <typename T>
+concept native_function =
+    !std::is_convertible_v<T, AS_NAMESPACE_QUALIFIER asGENFUNC_t> &&
+    detail::is_native_function_helper<std::decay_t<T>>;
+
+template <typename Lambda>
+concept noncapturing_lambda = requires() {
+    { +Lambda{} } -> native_function;
+} && std::is_empty_v<Lambda>;
+
+/**
+ * @brief Wrap NTTP function pointer as type
+ *
+ * @tparam Function NTTP function pointer
+ */
+template <native_function auto Function>
+struct fp_wrapper_t
+{
+    static constexpr auto get() noexcept
+    {
+        return Function;
+    }
+};
+
+template <native_function auto Function>
+constexpr inline fp_wrapper_t<Function> fp{};
+
 template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
 struct call_conv_t
 {};
@@ -301,7 +338,7 @@ void set_generic_return(
     }
     else if constexpr(std::is_class_v<Return>)
     {
-        if constexpr(is_only_constructible_v<Return, Return&&>)
+        if constexpr(meta::is_constructible_at_v<Return, Return&&>)
         {
             void* mem = gen->GetAddressOfReturnLocation();
             new(mem) Return(std::forward<Return>(ret));
