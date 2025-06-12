@@ -35,6 +35,7 @@ Documentation
 ~~~~~~~~~~~~~
 
 - Fix typo and wrong link.
+- Fix highlight script for AngelScript.
 
 1.5.2
 -----

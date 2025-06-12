@@ -119,8 +119,8 @@ class AngelScriptLexer(RegexLexer):
              bygroups(Keyword, Punctuation, Keyword.Type, Punctuation)),
 
             # Variables with @
-            (r'([a-zA-Z_][a-zA-Z0-9_]*)(@)\s+([a-zA-Z_][a-zA-Z0-9_]*)',
-             bygroups(Keyword.Type, Operator, Name.Variable)),
+            (r'([a-zA-Z_][a-zA-Z0-9_]*)(@)([ \t]+)([a-zA-Z_][a-zA-Z0-9_]*)',
+             bygroups(Keyword.Type, Operator, Text, Name.Variable)),
             (r'([a-zA-Z_][a-zA-Z0-9_]*)(@)',
              bygroups(Keyword.Type, Operator)),
             (r'@([a-zA-Z_][a-zA-Z0-9_]*)', Name.Variable),
