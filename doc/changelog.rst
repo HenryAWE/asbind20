@@ -16,6 +16,7 @@ Update
 - New tools for managing script function without increasing its reference count.
   It's useful when the programmer has deep understanding about the lifetime and want to write zero overhead code.
 - Adjust file structure for maintenance.
+- Slightly optimize memory usage of ``small_vector``.
 
 Breaking Change
 ~~~~~~~~~~~~~~~

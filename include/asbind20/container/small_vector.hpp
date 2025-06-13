@@ -40,6 +40,43 @@ namespace detail
             throw std::out_of_range("small vector out of range");
         }
     };
+
+    template <typename TypeInfoPolicy>
+    struct elem_type_data
+    {
+        elem_type_data(int tid, AS_NAMESPACE_QUALIFIER asITypeInfo* t) noexcept
+            : ti(t)
+        {
+            (void)tid; // unused
+        }
+
+        // Although having a type info pointer is useless for a primitive element type,
+        // it can keep the interface consistent with other types.
+        AS_NAMESPACE_QUALIFIER asITypeInfo* ti;
+
+        int get_id() const
+        {
+            return TypeInfoPolicy::get_type_id(ti);
+        }
+    };
+
+    // Note that GetTypeInfo APIs may ignore the handle bit, i.e. GetTypeInfoById(type_id)->GetTypeId() may not equal to type_id,
+    // so we need to store the type ID separately for typeinfo_identity.
+    // See: https://www.gamedev.net/forums/topic/718032-inconsistent-result-of-asiscriptmodule-gettypeinfobydecl-and-gettypeidbydecl/
+    template <>
+    struct elem_type_data<typeinfo_identity>
+    {
+        int type_id;
+        AS_NAMESPACE_QUALIFIER asITypeInfo* ti;
+
+        elem_type_data(int tid, AS_NAMESPACE_QUALIFIER asITypeInfo* t) noexcept
+            : type_id(tid), ti(t) {}
+
+        int get_id() const
+        {
+            return type_id;
+        }
+    };
 } // namespace detail
 
 /**
@@ -87,32 +124,32 @@ private:
     {
     public:
         impl_interface(int type_id, AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
-            : m_type_id(type_id), m_ti(ti) {}
+            : m_type_data(type_id, ti) {}
 
         ~impl_interface() = default;
 
         auto get_engine() const
             -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
         {
-            assert(m_ti != nullptr);
-            return m_ti->GetEngine();
+            assert(m_type_data.ti != nullptr);
+            return m_type_data.ti->GetEngine();
         }
 
         auto get_type_info() const noexcept
             -> AS_NAMESPACE_QUALIFIER asITypeInfo*
         {
-            return m_ti;
+            return m_type_data.ti;
         }
 
         int elem_type_id() const
         {
-            return m_type_id;
+            return m_type_data.get_id();
         }
 
         auto elem_type_info() const
             -> AS_NAMESPACE_QUALIFIER asITypeInfo*
         {
-            return TypeInfoPolicy::get_type_info(m_ti);
+            return TypeInfoPolicy::get_type_info(m_type_data.ti);
         }
 
         // The iterator interface only stores an unsigned offset value,
@@ -158,14 +195,7 @@ private:
         };
 
     private:
-        // TODO: Optimize the memory layout if the element type is subtype.
-        // Note that GetTypeInfo APIs may ignore the handle bit, i.e. GetTypeInfoById(type_id)->GetTypeId() may not equal to type_id,
-        // so we need to store the type ID separately for typeinfo_identity.
-        // See: https://www.gamedev.net/forums/topic/718032-inconsistent-result-of-asiscriptmodule-gettypeinfobydecl-and-gettypeidbydecl/
-        int m_type_id;
-        // Although having a type info pointer is useless for a primitive element type,
-        // it can keep the interface consistent with other types.
-        script_typeinfo m_ti;
+        detail::elem_type_data<TypeInfoPolicy> m_type_data;
     };
 
     template <int TypeId>
