@@ -181,7 +181,7 @@ private:
             void dec() noexcept
             {
                 if(m_off == 0) [[unlikely]]
-                    return;
+                    return; // Guard underflow
                 --m_off;
             }
 
@@ -198,6 +198,8 @@ private:
         detail::elem_type_data<TypeInfoPolicy> m_type_data;
     };
 
+    // Base interface for all primitive types with determined type ID,
+    // which means this base class is not designed for enums.
     template <int TypeId>
     class impl_primitive_base : public impl_interface
     {
@@ -270,27 +272,27 @@ private:
             m_p_end += new_size;
         }
 
-        static consteval size_type max_static_size()
+        static constexpr size_type max_static_size() noexcept
         {
             return StaticCapacityBytes / sizeof(value_type);
         }
 
-        size_type static_capacity() const
+        constexpr size_type static_capacity() const noexcept
         {
             return max_static_size();
         }
 
-        size_type capacity() const
+        size_type capacity() const noexcept
         {
             return m_p_capacity - m_p_begin;
         }
 
-        size_type size() const
+        size_type size() const noexcept
         {
             return m_p_end - m_p_begin;
         }
 
-        void* value_ref_at(size_type idx) const
+        void* value_ref_at(size_type idx) const noexcept
         {
             if(idx >= size())
                 return nullptr;
@@ -588,6 +590,9 @@ private:
     using impl_primitive = impl_storage<primitive_type_of_t<TypeId>, impl_primitive_base<TypeId>>;
     using impl_enum = impl_storage<int, impl_interface>;
 
+    // Storage implementation for script objects and handles.
+    // It not only handles the memory of elements,
+    // but also manages their lifetime.
     template <bool IsHandle>
     class impl_object :
         public impl_storage<void*, impl_interface>
@@ -931,10 +936,15 @@ private:
         }
 
     private:
+        // Convert the reference to argument from AngelScript to the actual object.
+        // For the handle type, the pointer cannot be null.
         static void* ref_to_obj(const void* ref) noexcept
         {
             if constexpr(IsHandle)
+            {
+                assert(ref != nullptr);
                 return *static_cast<void* const*>(ref);
+            }
             else
                 return const_cast<void*>(ref);
         }

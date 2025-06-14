@@ -37,7 +37,7 @@ namespace asbind20
  * @brief Get the string representing library version and configuration
  */
 [[nodiscard]]
-inline const char* library_version() noexcept
+constexpr const char* library_version() noexcept
 {
 #ifndef NDEBUG
     return ASBIND20_VERSION_STRING " DEBUG";
