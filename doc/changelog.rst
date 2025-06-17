@@ -3,6 +3,14 @@ Changelog
 
 Changelog since the version 1.5.0.
 
+1.7.0
+-----
+
+Removed
+~~~~~~~
+
+- GCC 12 support is dropped due to too many workarounds. Please use GCC 13 or newer.
+
 1.6.0
 -----
 
