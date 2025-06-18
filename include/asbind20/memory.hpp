@@ -350,6 +350,7 @@ public:
         reset();
     }
 
+    [[nodiscard]]
     handle_type get() const noexcept
     {
         return m_engine;
@@ -365,6 +366,7 @@ public:
         return get();
     }
 
+    [[nodiscard]]
     handle_type release() noexcept
     {
         return std::exchange(m_engine, nullptr);
@@ -523,6 +525,7 @@ public:
         m_bool->Unlock();
     }
 
+    [[nodiscard]]
     bool get_flag() const
     {
         assert(*this);
@@ -534,6 +537,7 @@ public:
         m_bool->Set(value);
     }
 
+    [[nodiscard]]
     handle_type get() const noexcept
     {
         return m_bool;
@@ -683,6 +687,7 @@ public:
         m_ti = ti;
     }
 
+    [[nodiscard]]
     int type_id() const
     {
         if(!m_ti) [[unlikely]]
@@ -691,7 +696,8 @@ public:
         return m_ti->GetTypeId();
     }
 
-    int subtype_id(AS_NAMESPACE_QUALIFIER asUINT idx) const
+    [[nodiscard]]
+    int subtype_id(AS_NAMESPACE_QUALIFIER asUINT idx = 0) const
     {
         if(!m_ti) [[unlikely]]
             return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
@@ -699,7 +705,8 @@ public:
         return m_ti->GetSubTypeId(idx);
     }
 
-    auto subtype(AS_NAMESPACE_QUALIFIER asUINT idx) const
+    [[nodiscard]]
+    auto subtype(AS_NAMESPACE_QUALIFIER asUINT idx = 0) const
         -> AS_NAMESPACE_QUALIFIER asITypeInfo*
     {
         if(!m_ti) [[unlikely]]
