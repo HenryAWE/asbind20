@@ -14,6 +14,12 @@ void register_ostream(std::ostream& os, AS_NAMESPACE_QUALIFIER asIScriptEngine* 
 
     os << std::boolalpha;
 
+    ref_class<std::ostream&(*)(std::ostream&)> endl_t(
+        engine,
+        "endl_t",
+        AS_NAMESPACE_QUALIFIER asOBJ_NOCOUNT
+    );
+
     ref_class<ostream, UseGeneric>(
         engine,
         "ostream",
@@ -22,15 +28,12 @@ void register_ostream(std::ostream& os, AS_NAMESPACE_QUALIFIER asIScriptEngine* 
         .use(_this << param<bool>)
         .use(_this << param<int>)
         .use(_this << param<float>)
+        .use(_this << param<decltype(endl_t)::class_type>("const endl_t&in"))
         .use(_this << param<const std::string&>("const string&in"));
 
     global<UseGeneric>(engine)
-        .function(
-            "void newline(ostream& os)",
-            [](std::ostream& os)
-            { os << std::endl; }
-        )
-        .property("ostream cout", os);
+        .property("ostream cout", os)
+        .property("endl_t endl", std::endl<char, std::char_traits<char>>);
 }
 
 void run_ostream_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
@@ -42,12 +45,9 @@ void run_ostream_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         "test_ostream",
         "void main()\n"
         "{\n"
-        "    cout << true;"
-        "    newline(cout);"
-        "    cout << 10 << 13;"
-        "    newline(cout);"
-        "    cout << 3.14f;"
-        "    newline(cout);"
+        "    cout << true << endl;\n"
+        "    cout << 10 << 13 << endl;\n"
+        "    cout << 3.14f << endl;\n"
         "    cout << \"hello\";"
         "}"
     );
