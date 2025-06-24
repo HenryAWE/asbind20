@@ -28,21 +28,24 @@ namespace detail
                                         std::is_member_function_pointer_v<T>;
 } // namespace detail
 
+/**
+ * @brief Acceptable native function for AngelScript
+ */
 template <typename T>
 concept native_function =
     !std::is_convertible_v<T, AS_NAMESPACE_QUALIFIER asGENFUNC_t> &&
     detail::is_native_function_helper<std::decay_t<T>>;
 
+/**
+ * @brief Lambda without any captured values
+ *
+ * @note This concept will also reject the function for generic calling convention
+ */
 template <typename Lambda>
 concept noncapturing_lambda = requires() {
     { +Lambda{} } -> native_function;
 } && std::is_empty_v<Lambda>;
 
-/**
- * @brief Wrap NTTP function pointer as type
- *
- * @tparam Function NTTP function pointer
- */
 template <native_function auto Function>
 struct fp_wrapper_t
 {
@@ -52,6 +55,11 @@ struct fp_wrapper_t
     }
 };
 
+/**
+ * @brief Wrap NTTP function pointer as type
+ *
+ * @tparam Function NTTP function pointer
+ */
 template <native_function auto Function>
 constexpr inline fp_wrapper_t<Function> fp{};
 
@@ -59,6 +67,9 @@ template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
 struct call_conv_t
 {};
 
+/**
+ * @brief Helper for specifying calling convention
+ */
 template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
 constexpr inline call_conv_t<CallConv> call_conv;
 
@@ -68,6 +79,11 @@ template <std::size_t... Is>
 struct var_type_t : public std::index_sequence<Is...>
 {};
 
+/**
+ * @brief Helper for specifying position of variable type parameters
+ *
+ * @tparam Is Position of variable type arguments in the script function declaration
+ */
 template <std::size_t... Is>
 inline constexpr var_type_t<Is...> var_type{};
 
@@ -147,7 +163,7 @@ namespace detail
     template <std::size_t RawArgCount, std::size_t... Is>
     consteval auto gen_script_arg_idx(var_type_t<Is...> = {})
     {
-        // Generate a index of script argument.
+        // Generate an index of script argument.
         // For example, given var_type<1> and
         // RawArgCount = 4, which can be (float, void*, int, float) in C++,
         // the result should be {0, 1, 1, 2}, which means (float, ?&in, float) in the AS.
