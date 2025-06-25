@@ -7,7 +7,7 @@
 namespace test_operators
 {
 template <bool UseGeneric>
-void register_ostream(std::ostream& os, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void register_ostream(std::ostream& os, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     using namespace asbind20;
     using std::ostream;
@@ -36,7 +36,7 @@ void register_ostream(std::ostream& os, AS_NAMESPACE_QUALIFIER asIScriptEngine* 
         .property("endl_t endl", std::endl<char, std::char_traits<char>>);
 }
 
-void run_ostream_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void run_ostream_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     auto* m = engine->GetModule(
         "test_ostream", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
@@ -48,7 +48,7 @@ void run_ostream_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         "    cout << true << endl;\n"
         "    cout << 10 << 13 << endl;\n"
         "    cout << 3.14f << endl;\n"
-        "    cout << \"hello\";"
+        "    cout << \"hello\";\n"
         "}"
     );
     ASSERT_GE(m->Build(), 0);
