@@ -749,7 +749,7 @@ namespace container
 
             data_type(data_type&& other) noexcept
             {
-                std::memcpy(this, &other, sizeof(data_type));
+                std::memcpy((void*)this, &other, sizeof(data_type));
                 other.ptr = nullptr;
             }
 
@@ -767,7 +767,7 @@ namespace container
                 if(this == &other) [[unlikely]]
                     return *this;
 
-                std::memcpy(this, &other, sizeof(data_type));
+                std::memcpy((void*)this, &other, sizeof(data_type));
                 other.ptr = nullptr;
 
                 return *this;
