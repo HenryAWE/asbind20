@@ -1184,47 +1184,57 @@ inline void set_script_exception(const std::string& info)
 namespace container
 {
     /**
-     * @brief Helper for storing a single script object
-     *
-     * @note This helper needs an external type ID for correctly handle the stored data,
-     *       so it is recommended to use this helper as a member of container class, together with a member for storing type ID.
+     * @brief A set of helper for storing a single script object
      */
     class single
     {
     public:
-        single() noexcept
-        {
-            m_data.ptr = nullptr;
-        };
-
-        single(const single&) = delete;
-
-        single(single&& other) noexcept
-        {
-            *this = std::move(other);
-        }
-
         /**
-         * @warning Due to limitations of the AngelScript interface, it won't properly release the stored object.
-         *          Remember to manually clear the stored object before destroying the helper!
+         * @brief Helper for storing data
+         *
+         * @note This helper needs an external type ID for correctly handle the stored data,
+         *       so it is recommended to use this helper as a member of container class, together with a member for storing type ID.
          */
-        ~single()
+        union data_type
         {
-            assert(m_data.ptr == nullptr && "reference not released");
-        }
+            /** primitive value */
+            std::byte primitive[8];
+            /** script handle */
+            void* handle;
+            /** script object */
+            void* ptr;
 
-        single& operator=(const single&) = delete;
+            data_type()
+                : ptr(nullptr) {}
 
-        single& operator=(single&& other) noexcept
-        {
-            if(this == &other) [[unlikely]]
+            data_type(const data_type&) = delete;
+
+            data_type(data_type&& other) noexcept
+            {
+                std::memcpy(this, &other, sizeof(data_type));
+                other.ptr = nullptr;
+            }
+
+            /**
+             * @warning Due to limitations of the AngelScript interface, it won't properly release the stored object.
+             *          Remember to manually clear the stored object before destroying the helper!
+             */
+            ~data_type()
+            {
+                assert(ptr == nullptr && "reference not released");
+            }
+
+            data_type& operator=(data_type&& other) noexcept
+            {
+                if(this == &other) [[unlikely]]
+                    return *this;
+
+                std::memcpy(this, &other, sizeof(data_type));
+                other.ptr = nullptr;
+
                 return *this;
-
-            std::memcpy(&m_data, &other.m_data, sizeof(m_data));
-            other.m_data.ptr = nullptr;
-
-            return *this;
-        }
+            }
+        };
 
         /**
          * @name Get the address of the data
@@ -1233,28 +1243,28 @@ namespace container
          */
         /// @{
 
-        void* data_address(int type_id)
+        static void* data_address(data_type& data, int type_id)
         {
             assert(!is_void_type(type_id));
 
             if(is_primitive_type(type_id))
-                return m_data.primitive;
+                return data.primitive;
             else if(is_objhandle(type_id))
-                return &m_data.handle;
+                return &data.handle;
             else
-                return m_data.ptr;
+                return data.ptr;
         }
 
-        const void* data_address(int type_id) const
+        static const void* data_address(const data_type& data, int type_id)
         {
             assert(!is_void_type(type_id));
 
             if(is_primitive_type(type_id))
-                return m_data.primitive;
+                return data.primitive;
             else if(is_objhandle(type_id))
-                return &m_data.handle;
+                return &data.handle;
             else
-                return m_data.ptr;
+                return data.ptr;
         }
 
         /// @}
@@ -1267,9 +1277,9 @@ namespace container
          * @note Only valid if the type of stored data is @b NOT a primitive value
          */
         [[nodiscard]]
-        void* object_ref() const noexcept
+        static void* object_ref(const data_type& data) noexcept
         {
-            return m_data.ptr;
+            return data.ptr;
         }
 
         // TODO: API receiving asITypeInfo*
@@ -1282,17 +1292,17 @@ namespace container
          *
          * @return True if successful
          */
-        bool construct(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id)
+        static bool construct(data_type& data, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id)
         {
             assert(!is_void_type(type_id));
 
             if(is_primitive_type(type_id))
             {
-                std::memset(m_data.primitive, 0, 8);
+                std::memset(data.primitive, 0, 8);
             }
             else if(is_objhandle(type_id))
             {
-                m_data.handle = nullptr;
+                data.handle = nullptr;
             }
             else
             {
@@ -1301,7 +1311,7 @@ namespace container
                 );
                 if(!ptr) [[unlikely]]
                     return false;
-                m_data.ptr = ptr;
+                data.ptr = ptr;
             }
 
             return true;
@@ -1318,18 +1328,18 @@ namespace container
          *
          * @note Make sure this helper doesn't contain a constructed object previously!
          */
-        bool copy_construct(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id, const void* ref)
+        static bool copy_construct(data_type& data, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id, const void* ref)
         {
             assert(!is_void_type(type_id));
 
             if(is_primitive_type(type_id))
             {
-                copy_primitive_value(m_data.primitive, ref, type_id);
+                copy_primitive_value(data.primitive, ref, type_id);
             }
             else if(is_objhandle(type_id))
             {
                 void* handle = *static_cast<void* const*>(ref);
-                m_data.handle = handle;
+                data.handle = handle;
                 if(handle)
                 {
                     engine->AddRefScriptObject(
@@ -1346,7 +1356,7 @@ namespace container
                 );
                 if(!ptr) [[unlikely]]
                     return false;
-                m_data.ptr = ptr;
+                data.ptr = ptr;
             }
 
             return true;
@@ -1363,21 +1373,21 @@ namespace container
          *
          * @note Make sure the stored value is valid!
          */
-        bool copy_assign_from(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id, const void* ref)
+        static bool copy_assign_from(data_type& data, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id, const void* ref)
         {
             assert(!is_void_type(type_id));
 
             if(is_primitive_type(type_id))
             {
-                copy_primitive_value(m_data.primitive, ref, type_id);
+                copy_primitive_value(data.primitive, ref, type_id);
             }
             else if(is_objhandle(type_id))
             {
                 AS_NAMESPACE_QUALIFIER asITypeInfo* ti = engine->GetTypeInfoById(type_id);
-                if(m_data.handle)
-                    engine->ReleaseScriptObject(m_data.handle, ti);
+                if(data.handle)
+                    engine->ReleaseScriptObject(data.handle, ti);
                 void* handle = *static_cast<void* const*>(ref);
-                m_data.handle = handle;
+                data.handle = handle;
                 if(handle)
                 {
                     engine->AddRefScriptObject(
@@ -1388,7 +1398,7 @@ namespace container
             else
             {
                 int r = engine->AssignScriptObject(
-                    m_data.ptr,
+                    data.ptr,
                     const_cast<void*>(ref),
                     engine->GetTypeInfoById(type_id)
                 );
@@ -1409,14 +1419,14 @@ namespace container
          *
          * @note Make sure the stored value is valid!
          */
-        bool copy_assign_to(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id, void* out) const
+        static bool copy_assign_to(const data_type& data, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id, void* out)
         {
             assert(!is_void_type(type_id));
             assert(out != nullptr);
 
             if(is_primitive_type(type_id))
             {
-                copy_primitive_value(out, m_data.primitive, type_id);
+                copy_primitive_value(out, data.primitive, type_id);
             }
             else if(is_objhandle(type_id))
             {
@@ -1425,11 +1435,11 @@ namespace container
                 AS_NAMESPACE_QUALIFIER asITypeInfo* ti = engine->GetTypeInfoById(type_id);
                 if(*out_handle)
                     engine->ReleaseScriptObject(*out_handle, ti);
-                *out_handle = m_data.handle;
-                if(m_data.handle)
+                *out_handle = data.handle;
+                if(data.handle)
                 {
                     engine->AddRefScriptObject(
-                        m_data.handle, ti
+                        data.handle, ti
                     );
                 }
             }
@@ -1437,7 +1447,7 @@ namespace container
             {
                 int r = engine->AssignScriptObject(
                     out,
-                    m_data.ptr,
+                    data.ptr,
                     engine->GetTypeInfoById(type_id)
                 );
 
@@ -1453,22 +1463,22 @@ namespace container
          * @param engine Script engine
          * @param type_id Type ID. Must @b NOT be void (`asTYPEID_VOID`)
          */
-        void destroy(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id)
+        static void destroy(data_type& data, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id)
         {
             if(is_primitive_type(type_id))
             {
                 // Suppressing assertion in destructor
-                assert((m_data.ptr = nullptr, true));
+                assert((data.ptr = nullptr, true));
                 return;
             }
 
-            if(!m_data.ptr)
+            if(!data.ptr)
                 return;
             engine->ReleaseScriptObject(
-                m_data.ptr,
+                data.ptr,
                 engine->GetTypeInfoById(type_id)
             );
-            m_data.ptr = nullptr;
+            data.ptr = nullptr;
         }
 
         /**
@@ -1478,7 +1488,7 @@ namespace container
          *
          * @param ti Type information
          */
-        void enum_refs(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+        static void enum_refs(data_type& data, AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
         {
             if(!ti) [[unlikely]]
                 return;
@@ -1489,25 +1499,15 @@ namespace container
 
             if(flags & AS_NAMESPACE_QUALIFIER asOBJ_REF)
             {
-                ti->GetEngine()->GCEnumCallback(object_ref());
+                ti->GetEngine()->GCEnumCallback(object_ref(data));
             }
             else if(flags & AS_NAMESPACE_QUALIFIER asOBJ_VALUE)
             {
                 ti->GetEngine()->ForwardGCEnumReferences(
-                    object_ref(), ti
+                    object_ref(data), ti
                 );
             }
         }
-
-    private:
-        union internal_t
-        {
-            std::byte primitive[8]; // primitive value
-            void* handle; // script handle
-            void* ptr; // script object
-        };
-
-        internal_t m_data;
     };
 } // namespace container
 } // namespace asbind20

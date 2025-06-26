@@ -77,7 +77,7 @@ public:
 private:
     script_typeinfo m_ti;
 
-    container::single m_data;
+    container::single::data_type m_data;
     bool m_has_value = false;
 };
 

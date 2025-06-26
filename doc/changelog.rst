@@ -6,6 +6,12 @@ Changelog since the version 1.5.0.
 1.7.0
 -----
 
+Breaking Change
+~~~~~~~~~~~~~~~
+
+- Redesign interfaces of ``container::single`` to reduce some surprising behaviors.
+  For example, the destructor won't clean the data, you need to call another function for releasing the data.
+
 Removed
 ~~~~~~~
 

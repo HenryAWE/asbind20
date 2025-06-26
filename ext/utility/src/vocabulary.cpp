@@ -24,10 +24,11 @@ script_optional::script_optional(const script_optional& other)
     if(other.has_value())
     {
         int type_id = other.element_type_id();
-        bool no_ex = m_data.copy_construct(
+        bool no_ex = container::single::copy_construct(
+            m_data,
             other.m_ti->GetEngine(),
             type_id,
-            other.m_data.data_address(type_id)
+            container::single::data_address(m_data, type_id)
         );
         if(!no_ex) [[unlikely]]
             return;
@@ -40,8 +41,8 @@ script_optional::script_optional(
 )
     : m_ti(ti)
 {
-    bool no_ex = m_data.construct(
-        ti->GetEngine(), ti->GetSubTypeId()
+    bool no_ex = container::single::construct(
+        m_data, ti->GetEngine(), ti->GetSubTypeId()
     );
     if(!no_ex) [[unlikely]]
         return;
@@ -69,7 +70,8 @@ script_optional::script_optional(
 )
     : m_ti(ti)
 {
-    bool no_ex = m_data.copy_construct(
+    bool no_ex = container::single::copy_construct(
+        m_data,
         ti->GetEngine(),
         ti->GetSubTypeId(),
         val
@@ -91,7 +93,7 @@ script_optional& script_optional::operator=(const script_optional& other)
 
     assert(m_ti == other.m_ti);
     if(other)
-        assign(other.m_data.data_address(other.element_type_id()));
+        assign(container::single::data_address(m_data, other.element_type_id()));
     else
         reset();
 
@@ -102,8 +104,8 @@ void script_optional::emplace()
 {
     assert(m_ti != nullptr);
     reset();
-    m_has_value = m_data.construct(
-        m_ti->GetEngine(), element_type_id()
+    m_has_value = container::single::construct(
+        m_data, m_ti->GetEngine(), element_type_id()
     );
 }
 
@@ -113,12 +115,14 @@ void script_optional::assign(const void* val)
 
     if(has_value())
     {
-        m_data.copy_assign_from(m_ti->GetEngine(), element_type_id(), val);
+        container::single::copy_assign_from(
+            m_data, m_ti->GetEngine(), element_type_id(), val
+        );
     }
     else
     {
-        m_has_value = m_data.copy_construct(
-            m_ti->GetEngine(), element_type_id(), val
+        m_has_value = container::single::copy_construct(
+            m_data, m_ti->GetEngine(), element_type_id(), val
         );
     }
 }
@@ -131,7 +135,7 @@ void* script_optional::value()
         return nullptr;
     }
 
-    return m_data.data_address(element_type_id());
+    return container::single::data_address(m_data, element_type_id());
 }
 
 const void* script_optional::value() const
@@ -142,21 +146,21 @@ const void* script_optional::value() const
         return nullptr;
     }
 
-    return m_data.data_address(element_type_id());
+    return container::single::data_address(m_data, element_type_id());
 }
 
 void* script_optional::value_or(void* val)
 {
     assert(val != nullptr);
 
-    return m_has_value ? m_data.data_address(element_type_id()) : val;
+    return m_has_value ? container::single::data_address(m_data, element_type_id()) : val;
 }
 
 const void* script_optional::value_or(const void* val) const
 {
     assert(val != nullptr);
 
-    return m_has_value ? m_data.data_address(element_type_id()) : val;
+    return m_has_value ? container::single::data_address(m_data, element_type_id()) : val;
 }
 
 void script_optional::reset()
@@ -164,7 +168,7 @@ void script_optional::reset()
     if(!m_has_value)
         return;
 
-    m_data.destroy(m_ti->GetEngine(), element_type_id());
+    container::single::destroy(m_data, m_ti->GetEngine(), element_type_id());
     m_has_value = false;
 }
 
@@ -172,7 +176,7 @@ void script_optional::enum_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     assert(m_ti->GetFlags() & AS_NAMESPACE_QUALIFIER asOBJ_GC);
 
-    m_data.enum_refs(m_ti->GetSubType());
+    container::single::enum_refs(m_data, m_ti->GetSubType());
 }
 
 void script_optional::release_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
