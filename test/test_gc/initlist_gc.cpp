@@ -111,7 +111,9 @@ public:
             return;
         }
 
-        m_var_data.copy_assign_from(m_engine, type_id, ref);
+        asbind20::container::single::copy_assign_from(
+            m_var_data, m_engine, type_id, ref
+        );
         m_var_type_id = type_id;
     }
 
@@ -122,7 +124,9 @@ public:
         if(asbind20::is_void_type(type_id))
             return false;
 
-        m_var_data.copy_assign_to(m_engine, m_var_type_id, out);
+        asbind20::container::single::copy_assign_to(
+            m_var_data, m_engine, m_var_type_id, out
+        );
         return true;
     }
 
@@ -131,7 +135,9 @@ public:
         if(asbind20::is_void_type(m_var_type_id))
             return;
 
-        m_var_data.destroy(m_engine, m_var_type_id);
+        asbind20::container::single::destroy(
+            m_var_data, m_engine, m_var_type_id
+        );
     }
 
     void release_refs()
@@ -144,7 +150,9 @@ public:
         if(asbind20::is_void_type(m_var_type_id))
             return;
 
-        m_var_data.enum_refs(m_engine->GetTypeInfoById(m_var_type_id));
+        asbind20::container::single::enum_refs(
+            m_var_data, m_engine->GetTypeInfoById(m_var_type_id)
+        );
     }
 
     int get_ints(AS_NAMESPACE_QUALIFIER asUINT idx) const
@@ -162,7 +170,7 @@ private:
     bool m_gc_flag = false;
 
     AS_NAMESPACE_QUALIFIER asIScriptEngine* m_engine;
-    asbind20::container::single m_var_data;
+    asbind20::container::single::data_type m_var_data;
     int m_var_type_id = AS_NAMESPACE_QUALIFIER asTYPEID_VOID;
 };
 
