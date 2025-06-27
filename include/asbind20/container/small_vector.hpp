@@ -17,6 +17,12 @@
 #include "../memory.hpp"
 #include "options.hpp"
 
+#ifdef _MSC_VER
+#    pragma warning(push)
+// structure was padded due to alignment specifier
+#    pragma warning(disable : 4324)
+#endif
+
 namespace asbind20::container
 {
 namespace detail
@@ -1756,5 +1762,9 @@ public:
     }
 };
 } // namespace asbind20::container
+
+#ifdef _MSC_VER
+#    pragma warning(pop)
+#endif
 
 #endif
