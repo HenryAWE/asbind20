@@ -1180,6 +1180,15 @@ inline void set_script_exception(const std::string& info)
 {
     set_script_exception(info.c_str());
 }
+
+inline void set_script_exception(std::string_view info)
+{
+    with_cstr(
+        [](const char* info)
+        { set_script_exception(info); },
+        info
+    );
+}
 } // namespace asbind20
 
 #endif

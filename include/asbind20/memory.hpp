@@ -657,6 +657,12 @@ public:
         return get();
     }
 
+    explicit operator bool() const noexcept
+    {
+        return m_ti != nullptr;
+    }
+
+    [[nodiscard]]
     handle_type release() noexcept
     {
         return std::exchange(m_ti, nullptr);
