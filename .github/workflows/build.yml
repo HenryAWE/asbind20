@@ -5,18 +5,22 @@ on: [push, pull_request]
 jobs:
     MSVC:
       runs-on: windows-2022
+      strategy:
+          fail-fast: false
+          matrix:
+            arch: [amd64, x86]
 
-      name: Windows MSVC
+      name: Windows MSVC (${{matrix.arch}})
 
       env:
         VCPKG_BUILD_TYPE: release
-        VCPKG_DEFAULT_TRIPLET: x64-windows
+        VCPKG_DEFAULT_TRIPLET:  ${{ matrix.arch == 'amd64' && 'x64-windows' || 'x86-windows' }}
 
       steps:
       - uses: actions/checkout@v4
       - uses: ilammy/msvc-dev-cmd@v1
         with:
-          arch: amd64
+          arch: ${{matrix.arch}}
 
       - name: Configure
         run: >
