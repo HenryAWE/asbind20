@@ -1568,7 +1568,7 @@ inline void register_script_array(
             .method("const T& get_back() const property", fp<&array_t::get_back>)
             .method("void sort(int start=0, uint n=uint(-1), bool asc=true, bool stable=false)", fp<&array_t::sort>)
             .funcdef("bool sort_by_callback(const T&in, const T&in)")
-            .method("void sort_by(const sort_by_callback&in, int start=0, uint n=uint(-1), bool asc=true, bool stable=false)", fp<&array_t::sort_by>)
+            .method("void sort_by(const sort_by_callback&in, int start=0, uint n=uint(-1), bool stable=false)", fp<&array_t::sort_by>)
             .method("void reverse(int start=0, uint n=uint(-1))", fp<overload_cast<index_type, size_type>(&array_t::reverse)>)
             .method("void reverse(const_array_iterator<T> start)", fp<overload_cast<iter_t>(&array_t::reverse)>)
             .method("void reverse(const_array_iterator<T> start, const_array_iterator<T> stop)", fp<overload_cast<iter_t, iter_t>(&array_t::reverse)>)

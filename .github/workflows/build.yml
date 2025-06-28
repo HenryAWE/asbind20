@@ -5,18 +5,22 @@ on: [push, pull_request]
 jobs:
     MSVC:
       runs-on: windows-2022
+      strategy:
+          fail-fast: false
+          matrix:
+            arch: [amd64, x86]
 
-      name: Windows MSVC
+      name: Windows MSVC (${{matrix.arch}})
 
       env:
         VCPKG_BUILD_TYPE: release
-        VCPKG_DEFAULT_TRIPLET: x64-windows
+        VCPKG_DEFAULT_TRIPLET:  ${{ matrix.arch == 'amd64' && 'x64-windows' || 'x86-windows' }}
 
       steps:
       - uses: actions/checkout@v4
       - uses: ilammy/msvc-dev-cmd@v1
         with:
-          arch: amd64
+          arch: ${{matrix.arch}}
 
       - name: Configure
         run: >
@@ -35,7 +39,7 @@ jobs:
 
       - name: Test
         working-directory: ${{github.workspace}}/build
-        run: ctest
+        run: ctest --output-on-failure
 
     GCC:
       runs-on: ubuntu-24.04
@@ -96,7 +100,7 @@ jobs:
 
       - name: Test
         working-directory: ${{github.workspace}}/build
-        run: ctest
+        run: ctest --output-on-failure
 
     Clang:
       runs-on: ubuntu-24.04
@@ -137,7 +141,7 @@ jobs:
 
       - name: Test
         working-directory: ${{github.workspace}}/build
-        run: ctest
+        run: ctest --output-on-failure
 
     ClangARM:
       runs-on: ubuntu-24.04-arm
@@ -185,7 +189,7 @@ jobs:
 
       - name: Test
         working-directory: ${{github.workspace}}/build
-        run: ctest
+        run: ctest --output-on-failure
 
     AS_USE_NAMESPACE:
       runs-on: ubuntu-24.04
@@ -227,7 +231,7 @@ jobs:
 
       - name: Test
         working-directory: ${{github.workspace}}/build
-        run: ctest
+        run: ctest --output-on-failure
 
     Emscripten:
       runs-on: ubuntu-24.04
@@ -273,7 +277,7 @@ jobs:
 
       - name: Test
         working-directory: ${{github.workspace}}/build
-        run: ctest
+        run: ctest --output-on-failure
 
     ASan:
       needs: Clang

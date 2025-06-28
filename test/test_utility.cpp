@@ -47,6 +47,33 @@ static consteval bool test_utility_meta_helpers()
 static_assert(test_utility_concepts());
 static_assert(test_utility_meta_helpers());
 
+#ifdef ASBIND20_HAS_STANDALONE_STDCALL
+
+namespace test_utility
+{
+static int cdecl_func(int, float)
+{
+    return 0;
+}
+
+static int ASBIND20_STDCALL stdcall_func(int, float)
+{
+    return 0;
+}
+} // namespace test_utility
+
+static consteval bool test_stdcall_helpers()
+{
+    using namespace asbind20;
+
+    static_assert(!meta::is_stdcall_v<decltype(test_utility::cdecl_func)>);
+    static_assert(meta::is_stdcall_v<decltype(test_utility::stdcall_func)>);
+
+    return true;
+}
+
+#endif
+
 namespace test_utility
 {
 static int f1()
@@ -427,6 +454,10 @@ int main(int argc, char* argv[])
 
 #ifdef AS_USE_NAMESPACE
     std::cerr << "AS_USE_NAMESPACE defined" << std::endl;
+#endif
+
+#ifdef ASBIND20_HAS_STANDALONE_STDCALL
+    std::cerr << "ASBIND20_HAS_STANDALONE_STDCALL defined" << std::endl;
 #endif
 
 #ifdef ASBIND20_HAS_STATIC_ENUM_NAME

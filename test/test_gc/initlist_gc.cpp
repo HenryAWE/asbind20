@@ -140,12 +140,12 @@ public:
         );
     }
 
-    void release_refs()
+    void release_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine*)
     {
         clear_var();
     }
 
-    void enum_refs()
+    void enum_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine*)
     {
         if(asbind20::is_void_type(m_var_type_id))
             return;
