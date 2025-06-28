@@ -13,7 +13,8 @@ Currently, the following platforms and compilers are officially supported and te
 
    * - Platform
      - Compiler
-   * - Windows x64
+   * - | Windows x64
+       | Windows x86
      - MSVC 19.41+
    * - Linux x64
      - | GCC 13, 14

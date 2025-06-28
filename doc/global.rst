@@ -30,6 +30,9 @@ Registering:
 .. note::
    Make sure the script function declaration matches what the registered function does with the ``asIScriptGeneric``!
 
+The binding generator will automatically distinguish between ``stdcall`` and ``cdecl`` calling convention,
+if they are actually different, e.g., when compiled on x86 Windows.
+
 For overloaded functions,
 you need to use ``overload_cast`` with arguments to choose the function you want.
 

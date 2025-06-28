@@ -6,11 +6,21 @@ Changelog since the version 1.5.0.
 1.7.0
 -----
 
+Update
+~~~~~~
+
+- Fully support of x86 (32bit) Windows platform, including special treatment for ``__stdcall``.
+
 Breaking Change
 ~~~~~~~~~~~~~~~
 
 - Redesign interfaces of ``container::single`` to reduce some surprising behaviors.
   For example, the destructor won't clean the data, you need to call another function for releasing the data.
+
+Bug fix
+~~~~~~~
+
+- Fix mismatched declaration in array extension that may cause crash on x86 platform.
 
 Removed
 ~~~~~~~
