@@ -1933,16 +1933,18 @@ namespace detail
     requires(!std::is_member_function_pointer_v<FuncSig>)
     constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes deduce_function_callconv()
     {
-        // TODO: Check stdcall
-
         /*
-        On x64 and many platform, CDECL and STDCALL have the same effect.
+        On x64 and many platforms (like arm64), CDECL and STDCALL have the same effect.
         It's safe to treat all global functions as CDECL.
         See: https://www.gamedev.net/forums/topic/715839-question-about-calling-convention-when-registering-functions-on-x64-platform/
 
-        We'll support STDCALL in future version if anyone need it.
+        Only some platforms like x86 need to treat the STDCALL separately.
         */
-        return AS_NAMESPACE_QUALIFIER asCALL_CDECL;
+
+        if constexpr(meta::is_stdcall_v<FuncSig>)
+            return AS_NAMESPACE_QUALIFIER asCALL_STDCALL;
+        else
+            return AS_NAMESPACE_QUALIFIER asCALL_CDECL;
     }
 
     template <typename T, typename Class>

@@ -164,19 +164,9 @@ namespace detail
     template <typename T>
     class func_traits_impl;
 
-#define ASBIND20_FUNC_TRAITS_IMPL_GLOBAL(noexcept_, ...)             \
+#define ASBIND20_FUNC_TRAITS_IMPL_GLOBAL(call_conv, noexcept_, ...)  \
     template <typename R, typename... Args>                          \
-    class func_traits_impl<R(Args...) noexcept_>                     \
-    {                                                                \
-    public:                                                          \
-        using return_type = R;                                       \
-        using args_tuple = std::tuple<Args...>;                      \
-        using class_type = void;                                     \
-        static constexpr bool is_const_v = false;                    \
-        static constexpr bool is_noexcept_v = #noexcept_[0] != '\0'; \
-    };                                                               \
-    template <typename R, typename... Args>                          \
-    class func_traits_impl<R (*)(Args...) noexcept_>                 \
+    class func_traits_impl<R(call_conv*)(Args...) noexcept_>         \
     {                                                                \
     public:                                                          \
         using return_type = R;                                       \
@@ -186,8 +176,16 @@ namespace detail
         static constexpr bool is_noexcept_v = #noexcept_[0] != '\0'; \
     }
 
-    ASBIND20_FUNC_TRAITS_IMPL_GLOBAL(noexcept);
-    ASBIND20_FUNC_TRAITS_IMPL_GLOBAL(, );
+#ifdef ASBIND20_HAS_STANDALONE_STDCALL
+    ASBIND20_FUNC_TRAITS_IMPL_GLOBAL(ASBIND20_CDECL, noexcept);
+    ASBIND20_FUNC_TRAITS_IMPL_GLOBAL(ASBIND20_CDECL, );
+    ASBIND20_FUNC_TRAITS_IMPL_GLOBAL(ASBIND20_STDCALL, noexcept);
+    ASBIND20_FUNC_TRAITS_IMPL_GLOBAL(ASBIND20_STDCALL, );
+#else
+    ASBIND20_FUNC_TRAITS_IMPL_GLOBAL(, noexcept);
+    ASBIND20_FUNC_TRAITS_IMPL_GLOBAL(, , );
+#endif
+
 
 #undef ASBIND20_FUNC_TRAITS_IMPL_GLOBAL
 
@@ -243,9 +241,9 @@ namespace detail
  * @tparam T Function type
  */
 template <typename T>
-class function_traits : public detail::func_traits_impl<std::remove_cvref_t<T>>
+class function_traits : public detail::func_traits_impl<std::decay_t<std::remove_cvref_t<T>>>
 {
-    using my_base = detail::func_traits_impl<std::remove_cvref_t<T>>;
+    using my_base = detail::func_traits_impl<std::decay_t<std::remove_cvref_t<T>>>;
 
 public:
     using type = T;
@@ -279,6 +277,36 @@ public:
 
     using last_arg_type = arg_type_optional<arg_count_v - 1>;
 };
+
+namespace meta
+{
+    namespace detail
+    {
+        template <typename F>
+        struct is_stdcall_helper
+        {
+            using type = std::false_type;
+        };
+
+#ifdef ASBIND20_HAS_STANDALONE_STDCALL
+
+        template <typename Return, typename... Args>
+        struct is_stdcall_helper<Return(ASBIND20_STDCALL*)(Args...)>
+        {
+            using type = std::true_type;
+        };
+
+#endif
+    } // namespace detail
+
+    template <typename F>
+    struct is_stdcall :
+        public detail::is_stdcall_helper<std::decay_t<F>>::type
+    {};
+
+    template <typename F>
+    inline constexpr bool is_stdcall_v = is_stdcall<F>::value;
+} // namespace meta
 
 template <typename T>
 requires(std::is_arithmetic_v<T> && !std::same_as<std::remove_cv_t<T>, char>)

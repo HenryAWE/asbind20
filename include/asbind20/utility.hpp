@@ -23,6 +23,16 @@
 
 namespace asbind20
 {
+#if defined(_WIN32) && !defined(_WIN64)
+#    define ASBIND20_HAS_STANDALONE_STDCALL
+#    define ASBIND20_CDECL __cdecl
+#    define ASBIND20_STDCALL __stdcall
+#else
+// placeholder
+#    define ASBIND20_CDECL
+#    define ASBIND20_STDCALL
+#endif
+
 struct this_type_t
 {};
 
