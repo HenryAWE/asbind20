@@ -20,6 +20,8 @@ static bool weakref_template_callback(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, bo
     return false;
 }
 
+script_weakref::script_weakref(const script_weakref&) = default;
+
 script_weakref::script_weakref(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
     : m_ref(nullptr), m_ti(ti), m_flag()
 {}

@@ -8,19 +8,9 @@
 
 namespace asbind20::ext
 {
-/**
- * @brief Extracts the contents from a script string without knowing the underlying type
- *
- * @param factory The string factory
- * @param str The pointer to script string
- *
- * @return std::string Result string
- */
-std::string extract_string(
-    AS_NAMESPACE_QUALIFIER asIStringFactory* factory, const void* str
-);
+using assert_handler_type = void(std::string_view);
 
-using assert_handler_t = void(std::string_view);
+// TODO: Remove parameter for string factory after upgrading to AngelScript 2.38
 
 /**
  * @brief Register script assertion support
@@ -31,7 +21,7 @@ using assert_handler_t = void(std::string_view);
  */
 void register_script_assert(
     AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
-    std::function<assert_handler_t> callback,
+    std::function<assert_handler_type> callback,
     bool set_ex = true,
     AS_NAMESPACE_QUALIFIER asIStringFactory* str_factory = nullptr
 );

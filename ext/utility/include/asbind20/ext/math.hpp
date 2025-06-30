@@ -5,7 +5,6 @@
 
 #include <limits>
 #include <cmath>
-#include <concepts>
 #include <complex>
 #include <asbind20/asbind.hpp>
 
@@ -49,7 +48,8 @@ constexpr Float complex_squared_length(const std::complex<Float>& c) noexcept
 template <typename Float>
 constexpr Float complex_length(const std::complex<Float>& c) noexcept
 {
-    return std::sqrt(complex_squared_length<Float>(c));
+    using std::sqrt;
+    return sqrt(complex_squared_length<Float>(c));
 }
 
 /**

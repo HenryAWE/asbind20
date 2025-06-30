@@ -12,6 +12,8 @@ class script_weakref
 public:
     script_weakref() = delete;
 
+    script_weakref(const script_weakref&) ;
+
     script_weakref(AS_NAMESPACE_QUALIFIER asITypeInfo* ti);
     script_weakref(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, void* ref);
 

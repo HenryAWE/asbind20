@@ -1,33 +1,12 @@
 #include <asbind20/ext/assert.hpp>
-#include <stdexcept>
+#include <asbind20/ext/debugging.hpp>
 
 namespace asbind20::ext
 {
-std::string extract_string(AS_NAMESPACE_QUALIFIER asIStringFactory* factory, const void* str)
-{
-    assert(factory);
-
-    AS_NAMESPACE_QUALIFIER asUINT sz = 0;
-    if(factory->GetRawStringData(str, nullptr, &sz) < 0)
-    {
-        throw std::runtime_error("failed to get raw string data");
-    }
-
-    std::string result;
-    result.resize(sz);
-
-    if(factory->GetRawStringData(str, result.data(), nullptr) < 0)
-    {
-        throw std::runtime_error("failed to get raw string data");
-    }
-
-    return result;
-}
-
 class script_assert_impl
 {
 public:
-    std::function<assert_handler_t> callback;
+    std::function<assert_handler_type> callback;
     bool set_ex = true;
     AS_NAMESPACE_QUALIFIER asIStringFactory* str_factory = nullptr;
 
@@ -75,7 +54,7 @@ private:
 
 void register_script_assert(
     AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
-    std::function<assert_handler_t> callback,
+    std::function<assert_handler_type> callback,
     bool set_ex,
     AS_NAMESPACE_QUALIFIER asIStringFactory* str_factory
 )
