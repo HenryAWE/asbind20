@@ -72,18 +72,16 @@ Link the library in a ``CMakeLists.txt``.
 
     target_link_libraries(main PRIVATE asbind20::asbind20)
 
-C. As CMake Submodule
---------------------------------
-Clone the library into your project.
+C. Integration with XMake Projects
+----------------------------------
 
-.. code-block:: sh
+Since the version 1.6.0, asbind20 has been accepted into the `official package registry <https://github.com/xmake-io/xmake-repo>`_.
+You can easily add asbind20 as a dependency of your project.
 
-    git clone https://github.com/HenryAWE/asbind20.git
+.. code-block:: lua
 
-Link the library in a ``CMakeLists.txt``.
+    add_requires("asbind20")
 
-.. code-block:: cmake
-
-    add_subdirectory(asbind20)
-
-    target_link_libraries(main PRIVATE asbind20::asbind20)
+    target("main")
+        -- ... --
+        add_packages("asbind20")

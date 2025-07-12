@@ -22,6 +22,11 @@ Bug fix
 
 - Fix mismatched declaration in array extension that may cause crash on x86 platform.
 
+Documentation
+~~~~~~~~~~~~~
+
+- Add information about using asbind20 in XMake projects.
+
 Removed
 ~~~~~~~
 
