@@ -703,21 +703,6 @@ namespace detail
     class list_constructor_base
     {
     public:
-        static constexpr bool is_acceptable_native_call_conv(
-            AS_NAMESPACE_QUALIFIER asECallConvTypes conv
-        ) noexcept
-        {
-            return conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
-        }
-
-        static constexpr bool is_acceptable_call_conv(
-            AS_NAMESPACE_QUALIFIER asECallConvTypes conv
-        ) noexcept
-        {
-            return conv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC ||
-                   is_acceptable_native_call_conv(conv);
-        }
-
         using native_function_type =
             std::conditional_t<
                 Template,
@@ -725,7 +710,8 @@ namespace detail
                 void (*)(ListBufType, void*)>;
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        requires(is_acceptable_call_conv(CallConv))
+        requires(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC ||
+                 CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST)
         using wrapper_type = std::conditional_t<
             CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
             AS_NAMESPACE_QUALIFIER asGENFUNC_t,
@@ -1033,32 +1019,18 @@ namespace detail
         policies::factory_policy Policy,
         typename... Args>
     class factory
-    {
-        static_assert(std::is_void_v<Policy>);
+    { // Implementation for default policy
+        static_assert(std::is_void_v<Policy>, "Invalid policy for factory");
 
     public:
-        static constexpr bool is_acceptable_native_call_conv(
-            AS_NAMESPACE_QUALIFIER asECallConvTypes conv
-        ) noexcept
-        {
-            return conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL;
-        }
-
-        static constexpr bool is_acceptable_call_conv(
-            AS_NAMESPACE_QUALIFIER asECallConvTypes conv
-        ) noexcept
-        {
-            return conv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC ||
-                   is_acceptable_native_call_conv(conv);
-        }
-
         using native_function_type = std::conditional_t<
             Template,
             Class* (*)(AS_NAMESPACE_QUALIFIER asITypeInfo*, Args...),
             Class* (*)(Args...)>;
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        requires(is_acceptable_call_conv(CallConv))
+        requires(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL ||
+                 CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
         using wrapper_type = std::conditional_t<
             CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
             AS_NAMESPACE_QUALIFIER asGENFUNC_t,
@@ -1123,32 +1095,18 @@ namespace detail
     class factory<Class, false, policies::notify_gc, Args...>
     {
     public:
-        static constexpr bool is_acceptable_native_call_conv(
-            AS_NAMESPACE_QUALIFIER asECallConvTypes conv
-        ) noexcept
-        {
-            return conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
-        }
-
-        static constexpr bool is_acceptable_call_conv(
-            AS_NAMESPACE_QUALIFIER asECallConvTypes conv
-        ) noexcept
-        {
-            return conv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC ||
-                   is_acceptable_native_call_conv(conv);
-        }
-
         using native_function_type =
             Class* (*)(Args..., AS_NAMESPACE_QUALIFIER asITypeInfo*);
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        requires(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST ||
+                 CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
         using wrapper_type = std::conditional_t<
             CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
             AS_NAMESPACE_QUALIFIER asGENFUNC_t,
             native_function_type>;
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        requires(is_acceptable_call_conv(CallConv))
         static auto generate(call_conv_t<CallConv>) noexcept
             -> wrapper_type<CallConv>
         {
@@ -1202,32 +1160,18 @@ namespace detail
     class factory<Class, true, policies::notify_gc, Args...>
     {
     public:
-        static constexpr bool is_acceptable_native_call_conv(
-            AS_NAMESPACE_QUALIFIER asECallConvTypes conv
-        ) noexcept
-        {
-            return conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL;
-        }
-
-        static constexpr bool is_acceptable_call_conv(
-            AS_NAMESPACE_QUALIFIER asECallConvTypes conv
-        ) noexcept
-        {
-            return conv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC ||
-                   is_acceptable_native_call_conv(conv);
-        }
-
         using native_function_type =
             Class* (*)(AS_NAMESPACE_QUALIFIER asITypeInfo*, Args...);
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        requires(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL ||
+                 CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
         using wrapper_type = std::conditional_t<
             CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
             AS_NAMESPACE_QUALIFIER asGENFUNC_t,
             native_function_type>;
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        requires(is_acceptable_call_conv(CallConv))
         static auto generate(call_conv_t<CallConv>) noexcept
             -> wrapper_type<CallConv>
         {
@@ -1403,28 +1347,14 @@ namespace detail
         }
     };
 
-    template <typename Class, bool Template, typename ListBufType, policies::factory_policy FactoryPolicy>
+    template <
+        typename Class,
+        bool Template,
+        typename ListBufType,
+        policies::factory_policy FactoryPolicy>
     class list_factory_base
     {
     public:
-        static constexpr bool is_acceptable_native_call_conv(
-            AS_NAMESPACE_QUALIFIER asECallConvTypes conv
-        ) noexcept
-        {
-            if constexpr(std::same_as<FactoryPolicy, policies::notify_gc> && !Template)
-                return conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
-            else
-                return conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL;
-        }
-
-        static constexpr bool is_acceptable_call_conv(
-            AS_NAMESPACE_QUALIFIER asECallConvTypes conv
-        ) noexcept
-        {
-            return conv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC ||
-                   is_acceptable_native_call_conv(conv);
-        }
-
         using native_function_type = std::conditional_t<
             Template,
             Class* (*)(AS_NAMESPACE_QUALIFIER asITypeInfo*, ListBufType),
@@ -1433,6 +1363,18 @@ namespace detail
                 Class* (*)(ListBufType, AS_NAMESPACE_QUALIFIER asITypeInfo*),
                 Class* (*)(ListBufType)>>;
 
+        static constexpr bool is_acceptable_call_conv(
+            AS_NAMESPACE_QUALIFIER asECallConvTypes conv
+        ) noexcept
+        {
+            if(conv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
+                return true;
+
+            if constexpr(std::same_as<FactoryPolicy, policies::notify_gc> && !Template)
+                return conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
+            else
+                return conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL;
+        }
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         requires(is_acceptable_call_conv(CallConv))
@@ -1836,33 +1778,18 @@ namespace detail
     class opConv
     {
     public:
-        static constexpr bool is_acceptable_native_call_conv(
-            AS_NAMESPACE_QUALIFIER asECallConvTypes conv
-        ) noexcept
-        {
-            return conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
-                   conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
-        }
-
-        static constexpr bool is_acceptable_call_conv(
-            AS_NAMESPACE_QUALIFIER asECallConvTypes conv
-        ) noexcept
-        {
-            return conv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC ||
-                   is_acceptable_native_call_conv(conv);
-        }
-
         using native_function_type = To (*)(Class&);
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        requires(is_acceptable_call_conv(CallConv))
+        requires(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
+                 CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST ||
+                 CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
         using wrapper_type = std::conditional_t<
             CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
             AS_NAMESPACE_QUALIFIER asGENFUNC_t,
             native_function_type>;
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        requires(is_acceptable_call_conv(CallConv))
         static auto generate(call_conv_t<CallConv>) noexcept -> wrapper_type<CallConv>
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
