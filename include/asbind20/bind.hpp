@@ -2623,13 +2623,13 @@ protected:
         : my_base(engine), m_name(std::move(name)) {}
 
     template <typename Class>
-    void register_object_type(AS_NAMESPACE_QUALIFIER asQWORD flags)
+    void register_object_type(AS_NAMESPACE_QUALIFIER asQWORD flags, int size)
     {
         [[maybe_unused]]
         int r = 0;
         r = m_engine->RegisterObjectType(
             m_name.c_str(),
-            static_cast<int>(sizeof(Class)),
+            size,
             flags
         );
         assert(r >= 0);
@@ -3906,7 +3906,9 @@ public:
             flags |= AS_NAMESPACE_QUALIFIER asOBJ_TEMPLATE;
         }
 
-        this->template register_object_type<Class>(flags);
+        this->template register_object_type<Class>(
+            flags, static_cast<int>(sizeof(Class))
+        );
     }
 
     template <std::convertible_to<std::string_view> StringView>
@@ -5253,7 +5255,9 @@ public:
             flags |= AS_NAMESPACE_QUALIFIER asOBJ_TEMPLATE;
         }
 
-        this->template register_object_type<Class>(flags);
+        // Size is unnecessary for reference type.
+        // Use 0 as size to support registering an incomplete type.
+        this->template register_object_type<Class>(flags, 0);
     }
 
     template <std::convertible_to<std::string_view> StringView>
