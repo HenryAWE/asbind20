@@ -6,6 +6,10 @@ Registering a Reference Type
 
 The basic reference type will be instantiated by factory function and managed by reference counting.
 
+Unlike the value type, the underlying C++ type for reference type can be incomplete type.
+This is designed to support the common C API pattern,
+which typically consists of an opaque structure pointer and a set of C functions.
+
 Factory
 ~~~~~~~
 
@@ -159,6 +163,9 @@ Tips for Reference Types
 
 Registering a Value Type
 ------------------------
+
+The underlying C++ type for value type must be a complete type,
+i.e., ``sizeof(T)`` is a valid expression.
 
 Flags of Value Type
 ~~~~~~~~~~~~~~~~~~~~
