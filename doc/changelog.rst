@@ -10,6 +10,7 @@ Update
 ~~~~~~
 
 - Fully support of x86 (32bit) Windows platform, including special treatment for ``__stdcall``.
+- Binding generator for reference type no longer requires the registered type to be complete type.
 
 Breaking Change
 ~~~~~~~~~~~~~~~
