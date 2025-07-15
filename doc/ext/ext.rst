@@ -14,6 +14,9 @@ There source code are located inside the ``ext/`` directory of repository.
    container/array
    container/stdstring
 
+.. note::
+   CMake target name is ``asbind20_ext_container``.
+
 .. toctree::
    :maxdepth: 2
    :caption: Utilities
@@ -21,3 +24,6 @@ There source code are located inside the ``ext/`` directory of repository.
    utility/math
    utility/vocabulary
    utility/misc
+
+.. note::
+   CMake target name is ``asbind20_ext_utility``.

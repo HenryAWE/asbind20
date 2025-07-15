@@ -33,12 +33,11 @@ Core Features
 Extension Library
 -----------------
 
-The extension library contains some tools that are less flexible than those in the core library.
-It also contains demonstration for how to register some common types like array or string by asbind20.
-
-The extension library was developed for personal project at first
-(actually, the whole asbind20 was a submodule of personal project long time ago),
+The extension library was developed for personal project at first,
 but most of them are general purpose and can be used in other projects.
+Actually, the whole asbind20 was a submodule of personal project long time ago.
+
+It also contains demonstration for how to register some common types like array or string by asbind20.
 
 License
 -------

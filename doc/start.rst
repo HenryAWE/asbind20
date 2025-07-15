@@ -1,11 +1,14 @@
+Prerequisites
+=============
+
+- AngelScript 2.37.0 or newer.
+- Any C++ compiler that supports C++20 features required by this library.
+  This library mainly depends on ``requires`` and ``<concepts>`` from C++20.
+
 Supported Platforms
 ===================
 
-- CMake >= 3.20
-- AngelScript >= 2.37.0
-- C++ compiler that supports C++20
-
-Currently, the following platforms and compilers are officially supported and tested by CI.
+Currently, the following platforms and compilers are officially supported and `tested by CI <https://github.com/HenryAWE/asbind20/blob/master/.github/workflows/build.yml>`_.
 
 .. list-table::
    :widths: auto
@@ -25,8 +28,7 @@ Currently, the following platforms and compilers are officially supported and te
    * - Emscripten
      - emsdk latest
 
-.. note::
-   Some advanced features are only available on newer compilers.
+However, other platforms supported by AngelScript should work as expected too.
 
 Integrate into Your Project
 ===========================
@@ -36,7 +38,7 @@ or use a package manager like `vcpkg <https://github.com/microsoft/vcpkg>`_.
 
 You can also find example script for installing AngelScript in `the GitHub Actions script of asbind20 <https://github.com/HenryAWE/asbind20/blob/master/.github/workflows/build.yml>`_.
 
-A. Copy into Your Project
+1. Copy into Your Project
 -------------------------
 
 The core library of asbind20 is a header-only library.
@@ -55,8 +57,32 @@ You can omit those files if they are unnecessary for your project.
    If you wish to use this part of library without building asbind20 separately,
    you need to copy necessary source files as well.
 
-B. Build and Install Using CMake
+2. Integration Using CMake
 --------------------------------
+
+CMake 3.20 or newer is required.
+
+If you don't want to build the extension library, you can set the CMake option ``asbind_build_ext`` to ``OFF``.
+
+.. code-block:: sh
+
+    cmake -Dasbind_build_ext=0 # ...
+
+A. Submodule
+~~~~~~~~~~~~
+
+You can add asbind20 through git submodule and then use ``add_subdirectory``.
+
+.. code-block:: cmake
+
+    add_subdirectory("directory/of/asbind20")
+
+    target_link_libraries(main PRIVATE asbind20::asbind20)
+
+B. Build and Install
+~~~~~~~~~~~~~~~~~~~~
+
+Additionally, you can build and install asbind20 using CMake.
 
 .. code-block:: sh
 
@@ -64,7 +90,7 @@ B. Build and Install Using CMake
     cmake --build build
     cmake --install build
 
-Link the library in a ``CMakeLists.txt``.
+Then, link the library in a ``CMakeLists.txt``.
 
 .. code-block:: cmake
 
@@ -72,7 +98,7 @@ Link the library in a ``CMakeLists.txt``.
 
     target_link_libraries(main PRIVATE asbind20::asbind20)
 
-C. Integration with XMake Projects
+3. Integration with XMake Projects
 ----------------------------------
 
 Since the version 1.6.0, asbind20 has been accepted into the `official package registry <https://github.com/xmake-io/xmake-repo>`_.
@@ -85,3 +111,5 @@ You can easily add asbind20 as a dependency of your project.
     target("main")
         -- ... --
         add_packages("asbind20")
+
+Please check the `official documentation of XMake about adding packages <https://xmake.io/guide/project-configuration/add-packages.html>`_ for more details.
