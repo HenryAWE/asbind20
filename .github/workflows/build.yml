@@ -28,7 +28,7 @@ jobs:
           -S ${{github.workspace}}
           -B build
           -G Ninja
-          -DCMAKE_CXX_STANDARD=20
+          -Dasbind_cxxstd=20
           -DCMAKE_BUILD_TYPE=Release
           -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake"
           -Dasbind_build_ext=1
@@ -71,7 +71,7 @@ jobs:
           -S ${{github.workspace}}
           -B build
           -G Ninja
-          -DCMAKE_CXX_STANDARD=20
+          -Dasbind_cxxstd=20
           -DCMAKE_C_COMPILER=gcc-${{matrix.gcc}}
           -DCMAKE_CXX_COMPILER=g++-${{matrix.gcc}}
           -DCMAKE_BUILD_TYPE=Release
@@ -133,7 +133,7 @@ jobs:
           -S ${{github.workspace}}
           -B build
           -G Ninja
-          -DCMAKE_CXX_STANDARD=${{matrix.cxxstd}}
+          -Dasbind_cxxstd=${{matrix.cxxstd}}
           -DCMAKE_C_COMPILER=clang-${{matrix.clang}}
           -DCMAKE_CXX_COMPILER=clang++-${{matrix.clang}}
           -DCMAKE_BUILD_TYPE=Release
@@ -181,7 +181,7 @@ jobs:
           -S ${{github.workspace}}
           -B build
           -G Ninja
-          -DCMAKE_CXX_STANDARD=20
+          -Dasbind_cxxstd=20
           -DCMAKE_C_COMPILER=clang-18
           -DCMAKE_CXX_COMPILER=clang++-18
           -DCMAKE_BUILD_TYPE=Release
@@ -222,7 +222,7 @@ jobs:
           -S ${{github.workspace}}
           -B build
           -G Ninja
-          -DCMAKE_CXX_STANDARD=20
+          -Dasbind_cxxstd=20
           -DCMAKE_CXX_FLAGS=-DAS_USE_NAMESPACE=1
           -DCMAKE_C_COMPILER=clang-18
           -DCMAKE_CXX_COMPILER=clang++-18
@@ -271,7 +271,7 @@ jobs:
           -S ${{github.workspace}}
           -B build
           -G Ninja
-          -DCMAKE_CXX_STANDARD=20
+          -Dasbind_cxxstd=20
           -DCMAKE_BUILD_TYPE=Release
           -DCMAKE_CXX_FLAGS=-fexceptions
           -Dasbind_build_ext=1
@@ -318,7 +318,7 @@ jobs:
           -S ${{github.workspace}}
           -B build
           -G Ninja
-          -DCMAKE_CXX_STANDARD=20
+          -Dasbind_cxxstd=20
           -DCMAKE_C_COMPILER=clang-18
           -DCMAKE_CXX_COMPILER=clang++-18
           -DCMAKE_BUILD_TYPE=Release

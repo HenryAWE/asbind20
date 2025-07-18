@@ -1,10 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
 
-if(NOT DEFINED CMAKE_CXX_STANDARD)
-    set(CMAKE_CXX_STANDARD 20)
-endif()
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 file(STRINGS "include/asbind20/asbind.hpp" asbind20_version_major_line REGEX "^#define ASBIND20_VERSION_MAJOR [0-9]+$")
 file(STRINGS "include/asbind20/asbind.hpp" asbind20_version_minor_line REGEX "^#define ASBIND20_VERSION_MINOR [0-9]+$")
 file(STRINGS "include/asbind20/asbind.hpp" asbind20_version_patch_line REGEX "^#define ASBIND20_VERSION_PATCH [0-9]+$")
@@ -23,8 +18,6 @@ project(
     LANGUAGES CXX
 )
 
-set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
-
 find_package(Threads REQUIRED)
 find_package(Angelscript 2.37.0 CONFIG REQUIRED)
 
@@ -40,6 +33,13 @@ include(GNUInstallDirs)
 
 option(asbind_build_test "Build tests" OFF)
 mark_as_advanced(asbind_build_test)
+
+set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+
+if(NOT DEFINED asbind_cxxstd)
+    set(asbind_cxxstd 20 CACHE STRING "Preferred C++ standard to use for asbind20")
+endif()
+target_compile_features(asbind20 INTERFACE cxx_std_${asbind_cxxstd})
 
 if(${asbind_build_test})
     message(STATUS "Fetching GoogleTest v1.14.0 from GitHub")
