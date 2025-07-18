@@ -21,7 +21,7 @@ Currently, the following platforms and compilers are officially supported and `t
      - MSVC 19.41+
    * - Linux x64
      - | GCC 13, 14
-       | Clang 18
+       | Clang 18, 19
        | Clang 18 (ASan)
    * - Linux arm64
      - Clang 18

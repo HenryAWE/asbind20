@@ -22,6 +22,7 @@ Bug fix
 ~~~~~~~
 
 - Fix mismatched declaration in array extension that may cause crash on x86 platform.
+- Fix CMake error when configuring with Clang 19 toolchain.
 
 Documentation
 ~~~~~~~~~~~~~
