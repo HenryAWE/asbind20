@@ -104,8 +104,13 @@ jobs:
 
     Clang:
       runs-on: ubuntu-24.04
+      strategy:
+          fail-fast: false
+          matrix:
+            clang: [18, 19]
+            cxxstd: [20, 23]
 
-      name: Linux Clang 18
+      name: Linux Clang ${{matrix.clang}} (C++ ${{matrix.cxxstd}})
 
       env:
         VCPKG_BUILD_TYPE: release
@@ -116,7 +121,7 @@ jobs:
       - name: Install Dependencies
         run: |
             sudo apt-get update
-            sudo apt-get install -y cmake ninja-build clang-18 clang++-18
+            sudo apt-get install -y cmake ninja-build clang-${{matrix.clang}} clang++-${{matrix.clang}}
 
       - name: Install AngelScript
         working-directory: /usr/local/share/vcpkg
@@ -128,9 +133,9 @@ jobs:
           -S ${{github.workspace}}
           -B build
           -G Ninja
-          -DCMAKE_CXX_STANDARD=20
-          -DCMAKE_C_COMPILER=clang-18
-          -DCMAKE_CXX_COMPILER=clang++-18
+          -DCMAKE_CXX_STANDARD=${{matrix.cxxstd}}
+          -DCMAKE_C_COMPILER=clang-${{matrix.clang}}
+          -DCMAKE_CXX_COMPILER=clang++-${{matrix.clang}}
           -DCMAKE_BUILD_TYPE=Release
           -DCMAKE_TOOLCHAIN_FILE="${VCPKG_INSTALLATION_ROOT}/scripts/buildsystems/vcpkg.cmake"
           -Dasbind_build_ext=1
