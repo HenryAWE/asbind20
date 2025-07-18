@@ -419,28 +419,14 @@ namespace detail
         using my_base = constructor_base<Class>;
 
     public:
-        static constexpr bool is_acceptable_native_call_conv(
-            AS_NAMESPACE_QUALIFIER asECallConvTypes conv
-        ) noexcept
-        {
-            return conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
-        }
-
-        static constexpr bool is_acceptable_call_conv(
-            AS_NAMESPACE_QUALIFIER asECallConvTypes conv
-        ) noexcept
-        {
-            return conv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC ||
-                   is_acceptable_native_call_conv(conv);
-        }
-
         using native_function_type = std::conditional_t<
             Template,
             void (*)(AS_NAMESPACE_QUALIFIER asITypeInfo*, Args..., void*),
             void (*)(Args..., void*)>;
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        requires(is_acceptable_call_conv(CallConv))
+        requires(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC ||
+                 CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST)
         using wrapper_type = std::conditional_t<
             CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
             AS_NAMESPACE_QUALIFIER asGENFUNC_t,
