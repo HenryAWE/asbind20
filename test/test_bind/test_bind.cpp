@@ -473,6 +473,8 @@ TEST_F(asbind_test_suite, enum_)
 int main(int argc, char* argv[])
 {
     ::testing::InitGoogleTest(&argc, argv);
+
+    std::cerr << "__cplusplus = " << __cplusplus << 'L' << std::endl;
     std::cerr << "asGetLibraryVersion(): " << AS_NAMESPACE_QUALIFIER asGetLibraryVersion() << std::endl;
     std::cerr << "asGetLibraryOptions(): " << AS_NAMESPACE_QUALIFIER asGetLibraryOptions() << std::endl;
     std::cerr << "asbind20::library_version(): " << asbind20::library_version() << std::endl;
