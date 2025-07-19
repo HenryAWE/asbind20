@@ -364,9 +364,7 @@ namespace policies
         }
     };
 
-    // TODO: Support `std::from_range` if C++23 is available (`__cpp_lib_containers_ranges`)
-
-    // std::from_range(_t)
+    // C++23 std::from_range(_t)
 #ifdef __cpp_lib_containers_ranges
 
 #    define ASBIND20_HAS_CONTAINERS_RANGES __cpp_lib_containers_ranges
@@ -1032,8 +1030,8 @@ namespace detail
         {
             static constexpr auto helper = [](void* mem, script_init_list_repeat list)
             {
-                std::span<ListElementType> r((ListElementType*)list.data(), list.size());
-                new(mem) Class(std::from_range, r);
+                std::span<ListElementType> rng((ListElementType*)list.data(), list.size());
+                new(mem) Class(std::from_range, rng);
             };
 
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -1818,6 +1816,66 @@ namespace detail
             }
         }
     };
+
+#ifdef ASBIND20_HAS_CONTAINERS_RANGES
+
+    template <
+        typename Class,
+        bool Template,
+        typename ListElementType,
+        policies::factory_policy FactoryPolicy>
+    class list_factory<Class, Template, ListElementType, policies::as_from_range, FactoryPolicy> :
+        public list_factory_base<Class, Template, void*, FactoryPolicy>
+    {
+        using my_base = list_factory_base<Class, Template, void*, FactoryPolicy>;
+
+    public:
+        static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
+        static_assert(!Template, "This policy is invalid for a template class");
+
+        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        static auto generate(call_conv_t<CallConv>) noexcept
+            -> my_base::template wrapper_type<CallConv>
+        {
+            static constexpr auto helper = [](script_init_list_repeat list) -> Class*
+            {
+                std::span<ListElementType> rng((ListElementType*)list.data(), list.size());
+                return new Class(std::from_range, rng);
+            };
+
+            if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
+            {
+                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+                {
+                    Class* ptr = helper(script_init_list_repeat(gen));
+                    if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
+                    {
+                        auto* ti = (AS_NAMESPACE_QUALIFIER asITypeInfo*)gen->GetAuxiliary();
+                        my_base::notify_gc_helper(ptr, ti);
+                    }
+                    gen->SetReturnAddress(ptr);
+                };
+            }
+            else if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
+            {
+                return +[](void* list_buf, AS_NAMESPACE_QUALIFIER asITypeInfo* ti) -> Class*
+                {
+                    Class* ptr = helper(script_init_list_repeat(list_buf));
+                    my_base::notify_gc_helper(ptr, ti);
+                    return ptr;
+                };
+            }
+            else // CallConv == asCALL_CDECL
+            {
+                return +[](void* list_buf) -> Class*
+                {
+                    return helper(script_init_list_repeat(list_buf));
+                };
+            }
+        }
+    };
+
+#endif
 
     template <typename Class, typename To>
     class opConv
