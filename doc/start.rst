@@ -5,6 +5,9 @@ Prerequisites
 - Any C++ compiler that supports C++20 features required by this library.
   This library mainly depends on ``requires`` and ``<concepts>`` from C++20.
 
+If the compiler and standard library support newer features like C++23,
+asbind20 will enable support for them.
+
 Supported Platforms
 ===================
 
@@ -21,7 +24,7 @@ Currently, the following platforms and compilers are officially supported and `t
      - MSVC 19.41+
    * - Linux x64
      - | GCC 13, 14
-       | Clang 18
+       | Clang 18, 19
        | Clang 18 (ASan)
    * - Linux arm64
      - Clang 18

@@ -91,6 +91,15 @@ struct my_vec_ints
             data.push_back(ptr[i]);
     }
 
+#ifdef ASBIND20_HAS_CONTAINERS_RANGES
+
+    template <typename Range>
+    my_vec_ints(std::from_range_t, Range&& r)
+        : data(std::from_range, std::forward<Range>(r))
+    {}
+
+#endif
+
     std::vector<int> data;
 };
 
@@ -422,6 +431,35 @@ TEST(initlist_generic, value_as_span)
     test_bind::check_from_span(engine);
 }
 
+#ifdef ASBIND20_HAS_CONTAINERS_RANGES
+
+TEST(initlist_native, value_from_range)
+{
+    if(asbind20::has_max_portability())
+        GTEST_SKIP() << "max portability";
+
+    auto engine = asbind20::make_script_engine();
+    test_bind::setup_initlist_test_env(engine);
+
+    test_bind::register_my_vec_ints<asbind20::policies::as_from_range, false>(
+        engine
+    );
+    test_bind::check_my_vec_ints(engine);
+}
+
+TEST(initlist_generic, value_from_range)
+{
+    auto engine = asbind20::make_script_engine();
+    test_bind::setup_initlist_test_env(engine);
+
+    test_bind::register_my_vec_ints<asbind20::policies::as_from_range, true>(
+        engine
+    );
+    test_bind::check_my_vec_ints(engine);
+}
+
+#endif
+
 namespace test_bind
 {
 class ref_initlist_test_base
@@ -545,6 +583,16 @@ public:
     ref_test_vector(asbind20::script_init_list_repeat list)
         : ref_test_vector((int*)list.data(), list.size())
     {}
+
+
+#ifdef ASBIND20_HAS_CONTAINERS_RANGES
+
+    template <typename Range>
+    ref_test_vector(std::from_range_t, Range&& r)
+        : data(std::from_range, std::forward<Range>(r))
+    {}
+
+#endif
 
     std::vector<int> data;
 };
@@ -769,3 +817,32 @@ TEST(initlist_generic, ref_test_as_span)
     );
     test_bind::check_ref_test_vector(engine);
 }
+
+#ifdef ASBIND20_HAS_CONTAINERS_RANGES
+
+TEST(initlist_native, ref_test_from_range)
+{
+    if(asbind20::has_max_portability())
+        GTEST_SKIP() << "max portability";
+
+    auto engine = asbind20::make_script_engine();
+    test_bind::setup_initlist_test_env(engine);
+
+    test_bind::register_ref_test_vector_with<asbind20::policies::as_from_range, false>(
+        engine
+    );
+    test_bind::check_ref_test_vector(engine);
+}
+
+TEST(initlist_generic, ref_test_from_range)
+{
+    auto engine = asbind20::make_script_engine();
+    test_bind::setup_initlist_test_env(engine);
+
+    test_bind::register_ref_test_vector_with<asbind20::policies::as_from_range, true>(
+        engine
+    );
+    test_bind::check_ref_test_vector(engine);
+}
+
+#endif

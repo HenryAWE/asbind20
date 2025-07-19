@@ -473,6 +473,8 @@ TEST_F(asbind_test_suite, enum_)
 int main(int argc, char* argv[])
 {
     ::testing::InitGoogleTest(&argc, argv);
+
+    std::cerr << "__cplusplus = " << __cplusplus << 'L' << std::endl;
     std::cerr << "asGetLibraryVersion(): " << AS_NAMESPACE_QUALIFIER asGetLibraryVersion() << std::endl;
     std::cerr << "asGetLibraryOptions(): " << AS_NAMESPACE_QUALIFIER asGetLibraryOptions() << std::endl;
     std::cerr << "asbind20::library_version(): " << asbind20::library_version() << std::endl;
@@ -481,6 +483,12 @@ int main(int argc, char* argv[])
     std::cerr << "ASBIND20_HAS_AS_INITIALIZER_LIST: " << ASBIND20_HAS_AS_INITIALIZER_LIST << std::endl;
 #else
     std::cerr << "ASBIND20_HAS_AS_INITIALIZER_LIST not defined" << std::endl;
+#endif
+
+#ifdef ASBIND20_HAS_CONTAINERS_RANGES
+    std::cerr << "ASBIND20_HAS_CONTAINERS_RANGES: " << ASBIND20_HAS_CONTAINERS_RANGES << std::endl;
+#else
+    std::cerr << "ASBIND20_HAS_CONTAINERS_RANGES not defined" << std::endl;
 #endif
 
     return RUN_ALL_TESTS();
