@@ -364,11 +364,17 @@ namespace policies
         }
     };
 
-    // C++23 std::from_range(_t)
 #ifdef __cpp_lib_containers_ranges
-
 #    define ASBIND20_HAS_CONTAINERS_RANGES __cpp_lib_containers_ranges
+#elif defined(ASBIND20_DOXYGEN)
+#    define ASBIND20_HAS_CONTAINERS_RANGES
+#endif
 
+#ifdef ASBIND20_HAS_CONTAINERS_RANGES
+
+    /**
+     * @brief Converting the initialization list for constructors accepting C++23 `std::from_range(_t)`
+     */
     struct as_from_range
     {
         using initialization_list_policy_tag = void;

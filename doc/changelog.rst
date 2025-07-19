@@ -11,6 +11,7 @@ Update
 
 - Fully support of x86 (32bit) Windows platform, including special treatment for ``__stdcall``.
 - Binding generator for reference type no longer requires the registered type to be complete type.
+- Policy for converting script initialization list for constructors accepting ``std::from_range(_t)`` when C++23 is enabled.
 
 Breaking Change
 ~~~~~~~~~~~~~~~

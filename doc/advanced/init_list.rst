@@ -199,3 +199,28 @@ Policies for the pattern with repeated elements, i.e., containing ``repeat`` in 
     using namespace asbind20;
     ref_class<int_list>(/* ... */)
         .list_factory<int>("repeat int", use_policy<policies::as_span>);
+
+5. ``std::from_range`` and a range
+
+   .. doxygenstruct:: asbind20::policies::as_from_range
+
+   Example
+
+   .. code-block:: c++
+
+    class int_list
+    {
+    public:
+        template <typename Range>
+        int_list(std::from_range_t, Range&& rng);
+    };
+
+   .. code-block:: c++
+
+    using namespace asbind20;
+    ref_class<int_list>(/* ... */)
+        .list_factory<int>("repeat int", use_policy<policies::as_from_range>);
+
+   .. note::
+    This policy is only available when compiler supports C++23.
+    You can check whether the macro ``ASBIND20_HAS_CONTAINERS_RANGES`` is defined.
