@@ -372,7 +372,7 @@ TEST(initlist_native, value_pointer_size)
     auto engine = asbind20::make_script_engine();
     test_bind::setup_initlist_test_env(engine);
 
-    test_bind::register_my_vec_ints<asbind20::policies::repeat_list_proxy, false>(
+    test_bind::register_my_vec_ints<asbind20::policies::pointer_and_size, false>(
         engine
     );
     test_bind::check_my_vec_ints(engine);
@@ -383,7 +383,7 @@ TEST(initlist_generic, value_pointer_size)
     auto engine = asbind20::make_script_engine();
     test_bind::setup_initlist_test_env(engine);
 
-    test_bind::register_my_vec_ints<asbind20::policies::repeat_list_proxy, true>(
+    test_bind::register_my_vec_ints<asbind20::policies::pointer_and_size, true>(
         engine
     );
     test_bind::check_my_vec_ints(engine);
