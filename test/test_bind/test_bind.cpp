@@ -485,5 +485,11 @@ int main(int argc, char* argv[])
     std::cerr << "ASBIND20_HAS_AS_INITIALIZER_LIST not defined" << std::endl;
 #endif
 
+#ifdef ASBIND20_HAS_CONTAINERS_RANGES
+    std::cerr << "ASBIND20_HAS_CONTAINERS_RANGES: " << ASBIND20_HAS_CONTAINERS_RANGES << std::endl;
+#else
+    std::cerr << "ASBIND20_HAS_CONTAINERS_RANGES not defined" << std::endl;
+#endif
+
     return RUN_ALL_TESTS();
 }

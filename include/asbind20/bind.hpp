@@ -366,6 +366,18 @@ namespace policies
 
     // TODO: Support `std::from_range` if C++23 is available (`__cpp_lib_containers_ranges`)
 
+    // std::from_range(_t)
+#ifdef __cpp_lib_containers_ranges
+
+#    define ASBIND20_HAS_CONTAINERS_RANGES __cpp_lib_containers_ranges
+
+    struct as_from_range
+    {
+        using initialization_list_policy_tag = void;
+    };
+
+#endif
+
     template <typename T>
     concept initialization_list_policy =
         std::is_void_v<T> || // Default policy: directly pass the initialization list from AS to C++
@@ -998,6 +1010,53 @@ namespace detail
             }
         }
     };
+
+#ifdef ASBIND20_HAS_CONTAINERS_RANGES
+
+    template <
+        typename Class,
+        bool Template,
+        typename ListElementType>
+    class list_constructor<Class, Template, ListElementType, policies::as_from_range> :
+        public list_constructor_base<Class, Template, void*>
+    {
+        using my_base = list_constructor_base<Class, Template, void*>;
+
+    public:
+        static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
+        static_assert(!Template, "This policy is invalid for a template class");
+
+        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        static auto generate(call_conv_t<CallConv>) noexcept
+            -> my_base::template wrapper_type<CallConv>
+        {
+            static constexpr auto helper = [](void* mem, script_init_list_repeat list)
+            {
+                std::span<ListElementType> r((ListElementType*)list.data(), list.size());
+                new(mem) Class(std::from_range, r);
+            };
+
+            if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
+            {
+                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+                {
+                    helper(
+                        gen->GetObject(),
+                        script_init_list_repeat(gen)
+                    );
+                };
+            }
+            else // CallConv == asCALL_CDECL_OBJLAST
+            {
+                return +[](void* list_buf, void* mem) -> void
+                {
+                    helper(mem, script_init_list_repeat(list_buf));
+                };
+            }
+        }
+    };
+
+#endif
 
     template <
         typename Class,
