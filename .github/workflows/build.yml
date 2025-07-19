@@ -9,8 +9,9 @@ jobs:
           fail-fast: false
           matrix:
             arch: [amd64, x86]
+            cxxstd: [20] # MSVC doesn't support C++23 features we want to use yet
 
-      name: Windows MSVC (${{matrix.arch}})
+      name: Windows ${{matrix.arch}} MSVC C++${{matrix.cxxstd}}
 
       env:
         VCPKG_BUILD_TYPE: release
@@ -28,7 +29,7 @@ jobs:
           -S ${{github.workspace}}
           -B build
           -G Ninja
-          -Dasbind_cxxstd=20
+          -Dasbind_cxxstd=${{matrix.cxxstd}}
           -DCMAKE_BUILD_TYPE=Release
           -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake"
           -Dasbind_build_ext=1
@@ -47,8 +48,9 @@ jobs:
           fail-fast: false
           matrix:
             gcc: [13, 14]
+            cxxstd: [20, 23]
 
-      name: Linux GCC ${{matrix.gcc}}
+      name: Linux x64 GCC ${{matrix.gcc}} C++${{matrix.cxxstd}}
 
       env:
         VCPKG_BUILD_TYPE: release
@@ -71,7 +73,7 @@ jobs:
           -S ${{github.workspace}}
           -B build
           -G Ninja
-          -Dasbind_cxxstd=20
+          -Dasbind_cxxstd=${{matrix.cxxstd}}
           -DCMAKE_C_COMPILER=gcc-${{matrix.gcc}}
           -DCMAKE_CXX_COMPILER=g++-${{matrix.gcc}}
           -DCMAKE_BUILD_TYPE=Release
@@ -110,7 +112,7 @@ jobs:
             clang: [18, 19]
             cxxstd: [20, 23]
 
-      name: Linux Clang ${{matrix.clang}} (C++ ${{matrix.cxxstd}})
+      name: Linux x64 Clang ${{matrix.clang}} C++${{matrix.cxxstd}}
 
       env:
         VCPKG_BUILD_TYPE: release
@@ -151,7 +153,7 @@ jobs:
     ClangARM:
       runs-on: ubuntu-24.04-arm
 
-      name: Linux Clang 18 (arm64)
+      name: Linux arm64 Clang 18
 
       env:
         VCPKG_BUILD_TYPE: release
@@ -199,7 +201,7 @@ jobs:
     AS_USE_NAMESPACE:
       runs-on: ubuntu-24.04
 
-      name: AS_USE_NAMESPACE (Clang 18)
+      name: Clang 18 (AS_USE_NAMESPACE)
 
       env:
         VCPKG_BUILD_TYPE: release
@@ -240,8 +242,12 @@ jobs:
 
     Emscripten:
       runs-on: ubuntu-24.04
+      strategy:
+          fail-fast: false
+          matrix:
+            cxxstd: [20, 23]
 
-      name: Emscripten
+      name: Emscripten C++${{matrix.cxxstd}}
 
       steps:
       - uses: actions/checkout@v4
@@ -271,7 +277,7 @@ jobs:
           -S ${{github.workspace}}
           -B build
           -G Ninja
-          -Dasbind_cxxstd=20
+          -Dasbind_cxxstd=${{matrix.cxxstd}}
           -DCMAKE_BUILD_TYPE=Release
           -DCMAKE_CXX_FLAGS=-fexceptions
           -Dasbind_build_ext=1
@@ -285,10 +291,9 @@ jobs:
         run: ctest --output-on-failure
 
     ASan:
-      needs: Clang
       runs-on: ubuntu-24.04
 
-      name: Address Sanitizer (Clang 18)
+      name: Clang 18 (ASan)
 
       env:
         VCPKG_BUILD_TYPE: release
