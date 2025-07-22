@@ -42,6 +42,54 @@ jobs:
         working-directory: ${{github.workspace}}/build
         run: ctest --output-on-failure
 
+    ClangCl:
+      runs-on: windows-2025
+
+      name: Windows x64 Clang-Cl
+
+      steps:
+      - uses: actions/checkout@v4
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Install Dependencies
+        run: |
+            choco upgrade llvm
+
+      - name: Install AngelScript
+        working-directory: ${{github.workspace}}
+        run: |
+          git clone https://github.com/codecat/angelscript-mirror.git
+          cd angelscript-mirror
+          git reset --hard d259eab41fd08fbde83cf1a7b01f4def6a09e895 # 2.37.0
+          cd sdk/angelscript/projects/cmake
+          cmake -GNinja -DCMAKE_BUILD_TYPE=Release -S . -B build
+          cmake --build build
+          cmake --install build
+
+      - name: Configure
+        run: >
+          cmake
+          -S ${{github.workspace}}
+          -B build
+          -GNinja
+          -Dasbind_cxxstd=20
+          -DCMAKE_C_COMPILER=clang-cl
+          -DCMAKE_CXX_COMPILER=clang-cl
+          -DCMAKE_BUILD_TYPE=Release
+          -Dasbind_dev_warning_as_error=OFF
+          -Dasbind_build_ext=1
+          -Dasbind_build_test=1
+
+      - name: Build
+        run: cmake --build ${{github.workspace}}/build --config Release
+
+      - name: Test
+        working-directory: ${{github.workspace}}/build
+        run: |
+          ctest --output-on-failure
+
     GCC:
       runs-on: ubuntu-24.04
       strategy:
