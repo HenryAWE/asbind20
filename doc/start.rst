@@ -21,7 +21,9 @@ Currently, the following platforms and compilers are officially supported and `t
      - Compiler
    * - | Windows x64
        | Windows x86
-     - MSVC 19.41+
+     - MSVC latest
+   * - Windows x64
+     - Clang-Cl latest
    * - Linux x64
      - | GCC 13, 14
        | Clang 18, 19
@@ -31,7 +33,11 @@ Currently, the following platforms and compilers are officially supported and `t
    * - Emscripten
      - emsdk latest
 
-However, other platforms supported by AngelScript should work as expected too.
+However, other platforms or architectures supported by AngelScript should work as expected too.
+
+.. note::
+  This library on GCC 12 (or older) and Clang 17 (or older) is not guaranteed to work correctly.
+  Please use newer compilers if possible.
 
 Integrate into Your Project
 ===========================
