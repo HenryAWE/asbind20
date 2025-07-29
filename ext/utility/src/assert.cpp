@@ -76,11 +76,7 @@ void register_script_assert(
 
     if(str_factory)
     {
-#if ANGELSCRIPT_VERSION >= 23800
-        int string_t_id = engine->GetStringFactory();
-#else
-        int string_t_id = engine->GetStringFactoryReturnTypeId();
-#endif
+        int string_t_id = get_script_string_type(engine);
         if(string_t_id != AS_NAMESPACE_QUALIFIER asNO_FUNCTION)
         {
             assert(string_t_id >= 0);

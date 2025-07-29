@@ -25,7 +25,7 @@ namespace asbind20
 {
 #if defined(_WIN32) && !defined(_WIN64)
 #    define ASBIND20_HAS_STANDALONE_STDCALL
-#    define ASBIND20_CDECL __cdecl
+#    define ASBIND20_CDECL   __cdecl
 #    define ASBIND20_STDCALL __stdcall
 #else
 // placeholder
@@ -208,6 +208,32 @@ constexpr bool is_signed(int type_id) noexcept
 constexpr bool is_objhandle(int type_id) noexcept
 {
     return type_id & (AS_NAMESPACE_QUALIFIER asTYPEID_OBJHANDLE);
+}
+
+/**
+ * @brief Get the script string type ID
+ *
+ * @param engine Script engine
+ */
+[[nodiscard]]
+inline int get_script_string_type(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
+#if ANGELSCRIPT_VERSION >= 23800
+    int string_t_id = engine->GetStringFactory();
+#else
+    int string_t_id = engine->GetStringFactoryReturnTypeId();
+#endif
+
+    return string_t_id;
+}
+
+/**
+ * @brief Check if a type id refers to the script string
+ */
+[[nodiscard]]
+inline bool is_script_string(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id)
+{
+    return get_script_string_type(engine) == type_id;
 }
 
 /**
