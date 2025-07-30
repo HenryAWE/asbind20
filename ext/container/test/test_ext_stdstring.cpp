@@ -100,7 +100,8 @@ std::string get_string_result(
     {
         EXPECT_EQ(result.error(), AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED)
             << "GetExceptionString: " << ctx->GetExceptionString() << '\n'
-            << "section: " << ctx->GetExceptionFunction()->GetScriptSectionName();
+            << "section: "
+            << asbind20::debugging::get_function_section_name(ctx->GetExceptionFunction());
     }
     else
         EXPECT_TRUE(asbind_test::result_has_value(result));
@@ -123,7 +124,8 @@ public:
                 auto* ctx = asbind20::current_context();
                 if(ctx)
                 {
-                    FAIL() << "string assertion failed in \"" << ctx->GetFunction()->GetScriptSectionName() << "\": " << msg;
+                    FAIL() << "string assertion failed in \""
+                           << asbind20::debugging::get_function_section_name(ctx->GetFunction()) << "\": " << msg;
                 }
                 else
                 {

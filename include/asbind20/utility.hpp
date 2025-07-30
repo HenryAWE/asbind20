@@ -1225,6 +1225,26 @@ inline void set_script_exception(std::string_view info)
         info
     );
 }
+
+namespace debugging
+{
+    /**
+     * @brief Get script section name of function
+     */
+    [[nodiscard]]
+    inline const char* get_function_section_name(AS_NAMESPACE_QUALIFIER asIScriptFunction* func)
+    {
+#if ANGELSCRIPT_VERSION >= 23800
+
+        const char* result;
+        func->GetDeclaredAt(&result, nullptr, nullptr);
+        return result;
+
+#else // 2.37
+        return func->GetScriptSectionName();
+#endif
+    }
+} // namespace debugging
 } // namespace asbind20
 
 #endif

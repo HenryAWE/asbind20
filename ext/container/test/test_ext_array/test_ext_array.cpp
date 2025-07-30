@@ -7,7 +7,8 @@ namespace test_ext_array
 void run_string(
     AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
     const char* section,
-    std::string_view code)
+    std::string_view code
+)
 {
     int r = 0;
 
@@ -39,12 +40,12 @@ void run_string(
     {
         FAIL()
             << "GetExceptionString: " << ctx->GetExceptionString() << '\n'
-            << "section: " << ctx->GetExceptionFunction()->GetScriptSectionName();
+            << "section: " << asbind20::debugging::get_function_section_name(ctx->GetExceptionFunction());
     }
     else
         ASSERT_TRUE(asbind_test::result_has_value(result));
 }
-}
+} // namespace test_ext_array
 
 namespace test_ext_array
 {
