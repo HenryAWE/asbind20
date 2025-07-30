@@ -63,7 +63,7 @@ public:
                 auto* ctx = current_context();
                 if(ctx)
                 {
-                    FAIL() << "array assertion failed in \"" << ctx->GetFunction()->GetScriptSectionName() << "\": " << msg;
+                    FAIL() << "array assertion failed in \"" << debugging::get_function_section_name(ctx->GetFunction()) << "\": " << msg;
                 }
                 else
                 {
