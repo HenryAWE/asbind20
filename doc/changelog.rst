@@ -3,6 +3,14 @@ Changelog
 
 Changelog since the version 1.5.0.
 
+1.7.1
+-----
+
+Update
+~~~~~~
+
+- Update compatibility with AngelScript 2.38.0.
+
 1.7.0
 -----
 
