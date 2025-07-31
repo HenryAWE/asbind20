@@ -927,7 +927,7 @@ namespace container
             }
             else if(is_objhandle(type_id))
             {
-                AS_NAMESPACE_QUALIFIER asITypeInfo* ti = engine->GetTypeInfoById(type_id);
+                auto* ti = engine->GetTypeInfoById(type_id);
                 if(data.handle)
                     engine->ReleaseScriptObject(data.handle, ti);
                 void* handle = *static_cast<void* const*>(ref);
@@ -976,7 +976,7 @@ namespace container
             {
                 void** out_handle = static_cast<void**>(out);
 
-                AS_NAMESPACE_QUALIFIER asITypeInfo* ti = engine->GetTypeInfoById(type_id);
+                auto* ti = engine->GetTypeInfoById(type_id);
                 if(*out_handle)
                     engine->ReleaseScriptObject(*out_handle, ti);
                 *out_handle = data.handle;

@@ -249,7 +249,7 @@ inline bool is_script_string(
  *           so it's safe to call this function by `type_requires_gc(ti->GetSubType())`.
  */
 [[nodiscard]]
-inline bool type_requires_gc(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+inline bool type_requires_gc(const AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
 {
     if(!ti) [[unlikely]]
         return false;
@@ -279,7 +279,7 @@ inline bool type_requires_gc(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
  * @param type_id AngelScript type id
  */
 inline auto sizeof_script_type(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id
+    const AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id
 )
     -> AS_NAMESPACE_QUALIFIER asUINT
 {
@@ -317,7 +317,7 @@ inline auto sizeof_script_type(
         }
     }
 
-    AS_NAMESPACE_QUALIFIER asITypeInfo* ti = engine->GetTypeInfoById(type_id);
+    auto* ti = engine->GetTypeInfoById(type_id);
     if(!ti)
         return 0;
 
@@ -1042,7 +1042,7 @@ std::size_t member_offset(T Class::* mp) noexcept
 }
 
 [[nodiscard]]
-inline auto get_default_factory(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+inline auto get_default_factory(const AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
     -> AS_NAMESPACE_QUALIFIER asIScriptFunction*
 {
     if(!ti) [[unlikely]]
@@ -1060,7 +1060,7 @@ inline auto get_default_factory(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
 }
 
 [[nodiscard]]
-inline auto get_default_constructor(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+inline auto get_default_constructor(const AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
     -> AS_NAMESPACE_QUALIFIER asIScriptFunction*
 {
     if(!ti) [[unlikely]]
@@ -1082,7 +1082,7 @@ inline auto get_default_constructor(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
 }
 
 [[nodiscard]]
-inline auto get_weakref_flag(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+inline auto get_weakref_flag(const AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
     -> AS_NAMESPACE_QUALIFIER asIScriptFunction*
 {
     if(!ti) [[unlikely]]

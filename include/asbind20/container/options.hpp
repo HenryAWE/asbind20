@@ -18,10 +18,12 @@ namespace asbind20::container
  * @brief Concept of type information policies
  */
 template <typename T>
-concept typeinfo_policy = requires(AS_NAMESPACE_QUALIFIER asITypeInfo* ti) {
+concept typeinfo_policy = requires(
+    AS_NAMESPACE_QUALIFIER asITypeInfo* ti, const AS_NAMESPACE_QUALIFIER asITypeInfo* cti
+) {
     typename T::typeinfo_policy_tag;
     { T::get_type_info(ti) } -> std::same_as<AS_NAMESPACE_QUALIFIER asITypeInfo*>;
-    { T::get_type_id(ti) } -> std::same_as<int>;
+    { T::get_type_id(cti) } -> std::same_as<int>;
 };
 
 /**
@@ -44,7 +46,7 @@ struct typeinfo_identity
     }
 
     [[nodiscard]]
-    static int get_type_id(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+    static int get_type_id(const AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
     {
         if(!ti) [[unlikely]]
             return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
@@ -73,7 +75,7 @@ struct typeinfo_subtype :
     }
 
     [[nodiscard]]
-    static int get_type_id(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+    static int get_type_id(const AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
     {
         if(!ti) [[unlikely]]
             return AS_NAMESPACE_QUALIFIER asINVALID_ARG;

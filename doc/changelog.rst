@@ -10,6 +10,7 @@ Update
 ~~~~~~
 
 - Update compatibility with AngelScript 2.38.0.
+- Mark more pointers in parameter list by ``const``.
 
 1.7.0
 -----
