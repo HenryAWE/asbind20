@@ -216,7 +216,9 @@ constexpr bool is_objhandle(int type_id) noexcept
  * @param engine Script engine
  */
 [[nodiscard]]
-inline int get_script_string_type(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+inline int get_script_string_type(
+    const AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
+)
 {
 #if ANGELSCRIPT_VERSION >= 23800
     int string_t_id = engine->GetStringFactory();
@@ -231,7 +233,9 @@ inline int get_script_string_type(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
  * @brief Check if a type id refers to the script string
  */
 [[nodiscard]]
-inline bool is_script_string(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id)
+inline bool is_script_string(
+    const AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id
+)
 {
     return get_script_string_type(engine) == type_id;
 }
@@ -1226,13 +1230,18 @@ inline void set_script_exception(std::string_view info)
     );
 }
 
+/**
+ * @brief Tools for debugging
+ */
 namespace debugging
 {
     /**
      * @brief Get script section name of function
      */
     [[nodiscard]]
-    inline const char* get_function_section_name(AS_NAMESPACE_QUALIFIER asIScriptFunction* func)
+    inline const char* get_function_section_name(
+        const AS_NAMESPACE_QUALIFIER asIScriptFunction* func
+    )
     {
 #if ANGELSCRIPT_VERSION >= 23800
 
