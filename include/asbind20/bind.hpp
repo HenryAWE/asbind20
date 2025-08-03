@@ -21,6 +21,7 @@
 #include "detail/include_as.hpp"
 #include "utility.hpp"
 #include "generic.hpp"
+#include "decl.hpp"
 
 namespace asbind20
 {
@@ -5186,7 +5187,7 @@ public:
         return *this;
     }
 
-#define ASBIND20_VALUE_CLASS_BEH(func_name, as_beh, as_decl)                             \
+#define ASBIND20_VALUE_CLASS_BEH(func_name, as_beh)                                      \
     template <native_function Fn>                                                        \
     basic_value_class& func_name(Fn&& fn) requires(!ForceGeneric)                        \
     {                                                                                    \
@@ -5195,7 +5196,7 @@ public:
             detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER as_beh, Class, func_t>(); \
         this->behaviour_impl(                                                            \
             AS_NAMESPACE_QUALIFIER as_beh,                                               \
-            as_decl,                                                                     \
+            decl::decl_of_beh<as_beh>(),                                                 \
             fn,                                                                          \
             call_conv<conv>                                                              \
         );                                                                               \
@@ -5205,7 +5206,7 @@ public:
     {                                                                                    \
         this->behaviour_impl(                                                            \
             AS_NAMESPACE_QUALIFIER as_beh,                                               \
-            as_decl,                                                                     \
+            decl::decl_of_beh<as_beh>(),                                                 \
             gfn,                                                                         \
             call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>                             \
         );                                                                               \
@@ -5233,8 +5234,8 @@ public:
     // For garbage collected value type
     // See: https://www.angelcode.com/angelscript/sdk/docs/manual/doc_gc_object.html#doc_reg_gcref_value
 
-    ASBIND20_VALUE_CLASS_BEH(enum_refs, asBEHAVE_ENUMREFS, "void f(int&in)")
-    ASBIND20_VALUE_CLASS_BEH(release_refs, asBEHAVE_RELEASEREFS, "void f(int&in)")
+    ASBIND20_VALUE_CLASS_BEH(enum_refs, asBEHAVE_ENUMREFS)
+    ASBIND20_VALUE_CLASS_BEH(release_refs, asBEHAVE_RELEASEREFS)
 
 #undef ASBIND20_VALUE_CLASS_BEH
 
@@ -6728,7 +6729,7 @@ public:
         return *this;
     }
 
-#define ASBIND20_REFERENCE_CLASS_BEH(func_name, as_beh, as_decl)                         \
+#define ASBIND20_REFERENCE_CLASS_BEH(func_name, as_beh)                                  \
     template <native_function Fn>                                                        \
     basic_ref_class& func_name(Fn&& fn) requires(!ForceGeneric)                          \
     {                                                                                    \
@@ -6737,7 +6738,7 @@ public:
             detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER as_beh, Class, func_t>(); \
         this->behaviour_impl(                                                            \
             AS_NAMESPACE_QUALIFIER as_beh,                                               \
-            as_decl,                                                                     \
+            decl::decl_of_beh<as_beh>(),                                                 \
             fn,                                                                          \
             call_conv<conv>                                                              \
         );                                                                               \
@@ -6747,7 +6748,7 @@ public:
     {                                                                                    \
         this->behaviour_impl(                                                            \
             AS_NAMESPACE_QUALIFIER as_beh,                                               \
-            as_decl,                                                                     \
+            decl::decl_of_beh<as_beh>(),                                                 \
             gfn,                                                                         \
             call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>                             \
         );                                                                               \
@@ -6772,14 +6773,14 @@ public:
         return *this;                                                                    \
     }
 
-    ASBIND20_REFERENCE_CLASS_BEH(get_weakref_flag, asBEHAVE_GET_WEAKREF_FLAG, "int&f()")
-    ASBIND20_REFERENCE_CLASS_BEH(addref, asBEHAVE_ADDREF, "void f()")
-    ASBIND20_REFERENCE_CLASS_BEH(release, asBEHAVE_RELEASE, "void f()")
-    ASBIND20_REFERENCE_CLASS_BEH(get_refcount, asBEHAVE_GETREFCOUNT, "int f()")
-    ASBIND20_REFERENCE_CLASS_BEH(set_gc_flag, asBEHAVE_SETGCFLAG, "void f()")
-    ASBIND20_REFERENCE_CLASS_BEH(get_gc_flag, asBEHAVE_GETGCFLAG, "bool f()")
-    ASBIND20_REFERENCE_CLASS_BEH(enum_refs, asBEHAVE_ENUMREFS, "void f(int&in)")
-    ASBIND20_REFERENCE_CLASS_BEH(release_refs, asBEHAVE_RELEASEREFS, "void f(int&in)")
+    ASBIND20_REFERENCE_CLASS_BEH(get_weakref_flag, asBEHAVE_GET_WEAKREF_FLAG)
+    ASBIND20_REFERENCE_CLASS_BEH(addref, asBEHAVE_ADDREF)
+    ASBIND20_REFERENCE_CLASS_BEH(release, asBEHAVE_RELEASE)
+    ASBIND20_REFERENCE_CLASS_BEH(get_refcount, asBEHAVE_GETREFCOUNT)
+    ASBIND20_REFERENCE_CLASS_BEH(set_gc_flag, asBEHAVE_SETGCFLAG)
+    ASBIND20_REFERENCE_CLASS_BEH(get_gc_flag, asBEHAVE_GETGCFLAG)
+    ASBIND20_REFERENCE_CLASS_BEH(enum_refs, asBEHAVE_ENUMREFS)
+    ASBIND20_REFERENCE_CLASS_BEH(release_refs, asBEHAVE_RELEASEREFS)
 
 #undef ASBIND20_REFERENCE_CLASS_BEH
 
