@@ -15,6 +15,11 @@ Update
 - Add test for clang-cl (Clang with MSVC-like interfaces) support.
 - Add nightly test for checking compatibility of asbind20 with the latest WIP version of AngelScript.
 
+Bug fix
+~~~~~~~
+
+- Add some missing utility interfaces for RAII helpers.
+
 Documentation
 ~~~~~~~~~~~~~
 
