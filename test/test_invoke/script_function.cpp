@@ -87,8 +87,6 @@ TEST(script_method, ownership)
         script_method_ref<int()> rf = test;
         EXPECT_EQ(test.target(), rf.target());
 
-
-        request_context ctx(engine);
         auto result = rf(ctx, foo);
 
         EXPECT_TRUE(asbind_test::result_has_value(result));
