@@ -34,6 +34,7 @@ jobs:
           -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake"
           -Dasbind_build_ext=1
           -Dasbind_build_test=1
+          -Dasbind_build_bench=1
 
       - name: Build
         run: cmake --build ${{github.workspace}}/build
@@ -41,6 +42,21 @@ jobs:
       - name: Test
         working-directory: ${{github.workspace}}/build
         run: ctest --output-on-failure
+
+      - name: Benchmark
+        working-directory: ${{github.workspace}}/build/bench
+        # Run all executables start with "bench_", using PowerShell
+        shell: pwsh
+        run: |
+          Get-ChildItem -Path . -Filter "bench_*.exe" -File | ForEach-Object {
+            $exe = $_.FullName
+            if (Test-Path $exe) {
+              Write-Host "Running benchmark: $exe"
+              & $exe
+            } else {
+              Write-Host "Benchmark executable not found: $exe"
+            }
+          }
 
     ClangCl:
       runs-on: windows-2025
@@ -81,6 +97,7 @@ jobs:
           -Dasbind_dev_warning_as_error=OFF
           -Dasbind_build_ext=1
           -Dasbind_build_test=1
+          -Dasbind_build_bench=1
 
       - name: Build
         run: cmake --build ${{github.workspace}}/build --config Release
@@ -89,6 +106,21 @@ jobs:
         working-directory: ${{github.workspace}}/build
         run: |
           ctest --output-on-failure
+
+      - name: Benchmark
+        working-directory: ${{github.workspace}}/build/bench
+        # Run all executables start with "bench_", using PowerShell
+        shell: pwsh
+        run: |
+          Get-ChildItem -Path . -Filter "bench_*.exe" -File | ForEach-Object {
+            $exe = $_.FullName
+            if (Test-Path $exe) {
+              Write-Host "Running benchmark: $exe"
+              & $exe
+            } else {
+              Write-Host "Benchmark executable not found: $exe"
+            }
+          }
 
     GCC:
       runs-on: ubuntu-24.04
@@ -128,6 +160,7 @@ jobs:
           -DCMAKE_TOOLCHAIN_FILE="${VCPKG_INSTALLATION_ROOT}/scripts/buildsystems/vcpkg.cmake"
           -Dasbind_build_ext=1
           -Dasbind_build_test=1
+          -Dasbind_build_bench=1
 
       - name: Build
         run: cmake --build ${{github.workspace}}/build
@@ -151,6 +184,17 @@ jobs:
       - name: Test
         working-directory: ${{github.workspace}}/build
         run: ctest --output-on-failure
+
+      - name: Benchmark
+        working-directory: ${{github.workspace}}/build/bench
+        # Run all executables start with "bench_"
+        run: |
+          for exe in bench_*; do
+            if [ -x "$exe" ]; then
+              echo "Running benchmark: $exe"
+              ./$exe
+            fi
+          done
 
     Clang:
       runs-on: ubuntu-24.04
@@ -250,6 +294,7 @@ jobs:
           -DAngelscript_DIR=/tmp/arm/lib/cmake/Angelscript
           -Dasbind_build_ext=1
           -Dasbind_build_test=1
+          -Dasbind_build_bench=1
 
       - name: Build
         run: cmake --build ${{github.workspace}}/build
@@ -257,6 +302,17 @@ jobs:
       - name: Test
         working-directory: ${{github.workspace}}/build
         run: ctest --output-on-failure
+
+      - name: Benchmark
+        working-directory: ${{github.workspace}}/build/bench
+        # Run all executables start with "bench_"
+        run: |
+          for exe in bench_*; do
+            if [ -x "$exe" ]; then
+              echo "Running benchmark: $exe"
+              ./$exe
+            fi
+          done
 
     AS_USE_NAMESPACE:
       runs-on: ubuntu-24.04
