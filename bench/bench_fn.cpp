@@ -1,5 +1,4 @@
-#include <benchmark/benchmark.h>
-#include <asbind20/asbind.hpp>
+#include "shared_bench_lib.hpp"
 #include <cassert>
 
 // Benchmark for comparing implementing the same logic in different ways:
@@ -13,7 +12,6 @@
 
 namespace bench_fn
 {
-BENCHMARK_DONT_OPTIMIZE
 static int small_fn(int a, int b)
 {
     return a + b;
@@ -51,10 +49,14 @@ static auto prepare_small_fn(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 
 static void cpp_small_fn(benchmark::State& state)
 {
+    using asbind_bench::int_identity;
     for(auto&& _ : state)
     {
-        BENCHMARK_UNUSED
-        int r = bench_fn::small_fn(1, 2);
+        int r = bench_fn::small_fn(
+            int_identity(1),
+            int_identity(2)
+        );
+        int_identity(r);
     }
 }
 
@@ -87,6 +89,7 @@ static void script_small_fn(benchmark::State& state)
     {
         auto result = run(ctx);
         assert(result.value() == 3);
+        asbind_bench::int_identity(result.value());
     }
 }
 
@@ -107,6 +110,7 @@ static void native_small_fn(benchmark::State& state)
     {
         auto result = run(ctx);
         assert(result.value() == 3);
+        asbind_bench::int_identity(result.value());
     }
 }
 
@@ -125,6 +129,7 @@ static void generic_small_fn(benchmark::State& state)
     {
         auto result = run(ctx);
         assert(result.value() == 3);
+        asbind_bench::int_identity(result.value());
     }
 }
 
@@ -154,6 +159,7 @@ static void handwritten_generic_small_fn(benchmark::State& state)
     {
         auto result = run(ctx);
         assert(result.value() == 3);
+        asbind_bench::int_identity(result.value());
     }
 }
 

@@ -1,3 +1,6 @@
+add_library(shared_bench_lib STATIC shared_bench_lib.hpp shared_bench_lib.cpp)
+target_link_libraries(shared_bench_lib PUBLIC asbind20)
+target_link_libraries(shared_bench_lib PUBLIC benchmark::benchmark)
+
 add_executable(bench_fn bench_fn.cpp)
-target_link_libraries(bench_fn PRIVATE asbind20)
-target_link_libraries(bench_fn PRIVATE benchmark::benchmark)
+target_link_libraries(bench_fn PRIVATE shared_bench_lib)
