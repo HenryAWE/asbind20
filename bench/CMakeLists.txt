@@ -4,3 +4,4 @@ target_link_libraries(shared_bench_lib PUBLIC benchmark::benchmark)
 
 add_executable(bench_fn bench_fn.cpp)
 target_link_libraries(bench_fn PRIVATE shared_bench_lib)
+target_link_libraries(bench_fn PRIVATE asbind20_ext_container)
