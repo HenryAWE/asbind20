@@ -14,6 +14,7 @@ Update
 - Add CMake flag for controlling the warning-as-error compiler flag during development and test.
 - Add test for clang-cl (Clang with MSVC-like interfaces) support.
 - Add nightly test for checking compatibility of asbind20 with the latest WIP version of AngelScript.
+- Add benchmarks for finding performance issues during development.
 
 Bug fix
 ~~~~~~~
