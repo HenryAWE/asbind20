@@ -190,6 +190,7 @@ jobs:
           -DCMAKE_TOOLCHAIN_FILE="${VCPKG_INSTALLATION_ROOT}/scripts/buildsystems/vcpkg.cmake"
           -Dasbind_build_ext=1
           -Dasbind_build_test=1
+          -Dasbind_build_bench=1
 
       - name: Build
         run: cmake --build ${{github.workspace}}/build
@@ -197,6 +198,17 @@ jobs:
       - name: Test
         working-directory: ${{github.workspace}}/build
         run: ctest --output-on-failure
+
+      - name: Benchmark
+        working-directory: ${{github.workspace}}/build/bench
+        # Run all executables start with "bench_"
+        run: |
+          for exe in bench_*; do
+            if [ -x "$exe" ]; then
+              echo "Running benchmark: $exe"
+              ./$exe
+            fi
+          done
 
     ClangARM:
       runs-on: ubuntu-24.04-arm

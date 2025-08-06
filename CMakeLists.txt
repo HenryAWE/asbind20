@@ -33,6 +33,8 @@ include(GNUInstallDirs)
 
 option(asbind_build_test "Build tests" OFF)
 mark_as_advanced(asbind_build_test)
+option(asbind_build_bench "Build benchmarks" OFF)
+mark_as_advanced(asbind_build_bench)
 
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
@@ -56,6 +58,22 @@ if(${asbind_build_test})
     FetchContent_MakeAvailable(googletest)
 
     enable_testing()
+endif()
+
+if(${asbind_build_bench})
+    message(STATUS "Fetching Google Benchmark v1.9.4 from GitHub")
+
+    include(FetchContent)
+
+    FetchContent_Declare(
+        benchmark
+        GIT_REPOSITORY https://github.com/google/benchmark.git
+        GIT_TAG v1.9.4
+    )
+    set(BENCHMARK_ENABLE_INSTALL OFF)
+    set(BENCHMARK_ENABLE_TESTING OFF)
+    set(BENCHMARK_ENABLE_GTEST_TESTS OFF)
+    FetchContent_MakeAvailable(benchmark)
 endif()
 
 if(${asbind_build_ext})
@@ -109,4 +127,8 @@ install(
 
 if(${asbind_build_test})
     add_subdirectory(test)
+endif()
+
+if(${asbind_build_bench})
+    add_subdirectory(bench)
 endif()
