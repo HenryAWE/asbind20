@@ -9,7 +9,7 @@ If the compiler and standard library support newer features like C++23,
 asbind20 will enable support for them.
 
 There is a nightly build script in CI of asbind20,
-testing its compatibility with the latest WIP version of AngelScript.
+testing its compatibility with `the latest WIP version of AngelScript <https://www.angelcode.com/angelscript/wip.php>`_.
 If you are using a WIP version of AS for newest features or fixes,
 you need to consider using the latest release of asbind20,
 or even the development branch.
