@@ -34,7 +34,7 @@ namespace decl
      * @return Null-terminated string
      */
     template <AS_NAMESPACE_QUALIFIER asEBehaviours Beh>
-    constexpr const char* decl_of_beh() noexcept
+    consteval const char* decl_of_beh() noexcept
     {
         static_assert(
             Beh != AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT && Beh != AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
@@ -56,6 +56,9 @@ namespace decl
         case AS_NAMESPACE_QUALIFIER asBEHAVE_ENUMREFS:
         case AS_NAMESPACE_QUALIFIER asBEHAVE_RELEASEREFS:
             return "void f(int&in)";
+
+        default:
+            return "";
         }
     }
 } // namespace decl

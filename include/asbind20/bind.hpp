@@ -5196,7 +5196,7 @@ public:
             detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER as_beh, Class, func_t>(); \
         this->behaviour_impl(                                                            \
             AS_NAMESPACE_QUALIFIER as_beh,                                               \
-            decl::decl_of_beh<as_beh>(),                                                 \
+            decl::decl_of_beh<AS_NAMESPACE_QUALIFIER as_beh>(),                          \
             fn,                                                                          \
             call_conv<conv>                                                              \
         );                                                                               \
@@ -5206,7 +5206,7 @@ public:
     {                                                                                    \
         this->behaviour_impl(                                                            \
             AS_NAMESPACE_QUALIFIER as_beh,                                               \
-            decl::decl_of_beh<as_beh>(),                                                 \
+            decl::decl_of_beh<AS_NAMESPACE_QUALIFIER as_beh>(),                          \
             gfn,                                                                         \
             call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>                             \
         );                                                                               \
@@ -6738,7 +6738,7 @@ public:
             detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER as_beh, Class, func_t>(); \
         this->behaviour_impl(                                                            \
             AS_NAMESPACE_QUALIFIER as_beh,                                               \
-            decl::decl_of_beh<as_beh>(),                                                 \
+            decl::decl_of_beh<AS_NAMESPACE_QUALIFIER as_beh>(),                          \
             fn,                                                                          \
             call_conv<conv>                                                              \
         );                                                                               \
@@ -6748,7 +6748,7 @@ public:
     {                                                                                    \
         this->behaviour_impl(                                                            \
             AS_NAMESPACE_QUALIFIER as_beh,                                               \
-            decl::decl_of_beh<as_beh>(),                                                 \
+            decl::decl_of_beh<AS_NAMESPACE_QUALIFIER as_beh>(),                          \
             gfn,                                                                         \
             call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>                             \
         );                                                                               \
