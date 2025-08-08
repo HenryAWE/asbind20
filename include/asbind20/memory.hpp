@@ -95,6 +95,11 @@ public:
         return get();
     }
 
+    explicit operator bool() const noexcept
+    {
+        return get() != nullptr;
+    }
+
     handle_type operator->() const noexcept
     {
         return get();

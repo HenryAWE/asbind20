@@ -41,6 +41,18 @@ RAII Helpers
 
 .. doxygenfunction:: asbind20::make_lockable_shared_bool
 
+IO Helpers
+==========
+
+The IO support is in a standalone header ``<asbind20/io/stream.hpp>``,
+which means you need to include it explicitly if you want to load/save byte code of AngelScript.
+
+.. doxygengroup:: ByteCode
+
+.. doxygenstruct:: asbind20::io::load_byte_code_result
+   :members:
+   :undoc-members:
+
 Miscellaneous Utilities
 =======================
 

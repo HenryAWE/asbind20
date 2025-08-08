@@ -1022,6 +1022,9 @@ public:
     script_function& operator=(const script_function&) = default;
     script_function& operator=(script_function&&) noexcept = default;
 
+    script_function(script_function_ref<R(Args...)> rf) noexcept
+        : my_base(rf.target()) {}
+
     result_type operator()(
         AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, Args&&... args
     ) const
@@ -1036,6 +1039,11 @@ public:
     void swap(script_function& other) noexcept
     {
         my_base::swap(other);
+    }
+
+    operator script_function_ref<R(Args...)>() const noexcept
+    {
+        return target();
     }
 };
 
@@ -1060,6 +1068,9 @@ public:
     explicit script_method(handle_type fp)
         : my_base(fp) {}
 
+    script_method(script_method_ref<R(Args...)> rf) noexcept
+        : my_base(rf.target()) {}
+
     script_method& operator=(const script_method&) = default;
     script_method& operator=(script_method&&) noexcept = default;
 
@@ -1079,6 +1090,11 @@ public:
     {
         my_base::swap(other);
     }
+
+    operator script_method_ref<R(Args...)>() const noexcept
+    {
+        return target();
+    }
 };
 
 /**
@@ -1094,7 +1110,7 @@ public:
 [[nodiscard]]
 inline script_object instantiate_class(
     AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
-    AS_NAMESPACE_QUALIFIER asITypeInfo* class_info
+    const AS_NAMESPACE_QUALIFIER asITypeInfo* class_info
 )
 {
     if(!class_info) [[unlikely]]

@@ -22,6 +22,9 @@ namespace asbind20
  */
 namespace io
 {
+    /**
+     * @brief Wrapper for `std::ostream`
+     */
     class ostream_wrapper final : public AS_NAMESPACE_QUALIFIER asIBinaryStream
     {
     public:
@@ -56,6 +59,9 @@ namespace io
         std::ostream* m_os;
     };
 
+    /**
+     * @brief Wrapper for `std::istream`
+     */
     class istream_wrapper final : public AS_NAMESPACE_QUALIFIER asIBinaryStream
     {
     public:
@@ -130,6 +136,9 @@ namespace io
         OutputIterator m_out;
     };
 
+    /**
+     * @brief Wrapper for reading from memory
+     */
     class memory_reader final : public AS_NAMESPACE_QUALIFIER asIBinaryStream
     {
     public:
@@ -179,9 +188,13 @@ namespace io
      */
     struct load_byte_code_result
     {
+        /// Loading result
         int r;
         bool debug_info_stripped;
 
+        /**
+         * @brief Will return true if `r` indicates the byte code was successfully loaded
+         */
         explicit operator bool() const noexcept
         {
             return r >= 0;
@@ -189,6 +202,19 @@ namespace io
     };
 } // namespace io
 
+/**
+ * @defgroup ByteCode Byte code manipulation
+ */
+/// @{
+
+/**
+ * @brief Save byte code to `std::ostream`
+ *
+ * @param os Output stream
+ * @param m Script module to save
+ * @param strip_debug_info Strip debug information
+ * @return Result of `asIScriptModule::SaveByteCode`
+ */
 inline int save_byte_code(
     std::ostream& os,
     AS_NAMESPACE_QUALIFIER asIScriptModule* m,
@@ -199,6 +225,17 @@ inline int save_byte_code(
     return m->SaveByteCode(&wrapper, strip_debug_info);
 }
 
+/**
+ * @brief Save byte code to an output iterator
+ *
+ * @tparam OutputIteratorValueType Value type of output iterator.
+ *         It can be any integral type whose size equals to `std::byte`.
+ *
+ * @param out Output iterator
+ * @param m Script module
+ * @param strip_debug_info Strip debug information
+ * @return Result of `asIScriptModule::SaveByteCode`
+ */
 template <typename OutputIteratorValueType = std::byte>
 int save_byte_code(
     std::output_iterator<OutputIteratorValueType> auto out,
@@ -210,6 +247,13 @@ int save_byte_code(
     return m->SaveByteCode(&wrapper, strip_debug_info);
 }
 
+/**
+ * @brief Load byte code from `std::istream`
+ *
+ * @param is Input stream
+ * @param m Script module
+ * @return Loading result
+ */
 inline io::load_byte_code_result load_byte_code(
     std::istream& is,
     AS_NAMESPACE_QUALIFIER asIScriptModule* m
@@ -221,6 +265,14 @@ inline io::load_byte_code_result load_byte_code(
     return {r, debug_info_stripped};
 }
 
+/**
+ * @brief Load byte code from memory buffer
+ *
+ * @param mem Memory buffer
+ * @param size Buffer size
+ * @param m Script module
+ * @return Loading result
+ */
 inline io::load_byte_code_result load_byte_code(
     const void* mem,
     std::size_t size,
@@ -232,6 +284,8 @@ inline io::load_byte_code_result load_byte_code(
     int r = m->LoadByteCode(&wrapper, &debug_info_stripped);
     return {r, debug_info_stripped};
 }
+
+/// @}
 } // namespace asbind20
 
 #endif

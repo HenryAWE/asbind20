@@ -1,0 +1,61 @@
+# Testing asbind20 with the latest WIP version of AngelScript
+
+name: Nightly
+
+on:
+  push:
+  schedule:
+    - cron: '0 0 * * *' # Runs every day at midnight UTC
+
+jobs:
+    ClangNightly:
+      runs-on: ubuntu-24.04
+      strategy:
+          fail-fast: false
+          matrix:
+            cxxstd: [20, 23]
+
+      name: Linux x64 Clang 19 C++${{matrix.cxxstd}}
+
+      env:
+        VCPKG_BUILD_TYPE: release
+
+      steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+            sudo apt-get update
+            sudo apt-get install -y cmake ninja-build clang-19 clang++-19
+
+      - name: Install AngelScript WIP
+        working-directory: /tmp
+        run: |
+          git clone https://github.com/codecat/angelscript-mirror.git
+          cd angelscript-mirror
+          git log -1 # Show the latest commit for reference
+          cd sdk/angelscript/projects/cmake
+          cmake -GNinja -DCMAKE_BUILD_TYPE=Release -S . -B build -DCMAKE_INSTALL_PREFIX=/tmp/installed/
+          cmake --build build
+          cmake --install build
+
+      - name: Configure
+        run: >
+          cmake
+          -S ${{github.workspace}}
+          -B build
+          -G Ninja
+          -Dasbind_cxxstd=${{matrix.cxxstd}}
+          -DCMAKE_C_COMPILER=clang-19
+          -DCMAKE_CXX_COMPILER=clang++-19
+          -DCMAKE_BUILD_TYPE=Release
+          -Dasbind_build_ext=1
+          -Dasbind_build_test=1
+          -DAngelscript_DIR=/tmp/installed/lib/cmake/Angelscript
+
+      - name: Build
+        run: cmake --build ${{github.workspace}}/build
+
+      - name: Test
+        working-directory: ${{github.workspace}}/build
+        run: ctest --output-on-failure

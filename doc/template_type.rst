@@ -126,5 +126,5 @@ except the type name should be the instantiated name.
 
 .. code-block:: c++
 
-    template_value_class<vec2<float>>(engine, "vec2<float>", /* ... */)
+    value_class<vec2<float>>(engine, "vec2<float>", /* ... */)
         .method(/* ... */);
