@@ -3,6 +3,9 @@ Changelog
 
 Changelog since the version 1.5.0.
 
+1.8.0
+-----
+
 1.7.1
 -----
 
