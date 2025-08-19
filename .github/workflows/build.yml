@@ -76,9 +76,9 @@ jobs:
       - name: Install AngelScript
         working-directory: ${{github.workspace}}
         run: |
-          git clone https://github.com/codecat/angelscript-mirror.git
-          cd angelscript-mirror
-          git reset --hard d259eab41fd08fbde83cf1a7b01f4def6a09e895 # 2.37.0
+          git clone https://github.com/anjo76/angelscript.git
+          cd angelscript
+          git reset --hard 535fa4e13037c659e726dcfac8791b19da463360 # 2.38.0
           cd sdk/angelscript/projects/cmake
           cmake -GNinja -DCMAKE_BUILD_TYPE=Release -S . -B build
           cmake --build build
@@ -273,9 +273,9 @@ jobs:
       - name: Install AngelScript
         working-directory: /tmp
         run: |
-          git clone https://github.com/codecat/angelscript-mirror.git
-          cd angelscript-mirror
-          git reset --hard d259eab41fd08fbde83cf1a7b01f4def6a09e895 # 2.37.0
+          git clone https://github.com/anjo76/angelscript.git
+          cd angelscript
+          git reset --hard 535fa4e13037c659e726dcfac8791b19da463360 # 2.38.0
           cd sdk/angelscript/projects/cmake
           cmake -GNinja -DCMAKE_C_COMPILER=clang-18 -DCMAKE_CXX_COMPILER=clang++-18 -DCMAKE_BUILD_TYPE=Release -S . -B build -DCMAKE_INSTALL_PREFIX=/tmp/arm
           cmake --build build
@@ -379,9 +379,9 @@ jobs:
       - name: Install AngelScript
         working-directory: /tmp
         run: |
-          git clone https://github.com/codecat/angelscript-mirror.git
-          cd angelscript-mirror
-          git reset --hard d259eab41fd08fbde83cf1a7b01f4def6a09e895 # 2.37.0
+          git clone https://github.com/anjo76/angelscript.git
+          cd angelscript
+          git reset --hard 535fa4e13037c659e726dcfac8791b19da463360 # 2.38.0
           cd sdk/angelscript/projects/cmake
           emcmake cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS=-fexceptions -S . -B build
           cmake --build build
@@ -425,9 +425,9 @@ jobs:
       - name: Install AngelScript
         working-directory: /tmp
         run: |
-          git clone https://github.com/codecat/angelscript-mirror.git
-          cd angelscript-mirror
-          git reset --hard d259eab41fd08fbde83cf1a7b01f4def6a09e895 # 2.37.0
+          git clone https://github.com/anjo76/angelscript.git
+          cd angelscript
+          git reset --hard 535fa4e13037c659e726dcfac8791b19da463360 # 2.38.0
           cd sdk/angelscript/projects/cmake
           cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-fsanitize=address -fno-omit-frame-pointer" -S . -B build -DCMAKE_INSTALL_PREFIX=/tmp/asan
           cmake --build build

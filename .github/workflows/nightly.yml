@@ -31,8 +31,8 @@ jobs:
       - name: Install AngelScript WIP
         working-directory: /tmp
         run: |
-          git clone https://github.com/codecat/angelscript-mirror.git
-          cd angelscript-mirror
+          git clone https://github.com/anjo76/angelscript.git
+          cd angelscript
           git log -1 # Show the latest commit for reference
           cd sdk/angelscript/projects/cmake
           cmake -GNinja -DCMAKE_BUILD_TYPE=Release -S . -B build -DCMAKE_INSTALL_PREFIX=/tmp/installed/
