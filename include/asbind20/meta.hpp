@@ -157,6 +157,55 @@ namespace meta
             }(std::make_index_sequence<SizeL>(), std::make_index_sequence<SizeR>());
         }
     }
+
+    /**
+     * @brief Get the script type flags.
+     *
+     * This function produces the same result as `asGetTypeTraits`,
+     * but this function is available at compile-time.
+     */
+    template <typename T>
+    consteval auto get_script_type_flags() noexcept
+        -> AS_NAMESPACE_QUALIFIER asQWORD
+    {
+        using namespace std;
+
+        constexpr bool flag_c = is_default_constructible_v<T> && !is_trivially_default_constructible_v<T>;
+        constexpr bool flag_d = is_destructible_v<T> && !is_trivially_destructible_v<T>;
+        constexpr bool flag_a = is_copy_assignable_v<T> && !is_trivially_copy_assignable_v<T>;
+        constexpr bool flag_k = is_copy_constructible_v<T> && !is_trivially_copy_constructible_v<T>;
+
+        constexpr bool is_float = is_floating_point_v<T>;
+        constexpr bool is_primitive = is_integral_v<T> || is_pointer_v<T> || is_enum_v<T>;
+        constexpr bool is_class = is_class_v<T>;
+        constexpr bool is_array = is_array_v<T>;
+
+        if(is_float)
+            return AS_NAMESPACE_QUALIFIER asOBJ_APP_FLOAT;
+        if(is_primitive)
+            return AS_NAMESPACE_QUALIFIER asOBJ_APP_PRIMITIVE;
+
+        if(is_class)
+        {
+            AS_NAMESPACE_QUALIFIER asQWORD flags =
+                AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS;
+            if(flag_c)
+                flags |=AS_NAMESPACE_QUALIFIER  asOBJ_APP_CLASS_CONSTRUCTOR;
+            if(flag_d)
+                flags |=AS_NAMESPACE_QUALIFIER  asOBJ_APP_CLASS_DESTRUCTOR;
+            if(flag_a)
+                flags |=AS_NAMESPACE_QUALIFIER  asOBJ_APP_CLASS_ASSIGNMENT;
+            if(flag_k)
+                flags |=AS_NAMESPACE_QUALIFIER  asOBJ_APP_CLASS_COPY_CONSTRUCTOR;
+            return flags;
+        }
+
+        if(is_array)
+            return AS_NAMESPACE_QUALIFIER asOBJ_APP_ARRAY;
+
+        // Unknown type traits
+        return 0;
+    }
 } // namespace meta
 
 namespace detail

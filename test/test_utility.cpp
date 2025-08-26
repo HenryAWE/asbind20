@@ -445,6 +445,55 @@ TEST(utility, script_type_traits)
     EXPECT_FALSE(is_unsigned(AS_NAMESPACE_QUALIFIER asTYPEID_INT64));
 }
 
+namespace test_utility
+{
+struct pod_class
+{};
+
+class copyable_class
+{
+public:
+    copyable_class(const copyable_class&) = default;
+
+    int val;
+};
+
+class non_copyable
+{
+public:
+    non_copyable(const non_copyable&) = delete;
+};
+
+template <typename T>
+void script_flags_test_helper()
+{
+    using namespace asbind20;
+    EXPECT_EQ(
+        meta::get_script_type_flags<T>(),
+        AS_NAMESPACE_QUALIFIER asGetTypeTraits<T>()
+    );
+}
+} // namespace test_utility
+
+TEST(utility, script_flags)
+{
+    using namespace test_utility;
+
+    script_flags_test_helper<pod_class>();
+    script_flags_test_helper<copyable_class>();
+    script_flags_test_helper<non_copyable>();
+
+    // Primitives
+    script_flags_test_helper<int>();
+    script_flags_test_helper<unsigned int>();
+    script_flags_test_helper<float>();
+    script_flags_test_helper<double>();
+
+    // Arrays
+    script_flags_test_helper<int[2]>();
+    script_flags_test_helper<float[2]>();
+}
+
 int main(int argc, char* argv[])
 {
     ::testing::InitGoogleTest(&argc, argv);
