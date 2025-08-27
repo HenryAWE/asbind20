@@ -633,17 +633,23 @@ int set_script_arg(
     }
 }
 
+/**
+ * @brief Apply a tuple to script context as arguments
+ *
+ * @param ctx Script context. The script function must be prepared.
+ * @param tp Tuple of arguments
+ */
+template <typename Tuple>
+void apply_script_args(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, Tuple&& tp)
+{
+    [&]<AS_NAMESPACE_QUALIFIER asUINT... Idx>(std::integer_sequence<AS_NAMESPACE_QUALIFIER asUINT, Idx...>)
+    {
+        (set_script_arg(ctx, Idx, std::get<Idx>(tp)), ...);
+    }(std::make_integer_sequence<AS_NAMESPACE_QUALIFIER asUINT, std::tuple_size_v<Tuple>>());
+}
+
 namespace detail
 {
-    template <typename Tuple>
-    void set_args(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, Tuple&& tp)
-    {
-        [&]<AS_NAMESPACE_QUALIFIER asUINT... Idx>(std::integer_sequence<AS_NAMESPACE_QUALIFIER asUINT, Idx...>)
-        {
-            (set_script_arg(ctx, Idx, std::get<Idx>(tp)), ...);
-        }(std::make_integer_sequence<AS_NAMESPACE_QUALIFIER asUINT, std::tuple_size_v<Tuple>>());
-    }
-
     template <typename T>
     concept is_script_obj =
         std::same_as<T, AS_NAMESPACE_QUALIFIER asIScriptObject*> ||
@@ -753,7 +759,7 @@ script_invoke_result<R> script_invoke(
     r = ctx->Prepare(func);
     assert(r >= 0);
 
-    detail::set_args(ctx, std::forward_as_tuple(args...));
+    apply_script_args(ctx, std::forward_as_tuple(args...));
 
     return detail::execute_context<R>(ctx);
 }
@@ -769,9 +775,9 @@ concept script_object_handle =
 template <script_object_handle Object>
 int set_script_object(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, Object&& obj)
 {
-    return ctx->SetObject(const_cast<AS_NAMESPACE_QUALIFIER asIScriptObject*>(
-        (AS_NAMESPACE_QUALIFIER asIScriptObject const*)obj
-    ));
+    return ctx->SetObject(
+        const_cast<AS_NAMESPACE_QUALIFIER asIScriptObject*>((AS_NAMESPACE_QUALIFIER asIScriptObject const*)obj)
+    );
 }
 
 /**
@@ -795,7 +801,7 @@ script_invoke_result<R> script_invoke(
     r = set_script_object(ctx, std::forward<Object>(obj));
     assert(r >= 0);
 
-    detail::set_args(ctx, std::forward_as_tuple(std::forward<Args>(args)...));
+    apply_script_args(ctx, std::forward_as_tuple(std::forward<Args>(args)...));
 
     return detail::execute_context<R>(ctx);
 }
