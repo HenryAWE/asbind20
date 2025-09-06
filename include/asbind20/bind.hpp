@@ -516,16 +516,14 @@ namespace detail
         }
     };
 
-    template <typename Class, bool Template, typename Arg>
+    template <typename Class, typename Arg>
     class copy_constructor : public constructor_base<Class>
     {
         using my_base = constructor_base<Class>;
 
     public:
-        using native_function_type = std::conditional_t<
-            Template,
-            void (*)(AS_NAMESPACE_QUALIFIER asITypeInfo*, Arg, void*),
-            void (*)(Arg, void*)>;
+        using native_function_type =
+            void (*)(Arg, void*);
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         requires(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC ||
@@ -540,22 +538,22 @@ namespace detail
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
             {
-                if constexpr(Template)
-                {
-                    return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
-                    {
-                        void* mem = gen->GetObject();
-                        new(mem) Class(
-                            *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
-                            get_generic_arg<Arg>(
-                                gen, 1
-                            )
-                        );
+                // if constexpr(Template)
+                // {
+                //     return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+                //     {
+                //         void* mem = gen->GetObject();
+                //         new(mem) Class(
+                //             *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
+                //             get_generic_arg<Arg>(
+                //                 gen, 1
+                //             )
+                //         );
 
-                        my_base::destroy_if_ex(static_cast<Class*>(mem));
-                    };
-                }
-                else
+                //         my_base::destroy_if_ex(static_cast<Class*>(mem));
+                //     };
+                // }
+                // else
                 {
                     return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
                     {
@@ -572,41 +570,25 @@ namespace detail
             }
             else // CallConv == asCALL_CDECL_OBJLAST
             {
-                if constexpr(Template)
+                return +[](Arg arg, void* mem) -> void
                 {
-                    return +[](AS_NAMESPACE_QUALIFIER asITypeInfo* ti, Arg arg, void* mem) -> void
-                    {
-                        new(mem) Class(ti, std::forward<Arg>(arg));
+                    new(mem) Class(std::forward<Arg>(arg));
 
-                        my_base::destroy_if_ex(static_cast<Class*>(mem));
-                    };
-                }
-                else
-                {
-                    return +[](Arg arg, void* mem) -> void
-                    {
-                        new(mem) Class(std::forward<Arg>(arg));
-
-                        my_base::destroy_if_ex(static_cast<Class*>(mem));
-                    };
-                }
+                    my_base::destroy_if_ex(static_cast<Class*>(mem));
+                };
             }
         }
     };
 
-    template <typename ElemType, std::size_t Size, bool Template, typename Arg>
-    class copy_constructor<ElemType[Size], Template, Arg> : public constructor_base<ElemType[Size]>
+    template <typename ElemType, std::size_t Size, typename Arg>
+    class copy_constructor<ElemType[Size], Arg> : public constructor_base<ElemType[Size]>
     {
-        static_assert(!Template); // A plain C array cannot be template class
-
         using my_base = constructor_base<ElemType[Size]>;
 
     public:
         static_assert(std::is_reference_v<Arg>);
-        using native_function_type = std::conditional_t<
-            Template,
-            void (*)(AS_NAMESPACE_QUALIFIER asITypeInfo*, Arg, void*),
-            void (*)(Arg, void*)>;
+        using native_function_type =
+            void (*)(Arg, void*);
 
         using class_type = ElemType[Size];
         using pointer_type = ElemType*;
@@ -4826,13 +4808,24 @@ private:
 public:
     basic_value_class& copy_constructor(use_generic_t)
     {
-        detail::copy_constructor<Class, Template, const Class&> wrapper;
-        this->behaviour_impl(
-            AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
-            decl_copy_ctor().c_str(),
-            wrapper.generate(generic_call_conv),
-            generic_call_conv
-        );
+        if constexpr(std::is_array_v<Class>)
+        {
+            detail::copy_constructor<Class, const Class&> wrapper;
+            this->behaviour_impl(
+                AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
+                decl_copy_ctor().c_str(),
+                wrapper.generate(generic_call_conv),
+                generic_call_conv
+            );
+        }
+        else
+        {
+            constructor<const Class&>(
+                use_generic,
+                string_concat("const ", m_name, " &in")
+            );
+        }
+
         return *this;
     }
 
@@ -4844,13 +4837,22 @@ public:
         }
         else
         {
-            detail::copy_constructor<Class, Template, const Class&> wrapper;
-            this->behaviour_impl(
-                AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
-                decl_copy_ctor().c_str(),
-                wrapper.generate(call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>),
-                call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
-            );
+            if constexpr(std::is_array_v<Class>)
+            {
+                detail::copy_constructor<Class, const Class&> wrapper;
+                this->behaviour_impl(
+                    AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
+                    decl_copy_ctor().c_str(),
+                    wrapper.generate(call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>),
+                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+                );
+            }
+            else
+            {
+                constructor<const Class&>(
+                    string_concat("const ", m_name, " &in")
+                );
+            }
         }
 
         return *this;
