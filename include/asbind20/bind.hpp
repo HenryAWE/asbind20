@@ -16,6 +16,7 @@
 #include <string>
 #include <tuple>
 #include <algorithm>
+#include <memory>
 #include <functional>
 #include <span>
 #include "detail/include_as.hpp"
@@ -511,6 +512,68 @@ namespace detail
                         my_base::destroy_if_ex(static_cast<Class*>(mem));
                     };
                 }
+            }
+        }
+    };
+
+    template <typename Class, typename Arg>
+    class arr_copy_constructor;
+
+    template <typename ElemType, std::size_t Size, typename Arg>
+    class arr_copy_constructor<ElemType[Size], Arg> : public constructor_base<ElemType[Size]>
+    {
+        using my_base = constructor_base<ElemType[Size]>;
+
+    public:
+        static_assert(std::is_reference_v<Arg>);
+        using native_function_type =
+            void (*)(Arg, void*);
+
+        using class_type = ElemType[Size];
+        using pointer_type = ElemType*;
+
+        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        requires(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC ||
+                 CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST)
+        using wrapper_type = std::conditional_t<
+            CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
+            AS_NAMESPACE_QUALIFIER asGENFUNC_t,
+            native_function_type>;
+
+    public:
+        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        static constexpr auto generate(call_conv_t<CallConv>) noexcept -> wrapper_type<CallConv>
+        {
+            if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
+            {
+                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+                {
+                    void* mem = gen->GetObject();
+
+                    // Decay to pointer
+                    std::decay_t<Arg> ptr = get_generic_arg<Arg>(
+                        gen, 0
+                    );
+                    std::uninitialized_copy(
+                        ptr, ptr + Size, static_cast<ElemType*>(mem)
+                    );
+
+                    my_base::destroy_if_ex(static_cast<ElemType(*)[Size]>(mem));
+                };
+            }
+            else // CallConv == asCALL_CDECL_OBJLAST
+            {
+                return +[](Arg arg, void* mem) -> void
+                {
+                    // Decay to pointer
+                    std::decay_t<Arg> ptr = arg;
+
+                    std::uninitialized_copy(
+                        ptr, ptr + Size, static_cast<ElemType*>(mem)
+                    );
+
+                    my_base::destroy_if_ex(static_cast<ElemType(*)[Size]>(mem));
+                };
             }
         }
     };
@@ -4675,21 +4738,61 @@ public:
         return *this;
     }
 
+private:
+    std::string decl_copy_ctor() const
+    {
+        return string_concat("void f(const ", m_name, "&in)");
+    }
+
+public:
     basic_value_class& copy_constructor(use_generic_t)
     {
-        constructor<const Class&>(
-            use_generic,
-            string_concat("const ", m_name, " &in")
-        );
+        if constexpr(std::is_array_v<Class>)
+        {
+            detail::arr_copy_constructor<Class, const Class&> wrapper;
+            this->behaviour_impl(
+                AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
+                decl_copy_ctor().c_str(),
+                wrapper.generate(generic_call_conv),
+                generic_call_conv
+            );
+        }
+        else
+        {
+            constructor<const Class&>(
+                use_generic,
+                string_concat("const ", m_name, " &in")
+            );
+        }
 
         return *this;
     }
 
     basic_value_class& copy_constructor()
     {
-        constructor<const Class&>(
-            string_concat("const ", m_name, "&in")
-        );
+        if constexpr(ForceGeneric)
+        {
+            this->copy_constructor(use_generic);
+        }
+        else
+        {
+            if constexpr(std::is_array_v<Class>)
+            {
+                detail::arr_copy_constructor<Class, const Class&> wrapper;
+                this->behaviour_impl(
+                    AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
+                    decl_copy_ctor().c_str(),
+                    wrapper.generate(call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>),
+                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+                );
+            }
+            else
+            {
+                constructor<const Class&>(
+                    string_concat("const ", m_name, " &in")
+                );
+            }
+        }
 
         return *this;
     }

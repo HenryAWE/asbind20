@@ -6,6 +6,11 @@ Changelog since the version 1.5.0.
 1.8.0
 -----
 
+Bug fix
+~~~~~~~
+
+- Fix error caused by generated copy constructor when registering a C array (``type[size]``) as value type.
+
 1.7.1
 -----
 
