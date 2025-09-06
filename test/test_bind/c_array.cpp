@@ -8,15 +8,25 @@ void register_int_array(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 
     using arr_type = int[4];
 
-    value_class<arr_type>(engine, "int_arr")
+    value_class<arr_type>(
+        engine, "int_arr", AS_NAMESPACE_QUALIFIER asOBJ_POD
+    )
+        .default_constructor()
         .constructor_function(
-            "",
-            [](arr_type* a)
+            "int val",
+            [](arr_type* a, int val)
             {
-                new(a) arr_type{1, 2};
+                new(a) arr_type{val, val};
             }
         )
-        .destructor()
+        // .constructor_function(
+        //     "const int_arr&in",
+        //     [](arr_type* a, const arr_type& val)
+        //     {
+        //         new(a) arr_type{val[0], val[1], val[2], val[3]};
+        //     }
+        // )
+        .copy_constructor()
         .method(
             "int& opIndex(uint idx)",
             [](arr_type& arr, std::uint32_t idx) -> int&
@@ -32,15 +42,26 @@ void register_int_array(
 
     using arr_type = int[4];
 
-    value_class<arr_type, true>(engine, "int_arr")
+    value_class<arr_type, true>(
+        engine, "int_arr", AS_NAMESPACE_QUALIFIER asOBJ_POD
+    )
+        .default_constructor()
         .constructor_function(
-            "",
-            [](arr_type* a)
+            "int val",
+            [](arr_type* a, int val)
             {
-                new(a) arr_type{1, 2};
+                new(a) arr_type{val, val};
             }
         )
-        .destructor()
+        // .constructor_function(
+        //     "const int_arr&in",
+        //     [](const arr_type& val, arr_type* a)
+        //     {
+        //         new(a) arr_type{val[0], val[1], val[2], val[3]};
+        //     },
+        //     call_conv<asCALL_CDECL_OBJLAST>
+        // )
+        .copy_constructor()
         .method(
             "int& opIndex(uint idx)",
             [](arr_type& arr, std::uint32_t idx) -> int&
@@ -55,21 +76,41 @@ void check_int_array(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     );
     m->AddScriptSection(
         "test_int_array",
-        "int test()\n"
+        "int test0()\n"
         "{\n"
-        "    int_arr a;\n"
-        //"    a[0] = 1; a[1] = 2;\n"
+        "    int_arr a(1);\n"
+        "    a[1] = 2;\n"
+        "    return a[0] + a[1];\n"
+        "}\n"
+        "int test1()\n"
+        "{\n"
+        "    int_arr a(0);\n"
+        "    a[0] = 3; a[1] = 4;\n"
+        "    int_arr copied(a);"
         "    return a[0] + a[1];\n"
         "}"
     );
     ASSERT_GE(m->Build(), 0);
 
-    auto* f = m->GetFunctionByName("test");
-    asbind20::request_context ctx(engine);
+    {
+        auto* f = m->GetFunctionByName("test0");
+        ASSERT_TRUE(f);
+        asbind20::request_context ctx(engine);
 
-    auto result = asbind20::script_invoke<int>(ctx, f);
-    EXPECT_TRUE(asbind_test::result_has_value(result));
-    EXPECT_EQ(result.value(), 1 + 2);
+        auto result = asbind20::script_invoke<int>(ctx, f);
+        EXPECT_TRUE(asbind_test::result_has_value(result));
+        EXPECT_EQ(result.value(), 1 + 2);
+    }
+
+    {
+        auto* f = m->GetFunctionByName("test1");
+        ASSERT_TRUE(f);
+        asbind20::request_context ctx(engine);
+
+        auto result = asbind20::script_invoke<int>(ctx, f);
+        EXPECT_TRUE(asbind_test::result_has_value(result));
+        EXPECT_EQ(result.value(), 3 + 4);
+    }
 }
 } // namespace test_bind
 

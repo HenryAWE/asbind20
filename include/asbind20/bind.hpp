@@ -515,6 +515,159 @@ namespace detail
         }
     };
 
+    template <typename Class, bool Template, typename Arg>
+    class copy_constructor : public constructor_base<Class>
+    {
+        using my_base = constructor_base<Class>;
+
+    public:
+        using native_function_type = std::conditional_t<
+            Template,
+            void (*)(AS_NAMESPACE_QUALIFIER asITypeInfo*, Arg, void*),
+            void (*)(Arg, void*)>;
+
+        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        requires(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC ||
+                 CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST)
+        using wrapper_type = std::conditional_t<
+            CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
+            AS_NAMESPACE_QUALIFIER asGENFUNC_t,
+            native_function_type>;
+
+        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        static constexpr auto generate(call_conv_t<CallConv>) noexcept -> wrapper_type<CallConv>
+        {
+            if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
+            {
+                if constexpr(Template)
+                {
+                    return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+                    {
+                        void* mem = gen->GetObject();
+                        new(mem) Class(
+                            *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
+                            get_generic_arg<Arg>(
+                                gen, 1
+                            )
+                        );
+
+                        my_base::destroy_if_ex(static_cast<Class*>(mem));
+                    };
+                }
+                else
+                {
+                    return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+                    {
+                        void* mem = gen->GetObject();
+                        new(mem) Class(
+                            get_generic_arg<Arg>(
+                                gen, 0
+                            )
+                        );
+
+                        my_base::destroy_if_ex(static_cast<Class*>(mem));
+                    };
+                }
+            }
+            else // CallConv == asCALL_CDECL_OBJLAST
+            {
+                if constexpr(Template)
+                {
+                    return +[](AS_NAMESPACE_QUALIFIER asITypeInfo* ti, Arg arg, void* mem) -> void
+                    {
+                        new(mem) Class(ti, std::forward<Arg>(arg));
+
+                        my_base::destroy_if_ex(static_cast<Class*>(mem));
+                    };
+                }
+                else
+                {
+                    return +[](Arg arg, void* mem) -> void
+                    {
+                        new(mem) Class(std::forward<Arg>(arg));
+
+                        my_base::destroy_if_ex(static_cast<Class*>(mem));
+                    };
+                }
+            }
+        }
+    };
+
+    template <typename ElemType, std::size_t Size, bool Template, typename Arg>
+    class copy_constructor<ElemType[Size], Template, Arg> : public constructor_base<ElemType[Size]>
+    {
+        static_assert(!Template); // A plain C array cannot be template class
+
+        using my_base = constructor_base<ElemType[Size]>;
+
+    public:
+        static_assert(std::is_reference_v<Arg>);
+        using native_function_type = std::conditional_t<
+            Template,
+            void (*)(AS_NAMESPACE_QUALIFIER asITypeInfo*, Arg, void*),
+            void (*)(Arg, void*)>;
+
+        using class_type = ElemType[Size];
+
+        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        requires(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC ||
+                 CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST)
+        using wrapper_type = std::conditional_t<
+            CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
+            AS_NAMESPACE_QUALIFIER asGENFUNC_t,
+            native_function_type>;
+
+#if defined(__clang__) || defined(__GNUC__)
+#    pragma GCC diagnostic push
+#    pragma GCC diagnostic ignored "-Wmissing-braces"
+#endif
+
+    private:
+        void impl_generic()
+        {
+        }
+
+    public:
+        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        static constexpr auto generate(call_conv_t<CallConv>) noexcept -> wrapper_type<CallConv>
+        {
+            if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
+            {
+                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+                {
+                    void* mem = gen->GetObject();
+
+                    // Should be reference to C array
+                    Arg arr_ref = get_generic_arg<Arg>(
+                        gen, 0
+                    );
+                    [&]<std::size_t... Is>(std::index_sequence<Is...>)
+                    {
+                        new(mem) class_type{arr_ref[Is]...};
+                    }(std::make_index_sequence<Size>());
+
+                    my_base::destroy_if_ex(static_cast<ElemType(*)[Size]>(mem));
+                };
+            }
+            else // CallConv == asCALL_CDECL_OBJLAST
+            {
+                return +[](Arg arr_ref, void* mem) -> void
+                {
+                    [&]<std::size_t... Is>(std::index_sequence<Is...>)
+                    {
+                        new(mem) class_type{arr_ref[Is]...};
+                    }(std::make_index_sequence<Size>());
+
+                    my_base::destroy_if_ex(static_cast<ElemType(*)[Size]>(mem));
+                };
+            }
+        }
+
+#if defined(__clang__) || defined(__GNUC__)
+#    pragma GCC diagnostic pop
+#endif
+    };
+
     template <
         native_function auto ConstructorFunc,
         typename Class,
@@ -4675,21 +4828,41 @@ public:
         return *this;
     }
 
+private:
+    std::string decl_copy_ctor() const
+    {
+        return string_concat("void f(const ", m_name, "&in)");
+    }
+
+public:
     basic_value_class& copy_constructor(use_generic_t)
     {
-        constructor<const Class&>(
-            use_generic,
-            string_concat("const ", m_name, " &in")
+        detail::copy_constructor<Class, Template, const Class&> wrapper;
+        this->behaviour_impl(
+            AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
+            decl_copy_ctor().c_str(),
+            wrapper.generate(generic_call_conv),
+            generic_call_conv
         );
-
         return *this;
     }
 
     basic_value_class& copy_constructor()
     {
-        constructor<const Class&>(
-            string_concat("const ", m_name, "&in")
-        );
+        if constexpr(ForceGeneric)
+        {
+            this->copy_constructor(use_generic);
+        }
+        else
+        {
+            detail::copy_constructor<Class, Template, const Class&> wrapper;
+            this->behaviour_impl(
+                AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
+                decl_copy_ctor().c_str(),
+                wrapper.generate(call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>),
+                call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+            );
+        }
 
         return *this;
     }
