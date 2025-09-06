@@ -517,71 +517,10 @@ namespace detail
     };
 
     template <typename Class, typename Arg>
-    class copy_constructor : public constructor_base<Class>
-    {
-        using my_base = constructor_base<Class>;
-
-    public:
-        using native_function_type =
-            void (*)(Arg, void*);
-
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        requires(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC ||
-                 CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST)
-        using wrapper_type = std::conditional_t<
-            CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
-            AS_NAMESPACE_QUALIFIER asGENFUNC_t,
-            native_function_type>;
-
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        static constexpr auto generate(call_conv_t<CallConv>) noexcept -> wrapper_type<CallConv>
-        {
-            if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-            {
-                // if constexpr(Template)
-                // {
-                //     return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
-                //     {
-                //         void* mem = gen->GetObject();
-                //         new(mem) Class(
-                //             *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
-                //             get_generic_arg<Arg>(
-                //                 gen, 1
-                //             )
-                //         );
-
-                //         my_base::destroy_if_ex(static_cast<Class*>(mem));
-                //     };
-                // }
-                // else
-                {
-                    return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
-                    {
-                        void* mem = gen->GetObject();
-                        new(mem) Class(
-                            get_generic_arg<Arg>(
-                                gen, 0
-                            )
-                        );
-
-                        my_base::destroy_if_ex(static_cast<Class*>(mem));
-                    };
-                }
-            }
-            else // CallConv == asCALL_CDECL_OBJLAST
-            {
-                return +[](Arg arg, void* mem) -> void
-                {
-                    new(mem) Class(std::forward<Arg>(arg));
-
-                    my_base::destroy_if_ex(static_cast<Class*>(mem));
-                };
-            }
-        }
-    };
+    class arr_copy_constructor;
 
     template <typename ElemType, std::size_t Size, typename Arg>
-    class copy_constructor<ElemType[Size], Arg> : public constructor_base<ElemType[Size]>
+    class arr_copy_constructor<ElemType[Size], Arg> : public constructor_base<ElemType[Size]>
     {
         using my_base = constructor_base<ElemType[Size]>;
 
@@ -4810,7 +4749,7 @@ public:
     {
         if constexpr(std::is_array_v<Class>)
         {
-            detail::copy_constructor<Class, const Class&> wrapper;
+            detail::arr_copy_constructor<Class, const Class&> wrapper;
             this->behaviour_impl(
                 AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
                 decl_copy_ctor().c_str(),
@@ -4839,7 +4778,7 @@ public:
         {
             if constexpr(std::is_array_v<Class>)
             {
-                detail::copy_constructor<Class, const Class&> wrapper;
+                detail::arr_copy_constructor<Class, const Class&> wrapper;
                 this->behaviour_impl(
                     AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
                     decl_copy_ctor().c_str(),
