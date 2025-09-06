@@ -16,6 +16,7 @@
 #include <string>
 #include <tuple>
 #include <algorithm>
+#include <memory>
 #include <functional>
 #include <span>
 #include "detail/include_as.hpp"
@@ -608,6 +609,7 @@ namespace detail
             void (*)(Arg, void*)>;
 
         using class_type = ElemType[Size];
+        using pointer_type = ElemType*;
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         requires(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC ||
@@ -616,16 +618,6 @@ namespace detail
             CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
             AS_NAMESPACE_QUALIFIER asGENFUNC_t,
             native_function_type>;
-
-#if defined(__clang__) || defined(__GNUC__)
-#    pragma GCC diagnostic push
-#    pragma GCC diagnostic ignored "-Wmissing-braces"
-#endif
-
-    private:
-        void impl_generic()
-        {
-        }
 
     public:
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
@@ -637,35 +629,32 @@ namespace detail
                 {
                     void* mem = gen->GetObject();
 
-                    // Should be reference to C array
-                    Arg arr_ref = get_generic_arg<Arg>(
+                    // Decay to pointer
+                    std::decay_t<Arg> ptr = get_generic_arg<Arg>(
                         gen, 0
                     );
-                    [&]<std::size_t... Is>(std::index_sequence<Is...>)
-                    {
-                        new(mem) class_type{arr_ref[Is]...};
-                    }(std::make_index_sequence<Size>());
+                    std::uninitialized_copy(
+                        ptr, ptr + Size, static_cast<ElemType*>(mem)
+                    );
 
                     my_base::destroy_if_ex(static_cast<ElemType(*)[Size]>(mem));
                 };
             }
             else // CallConv == asCALL_CDECL_OBJLAST
             {
-                return +[](Arg arr_ref, void* mem) -> void
+                return +[](Arg arg, void* mem) -> void
                 {
-                    [&]<std::size_t... Is>(std::index_sequence<Is...>)
-                    {
-                        new(mem) class_type{arr_ref[Is]...};
-                    }(std::make_index_sequence<Size>());
+                    // Decay to pointer
+                    std::decay_t<Arg> ptr = arg;
+
+                    std::uninitialized_copy(
+                        ptr, ptr + Size, static_cast<ElemType*>(mem)
+                    );
 
                     my_base::destroy_if_ex(static_cast<ElemType(*)[Size]>(mem));
                 };
             }
         }
-
-#if defined(__clang__) || defined(__GNUC__)
-#    pragma GCC diagnostic pop
-#endif
     };
 
     template <

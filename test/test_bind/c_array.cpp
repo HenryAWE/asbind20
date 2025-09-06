@@ -19,13 +19,6 @@ void register_int_array(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
                 new(a) arr_type{val, val};
             }
         )
-        // .constructor_function(
-        //     "const int_arr&in",
-        //     [](arr_type* a, const arr_type& val)
-        //     {
-        //         new(a) arr_type{val[0], val[1], val[2], val[3]};
-        //     }
-        // )
         .copy_constructor()
         .method(
             "int& opIndex(uint idx)",
@@ -53,14 +46,6 @@ void register_int_array(
                 new(a) arr_type{val, val};
             }
         )
-        // .constructor_function(
-        //     "const int_arr&in",
-        //     [](const arr_type& val, arr_type* a)
-        //     {
-        //         new(a) arr_type{val[0], val[1], val[2], val[3]};
-        //     },
-        //     call_conv<asCALL_CDECL_OBJLAST>
-        // )
         .copy_constructor()
         .method(
             "int& opIndex(uint idx)",
