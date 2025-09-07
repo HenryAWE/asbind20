@@ -1,6 +1,3 @@
-#include "asbind20/bind.hpp"
-#include "asbind20/invoke.hpp"
-#include "asbind20/utility.hpp"
 #include <angelscript.h>
 #include <cstdint>
 #include <gtest/gtest.h>
