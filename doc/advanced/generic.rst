@@ -1,30 +1,65 @@
 Generic Wrappers
 ================
 
-.. doxygenfunction:: asbind20::has_max_portability
-
 Wrap a Specific Method, Function, Behavior
 ------------------------------------------
 
 With the power of non-type template parameter (NTTP),
 asbind20 can generate generic wrapper of any function by macro-free utilities.
 Additionally, it supports for wrapping a function with variable type (declared by ``?`` in the AngelScript).
+
 This can be useful for binding interface on platform without native calling convention support, e.g., Emscripten.
+
+.. doxygenfunction:: asbind20::has_max_portability
+
+Besides, generic calling convention might have better performance than native calling convention when binding functions of shorter parameter list,
+but this is platform dependent.
+You can check benchmarks of asbind20 to decide whether to prefer using generic calling convention.
+
+Global Functions
+~~~~~~~~~~~~~~~~
+
+Due to the limitation of C++, you need to pass the function pointer by the helper ``fp<>``.
+But lambda expression still can be directly registered.
+
+.. code-block:: c++
+
+    using namespace asbind20;
+
+    class_wrapper instance;
+
+    global(engine)
+        // Pass function pointer by the helper
+        .function(use_generic, "void set_int(int&out)", fp<&test_bind::set_int>)
+        // Lambda can be directly registered
+        .function(
+            use_generic,
+            "int gen_int() ",
+            []() -> int
+            { return 42; }
+        )
+        // Synthesize global function by member function and an instance
+        .function(
+            use_generic,
+            "void set_val(int val)",
+            fp<&class_wrapper::set_val>,
+            auxiliary(instance)
+        )
 
 Ordinary Methods and Behaviors
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Generic wrappers for methods and behaviors are generated in the similar way.
+
 .. code-block:: c++
 
-    using asbind20::use_generic;
-    using asbind20::fp;
-    using asbind20::var_type;
+    using namespace asbind20;
 
     // Use `use_generic` tag to force generated proxies to use asCALL_GENERIC
-    asbind20::value_class<my_value_class>(...)
+    value_class<my_value_class>(...)
         .constructor<int>(use_generic, "int")
         .opEquals(use_generic)
-        // Due to the limitation of C++, you need to pass the function pointer by a helper (fp<>)
+        // Similar to global functions, you need to pass the function pointer by the fp<> helper
         .method(use_generic, "int mem_func(int arg)", fp<&my_value_class::mem_func>)
         // Lambda can be directly registered
         .method(
@@ -73,6 +108,7 @@ Example code:
         .method(
             use_generic, "void log(int level, const ?&in)", fp<&my_value_class::log>, var_type<1>
         )
+        // Variable type and lambda wrapper
         .method(
             use_generic,
             "void from_var(const ?&in)",
@@ -80,6 +116,18 @@ Example code:
             { /* ... */ },
             var_type<0>
         );
+
+    global(/* ... */)
+        .function(
+            use_generic,  "void log(int level, const ?&in)", fp<&global_log>, var_type<1>
+        )
+        .function(
+            use_generic,
+            "int global_var_func(const ?&in)",
+            [](void* ref, int type_id) -> int
+            { /* ... */},
+            var_type<0>
+        )
 
 .. _generic-composite:
 
@@ -124,11 +172,9 @@ The major difference from the native one is how to use the ``composite`` helper.
 Wrap a Group of Methods, Functions, or Behaviors
 ------------------------------------------------
 
-If you want to force a group of registered functions to be generic, you can set the ``ForceGeneric`` flag of binding generator to ``true``.
+If you want to force a group of registered functions to be generic,
+you can set the ``ForceGeneric`` flag of binding generator to ``true``.
 You can use this flag to avoid the code for registering the application interface being flooded by ``use_generic``.
-
-Trying to register functions by native calling convention with ``ForceGeneric`` enabled will trigger a compile-time error.
-If you are targeting a platform without native calling convention support by AngelScript, this flag can be helpful to discover bugs early.
 
 .. code-block:: c++
 
@@ -136,10 +182,13 @@ If you are targeting a platform without native calling convention support by Ang
     asbind20::ref_class<my_ref_class, true>(...);
     asbind20::global<true>(...);
 
+Trying to register functions by native calling convention with ``ForceGeneric`` enabled will trigger a compile-time error.
+If you are targeting a platform without native calling convention support by AngelScript, this flag can be helpful to discover bugs early.
+
 .. note::
 
     If you use an outer template argument to control the mode of binding generator,
-    the generator can be a dependent name, thus you may need an additional ``template`` disambiguator to use the binding generator.
+    the generator will be a dependent name, thus you need an additional ``template`` disambiguator to use the binding generator.
 
     .. code-block:: c++
 

@@ -178,7 +178,7 @@ as it will be able to automatically handle these cases the same way it handles b
 
 If you plan on passing or returning the type by value to registered functions that uses native calling convention,
 you also need to inform how the type is implemented in the application.
-But if you only plan on using generic calling conventions,
+But if you only plan on :doc:`using generic calling conventions <advanced/generic>`,
 or don't pass these types by value then you don't need to worry about that.
 
 The asbind20 will handle common flags for you.
