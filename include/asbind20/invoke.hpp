@@ -271,6 +271,7 @@ public:
         return get_script_return<T>(get_context());
     }
 
+    /** @note This function is only available if return type is reference or convertible to pointer */
     pointer_type operator->() const requires(
         detail::invoke_result_traits<return_type>::to_pointer_support
     )

@@ -20,6 +20,8 @@ Update
 - ``script_invoke_result`` now supports ``operator->`` for pointer type,
   which is useful for accessing members of returned reference types.
 
+- Expose ``get_context_result`` for easily retrieving result from context.
+
 Bug fix
 ~~~~~~~
 
