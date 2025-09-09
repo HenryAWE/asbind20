@@ -152,22 +152,62 @@ namespace detail
     };
 } // namespace detail
 
-/**
- * @brief Script invocation result
- *
- * @tparam R Result type
- */
 template <typename R>
-class script_invoke_result
+auto get_context_result(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx);
+
+/**
+ * @brief Base class of script results
+ */
+class script_invoke_result_base
 {
 public:
-    using value_type = R;
-    using return_type =
-        decltype(get_script_return<R>(std::declval<AS_NAMESPACE_QUALIFIER asIScriptContext*>()));
-    using pointer_type =
-        typename detail::invoke_result_traits<return_type>::pointer_type;
+    script_invoke_result_base() = delete;
+    script_invoke_result_base(const script_invoke_result_base&) noexcept = default;
 
-    script_invoke_result(
+    script_invoke_result_base& operator=(
+        const script_invoke_result_base& other
+    ) noexcept = default;
+
+    ~script_invoke_result_base() = default;
+
+    [[nodiscard]]
+    auto get_context() const noexcept
+        -> AS_NAMESPACE_QUALIFIER asIScriptContext*
+    {
+        return m_ctx;
+    }
+
+    /**
+     * @brief Returns the AngelScript error code of context state
+     */
+    [[nodiscard]]
+    auto error() const
+        -> AS_NAMESPACE_QUALIFIER asEContextState
+    {
+        return m_ctx->GetState();
+    }
+
+    /**
+     * @name Value Status
+     * @brief Checks whether the object contains a returned value
+     */
+    /// @{
+
+    [[nodiscard]]
+    bool has_value() const noexcept
+    {
+        return error() == AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED;
+    }
+
+    explicit operator bool() const noexcept
+    {
+        return has_value();
+    }
+
+    /// @}
+
+protected:
+    script_invoke_result_base(
         AS_NAMESPACE_QUALIFIER asIScriptContext* ctx
     ) noexcept
         : m_ctx(ctx)
@@ -175,9 +215,46 @@ public:
         assert(m_ctx != nullptr);
     }
 
-    script_invoke_result(const script_invoke_result&) noexcept = default;
+    [[noreturn]]
+    void throw_bad_access() const
+    {
+        throw bad_script_invoke_result_access(error());
+    }
 
-    script_invoke_result& operator=(const script_invoke_result& other) noexcept = default;
+private:
+    AS_NAMESPACE_QUALIFIER asIScriptContext* m_ctx;
+};
+
+/**
+ * @brief Script invocation result
+ *
+ * @tparam T Result type
+ */
+template <typename T>
+class script_invoke_result : public script_invoke_result_base
+{
+    template <typename R>
+    friend auto get_context_result(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx);
+
+    script_invoke_result(
+        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx
+    ) noexcept
+        : script_invoke_result_base(ctx) {}
+
+public:
+    using value_type = T;
+    using return_type =
+        decltype(get_script_return<T>(std::declval<AS_NAMESPACE_QUALIFIER asIScriptContext*>()));
+    using pointer_type =
+        typename detail::invoke_result_traits<return_type>::pointer_type;
+
+    script_invoke_result(
+        const script_invoke_result&
+    ) noexcept = default;
+
+    script_invoke_result& operator=(
+        const script_invoke_result& other
+    ) noexcept = default;
 
     ~script_invoke_result() = default;
 
@@ -191,7 +268,7 @@ public:
     return_type operator*() const
     {
         assert(has_value());
-        return get_script_return<R>(m_ctx);
+        return get_script_return<T>(get_context());
     }
 
     pointer_type operator->() const requires(
@@ -218,67 +295,42 @@ public:
     return_type value() const
     {
         if(!has_value())
-            throw bad_script_invoke_result_access(error());
+            throw_bad_access();
         return **this;
     }
 
     /// @}
-
-    /**
-     * @name Value Status
-     * @brief Checks whether the object contains a returned value
-     */
-    /// @{
-
-    [[nodiscard]]
-    bool has_value() const noexcept
-    {
-        return error() == AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED;
-    }
-
-    explicit operator bool() const noexcept
-    {
-        return has_value();
-    }
-
-    /// @}
-
-    /**
-     * @brief Returns the AngelScript error code of context state
-     */
-    [[nodiscard]]
-    auto error() const noexcept
-        -> AS_NAMESPACE_QUALIFIER asEContextState
-    {
-        return m_ctx->GetState();
-    }
-
-private:
-    AS_NAMESPACE_QUALIFIER asIScriptContext* m_ctx;
 };
 
 /**
  * @brief Script invocation result for references
  */
-template <typename R>
-class script_invoke_result<R&>
+template <typename T>
+class script_invoke_result<T&> : public script_invoke_result_base
 {
-public:
-    using value_type = R&;
-    using return_type = R&;
-    using pointer_type = R*;
+    template <typename R>
+    friend auto get_context_result(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx);
 
-    script_invoke_result(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx) noexcept
-        : m_ctx(ctx) {}
+    script_invoke_result(
+        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx
+    ) noexcept
+        : script_invoke_result_base(ctx) {}
+
+public:
+    using value_type = T&;
+    using return_type = T&;
+    using pointer_type = T*;
 
     ~script_invoke_result() = default;
 
-    script_invoke_result& operator=(const script_invoke_result& other) noexcept = default;
+    script_invoke_result& operator=(
+        const script_invoke_result& other
+    ) noexcept = default;
 
     return_type operator*() const noexcept
     {
         assert(has_value());
-        return get_script_return<R&>(m_ctx);
+        return get_script_return<T&>(get_context());
     }
 
     pointer_type operator->() const noexcept
@@ -291,83 +343,49 @@ public:
     return_type value() const
     {
         if(!has_value())
-            throw bad_script_invoke_result_access(error());
+            throw_bad_access();
         return **this;
     }
-
-    [[nodiscard]]
-    bool has_value() const noexcept
-    {
-        return error() == AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED;
-    }
-
-    [[nodiscard]]
-    explicit operator bool() const noexcept
-    {
-        return has_value();
-    }
-
-    [[nodiscard]]
-    auto error() const noexcept
-        -> AS_NAMESPACE_QUALIFIER asEContextState
-    {
-        return m_ctx->GetState();
-    }
-
-private:
-    AS_NAMESPACE_QUALIFIER asIScriptContext* m_ctx;
 };
 
 /**
  * @brief Script invocation result for void type
  */
 template <>
-class script_invoke_result<void>
+class script_invoke_result<void> : public script_invoke_result_base
 {
+    template <typename R>
+    friend auto get_context_result(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx);
+
+    script_invoke_result(
+        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx
+    ) noexcept
+        : script_invoke_result_base(ctx) {}
+
 public:
     using value_type = void;
     using return_type = void;
 
-    script_invoke_result(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx) noexcept
-        : m_ctx(ctx) {}
-
-    script_invoke_result(const script_invoke_result& other) noexcept = default;
+    script_invoke_result(
+        const script_invoke_result& other
+    ) noexcept = default;
 
     ~script_invoke_result() = default;
 
-    script_invoke_result& operator=(const script_invoke_result& other) noexcept = default;
+    script_invoke_result& operator=(
+        const script_invoke_result& other
+    ) noexcept = default;
 
     void operator*() const noexcept
     {
         assert(has_value());
     }
 
-    [[nodiscard]]
-    bool has_value() const noexcept
-    {
-        return error() == AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED;
-    }
-
-    explicit operator bool() const noexcept
-    {
-        return has_value();
-    }
-
     void value() const
     {
         if(!has_value())
-            throw bad_script_invoke_result_access(error());
+            throw_bad_access();
     }
-
-    [[nodiscard]]
-    auto error() const noexcept
-        -> AS_NAMESPACE_QUALIFIER asEContextState
-    {
-        return m_ctx->GetState();
-    }
-
-private:
-    AS_NAMESPACE_QUALIFIER asIScriptContext* m_ctx;
 };
 
 template <typename T>
@@ -518,7 +536,7 @@ void apply_script_args(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, Tuple&& tp)
 }
 
 /**
- * @brief Executes the context
+ * @brief Get the result of context
  *
  * @tparam R Return type. It can be safely ignored by `void` if you only want the error code
  *
@@ -527,10 +545,8 @@ void apply_script_args(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, Tuple&& tp)
  * @return Result of the execution
  */
 template <typename R>
-auto execute_context(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx)
+auto get_context_result(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx)
 {
-    ctx->Execute();
-
     return script_invoke_result<R>(ctx);
 }
 
@@ -554,7 +570,8 @@ script_invoke_result<R> script_invoke(
 
     apply_script_args(ctx, std::forward_as_tuple(args...));
 
-    return execute_context<R>(ctx);
+    ctx->Execute();
+    return get_context_result<R>(ctx);
 }
 
 template <typename T>
@@ -596,7 +613,8 @@ script_invoke_result<R> script_invoke(
 
     apply_script_args(ctx, std::forward_as_tuple(std::forward<Args>(args)...));
 
-    return execute_context<R>(ctx);
+    ctx->Execute();
+    return get_context_result<R>(ctx);
 }
 
 namespace detail
