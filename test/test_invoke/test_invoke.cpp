@@ -3,6 +3,7 @@
 #include <asbind20/asbind.hpp>
 #include <asbind20/ext/vocabulary.hpp>
 #include <asbind20/ext/stdstring.hpp>
+#include <asbind20/ext/array.hpp>
 
 using namespace asbind_test;
 
@@ -14,6 +15,7 @@ TEST(test_invoke, common_types)
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
     ext::register_std_string(engine);
+    ext::register_script_array(engine);
     auto* m = engine->GetModule(
         "test_invoke", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
     );
@@ -25,6 +27,7 @@ TEST(test_invoke, common_types)
         "float flt_identity(float val) { return val; }\n"
         "double dbl_identity(double val) { return val; }\n"
         "string test(int a, int&out b) { b = a + 1; return \"test\"; }"
+        "array<int>@ test_handle(int v0, int v1) { int[] a = {v0, v1}; return a; }"
     );
     ASSERT_GE(m->Build(), 0);
 
@@ -82,6 +85,19 @@ TEST(test_invoke, common_types)
         ASSERT_TRUE(result_has_value(result));
         EXPECT_EQ(result.value(), "test");
         EXPECT_EQ(val, 2);
+    }
+
+    {
+        auto* fp = m->GetFunctionByName("test_handle");
+        ASSERT_NE(fp, nullptr);
+
+        asbind20::request_context ctx(engine);
+
+        auto result = asbind20::script_invoke<ext::script_array*>(ctx, fp, 10, 13);
+        ASSERT_TRUE(result_has_value(result));
+        EXPECT_EQ(result->size(), 2);
+        EXPECT_EQ(*(int*)result->opIndex(0), 10);
+        EXPECT_EQ(*(int*)result->opIndex(1), 13);
     }
 }
 

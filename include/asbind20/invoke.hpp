@@ -114,6 +114,44 @@ private:
     error_code_type m_r;
 };
 
+namespace detail
+{
+    template <typename T>
+    struct invoke_result_traits
+    {
+        using pointer_type = T*;
+        static constexpr bool to_pointer_support = false;
+    };
+
+    template <typename T>
+    struct invoke_result_traits<T*>
+    {
+        using pointer_type = T*;
+        static constexpr bool to_pointer_support = true;
+    };
+
+    template <typename T>
+    struct invoke_result_traits<T[]>
+    {
+        using pointer_type = T*;
+        static constexpr bool to_pointer_support = true;
+    };
+
+    template <typename T, std::size_t Size>
+    struct invoke_result_traits<T[Size]>
+    {
+        using pointer_type = T*;
+        static constexpr bool to_pointer_support = true;
+    };
+
+    template <typename T>
+    struct invoke_result_traits<T&>
+    {
+        using pointer_type = T*;
+        static constexpr bool to_pointer_support = true;
+    };
+} // namespace detail
+
 /**
  * @brief Script invocation result
  *
@@ -124,8 +162,10 @@ class script_invoke_result
 {
 public:
     using value_type = R;
-    using return_type = decltype(get_script_return<R>(std::declval<AS_NAMESPACE_QUALIFIER asIScriptContext*>()));
-    using pointer_type = std::remove_reference_t<return_type>*;
+    using return_type =
+        decltype(get_script_return<R>(std::declval<AS_NAMESPACE_QUALIFIER asIScriptContext*>()));
+    using pointer_type =
+        typename detail::invoke_result_traits<return_type>::pointer_type;
 
     script_invoke_result(
         AS_NAMESPACE_QUALIFIER asIScriptContext* ctx
@@ -154,10 +194,15 @@ public:
         return get_script_return<R>(m_ctx);
     }
 
-    pointer_type operator->() const requires(std::is_reference_v<return_type>)
+    pointer_type operator->() const requires(
+        detail::invoke_result_traits<return_type>::to_pointer_support
+    )
     {
         assert(has_value());
-        return std::addressof(**this);
+        if constexpr(!std::is_reference_v<return_type>)
+            return static_cast<pointer_type>(**this);
+        else
+            return std::addressof(**this);
     }
 
     /// @}
