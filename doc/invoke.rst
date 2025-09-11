@@ -6,6 +6,8 @@ Invoking a Script Function
 
 This library can automatically convert arguments in C++ for invoking an AngelScript function.
 
+.. doxygenfunction:: asbind20::script_invoke(asIScriptContext*, asIScriptFunction*, Args&&...)
+
 This example uses the string extension from asbind20 as an example,
 you can change the ``std::string`` to your underlying string type.
 
@@ -50,6 +52,8 @@ The library provides tools for instantiating a script class.
 The ``script_invoke`` also supports invoking a method, a.k.a., member function.
 You need to put the script object in front of the script function in arguments,
 this is designed to simulate a method call ``obj.method()``.
+
+.. doxygenfunction:: asbind20::script_invoke(asIScriptContext*, Object&&, asIScriptFunction*, Args&&...)
 
 The script class defined in AngelScript:
 
@@ -97,9 +101,19 @@ C++ code:
 Reference of Invocation Tools
 -----------------------------
 
-.. doxygenfunction:: asbind20::script_invoke(asIScriptContext*, asIScriptFunction*, Args&&...)
-.. doxygenfunction:: asbind20::script_invoke(asIScriptContext*, Object&&, asIScriptFunction*, Args&&...)
+.. doxygenfunction:: asbind20::get_context_result
+
+The result types of script invocation consist of the primary template,
+specialization for references, and specialization for ``void``.
 
 .. doxygenclass:: asbind20::script_invoke_result
+   :members:
+   :undoc-members:
+
+.. doxygenclass:: asbind20::script_invoke_result< T & >
+   :members:
+   :undoc-members:
+
+.. doxygenclass:: asbind20::script_invoke_result< void >
    :members:
    :undoc-members:

@@ -13,6 +13,12 @@ TEST(test_invoke, script_class)
     auto* m = engine->GetModule(
         "test_script_class", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
     );
+    global<true>(engine)
+        .function(
+            "void throw_err()",
+            []() -> void
+            { throw std::runtime_error("err"); }
+        );
 
     m->AddScriptSection(
         "test_invoke.as",
@@ -22,6 +28,7 @@ TEST(test_invoke, script_class)
         "void set_val(int new_val) { m_val = new_val; }"
         "int get_val() const { return m_val; }"
         "int& get_val_ref() { return m_val; }"
+        "int err() { throw_err(); return 42; }"
         "};"
     );
     ASSERT_GE(m->Build(), 0);
@@ -54,5 +61,12 @@ TEST(test_invoke, script_class)
         val = asbind20::script_invoke<int>(ctx, my_class, get_val);
         ASSERT_TRUE(result_has_value(val));
         EXPECT_EQ(val.value(), 182376);
+
+        auto* err = my_class_t->GetMethodByDecl("int err()");
+        ASSERT_TRUE(err);
+
+        auto err_result = script_invoke<int>(ctx, err);
+        EXPECT_FALSE(result_has_value(err_result));
+        EXPECT_THROW((void)err_result.value(), bad_script_invoke_result_access);
     }
 }
