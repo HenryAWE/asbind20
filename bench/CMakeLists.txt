@@ -8,3 +8,8 @@ target_link_libraries(bench_fn PRIVATE asbind20_ext_container)
 
 add_executable(bench_io bench_io.cpp)
 target_link_libraries(bench_io PRIVATE shared_bench_lib)
+
+add_executable(bench_invoke bench_invoke.cpp)
+target_link_libraries(bench_invoke PRIVATE shared_bench_lib)
+target_link_libraries(bench_invoke PRIVATE asbind20_ext_container)
+
