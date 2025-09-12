@@ -75,6 +75,8 @@ TEST(test_invoke, common_types)
     }
 
     {
+        using namespace std::literals;
+
         auto* fp = m->GetFunctionByName("test");
         ASSERT_NE(fp, nullptr);
 
@@ -84,7 +86,19 @@ TEST(test_invoke, common_types)
         auto result = asbind20::script_invoke<std::string>(ctx, fp, 1, std::ref(val));
         ASSERT_TRUE(result_has_value(result));
         EXPECT_EQ(result.value(), "test");
+        EXPECT_EQ(result.value_or("hello"s), "test");
+        EXPECT_EQ(result.value_or("hello"sv), "test");
+        EXPECT_EQ(result.value_or("hello"), "test");
+        {
+            const char* str = "hello";
+            EXPECT_EQ(result.value_or(str), "test")
+                << "str=" << str;
+        }
         EXPECT_EQ(val, 2);
+
+        auto opt = result.to_optional();
+        EXPECT_TRUE(opt.has_value());
+        EXPECT_EQ(*opt, "test");
     }
 
     {
@@ -139,6 +153,12 @@ TEST(test_invoke, custom_rule_byte)
 
         ASSERT_TRUE(result_has_value(result));
         EXPECT_EQ(result.value(), std::byte(0x2));
+        EXPECT_EQ(result.value_or(std::byte(0)), std::byte(0x2));
+        EXPECT_EQ(result.value_or(0), std::byte(0x2));
+
+        auto opt = result.to_optional();
+        EXPECT_TRUE(opt.has_value());
+        EXPECT_EQ(*opt, std::byte(0x2));
     }
 }
 
@@ -215,6 +235,12 @@ TEST(test_invoke, bad_result)
 
         EXPECT_THROW((void)result.value(), bad_script_invoke_result_access);
         EXPECT_TRUE(test_invoke::check_result_ex(result));
+
+        EXPECT_EQ(result.value_or(3), 3);
+        EXPECT_EQ(result.value_or(3.14f), 3);
+
+        auto opt = std::optional<int>(result);
+        EXPECT_FALSE(opt.has_value());
     }
 
     {
@@ -245,6 +271,10 @@ TEST(test_invoke, bad_result)
 
         EXPECT_THROW((void)result.value(), bad_script_invoke_result_access);
         EXPECT_TRUE(test_invoke::check_result_ex(result));
+
+        int tmp = 3;
+        EXPECT_EQ(result.value_or(tmp), 3);
+        EXPECT_EQ(std::addressof(result.value_or(tmp)), std::addressof(tmp));
     }
 
     {

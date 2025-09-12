@@ -300,7 +300,30 @@ public:
         return **this;
     }
 
+    template <typename U = std::remove_cv_t<T>>
+    value_type value_or(U&& default_val) const
+    {
+        if(has_value())
+            return **this;
+        else
+            return static_cast<T>(std::forward<U>(default_val));
+    }
+
     /// @}
+
+    [[nodiscard]]
+    std::optional<T> to_optional() const
+    {
+        if(!has_value())
+            return std::nullopt;
+        else
+            return std::optional<T>(**this);
+    }
+
+    explicit operator std::optional<T>() const
+    {
+        return to_optional();
+    }
 };
 
 /**
@@ -346,6 +369,15 @@ public:
         if(!has_value())
             throw_bad_access();
         return **this;
+    }
+
+    template <typename U = std::remove_cv_t<T>>
+    T& value_or(U&& default_val) const
+    {
+        if(has_value())
+            return **this;
+        else
+            return std::forward<U>(default_val);
     }
 };
 

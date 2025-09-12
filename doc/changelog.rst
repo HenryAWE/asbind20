@@ -22,6 +22,8 @@ Update
 
 - Expose ``get_context_result`` for easily retrieving result from context.
 
+- Add member function ``value_or`` and integration with ``std::optional`` for ``script_invoke_result``.
+
 Bug fix
 ~~~~~~~
 
