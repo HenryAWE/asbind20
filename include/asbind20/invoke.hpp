@@ -11,6 +11,7 @@
 
 #include <tuple>
 #include <functional>
+#include <optional>
 #include "detail/include_as.hpp"
 #include "utility.hpp"
 #include "type_traits.hpp"
