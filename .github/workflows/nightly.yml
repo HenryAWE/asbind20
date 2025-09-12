@@ -59,3 +59,14 @@ jobs:
       - name: Test
         working-directory: ${{github.workspace}}/build
         run: ctest --output-on-failure
+
+      - name: Benchmark
+        working-directory: ${{github.workspace}}/build/bench
+        # Run all executables start with "bench_"
+        run: |
+          for exe in bench_*; do
+            if [ -x "$exe" ]; then
+              echo "Running benchmark: $exe"
+              ./$exe
+            fi
+          done

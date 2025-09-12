@@ -143,6 +143,8 @@ ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliqu
 )";
 } // namespace bench_invoke
 
+#ifndef ASBIND_BENCH_NO_NATIVE
+
 static void native_to_lower_auto_get(benchmark::State& state)
 {
     using namespace asbind20;
@@ -194,6 +196,8 @@ static void native_to_lower_manual_get(benchmark::State& state)
 }
 
 BENCHMARK(native_to_lower_manual_get);
+
+#endif
 
 static void generic_to_lower_auto_get(benchmark::State& state)
 {

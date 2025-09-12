@@ -398,6 +398,7 @@ jobs:
           -DCMAKE_CXX_FLAGS=-fexceptions
           -Dasbind_build_ext=1
           -Dasbind_build_test=1
+          -Dasbind_build_bench=1
 
       - name: Build
         run: cmake --build ${{github.workspace}}/build
@@ -405,6 +406,17 @@ jobs:
       - name: Test
         working-directory: ${{github.workspace}}/build
         run: ctest --output-on-failure
+
+      - name: Benchmark
+        working-directory: ${{github.workspace}}/build/bench
+        # List all files start with "bench_" and end with ".js"
+        run: |
+          for file in bench_*.js; do
+            if [ -f "$file" ]; then
+              echo "Running benchmark: $file"
+              node "$file"
+            fi
+          done
 
     ASan:
       runs-on: ubuntu-24.04

@@ -7,6 +7,10 @@
 
 // IWYU pragma: end_exports
 
+#ifdef __EMSCRIPTEN__
+#    define ASBIND_BENCH_NO_NATIVE
+#endif
+
 namespace asbind_bench
 {
 /**

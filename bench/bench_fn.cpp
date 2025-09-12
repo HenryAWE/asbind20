@@ -96,6 +96,8 @@ static void script_small_fn(benchmark::State& state)
 
 BENCHMARK(script_small_fn);
 
+#ifndef ASBIND_BENCH_NO_NATIVE
+
 static void native_small_fn(benchmark::State& state)
 {
     using namespace asbind20;
@@ -116,6 +118,8 @@ static void native_small_fn(benchmark::State& state)
 }
 
 BENCHMARK(native_small_fn);
+
+#endif
 
 static void generic_small_fn(benchmark::State& state)
 {
