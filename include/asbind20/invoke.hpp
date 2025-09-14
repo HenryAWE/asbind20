@@ -9,12 +9,17 @@
 
 #pragma once
 
+#include <version>
 #include <tuple>
 #include <functional>
 #include <optional>
 #include "detail/include_as.hpp"
 #include "utility.hpp"
 #include "type_traits.hpp"
+#ifdef __cpp_lib_expected
+#    define ASBIND20_HAS_EXPECTED __cpp_lib_expected
+#    include <expected>
+#endif
 
 namespace asbind20
 {
@@ -162,6 +167,8 @@ auto get_context_result(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx);
 class script_invoke_result_base
 {
 public:
+    using error_type = AS_NAMESPACE_QUALIFIER asEContextState;
+
     script_invoke_result_base() = delete;
     script_invoke_result_base(const script_invoke_result_base&) noexcept = default;
 
@@ -325,6 +332,24 @@ public:
     {
         return to_optional();
     }
+
+#ifdef ASBIND20_HAS_EXPECTED
+
+    [[nodiscard]]
+    std::expected<T, error_type> to_expected() const
+    {
+        if(has_value())
+            return std::expected<T, error_type>(**this);
+        else
+            return std::unexpected<error_type>(error());
+    }
+
+    operator std::expected<T, error_type>() const
+    {
+        return to_expected();
+    }
+
+#endif
 };
 
 /**

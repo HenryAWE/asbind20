@@ -24,6 +24,8 @@ Update
 
 - Add member function ``value_or`` and integration with ``std::optional`` for ``script_invoke_result``.
 
+- ``script_invoke_result`` can be converted to ``std::expected`` if C++23 is available.
+
 Bug fix
 ~~~~~~~
 

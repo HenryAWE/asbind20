@@ -99,6 +99,14 @@ TEST(test_invoke, common_types)
         auto opt = result.to_optional();
         EXPECT_TRUE(opt.has_value());
         EXPECT_EQ(*opt, "test");
+
+#ifdef ASBIND20_HAS_EXPECTED
+
+        auto ex = std::expected<std::string, AS_NAMESPACE_QUALIFIER asEContextState>(result);
+        EXPECT_TRUE(ex.has_value());
+        EXPECT_EQ(*ex, "test");
+
+#endif
     }
 
     {
@@ -241,6 +249,14 @@ TEST(test_invoke, bad_result)
 
         auto opt = std::optional<int>(result);
         EXPECT_FALSE(opt.has_value());
+
+#ifdef ASBIND20_HAS_EXPECTED
+
+        auto ex = std::expected<int, AS_NAMESPACE_QUALIFIER asEContextState>(result);
+        EXPECT_FALSE(ex.has_value());
+        EXPECT_EQ(ex.error(), AS_NAMESPACE_QUALIFIER asEXECUTION_EXCEPTION);
+
+#endif
     }
 
     {
@@ -296,5 +312,12 @@ TEST(test_invoke, bad_result)
 int main(int argc, char* argv[])
 {
     ::testing::InitGoogleTest(&argc, argv);
+
+#ifdef ASBIND20_HAS_EXPECTED
+    std::cerr << "ASBIND20_HAS_EXPECTED: " << ASBIND20_HAS_EXPECTED << std::endl;
+#else
+    std::cerr << "ASBIND20_HAS_EXPECTED not defined" << std::endl;
+#endif
+
     return RUN_ALL_TESTS();
 }
