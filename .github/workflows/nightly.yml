@@ -51,6 +51,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release
           -Dasbind_build_ext=1
           -Dasbind_build_test=1
+          -Dasbind_build_bench=1
           -DAngelscript_DIR=/tmp/installed/lib/cmake/Angelscript
 
       - name: Build
