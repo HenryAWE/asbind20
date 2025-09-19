@@ -679,17 +679,6 @@ namespace detail
     public:
         using function_type = decltype(+Lambda{});
 
-        static consteval function_type underlying_function()
-        {
-            return +Lambda{};
-        }
-
-        static constexpr auto underlying_convention() noexcept
-            -> AS_NAMESPACE_QUALIFIER asECallConvTypes
-        {
-            return OriginalConv;
-        }
-
     private:
         using traits = function_traits<function_type>;
 
@@ -698,8 +687,8 @@ namespace detail
             return get_generic_this<function_type, OriginalConv>(gen);
         }
 
-        ASBIND20_GENERIC_WRAPPER_IMPL(underlying_function())
-        ASBIND20_GENERIC_WRAPPER_VAR_TYPE_IMPL(underlying_function())
+        ASBIND20_GENERIC_WRAPPER_IMPL(+Lambda{})
+        ASBIND20_GENERIC_WRAPPER_VAR_TYPE_IMPL(+Lambda{})
 
     public:
         static constexpr auto generate() noexcept

@@ -322,6 +322,9 @@ namespace policies
             {
                 const T* ptr;
                 std::size_t size;
+
+                tmp_type(const T* p, std::size_t s) noexcept
+                    : ptr(p), size(s) {}
             };
 
             tmp_type tmp((const T*)list.data(), list.size());
@@ -795,7 +798,7 @@ namespace detail
     public:
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         static auto generate(call_conv_t<CallConv>) noexcept
-            -> my_base::template wrapper_type<CallConv>
+            -> typename my_base::template wrapper_type<CallConv>
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
             {
@@ -851,7 +854,7 @@ namespace detail
     public:
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         static auto generate(call_conv_t<CallConv>) noexcept
-            -> my_base::template wrapper_type<CallConv>
+            -> typename my_base::template wrapper_type<CallConv>
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
             {
@@ -911,7 +914,7 @@ namespace detail
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         static auto generate(call_conv_t<CallConv>) noexcept
-            -> my_base::template wrapper_type<CallConv>
+            -> typename my_base::template wrapper_type<CallConv>
         {
             static constexpr auto helper = [](void* mem, ListElementType* list_buf)
             {
@@ -956,7 +959,7 @@ namespace detail
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         static auto generate(call_conv_t<CallConv>) noexcept
-            -> my_base::template wrapper_type<CallConv>
+            -> typename my_base::template wrapper_type<CallConv>
         {
             static constexpr auto helper = [](void* mem, script_init_list_repeat list)
             {
@@ -1004,7 +1007,7 @@ namespace detail
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         static auto generate(call_conv_t<CallConv>) noexcept
-            -> my_base::template wrapper_type<CallConv>
+            -> typename my_base::template wrapper_type<CallConv>
         {
             static constexpr auto helper = [](void* mem, script_init_list_repeat list)
             {
@@ -1051,7 +1054,7 @@ namespace detail
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         static auto generate(call_conv_t<CallConv>) noexcept
-            -> my_base::template wrapper_type<CallConv>
+            -> typename my_base::template wrapper_type<CallConv>
         {
             static constexpr auto helper = [](void* mem, script_init_list_repeat list)
             {
@@ -1523,7 +1526,7 @@ namespace detail
     public:
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         static auto generate(call_conv_t<CallConv>) noexcept
-            -> my_base::template wrapper_type<CallConv>
+            -> typename my_base::template wrapper_type<CallConv>
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
             {
@@ -1586,7 +1589,7 @@ namespace detail
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         static auto generate(call_conv_t<CallConv>) noexcept
-            -> my_base::template wrapper_type<CallConv>
+            -> typename my_base::template wrapper_type<CallConv>
         {
             static constexpr auto helper = [](ListElementType* list_buf) -> Class*
             {
@@ -1642,7 +1645,7 @@ namespace detail
     public:
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         static auto generate(call_conv_t<CallConv>) noexcept
-            -> my_base::template wrapper_type<CallConv>
+            -> typename my_base::template wrapper_type<CallConv>
         {
             if constexpr(Template)
             {
@@ -1726,7 +1729,7 @@ namespace detail
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         static auto generate(call_conv_t<CallConv>) noexcept
-            -> my_base::template wrapper_type<CallConv>
+            -> typename my_base::template wrapper_type<CallConv>
         {
             static constexpr auto helper = [](script_init_list_repeat list) -> Class*
             {
@@ -1787,7 +1790,7 @@ namespace detail
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         static auto generate(call_conv_t<CallConv>) noexcept
-            -> my_base::template wrapper_type<CallConv>
+            -> typename my_base::template wrapper_type<CallConv>
         {
             static constexpr auto helper = [](script_init_list_repeat list) -> Class*
             {
@@ -1847,7 +1850,7 @@ namespace detail
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         static auto generate(call_conv_t<CallConv>) noexcept
-            -> my_base::template wrapper_type<CallConv>
+            -> typename my_base::template wrapper_type<CallConv>
         {
             static constexpr auto helper = [](script_init_list_repeat list) -> Class*
             {

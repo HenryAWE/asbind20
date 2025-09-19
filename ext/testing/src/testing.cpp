@@ -1,7 +1,6 @@
 #include <asbind20/ext/testing.hpp>
 #include <sstream>
 #include <iostream>
-#include <ranges>
 
 namespace asbind20::ext
 {
@@ -82,13 +81,27 @@ namespace testing
             os << '[' << m_name << "] ";
         };
 
-        for(auto&& i : msg | std::views::split('\n'))
+        prefix_helper();
+        if(msg.empty())
         {
-            std::string_view str(i.begin(), i.end());
-
-            prefix_helper();
-            os << str << '\n';
+            os << '\n';
+            return;
         }
+
+        for(char c : msg)
+        {
+            if(c == '\n')
+            {
+                os << '\n';
+                prefix_helper();
+                continue;
+            }
+
+            os.put(c);
+        }
+
+        if(!msg.empty() && msg.back() != '\n')
+            os << '\n';
     }
 
     std::string suite::format_current_loc(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx)
