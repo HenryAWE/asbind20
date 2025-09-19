@@ -33,15 +33,18 @@ However, asbind20 on other platforms, architectures or compiler toolchains suppo
      - Clang-Cl latest
    * - Linux x64
      - | GCC 13, 14
-       | Clang 18, 19
+       | Clang 15*, 18, 19
        | Clang 18 (ASan)
    * - Linux arm64
      - Clang 18
    * - Emscripten
      - emsdk latest
 
+\* The Clang 15 toolchain only supports features available under C++20.
+
 .. note::
-  - This library on older compiler toolchains, like GCC 12 or Clang 17, is not guaranteed to work correctly.
+  - This library on older compiler toolchains, like GCC 12, still works as expected under most situations,
+    but it might need some workarounds to deal with defects of the compiler, e.g., additional ``typename`` in template-related code.
     Please use newer compiler toolchains if possible.
   - The "latest" in the above table means the latest version of compiler toolchain available in CI when asbind20 releases a new stable version.
 
