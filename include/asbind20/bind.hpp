@@ -519,6 +519,53 @@ namespace detail
         }
     };
 
+    template <typename Class>
+    class arr_default_constructor;
+
+    template <typename ElemType, std::size_t Size>
+    class arr_default_constructor<ElemType[Size]> : public constructor_base<ElemType[Size]>
+    {
+        using my_base = constructor_base<ElemType[Size]>;
+
+    public:
+        using native_function_type = void (*)(void*);
+
+        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        requires(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC ||
+                 CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST)
+        using wrapper_type = std::conditional_t<
+            CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
+            AS_NAMESPACE_QUALIFIER asGENFUNC_t,
+            native_function_type>;
+
+        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        static auto generate(call_conv_t<CallConv>) noexcept -> wrapper_type<CallConv>
+        {
+            if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
+            {
+                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+                {
+                    auto* ptr = static_cast<ElemType*>(gen->GetObject());
+
+                    std::uninitialized_default_construct_n(
+                        ptr, Size
+                    );
+                };
+            }
+            else // CallConv == asCALL_CDECL_OBJLAST
+            {
+                return +[](void* mem) -> void
+                {
+                    auto* ptr = static_cast<ElemType*>(mem);
+
+                    std::uninitialized_default_construct_n(
+                        ptr, Size
+                    );
+                };
+            }
+        }
+    };
+
     template <typename Class, typename Arg>
     class arr_copy_constructor;
 
@@ -4729,14 +4776,41 @@ public:
 
     basic_value_class& default_constructor(use_generic_t)
     {
-        constructor<>(use_generic, "");
+        if constexpr(std::is_array_v<Class>)
+        {
+            detail::arr_default_constructor<Class> wrapper;
+            this->behaviour_impl(
+                AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
+                "void f()",
+                wrapper.generate(generic_call_conv),
+                generic_call_conv
+            );
+        }
+        else
+            constructor<>(use_generic, "");
 
         return *this;
     }
 
     basic_value_class& default_constructor()
     {
-        constructor<>("");
+        if constexpr(ForceGeneric)
+            this->default_constructor(use_generic);
+        else
+        {
+            if constexpr(std::is_array_v<Class>)
+            {
+                detail::arr_default_constructor<Class> wrapper;
+                this->behaviour_impl(
+                    AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
+                    "void f()",
+                    wrapper.generate(call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>),
+                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+                );
+            }
+            else
+                constructor<>("");
+        }
 
         return *this;
     }
