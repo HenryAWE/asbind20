@@ -609,7 +609,7 @@ private:
         using value_type = void*;
         using pointer = void**;
         using const_pointer = void* const*;
-        using allocator_type = my_base::allocator_type;
+        using allocator_type = typename my_base::allocator_type;
 
         using my_base::my_base;
 

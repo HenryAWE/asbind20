@@ -26,6 +26,8 @@ Update
 
 - ``script_invoke_result`` can be converted to ``std::expected`` if C++23 is available.
 
+- Backport to support Clang 15 toolchain.
+
 Bug fix
 ~~~~~~~
 

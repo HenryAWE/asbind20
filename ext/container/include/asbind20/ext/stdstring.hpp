@@ -14,7 +14,6 @@
 #include <cstddef>
 #include <string>
 #include <unordered_map>
-#include <ranges>
 #include <asbind20/asbind.hpp>
 #include "utf8.hpp"
 #include "array.hpp"
@@ -228,14 +227,33 @@ namespace script_string
             script_array& out, std::string_view str, std::string_view delimiter, bool skip_empty
         )
         {
-            auto result = str | std::views::split(delimiter);
-
-            for(auto&& i : result)
+            if(delimiter.empty())
             {
-                if(skip_empty && i.empty())
-                    continue;
-                std::string s(i.begin(), i.end());
+                return;
+            }
+
+            auto push_seg = [&out](std::string_view sv)
+            {
+                std::string s(sv);
                 out.push_back(&s);
+            };
+
+            std::size_t pos = 0;
+            while(true)
+            {
+                std::size_t next = str.find(delimiter, pos);
+                if(next == std::string_view::npos)
+                {
+                    std::string_view seg = str.substr(pos);
+                    if(!seg.empty() || !skip_empty)
+                        push_seg(seg);
+                    break;
+                }
+
+                std::string_view seg = str.substr(pos, next - pos);
+                if(!seg.empty() || !skip_empty)
+                    push_seg(seg);
+                pos = next + delimiter.size();
             }
         }
     } // namespace detail
@@ -311,7 +329,13 @@ inline void register_std_string(
         c
             .behaviours_by_traits()
             .opEquals()
-            .opCmp()
+            .method(
+                "int opCmp(const string&in) const",
+                [](const std::string& lhs, const std::string& rhs) -> int
+                {
+                    return lhs.compare(rhs);
+                }
+            )
             .opAdd()
             .method("string append(const string&in str) const", fp<&string_append>)
             .method("string prepend(const string&in str) const", fp<&string_prepend>)
