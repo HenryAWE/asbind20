@@ -36,7 +36,6 @@ TEST(script_function, ownership)
         script_function_ref<int()> rf = f;
         EXPECT_EQ(f.target(), rf.target());
 
-
         request_context ctx(engine);
         auto result = rf(ctx);
 
@@ -45,6 +44,15 @@ TEST(script_function, ownership)
 
         script_function<int()> another = rf;
         EXPECT_EQ(another.target(), rf.target());
+    }
+
+    {
+        auto another = f;
+        EXPECT_EQ(another.target(), f.target());
+
+        f.reset();
+        EXPECT_FALSE(f);
+        EXPECT_EQ(f.target(), nullptr);
     }
 }
 
@@ -67,7 +75,7 @@ TEST(script_method, ownership)
     );
     ASSERT_GE(m->Build(), 0);
 
-    auto* foo_t = m->GetTypeInfoByName("foo");
+    auto foo_t = script_typeinfo(m->GetTypeInfoByName("foo"));
     ASSERT_TRUE(foo_t);
 
     request_context ctx(engine);
@@ -76,6 +84,8 @@ TEST(script_method, ownership)
 
     script_method<int()> test(foo_t->GetMethodByName("test"));
     ASSERT_TRUE(test);
+
+    m->Discard();
 
     {
         auto result = test(ctx, foo);
@@ -94,5 +104,14 @@ TEST(script_method, ownership)
 
         script_method<int()> another = rf;
         EXPECT_EQ(another.target(), rf.target());
+    }
+
+    {
+        auto another = test;
+        EXPECT_EQ(another.target(), test.target());
+
+        test.reset();
+        EXPECT_FALSE(test);
+        EXPECT_EQ(test.target(), nullptr);
     }
 }

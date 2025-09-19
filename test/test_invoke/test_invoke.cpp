@@ -216,10 +216,15 @@ TEST(test_invoke, bad_result)
             "void throw_err()",
             []() -> void
             { throw std::runtime_error("throw_err"); }
+        )
+        .function(
+            "void abort_ctx()",
+            []() -> void
+            { current_context()->Abort(); }
         );
 
     auto* m = engine->GetModule(
-        "test_custom_rule", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
+        "test_bad_result", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
     );
     m->AddScriptSection(
         "bad_result",
@@ -227,6 +232,7 @@ TEST(test_invoke, bad_result)
         "int placeholder = 42;\n"
         "int& test1() { throw_err(); return placeholder; }\n"
         "void test2() { throw_err(); }"
+        "void test3() { abort_ctx(); }"
     );
     ASSERT_GE(m->Build(), 0);
 
@@ -306,6 +312,68 @@ TEST(test_invoke, bad_result)
 
         EXPECT_THROW((void)result.value(), bad_script_invoke_result_access);
         EXPECT_TRUE(test_invoke::check_result_ex(result));
+    }
+
+    {
+        auto* f = m->GetFunctionByName("test3");
+        ASSERT_TRUE(f);
+
+        request_context ctx(engine);
+        auto result = script_invoke<void>(ctx, f);
+
+        ASSERT_FALSE(result_has_value(result));
+        EXPECT_FALSE(result.has_value());
+        EXPECT_EQ(result.error(), AS_NAMESPACE_QUALIFIER asEXECUTION_ABORTED);
+
+        EXPECT_THROW((void)result.value(), bad_script_invoke_result_access);
+        EXPECT_TRUE(test_invoke::check_result_ex(result, AS_NAMESPACE_QUALIFIER asEXECUTION_ABORTED));
+    }
+}
+
+TEST(test_invoke, suspension)
+{
+    using namespace asbind20;
+    using asbind_test::result_has_value;
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine);
+    asbind_test::setup_exception_translator(engine);
+
+    global<true>(engine)
+        .function(
+            "void suspend_this()",
+            []() -> void
+            { current_context()->Suspend(); }
+        );
+
+    auto* m = engine->GetModule(
+        "test_bad_result", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
+    );
+    m->AddScriptSection(
+        "suspension",
+        "int test0() { suspend_this(); return 42; }\n"
+    );
+    ASSERT_GE(m->Build(), 0);
+
+    {
+        auto* f = m->GetFunctionByName("test0");
+        ASSERT_TRUE(f);
+
+        request_context ctx(engine);
+        auto result = script_invoke<int>(ctx, f);
+
+        ASSERT_FALSE(result_has_value(result));
+        EXPECT_FALSE(result.has_value());
+        EXPECT_EQ(result.error(), AS_NAMESPACE_QUALIFIER asEXECUTION_SUSPENDED);
+
+        EXPECT_THROW((void)result.value(), bad_script_invoke_result_access);
+        EXPECT_TRUE(test_invoke::check_result_ex(result, AS_NAMESPACE_QUALIFIER asEXECUTION_SUSPENDED));
+
+        int r = result.get_context()->Execute();
+        EXPECT_EQ(r, AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED);
+        EXPECT_EQ(r, (int)result.error());
+
+        EXPECT_EQ(result.value(), 42);
     }
 }
 
