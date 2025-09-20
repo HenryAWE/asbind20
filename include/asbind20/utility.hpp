@@ -1237,12 +1237,18 @@ namespace debugging
 {
     /**
      * @brief Get script section name of function
+     *
+     * This helper can handle the different interfaces for getting the section name across AngelScript versions.
+     *
+     * @param func Script function. It cannot be nullptr.
      */
     [[nodiscard]]
     inline const char* get_function_section_name(
         const AS_NAMESPACE_QUALIFIER asIScriptFunction* func
     )
     {
+        assert(func != nullptr);
+
 #if ANGELSCRIPT_VERSION >= 23800
 
         const char* result;
@@ -1254,6 +1260,9 @@ namespace debugging
 #endif
     }
 
+    /**
+     * @brief GC statistics
+     */
     struct gc_statistics
     {
         using value_type = AS_NAMESPACE_QUALIFIER asUINT;
@@ -1267,9 +1276,16 @@ namespace debugging
         bool operator==(const gc_statistics&) const noexcept = default;
     };
 
+    /**
+     * @brief Get the GC statistics
+     *
+     * @param engine Script engine. It cannot be nullptr.
+     */
     [[nodiscard]]
     inline gc_statistics get_gc_statistics(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     {
+        assert(engine != nullptr);
+
         gc_statistics result{};
         engine->GetGCStatistics(
             &result.current_size,

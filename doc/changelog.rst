@@ -28,10 +28,12 @@ Update
 
 - Backport to support Clang 15 toolchain.
 
+- More utilities.
+
 Bug fix
 ~~~~~~~
 
-- Fix error caused by generated copy constructor when registering a C array (``type[size]``) as value type.
+- Fix error caused by generated default/copy constructor when registering a C array (``type[size]``) as value type.
 
 Breaking Change
 ~~~~~~~~~~~~~~~

@@ -69,3 +69,13 @@ Miscellaneous Utilities
 .. doxygenclass:: asbind20::compressed_pair
    :members:
    :undoc-members:
+
+Debugging
+=========
+
+.. doxygenfunction:: asbind20::debugging::get_function_section_name
+
+.. doxygenstruct:: asbind20::debugging::gc_statistics
+   :members:
+   :undoc-members:
+.. doxygenfunction:: asbind20::debugging::get_gc_statistics
