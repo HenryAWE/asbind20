@@ -6,6 +6,7 @@
 
 static constexpr char optional_gc_test_script[] = R"(bool test0()
 {
+    output_stat();
     optional<int> o = nullopt;
     return !o.has_value;
 }
@@ -17,8 +18,10 @@ class foo
 
 bool test1()
 {
+    output_stat();
     foo f;
     @f.ref.value = @f;
+    output_stat();
     return f.ref.has_value;
 }
 )";
@@ -49,6 +52,29 @@ public:
             }
         );
         ext::register_script_optional(m_engine, UseGeneric);
+
+        asbind20::global<true>(m_engine)
+            .function(
+                "void output_stat()",
+                []() -> void
+                {
+                    auto* ctx = asbind20::current_context();
+                    ASSERT_TRUE(ctx);
+
+                    auto* f = ctx->GetFunction();
+                    std::cerr
+                        << '['
+                        << asbind20::debugging::get_function_section_name(f)
+                        << ':'
+                        << f->GetName()
+                        << "] ";
+                    asbind_test::output_gc_statistics(
+                        std::cerr,
+                        ctx->GetEngine(),
+                        ';'
+                    );
+                }
+            );
     }
 
     void TearDown() override

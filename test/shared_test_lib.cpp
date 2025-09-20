@@ -88,6 +88,30 @@ void setup_exception_translator(
         );
 }
 
+void output_gc_statistics(
+    std::ostream& os,
+    const asbind20::debugging::gc_statistics& stat,
+    char sep
+)
+{
+    os << "current: " << stat.current_size << sep;
+    os << "total destroyed: " << stat.total_destroyed << sep;
+    os << "total detected: " << stat.total_detected << sep;
+    os << "new objects: " << stat.new_objects << sep;
+    os << "total new destroyed: " << stat.total_new_destroyed;
+    os << std::endl;
+}
+
+void output_gc_statistics(
+    std::ostream& os,
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    char sep
+)
+{
+    auto stat = asbind20::debugging::get_gc_statistics(engine);
+    output_gc_statistics(os, stat, sep);
+}
+
 void asbind_test_suite::msg_callback(const AS_NAMESPACE_QUALIFIER asSMessageInfo* msg)
 {
     if(msg->type == AS_NAMESPACE_QUALIFIER asMSGTYPE_ERROR)

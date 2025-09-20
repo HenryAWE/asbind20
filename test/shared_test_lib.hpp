@@ -41,6 +41,17 @@ void setup_exception_translator(
     AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
 );
 
+void output_gc_statistics(
+    std::ostream& os,
+    const asbind20::debugging::gc_statistics& stat,
+    char sep = '\n'
+);
+void output_gc_statistics(
+    std::ostream& os,
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    char sep = '\n'
+);
+
 class expected_ex : public std::exception
 {
 public:
