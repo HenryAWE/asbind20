@@ -19,40 +19,6 @@ namespace asbind20
 {
 namespace detail
 {
-    template <bool IsValueType, bool IsReference>
-    std::string full_param_decl(
-        bool is_const,
-        std::string_view decl,
-        AS_NAMESPACE_QUALIFIER asETypeModifiers tm
-    )
-    {
-        if constexpr(!IsReference)
-            return std::string(decl);
-        else
-        {
-            assert(tm != AS_NAMESPACE_QUALIFIER asTM_NONE && "Reference modifier is required");
-
-            if constexpr(IsValueType)
-            {
-                if(is_const || tm == AS_NAMESPACE_QUALIFIER asTM_INREF)
-                    return string_concat(decl, "&in");
-                else if(tm == AS_NAMESPACE_QUALIFIER asTM_OUTREF)
-                    return string_concat(decl, "&out");
-                else // tm == asTM_INOUTREF
-                    assert(false && "&inout for value type is invalid");
-            }
-            else
-            {
-                if(is_const || tm == AS_NAMESPACE_QUALIFIER asTM_INREF)
-                    return string_concat(decl, "&in");
-                else if(tm == AS_NAMESPACE_QUALIFIER asTM_OUTREF)
-                    return string_concat(decl, "&out");
-                else // tm == asTM_INOUTREF
-                    return string_concat(decl, '&');
-            }
-        }
-    }
-
     template <typename T, typename RegisterHelper>
     std::string get_return_decl(const RegisterHelper& c)
     {
@@ -162,7 +128,7 @@ namespace operators
                     is_const ? "const" : ""
                 );
             }
-            else if(ParamRef)
+            else if constexpr(ParamRef)
             {
                 return string_concat(
                     ret_decl,
@@ -275,7 +241,6 @@ namespace operators
 #define ASBIND20_ASSIGNMENT_OPERATOR_HELPER(op_name, cpp_op)                                                   \
     template <bool ThisConst, typename Rhs>                                                                    \
     class op_name;                                                                                             \
-                                                                                                               \
     template <bool ThisConst, bool RhsConst>                                                                   \
     class op_name<ThisConst, this_placeholder<RhsConst>> :                                                     \
         public binary_operator                                                                                 \
@@ -313,7 +278,6 @@ namespace operators
                     call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>                                    \
                 );                                                                                             \
             }                                                                                                  \
-                                                                                                               \
         private:                                                                                               \
             const op_name* m_proxy;                                                                            \
         };                                                                                                     \
@@ -349,7 +313,6 @@ namespace operators
                     call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>                                    \
                 );                                                                                             \
             }                                                                                                  \
-                                                                                                               \
         private:                                                                                               \
             const op_name* m_proxy;                                                                            \
             std::string_view m_ret_decl;                                                                       \
@@ -371,14 +334,12 @@ namespace operators
             ar.use(this->return_<return_type>());                                                              \
         }                                                                                                      \
     };                                                                                                         \
-                                                                                                               \
     template <bool ThisConst, typename Rhs, bool AutoDecl>                                                     \
     class op_name<ThisConst, param_placeholder<Rhs, AutoDecl>> :                                               \
         private param_placeholder<Rhs, AutoDecl>,                                                              \
         public binary_operator                                                                                 \
     {                                                                                                          \
         using param_type = param_placeholder<Rhs, AutoDecl>;                                                   \
-                                                                                                               \
     public:                                                                                                    \
         op_name(const param_type& param)                                                                       \
             : param_type(param) {}                                                                             \
@@ -410,7 +371,6 @@ namespace operators
                     call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>                                    \
                 );                                                                                             \
             }                                                                                                  \
-                                                                                                               \
         private:                                                                                               \
             const op_name* m_proxy;                                                                            \
         };                                                                                                     \
@@ -442,7 +402,6 @@ namespace operators
                     call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>                                    \
                 );                                                                                             \
             }                                                                                                  \
-                                                                                                               \
         private:                                                                                               \
             const op_name* m_proxy;                                                                            \
             std::string_view m_ret_decl;                                                                       \
@@ -659,6 +618,7 @@ namespace operators
             const opIndex* m_proxy;
             std::string_view m_ret_decl;
         };
+
         ASBIND20_OPERATOR_RETURN_PROXY_FUNC(opIndex)
 
         template <typename RegisterHelper>
@@ -963,7 +923,6 @@ namespace operators
                     call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>          \
                 );                                                                  \
             }                                                                       \
-                                                                                    \
         private:                                                                    \
             const op_name* m_proxy;                                                 \
         };                                                                          \
@@ -981,7 +940,6 @@ namespace operators
                     ThisConst,                                                      \
                     std::add_const_t<class_type>,                                   \
                     class_type>;                                                    \
-                                                                                    \
                 ar.method(                                                          \
                     gen_name(                                                       \
                         m_ret_decl,                                                 \
@@ -995,7 +953,6 @@ namespace operators
                     call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>          \
                 );                                                                  \
             }                                                                       \
-                                                                                    \
         private:                                                                    \
             const op_name* m_proxy;                                                 \
             std::string_view m_ret_decl;                                            \
@@ -1027,7 +984,6 @@ namespace operators
 #define ASBIND20_BINARY_OPERATOR_HELPER(op_name, cpp_op)                                                       \
     template <typename Lhs, typename Rhs>                                                                      \
     class op_name;                                                                                             \
-                                                                                                               \
     template <bool LhsConst, bool RhsConst>                                                                    \
     class op_name<this_placeholder<LhsConst>, this_placeholder<RhsConst>> :                                    \
         public binary_operator                                                                                 \
@@ -1065,7 +1021,6 @@ namespace operators
                     call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>                                    \
                 );                                                                                             \
             }                                                                                                  \
-                                                                                                               \
         private:                                                                                               \
             const op_name* m_proxy;                                                                            \
         };                                                                                                     \
@@ -1123,14 +1078,12 @@ namespace operators
             ar.use(this->return_<return_type>());                                                              \
         }                                                                                                      \
     };                                                                                                         \
-                                                                                                               \
     template <bool LhsConst, typename Rhs, bool AutoDecl>                                                      \
     class op_name<this_placeholder<LhsConst>, param_placeholder<Rhs, AutoDecl>> :                              \
         private param_placeholder<Rhs, AutoDecl>,                                                              \
         public binary_operator                                                                                 \
     {                                                                                                          \
         using param_type = param_placeholder<Rhs, AutoDecl>;                                                   \
-                                                                                                               \
     public:                                                                                                    \
         op_name(const param_type& param)                                                                       \
             : param_type(param) {}                                                                             \
@@ -1162,7 +1115,6 @@ namespace operators
                     call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>                                    \
                 );                                                                                             \
             }                                                                                                  \
-                                                                                                               \
         private:                                                                                               \
             const op_name* m_proxy;                                                                            \
         };                                                                                                     \
@@ -1194,7 +1146,6 @@ namespace operators
                     call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>                                    \
                 );                                                                                             \
             }                                                                                                  \
-                                                                                                               \
         private:                                                                                               \
             const op_name* m_proxy;                                                                            \
             std::string_view m_ret_decl;                                                                       \
@@ -1212,14 +1163,12 @@ namespace operators
             ar.use(this->return_<return_type>());                                                              \
         }                                                                                                      \
     };                                                                                                         \
-                                                                                                               \
     template <typename Lhs, bool AutoDecl, bool RhsConst>                                                      \
     class op_name<param_placeholder<Lhs, AutoDecl>, this_placeholder<RhsConst>> :                              \
         private param_placeholder<Lhs, AutoDecl>,                                                              \
         public binary_operator                                                                                 \
     {                                                                                                          \
         using param_type = param_placeholder<Lhs, AutoDecl>;                                                   \
-                                                                                                               \
     public:                                                                                                    \
         op_name(const param_type& param)                                                                       \
             : param_type(param) {}                                                                             \
@@ -1251,7 +1200,6 @@ namespace operators
                     call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>                                     \
                 );                                                                                             \
             }                                                                                                  \
-                                                                                                               \
         private:                                                                                               \
             const op_name* m_proxy;                                                                            \
         };                                                                                                     \
@@ -1283,7 +1231,6 @@ namespace operators
                     call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>                                     \
                 );                                                                                             \
             }                                                                                                  \
-                                                                                                               \
         private:                                                                                               \
             const op_name* m_proxy;                                                                            \
             std::string_view m_ret_decl;                                                                       \
