@@ -10,6 +10,7 @@
 #pragma once
 
 #include <cstddef>
+#include <bit>
 #include <array>
 #include <algorithm>
 #include <functional>
