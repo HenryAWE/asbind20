@@ -45,21 +45,8 @@ namespace detail
         using my_base = constructor_base<Class>;
 
     public:
-        using native_function_type = std::conditional_t<
-            Template,
-            void (*)(AS_NAMESPACE_QUALIFIER asITypeInfo*, Args..., void*),
-            void (*)(Args..., void*)>;
-
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        requires(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC ||
-                 CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST)
-        using wrapper_type = std::conditional_t<
-            CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
-            AS_NAMESPACE_QUALIFIER asGENFUNC_t,
-            native_function_type>;
-
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        static auto generate(call_conv_t<CallConv>) noexcept -> wrapper_type<CallConv>
+        static auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
             {
@@ -134,18 +121,8 @@ namespace detail
         using my_base = constructor_base<ElemType[Size]>;
 
     public:
-        using native_function_type = void (*)(void*);
-
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        requires(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC ||
-                 CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST)
-        using wrapper_type = std::conditional_t<
-            CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
-            AS_NAMESPACE_QUALIFIER asGENFUNC_t,
-            native_function_type>;
-
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        static auto generate(call_conv_t<CallConv>) noexcept -> wrapper_type<CallConv>
+        static auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
             {
@@ -182,23 +159,12 @@ namespace detail
 
     public:
         static_assert(std::is_reference_v<Arg>);
-        using native_function_type =
-            void (*)(Arg, void*);
 
         using class_type = ElemType[Size];
         using pointer_type = ElemType*;
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        requires(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC ||
-                 CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST)
-        using wrapper_type = std::conditional_t<
-            CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
-            AS_NAMESPACE_QUALIFIER asGENFUNC_t,
-            native_function_type>;
-
-    public:
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        static constexpr auto generate(call_conv_t<CallConv>) noexcept -> wrapper_type<CallConv>
+        static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
             {
@@ -239,10 +205,6 @@ namespace detail
         typename Class,
         bool Template,
         AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv>
-    requires(
-        OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
-        OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
-    )
     class constructor_function
     {
     public:
@@ -328,18 +290,14 @@ namespace detail
     };
 
     template <
-        noncapturing_lambda ConstructorFunc,
+        typename ConstructorLambda,
         typename Class,
         bool Template,
         AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv>
-    requires(
-        OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
-        OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
-    )
     class constructor_lambda
     {
     public:
-        using native_function_type = std::decay_t<decltype(+ConstructorFunc{})>;
+        using native_function_type = std::decay_t<decltype(+ConstructorLambda{})>;
 
         static auto generate(call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>) noexcept
             -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
@@ -357,7 +315,7 @@ namespace detail
                         {
                             Class* mem = (Class*)gen->GetObject();
                             std::invoke(
-                                ConstructorFunc{},
+                                ConstructorLambda{},
                                 mem,
                                 *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
                                 get_generic_arg<std::tuple_element_t<Is + 2, args_tuple>>(
@@ -372,7 +330,7 @@ namespace detail
                         {
                             Class* mem = (Class*)gen->GetObject();
                             std::invoke(
-                                ConstructorFunc{},
+                                ConstructorLambda{},
                                 mem,
                                 get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(
                                     gen, (AS_NAMESPACE_QUALIFIER asUINT)Is
@@ -392,7 +350,7 @@ namespace detail
                         {
                             Class* mem = (Class*)gen->GetObject();
                             std::invoke(
-                                ConstructorFunc{},
+                                ConstructorLambda{},
                                 *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
                                 get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(
                                     gen, (AS_NAMESPACE_QUALIFIER asUINT)Is + 1
@@ -407,7 +365,7 @@ namespace detail
                         {
                             Class* mem = (Class*)gen->GetObject();
                             std::invoke(
-                                ConstructorFunc{},
+                                ConstructorLambda{},
                                 get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
                                     gen, (AS_NAMESPACE_QUALIFIER asUINT)Is
                                 )...,
@@ -424,19 +382,6 @@ namespace detail
     class list_constructor_base
     {
     public:
-        using native_function_type =
-            std::conditional_t<
-                Template,
-                void (*)(AS_NAMESPACE_QUALIFIER asITypeInfo*, ListBufType, void*),
-                void (*)(ListBufType, void*)>;
-
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        requires(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC ||
-                 CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST)
-        using wrapper_type = std::conditional_t<
-            CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
-            AS_NAMESPACE_QUALIFIER asGENFUNC_t,
-            native_function_type>;
     };
 
     template <
@@ -446,12 +391,9 @@ namespace detail
         policies::initialization_list_policy Policy = void>
     class list_constructor : public list_constructor_base<Class, Template, ListElementType*>
     {
-        using my_base = list_constructor_base<Class, Template, ListElementType*>;
-
     public:
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         static auto generate(call_conv_t<CallConv>) noexcept
-            -> typename my_base::template wrapper_type<CallConv>
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
             {
@@ -502,12 +444,9 @@ namespace detail
     class list_constructor<Class, Template, ListElementType, policies::repeat_list_proxy> :
         public list_constructor_base<Class, Template, void*>
     {
-        using my_base = list_constructor_base<Class, Template, void*>;
-
     public:
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         static auto generate(call_conv_t<CallConv>) noexcept
-            -> typename my_base::template wrapper_type<CallConv>
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
             {
@@ -556,18 +495,14 @@ namespace detail
         bool Template,
         typename ListElementType,
         std::size_t Size>
-    class list_constructor<Class, Template, ListElementType, policies::apply_to<Size>> :
-        public list_constructor_base<Class, Template, ListElementType*>
+    class list_constructor<Class, Template, ListElementType, policies::apply_to<Size>>
     {
-        using my_base = list_constructor_base<Class, Template, ListElementType*>;
-
     public:
         static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
         static_assert(!Template, "This policy is invalid for a template class");
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         static auto generate(call_conv_t<CallConv>) noexcept
-            -> typename my_base::template wrapper_type<CallConv>
         {
             static constexpr auto helper = [](void* mem, ListElementType* list_buf)
             {
@@ -604,15 +539,12 @@ namespace detail
     class list_constructor<Class, Template, ListElementType, policies::as_iterators> :
         public list_constructor_base<Class, Template, void*>
     {
-        using my_base = list_constructor_base<Class, Template, void*>;
-
     public:
         static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
         static_assert(!Template, "This policy is invalid for a template class");
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         static auto generate(call_conv_t<CallConv>) noexcept
-            -> typename my_base::template wrapper_type<CallConv>
         {
             static constexpr auto helper = [](void* mem, script_init_list_repeat list)
             {
@@ -649,18 +581,14 @@ namespace detail
         typename Class,
         bool Template,
         typename ListElementType>
-    class list_constructor<Class, Template, ListElementType, policies::pointer_and_size> :
-        public list_constructor_base<Class, Template, void*>
+    class list_constructor<Class, Template, ListElementType, policies::pointer_and_size>
     {
-        using my_base = list_constructor_base<Class, Template, void*>;
-
     public:
         static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
         static_assert(!Template, "This policy is invalid for a template class");
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         static auto generate(call_conv_t<CallConv>) noexcept
-            -> typename my_base::template wrapper_type<CallConv>
         {
             static constexpr auto helper = [](void* mem, script_init_list_repeat list)
             {
@@ -696,8 +624,7 @@ namespace detail
         std::same_as<ConvertibleRangePolicy, policies::as_initializer_list> ||
         std::same_as<ConvertibleRangePolicy, policies::as_span>
     )
-    class list_constructor<Class, Template, ListElementType, ConvertibleRangePolicy> :
-        public list_constructor_base<Class, Template, void*>
+    class list_constructor<Class, Template, ListElementType, ConvertibleRangePolicy>
     {
         using my_base = list_constructor_base<Class, Template, void*>;
 
@@ -707,7 +634,6 @@ namespace detail
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         static auto generate(call_conv_t<CallConv>) noexcept
-            -> typename my_base::template wrapper_type<CallConv>
         {
             static constexpr auto helper = [](void* mem, script_init_list_repeat list)
             {
@@ -751,7 +677,6 @@ namespace detail
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         static auto generate(call_conv_t<CallConv>) noexcept
-            -> my_base::template wrapper_type<CallConv>
         {
             static constexpr auto helper = [](void* mem, script_init_list_repeat list)
             {
@@ -1123,35 +1048,7 @@ namespace detail
     class list_factory_base
     {
     public:
-        using native_function_type = std::conditional_t<
-            Template,
-            Class* (*)(AS_NAMESPACE_QUALIFIER asITypeInfo*, ListBufType),
-            std::conditional_t<
-                std::same_as<FactoryPolicy, policies::notify_gc>,
-                Class* (*)(ListBufType, AS_NAMESPACE_QUALIFIER asITypeInfo*),
-                Class* (*)(ListBufType)>>;
-
-        static constexpr bool is_acceptable_call_conv(
-            AS_NAMESPACE_QUALIFIER asECallConvTypes conv
-        ) noexcept
-        {
-            if(conv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-                return true;
-
-            if constexpr(std::same_as<FactoryPolicy, policies::notify_gc> && !Template)
-                return conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
-            else
-                return conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL;
-        }
-
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        requires(is_acceptable_call_conv(CallConv))
-        using wrapper_type = std::conditional_t<
-            CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
-            AS_NAMESPACE_QUALIFIER asGENFUNC_t,
-            native_function_type>;
-
-        static void notify_gc_helper(void* obj, AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+        static void notify_gc_if_necessary(void* obj, AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
         {
             if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
             {
@@ -1174,12 +1071,9 @@ namespace detail
         policies::factory_policy FactoryPolicy = void>
     class list_factory : public list_factory_base<Class, Template, ListElementType*, FactoryPolicy>
     {
-        using my_base = list_factory_base<Class, Template, ListElementType*, FactoryPolicy>;
-
     public:
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         static auto generate(call_conv_t<CallConv>) noexcept
-            -> typename my_base::template wrapper_type<CallConv>
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
             {
@@ -1242,7 +1136,6 @@ namespace detail
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         static auto generate(call_conv_t<CallConv>) noexcept
-            -> typename my_base::template wrapper_type<CallConv>
         {
             static constexpr auto helper = [](ListElementType* list_buf) -> Class*
             {
@@ -1261,7 +1154,7 @@ namespace detail
                     {
                         auto* ti = (AS_NAMESPACE_QUALIFIER asITypeInfo*)gen->GetAuxiliary();
                         assert(ti != nullptr);
-                        my_base::notify_gc_helper(ptr, ti);
+                        my_base::notify_gc_if_necessary(ptr, ti);
                     }
                     gen->SetReturnAddress(ptr);
                 };
@@ -1271,7 +1164,7 @@ namespace detail
                 return +[](ListElementType* list_buf, AS_NAMESPACE_QUALIFIER asITypeInfo* ti) -> Class*
                 {
                     Class* ptr = helper(list_buf);
-                    my_base::notify_gc_helper(ptr, ti);
+                    my_base::notify_gc_if_necessary(ptr, ti);
                     return ptr;
                 };
             }
@@ -1298,7 +1191,6 @@ namespace detail
     public:
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         static auto generate(call_conv_t<CallConv>) noexcept
-            -> typename my_base::template wrapper_type<CallConv>
         {
             if constexpr(Template)
             {
@@ -1311,7 +1203,7 @@ namespace detail
                             ti,
                             script_init_list_repeat(gen, 1)
                         );
-                        my_base::notify_gc_helper(ptr, ti);
+                        my_base::notify_gc_if_necessary(ptr, ti);
                         gen->SetReturnAddress(ptr);
                     };
                 }
@@ -1320,7 +1212,7 @@ namespace detail
                     return +[](AS_NAMESPACE_QUALIFIER asITypeInfo* ti, void* list_buf) -> Class*
                     {
                         Class* ptr = new Class(ti, script_init_list_repeat(list_buf));
-                        my_base::notify_gc_helper(ptr, ti);
+                        my_base::notify_gc_if_necessary(ptr, ti);
                         return ptr;
                     };
                 }
@@ -1335,7 +1227,7 @@ namespace detail
                         {
                             Class* ptr = new Class(script_init_list_repeat(gen));
                             auto* ti = (AS_NAMESPACE_QUALIFIER asITypeInfo*)gen->GetAuxiliary();
-                            my_base::notify_gc_helper(ptr, ti);
+                            my_base::notify_gc_if_necessary(ptr, ti);
                             gen->SetReturnAddress(ptr);
                         }
                         else
@@ -1351,7 +1243,7 @@ namespace detail
                     return +[](void* list_buf, AS_NAMESPACE_QUALIFIER asITypeInfo* ti) -> Class*
                     {
                         Class* ptr = new Class(script_init_list_repeat(list_buf));
-                        my_base::notify_gc_helper(ptr, ti);
+                        my_base::notify_gc_if_necessary(ptr, ti);
                         return ptr;
                     };
                 }
@@ -1382,7 +1274,6 @@ namespace detail
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         static auto generate(call_conv_t<CallConv>) noexcept
-            -> typename my_base::template wrapper_type<CallConv>
         {
             static constexpr auto helper = [](script_init_list_repeat list) -> Class*
             {
@@ -1403,7 +1294,7 @@ namespace detail
                     if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
                     {
                         auto* ti = (AS_NAMESPACE_QUALIFIER asITypeInfo*)gen->GetAuxiliary();
-                        my_base::notify_gc_helper(ptr, ti);
+                        my_base::notify_gc_if_necessary(ptr, ti);
                     }
                     gen->SetReturnAddress(ptr);
                 };
@@ -1413,7 +1304,7 @@ namespace detail
                 return +[](void* list_buf, AS_NAMESPACE_QUALIFIER asITypeInfo* ti) -> Class*
                 {
                     Class* ptr = helper(script_init_list_repeat(list_buf));
-                    my_base::notify_gc_helper(ptr, ti);
+                    my_base::notify_gc_if_necessary(ptr, ti);
                     return ptr;
                 };
             }
@@ -1443,7 +1334,6 @@ namespace detail
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         static auto generate(call_conv_t<CallConv>) noexcept
-            -> typename my_base::template wrapper_type<CallConv>
         {
             static constexpr auto helper = [](script_init_list_repeat list) -> Class*
             {
@@ -1458,7 +1348,7 @@ namespace detail
                     if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
                     {
                         auto* ti = (AS_NAMESPACE_QUALIFIER asITypeInfo*)gen->GetAuxiliary();
-                        my_base::notify_gc_helper(ptr, ti);
+                        my_base::notify_gc_if_necessary(ptr, ti);
                     }
                     gen->SetReturnAddress(ptr);
                 };
@@ -1468,7 +1358,7 @@ namespace detail
                 return +[](void* list_buf, AS_NAMESPACE_QUALIFIER asITypeInfo* ti) -> Class*
                 {
                     Class* ptr = helper(script_init_list_repeat(list_buf));
-                    my_base::notify_gc_helper(ptr, ti);
+                    my_base::notify_gc_if_necessary(ptr, ti);
                     return ptr;
                 };
             }
@@ -1482,18 +1372,18 @@ namespace detail
         }
     };
 
+    template <typename Policy>
+    concept convertible_range_policy = policies::initialization_list_policy<Policy> &&
+                                       (std::same_as<Policy, policies::as_initializer_list> ||
+                                        std::same_as<Policy, policies::as_span>);
+
     template <
         typename Class,
         bool Template,
         typename ListElementType,
-        policies::initialization_list_policy ConvertibleRangePolicy,
+        convertible_range_policy ConvertibleRangePolicy,
         policies::factory_policy FactoryPolicy>
-    requires(
-        std::same_as<ConvertibleRangePolicy, policies::as_initializer_list> ||
-        std::same_as<ConvertibleRangePolicy, policies::as_span>
-    )
-    class list_factory<Class, Template, ListElementType, ConvertibleRangePolicy, FactoryPolicy> :
-        public list_factory_base<Class, Template, void*, FactoryPolicy>
+    class list_factory<Class, Template, ListElementType, ConvertibleRangePolicy, FactoryPolicy>
     {
         using my_base = list_factory_base<Class, Template, void*, FactoryPolicy>;
 
@@ -1503,7 +1393,6 @@ namespace detail
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         static auto generate(call_conv_t<CallConv>) noexcept
-            -> typename my_base::template wrapper_type<CallConv>
         {
             static constexpr auto helper = [](script_init_list_repeat list) -> Class*
             {
@@ -1518,7 +1407,7 @@ namespace detail
                     if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
                     {
                         auto* ti = (AS_NAMESPACE_QUALIFIER asITypeInfo*)gen->GetAuxiliary();
-                        my_base::notify_gc_helper(ptr, ti);
+                        my_base::notify_gc_if_necessary(ptr, ti);
                     }
                     gen->SetReturnAddress(ptr);
                 };
@@ -1528,7 +1417,7 @@ namespace detail
                 return +[](void* list_buf, AS_NAMESPACE_QUALIFIER asITypeInfo* ti) -> Class*
                 {
                     Class* ptr = helper(script_init_list_repeat(list_buf));
-                    my_base::notify_gc_helper(ptr, ti);
+                    my_base::notify_gc_if_necessary(ptr, ti);
                     return ptr;
                 };
             }
@@ -1560,7 +1449,6 @@ namespace detail
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         static auto generate(call_conv_t<CallConv>) noexcept
-            -> my_base::template wrapper_type<CallConv>
         {
             static constexpr auto helper = [](script_init_list_repeat list) -> Class*
             {
@@ -1576,7 +1464,7 @@ namespace detail
                     if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
                     {
                         auto* ti = (AS_NAMESPACE_QUALIFIER asITypeInfo*)gen->GetAuxiliary();
-                        my_base::notify_gc_helper(ptr, ti);
+                        my_base::notify_gc_if_necessary(ptr, ti);
                     }
                     gen->SetReturnAddress(ptr);
                 };
@@ -1586,7 +1474,7 @@ namespace detail
                 return +[](void* list_buf, AS_NAMESPACE_QUALIFIER asITypeInfo* ti) -> Class*
                 {
                     Class* ptr = helper(script_init_list_repeat(list_buf));
-                    my_base::notify_gc_helper(ptr, ti);
+                    my_base::notify_gc_if_necessary(ptr, ti);
                     return ptr;
                 };
             }
@@ -1606,19 +1494,8 @@ namespace detail
     class opConv
     {
     public:
-        using native_function_type = To (*)(Class&);
-
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        requires(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
-                 CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST ||
-                 CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-        using wrapper_type = std::conditional_t<
-            CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
-            AS_NAMESPACE_QUALIFIER asGENFUNC_t,
-            native_function_type>;
-
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        static auto generate(call_conv_t<CallConv>) noexcept -> wrapper_type<CallConv>
+        static auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
             {
