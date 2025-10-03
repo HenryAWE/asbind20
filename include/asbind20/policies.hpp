@@ -1,10 +1,23 @@
+/**
+ * @file policies.hpp
+ * @author HenryAWE
+ * @brief Policies for some special functions/behaviours
+ */
+
+#ifndef ASBIND20_POLICIES_HPP
+#define ASBIND20_POLICIES_HPP
+
 #pragma once
 
+#include <bit>
 #include <span>
 #include <cstddef>
 #include "meta.hpp"
 #include "utility.hpp"
 
+/**
+ * @brief Policies for customizing some special functions/behaviours
+ */
 namespace asbind20::policies
 {
 /**
@@ -190,3 +203,5 @@ concept factory_policy =
         typename T::factory_policy_tag;
     };
 } // namespace asbind20::policies
+
+#endif

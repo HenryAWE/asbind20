@@ -1,3 +1,12 @@
+/**
+ * @file global.hpp
+ * @author HenryAWE
+ * @brief Binding generator for global functions and variables
+ */
+
+#ifndef ASBIND20_BIND_GLOBAL_HPP
+#define ASBIND20_BIND_GLOBAL_HPP
+
 #pragma once
 
 #include "common.hpp"
@@ -496,3 +505,5 @@ global(AS_NAMESPACE_QUALIFIER asIScriptEngine*) -> global<false>;
 
 global(const script_engine&) -> global<false>;
 } // namespace asbind20
+
+#endif

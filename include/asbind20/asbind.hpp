@@ -26,6 +26,7 @@
 #include <cstring>
 #include "detail/include_as.hpp"
 #include "utility.hpp"
+#include "policies.hpp"
 #include "bind.hpp"
 #include "invoke.hpp"
 

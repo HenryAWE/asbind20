@@ -1,3 +1,12 @@
+/**
+ * @file class.hpp
+ * @author HenryAWE
+ * @brief Binding generator for classes
+ */
+
+#ifndef ASBIND20_BIND_CLASS_HPP
+#define ASBIND20_BIND_CLASS_HPP
+
 #pragma once
 
 #include "common.hpp"
@@ -5873,3 +5882,5 @@ using ref_class = basic_ref_class<Class, false, UseGeneric>;
 template <typename Class, bool ForceGeneric = false>
 using template_ref_class = basic_ref_class<Class, true, ForceGeneric>;
 } // namespace asbind20
+
+#endif
