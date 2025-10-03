@@ -28,7 +28,7 @@ public:
         : my_base(engine) {}
 
     template <typename Auxiliary>
-    void* get_auxiliary_address(auxiliary_wrapper<Auxiliary> aux) const
+    static void* get_auxiliary_address(auxiliary_wrapper<Auxiliary> aux)
     {
         if constexpr(std::same_as<Auxiliary, this_type_t>)
         {
