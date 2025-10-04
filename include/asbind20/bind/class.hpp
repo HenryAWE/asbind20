@@ -218,184 +218,6 @@ namespace detail
     };
 
     template <
-        native_function auto ConstructorFunc,
-        typename Class,
-        bool Template,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv>
-    class constructor_function
-    {
-    public:
-        using native_function_type = std::decay_t<decltype(ConstructorFunc)>;
-
-        static auto generate(call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>) noexcept
-            -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
-        {
-            using traits = function_traits<decltype(ConstructorFunc)>;
-            using args_tuple = typename traits::args_tuple;
-
-            if constexpr(OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
-            {
-                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
-                {
-                    if constexpr(Template)
-                    {
-                        [gen]<std::size_t... Is>(std::index_sequence<Is...>)
-                        {
-                            Class* mem = (Class*)gen->GetObject();
-                            std::invoke(
-                                ConstructorFunc,
-                                mem,
-                                *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
-                                get_generic_arg<std::tuple_element_t<Is + 2, args_tuple>>(
-                                    gen, (AS_NAMESPACE_QUALIFIER asUINT)Is + 1
-                                )...
-                            );
-                        }(std::make_index_sequence<traits::arg_count_v - 2>());
-                    }
-                    else
-                    {
-                        [gen]<std::size_t... Is>(std::index_sequence<Is...>)
-                        {
-                            Class* mem = (Class*)gen->GetObject();
-                            std::invoke(
-                                ConstructorFunc,
-                                mem,
-                                get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(
-                                    gen, (AS_NAMESPACE_QUALIFIER asUINT)Is
-                                )...
-                            );
-                        }(std::make_index_sequence<traits::arg_count_v - 1>());
-                    }
-                };
-            }
-            else // OriginalCallConv == asCALL_CDECL_OBJLAST
-            {
-                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
-                {
-                    if constexpr(Template)
-                    {
-                        [gen]<std::size_t... Is>(std::index_sequence<Is...>)
-                        {
-                            Class* mem = (Class*)gen->GetObject();
-                            std::invoke(
-                                ConstructorFunc,
-                                *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
-                                get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(
-                                    gen, (AS_NAMESPACE_QUALIFIER asUINT)Is + 1
-                                )...,
-                                mem
-                            );
-                        }(std::make_index_sequence<traits::arg_count_v - 2>());
-                    }
-                    else
-                    {
-                        [gen]<std::size_t... Is>(std::index_sequence<Is...>)
-                        {
-                            Class* mem = (Class*)gen->GetObject();
-                            std::invoke(
-                                ConstructorFunc,
-                                get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
-                                    gen, (AS_NAMESPACE_QUALIFIER asUINT)Is
-                                )...,
-                                mem
-                            );
-                        }(std::make_index_sequence<traits::arg_count_v - 1>());
-                    }
-                };
-            }
-        }
-    };
-
-    template <
-        typename ConstructorLambda,
-        typename Class,
-        bool Template,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv>
-    class constructor_lambda
-    {
-    public:
-        using native_function_type = std::decay_t<decltype(+ConstructorLambda{})>;
-
-        static auto generate(call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>) noexcept
-            -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
-        {
-            using traits = function_traits<native_function_type>;
-            using args_tuple = typename traits::args_tuple;
-
-            if constexpr(OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
-            {
-                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
-                {
-                    if constexpr(Template)
-                    {
-                        [gen]<std::size_t... Is>(std::index_sequence<Is...>)
-                        {
-                            Class* mem = (Class*)gen->GetObject();
-                            std::invoke(
-                                ConstructorLambda{},
-                                mem,
-                                *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
-                                get_generic_arg<std::tuple_element_t<Is + 2, args_tuple>>(
-                                    gen, (AS_NAMESPACE_QUALIFIER asUINT)Is + 1
-                                )...
-                            );
-                        }(std::make_index_sequence<traits::arg_count_v - 2>());
-                    }
-                    else
-                    {
-                        [gen]<std::size_t... Is>(std::index_sequence<Is...>)
-                        {
-                            Class* mem = (Class*)gen->GetObject();
-                            std::invoke(
-                                ConstructorLambda{},
-                                mem,
-                                get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(
-                                    gen, (AS_NAMESPACE_QUALIFIER asUINT)Is
-                                )...
-                            );
-                        }(std::make_index_sequence<traits::arg_count_v - 1>());
-                    }
-                };
-            }
-            else // OriginalCallConv == asCALL_CDECL_OBJLAST
-            {
-                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
-                {
-                    if constexpr(Template)
-                    {
-                        [gen]<std::size_t... Is>(std::index_sequence<Is...>)
-                        {
-                            Class* mem = (Class*)gen->GetObject();
-                            std::invoke(
-                                ConstructorLambda{},
-                                *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
-                                get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(
-                                    gen, (AS_NAMESPACE_QUALIFIER asUINT)Is + 1
-                                )...,
-                                mem
-                            );
-                        }(std::make_index_sequence<traits::arg_count_v - 2>());
-                    }
-                    else
-                    {
-                        [gen]<std::size_t... Is>(std::index_sequence<Is...>)
-                        {
-                            Class* mem = (Class*)gen->GetObject();
-                            std::invoke(
-                                ConstructorLambda{},
-                                get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
-                                    gen, (AS_NAMESPACE_QUALIFIER asUINT)Is
-                                )...,
-                                mem
-                            );
-                        }(std::make_index_sequence<traits::arg_count_v - 1>());
-                    }
-                };
-            }
-        }
-    };
-
-    template <
         typename Class,
         bool Template,
         typename ListElementType = void,
@@ -3071,7 +2893,7 @@ public:
     {
         this->constructor_function(
             params,
-            detail::constructor_function<Constructor, Class, Template, CallConv>::generate(generic_call_conv),
+            constructor_to_asGENFUNC_t<Class, Template>(fp<Constructor>, call_conv<CallConv>),
             generic_call_conv
         );
 
@@ -3079,7 +2901,7 @@ public:
     }
 
     template <
-        auto Constructor,
+        auto ConstructorFunc,
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
     requires(
         CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
@@ -3089,54 +2911,54 @@ public:
         use_generic_t,
         std::string_view params,
         use_explicit_t,
-        fp_wrapper_t<Constructor>,
+        fp_wrapper_t<ConstructorFunc>,
         call_conv_t<CallConv>
     )
     {
         this->constructor_function(
             params,
             use_explicit,
-            detail::constructor_function<Constructor, Class, Template, CallConv>::generate(generic_call_conv),
+            constructor_to_asGENFUNC_t<Class, Template>(fp<ConstructorFunc>, call_conv<CallConv>),
             generic_call_conv
         );
 
         return *this;
     }
 
-    template <auto Constructor>
+    template <auto ConstructorFunc>
     basic_value_class& constructor_function(
         use_generic_t,
         std::string_view params,
-        fp_wrapper_t<Constructor>
+        fp_wrapper_t<ConstructorFunc>
     )
     {
         constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
-            detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT, Class, std::decay_t<decltype(Constructor)>>();
+            detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT, Class, std::decay_t<decltype(ConstructorFunc)>>();
         this->constructor_function(
             use_generic,
             params,
-            fp<Constructor>,
+            fp<ConstructorFunc>,
             call_conv<conv>
         );
 
         return *this;
     }
 
-    template <auto Constructor>
+    template <auto ConstructorFunc>
     basic_value_class& constructor_function(
         use_generic_t,
         std::string_view params,
         use_explicit_t,
-        fp_wrapper_t<Constructor>
+        fp_wrapper_t<ConstructorFunc>
     )
     {
         constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
-            detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT, Class, std::decay_t<decltype(Constructor)>>();
+            detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT, Class, std::decay_t<decltype(ConstructorFunc)>>();
         this->constructor_function(
             use_generic,
             params,
             use_explicit,
-            fp<Constructor>,
+            fp<ConstructorFunc>,
             call_conv<conv>
         );
 
@@ -3205,19 +3027,19 @@ public:
     }
 
     template <
-        noncapturing_lambda Constructor,
+        noncapturing_lambda ConstructorLambda,
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
     requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
     basic_value_class& constructor_function(
         use_generic_t,
         std::string_view params,
-        const Constructor&,
+        const ConstructorLambda&,
         call_conv_t<CallConv>
     )
     {
         this->constructor_function(
             params,
-            detail::constructor_lambda<Constructor, Class, Template, CallConv>::generate(generic_call_conv),
+            constructor_to_asGENFUNC_t<Class, Template>(ConstructorLambda{}, call_conv<CallConv>),
             generic_call_conv
         );
 
@@ -3225,21 +3047,21 @@ public:
     }
 
     template <
-        noncapturing_lambda Constructor,
+        noncapturing_lambda ConstructorLambda,
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
     requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
     basic_value_class& constructor_function(
         use_generic_t,
         std::string_view params,
         use_explicit_t,
-        const Constructor&,
+        const ConstructorLambda&,
         call_conv_t<CallConv>
     )
     {
         this->constructor_function(
             params,
             use_explicit,
-            detail::constructor_lambda<Constructor, Class, Template, CallConv>::generate(generic_call_conv),
+            constructor_to_asGENFUNC_t<Class, Template>(ConstructorLambda{}, call_conv<CallConv>),
             generic_call_conv
         );
 

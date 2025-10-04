@@ -1199,6 +1199,223 @@ constexpr auto to_asGENFUNC_t(AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn, call_conv_
 {
     return gfn;
 }
+
+namespace detail
+{
+    template <
+        native_function auto ConstructorFunc,
+        typename Class,
+        bool Template,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv>
+    class generic_wrapper_ctor_func
+    {
+    public:
+        using native_function_type = std::decay_t<decltype(ConstructorFunc)>;
+
+        static auto generate() noexcept
+            -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
+        {
+            using traits = function_traits<decltype(ConstructorFunc)>;
+            using args_tuple = typename traits::args_tuple;
+
+            if constexpr(OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
+            {
+                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+                {
+                    if constexpr(Template)
+                    {
+                        [gen]<std::size_t... Is>(std::index_sequence<Is...>)
+                        {
+                            Class* mem = (Class*)gen->GetObject();
+                            std::invoke(
+                                ConstructorFunc,
+                                mem,
+                                *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
+                                get_generic_arg<std::tuple_element_t<Is + 2, args_tuple>>(
+                                    gen, (AS_NAMESPACE_QUALIFIER asUINT)Is + 1
+                                )...
+                            );
+                        }(std::make_index_sequence<traits::arg_count_v - 2>());
+                    }
+                    else
+                    {
+                        [gen]<std::size_t... Is>(std::index_sequence<Is...>)
+                        {
+                            Class* mem = (Class*)gen->GetObject();
+                            std::invoke(
+                                ConstructorFunc,
+                                mem,
+                                get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(
+                                    gen, (AS_NAMESPACE_QUALIFIER asUINT)Is
+                                )...
+                            );
+                        }(std::make_index_sequence<traits::arg_count_v - 1>());
+                    }
+                };
+            }
+            else // OriginalCallConv == asCALL_CDECL_OBJLAST
+            {
+                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+                {
+                    if constexpr(Template)
+                    {
+                        [gen]<std::size_t... Is>(std::index_sequence<Is...>)
+                        {
+                            Class* mem = (Class*)gen->GetObject();
+                            std::invoke(
+                                ConstructorFunc,
+                                *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
+                                get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(
+                                    gen, (AS_NAMESPACE_QUALIFIER asUINT)Is + 1
+                                )...,
+                                mem
+                            );
+                        }(std::make_index_sequence<traits::arg_count_v - 2>());
+                    }
+                    else
+                    {
+                        [gen]<std::size_t... Is>(std::index_sequence<Is...>)
+                        {
+                            Class* mem = (Class*)gen->GetObject();
+                            std::invoke(
+                                ConstructorFunc,
+                                get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
+                                    gen, (AS_NAMESPACE_QUALIFIER asUINT)Is
+                                )...,
+                                mem
+                            );
+                        }(std::make_index_sequence<traits::arg_count_v - 1>());
+                    }
+                };
+            }
+        }
+    };
+
+    template <
+        typename ConstructorLambda,
+        typename Class,
+        bool Template,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv>
+    class generic_wrapper_ctor_lambda
+    {
+    public:
+        using native_function_type = std::decay_t<decltype(+ConstructorLambda{})>;
+
+        static auto generate() noexcept
+            -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
+        {
+            using traits = function_traits<native_function_type>;
+            using args_tuple = typename traits::args_tuple;
+
+            if constexpr(OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
+            {
+                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+                {
+                    if constexpr(Template)
+                    {
+                        [gen]<std::size_t... Is>(std::index_sequence<Is...>)
+                        {
+                            Class* mem = (Class*)gen->GetObject();
+                            std::invoke(
+                                ConstructorLambda{},
+                                mem,
+                                *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
+                                get_generic_arg<std::tuple_element_t<Is + 2, args_tuple>>(
+                                    gen, (AS_NAMESPACE_QUALIFIER asUINT)Is + 1
+                                )...
+                            );
+                        }(std::make_index_sequence<traits::arg_count_v - 2>());
+                    }
+                    else
+                    {
+                        [gen]<std::size_t... Is>(std::index_sequence<Is...>)
+                        {
+                            Class* mem = (Class*)gen->GetObject();
+                            std::invoke(
+                                ConstructorLambda{},
+                                mem,
+                                get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(
+                                    gen, (AS_NAMESPACE_QUALIFIER asUINT)Is
+                                )...
+                            );
+                        }(std::make_index_sequence<traits::arg_count_v - 1>());
+                    }
+                };
+            }
+            else // OriginalCallConv == asCALL_CDECL_OBJLAST
+            {
+                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+                {
+                    if constexpr(Template)
+                    {
+                        [gen]<std::size_t... Is>(std::index_sequence<Is...>)
+                        {
+                            Class* mem = (Class*)gen->GetObject();
+                            std::invoke(
+                                ConstructorLambda{},
+                                *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
+                                get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(
+                                    gen, (AS_NAMESPACE_QUALIFIER asUINT)Is + 1
+                                )...,
+                                mem
+                            );
+                        }(std::make_index_sequence<traits::arg_count_v - 2>());
+                    }
+                    else
+                    {
+                        [gen]<std::size_t... Is>(std::index_sequence<Is...>)
+                        {
+                            Class* mem = (Class*)gen->GetObject();
+                            std::invoke(
+                                ConstructorLambda{},
+                                get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
+                                    gen, (AS_NAMESPACE_QUALIFIER asUINT)Is
+                                )...,
+                                mem
+                            );
+                        }(std::make_index_sequence<traits::arg_count_v - 1>());
+                    }
+                };
+            }
+        }
+    };
+} // namespace detail
+
+template <
+    typename Class,
+    bool IsTemplate,
+    native_function auto ConstructorFunc,
+    asECallConvTypes CallConv>
+constexpr auto constructor_to_asGENFUNC_t(
+    fp_wrapper_t<ConstructorFunc>,
+    call_conv_t<CallConv>
+)
+{
+    using gen_t = detail::generic_wrapper_ctor_func<
+        ConstructorFunc,
+        Class,
+        IsTemplate,
+        CallConv>;
+    return gen_t::generate();
+}
+
+template <
+    typename Class,
+    bool IsTemplate,
+    noncapturing_lambda ConstructorLambda,
+    asECallConvTypes CallConv>
+constexpr auto constructor_to_asGENFUNC_t(
+    const ConstructorLambda&,
+    call_conv_t<CallConv>
+)
+{
+    using gen_t = detail::generic_wrapper_ctor_lambda<
+        ConstructorLambda,
+        Class,
+        IsTemplate,
+        CallConv>;
+    return gen_t::generate();
+}
 } // namespace asbind20
 
 #endif
