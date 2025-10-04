@@ -1375,7 +1375,7 @@ template <
     typename Class,
     bool IsTemplate,
     native_function auto ConstructorFunc,
-    asECallConvTypes CallConv>
+    AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
 constexpr auto constructor_to_asGENFUNC_t(
     fp_wrapper_t<ConstructorFunc>,
     call_conv_t<CallConv>
@@ -1393,7 +1393,7 @@ template <
     typename Class,
     bool IsTemplate,
     noncapturing_lambda ConstructorLambda,
-    asECallConvTypes CallConv>
+    AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
 constexpr auto constructor_to_asGENFUNC_t(
     const ConstructorLambda&,
     call_conv_t<CallConv>
