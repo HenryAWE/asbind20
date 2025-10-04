@@ -1450,7 +1450,7 @@ namespace detail
         policies::factory_policy FactoryPolicy>
     class list_factory<Class, Template, ListElementType, policies::as_from_range, FactoryPolicy>
     {
-        using notifier = list_factory_base<FactoryPolicy, Template>;
+        using notifier = notify_gc_helper<FactoryPolicy, Template>;
 
     public:
         static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
