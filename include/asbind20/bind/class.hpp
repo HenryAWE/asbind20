@@ -19,8 +19,15 @@ namespace detail
 {
     // Wrapper generators for special functions like constructor
 
-    template <typename Class, bool Noexcept = false>
-    class constructor_base
+    /**
+     * @brief Destroy the constructed object if there is any script exception,
+     *        because AngelScript won't call the destructor under this situation.
+     *
+     * @tparam Class Class type
+     * @tparam ScriptNoexcept True if the user can guarantee that the constructor won't cause any script exception
+     */
+    template <typename Class, bool ScriptNoexcept = false>
+    class ctor_ex_guard
     {
     protected:
         // Destroy the constructed object if there is any script exception,
@@ -28,21 +35,40 @@ namespace detail
         static void destroy_if_ex(Class* obj)
         {
             constexpr bool no_guard =
-                Noexcept ||
+                ScriptNoexcept ||
                 std::is_trivially_destructible_v<Class>;
 
             if constexpr(!no_guard)
             {
                 if(has_script_exception())
-                    obj->~Class();
+                    std::destroy_at(obj);
+            }
+        }
+    };
+
+    // Specialization for C-array
+    template <typename ElemType, std::size_t Size, bool ScriptNoexcept>
+    class ctor_ex_guard<ElemType[Size], ScriptNoexcept>
+    {
+    protected:
+        static void destroy_if_ex(ElemType* arr)
+        {
+            constexpr bool no_guard =
+                ScriptNoexcept ||
+                std::is_trivially_destructible_v<ElemType>;
+
+            if constexpr(!no_guard)
+            {
+                if(has_script_exception())
+                    std::destroy_n(arr, Size);
             }
         }
     };
 
     template <typename Class, bool Template, typename... Args>
-    class constructor : public constructor_base<Class>
+    class constructor : public ctor_ex_guard<Class>
     {
-        using my_base = constructor_base<Class>;
+        using my_base = ctor_ex_guard<Class>;
 
     public:
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
@@ -116,9 +142,9 @@ namespace detail
     class arr_default_constructor;
 
     template <typename ElemType, std::size_t Size>
-    class arr_default_constructor<ElemType[Size]> : public constructor_base<ElemType[Size]>
+    class arr_default_constructor<ElemType[Size]> : public ctor_ex_guard<ElemType[Size]>
     {
-        using my_base = constructor_base<ElemType[Size]>;
+        using my_base = ctor_ex_guard<ElemType[Size]>;
 
     public:
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
@@ -133,6 +159,7 @@ namespace detail
                     std::uninitialized_default_construct_n(
                         ptr, Size
                     );
+                    my_base::destroy_if_ex(ptr);
                 };
             }
             else // CallConv == asCALL_CDECL_OBJLAST
@@ -144,6 +171,7 @@ namespace detail
                     std::uninitialized_default_construct_n(
                         ptr, Size
                     );
+                    my_base::destroy_if_ex(ptr);
                 };
             }
         }
@@ -153,15 +181,12 @@ namespace detail
     class arr_copy_constructor;
 
     template <typename ElemType, std::size_t Size, typename Arg>
-    class arr_copy_constructor<ElemType[Size], Arg> : public constructor_base<ElemType[Size]>
+    class arr_copy_constructor<ElemType[Size], Arg> : public ctor_ex_guard<ElemType[Size]>
     {
-        using my_base = constructor_base<ElemType[Size]>;
+        using my_base = ctor_ex_guard<ElemType[Size]>;
 
     public:
         static_assert(std::is_reference_v<Arg>);
-
-        using class_type = ElemType[Size];
-        using pointer_type = ElemType*;
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
@@ -170,31 +195,25 @@ namespace detail
             {
                 return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
                 {
-                    void* mem = gen->GetObject();
+                    auto* ptr = static_cast<ElemType*>(gen->GetObject());
 
                     // Decay to pointer
-                    std::decay_t<Arg> ptr = get_generic_arg<Arg>(
-                        gen, 0
-                    );
-                    std::uninitialized_copy(
-                        ptr, ptr + Size, static_cast<ElemType*>(mem)
-                    );
+                    std::decay_t<Arg> src = get_generic_arg<Arg>(gen, 0);
 
-                    my_base::destroy_if_ex(static_cast<ElemType(*)[Size]>(mem));
+                    std::uninitialized_copy_n(src, Size, ptr);
+                    my_base::destroy_if_ex(ptr);
                 };
             }
             else // CallConv == asCALL_CDECL_OBJLAST
             {
                 return +[](Arg arg, void* mem) -> void
                 {
+                    auto* ptr = static_cast<ElemType*>(mem);
                     // Decay to pointer
-                    std::decay_t<Arg> ptr = arg;
+                    std::decay_t<Arg> src = arg;
 
-                    std::uninitialized_copy(
-                        ptr, ptr + Size, static_cast<ElemType*>(mem)
-                    );
-
-                    my_base::destroy_if_ex(static_cast<ElemType(*)[Size]>(mem));
+                    std::uninitialized_copy_n(src, Size, ptr);
+                    my_base::destroy_if_ex(ptr);
                 };
             }
         }
