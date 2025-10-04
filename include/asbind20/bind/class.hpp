@@ -27,9 +27,8 @@ namespace detail
      * @tparam ScriptNoexcept True if the user can guarantee that the constructor won't cause any script exception
      */
     template <typename Class, bool ScriptNoexcept = false>
-    class ctor_ex_guard
+    struct ctor_ex_guard
     {
-    protected:
         // Destroy the constructed object if there is any script exception,
         // because AngelScript won't call the destructor under this situation.
         static void destroy_if_ex(Class* obj)
@@ -48,9 +47,8 @@ namespace detail
 
     // Specialization for C-array
     template <typename ElemType, std::size_t Size, bool ScriptNoexcept>
-    class ctor_ex_guard<ElemType[Size], ScriptNoexcept>
+    struct ctor_ex_guard<ElemType[Size], ScriptNoexcept>
     {
-    protected:
         static void destroy_if_ex(ElemType* arr)
         {
             constexpr bool no_guard =
@@ -66,9 +64,9 @@ namespace detail
     };
 
     template <typename Class, bool Template, typename... Args>
-    class constructor : public ctor_ex_guard<Class>
+    class constructor
     {
-        using my_base = ctor_ex_guard<Class>;
+        using ex_guard = ctor_ex_guard<Class>;
 
     public:
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
@@ -92,7 +90,7 @@ namespace detail
                                 )...
                             );
 
-                            my_base::destroy_if_ex(static_cast<Class*>(mem));
+                            ex_guard::destroy_if_ex(static_cast<Class*>(mem));
                         }(std::index_sequence_for<Args...>());
                     };
                 }
@@ -109,7 +107,7 @@ namespace detail
                                 )...
                             );
 
-                            my_base::destroy_if_ex(static_cast<Class*>(mem));
+                            ex_guard::destroy_if_ex(static_cast<Class*>(mem));
                         }(std::index_sequence_for<Args...>());
                     };
                 }
@@ -122,7 +120,7 @@ namespace detail
                     {
                         new(mem) Class(ti, std::forward<Args>(args)...);
 
-                        my_base::destroy_if_ex(static_cast<Class*>(mem));
+                        ex_guard::destroy_if_ex(static_cast<Class*>(mem));
                     };
                 }
                 else
@@ -131,7 +129,7 @@ namespace detail
                     {
                         new(mem) Class(std::forward<Args>(args)...);
 
-                        my_base::destroy_if_ex(static_cast<Class*>(mem));
+                        ex_guard::destroy_if_ex(static_cast<Class*>(mem));
                     };
                 }
             }
@@ -142,9 +140,9 @@ namespace detail
     class arr_default_constructor;
 
     template <typename ElemType, std::size_t Size>
-    class arr_default_constructor<ElemType[Size]> : public ctor_ex_guard<ElemType[Size]>
+    class arr_default_constructor<ElemType[Size]>
     {
-        using my_base = ctor_ex_guard<ElemType[Size]>;
+        using ex_guard = ctor_ex_guard<ElemType[Size]>;
 
     public:
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
@@ -159,7 +157,7 @@ namespace detail
                     std::uninitialized_default_construct_n(
                         ptr, Size
                     );
-                    my_base::destroy_if_ex(ptr);
+                    ex_guard::destroy_if_ex(ptr);
                 };
             }
             else // CallConv == asCALL_CDECL_OBJLAST
@@ -171,7 +169,7 @@ namespace detail
                     std::uninitialized_default_construct_n(
                         ptr, Size
                     );
-                    my_base::destroy_if_ex(ptr);
+                    ex_guard::destroy_if_ex(ptr);
                 };
             }
         }
@@ -181,9 +179,9 @@ namespace detail
     class arr_copy_constructor;
 
     template <typename ElemType, std::size_t Size, typename Arg>
-    class arr_copy_constructor<ElemType[Size], Arg> : public ctor_ex_guard<ElemType[Size]>
+    class arr_copy_constructor<ElemType[Size], Arg>
     {
-        using my_base = ctor_ex_guard<ElemType[Size]>;
+        using ex_guard = ctor_ex_guard<ElemType[Size]>;
 
     public:
         static_assert(std::is_reference_v<Arg>);
@@ -201,7 +199,7 @@ namespace detail
                     std::decay_t<Arg> src = get_generic_arg<Arg>(gen, 0);
 
                     std::uninitialized_copy_n(src, Size, ptr);
-                    my_base::destroy_if_ex(ptr);
+                    ex_guard::destroy_if_ex(ptr);
                 };
             }
             else // CallConv == asCALL_CDECL_OBJLAST
@@ -213,7 +211,7 @@ namespace detail
                     std::decay_t<Arg> src = arg;
 
                     std::uninitialized_copy_n(src, Size, ptr);
-                    my_base::destroy_if_ex(ptr);
+                    ex_guard::destroy_if_ex(ptr);
                 };
             }
         }
@@ -1047,25 +1045,35 @@ namespace detail
     };
 
     template <
-        typename Class,
-        bool Template,
-        typename ListBufType,
-        policies::factory_policy FactoryPolicy>
-    class list_factory_base
+        policies::factory_policy FactoryPolicy,
+        bool Template>
+    struct notify_gc_helper
     {
-    public:
+        // Placeholder
         static void notify_gc_if_necessary(void* obj, AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
         {
-            if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
+            (void)obj;
+            (void)ti;
+        }
+    };
+
+    template <bool Template>
+    struct notify_gc_helper<policies::notify_gc, Template>
+    {
+        static void notify_gc_if_necessary(void* obj, AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+        {
+            if(!ti) [[unlikely]]
+                return;
+
+            // The template callback may remove the asOBJ_GC flag to optimize for certain subtypes,
+            // so we need to check it again at runtime
+            if constexpr(Template)
             {
-                if constexpr(Template)
-                {
-                    auto flags = ti->GetFlags();
-                    if(!(flags & AS_NAMESPACE_QUALIFIER asOBJ_GC))
-                        return;
-                }
-                ti->GetEngine()->NotifyGarbageCollectorOfNewObject(obj, ti);
+                auto flags = ti->GetFlags();
+                if(!(flags & AS_NAMESPACE_QUALIFIER asOBJ_GC))
+                    return;
             }
+            ti->GetEngine()->NotifyGarbageCollectorOfNewObject(obj, ti);
         }
     };
 
@@ -1075,7 +1083,7 @@ namespace detail
         typename ListElementType = void,
         policies::initialization_list_policy Policy = void,
         policies::factory_policy FactoryPolicy = void>
-    class list_factory : public list_factory_base<Class, Template, ListElementType*, FactoryPolicy>
+    class list_factory
     {
     public:
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
@@ -1131,10 +1139,9 @@ namespace detail
         typename ListElementType,
         std::size_t Size,
         policies::factory_policy FactoryPolicy>
-    class list_factory<Class, Template, ListElementType, policies::apply_to<Size>, FactoryPolicy> :
-        public list_factory_base<Class, Template, ListElementType*, FactoryPolicy>
+    class list_factory<Class, Template, ListElementType, policies::apply_to<Size>, FactoryPolicy>
     {
-        using my_base = list_factory_base<Class, Template, ListElementType*, FactoryPolicy>;
+        using notifier = notify_gc_helper<FactoryPolicy, Template>;
 
     public:
         static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
@@ -1160,7 +1167,7 @@ namespace detail
                     {
                         auto* ti = (AS_NAMESPACE_QUALIFIER asITypeInfo*)gen->GetAuxiliary();
                         assert(ti != nullptr);
-                        my_base::notify_gc_if_necessary(ptr, ti);
+                        notifier::notify_gc_if_necessary(ptr, ti);
                     }
                     gen->SetReturnAddress(ptr);
                 };
@@ -1170,7 +1177,7 @@ namespace detail
                 return +[](ListElementType* list_buf, AS_NAMESPACE_QUALIFIER asITypeInfo* ti) -> Class*
                 {
                     Class* ptr = helper(list_buf);
-                    my_base::notify_gc_if_necessary(ptr, ti);
+                    notifier::notify_gc_if_necessary(ptr, ti);
                     return ptr;
                 };
             }
@@ -1189,10 +1196,9 @@ namespace detail
         bool Template,
         typename ListElementType,
         policies::factory_policy FactoryPolicy>
-    class list_factory<Class, Template, ListElementType, policies::repeat_list_proxy, FactoryPolicy> :
-        public list_factory_base<Class, Template, void*, FactoryPolicy>
+    class list_factory<Class, Template, ListElementType, policies::repeat_list_proxy, FactoryPolicy>
     {
-        using my_base = list_factory_base<Class, Template, void*, FactoryPolicy>;
+        using notifier = notify_gc_helper<FactoryPolicy, Template>;
 
     public:
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
@@ -1209,7 +1215,7 @@ namespace detail
                             ti,
                             script_init_list_repeat(gen, 1)
                         );
-                        my_base::notify_gc_if_necessary(ptr, ti);
+                        notifier::notify_gc_if_necessary(ptr, ti);
                         gen->SetReturnAddress(ptr);
                     };
                 }
@@ -1218,7 +1224,7 @@ namespace detail
                     return +[](AS_NAMESPACE_QUALIFIER asITypeInfo* ti, void* list_buf) -> Class*
                     {
                         Class* ptr = new Class(ti, script_init_list_repeat(list_buf));
-                        my_base::notify_gc_if_necessary(ptr, ti);
+                        notifier::notify_gc_if_necessary(ptr, ti);
                         return ptr;
                     };
                 }
@@ -1233,7 +1239,7 @@ namespace detail
                         {
                             Class* ptr = new Class(script_init_list_repeat(gen));
                             auto* ti = (AS_NAMESPACE_QUALIFIER asITypeInfo*)gen->GetAuxiliary();
-                            my_base::notify_gc_if_necessary(ptr, ti);
+                            notifier::notify_gc_if_necessary(ptr, ti);
                             gen->SetReturnAddress(ptr);
                         }
                         else
@@ -1249,7 +1255,7 @@ namespace detail
                     return +[](void* list_buf, AS_NAMESPACE_QUALIFIER asITypeInfo* ti) -> Class*
                     {
                         Class* ptr = new Class(script_init_list_repeat(list_buf));
-                        my_base::notify_gc_if_necessary(ptr, ti);
+                        notifier::notify_gc_if_necessary(ptr, ti);
                         return ptr;
                     };
                 }
@@ -1269,10 +1275,9 @@ namespace detail
         bool Template,
         typename ListElementType,
         policies::factory_policy FactoryPolicy>
-    class list_factory<Class, Template, ListElementType, policies::as_iterators, FactoryPolicy> :
-        public list_factory_base<Class, Template, void*, FactoryPolicy>
+    class list_factory<Class, Template, ListElementType, policies::as_iterators, FactoryPolicy>
     {
-        using my_base = list_factory_base<Class, Template, void*, FactoryPolicy>;
+        using notifier = notify_gc_helper<FactoryPolicy, Template>;
 
     public:
         static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
@@ -1300,7 +1305,7 @@ namespace detail
                     if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
                     {
                         auto* ti = (AS_NAMESPACE_QUALIFIER asITypeInfo*)gen->GetAuxiliary();
-                        my_base::notify_gc_if_necessary(ptr, ti);
+                        notifier::notify_gc_if_necessary(ptr, ti);
                     }
                     gen->SetReturnAddress(ptr);
                 };
@@ -1310,7 +1315,7 @@ namespace detail
                 return +[](void* list_buf, AS_NAMESPACE_QUALIFIER asITypeInfo* ti) -> Class*
                 {
                     Class* ptr = helper(script_init_list_repeat(list_buf));
-                    my_base::notify_gc_if_necessary(ptr, ti);
+                    notifier::notify_gc_if_necessary(ptr, ti);
                     return ptr;
                 };
             }
@@ -1329,10 +1334,9 @@ namespace detail
         bool Template,
         typename ListElementType,
         policies::factory_policy FactoryPolicy>
-    class list_factory<Class, Template, ListElementType, policies::pointer_and_size, FactoryPolicy> :
-        public list_factory_base<Class, Template, void*, FactoryPolicy>
+    class list_factory<Class, Template, ListElementType, policies::pointer_and_size, FactoryPolicy>
     {
-        using my_base = list_factory_base<Class, Template, void*, FactoryPolicy>;
+        using notifier = notify_gc_helper<FactoryPolicy, Template>;
 
     public:
         static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
@@ -1354,7 +1358,7 @@ namespace detail
                     if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
                     {
                         auto* ti = (AS_NAMESPACE_QUALIFIER asITypeInfo*)gen->GetAuxiliary();
-                        my_base::notify_gc_if_necessary(ptr, ti);
+                        notifier::notify_gc_if_necessary(ptr, ti);
                     }
                     gen->SetReturnAddress(ptr);
                 };
@@ -1364,7 +1368,7 @@ namespace detail
                 return +[](void* list_buf, AS_NAMESPACE_QUALIFIER asITypeInfo* ti) -> Class*
                 {
                     Class* ptr = helper(script_init_list_repeat(list_buf));
-                    my_base::notify_gc_if_necessary(ptr, ti);
+                    notifier::notify_gc_if_necessary(ptr, ti);
                     return ptr;
                 };
             }
@@ -1391,7 +1395,7 @@ namespace detail
         policies::factory_policy FactoryPolicy>
     class list_factory<Class, Template, ListElementType, ConvertibleRangePolicy, FactoryPolicy>
     {
-        using my_base = list_factory_base<Class, Template, void*, FactoryPolicy>;
+        using notifier = notify_gc_helper<FactoryPolicy, Template>;
 
     public:
         static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
@@ -1413,7 +1417,7 @@ namespace detail
                     if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
                     {
                         auto* ti = (AS_NAMESPACE_QUALIFIER asITypeInfo*)gen->GetAuxiliary();
-                        my_base::notify_gc_if_necessary(ptr, ti);
+                        notifier::notify_gc_if_necessary(ptr, ti);
                     }
                     gen->SetReturnAddress(ptr);
                 };
@@ -1423,7 +1427,7 @@ namespace detail
                 return +[](void* list_buf, AS_NAMESPACE_QUALIFIER asITypeInfo* ti) -> Class*
                 {
                     Class* ptr = helper(script_init_list_repeat(list_buf));
-                    my_base::notify_gc_if_necessary(ptr, ti);
+                    notifier::notify_gc_if_necessary(ptr, ti);
                     return ptr;
                 };
             }
@@ -1444,10 +1448,9 @@ namespace detail
         bool Template,
         typename ListElementType,
         policies::factory_policy FactoryPolicy>
-    class list_factory<Class, Template, ListElementType, policies::as_from_range, FactoryPolicy> :
-        public list_factory_base<Class, Template, void*, FactoryPolicy>
+    class list_factory<Class, Template, ListElementType, policies::as_from_range, FactoryPolicy>
     {
-        using my_base = list_factory_base<Class, Template, void*, FactoryPolicy>;
+        using notifier = list_factory_base<FactoryPolicy, Template>;
 
     public:
         static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
@@ -1470,7 +1473,7 @@ namespace detail
                     if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
                     {
                         auto* ti = (AS_NAMESPACE_QUALIFIER asITypeInfo*)gen->GetAuxiliary();
-                        my_base::notify_gc_if_necessary(ptr, ti);
+                        notifier::notify_gc_if_necessary(ptr, ti);
                     }
                     gen->SetReturnAddress(ptr);
                 };
@@ -1480,7 +1483,7 @@ namespace detail
                 return +[](void* list_buf, AS_NAMESPACE_QUALIFIER asITypeInfo* ti) -> Class*
                 {
                     Class* ptr = helper(script_init_list_repeat(list_buf));
-                    my_base::notify_gc_if_necessary(ptr, ti);
+                    notifier::notify_gc_if_necessary(ptr, ti);
                     return ptr;
                 };
             }
