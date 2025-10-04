@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <concepts>
 #include "common.hpp"
 #include "../policies.hpp"
 #include "../decl.hpp"

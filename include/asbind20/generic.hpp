@@ -271,10 +271,8 @@ namespace detail
 
 #ifdef _MSC_VER
 #    pragma warning(push)
-/*
-* When binding functions that may directly throw an exception,
-* MSVC will report warning of unreachable code.
-*/
+// When binding functions that may directly throw an exception,
+// MSVC will report warning of unreachable code.
 #    pragma warning(disable : 4702)
 #endif
 
@@ -819,16 +817,8 @@ namespace detail
     requires(OriginalConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
     class generic_wrapper_nontype
     {
-    public:
-        using function_type = std::decay_t<decltype(Function)>;
-
-        static constexpr auto underlying_convention() noexcept
-            -> AS_NAMESPACE_QUALIFIER asECallConvTypes
-        {
-            return OriginalConv;
-        }
-
     private:
+        using function_type = std::decay_t<decltype(Function)>;
         using traits = function_traits<function_type>;
 
         static decltype(auto) this_(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
@@ -891,7 +881,7 @@ namespace detail
                     Function,
                     get_generic_auxiliary<typename traits::class_type*>(gen),
                     this_(gen),
-                    detail::var_type_helper<typename traits::template arg_type<Is + 1>>(
+                    detail::var_type_helper<typename traits::template arg_type<Is + 1>>( // Plus 1 to skip the "this_(gen)" argument
                         detail::var_type_tag<VarType, Is>{},
                         gen,
                         static_cast<AS_NAMESPACE_QUALIFIER asUINT>(indices[Is])
