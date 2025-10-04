@@ -1,5 +1,5 @@
 /**
- * @file class.hpp
+ * @file bind/class.hpp
  * @author HenryAWE
  * @brief Binding generator for classes
  */

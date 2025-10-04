@@ -1,5 +1,5 @@
 /**
- * @file common.hpp
+ * @file bind/common.hpp
  * @author HenryAWE
  * @brief Common code for binding generator
  */

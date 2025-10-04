@@ -1,5 +1,5 @@
 /**
- * @file small_vector.hpp
+ * @file container/small_vector.hpp
  * @author HenryAWE
  * @brief Vector with small size optimization (SSO) for AngelScript object
  */

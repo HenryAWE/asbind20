@@ -1,5 +1,5 @@
 /**
- * @file global.hpp
+ * @file bind/global.hpp
  * @author HenryAWE
  * @brief Binding generator for global functions and variables
  */
