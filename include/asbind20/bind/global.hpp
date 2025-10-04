@@ -115,7 +115,7 @@ public:
     global& function(
         use_generic_t,
         std::string_view decl,
-        fp_wrapper_t<Function>,
+        fp_wrapper<Function>,
         call_conv_t<CallConv>
     )
     {
@@ -139,7 +139,7 @@ public:
     requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
     global& function(
         std::string_view decl,
-        fp_wrapper_t<Function>,
+        fp_wrapper<Function>,
         call_conv_t<CallConv>
     )
     {
@@ -164,7 +164,7 @@ public:
     global& function(
         use_generic_t,
         std::string_view decl,
-        fp_wrapper_t<Function>
+        fp_wrapper<Function>
     )
     {
         constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
@@ -178,7 +178,7 @@ public:
     template <auto Function>
     global& function(
         std::string_view decl,
-        fp_wrapper_t<Function>
+        fp_wrapper<Function>
     )
     {
         constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
@@ -285,7 +285,7 @@ public:
     global& function(
         use_generic_t,
         std::string_view decl,
-        fp_wrapper_t<Function>,
+        fp_wrapper<Function>,
         auxiliary_wrapper<Auxiliary> aux,
         call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL> = {}
     )
@@ -310,7 +310,7 @@ public:
         typename Auxiliary>
     global& function(
         std::string_view decl,
-        fp_wrapper_t<Function>,
+        fp_wrapper<Function>,
         auxiliary_wrapper<Auxiliary> aux,
         call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL> = {}
     )

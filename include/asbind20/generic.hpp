@@ -48,7 +48,7 @@ concept noncapturing_lambda = requires() {
 } && std::is_empty_v<Lambda>;
 
 template <native_function auto Function>
-struct fp_wrapper_t
+struct fp_wrapper
 {
     static constexpr auto get() noexcept
     {
@@ -62,7 +62,7 @@ struct fp_wrapper_t
  * @tparam Function NTTP function pointer
  */
 template <native_function auto Function>
-constexpr inline fp_wrapper_t<Function> fp{};
+constexpr inline fp_wrapper<Function> fp{};
 
 template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
 struct call_conv_t
@@ -1128,7 +1128,7 @@ template <
     native_function auto Function,
     AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv>
 requires(OriginalCallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-consteval auto to_asGENFUNC_t(fp_wrapper_t<Function>, call_conv_t<OriginalCallConv>)
+consteval auto to_asGENFUNC_t(fp_wrapper<Function>, call_conv_t<OriginalCallConv>)
     -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
 {
     return detail::fp_to_asGENFUNC_t_impl<Function, OriginalCallConv>();
@@ -1148,7 +1148,7 @@ template <
     native_function auto Function,
     AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv,
     std::size_t... Is>
-consteval auto to_asGENFUNC_t(fp_wrapper_t<Function>, call_conv_t<OriginalCallConv>, var_type_t<Is...>)
+consteval auto to_asGENFUNC_t(fp_wrapper<Function>, call_conv_t<OriginalCallConv>, var_type_t<Is...>)
     -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
 {
     return detail::fp_to_asGENFUNC_t_impl<Function, OriginalCallConv, Is...>();
@@ -1158,7 +1158,7 @@ template <
     native_function auto Function,
     auto Composite>
 consteval auto to_asGENFUNC_t(
-    fp_wrapper_t<Function>,
+    fp_wrapper<Function>,
     call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>, // Calling convention parameter reserved for the future
     composite_wrapper_nontype<Composite>
 )
@@ -1172,7 +1172,7 @@ template <
     auto Composite,
     std::size_t... Is>
 consteval auto to_asGENFUNC_t(
-    fp_wrapper_t<Function>,
+    fp_wrapper<Function>,
     call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>, // Calling convention parameter reserved for the future
     composite_wrapper_nontype<Composite>,
     var_type_t<Is...>
@@ -1377,7 +1377,7 @@ template <
     native_function auto ConstructorFunc,
     AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
 constexpr auto constructor_to_asGENFUNC_t(
-    fp_wrapper_t<ConstructorFunc>,
+    fp_wrapper<ConstructorFunc>,
     call_conv_t<CallConv>
 )
 {
