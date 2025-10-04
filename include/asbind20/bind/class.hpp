@@ -397,18 +397,12 @@ namespace detail
         }
     };
 
-    template <typename Class, bool Template, typename ListBufType>
-    class list_constructor_base
-    {
-    public:
-    };
-
     template <
         typename Class,
         bool Template,
         typename ListElementType = void,
         policies::initialization_list_policy Policy = void>
-    class list_constructor : public list_constructor_base<Class, Template, ListElementType*>
+    class list_constructor
     {
     public:
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
@@ -460,8 +454,7 @@ namespace detail
         typename Class,
         bool Template,
         typename ListElementType>
-    class list_constructor<Class, Template, ListElementType, policies::repeat_list_proxy> :
-        public list_constructor_base<Class, Template, void*>
+    class list_constructor<Class, Template, ListElementType, policies::repeat_list_proxy>
     {
     public:
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
@@ -555,8 +548,7 @@ namespace detail
         typename Class,
         bool Template,
         typename ListElementType>
-    class list_constructor<Class, Template, ListElementType, policies::as_iterators> :
-        public list_constructor_base<Class, Template, void*>
+    class list_constructor<Class, Template, ListElementType, policies::as_iterators>
     {
     public:
         static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
@@ -645,8 +637,6 @@ namespace detail
     )
     class list_constructor<Class, Template, ListElementType, ConvertibleRangePolicy>
     {
-        using my_base = list_constructor_base<Class, Template, void*>;
-
     public:
         static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
         static_assert(!Template, "This policy is invalid for a template class");
@@ -685,11 +675,8 @@ namespace detail
         typename Class,
         bool Template,
         typename ListElementType>
-    class list_constructor<Class, Template, ListElementType, policies::as_from_range> :
-        public list_constructor_base<Class, Template, void*>
+    class list_constructor<Class, Template, ListElementType, policies::as_from_range>
     {
-        using my_base = list_constructor_base<Class, Template, void*>;
-
     public:
         static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
         static_assert(!Template, "This policy is invalid for a template class");
