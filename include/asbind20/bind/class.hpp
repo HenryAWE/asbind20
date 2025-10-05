@@ -378,7 +378,13 @@ namespace detail
     concept init_list_based_policy =
         policies::initialization_list_policy<T> &&
         (std::same_as<T, policies::as_iterators> ||
-         std::same_as<T, policies::pointer_and_size>);
+         std::same_as<T, policies::pointer_and_size> ||
+         std::same_as<T, policies::as_initializer_list> ||
+         std::same_as<T, policies::as_span>
+#ifdef ASBIND20_HAS_CONTAINERS_RANGES
+         || std::same_as<T, policies::as_from_range>
+#endif
+        );
 
     template <
         typename Class,
@@ -402,6 +408,20 @@ namespace detail
             else if constexpr(std::same_as<Policy, policies::pointer_and_size>)
             {
                 new(mem) Class((ListElementType*)list.data(), list.size());
+            }
+#ifdef ASBIND20_HAS_CONTAINERS_RANGES
+            else if constexpr(std::same_as<Policy, policies::as_from_range>)
+            {
+                std::span<ListElementType> rng((ListElementType*)list.data(), list.size());
+                new(mem) Class(std::from_range, rng);
+            }
+#    endif
+            else if constexpr(
+                std::same_as<Policy, policies::as_initializer_list> ||
+                std::same_as<Policy, policies::as_span>
+            )
+            {
+                new(mem) Class(Policy::template convert<ListElementType>(list));
             }
         }
 
@@ -435,92 +455,6 @@ namespace detail
     template <
         typename Class,
         bool Template,
-        typename ListElementType,
-        policies::initialization_list_policy ConvertibleRangePolicy>
-    requires(
-        std::same_as<ConvertibleRangePolicy, policies::as_initializer_list> ||
-        std::same_as<ConvertibleRangePolicy, policies::as_span>
-    )
-    class list_constructor<Class, Template, ListElementType, ConvertibleRangePolicy>
-    {
-    public:
-        static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
-        static_assert(!Template, "This policy is invalid for a template class");
-
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        static auto generate(call_conv_t<CallConv>) noexcept
-        {
-            static constexpr auto helper = [](void* mem, script_init_list_repeat list)
-            {
-                new(mem) Class(ConvertibleRangePolicy::template convert<ListElementType>(list));
-            };
-
-            if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-            {
-                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
-                {
-                    helper(
-                        gen->GetObject(),
-                        script_init_list_repeat(gen)
-                    );
-                };
-            }
-            else // CallConv == asCALL_CDECL_OBJLAST
-            {
-                return +[](void* list_buf, void* mem) -> void
-                {
-                    helper(mem, script_init_list_repeat(list_buf));
-                };
-            }
-        }
-    };
-
-#ifdef ASBIND20_HAS_CONTAINERS_RANGES
-
-    template <
-        typename Class,
-        bool Template,
-        typename ListElementType>
-    class list_constructor<Class, Template, ListElementType, policies::as_from_range>
-    {
-    public:
-        static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
-        static_assert(!Template, "This policy is invalid for a template class");
-
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        static auto generate(call_conv_t<CallConv>) noexcept
-        {
-            static constexpr auto helper = [](void* mem, script_init_list_repeat list)
-            {
-                std::span<ListElementType> rng((ListElementType*)list.data(), list.size());
-                new(mem) Class(std::from_range, rng);
-            };
-
-            if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-            {
-                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
-                {
-                    helper(
-                        gen->GetObject(),
-                        script_init_list_repeat(gen)
-                    );
-                };
-            }
-            else // CallConv == asCALL_CDECL_OBJLAST
-            {
-                return +[](void* list_buf, void* mem) -> void
-                {
-                    helper(mem, script_init_list_repeat(list_buf));
-                };
-            }
-        }
-    };
-
-#endif
-
-    template <
-        typename Class,
-        bool Template,
         policies::factory_policy Policy,
         typename... Args>
     class factory
@@ -528,21 +462,8 @@ namespace detail
         static_assert(std::is_void_v<Policy>, "Invalid policy for factory");
 
     public:
-        using native_function_type = std::conditional_t<
-            Template,
-            Class* (*)(AS_NAMESPACE_QUALIFIER asITypeInfo*, Args...),
-            Class* (*)(Args...)>;
-
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        requires(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL ||
-                 CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-        using wrapper_type = std::conditional_t<
-            CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
-            AS_NAMESPACE_QUALIFIER asGENFUNC_t,
-            native_function_type>;
-
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        static auto generate(call_conv_t<CallConv>) noexcept -> wrapper_type<CallConv>
+        static auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
             {
