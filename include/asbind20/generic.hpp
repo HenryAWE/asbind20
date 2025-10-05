@@ -1376,6 +1376,10 @@ template <
     bool IsTemplate,
     native_function auto ConstructorFunc,
     AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+requires(
+    CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
+    CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
+)
 constexpr auto constructor_to_asGENFUNC_t(
     fp_wrapper<ConstructorFunc>,
     call_conv_t<CallConv>
@@ -1394,6 +1398,10 @@ template <
     bool IsTemplate,
     noncapturing_lambda ConstructorLambda,
     AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+requires(
+    CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
+    CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
+)
 constexpr auto constructor_to_asGENFUNC_t(
     const ConstructorLambda&,
     call_conv_t<CallConv>
@@ -1402,6 +1410,144 @@ constexpr auto constructor_to_asGENFUNC_t(
     using gen_t = detail::generic_wrapper_ctor_lambda<
         ConstructorLambda,
         Class,
+        IsTemplate,
+        CallConv>;
+    return gen_t::generate();
+}
+
+namespace detail
+{
+    // Generic wrapper for the factory with an auxiliary object
+    // (Ordinary factories can be treated as global functions)
+    // Note: although the global C++ functions are registered as CDECL_OBJFIRST/LAST,
+    // the auxiliary object is still retrieved through GetAuxiliary() instead of GetObject()
+    template <
+        native_function auto FactoryFunc,
+        bool Template,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv>
+    class generic_wrapper_factory_aux
+    {
+        using traits = function_traits<decltype(FactoryFunc)>;
+        using args_tuple = typename traits::args_tuple;
+        // For THISCALL_ASGLOBAL, we'll directly use traits::class_type
+        using auxiliary_type = std::conditional_t<
+            OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST,
+            typename traits::first_arg_type,
+            typename traits::last_arg_type>;
+
+        // For templated classes
+        static void* invoke_factory(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+            requires(Template)
+        {
+            // Argument count except the typeinfo and auxiliary object
+            constexpr std::size_t user_arg_v =
+                OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL ?
+                    traits::arg_count_v - 1 :
+                    traits::arg_count_v - 2;
+
+            return [gen]<std::size_t... Is>(std::index_sequence<Is...>) -> void*
+            {
+                if constexpr(OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL)
+                {
+                    return std::invoke(
+                        FactoryFunc,
+                        get_generic_auxiliary<typename traits::class_type>(gen),
+                        *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
+                        get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(gen, (AS_NAMESPACE_QUALIFIER asUINT)Is + 1)...
+                    );
+                }
+                else if constexpr(OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
+                {
+                    return std::invoke(
+                        FactoryFunc,
+                        get_generic_auxiliary<auxiliary_type>(gen),
+                        *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
+                        get_generic_arg<std::tuple_element_t<Is + 2, args_tuple>>(gen, (AS_NAMESPACE_QUALIFIER asUINT)Is + 1)...
+                    );
+                }
+                else // OriginalCallConv == asCALL_CDECL_OBJLAST
+                {
+                    return std::invoke(
+                        FactoryFunc,
+                        *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
+                        get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(gen, (AS_NAMESPACE_QUALIFIER asUINT)Is + 1)...,
+                        get_generic_auxiliary<auxiliary_type>(gen)
+                    );
+                }
+            }(std::make_index_sequence<user_arg_v>());
+        }
+
+        // For non-templated classes
+        static void* invoke_factory(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+            requires(!Template)
+        {
+            // Argument count except the auxiliary object
+            constexpr std::size_t user_arg_v =
+                OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL ?
+                    traits::arg_count_v :
+                    traits::arg_count_v - 1;
+
+            return [gen]<std::size_t... Is>(std::index_sequence<Is...>) -> void*
+            {
+                if constexpr(OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL)
+                {
+                    return std::invoke(
+                        FactoryFunc,
+                        get_generic_auxiliary<typename traits::class_type>(gen),
+                        get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (AS_NAMESPACE_QUALIFIER asUINT)Is)...
+                    );
+                }
+                else if constexpr(OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
+                {
+                    return std::invoke(
+                        FactoryFunc,
+                        get_generic_auxiliary<auxiliary_type>(gen),
+                        // Plus 1 to skip the auxiliary object at the first position
+                        get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(gen, (AS_NAMESPACE_QUALIFIER asUINT)Is)...
+                    );
+                }
+                else // OriginalCallConv == asCALL_CDECL_OBJLAST
+                {
+                    return std::invoke(
+                        FactoryFunc,
+                        get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (AS_NAMESPACE_QUALIFIER asUINT)Is)...,
+                        get_generic_auxiliary<auxiliary_type>(gen)
+                    );
+                }
+            }(std::make_index_sequence<user_arg_v>());
+        }
+
+        static void wrapper_impl(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        {
+            void* ptr = invoke_factory(gen);
+            gen->SetReturnAddress(ptr);
+        }
+
+    public:
+        static constexpr auto generate() noexcept
+            -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
+        {
+            return &wrapper_impl;
+        }
+    };
+} // namespace detail
+
+template <
+    bool IsTemplate,
+    auto AuxFactoryFunc,
+    AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+requires(
+    CallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL ||
+    CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
+    CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
+)
+constexpr auto auxiliary_factory_to_asGENFUNC_t(
+    fp_wrapper<AuxFactoryFunc>,
+    call_conv_t<CallConv>
+)
+{
+    using gen_t = detail::generic_wrapper_factory_aux<
+        AuxFactoryFunc,
         IsTemplate,
         CallConv>;
     return gen_t::generate();
