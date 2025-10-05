@@ -415,7 +415,7 @@ namespace detail
                 std::span<ListElementType> rng((ListElementType*)list.data(), list.size());
                 new(mem) Class(std::from_range, rng);
             }
-#    endif
+#endif
             else if constexpr(
                 std::same_as<Policy, policies::as_initializer_list> ||
                 std::same_as<Policy, policies::as_span>
