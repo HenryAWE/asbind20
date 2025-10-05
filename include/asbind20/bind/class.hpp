@@ -223,50 +223,57 @@ namespace detail
         bool Template,
         typename ListElementType = void,
         policies::initialization_list_policy Policy = void>
-    class list_constructor
+    class list_constructor;
+
+    template <
+        typename Class,
+        bool Template,
+        typename ListElementType>
+    class list_constructor<Class, Template, ListElementType, void> // Implementation for default policy
     {
+        static void wrapper_impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        {
+            if constexpr(Template)
+            {
+                void* mem = gen->GetObject();
+                new(mem) Class(
+                    *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
+                    *(ListElementType**)gen->GetAddressOfArg(1)
+                );
+            }
+            else
+            {
+                void* mem = gen->GetObject();
+                new(mem) Class(*(ListElementType**)gen->GetAddressOfArg(0));
+            }
+        }
+
+        static void wrapper_impl_objlast_template(
+            AS_NAMESPACE_QUALIFIER asITypeInfo* ti, ListElementType* list_buf, void* mem
+        )
+        {
+            new(mem) Class(ti, list_buf);
+        }
+
+        static void wrapper_impl_objlast(
+            ListElementType* list_buf, void* mem
+        )
+        {
+            new(mem) Class(list_buf);
+        }
+
     public:
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        static auto generate(call_conv_t<CallConv>) noexcept
+        static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-            {
-                if constexpr(Template)
-                {
-                    return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
-                    {
-                        void* mem = gen->GetObject();
-                        new(mem) Class(
-                            *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
-                            *(ListElementType**)gen->GetAddressOfArg(1)
-                        );
-                    };
-                }
-                else
-                {
-                    return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
-                    {
-                        void* mem = gen->GetObject();
-                        new(mem) Class(*(ListElementType**)gen->GetAddressOfArg(0));
-                    };
-                }
-            }
+                return &wrapper_impl_generic;
             else // CallConv == asCALL_CDECL_OBJLAST
             {
                 if constexpr(Template)
-                {
-                    return +[](AS_NAMESPACE_QUALIFIER asITypeInfo* ti, ListElementType* list_buf, void* mem) -> void
-                    {
-                        new(mem) Class(ti, list_buf);
-                    };
-                }
+                    return &wrapper_impl_objlast_template;
                 else
-                {
-                    return +[](ListElementType* list_buf, void* mem) -> void
-                    {
-                        new(mem) Class(list_buf);
-                    };
-                }
+                    return &wrapper_impl_objlast;
             }
         }
     };
@@ -277,48 +284,49 @@ namespace detail
         typename ListElementType>
     class list_constructor<Class, Template, ListElementType, policies::repeat_list_proxy>
     {
+        static void wrapper_impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        {
+            if constexpr(Template)
+            {
+                void* mem = gen->GetObject();
+                new(mem) Class(
+                    *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
+                    script_init_list_repeat(gen, 1)
+                );
+            }
+            else
+            {
+                void* mem = gen->GetObject();
+                new(mem) Class(script_init_list_repeat(gen));
+            }
+        }
+
+        static void wrapper_impl_objlast_template(
+            AS_NAMESPACE_QUALIFIER asITypeInfo* ti, void* list_buf, void* mem
+        )
+        {
+            new(mem) Class(ti, script_init_list_repeat(list_buf));
+        }
+
+        static void wrapper_impl_objlast(
+            void* list_buf, void* mem
+        )
+        {
+            new(mem) Class(script_init_list_repeat(list_buf));
+        }
+
     public:
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        static auto generate(call_conv_t<CallConv>) noexcept
+        static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-            {
-                if constexpr(Template)
-                {
-                    return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
-                    {
-                        void* mem = gen->GetObject();
-                        new(mem) Class(
-                            *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
-                            script_init_list_repeat(gen, 1)
-                        );
-                    };
-                }
-                else
-                {
-                    return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
-                    {
-                        void* mem = gen->GetObject();
-                        new(mem) Class(script_init_list_repeat(gen));
-                    };
-                }
-            }
+                return &wrapper_impl_generic;
             else // CallConv == asCALL_CDECL_OBJLAST
             {
                 if constexpr(Template)
-                {
-                    return +[](AS_NAMESPACE_QUALIFIER asITypeInfo* ti, void* list_buf, void* mem) -> void
-                    {
-                        new(mem) Class(ti, script_init_list_repeat(list_buf));
-                    };
-                }
+                    return &wrapper_impl_objlast_template;
                 else
-                {
-                    return +[](void* list_buf, void* mem) -> void
-                    {
-                        new(mem) Class(script_init_list_repeat(list_buf));
-                    };
-                }
+                    return &wrapper_impl_objlast;
             }
         }
     };
