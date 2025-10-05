@@ -278,6 +278,7 @@ namespace detail
         }
     };
 
+    // Construct from a proxy of script initialization list
     template <
         typename Class,
         bool Template,
@@ -338,55 +339,57 @@ namespace detail
         std::size_t Size>
     class list_constructor<Class, Template, ListElementType, policies::apply_to<Size>>
     {
+        static void apply_helper(void* mem, ListElementType* list_buf)
+        {
+            [&]<std::size_t... Is>(std::index_sequence<Is...>)
+            {
+                new(mem) Class(list_buf[Is]...);
+            }(std::make_index_sequence<Size>());
+        }
+
+        static void wrapper_impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        {
+            apply_helper(
+                gen->GetObject(),
+                *(ListElementType**)gen->GetAddressOfArg(0)
+            );
+        }
+
+        static void wrapper_impl_objlast(ListElementType* list_buf, void* mem)
+        {
+            apply_helper(mem, list_buf);
+        }
+
     public:
         static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
         static_assert(!Template, "This policy is invalid for a template class");
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        static auto generate(call_conv_t<CallConv>) noexcept
+        static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
-            static constexpr auto helper = [](void* mem, ListElementType* list_buf)
-            {
-                [&]<std::size_t... Is>(std::index_sequence<Is...>)
-                {
-                    new(mem) Class(list_buf[Is]...);
-                }(std::make_index_sequence<Size>());
-            };
-
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-            {
-                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
-                {
-                    helper(
-                        gen->GetObject(),
-                        *(ListElementType**)gen->GetAddressOfArg(0)
-                    );
-                };
-            }
+                return &wrapper_impl_generic;
             else // CallConv == asCALL_CDECL_OBJLAST
-            {
-                return +[](ListElementType* list_buf, void* mem) -> void
-                {
-                    helper(mem, list_buf);
-                };
-            }
+                return &wrapper_impl_objlast;
         }
     };
+
+    template <typename T>
+    concept init_list_based_policy =
+        policies::initialization_list_policy<T> &&
+        (std::same_as<T, policies::as_iterators> ||
+         std::same_as<T, policies::pointer_and_size>);
 
     template <
         typename Class,
         bool Template,
-        typename ListElementType>
-    class list_constructor<Class, Template, ListElementType, policies::as_iterators>
+        typename ListElementType,
+        init_list_based_policy Policy>
+    class list_constructor<Class, Template, ListElementType, Policy>
     {
-    public:
-        static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
-        static_assert(!Template, "This policy is invalid for a template class");
-
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        static auto generate(call_conv_t<CallConv>) noexcept
+        static void from_list_helper(void* mem, script_init_list_repeat list)
         {
-            static constexpr auto helper = [](void* mem, script_init_list_repeat list)
+            if constexpr(std::same_as<Policy, policies::as_iterators>)
             {
                 policies::as_iterators::apply<ListElementType>(
                     [mem](auto start, auto stop)
@@ -395,63 +398,37 @@ namespace detail
                     },
                     list
                 );
-            };
-
-            if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-            {
-                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
-                {
-                    helper(
-                        gen->GetObject(),
-                        script_init_list_repeat(gen)
-                    );
-                };
             }
-            else // CallConv == asCALL_CDECL_OBJLAST
+            else if constexpr(std::same_as<Policy, policies::pointer_and_size>)
             {
-                return +[](void* list_buf, void* mem) -> void
-                {
-                    helper(mem, script_init_list_repeat(list_buf));
-                };
+                new(mem) Class((ListElementType*)list.data(), list.size());
             }
         }
-    };
 
-    template <
-        typename Class,
-        bool Template,
-        typename ListElementType>
-    class list_constructor<Class, Template, ListElementType, policies::pointer_and_size>
-    {
+        static void wrapper_impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        {
+            from_list_helper(
+                gen->GetObject(),
+                script_init_list_repeat(gen)
+            );
+        }
+
+        static void wrapper_impl_objlast(ListElementType* list_buf, void* mem)
+        {
+            from_list_helper(mem, script_init_list_repeat(list_buf));
+        }
+
     public:
         static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
         static_assert(!Template, "This policy is invalid for a template class");
 
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        static auto generate(call_conv_t<CallConv>) noexcept
+        static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
-            static constexpr auto helper = [](void* mem, script_init_list_repeat list)
-            {
-                new(mem) Class((ListElementType*)list.data(), list.size());
-            };
-
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-            {
-                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
-                {
-                    helper(
-                        gen->GetObject(),
-                        script_init_list_repeat(gen)
-                    );
-                };
-            }
+                return &wrapper_impl_generic;
             else // CallConv == asCALL_CDECL_OBJLAST
-            {
-                return +[](void* list_buf, void* mem) -> void
-                {
-                    helper(mem, script_init_list_repeat(list_buf));
-                };
-            }
+                return &wrapper_impl_objlast;
         }
     };
 
