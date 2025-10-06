@@ -804,82 +804,105 @@ namespace detail
         }
     };
 
+    // Convert to initlist proxy for non-templated classes
     template <
         typename Class,
-        bool Template,
         typename ListElementType,
         policies::factory_policy FactoryPolicy>
-    class list_factory<Class, Template, ListElementType, policies::repeat_list_proxy, FactoryPolicy>
+    class list_factory<Class, false, ListElementType, policies::repeat_list_proxy, FactoryPolicy>
     {
-        using notifier = notify_gc_helper<FactoryPolicy, Template>;
+        using notifier = notify_gc_helper<FactoryPolicy, false>;
 
-    public:
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        static auto generate(call_conv_t<CallConv>) noexcept
+        static void wrapper_impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
         {
-            if constexpr(Template)
+            if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
             {
-                if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-                {
-                    return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
-                    {
-                        auto* ti = *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0);
-                        Class* ptr = new Class(
-                            ti,
-                            script_init_list_repeat(gen, 1)
-                        );
-                        notifier::notify_gc_if_necessary(ptr, ti);
-                        gen->SetReturnAddress(ptr);
-                    };
-                }
-                else // CallConv == asCALL_CDECL
-                {
-                    return +[](AS_NAMESPACE_QUALIFIER asITypeInfo* ti, void* list_buf) -> Class*
-                    {
-                        Class* ptr = new Class(ti, script_init_list_repeat(list_buf));
-                        notifier::notify_gc_if_necessary(ptr, ti);
-                        return ptr;
-                    };
-                }
+                Class* ptr = new Class(script_init_list_repeat(gen));
+                // Works together with the helper "auxiliary(this_type)"
+                auto* ti = (AS_NAMESPACE_QUALIFIER asITypeInfo*)gen->GetAuxiliary();
+                assert(ti != nullptr);
+                notifier::notify_gc_if_necessary(ptr, ti);
+                gen->SetReturnAddress(ptr);
             }
             else
             {
-                if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-                {
-                    return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
-                    {
-                        if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
-                        {
-                            Class* ptr = new Class(script_init_list_repeat(gen));
-                            auto* ti = (AS_NAMESPACE_QUALIFIER asITypeInfo*)gen->GetAuxiliary();
-                            notifier::notify_gc_if_necessary(ptr, ti);
-                            gen->SetReturnAddress(ptr);
-                        }
-                        else
-                        {
-                            gen->SetReturnAddress(
-                                new Class(script_init_list_repeat(gen))
-                            );
-                        }
-                    };
-                }
-                else if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
-                {
-                    return +[](void* list_buf, AS_NAMESPACE_QUALIFIER asITypeInfo* ti) -> Class*
-                    {
-                        Class* ptr = new Class(script_init_list_repeat(list_buf));
-                        notifier::notify_gc_if_necessary(ptr, ti);
-                        return ptr;
-                    };
-                }
-                else // CallConv == asCALL_CDECL
-                {
-                    return +[](void* list_buf) -> Class*
-                    {
-                        return new Class(script_init_list_repeat(list_buf));
-                    };
-                }
+                gen->SetReturnAddress(
+                    new Class(script_init_list_repeat(gen))
+                );
             }
+        }
+
+        //Works together with the helper "auxiliary(this_type)"
+        static Class* wrapper_impl_cdecl_objlast(
+            void* list_buf, AS_NAMESPACE_QUALIFIER asITypeInfo* ti
+        )
+        {
+            Class* ptr = new Class(script_init_list_repeat(list_buf));
+            notifier::notify_gc_if_necessary(ptr, ti);
+            return ptr;
+        }
+
+        static Class* wrapper_impl_cdecl(void* list_buf)
+        {
+            return new Class(script_init_list_repeat(list_buf));
+        }
+
+    public:
+        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        static constexpr auto generate(call_conv_t<CallConv>) noexcept
+        {
+            if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
+                return &wrapper_impl_generic;
+            else if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
+            {
+                static_assert(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST);
+                return &wrapper_impl_cdecl_objlast;
+            }
+            else // CallConv == asCALL_CDECL
+            {
+                static_assert(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL);
+                return &wrapper_impl_cdecl;
+            }
+        }
+    };
+
+    // Convert to initlist proxy for templated classes
+    template <
+        typename Class,
+        typename ListElementType,
+        policies::factory_policy FactoryPolicy>
+    class list_factory<Class, true, ListElementType, policies::repeat_list_proxy, FactoryPolicy>
+    {
+        using notifier = notify_gc_helper<FactoryPolicy, true>;
+
+        static void wrapper_impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        {
+            auto* ti = *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0);
+            Class* ptr = new Class(
+                ti,
+                script_init_list_repeat(gen, 1)
+            );
+            notifier::notify_gc_if_necessary(ptr, ti);
+            gen->SetReturnAddress(ptr);
+        }
+
+        static Class* wrapper_impl_cdecl(
+            AS_NAMESPACE_QUALIFIER asITypeInfo* ti, void* list_buf
+        )
+        {
+            Class* ptr = new Class(ti, script_init_list_repeat(list_buf));
+            notifier::notify_gc_if_necessary(ptr, ti);
+            return ptr;
+        }
+
+    public:
+        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        static constexpr auto generate(call_conv_t<CallConv>) noexcept
+        {
+            if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
+                return &wrapper_impl_generic;
+            else // CallConv == asCALL_CDECL
+                return &wrapper_impl_cdecl;
         }
     };
 
