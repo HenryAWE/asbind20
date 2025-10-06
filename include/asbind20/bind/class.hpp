@@ -41,7 +41,7 @@ namespace detail
 
             if constexpr(!no_guard)
             {
-                if(has_script_exception())
+                if(has_script_exception()) [[unlikely]]
                     std::destroy_at(obj);
             }
         }
@@ -59,7 +59,7 @@ namespace detail
 
             if constexpr(!no_guard)
             {
-                if(has_script_exception())
+                if(has_script_exception()) [[unlikely]]
                     std::destroy_n(arr, Size);
             }
         }
