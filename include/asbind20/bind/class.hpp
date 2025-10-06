@@ -681,55 +681,61 @@ namespace detail
     template <
         typename Class,
         bool Template,
-        typename ListElementType = void,
-        policies::initialization_list_policy Policy = void,
-        policies::factory_policy FactoryPolicy = void>
-    class list_factory
+        typename ListElementType,
+        policies::initialization_list_policy Policy,
+        policies::factory_policy FactoryPolicy>
+    class list_factory;
+
+    // Implementation for default policy & factory policy
+    template <
+        typename Class,
+        bool Template,
+        typename ListElementType>
+    class list_factory<Class, Template, ListElementType, void, void>
     {
+        static void wrapper_impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        {
+            if constexpr(Template)
+            {
+                Class* ptr = new Class(
+                    *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
+                    *(ListElementType**)gen->GetAddressOfArg(1)
+                );
+                gen->SetReturnAddress(ptr);
+            }
+            else
+            {
+                Class* ptr = new Class(
+                    *(ListElementType**)gen->GetAddressOfArg(0)
+                );
+                gen->SetReturnAddress(ptr);
+            }
+        }
+
+        static Class* wrapper_impl_cdecl_template(
+            AS_NAMESPACE_QUALIFIER asITypeInfo* ti, ListElementType* list_buf
+        )
+        {
+            return new Class(ti, list_buf);
+        }
+
+        static Class* wrapper_impl_cdecl(ListElementType* list_buf)
+        {
+            return new Class(list_buf);
+        }
+
     public:
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        static auto generate(call_conv_t<CallConv>) noexcept
+        static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-            {
-                if constexpr(Template)
-                {
-                    return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
-                    {
-                        Class* ptr = new Class(
-                            *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
-                            *(ListElementType**)gen->GetAddressOfArg(1)
-                        );
-                        gen->SetReturnAddress(ptr);
-                    };
-                }
-                else
-                {
-                    return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
-                    {
-                        Class* ptr = new Class(
-                            *(ListElementType**)gen->GetAddressOfArg(0)
-                        );
-                        gen->SetReturnAddress(ptr);
-                    };
-                }
-            }
+                return &wrapper_impl_generic;
             else // CallConv == asCALL_CDECL
             {
                 if constexpr(Template)
-                {
-                    return +[](AS_NAMESPACE_QUALIFIER asITypeInfo* ti, ListElementType* list_buf) -> Class*
-                    {
-                        return new Class(ti, list_buf);
-                    };
-                }
+                    return &wrapper_impl_cdecl_template;
                 else
-                {
-                    return +[](ListElementType* list_buf) -> Class*
-                    {
-                        return new Class(list_buf);
-                    };
-                }
+                    return &wrapper_impl_cdecl;
             }
         }
     };
@@ -4956,7 +4962,7 @@ public:
     )
     {
         AS_NAMESPACE_QUALIFIER asGENFUNC_t wrapper =
-            detail::list_factory<Class, Template, ListElementType, Policy>::generate(generic_call_conv);
+            detail::list_factory<Class, Template, ListElementType, Policy, void>::generate(generic_call_conv);
 
         list_factory_function(
             pattern,
@@ -4982,7 +4988,7 @@ public:
         else
         {
             auto wrapper =
-                detail::list_factory<Class, Template, ListElementType, Policy>::generate(
+                detail::list_factory<Class, Template, ListElementType, Policy, void>::generate(
                     call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
                 );
 
