@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <memory>
 #include <concepts>
 #include "common.hpp"
 #include "../policies.hpp"
@@ -65,114 +66,130 @@ namespace detail
     };
 
     template <typename Class, bool Template, typename... Args>
-    class constructor
+    class constructor;
+
+    // Constructor for non-templated classes
+    template <typename Class, typename... Args>
+    requires(!std::is_array_v<Class>)
+    class constructor<Class, false, Args...>
     {
         using ex_guard = ctor_ex_guard<Class>;
 
+        static void wrapper_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        {
+            using args_tuple = std::tuple<Args...>;
+
+            [gen]<std::size_t... Is>(std::index_sequence<Is...>)
+            {
+                void* mem = gen->GetObject();
+                new(mem) Class(
+                    get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
+                        gen, (AS_NAMESPACE_QUALIFIER asUINT)Is
+                    )...
+                );
+
+                ex_guard::destroy_if_ex(static_cast<Class*>(mem));
+            }(std::index_sequence_for<Args...>());
+        }
+
+        static void wrapper_objlast(Args... args, void* mem)
+        {
+            new(mem) Class(std::forward<Args>(args)...);
+
+            ex_guard::destroy_if_ex(static_cast<Class*>(mem));
+        }
+
     public:
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        static auto generate(call_conv_t<CallConv>) noexcept
+        static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-            {
-                using args_tuple = std::tuple<Args...>;
-
-                if constexpr(Template)
-                {
-                    return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
-                    {
-                        [gen]<std::size_t... Is>(std::index_sequence<Is...>)
-                        {
-                            void* mem = gen->GetObject();
-                            new(mem) Class(
-                                *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
-                                get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
-                                    gen, (AS_NAMESPACE_QUALIFIER asUINT)Is + 1
-                                )...
-                            );
-
-                            ex_guard::destroy_if_ex(static_cast<Class*>(mem));
-                        }(std::index_sequence_for<Args...>());
-                    };
-                }
-                else
-                {
-                    return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
-                    {
-                        [gen]<std::size_t... Is>(std::index_sequence<Is...>)
-                        {
-                            void* mem = gen->GetObject();
-                            new(mem) Class(
-                                get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
-                                    gen, (AS_NAMESPACE_QUALIFIER asUINT)Is
-                                )...
-                            );
-
-                            ex_guard::destroy_if_ex(static_cast<Class*>(mem));
-                        }(std::index_sequence_for<Args...>());
-                    };
-                }
-            }
+                return &wrapper_generic;
             else // CallConv == asCALL_CDECL_OBJLAST
-            {
-                if constexpr(Template)
-                {
-                    return +[](AS_NAMESPACE_QUALIFIER asITypeInfo* ti, Args... args, void* mem) -> void
-                    {
-                        new(mem) Class(ti, std::forward<Args>(args)...);
-
-                        ex_guard::destroy_if_ex(static_cast<Class*>(mem));
-                    };
-                }
-                else
-                {
-                    return +[](Args... args, void* mem) -> void
-                    {
-                        new(mem) Class(std::forward<Args>(args)...);
-
-                        ex_guard::destroy_if_ex(static_cast<Class*>(mem));
-                    };
-                }
-            }
+                return &wrapper_objlast;
         }
     };
 
-    template <typename Class>
-    class arr_default_constructor;
-
-    template <typename ElemType, std::size_t Size>
-    class arr_default_constructor<ElemType[Size]>
+    // Constructor wrapper for templated classes
+    template <typename Class, typename... Args>
+    requires(!std::is_array_v<Class>)
+    class constructor<Class, true, Args...>
     {
-        using ex_guard = ctor_ex_guard<ElemType[Size]>;
+        using ex_guard = ctor_ex_guard<Class>;
+
+        static void wrapper_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        {
+            [gen]<std::size_t... Is>(std::index_sequence<Is...>)
+            {
+                using args_tuple = std::tuple<Args...>;
+
+                void* mem = gen->GetObject();
+                new(mem) Class(
+                    *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
+                    get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
+                        gen, (AS_NAMESPACE_QUALIFIER asUINT)Is + 1
+                    )...
+                );
+
+                ex_guard::destroy_if_ex(static_cast<Class*>(mem));
+            }(std::index_sequence_for<Args...>());
+        }
+
+        static void wrapper_objlast(
+            AS_NAMESPACE_QUALIFIER asITypeInfo* ti, Args... args, void* mem
+        )
+        {
+            new(mem) Class(ti, std::forward<Args>(args)...);
+
+            ex_guard::destroy_if_ex(static_cast<Class*>(mem));
+        }
 
     public:
         template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        static auto generate(call_conv_t<CallConv>) noexcept
+        static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-            {
-                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
-                {
-                    auto* ptr = static_cast<ElemType*>(gen->GetObject());
-
-                    std::uninitialized_default_construct_n(
-                        ptr, Size
-                    );
-                    ex_guard::destroy_if_ex(ptr);
-                };
-            }
+                return &wrapper_generic;
             else // CallConv == asCALL_CDECL_OBJLAST
-            {
-                return +[](void* mem) -> void
-                {
-                    auto* ptr = static_cast<ElemType*>(mem);
+                return &wrapper_objlast;
+        }
+    };
 
-                    std::uninitialized_default_construct_n(
-                        ptr, Size
-                    );
-                    ex_guard::destroy_if_ex(ptr);
-                };
-            }
+    template <typename ElemType, std::size_t Size, bool Template>
+    class constructor<ElemType[Size], Template>
+    {
+        using ex_guard = ctor_ex_guard<ElemType[Size]>;
+
+        static_assert(!Template, "Default constructor of C-array is invalid for template");
+
+        static void wrapper_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        {
+            auto* ptr = static_cast<ElemType*>(gen->GetObject());
+
+            std::uninitialized_default_construct_n(
+                ptr, Size
+            );
+            ex_guard::destroy_if_ex(ptr);
+        }
+
+        static void wrapper_objlast(void* mem)
+        {
+            auto* ptr = static_cast<ElemType*>(mem);
+
+            std::uninitialized_default_construct_n(
+                ptr, Size
+            );
+            ex_guard::destroy_if_ex(ptr);
+        }
+
+    public:
+        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        static constexpr auto generate(call_conv_t<CallConv>) noexcept
+        {
+            if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
+                return &wrapper_generic;
+            else // CallConv == asCALL_CDECL_OBJLAST
+                return &wrapper_objlast;
         }
     };
 
@@ -2997,20 +3014,23 @@ public:
         return *this;
     }
 
+private:
+    static constexpr const char* decl_default_ctor()
+    {
+        return Template ? "void f(int&in)" : "void f()";
+    }
+
+public:
     basic_value_class& default_constructor(use_generic_t)
     {
-        if constexpr(std::is_array_v<Class>)
-        {
-            detail::arr_default_constructor<Class> wrapper;
-            this->behaviour_impl(
-                AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
-                "void f()",
-                wrapper.generate(generic_call_conv),
-                generic_call_conv
-            );
-        }
-        else
-            constructor<>(use_generic, "");
+        using gen_t = detail::constructor<Class, Template>;
+        this->behaviour_impl(
+            AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
+            decl_default_ctor(),
+            gen_t::generate(generic_call_conv),
+            generic_call_conv,
+            nullptr
+        );
 
         return *this;
     }
@@ -3021,18 +3041,14 @@ public:
             this->default_constructor(use_generic);
         else
         {
-            if constexpr(std::is_array_v<Class>)
-            {
-                detail::arr_default_constructor<Class> wrapper;
-                this->behaviour_impl(
-                    AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
-                    "void f()",
-                    wrapper.generate(call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>),
-                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
-                );
-            }
-            else
-                constructor<>("");
+            using gen_t = detail::constructor<Class, Template>;
+            this->behaviour_impl(
+                AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
+                decl_default_ctor(),
+                gen_t::generate(call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>),
+                call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>,
+                nullptr
+            );
         }
 
         return *this;
