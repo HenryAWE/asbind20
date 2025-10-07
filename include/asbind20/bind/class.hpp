@@ -76,7 +76,7 @@ namespace detail
     {
         using ex_guard = ctor_ex_guard<Class>;
 
-        static void wrapper_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        static void impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
         {
             using args_tuple = std::tuple<Args...>;
 
@@ -93,7 +93,7 @@ namespace detail
             }(std::index_sequence_for<Args...>());
         }
 
-        static void wrapper_objlast(Args... args, void* mem)
+        static void impl_objlast(Args... args, void* mem)
         {
             new(mem) Class(std::forward<Args>(args)...);
 
@@ -105,9 +105,9 @@ namespace detail
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-                return &wrapper_generic;
+                return &impl_generic;
             else // CallConv == asCALL_CDECL_OBJLAST
-                return &wrapper_objlast;
+                return &impl_objlast;
         }
     };
 
@@ -118,7 +118,7 @@ namespace detail
     {
         using ex_guard = ctor_ex_guard<Class>;
 
-        static void wrapper_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        static void impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
         {
             [gen]<std::size_t... Is>(std::index_sequence<Is...>)
             {
@@ -136,7 +136,7 @@ namespace detail
             }(std::index_sequence_for<Args...>());
         }
 
-        static void wrapper_objlast(
+        static void impl_objlast(
             AS_NAMESPACE_QUALIFIER asITypeInfo* ti, Args... args, void* mem
         )
         {
@@ -150,9 +150,9 @@ namespace detail
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-                return &wrapper_generic;
+                return &impl_generic;
             else // CallConv == asCALL_CDECL_OBJLAST
-                return &wrapper_objlast;
+                return &impl_objlast;
         }
     };
 
@@ -163,7 +163,7 @@ namespace detail
 
         static_assert(!Template, "Default constructor of C-array is invalid for template");
 
-        static void wrapper_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        static void impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
         {
             auto* ptr = static_cast<ElemType*>(gen->GetObject());
 
@@ -173,7 +173,7 @@ namespace detail
             ex_guard::destroy_if_ex(ptr);
         }
 
-        static void wrapper_objlast(void* mem)
+        static void impl_objlast(void* mem)
         {
             auto* ptr = static_cast<ElemType*>(mem);
 
@@ -188,9 +188,9 @@ namespace detail
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-                return &wrapper_generic;
+                return &impl_generic;
             else // CallConv == asCALL_CDECL_OBJLAST
-                return &wrapper_objlast;
+                return &impl_objlast;
         }
     };
 
@@ -249,7 +249,7 @@ namespace detail
         typename ListElementType>
     class list_constructor<Class, Template, ListElementType, void> // Implementation for default policy
     {
-        static void wrapper_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        static void impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
         {
             if constexpr(Template)
             {
@@ -266,14 +266,14 @@ namespace detail
             }
         }
 
-        static void wrapper_objlast_template(
+        static void impl_objlast_template(
             AS_NAMESPACE_QUALIFIER asITypeInfo* ti, ListElementType* list_buf, void* mem
         )
         {
             new(mem) Class(ti, list_buf);
         }
 
-        static void wrapper_objlast(
+        static void impl_objlast(
             ListElementType* list_buf, void* mem
         )
         {
@@ -285,13 +285,13 @@ namespace detail
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-                return &wrapper_generic;
+                return &impl_generic;
             else // CallConv == asCALL_CDECL_OBJLAST
             {
                 if constexpr(Template)
-                    return &wrapper_objlast_template;
+                    return &impl_objlast_template;
                 else
-                    return &wrapper_objlast;
+                    return &impl_objlast;
             }
         }
     };
@@ -303,7 +303,7 @@ namespace detail
         typename ListElementType>
     class list_constructor<Class, Template, ListElementType, policies::repeat_list_proxy>
     {
-        static void wrapper_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        static void impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
         {
             if constexpr(Template)
             {
@@ -320,14 +320,14 @@ namespace detail
             }
         }
 
-        static void wrapper_objlast_template(
+        static void impl_objlast_template(
             AS_NAMESPACE_QUALIFIER asITypeInfo* ti, void* list_buf, void* mem
         )
         {
             new(mem) Class(ti, script_init_list_repeat(list_buf));
         }
 
-        static void wrapper_objlast(
+        static void impl_objlast(
             void* list_buf, void* mem
         )
         {
@@ -339,13 +339,13 @@ namespace detail
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-                return &wrapper_generic;
+                return &impl_generic;
             else // CallConv == asCALL_CDECL_OBJLAST
             {
                 if constexpr(Template)
-                    return &wrapper_objlast_template;
+                    return &impl_objlast_template;
                 else
-                    return &wrapper_objlast;
+                    return &impl_objlast;
             }
         }
     };
@@ -365,7 +365,7 @@ namespace detail
             }(std::make_index_sequence<Size>());
         }
 
-        static void wrapper_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        static void impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
         {
             apply_helper(
                 gen->GetObject(),
@@ -373,7 +373,7 @@ namespace detail
             );
         }
 
-        static void wrapper_objlast(ListElementType* list_buf, void* mem)
+        static void impl_objlast(ListElementType* list_buf, void* mem)
         {
             apply_helper(mem, list_buf);
         }
@@ -386,9 +386,9 @@ namespace detail
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-                return &wrapper_generic;
+                return &impl_generic;
             else // CallConv == asCALL_CDECL_OBJLAST
-                return &wrapper_objlast;
+                return &impl_objlast;
         }
     };
 
@@ -443,7 +443,7 @@ namespace detail
             }
         }
 
-        static void wrapper_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        static void impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
         {
             from_list_helper(
                 gen->GetObject(),
@@ -451,7 +451,7 @@ namespace detail
             );
         }
 
-        static void wrapper_objlast(ListElementType* list_buf, void* mem)
+        static void impl_objlast(ListElementType* list_buf, void* mem)
         {
             from_list_helper(mem, script_init_list_repeat(list_buf));
         }
@@ -464,9 +464,9 @@ namespace detail
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-                return &wrapper_generic;
+                return &impl_generic;
             else // CallConv == asCALL_CDECL_OBJLAST
-                return &wrapper_objlast;
+                return &impl_objlast;
         }
     };
 
@@ -484,7 +484,7 @@ namespace detail
         typename... Args>
     class factory<Class, Template, void, Args...>
     {
-        static void wrapper_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        static void impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
         {
             using args_tuple = std::tuple<Args...>;
             if constexpr(Template)
@@ -510,14 +510,14 @@ namespace detail
             }
         }
 
-        static Class* wrapper_cdecl_template(
+        static Class* impl_cdecl_template(
             AS_NAMESPACE_QUALIFIER asITypeInfo* ti, Args... args
         )
         {
             return new Class(ti, std::forward<Args>(args)...);
         }
 
-        static Class* wrapper_cdecl(Args... args)
+        static Class* impl_cdecl(Args... args)
         {
             return new Class(std::forward<Args>(args)...);
         }
@@ -527,13 +527,13 @@ namespace detail
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-                return &wrapper_generic;
+                return &impl_generic;
             else // CallConv == asCALL_CDECL
             {
                 if constexpr(Template)
-                    return &wrapper_cdecl_template;
+                    return &impl_cdecl_template;
                 else
-                    return &wrapper_cdecl;
+                    return &impl_cdecl;
             }
         }
     };
@@ -545,7 +545,7 @@ namespace detail
         // Note: GC notifier for non-templated class expects the typeinfo is passed by auxiliary pointer,
         // a.k.a the "auxiliary(this_type)" helper
 
-        static void wrapper_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        static void impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
         {
             using args_tuple = std::tuple<Args...>;
 
@@ -570,7 +570,7 @@ namespace detail
             }(std::index_sequence_for<Args...>());
         }
 
-        static Class* wrapper_objlast(Args... args, AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+        static Class* impl_objlast(Args... args, AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
         {
             Class* ptr = new Class(std::forward<Args>(args)...);
             if(has_script_exception()) [[unlikely]]
@@ -589,9 +589,9 @@ namespace detail
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-                return &wrapper_generic;
+                return &impl_generic;
             else // CallConv == asCALL_CDECL_OBJLAST
-                return &wrapper_objlast;
+                return &impl_objlast;
         }
     };
 
@@ -600,9 +600,9 @@ namespace detail
     class factory<Class, true, policies::notify_gc, Args...>
     {
         // Note: Template callback may remove the asOBJ_GC flag for some instantiations,
-        // so the following wrappers will check the flag at runtime.
+        // so the following wrapper implementations will check the flag at runtime.
 
-        static void wrapper_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        static void impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
         {
             using args_tuple = std::tuple<Args...>;
 
@@ -633,7 +633,7 @@ namespace detail
             }(std::index_sequence_for<Args...>());
         }
 
-        static Class* wrapper_cdecl(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, Args... args)
+        static Class* impl_cdecl(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, Args... args)
         {
             Class* ptr = new Class(ti, std::forward<Args>(args)...);
 
@@ -657,9 +657,9 @@ namespace detail
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-                return &wrapper_generic;
+                return &impl_generic;
             else // CallConv == asCALL_CDECL
-                return &wrapper_cdecl;
+                return &impl_cdecl;
         }
     };
 
@@ -711,7 +711,7 @@ namespace detail
         typename ListElementType>
     class list_factory<Class, Template, ListElementType, void, void>
     {
-        static void wrapper_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        static void impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
         {
             if constexpr(Template)
             {
@@ -730,14 +730,14 @@ namespace detail
             }
         }
 
-        static Class* wrapper_cdecl_template(
+        static Class* impl_cdecl_template(
             AS_NAMESPACE_QUALIFIER asITypeInfo* ti, ListElementType* list_buf
         )
         {
             return new Class(ti, list_buf);
         }
 
-        static Class* wrapper_cdecl(ListElementType* list_buf)
+        static Class* impl_cdecl(ListElementType* list_buf)
         {
             return new Class(list_buf);
         }
@@ -747,13 +747,13 @@ namespace detail
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-                return &wrapper_generic;
+                return &impl_generic;
             else // CallConv == asCALL_CDECL
             {
                 if constexpr(Template)
-                    return &wrapper_cdecl_template;
+                    return &impl_cdecl_template;
                 else
-                    return &wrapper_cdecl;
+                    return &impl_cdecl;
             }
         }
     };
@@ -776,7 +776,7 @@ namespace detail
             }(std::make_index_sequence<Size>());
         }
 
-        static void wrapper_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        static void impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
         {
             Class* ptr = apply_helper(*(ListElementType**)gen->GetAddressOfArg(0));
             if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
@@ -788,14 +788,14 @@ namespace detail
             gen->SetReturnAddress(ptr);
         }
 
-        static Class* wrapper_objlast(ListElementType* list_buf, AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+        static Class* impl_objlast(ListElementType* list_buf, AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
         {
             Class* ptr = apply_helper(list_buf);
             notifier::notify_gc_if_necessary(ptr, ti);
             return ptr;
         }
 
-        static Class* wrapper_cdecl(ListElementType* list_buf)
+        static Class* impl_cdecl(ListElementType* list_buf)
         {
             return apply_helper(list_buf);
         }
@@ -808,16 +808,16 @@ namespace detail
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-                return &wrapper_generic;
+                return &impl_generic;
             else if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
             {
                 static_assert(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST);
-                return &wrapper_objlast;
+                return &impl_objlast;
             }
             else // CallConv == asCALL_CDECL
             {
                 static_assert(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL);
-                return &wrapper_cdecl;
+                return &impl_cdecl;
             }
         }
     };
@@ -831,7 +831,7 @@ namespace detail
     {
         using notifier = notify_gc_helper<FactoryPolicy, false>;
 
-        static void wrapper_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        static void impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
         {
             if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
             {
@@ -851,7 +851,7 @@ namespace detail
         }
 
         //Works together with the helper "auxiliary(this_type)"
-        static Class* wrapper_cdecl_objlast(
+        static Class* impl_cdecl_objlast(
             void* list_buf, AS_NAMESPACE_QUALIFIER asITypeInfo* ti
         )
         {
@@ -860,7 +860,7 @@ namespace detail
             return ptr;
         }
 
-        static Class* wrapper_cdecl(void* list_buf)
+        static Class* impl_cdecl(void* list_buf)
         {
             return new Class(script_init_list_repeat(list_buf));
         }
@@ -870,16 +870,16 @@ namespace detail
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-                return &wrapper_generic;
+                return &impl_generic;
             else if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
             {
                 static_assert(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST);
-                return &wrapper_cdecl_objlast;
+                return &impl_cdecl_objlast;
             }
             else // CallConv == asCALL_CDECL
             {
                 static_assert(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL);
-                return &wrapper_cdecl;
+                return &impl_cdecl;
             }
         }
     };
@@ -893,7 +893,7 @@ namespace detail
     {
         using notifier = notify_gc_helper<FactoryPolicy, true>;
 
-        static void wrapper_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        static void impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
         {
             auto* ti = *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0);
             Class* ptr = new Class(
@@ -904,7 +904,7 @@ namespace detail
             gen->SetReturnAddress(ptr);
         }
 
-        static Class* wrapper_cdecl(
+        static Class* impl_cdecl(
             AS_NAMESPACE_QUALIFIER asITypeInfo* ti, void* list_buf
         )
         {
@@ -918,9 +918,9 @@ namespace detail
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-                return &wrapper_generic;
+                return &impl_generic;
             else // CallConv == asCALL_CDECL
-                return &wrapper_cdecl;
+                return &impl_cdecl;
         }
     };
 
@@ -966,7 +966,7 @@ namespace detail
             }
         }
 
-        static void wrapper_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        static void impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
         {
             Class* ptr = from_list_helper(script_init_list_repeat(gen));
             if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
@@ -980,14 +980,14 @@ namespace detail
         }
 
         // Works together with the helper "auxiliary(this_type)"
-        static Class* wrapper_objlast(void* list_buf, AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+        static Class* impl_objlast(void* list_buf, AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
         {
             Class* ptr = from_list_helper(script_init_list_repeat(list_buf));
             notifier::notify_gc_if_necessary(ptr, ti);
             return ptr;
         }
 
-        static Class* wrapper_cdecl(void* list_buf)
+        static Class* impl_cdecl(void* list_buf)
         {
             return from_list_helper(script_init_list_repeat(list_buf));
         }
@@ -1000,16 +1000,16 @@ namespace detail
         static auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-                return wrapper_generic;
+                return impl_generic;
             else if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
             {
                 static_assert(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST);
-                return &wrapper_objlast;
+                return &impl_objlast;
             }
             else // CallConv == asCALL_CDECL
             {
                 static_assert(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL);
-                return &wrapper_cdecl;
+                return &impl_cdecl;
             }
         }
     };
