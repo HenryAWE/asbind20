@@ -18,13 +18,6 @@
 namespace asbind20::detail
 { // All contents in this file should NOT be directly used by user code
 
-#ifdef _MSC_VER
-#    pragma warning(push)
-// When binding functions that may directly throw an exception,
-// MSVC will report warning of unreachable code.
-#    pragma warning(disable : 4702)
-#endif
-
 template <std::size_t RawArgCount, std::size_t... Is>
 consteval auto gen_script_arg_idx(var_type_t<Is...> = {})
 {
@@ -1013,10 +1006,6 @@ constexpr auto auxiliary_factory_to_asGENFUNC_t(
         CallConv>;
     return gen_t::generate();
 }
-
-#ifdef _MSC_VER
-#    pragma warning(pop)
-#endif
 } // namespace asbind20::detail
 
 #endif

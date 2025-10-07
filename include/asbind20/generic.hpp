@@ -17,6 +17,13 @@
 
 namespace asbind20
 {
+#ifdef _MSC_VER
+#    pragma warning(push)
+// When binding functions that may directly throw an exception,
+// MSVC will report warning of unreachable code.
+#    pragma warning(disable : 4702)
+#endif
+
 /**
  * @brief Get pointer/reference to the object
  *
@@ -317,7 +324,9 @@ decltype(auto) get_generic_this(
         static_assert(!CallConv && false, "This calling convention doesn't have a this pointer");
 }
 
-
+#ifdef _MSC_VER
+#    pragma warning(pop)
+#endif
 } // namespace asbind20
 
 #endif
