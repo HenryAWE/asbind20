@@ -102,7 +102,7 @@ static void setup_to_lower_env(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     global<UseGeneric>(engine)
         .function("string to_lower(const string&in)", fp<&str_to_lower>)
         .message_callback(
-            +[](const asSMessageInfo* msg)
+            +[](const AS_NAMESPACE_QUALIFIER asSMessageInfo* msg)
             { std::cerr << msg->message << std::endl; }
         );
 }

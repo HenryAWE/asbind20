@@ -1,3 +1,9 @@
+/**
+ * @file decl.hpp
+ * @author HenryAWE
+ * @brief Tools for generating declarations of script functions/methods
+ */
+
 #ifndef ASBIND20_DECL_HPP
 #define ASBIND20_DECL_HPP
 

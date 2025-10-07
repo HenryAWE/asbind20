@@ -1,6 +1,6 @@
 #include <shared_test_lib.hpp>
 
-#if ANGELSCRIPT_VERSION >= 23800
+#ifdef ASBIND20_HAS_AS_FOREACH
 
 namespace test_bind
 {

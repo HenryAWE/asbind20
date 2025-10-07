@@ -14,33 +14,17 @@
 #include <cstring>
 #include <string>
 #include <utility>
+#include <bit>
 #include <mutex> // IWYU pragma: export `std::lock_guard`
 #include <compare>
 #include <functional>
 #include <type_traits>
 #include <concepts>
+#include "detail/config.hpp" // IWYU pragma: export configs
 #include "detail/include_as.hpp"
 
 namespace asbind20
 {
-#if defined(_WIN32) && !defined(_WIN64)
-#    define ASBIND20_HAS_STANDALONE_STDCALL
-#    define ASBIND20_CDECL   __cdecl
-#    define ASBIND20_STDCALL __stdcall
-#else
-// placeholder
-#    define ASBIND20_CDECL
-#    define ASBIND20_STDCALL
-#endif
-
-struct this_type_t
-{};
-
-/**
- * @brief Tag indicating current type. Its exact meaning depends on context.
- */
-inline constexpr this_type_t this_type{};
-
 template <typename FirstPolicy = void, typename... Policies>
 struct use_policy_t
 {
@@ -50,6 +34,238 @@ struct use_policy_t
 
 template <typename FirstPolicy = void, typename... Policies>
 constexpr inline use_policy_t<FirstPolicy, Policies...> use_policy{};
+
+template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+struct call_conv_t
+{};
+
+/**
+ * @brief Helper for specifying calling convention
+ */
+template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+constexpr inline call_conv_t<CallConv> call_conv;
+
+constexpr inline call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> generic_call_conv{};
+
+namespace detail
+{
+    template <typename T>
+    concept is_native_function_helper = std::is_function_v<T> ||
+                                        std::is_function_v<std::remove_pointer_t<T>> ||
+                                        std::is_member_function_pointer_v<T>;
+} // namespace detail
+
+/**
+ * @brief Acceptable native function for AngelScript
+ */
+template <typename T>
+concept native_function =
+    !std::is_convertible_v<T, AS_NAMESPACE_QUALIFIER asGENFUNC_t> &&
+    detail::is_native_function_helper<std::decay_t<T>>;
+
+/**
+ * @brief Lambda without any captured values
+ *
+ * @note This concept will also reject the function for generic calling convention
+ */
+template <typename Lambda>
+concept noncapturing_lambda = requires() {
+    { +Lambda{} } -> native_function;
+} && std::is_empty_v<Lambda>;
+
+template <native_function auto Function>
+struct fp_wrapper
+{
+    static constexpr auto get() noexcept
+    {
+        return Function;
+    }
+};
+
+/**
+ * @brief Wrap NTTP function pointer as type
+ *
+ * @tparam Function NTTP function pointer
+ */
+template <native_function auto Function>
+constexpr inline fp_wrapper<Function> fp{};
+
+struct this_type_t
+{};
+
+/**
+ * @brief Tag indicating current type. Its exact meaning depends on context.
+ */
+inline constexpr this_type_t this_type{};
+
+template <typename T>
+class auxiliary_wrapper
+{
+public:
+    auxiliary_wrapper() = delete;
+    constexpr auxiliary_wrapper(const auxiliary_wrapper&) noexcept = default;
+
+    explicit constexpr auxiliary_wrapper(T* aux) noexcept
+        : m_aux(aux) {}
+
+    [[nodiscard]]
+    void* get_address() const noexcept
+    {
+        return (void*)m_aux;
+    }
+
+private:
+    T* m_aux;
+};
+
+template <>
+class auxiliary_wrapper<this_type_t>
+{
+public:
+    auxiliary_wrapper() = delete;
+    constexpr auxiliary_wrapper(const auxiliary_wrapper&) noexcept = default;
+
+    explicit constexpr auxiliary_wrapper(this_type_t) noexcept {};
+};
+
+template <typename T>
+[[nodiscard]]
+constexpr auxiliary_wrapper<T> auxiliary(T& aux) noexcept
+{
+    return auxiliary_wrapper<T>(std::addressof(aux));
+}
+
+template <typename T>
+[[nodiscard]]
+constexpr auxiliary_wrapper<T> auxiliary(T* aux) noexcept
+{
+    return auxiliary_wrapper<T>(aux);
+}
+
+[[nodiscard]]
+constexpr inline auxiliary_wrapper<void> auxiliary(std::nullptr_t) noexcept
+{
+    return auxiliary_wrapper<void>(nullptr);
+}
+
+[[nodiscard]]
+constexpr inline auxiliary_wrapper<this_type_t> auxiliary(this_type_t) noexcept
+{
+    return auxiliary_wrapper<this_type_t>(this_type);
+}
+
+template <typename T>
+constexpr auxiliary_wrapper<T> auxiliary(T&& aux) = delete;
+
+/**
+ * @brief Store a pointer-sized integer value as auxiliary object
+ *
+ * @note DO NOT use this unless you know what you are doing!
+ *
+ * @warning Only use this with the @b generic calling convention!
+ *
+ * @param val Integer value
+ */
+[[nodiscard]]
+constexpr auxiliary_wrapper<void> aux_value(std::intptr_t val) noexcept
+{
+    return auxiliary_wrapper<void>(std::bit_cast<void*>(val));
+}
+
+template <std::size_t... Is>
+struct var_type_t : public std::index_sequence<Is...>
+{};
+
+/**
+ * @brief Helper for specifying position of variable type parameters
+ *
+ * @tparam Is Position of variable type arguments in the script function declaration
+ */
+template <std::size_t... Is>
+inline constexpr var_type_t<Is...> var_type{};
+
+/**
+ * @brief Get offset from a member pointer
+ *
+ * @note This function is implemented by undefined behavior but is expected to work on most platforms
+ */
+template <typename T, typename Class>
+std::size_t member_offset(T Class::* mp) noexcept
+{
+    Class* p = nullptr;
+    return std::size_t(std::addressof(p->*mp)) - std::size_t(p);
+}
+
+class composite_wrapper
+{
+public:
+    using composite_wrapper_tag = void;
+
+    composite_wrapper() = delete;
+    constexpr composite_wrapper(const composite_wrapper&) noexcept = default;
+
+    constexpr explicit composite_wrapper(std::size_t off) noexcept
+        : m_off(off) {}
+
+    constexpr composite_wrapper& operator=(const composite_wrapper&) noexcept = default;
+
+    [[nodiscard]]
+    constexpr std::size_t get_offset() const noexcept
+    {
+        return m_off;
+    }
+
+private:
+    std::size_t m_off;
+};
+
+template <auto Composite>
+class composite_wrapper_nontype;
+
+template <auto MemberObject>
+requires(std::is_member_object_pointer_v<decltype(MemberObject)>)
+class composite_wrapper_nontype<MemberObject>
+{
+public:
+    using composite_wrapper_tag = void;
+
+    operator composite_wrapper() const noexcept
+    {
+        // The implementation of member_offset is not constexpr-friendly,
+        // so this function should not be constexpr.
+        return composite_wrapper(member_offset(MemberObject));
+    }
+};
+
+template <std::size_t Offset>
+class composite_wrapper_nontype<Offset>
+{
+public:
+    using composite_wrapper_tag = void;
+
+    constexpr operator composite_wrapper() const noexcept
+    {
+        return composite_wrapper(Offset);
+    }
+};
+
+constexpr composite_wrapper composite(std::size_t off) noexcept
+{
+    return composite_wrapper(off);
+}
+
+template <typename MemberPointer>
+requires(std::is_member_object_pointer_v<MemberPointer>)
+composite_wrapper composite(MemberPointer mp) noexcept
+{
+    return composite_wrapper(member_offset(mp));
+}
+
+template <auto Composite>
+constexpr composite_wrapper_nontype<Composite> composite() noexcept
+{
+    return {};
+}
 
 namespace detail
 {
@@ -91,17 +307,6 @@ constexpr inline std::true_type const_;
  */
 template <typename... Args>
 constexpr inline detail::overload_cast_impl<Args...> overload_cast{};
-
-template <typename Func>
-auto to_asSFuncPtr(Func f)
-    -> AS_NAMESPACE_QUALIFIER asSFuncPtr
-{
-    // Reference: asFUNCTION and asMETHOD from the AngelScript interface
-    if constexpr(std::is_member_function_pointer_v<Func>)
-        return AS_NAMESPACE_QUALIFIER asSMethodPtr<sizeof(f)>::Convert(f);
-    else
-        return AS_NAMESPACE_QUALIFIER asFunctionPtr(f);
-}
 
 template <int TypeId>
 requires(!(TypeId & ~(AS_NAMESPACE_QUALIFIER asTYPEID_MASK_SEQNBR)))
@@ -1027,18 +1232,6 @@ constexpr std::string_view static_enum_name() noexcept
     }
 
     return name;
-}
-
-/**
- * @brief Get offset from a member pointer
- *
- * @note This function is implemented by undefined behavior but is expected to work on most platforms
- */
-template <typename T, typename Class>
-std::size_t member_offset(T Class::* mp) noexcept
-{
-    Class* p = nullptr;
-    return std::size_t(std::addressof(p->*mp)) - std::size_t(p);
 }
 
 [[nodiscard]]
