@@ -24,6 +24,7 @@
 // IWYU pragma: begin_exports
 
 #include <cstring>
+#include "detail/config.hpp"
 #include "detail/include_as.hpp"
 #include "utility.hpp"
 #include "policies.hpp"
