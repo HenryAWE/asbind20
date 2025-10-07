@@ -10,9 +10,10 @@
 #pragma once
 
 #include <cassert>
+#include <string_view>
 #include <algorithm>
 #include <concepts>
-#include "../generic.hpp" // IWYU pragma: export generic wrappers
+#include "wrappers.hpp"
 #include "../meta.hpp"
 #include "../utility.hpp"
 

@@ -126,7 +126,7 @@ public:
 
         this->function(
             decl,
-            to_asGENFUNC_t(fp<Function>, call_conv<CallConv>),
+            detail::to_asGENFUNC_t(fp<Function>, call_conv<CallConv>),
             generic_call_conv
         );
 
@@ -205,7 +205,7 @@ public:
     {
         this->function(
             decl,
-            to_asGENFUNC_t(Lambda{}, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>),
+            detail::to_asGENFUNC_t(Lambda{}, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>),
             generic_call_conv
         );
 
@@ -297,7 +297,7 @@ public:
 
         function(
             decl,
-            to_asGENFUNC_t(fp<Function>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL>),
+            detail::to_asGENFUNC_t(fp<Function>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL>),
             aux,
             generic_call_conv
         );

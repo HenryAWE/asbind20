@@ -1638,7 +1638,7 @@ private:
                 Class,                                                                       \
                 std::decay_t<decltype(Callback)>>();                                         \
         template_callback(                                                                   \
-            to_asGENFUNC_t(fp<Callback>, call_conv<conv>)                                    \
+            detail::to_asGENFUNC_t(fp<Callback>, call_conv<conv>)                            \
         );                                                                                   \
         return *this;                                                                        \
     }                                                                                        \
@@ -1765,7 +1765,7 @@ private:
     {                                                                         \
         this->method_impl(                                                    \
             decl,                                                             \
-            to_asGENFUNC_t(fp<Method>, call_conv<CallConv>),                  \
+            detail::to_asGENFUNC_t(fp<Method>, call_conv<CallConv>),          \
             generic_call_conv                                                 \
         );                                                                    \
         return *this;                                                         \
@@ -1781,7 +1781,7 @@ private:
             method_callconv<Method>();                                        \
         this->method_impl(                                                    \
             decl,                                                             \
-            to_asGENFUNC_t(fp<Method>, call_conv<conv>),                      \
+            detail::to_asGENFUNC_t(fp<Method>, call_conv<conv>),              \
             generic_call_conv                                                 \
         );                                                                    \
         return *this;                                                         \
@@ -1831,7 +1831,7 @@ private:
     {                                                                              \
         this->method_impl(                                                         \
             decl,                                                                  \
-            to_asGENFUNC_t(fp<Method>, call_conv<CallConv>),                       \
+            detail::to_asGENFUNC_t(fp<Method>, call_conv<CallConv>),               \
             generic_call_conv,                                                     \
             my_base::get_auxiliary_address(aux)                                    \
         );                                                                         \
@@ -1849,7 +1849,7 @@ private:
             method_callconv_aux<Method, Auxiliary>();                              \
         this->method_impl(                                                         \
             decl,                                                                  \
-            to_asGENFUNC_t(fp<Method>, call_conv<conv>),                           \
+            detail::to_asGENFUNC_t(fp<Method>, call_conv<conv>),                   \
             generic_call_conv,                                                     \
             my_base::get_auxiliary_address(aux)                                    \
         );                                                                         \
@@ -1902,7 +1902,7 @@ private:
     {                                                                       \
         this->method_impl(                                                  \
             decl,                                                           \
-            to_asGENFUNC_t(Lambda{}, call_conv<CallConv>),                  \
+            detail::to_asGENFUNC_t(Lambda{}, call_conv<CallConv>),          \
             generic_call_conv                                               \
         );                                                                  \
         return *this;                                                       \
@@ -1961,7 +1961,7 @@ private:
     {                                                                                            \
         this->method_impl(                                                                       \
             decl,                                                                                \
-            to_asGENFUNC_t(fp<Function>, call_conv<CallConv>, var_type<Is...>),                  \
+            detail::to_asGENFUNC_t(fp<Function>, call_conv<CallConv>, var_type<Is...>),          \
             generic_call_conv                                                                    \
         );                                                                                       \
         return *this;                                                                            \
@@ -2051,7 +2051,7 @@ private:
     {                                                                                                 \
         this->method_impl(                                                                            \
             decl,                                                                                     \
-            to_asGENFUNC_t(fp<Function>, call_conv<CallConv>, var_type<Is...>),                       \
+            detail::to_asGENFUNC_t(fp<Function>, call_conv<CallConv>, var_type<Is...>),               \
             generic_call_conv,                                                                        \
             my_base::get_auxiliary_address(aux)                                                       \
         );                                                                                            \
@@ -2149,7 +2149,7 @@ private:
     {                                                                                        \
         this->method_impl(                                                                   \
             decl,                                                                            \
-            to_asGENFUNC_t(Lambda{}, call_conv<CallConv>, var_type<Is...>),                  \
+            detail::to_asGENFUNC_t(Lambda{}, call_conv<CallConv>, var_type<Is...>),          \
             generic_call_conv                                                                \
         );                                                                                   \
         return *this;                                                                        \
@@ -2222,53 +2222,53 @@ private:
         return *this;                                                                        \
     }
 
-#define ASBIND20_CLASS_WRAPPED_COMPOSITE_METHOD(register_type)                                                                 \
-    template <auto Fn, auto Composite>                                                                                         \
-    requires(std::is_member_function_pointer_v<decltype(Fn)>)                                                                  \
-    register_type& method(                                                                                                     \
-        use_generic_t,                                                                                                         \
-        std::string_view decl,                                                                                                 \
-        fp_wrapper<Fn>,                                                                                                        \
-        composite_wrapper_nontype<Composite>,                                                                                  \
-        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_THISCALL> = {}                                                               \
-    )                                                                                                                          \
-    {                                                                                                                          \
-        this->method_impl(                                                                                                     \
-            decl,                                                                                                              \
-            to_asGENFUNC_t(fp<Fn>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>, composite_wrapper_nontype<Composite>{}), \
-            generic_call_conv                                                                                                  \
-        );                                                                                                                     \
-        return *this;                                                                                                          \
-    }                                                                                                                          \
-    template <auto Fn, auto Composite>                                                                                         \
-    requires(std::is_member_function_pointer_v<decltype(Fn)>)                                                                  \
-    register_type& method(                                                                                                     \
-        std::string_view decl,                                                                                                 \
-        fp_wrapper<Fn>,                                                                                                        \
-        composite_wrapper_nontype<Composite>,                                                                                  \
-        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_THISCALL> = {}                                                               \
-    )                                                                                                                          \
-    {                                                                                                                          \
-        if constexpr(ForceGeneric)                                                                                             \
-        {                                                                                                                      \
-            this->method(                                                                                                      \
-                use_generic,                                                                                                   \
-                decl,                                                                                                          \
-                fp<Fn>,                                                                                                        \
-                composite_wrapper_nontype<Composite>{},                                                                        \
-                call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>                                                              \
-            );                                                                                                                 \
-        }                                                                                                                      \
-        else                                                                                                                   \
-        {                                                                                                                      \
-            this->method(                                                                                                      \
-                decl,                                                                                                          \
-                Fn,                                                                                                            \
-                composite(Composite),                                                                                          \
-                call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>                                                              \
-            );                                                                                                                 \
-        }                                                                                                                      \
-        return *this;                                                                                                          \
+#define ASBIND20_CLASS_WRAPPED_COMPOSITE_METHOD(register_type)                                                                         \
+    template <auto Fn, auto Composite>                                                                                                 \
+    requires(std::is_member_function_pointer_v<decltype(Fn)>)                                                                          \
+    register_type& method(                                                                                                             \
+        use_generic_t,                                                                                                                 \
+        std::string_view decl,                                                                                                         \
+        fp_wrapper<Fn>,                                                                                                                \
+        composite_wrapper_nontype<Composite>,                                                                                          \
+        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_THISCALL> = {}                                                                       \
+    )                                                                                                                                  \
+    {                                                                                                                                  \
+        this->method_impl(                                                                                                             \
+            decl,                                                                                                                      \
+            detail::to_asGENFUNC_t(fp<Fn>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>, composite_wrapper_nontype<Composite>{}), \
+            generic_call_conv                                                                                                          \
+        );                                                                                                                             \
+        return *this;                                                                                                                  \
+    }                                                                                                                                  \
+    template <auto Fn, auto Composite>                                                                                                 \
+    requires(std::is_member_function_pointer_v<decltype(Fn)>)                                                                          \
+    register_type& method(                                                                                                             \
+        std::string_view decl,                                                                                                         \
+        fp_wrapper<Fn>,                                                                                                                \
+        composite_wrapper_nontype<Composite>,                                                                                          \
+        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_THISCALL> = {}                                                                       \
+    )                                                                                                                                  \
+    {                                                                                                                                  \
+        if constexpr(ForceGeneric)                                                                                                     \
+        {                                                                                                                              \
+            this->method(                                                                                                              \
+                use_generic,                                                                                                           \
+                decl,                                                                                                                  \
+                fp<Fn>,                                                                                                                \
+                composite_wrapper_nontype<Composite>{},                                                                                \
+                call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>                                                                      \
+            );                                                                                                                         \
+        }                                                                                                                              \
+        else                                                                                                                           \
+        {                                                                                                                              \
+            this->method(                                                                                                              \
+                decl,                                                                                                                  \
+                Fn,                                                                                                                    \
+                composite(Composite),                                                                                                  \
+                call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>                                                                      \
+            );                                                                                                                         \
+        }                                                                                                                              \
+        return *this;                                                                                                                  \
     }
 
 #define ASBIND20_CLASS_WRAPPED_COMPOSITE_VAR_TYPE_METHOD(register_type)      \
@@ -2285,7 +2285,7 @@ private:
     {                                                                        \
         this->method_impl(                                                   \
             decl,                                                            \
-            to_asGENFUNC_t(                                                  \
+            detail::to_asGENFUNC_t(                                          \
                 fp<Fn>,                                                      \
                 call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>,           \
                 composite_wrapper_nontype<Composite>{},                      \
@@ -2585,7 +2585,7 @@ public:
     {
         this->constructor_function(
             params,
-            constructor_to_asGENFUNC_t<Class, Template>(fp<Constructor>, call_conv<CallConv>),
+            detail::constructor_to_asGENFUNC_t<Class, Template>(fp<Constructor>, call_conv<CallConv>),
             generic_call_conv
         );
 
@@ -2610,7 +2610,7 @@ public:
         this->constructor_function(
             params,
             use_explicit,
-            constructor_to_asGENFUNC_t<Class, Template>(fp<ConstructorFunc>, call_conv<CallConv>),
+            detail::constructor_to_asGENFUNC_t<Class, Template>(fp<ConstructorFunc>, call_conv<CallConv>),
             generic_call_conv
         );
 
@@ -2731,7 +2731,7 @@ public:
     {
         this->constructor_function(
             params,
-            constructor_to_asGENFUNC_t<Class, Template>(ConstructorLambda{}, call_conv<CallConv>),
+            detail::constructor_to_asGENFUNC_t<Class, Template>(ConstructorLambda{}, call_conv<CallConv>),
             generic_call_conv
         );
 
@@ -2753,7 +2753,7 @@ public:
         this->constructor_function(
             params,
             use_explicit,
-            constructor_to_asGENFUNC_t<Class, Template>(ConstructorLambda{}, call_conv<CallConv>),
+            detail::constructor_to_asGENFUNC_t<Class, Template>(ConstructorLambda{}, call_conv<CallConv>),
             generic_call_conv
         );
 
@@ -3636,7 +3636,7 @@ public:
         using func_t = std::decay_t<decltype(Function)>;                                 \
         constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =                         \
             detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER as_beh, Class, func_t>(); \
-        this->func_name(to_asGENFUNC_t(fp<Function>, call_conv<conv>));                  \
+        this->func_name(detail::to_asGENFUNC_t(fp<Function>, call_conv<conv>));          \
         return *this;                                                                    \
     }                                                                                    \
     template <auto Function>                                                             \
@@ -4180,7 +4180,7 @@ public:
     {
         factory_function(
             params,
-            to_asGENFUNC_t(fp<Factory>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>),
+            detail::to_asGENFUNC_t(fp<Factory>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>),
             generic_call_conv
         );
 
@@ -4199,7 +4199,7 @@ public:
         this->factory_function(
             params,
             use_explicit,
-            to_asGENFUNC_t(fp<Factory>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>),
+            detail::to_asGENFUNC_t(fp<Factory>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>),
             generic_call_conv
         );
 
@@ -4220,7 +4220,7 @@ public:
     {
         factory_function(
             params,
-            auxiliary_factory_to_asGENFUNC_t<Template>(fp<AuxFactoryFunc>, call_conv<CallConv>),
+            detail::auxiliary_factory_to_asGENFUNC_t<Template>(fp<AuxFactoryFunc>, call_conv<CallConv>),
             aux,
             generic_call_conv
         );
@@ -4244,7 +4244,7 @@ public:
         factory_function(
             params,
             use_explicit,
-            auxiliary_factory_to_asGENFUNC_t<Template>(fp<AuxFactoryFunc>, call_conv<CallConv>),
+            detail::auxiliary_factory_to_asGENFUNC_t<Template>(fp<AuxFactoryFunc>, call_conv<CallConv>),
             aux,
             generic_call_conv
         );
@@ -5178,7 +5178,7 @@ public:
         using func_t = std::decay_t<decltype(Function)>;                                 \
         constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =                         \
             detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER as_beh, Class, func_t>(); \
-        this->func_name(to_asGENFUNC_t(fp<Function>, call_conv<conv>));                  \
+        this->func_name(detail::to_asGENFUNC_t(fp<Function>, call_conv<conv>));          \
         return *this;                                                                    \
     }                                                                                    \
     template <auto Function>                                                             \
