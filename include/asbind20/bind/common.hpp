@@ -12,12 +12,23 @@
 #include <cassert>
 #include <algorithm>
 #include <concepts>
-#include "../generic.hpp"
+#include "../generic.hpp" // IWYU pragma: export generic wrappers
 #include "../meta.hpp"
 #include "../utility.hpp"
 
 namespace asbind20
 {
+template <typename Func>
+auto to_asSFuncPtr(Func f)
+    -> AS_NAMESPACE_QUALIFIER asSFuncPtr
+{
+    // Reference: asFUNCTION and asMETHOD from the AngelScript interface
+    if constexpr(std::is_member_function_pointer_v<Func>)
+        return AS_NAMESPACE_QUALIFIER asSMethodPtr<sizeof(f)>::Convert(f);
+    else
+        return AS_NAMESPACE_QUALIFIER asFunctionPtr(f);
+}
+
 struct use_generic_t
 {};
 
