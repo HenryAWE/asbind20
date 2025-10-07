@@ -62,7 +62,7 @@ public:
             {
                 return m_engine->RegisterGlobalFunction(
                     decl,
-                    to_asSFuncPtr(fn),
+                    detail::to_asSFuncPtr(fn),
                     CallConv
                 );
             },
@@ -99,7 +99,7 @@ public:
             {
                 return m_engine->RegisterGlobalFunction(
                     decl,
-                    to_asSFuncPtr(gfn),
+                    detail::to_asSFuncPtr(gfn),
                     AS_NAMESPACE_QUALIFIER asCALL_GENERIC
                 );
             },
@@ -241,7 +241,7 @@ public:
             {
                 return m_engine->RegisterGlobalFunction(
                     decl,
-                    to_asSFuncPtr(gfn),
+                    detail::to_asSFuncPtr(gfn),
                     AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
                     get_auxiliary_address(aux)
                 );
@@ -268,7 +268,7 @@ public:
             {
                 return m_engine->RegisterGlobalFunction(
                     decl,
-                    to_asSFuncPtr(fn),
+                    detail::to_asSFuncPtr(fn),
                     AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL,
                     get_auxiliary_address(aux)
                 );
@@ -427,7 +427,7 @@ public:
         [[maybe_unused]]
         int r = 0;
         r = m_engine->SetMessageCallback(
-            to_asSFuncPtr(fn),
+            detail::to_asSFuncPtr(fn),
             obj,
             AS_NAMESPACE_QUALIFIER asCALL_CDECL
         );
@@ -446,7 +446,7 @@ public:
         [[maybe_unused]]
         int r = 0;
         r = m_engine->SetMessageCallback(
-            to_asSFuncPtr(fn),
+            detail::to_asSFuncPtr(fn),
             (void*)std::addressof(obj),
             AS_NAMESPACE_QUALIFIER asCALL_THISCALL
         );
@@ -473,7 +473,7 @@ public:
         [[maybe_unused]]
         int r = 0;
         r = m_engine->SetTranslateAppExceptionCallback(
-            to_asSFuncPtr(fn),
+            detail::to_asSFuncPtr(fn),
             obj,
             AS_NAMESPACE_QUALIFIER asCALL_CDECL
         );
@@ -492,7 +492,7 @@ public:
         [[maybe_unused]]
         int r = 0;
         r = m_engine->SetTranslateAppExceptionCallback(
-            to_asSFuncPtr(fn),
+            detail::to_asSFuncPtr(fn),
             (void*)std::addressof(obj),
             AS_NAMESPACE_QUALIFIER asCALL_THISCALL
         );

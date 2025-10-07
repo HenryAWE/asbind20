@@ -18,17 +18,6 @@
 
 namespace asbind20
 {
-template <typename Func>
-auto to_asSFuncPtr(Func f)
-    -> AS_NAMESPACE_QUALIFIER asSFuncPtr
-{
-    // Reference: asFUNCTION and asMETHOD from the AngelScript interface
-    if constexpr(std::is_member_function_pointer_v<Func>)
-        return AS_NAMESPACE_QUALIFIER asSMethodPtr<sizeof(f)>::Convert(f);
-    else
-        return AS_NAMESPACE_QUALIFIER asFunctionPtr(f);
-}
-
 struct use_generic_t
 {};
 
@@ -41,16 +30,28 @@ constexpr inline use_explicit_t use_explicit{};
 
 namespace detail
 {
-    template <typename Auxiliary>
-    struct real_aux_type
+    template <typename Func>
+    auto to_asSFuncPtr(Func f)
+        -> AS_NAMESPACE_QUALIFIER asSFuncPtr
     {
-        using type = Auxiliary;
+        // Reference: asFUNCTION and asMETHOD from the AngelScript interface
+        if constexpr(std::is_member_function_pointer_v<Func>)
+            return AS_NAMESPACE_QUALIFIER asSMethodPtr<sizeof(f)>::Convert(f);
+        else
+            return AS_NAMESPACE_QUALIFIER asFunctionPtr(f);
+    }
+
+    // Helper for retrieving actual auxiliary type from the helper
+    template <typename Auxiliary>
+    struct auxiliary_traits
+    {
+        using value_type = Auxiliary;
     };
 
     template <>
-    struct real_aux_type<this_type_t>
+    struct auxiliary_traits<this_type_t>
     {
-        using type = AS_NAMESPACE_QUALIFIER asITypeInfo;
+        using value_type = AS_NAMESPACE_QUALIFIER asITypeInfo;
     };
 
     template <typename FuncSig>
@@ -203,7 +204,7 @@ namespace detail
                 using traits = function_traits<FuncSig>;
                 using first_arg_t = std::remove_cv_t<typename traits::first_arg_type>;
                 using last_arg_t = std::remove_cv_t<typename traits::last_arg_type>;
-                using aux_t = typename real_aux_type<Auxiliary>::type;
+                using aux_t = typename auxiliary_traits<Auxiliary>::value_type;
 
                 constexpr bool obj_first = is_this_arg<first_arg_t, aux_t>(false);
                 constexpr bool obj_last = is_this_arg<last_arg_t, aux_t>(false);

@@ -11,7 +11,7 @@
 
 #include <memory>
 #include <concepts>
-#    include "common.hpp"
+#include "common.hpp"
 #include "wrappers.hpp"
 #include "../policies.hpp"
 #include "../decl.hpp"
@@ -1113,7 +1113,7 @@ protected:
                 return m_engine->RegisterObjectMethod(
                     m_name.c_str(),
                     decl,
-                    to_asSFuncPtr(fn),
+                    detail::to_asSFuncPtr(fn),
                     CallConv,
                     aux
                 );
@@ -1140,7 +1140,7 @@ protected:
                 return m_engine->RegisterObjectMethod(
                     m_name.c_str(),
                     decl,
-                    to_asSFuncPtr(gfn),
+                    detail::to_asSFuncPtr(gfn),
                     AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
                     aux
                 );
@@ -1166,7 +1166,7 @@ protected:
                 return m_engine->RegisterObjectMethod(
                     m_name.c_str(),
                     decl,
-                    to_asSFuncPtr(fn),
+                    detail::to_asSFuncPtr(fn),
                     CallConv,
                     aux,
                     static_cast<int>(comp.get_offset()),
@@ -1193,7 +1193,7 @@ protected:
                 return m_engine->RegisterObjectMethod(
                     m_name.c_str(),
                     decl,
-                    to_asSFuncPtr(gfn),
+                    detail::to_asSFuncPtr(gfn),
                     AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
                     aux,
                     static_cast<int>(comp.get_offset()),
@@ -1222,7 +1222,7 @@ protected:
             m_name.c_str(),
             beh,
             decl,
-            to_asSFuncPtr(fn),
+            detail::to_asSFuncPtr(fn),
             CallConv,
             aux
         );
