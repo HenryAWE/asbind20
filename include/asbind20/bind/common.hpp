@@ -13,7 +13,6 @@
 #include <string_view>
 #include <algorithm>
 #include <concepts>
-#include "wrappers.hpp"
 #include "../meta.hpp"
 #include "../utility.hpp"
 
@@ -66,10 +65,14 @@ namespace detail
         Only some platforms like x86 need to treat the STDCALL separately.
         */
 
+#ifdef ASBIND20_HAS_STANDALONE_STDCALL
         if constexpr(meta::is_stdcall_v<FuncSig>)
             return AS_NAMESPACE_QUALIFIER asCALL_STDCALL;
         else
             return AS_NAMESPACE_QUALIFIER asCALL_CDECL;
+#else
+        return AS_NAMESPACE_QUALIFIER asCALL_CDECL;
+#endif
     }
 
     template <typename T, typename Class>

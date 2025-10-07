@@ -11,7 +11,8 @@
 
 #include <memory>
 #include <concepts>
-#include "common.hpp"
+#    include "common.hpp"
+#include "wrappers.hpp"
 #include "../policies.hpp"
 #include "../decl.hpp"
 
@@ -3325,7 +3326,10 @@ public:
     template <
         auto ListConstructorFunc,
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-    requires(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST || CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST)
+    requires(
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
+    )
     basic_value_class& list_constructor_function(
         std::string_view pattern,
         fp_wrapper<ListConstructorFunc>,
