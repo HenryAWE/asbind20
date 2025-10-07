@@ -13,8 +13,8 @@ Update
   now it will get the result when user needs it (lazy evaluation).
 
   According to benchmarks, this has the same performance as the handwritten code retrieving values from AS interfaces directly.
-  It is even slightly faster than the handwritten code in some situation.
-  Compared to handwritten implementation, the previous implementation is slower about 1% ~ 3%,
+  It is even slightly faster than the plain handwritten code in some situation.
+  Compared to handwritten implementation, the implementation from previous version is slower about 1% ~ 3%,
   and even worse when returning a value type with expensive copy construction, such as a string with extremely huge content.
 
 - ``script_invoke_result`` now supports ``operator->`` for pointer type,
@@ -22,13 +22,17 @@ Update
 
 - Expose ``get_context_result`` for easily retrieving result from context.
 
-- Add member function ``value_or`` and integration with ``std::optional`` for ``script_invoke_result``.
+- Add member function ``value_or`` for ``script_invoke_result``.
 
+- ``script_invoke_result`` can be converted to ``std::optional``.
 - ``script_invoke_result`` can be converted to ``std::expected`` if C++23 is available.
 
 - Backport to support Clang 15 toolchain.
 
 - More utilities.
+
+- Intermediate interfaces for creating generic wrappers have all moved into the internal namespace,
+  in order to not confuse the users.
 
 Bug fix
 ~~~~~~~
@@ -38,9 +42,12 @@ Bug fix
 Breaking Change
 ~~~~~~~~~~~~~~~
 
-- ``script_invoke_result`` now can only be returned by script invocation tool. User cannot calls its constructor by value,
+- Due to the new lazy evaluation implementation of ``script_invoke_result``,
+  it now can only be returned by script invocation tool.
+  User cannot calls its constructor by value directly,
   e.g., returning a placeholder value when script failed.
-  Please consider converting these code to use ``std::optional`` (or ``std::expected`` if C++23 is available).
+
+  Please consider converting the code style described above to use ``std::optional`` (or ``std::expected`` if C++23 is available).
 
 1.7.1
 -----
