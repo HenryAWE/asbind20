@@ -1,5 +1,5 @@
 /**
- * @file wrappers.hpp
+ * @file bind/wrappers.hpp
  * @author HenryAWE
  * @brief Generator of generic wrappers
  */
