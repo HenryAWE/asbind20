@@ -3258,12 +3258,15 @@ public:
     }
 
     template <
-        native_function ListConstructor,
+        native_function ListConstructorFunc,
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-    requires(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST || CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST)
+    requires(
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
+    )
     basic_value_class& list_constructor_function(
         std::string_view pattern,
-        ListConstructor&& ctor,
+        ListConstructorFunc&& ctor,
         call_conv_t<CallConv>
     ) requires(!ForceGeneric)
     {
@@ -3277,14 +3280,14 @@ public:
         return *this;
     }
 
-    template <native_function ListConstructor>
+    template <native_function ListConstructorFunc>
     basic_value_class& list_constructor_function(
         std::string_view pattern,
-        ListConstructor&& ctor
+        ListConstructorFunc&& ctor
     ) requires(!ForceGeneric)
     {
         constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
-            detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_CONSTRUCT, Class, std::decay_t<ListConstructor>>();
+            detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_CONSTRUCT, Class, std::decay_t<ListConstructorFunc>>();
         this->list_constructor_function(
             pattern,
             ctor,
@@ -3295,108 +3298,82 @@ public:
     }
 
     template <
-        auto ListConstructor,
+        auto ListConstructorFunc,
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-    requires(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST || CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST)
+    requires(
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
+        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
+    )
     basic_value_class& list_constructor_function(
         use_generic_t,
         std::string_view pattern,
-        fp_wrapper<ListConstructor>,
+        fp_wrapper<ListConstructorFunc>,
         call_conv_t<CallConv>
     )
     {
-        using traits = function_traits<std::decay_t<decltype(ListConstructor)>>;
-        static_assert(traits::arg_count_v == 2);
-        static_assert(std::is_void_v<typename traits::return_type>);
-
-        if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
-        {
-            using list_buf_t = typename traits::last_arg_type;
-            static_assert(std::is_pointer_v<list_buf_t>);
-            list_constructor_function(
-                pattern,
-                +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
-                {
-                    ListConstructor(
-                        get_generic_object<Class*>(gen),
-                        *(list_buf_t*)gen->GetAddressOfArg(0)
-                    );
-                },
-                generic_call_conv
-            );
-        }
-        else // CallConv == asCALL_CDECL_OBJLAST
-        {
-            using list_buf_t = typename traits::first_arg_type;
-            static_assert(std::is_pointer_v<list_buf_t>);
-            list_constructor_function(
-                pattern,
-                +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
-                {
-                    ListConstructor(
-                        *(list_buf_t*)gen->GetAddressOfArg(0),
-                        get_generic_object<Class*>(gen)
-                    );
-                },
-                generic_call_conv
-            );
-        }
+        list_constructor_function(
+            pattern,
+            detail::list_constructor_to_asGENFUNC_t<Class, Template>(
+                fp<ListConstructorFunc>, call_conv<CallConv>
+            ),
+            generic_call_conv
+        );
 
         return *this;
     }
 
     template <
-        auto ListConstructor,
+        auto ListConstructorFunc,
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
     requires(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST || CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST)
     basic_value_class& list_constructor_function(
         std::string_view pattern,
-        fp_wrapper<ListConstructor>,
+        fp_wrapper<ListConstructorFunc>,
         call_conv_t<CallConv>
     )
     {
         if constexpr(ForceGeneric)
         {
-            list_constructor_function(use_generic, pattern, fp<ListConstructor>, call_conv<CallConv>);
+            list_constructor_function(use_generic, pattern, fp<ListConstructorFunc>, call_conv<CallConv>);
         }
         else
         {
-            list_constructor_function(pattern, ListConstructor, call_conv<CallConv>);
+            list_constructor_function(pattern, ListConstructorFunc, call_conv<CallConv>);
         }
 
         return *this;
     }
 
-    template <auto ListConstructor>
+    template <auto ListConstructorFunc>
     basic_value_class& list_constructor_function(
         use_generic_t,
         std::string_view pattern,
-        fp_wrapper<ListConstructor>
+        fp_wrapper<ListConstructorFunc>
     )
     {
         constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
-            detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_CONSTRUCT, Class, std::decay_t<decltype(ListConstructor)>>();
+            detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_CONSTRUCT, Class, std::decay_t<decltype(ListConstructorFunc)>>();
 
-        this->list_constructor_function(use_generic, pattern, fp<ListConstructor>, call_conv<conv>);
+        this->list_constructor_function(use_generic, pattern, fp<ListConstructorFunc>, call_conv<conv>);
 
         return *this;
     }
 
-    template <auto ListConstructor>
+    template <auto ListConstructorFunc>
     basic_value_class& list_constructor_function(
         std::string_view pattern,
-        fp_wrapper<ListConstructor>
+        fp_wrapper<ListConstructorFunc>
     )
     {
         constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
-            detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_CONSTRUCT, Class, std::decay_t<decltype(ListConstructor)>>();
+            detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_CONSTRUCT, Class, std::decay_t<decltype(ListConstructorFunc)>>();
         if constexpr(ForceGeneric)
         {
-            this->list_constructor_function(use_generic, pattern, fp<ListConstructor>, call_conv<conv>);
+            this->list_constructor_function(use_generic, pattern, fp<ListConstructorFunc>, call_conv<conv>);
         }
         else
         {
-            this->list_constructor_function(pattern, ListConstructor, call_conv<conv>);
+            this->list_constructor_function(pattern, ListConstructorFunc, call_conv<conv>);
         }
 
         return *this;

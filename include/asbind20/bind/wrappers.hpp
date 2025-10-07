@@ -872,6 +872,72 @@ constexpr auto constructor_to_asGENFUNC_t(
     return gen_t::generate();
 }
 
+template <
+    native_function auto ListConstructorFunc,
+    typename Class,
+    bool IsTemplate,
+    AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv>
+class generic_wrapper_list_ctor
+{
+    // FIXME: Handle IsTemplate
+
+    using traits = function_traits<std::decay_t<decltype(ListConstructorFunc)>>;
+    static_assert(traits::arg_count_v == 2);
+    static_assert(std::is_void_v<typename traits::return_type>);
+
+    static void wrapper_objfirst(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+    {
+        using list_buf_t = typename traits::last_arg_type;
+        static_assert(std::is_pointer_v<list_buf_t>);
+        ListConstructorFunc(
+            get_generic_object<Class*>(gen),
+            *(list_buf_t*)gen->GetAddressOfArg(0)
+        );
+    }
+
+    static void wrapper_objlast(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+    {
+        using list_buf_t = typename traits::first_arg_type;
+        static_assert(std::is_pointer_v<list_buf_t>);
+        ListConstructor(
+            *(list_buf_t*)gen->GetAddressOfArg(0),
+            get_generic_object<Class*>(gen)
+        );
+    }
+
+public:
+    static constexpr auto generate() noexcept
+        -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
+    {
+        if constexpr(OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
+            return &wrapper_objfirst;
+        else // OriginalCallConv == asCALL_CDECL_OBJLAST
+            return &wrapper_objlast;
+    }
+};
+
+template <
+    typename Class,
+    bool IsTemplate,
+    native_function auto ListConstructorFunc,
+    AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+requires(
+    CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
+    CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
+)
+constexpr auto list_constructor_to_asGENFUNC_t(
+    fp_wrapper<ListConstructorFunc>,
+    call_conv_t<CallConv>
+)
+{
+    using gen_t = generic_wrapper_list_ctor<
+        ListConstructorFunc,
+        Class,
+        IsTemplate,
+        CallConv>;
+    return gen_t::generate();
+}
+
 // Generic wrapper for the factory with an auxiliary object
 // (Ordinary factories can be treated as global functions)
 // Note: although the global C++ functions are registered as CDECL_OBJFIRST/LAST,
