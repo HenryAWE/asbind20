@@ -480,29 +480,11 @@ enum class enum_uint64 : std::uint64_t
 } // namespace test_bind
 
 template <>
-struct asbind20::type_traits<test_bind::enum_uint64>
-{
-    static int set_arg(
-        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
-        AS_NAMESPACE_QUALIFIER asUINT arg,
-        test_bind::enum_uint64 val
-    )
-    {
-        return ctx->SetArgQWord(
-            arg, static_cast<AS_NAMESPACE_QUALIFIER asQWORD>(val)
-        );
-    }
-
-    static test_bind::enum_uint64 get_return(
-        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx
-    )
-    {
-        return static_cast<test_bind::enum_uint64>(ctx->GetReturnQWord());
-    }
-};
+struct asbind20::type_traits<test_bind::enum_uint64> :
+    public asbind20::underlying_enum_traits<test_bind::enum_uint64>
+{};
 
 TEST_F(asbind_test_suite, enum_uint64)
-
 {
     auto* engine = get_engine();
 
@@ -512,7 +494,7 @@ TEST_F(asbind_test_suite, enum_uint64)
     e
         .value(enum_uint64::flag_a, "flag_a")
         .value(enum_uint64::flag_b, "flag_b");
-    EXPECT_EQ(e.get_underlying(), "uint64");
+    EXPECT_EQ(std::string_view(e.get_underlying()), "uint64");
 
     auto* m = engine->GetModule(
         "test_enum", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
