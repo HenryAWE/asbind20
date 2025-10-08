@@ -12,7 +12,7 @@
 
 #pragma once
 
-#include "generic.hpp"
+#include "meta.hpp"
 #include "utility.hpp"
 
 namespace asbind20
