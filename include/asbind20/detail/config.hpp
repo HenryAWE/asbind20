@@ -26,4 +26,8 @@
 #    define ASBIND20_HAS_AS_FOREACH
 #endif
 
+#if ANGELSCRIPT_VERSION >= 23900
+#    define ASBIND20_HAS_ENUM_UNDERLYING_TYPE
+#endif
+
 #endif
