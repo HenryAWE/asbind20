@@ -8,10 +8,27 @@ Example for ``std::byte``
 -------------------------
 
 The ``std::byte`` is defined using ``enum class byte : unsigned char {};``.
-However, the default logic of type translator will convert enumerations to ``int`` because all underlying type of ``enum`` in AngelScript is ``int``.
+However, the default logic of type translator will convert enumerations to ``int`` because all underlying type of ``enum`` in AngelScript is ``int`` by default.
 
-Here is how to make ``std::byte`` be treated as ``uint8`` by asbind20.
-This conversion rule is already defined in ``asbind20/type_traits.hpp``.
+.. _custom-rule-for-enum-underlying:
+
+For enumerations with custom underlying types,
+asbind20 provides an utility for quickly implementing the traits.
+
+.. doxygenstruct:: asbind20::underlying_enum_traits
+
+Example usage:
+
+.. code-block:: c++
+
+    // In the global namespace:
+    template <>
+    struct asbind20::type_traits<std::byte> :
+        public asbind20::underlying_enum_traits<std::byte>
+    {};
+
+Here is detailed example for how to make ``std::byte`` be treated as ``uint8`` by asbind20.
+You can apply this logic to the type that you want to have customized rules.
 
 .. code-block:: c++
 
@@ -42,6 +59,8 @@ This conversion rule is already defined in ``asbind20/type_traits.hpp``.
             return gen->SetReturnByte(static_cast<asBYTE>(val));
         }
     };
+
+The above conversion rule is already defined in ``asbind20/type_traits.hpp``.
 
 Reference of Conversion Rules Provided by asbind20
 --------------------------------------------------

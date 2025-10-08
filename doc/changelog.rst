@@ -18,6 +18,7 @@ Update
   and even worse when returning a value type with expensive copy construction, such as a string with extremely huge content.
 
 - Experimental support for enum with custom underlying type in AngelScript 2.39 WIP.
+- Utility for quickly implementing conversion rules for enums with underlying type other than ``int`` such as ``std::byte``.
 
 - ``script_invoke_result`` now supports ``operator->`` for pointer type,
   which is useful for accessing members of returned reference types.

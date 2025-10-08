@@ -63,7 +63,8 @@ Enumerations
         .value(my_enum::B, "B");
 
 .. note::
-   AngelScript uses 32-bit integer to store underlying value of enums.
+   Until the version 2.39, AngelScript uses 32-bit integer to store underlying value of enums.
+   before it supports customizable underlying type.
    Please make sure those values don't overflow or underflow.
 
 Besides, the library provides a convenient interface for generating string representation of enum value at compile-time.
@@ -90,3 +91,27 @@ The following code is equivalent to the above one:
 
    If you are interested in how this is achieved, you can read `this article written by YKIKO (Chinese) <https://zhuanlan.zhihu.com/p/680412313>`_,
    or author's `English translation <https://ykiko.me/en/articles/680412313/>`_.
+
+Since the version 2.39, AngelScript supports enumerations with custom underlying types.
+
+You can register them by ``enum_underlying``,
+which is an alias of ``enum_<Enum, std::underlying_type_t<Enum>>``.
+
+.. code-block:: c++
+
+    enum class enum_uint64 : std::uint64_t
+    {
+        A,
+        B = std::uint64_t(-1) // Larger than UINT32_MAX
+    };
+
+.. code-block:: c++
+
+    asbind20::enum_underlying<enum_uint64>(engine, "enum_uint64")
+        .value(enum_uint64::A, "A")
+        .value(enum_uint64::B, "B");
+
+.. note::
+
+    If you need to interact these enums from C++ side,
+    the enums with custom underlying type :ref:`need to specify the conversion rules <custom-rule-for-enum-underlying>`.
