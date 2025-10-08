@@ -49,6 +49,11 @@ Breaking Change
 
   Please consider converting the code style described above to use ``std::optional`` (or ``std::expected`` if C++23 is available).
 
+Documentation
+~~~~~~~~~~~~~
+
+- Add Chinese README
+
 1.7.1
 -----
 
