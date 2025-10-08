@@ -468,6 +468,68 @@ TEST_F(asbind_test_suite, enum_)
     m->Discard();
 }
 
+#ifdef ASBIND20_HAS_ENUM_UNDERLYING_TYPE
+
+namespace test_bind
+{
+enum class enum_uint64 : std::uint64_t
+{
+    flag_a = 1,
+    flag_b = std::uint64_t(-1) // UINT64_MAX
+};
+} // namespace test_bind
+
+template <>
+struct asbind20::type_traits<test_bind::enum_uint64> :
+    public asbind20::underlying_enum_traits<test_bind::enum_uint64>
+{};
+
+TEST_F(asbind_test_suite, enum_uint64)
+{
+    auto* engine = get_engine();
+
+    using test_bind::enum_uint64;
+
+    asbind20::enum_underlying<enum_uint64> e(engine, "enum_uint64");
+    e
+        .value(enum_uint64::flag_a, "flag_a")
+        .value(enum_uint64::flag_b, "flag_b");
+    EXPECT_EQ(std::string_view(e.get_underlying()), "uint64");
+
+    auto* m = engine->GetModule(
+        "test_enum", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
+    );
+
+    m->AddScriptSection(
+        "test_enum_uint64.as",
+        "enum_uint64 get_enum_val() { return enum_uint64::flag_a; }\n"
+        "bool check_enum_val(enum_uint64 val) { return val == enum_uint64::flag_b; }"
+    );
+    ASSERT_GE(m->Build(), 0);
+
+    {
+        asbind20::request_context ctx(engine);
+        auto* func = m->GetFunctionByName("get_enum_val");
+        ASSERT_TRUE(func);
+
+        auto result = asbind20::script_invoke<enum_uint64>(ctx, func);
+        ASSERT_TRUE(result_has_value(result));
+        EXPECT_EQ(result.value(), enum_uint64::flag_a);
+    }
+
+    {
+        asbind20::request_context ctx(engine);
+        auto* func = m->GetFunctionByName("check_enum_val");
+        ASSERT_TRUE(func);
+
+        auto result = asbind20::script_invoke<bool>(ctx, func, enum_uint64::flag_b);
+        ASSERT_TRUE(result_has_value(result));
+        EXPECT_TRUE(result.value());
+    }
+}
+
+#endif
+
 int main(int argc, char* argv[])
 {
     ::testing::InitGoogleTest(&argc, argv);
@@ -476,6 +538,12 @@ int main(int argc, char* argv[])
     std::cerr << "asGetLibraryVersion(): " << AS_NAMESPACE_QUALIFIER asGetLibraryVersion() << std::endl;
     std::cerr << "asGetLibraryOptions(): " << AS_NAMESPACE_QUALIFIER asGetLibraryOptions() << std::endl;
     std::cerr << "asbind20::library_version(): " << asbind20::library_version() << std::endl;
+
+    std::cerr << "ASBIND20_HAS_ENUM_UNDERLYING_TYPE";
+#ifndef ASBIND20_HAS_ENUM_UNDERLYING_TYPE
+    std::cerr << " not";
+#endif
+    std::cerr << " defined" << std::endl;
 
 #ifdef ASBIND20_HAS_AS_INITIALIZER_LIST
     std::cerr << "ASBIND20_HAS_AS_INITIALIZER_LIST: " << ASBIND20_HAS_AS_INITIALIZER_LIST << std::endl;
