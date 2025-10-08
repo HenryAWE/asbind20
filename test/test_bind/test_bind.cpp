@@ -508,7 +508,7 @@ TEST_F(asbind_test_suite, enum_uint64)
 
     using test_bind::enum_uint64;
 
-    asbind20::enum_<enum_uint64, std::underlying_type_t<enum_uint64>> e(engine, "enum_uint64");
+    asbind20::enum_underlying<enum_uint64> e(engine, "enum_uint64");
     e
         .value(enum_uint64::flag_a, "flag_a")
         .value(enum_uint64::flag_b, "flag_b");

@@ -140,6 +140,12 @@ private:
         assert(r >= 0);
     }
 };
+
+/**
+ * @brief Helper for register enum with underlying type
+ */
+template <typename Enum>
+using enum_underlying = enum_<Enum, std::underlying_type_t<Enum>>;
 } // namespace asbind20
 
 #endif
