@@ -61,6 +61,15 @@ public:
         set_engine();
     }
 
+    // For {int, int} pattern
+    gc_init_list(const int* list_buf)
+    {
+        set_engine();
+
+        ints.push_back(list_buf[0]);
+        ints.push_back(list_buf[1]);
+    }
+
     gc_init_list(asbind20::script_init_list_repeat list)
     {
         set_engine();
@@ -220,6 +229,17 @@ void register_gc_init_list(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     }
 }
 
+// For testing omitted list policy, i.e., only factory policy is provided
+template <bool UseGeneric>
+void register_gc_init_list_simple(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
+    using namespace asbind20;
+
+    auto c = register_gc_init_list_basic_methods<UseGeneric>(engine);
+    c
+        .template list_factory<int>("int,int", use_policy<policies::notify_gc>);
+}
+
 static constexpr char test_initlist_gc_script[] = R"AngelScript(class foo
 {
     gc_init_list@ il_ref;
@@ -329,6 +349,85 @@ public:
     int max_test_idx()
     {
         return 2;
+    }
+
+private:
+    asbind20::script_engine m_engine;
+};
+
+static constexpr char test_gc_script_simple[] = R"AngelScript(class foo
+{
+    gc_init_list@ il_ref;
+};
+
+bool test0()
+{
+    gc_init_list il = {10 , 13};
+    assert(il.int_count == 2);
+    assert(il.ints[0] == 10);
+    assert(il.ints[1] == 13);
+
+    foo@ f = foo();
+    @f.il_ref = @il;
+    il.copy(@f);
+
+    foo@ tmp = null;
+    bool result = il.get_var(@tmp);
+    assert(tmp is f);
+
+    return result;
+}
+)AngelScript";
+
+template <bool UseGeneric>
+class simple_initlist_gc_test : public ::testing::Test
+{
+public:
+    void SetUp() override
+    {
+        if constexpr(!UseGeneric)
+        {
+            if(asbind20::has_max_portability())
+                GTEST_SKIP() << "max portability";
+        }
+
+        m_engine = asbind20::make_script_engine();
+
+        asbind_test::setup_message_callback(m_engine, true);
+        asbind20::ext::register_script_assert(
+            m_engine,
+            [](std::string_view msg)
+            {
+                FAIL() << "initlist GC assertion failed: " << msg;
+            }
+        );
+        register_gc_init_list_simple<UseGeneric>(m_engine);
+    }
+
+    void TearDown() override
+    {
+        m_engine.reset();
+    }
+
+    auto build_script()
+        -> AS_NAMESPACE_QUALIFIER asIScriptModule*
+    {
+        auto* m = m_engine->GetModule(
+            "test_gc_initlist_simple", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
+        );
+
+        m->AddScriptSection(
+            "test_gc_initlist_simple",
+            test_gc_script_simple
+        );
+        EXPECT_GE(m->Build(), 0);
+
+        return m;
+    }
+
+    int max_test_idx()
+    {
+        return 0;
     }
 
 private:
@@ -507,6 +606,9 @@ using initlist_gc_test_native = test_gc::basic_initlist_gc_test<IListPolicy, fal
 template <asbind20::policies::initialization_list_policy IListPolicy>
 using initlist_gc_test_generic = test_gc::basic_initlist_gc_test<IListPolicy, true>;
 
+using initlist_gc_test_simple_native = test_gc::simple_initlist_gc_test<false>;
+using initlist_gc_test_simple_generic = test_gc::simple_initlist_gc_test<true>;
+
 using initlist_policies = ::testing::Types<
     asbind20::policies::apply_to<2>,
     asbind20::policies::apply_to<4>,
@@ -517,6 +619,18 @@ using initlist_policies = ::testing::Types<
     asbind20::policies::as_initializer_list,
 #endif
     asbind20::policies::repeat_list_proxy>;
+
+TEST_F(initlist_gc_test_simple_native, run_script)
+{
+    AS_NAMESPACE_QUALIFIER asIScriptModule* m = initlist_gc_test_simple_native::build_script();
+    test_gc::run_initlist_gc_test(m, initlist_gc_test_simple_native::max_test_idx());
+}
+
+TEST_F(initlist_gc_test_simple_generic, run_script)
+{
+    AS_NAMESPACE_QUALIFIER asIScriptModule* m = initlist_gc_test_simple_generic::build_script();
+    test_gc::run_initlist_gc_test(m, initlist_gc_test_simple_generic::max_test_idx());
+}
 
 TYPED_TEST_SUITE(initlist_gc_test_native, initlist_policies, list_policies_name);
 TYPED_TEST_SUITE(initlist_gc_test_generic, initlist_policies, list_policies_name);

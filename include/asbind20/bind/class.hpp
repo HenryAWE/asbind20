@@ -393,7 +393,7 @@ namespace detail
     };
 
     template <typename T>
-    concept init_list_based_policy =
+    concept repeat_list_based_policy =
         policies::initialization_list_policy<T> &&
         (std::same_as<T, policies::as_iterators> ||
          std::same_as<T, policies::pointer_and_size> ||
@@ -408,7 +408,7 @@ namespace detail
         typename Class,
         bool Template,
         typename ListElementType,
-        init_list_based_policy Policy>
+        repeat_list_based_policy Policy>
     class list_constructor<Class, Template, ListElementType, Policy>
     {
         static void from_list_helper(void* mem, script_init_list_repeat list)
@@ -700,11 +700,11 @@ namespace detail
         typename Class,
         bool Template,
         typename ListElementType,
-        policies::initialization_list_policy Policy,
+        policies::initialization_list_policy IListPolicy,
         policies::factory_policy FactoryPolicy>
     class list_factory;
 
-    // Implementation for default policy & factory policy
+    // Implementation for default initlist policy & factory policy
     template <
         typename Class,
         bool Template,
@@ -754,6 +754,81 @@ namespace detail
                     return &impl_cdecl_template;
                 else
                     return &impl_cdecl;
+            }
+        }
+    };
+
+    // Implementation for default initlist policy & notifying GC
+    template <
+        typename Class,
+        bool Template,
+        typename ListElementType>
+    class list_factory<Class, Template, ListElementType, void, policies::notify_gc>
+    {
+        using notifier = notify_gc_helper<policies::notify_gc, Template>;
+
+        static void impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        {
+            if constexpr(Template)
+            {
+                auto* ti = *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0);
+
+                Class* ptr = new Class(
+                    ti, *(ListElementType**)gen->GetAddressOfArg(1)
+                );
+                notifier::notify_gc_if_necessary(ptr, ti);
+
+                gen->SetReturnAddress(ptr);
+            }
+            else
+            {
+                Class* ptr = new Class(
+                    *(ListElementType**)gen->GetAddressOfArg(0)
+                );
+
+                // Expects the typeinfo is passed by auxiliary pointer (see the helper "auxiliary(this_type)")
+                auto* ti = (AS_NAMESPACE_QUALIFIER asITypeInfo*)gen->GetAuxiliary();
+                assert(ti != nullptr);
+                notifier::notify_gc_if_necessary(ptr, ti);
+
+                gen->SetReturnAddress(ptr);
+            }
+        }
+
+        static Class* impl_cdecl_template(
+            AS_NAMESPACE_QUALIFIER asITypeInfo* ti, ListElementType* list_buf
+        )
+        {
+            Class* ptr = new Class(ti, list_buf);
+            notifier::notify_gc_if_necessary(ptr, ti);
+            return ptr;
+        }
+
+        // Works together with the helper "auxiliary(this_type)"
+        static Class* impl_cdecl_objlast(
+            ListElementType* list_buf, AS_NAMESPACE_QUALIFIER asITypeInfo* ti
+        )
+        {
+            Class* ptr = new Class(list_buf);
+            notifier::notify_gc_if_necessary(ptr, ti);
+            return ptr;
+        }
+
+    public:
+        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        static constexpr auto generate(call_conv_t<CallConv>) noexcept
+        {
+            if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
+                return &impl_generic;
+            else if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST)
+            {
+                static_assert(!Template, "This calling convention for factory is for templated class");
+                return &impl_cdecl_objlast;
+            }
+            else // CallConv == asCALL_CDECL
+            {
+                static_assert(!Template, "This calling convention for factory is for templated class");
+                return &impl_cdecl_template;
             }
         }
     };
@@ -928,15 +1003,15 @@ namespace detail
         typename Class,
         bool Template,
         typename ListElementType,
-        init_list_based_policy Policy,
+        repeat_list_based_policy IListPolicy,
         policies::factory_policy FactoryPolicy>
-    class list_factory<Class, Template, ListElementType, Policy, FactoryPolicy>
+    class list_factory<Class, Template, ListElementType, IListPolicy, FactoryPolicy>
     {
         using notifier = notify_gc_helper<FactoryPolicy, Template>;
 
         static Class* from_list_helper(script_init_list_repeat list)
         {
-            if constexpr(std::same_as<Policy, policies::as_iterators>)
+            if constexpr(std::same_as<IListPolicy, policies::as_iterators>)
             {
                 return policies::as_iterators::apply<ListElementType>(
                     [](auto start, auto stop) -> Class*
@@ -946,7 +1021,7 @@ namespace detail
                     list
                 );
             }
-            else if constexpr(std::same_as<Policy, policies::pointer_and_size>)
+            else if constexpr(std::same_as<IListPolicy, policies::pointer_and_size>)
             {
                 return new Class((ListElementType*)list.data(), list.size());
             }
@@ -958,11 +1033,11 @@ namespace detail
             }
 #endif
             else if constexpr(
-                std::same_as<Policy, policies::as_initializer_list> ||
-                std::same_as<Policy, policies::as_span>
+                std::same_as<IListPolicy, policies::as_initializer_list> ||
+                std::same_as<IListPolicy, policies::as_span>
             )
             {
-                return new Class(Policy::template convert<ListElementType>(list));
+                return new Class(IListPolicy::template convert<ListElementType>(list));
             }
         }
 
@@ -4896,27 +4971,39 @@ public:
         return *this;
     }
 
+private:
+    // For non-templated types,
+    // GC notifier needs to access the typeinfo through the auxiliary pointer
+    template <typename FactoryPolicy>
+    void* aux_for_notifying_gc() const
+    {
+        void* aux = nullptr;
+        if constexpr(std::same_as<FactoryPolicy, policies::notify_gc> && !Template)
+        {
+            aux = m_engine->GetTypeInfoById(this->get_type_id());
+            assert(aux != nullptr);
+        }
+        return aux;
+    }
+
+public:
     template <
         typename ListElementType = void,
-        policies::initialization_list_policy ListPolicy,
+        policies::initialization_list_policy IListPolicy,
         policies::factory_policy FactoryPolicy>
     basic_ref_class& list_factory(
         use_generic_t,
         std::string_view pattern,
-        use_policy_t<ListPolicy, FactoryPolicy>
+        use_policy_t<IListPolicy, FactoryPolicy>
     )
     {
-        AS_NAMESPACE_QUALIFIER asGENFUNC_t wrapper =
-            detail::list_factory<Class, Template, ListElementType, ListPolicy, FactoryPolicy>::generate(generic_call_conv);
-
-        void* aux = nullptr;
-        if constexpr(std::same_as<FactoryPolicy, policies::notify_gc> && !Template)
-            aux = m_engine->GetTypeInfoById(this->get_type_id());
+        using gen_t =
+            detail::list_factory<Class, Template, ListElementType, IListPolicy, FactoryPolicy>;
 
         this->list_factory_function(
             pattern,
-            wrapper,
-            auxiliary(aux),
+            gen_t::generate(generic_call_conv),
+            auxiliary(this->aux_for_notifying_gc<FactoryPolicy>()),
             generic_call_conv
         );
 
@@ -4925,45 +5012,43 @@ public:
 
     template <
         typename ListElementType = void,
-        policies::initialization_list_policy ListPolicy,
+        policies::initialization_list_policy IListPolicy,
         policies::factory_policy FactoryPolicy>
     basic_ref_class& list_factory(
         std::string_view pattern,
-        use_policy_t<ListPolicy, FactoryPolicy>
+        use_policy_t<IListPolicy, FactoryPolicy>
     )
     {
         if constexpr(ForceGeneric)
         {
-            list_factory<ListElementType>(use_generic, pattern, use_policy<ListPolicy, FactoryPolicy>);
+            list_factory<ListElementType>(use_generic, pattern, use_policy<IListPolicy, FactoryPolicy>);
         }
         else
         {
             if constexpr(std::same_as<FactoryPolicy, policies::notify_gc> && !Template)
             {
-                auto wrapper =
-                    detail::list_factory<Class, Template, ListElementType, ListPolicy, FactoryPolicy>::generate(
-                        call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
-                    );
-
-                AS_NAMESPACE_QUALIFIER asITypeInfo* ti = m_engine->GetTypeInfoById(this->get_type_id());
+                using gen_t =
+                    detail::list_factory<Class, Template, ListElementType, IListPolicy, FactoryPolicy>;
 
                 this->list_factory_function(
                     pattern,
-                    wrapper,
-                    auxiliary(ti),
+                    gen_t::generate(
+                        call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+                    ),
+                    auxiliary(this->aux_for_notifying_gc<FactoryPolicy>()),
                     call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
                 );
             }
             else
             {
-                auto wrapper =
-                    detail::list_factory<Class, Template, ListElementType, ListPolicy, FactoryPolicy>::generate(
-                        call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
-                    );
+                using gen_t =
+                    detail::list_factory<Class, Template, ListElementType, IListPolicy, FactoryPolicy>;
 
                 list_factory_function(
                     pattern,
-                    wrapper,
+                    gen_t::generate(
+                        call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
+                    ),
                     call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
                 );
             }
@@ -4974,15 +5059,15 @@ public:
 
     template <
         typename ListElementType = void,
-        policies::initialization_list_policy Policy = void>
+        policies::initialization_list_policy IListPolicy = void>
     basic_ref_class& list_factory(
         use_generic_t,
         std::string_view pattern,
-        use_policy_t<Policy> = {}
+        use_policy_t<IListPolicy> = {}
     )
     {
         AS_NAMESPACE_QUALIFIER asGENFUNC_t wrapper =
-            detail::list_factory<Class, Template, ListElementType, Policy, void>::generate(generic_call_conv);
+            detail::list_factory<Class, Template, ListElementType, IListPolicy, void>::generate(generic_call_conv);
 
         list_factory_function(
             pattern,
@@ -4995,27 +5080,81 @@ public:
 
     template <
         typename ListElementType = void,
-        policies::initialization_list_policy Policy = void>
+        policies::initialization_list_policy IListPolicy = void>
     basic_ref_class& list_factory(
         std::string_view pattern,
-        use_policy_t<Policy> = {}
+        use_policy_t<IListPolicy> = {}
     )
     {
         if constexpr(ForceGeneric)
         {
-            list_factory<ListElementType>(use_generic, pattern, use_policy<Policy>);
+            list_factory<ListElementType>(use_generic, pattern, use_policy<IListPolicy>);
         }
         else
         {
-            auto wrapper =
-                detail::list_factory<Class, Template, ListElementType, Policy, void>::generate(
-                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
-                );
+            using gen_t =
+                detail::list_factory<Class, Template, ListElementType, IListPolicy, void>;
 
             list_factory_function(
                 pattern,
-                wrapper,
+                gen_t::generate(
+                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
+                ),
                 call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
+            );
+        }
+
+        return *this;
+    }
+
+    template <
+        typename ListElementType = void,
+        policies::factory_policy FactoryPolicy>
+    requires(!std::is_void_v<FactoryPolicy>)
+    basic_ref_class& list_factory(
+        use_generic_t,
+        std::string_view pattern,
+        use_policy_t<FactoryPolicy> = {}
+    )
+    {
+        using gen_t =
+            detail::list_factory<Class, Template, ListElementType, void, FactoryPolicy>;
+
+        list_factory_function(
+            pattern,
+            gen_t::generate(generic_call_conv),
+            auxiliary(this->aux_for_notifying_gc<FactoryPolicy>()),
+            generic_call_conv
+        );
+
+        return *this;
+    }
+
+    template <
+        typename ListElementType = void,
+        policies::factory_policy FactoryPolicy>
+    requires(!std::is_void_v<FactoryPolicy>)
+    basic_ref_class& list_factory(
+        std::string_view pattern,
+        use_policy_t<FactoryPolicy> = {}
+    )
+    {
+        if constexpr(ForceGeneric)
+        {
+            list_factory<ListElementType>(use_generic, pattern, use_policy<FactoryPolicy>);
+        }
+        else
+        {
+            using gen_t =
+                detail::list_factory<Class, Template, ListElementType, void, FactoryPolicy>;
+
+            list_factory_function(
+                pattern,
+                gen_t::generate(
+                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+                ),
+                auxiliary(this->aux_for_notifying_gc<FactoryPolicy>()),
+                call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
             );
         }
 
