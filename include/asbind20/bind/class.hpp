@@ -408,12 +408,12 @@ namespace detail
         typename Class,
         bool Template,
         typename ListElementType,
-        repeat_list_based_policy Policy>
-    class list_constructor<Class, Template, ListElementType, Policy>
+        repeat_list_based_policy IListPolicy>
+    class list_constructor<Class, Template, ListElementType, IListPolicy>
     {
         static void from_list_helper(void* mem, script_init_list_repeat list)
         {
-            if constexpr(std::same_as<Policy, policies::as_iterators>)
+            if constexpr(std::same_as<IListPolicy, policies::as_iterators>)
             {
                 policies::as_iterators::apply<ListElementType>(
                     [mem](auto start, auto stop)
@@ -423,23 +423,23 @@ namespace detail
                     list
                 );
             }
-            else if constexpr(std::same_as<Policy, policies::pointer_and_size>)
+            else if constexpr(std::same_as<IListPolicy, policies::pointer_and_size>)
             {
                 new(mem) Class((ListElementType*)list.data(), list.size());
             }
 #ifdef ASBIND20_HAS_CONTAINERS_RANGES
-            else if constexpr(std::same_as<Policy, policies::as_from_range>)
+            else if constexpr(std::same_as<IListPolicy, policies::as_from_range>)
             {
                 std::span<ListElementType> rng((ListElementType*)list.data(), list.size());
                 new(mem) Class(std::from_range, rng);
             }
 #endif
             else if constexpr(
-                std::same_as<Policy, policies::as_initializer_list> ||
-                std::same_as<Policy, policies::as_span>
+                std::same_as<IListPolicy, policies::as_initializer_list> ||
+                std::same_as<IListPolicy, policies::as_span>
             )
             {
-                new(mem) Class(Policy::template convert<ListElementType>(list));
+                new(mem) Class(IListPolicy::template convert<ListElementType>(list));
             }
         }
 
@@ -1026,7 +1026,7 @@ namespace detail
                 return new Class((ListElementType*)list.data(), list.size());
             }
 #ifdef ASBIND20_HAS_CONTAINERS_RANGES
-            else if constexpr(std::same_as<Policy, policies::as_from_range>)
+            else if constexpr(std::same_as<IListPolicy, policies::as_from_range>)
             {
                 std::span<ListElementType> rng((ListElementType*)list.data(), list.size());
                 return new Class(std::from_range, rng);
