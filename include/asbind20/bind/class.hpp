@@ -827,7 +827,7 @@ namespace detail
             }
             else // CallConv == asCALL_CDECL
             {
-                static_assert(!Template, "This calling convention for factory is for templated class");
+                static_assert(Template, "This calling convention for factory is for templated class");
                 return &impl_cdecl_template;
             }
         }
@@ -5148,14 +5148,27 @@ public:
             using gen_t =
                 detail::list_factory<Class, Template, ListElementType, void, FactoryPolicy>;
 
-            list_factory_function(
-                pattern,
-                gen_t::generate(
+            if constexpr(Template)
+            {
+                list_factory_function(
+                    pattern,
+                    gen_t::generate(
+                        call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
+                    ),
+                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
+                );
+            }
+            else
+            {
+                list_factory_function(
+                    pattern,
+                    gen_t::generate(
+                        call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+                    ),
+                    auxiliary(this->aux_for_notifying_gc<FactoryPolicy>()),
                     call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
-                ),
-                auxiliary(this->aux_for_notifying_gc<FactoryPolicy>()),
-                call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
-            );
+                );
+            }
         }
 
         return *this;

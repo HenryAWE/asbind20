@@ -801,3 +801,282 @@ TEST_F(custom_list_function_objlast_generic, run_script)
     AS_NAMESPACE_QUALIFIER asIScriptModule* m = build_script();
     test_gc::run_initlist_gc_test(m, max_test_idx());
 }
+
+namespace test_gc
+{
+class templ_gc_init_list
+{
+public:
+    templ_gc_init_list(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+        : m_ti(ti) {}
+
+    // For pattern {int, int}
+    templ_gc_init_list(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, int* list_buf)
+        : ints{list_buf[0], list_buf[1]}, m_ti(ti)
+    {
+        std::cerr << "{int, int}" << std::endl;
+    }
+
+    // For pattern {repeat int}
+    templ_gc_init_list(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, void* list_buf)
+        : m_ti(ti)
+    {
+        asbind20::script_init_list_repeat ilist(list_buf);
+        std::copy_n((int*)ilist.data(), ilist.size(), std::back_inserter(ints));
+
+        std::cerr << "{repeat int}" << std::endl;
+    }
+
+    ~templ_gc_init_list()
+    {
+        clear_var();
+    }
+
+    int subtype_id() const
+    {
+        return m_ti->GetSubTypeId();
+    }
+
+    static bool template_callback(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, bool&)
+    {
+        return !asbind20::is_void_type(ti->GetSubTypeId());
+    }
+
+    bool get_gc_flag() const
+    {
+        return m_gc_flag;
+    }
+
+    void set_gc_flag()
+    {
+        m_gc_flag = true;
+    }
+
+    void addref()
+    {
+        m_gc_flag = false;
+        ++m_counter;
+    }
+
+    void release()
+    {
+        m_counter.dec_and_try_delete(this);
+    }
+
+    int get_refcount() const
+    {
+        return m_counter;
+    }
+
+    void copy(const void* ref)
+    {
+        assert(ref != nullptr);
+        asbind20::container::single::copy_assign_from(
+            m_var_data, get_engine(), subtype_id(), ref
+        );
+    }
+
+    void* get_ref()
+    {
+        return asbind20::container::single::data_address(
+            m_var_data, subtype_id()
+        );
+    }
+
+    void clear_var()
+    {
+        asbind20::container::single::destroy(
+            m_var_data, get_engine(), subtype_id()
+        );
+    }
+
+    void release_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine*)
+    {
+        clear_var();
+    }
+
+    void enum_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine*)
+    {
+        asbind20::container::single::enum_refs(
+            m_var_data, m_ti.subtype()
+        );
+    }
+
+    int get_ints(AS_NAMESPACE_QUALIFIER asUINT idx) const
+    {
+        return ints.at(idx);
+    }
+
+    AS_NAMESPACE_QUALIFIER asUINT int_count() const
+    {
+        return static_cast<AS_NAMESPACE_QUALIFIER asUINT>(ints.size());
+    }
+
+    std::vector<int> ints;
+
+    auto get_engine() const
+        -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
+    {
+        return m_ti->GetEngine();
+    }
+
+private:
+    asbind20::script_typeinfo m_ti;
+
+    asbind20::atomic_counter m_counter;
+    bool m_gc_flag = false;
+
+    asbind20::container::single::data_type m_var_data;
+};
+
+template <typename ListElemType, bool UseGeneric>
+auto register_gc_init_list_temp_methods(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
+    using namespace asbind20;
+
+    const char* list_pattern =
+        std::is_void_v<ListElemType> ? "repeat int" : "int,int";
+
+    return template_ref_class<templ_gc_init_list, UseGeneric>(engine, "gc_init_list<T>", AS_NAMESPACE_QUALIFIER asOBJ_GC)
+        .template_callback(fp<&templ_gc_init_list::template_callback>)
+        .addref(fp<&templ_gc_init_list::addref>)
+        .release(fp<&templ_gc_init_list::release>)
+        .get_refcount(fp<&templ_gc_init_list::get_refcount>)
+        .set_gc_flag(fp<&templ_gc_init_list::set_gc_flag>)
+        .get_gc_flag(fp<&templ_gc_init_list::get_gc_flag>)
+        .release_refs(fp<&templ_gc_init_list::release_refs>)
+        .enum_refs(fp<&templ_gc_init_list::enum_refs>)
+        .default_factory(use_policy<policies::notify_gc>)
+        .template list_factory<ListElemType>(list_pattern, use_policy<policies::notify_gc>)
+        .method("void copy(const T&in)", fp<&templ_gc_init_list::copy>)
+        .method("T& get_var()", fp<&templ_gc_init_list::get_ref>)
+        .method("uint get_int_count() const property", fp<&templ_gc_init_list::int_count>)
+        .method("int get_ints(uint) const property", fp<&templ_gc_init_list::get_ints>);
+}
+
+static constexpr char test_temp_initlist_gc_script[] = R"AngelScript(class foo
+{
+    gc_init_list<int>@ il_ref;
+};
+
+gc_init_list<int>@ get()
+{
+    gc_init_list<foo@> il;
+    assert(il.int_count == 0);
+
+    foo@ f = foo();
+    gc_init_list<int> sublist = {10, 13};
+    @f.il_ref = @sublist;
+
+    il.copy(@f);
+    return il.get_var().il_ref;
+})AngelScript";
+
+template <typename ListElemType, bool UseGeneric>
+class basic_temp_initlist_gc_test : public ::testing::Test
+{
+public:
+    void SetUp() override
+    {
+        if constexpr(!UseGeneric)
+        {
+            if(asbind20::has_max_portability())
+                GTEST_SKIP() << "max portability";
+        }
+
+        m_engine = asbind20::make_script_engine();
+
+        asbind_test::setup_message_callback(m_engine, true);
+        asbind20::ext::register_script_assert(
+            m_engine,
+            [](std::string_view msg)
+            {
+                FAIL() << "initlist GC assertion failed: " << msg;
+            }
+        );
+        register_gc_init_list_temp_methods<ListElemType, UseGeneric>(m_engine);
+    }
+
+    void TearDown() override
+    {
+        m_engine.reset();
+    }
+
+    auto build_script()
+        -> AS_NAMESPACE_QUALIFIER asIScriptModule*
+    {
+        auto* m = m_engine->GetModule(
+            "test_gc_initlist", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
+        );
+
+        m->AddScriptSection(
+            "test_gc_initlist",
+            test_temp_initlist_gc_script
+        );
+        EXPECT_GE(m->Build(), 0);
+
+        return m;
+    }
+
+private:
+    asbind20::script_engine m_engine;
+};
+
+static void run_templ_gc_list_test(AS_NAMESPACE_QUALIFIER asIScriptModule* m)
+{
+    auto* engine = m->GetEngine();
+
+    auto* f = m->GetFunctionByName("get");
+    ASSERT_TRUE(f);
+
+    std::cerr << "- Before invocation:\n";
+    asbind_test::output_gc_statistics(std::cerr, engine);
+    {
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<templ_gc_init_list>(ctx, f);
+        ASSERT_TRUE(asbind_test::result_has_value(result));
+
+        std::cerr << "- After invocation:\n";
+        asbind_test::output_gc_statistics(std::cerr, engine);
+
+        auto& list = result.value();
+        ASSERT_EQ(list.ints.size(), 2);
+        EXPECT_EQ(list.ints[0], 10);
+        EXPECT_EQ(list.ints[1], 13);
+    }
+
+    engine->GarbageCollect();
+    std::cerr << "- After cleanup:\n";
+    asbind_test::output_gc_statistics(std::cerr, engine);
+}
+} // namespace test_gc
+
+using void_temp_initlist_gc_native = test_gc::basic_temp_initlist_gc_test<void, false>;
+using void_temp_initlist_gc_generic = test_gc::basic_temp_initlist_gc_test<void, true>;
+
+TEST_F(void_temp_initlist_gc_native, run_script)
+{
+    auto* m = void_temp_initlist_gc_native::build_script();
+    test_gc::run_templ_gc_list_test(m);
+}
+
+TEST_F(void_temp_initlist_gc_generic, run_script)
+{
+    auto* m = void_temp_initlist_gc_generic::build_script();
+    test_gc::run_templ_gc_list_test(m);
+}
+
+using int_temp_initlist_gc_native = test_gc::basic_temp_initlist_gc_test<int, false>;
+using int_temp_initlist_gc_generic = test_gc::basic_temp_initlist_gc_test<int, true>;
+
+TEST_F(int_temp_initlist_gc_native, run_script)
+{
+    auto* m = int_temp_initlist_gc_native::build_script();
+    test_gc::run_templ_gc_list_test(m);
+}
+
+TEST_F(int_temp_initlist_gc_generic, run_script)
+{
+    auto* m = int_temp_initlist_gc_generic::build_script();
+    test_gc::run_templ_gc_list_test(m);
+}
