@@ -2,6 +2,8 @@
 
 #ifdef ASBIND20_HAS_AS_FOREACH
 
+#    include <asbind20/foreach.hpp>
+
 namespace test_bind
 {
 class int_generator
@@ -58,11 +60,12 @@ void register_int_generator(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     using namespace asbind20;
 
-    value_class<int_generator::iterator, UseGeneric>(
+    value_class<int_generator::iterator, UseGeneric> iter(
         engine,
         "int_generator_iterator",
         AS_NAMESPACE_QUALIFIER asOBJ_POD
-    )
+    );
+    iter
         .default_constructor()
         .opAssign()
         .copy_constructor()
@@ -73,30 +76,7 @@ void register_int_generator(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         "int_generator",
         AS_NAMESPACE_QUALIFIER asOBJ_NOCOUNT
     )
-        .method("int_generator_iterator opForBegin() const", fp<&int_generator::begin>)
-        .method(
-            "int opForValue(const int_generator_iterator&in) const",
-            [](const int_generator& this_, const int_generator::iterator& it) -> int
-            {
-                (void)this_;
-                return *it;
-            }
-        )
-        .method(
-            "int_generator_iterator opForNext(const int_generator_iterator&in) const",
-            [](const int_generator&, const int_generator::iterator& it) -> int_generator::iterator
-            {
-                auto tmp = it;
-                return ++tmp;
-            }
-        )
-        .method(
-            "bool opForEnd(const int_generator_iterator&in) const",
-            [](const int_generator& this_, const int_generator::iterator& it) -> bool
-            {
-                return it == this_.end();
-            }
-        );
+        .use(basic_foreach_register<int, decltype(iter), true>(iter));
 
     global(engine)
         .property("int_generator int_gen", g_int_gen);
