@@ -144,8 +144,15 @@ jobs:
             sudo apt-get install -y cmake ninja-build gcc-${{matrix.gcc}} g++-${{matrix.gcc}}
 
       - name: Install AngelScript
-        working-directory: /usr/local/share/vcpkg
-        run: ./vcpkg install angelscript
+        working-directory: /tmp
+        run: |
+          git clone https://github.com/anjo76/angelscript.git
+          cd angelscript
+          git reset --hard 535fa4e13037c659e726dcfac8791b19da463360 # 2.38.0
+          cd sdk/angelscript/projects/cmake
+          cmake -GNinja cmake -GNinja -DCMAKE_BUILD_TYPE=Release -S . -B build
+          cmake --build build
+          sudo cmake --install build
 
       - name: Configure
         run: >
@@ -157,7 +164,6 @@ jobs:
           -DCMAKE_C_COMPILER=gcc-${{matrix.gcc}}
           -DCMAKE_CXX_COMPILER=g++-${{matrix.gcc}}
           -DCMAKE_BUILD_TYPE=Release
-          -DCMAKE_TOOLCHAIN_FILE="${VCPKG_INSTALLATION_ROOT}/scripts/buildsystems/vcpkg.cmake"
           -Dasbind_build_ext=1
           -Dasbind_build_test=1
           -Dasbind_build_bench=1
@@ -171,13 +177,13 @@ jobs:
 
       - name: Test Installation
         run: |
-          cmake -GNinja -S test/test_install/ -B build/asbind20_test_install -DCMAKE_CXX_COMPILER=g++-${{matrix.gcc}} -DCMAKE_TOOLCHAIN_FILE="${VCPKG_INSTALLATION_ROOT}/scripts/buildsystems/vcpkg.cmake"
+          cmake -GNinja -S test/test_install/ -B build/asbind20_test_install -DCMAKE_CXX_COMPILER=g++-${{matrix.gcc}}
           cmake --build build/asbind20_test_install
           build/asbind20_test_install/asbind20_test_install
 
       - name: Test add_subdirectory
         run: |
-          cmake -GNinja -S test/test_subdir/ -B build/asbind20_test_subdir -DCMAKE_CXX_COMPILER=g++-${{matrix.gcc}} -DCMAKE_TOOLCHAIN_FILE="${VCPKG_INSTALLATION_ROOT}/scripts/buildsystems/vcpkg.cmake"
+          cmake -GNinja -S test/test_subdir/ -B build/asbind20_test_subdir -DCMAKE_CXX_COMPILER=g++-${{matrix.gcc}}
           cmake --build build/asbind20_test_subdir
           build/asbind20_test_subdir/asbind20_test_subdir
 
