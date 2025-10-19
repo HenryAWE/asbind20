@@ -12,7 +12,7 @@
 #include "meta.hpp"
 #include "bind.hpp" // IWYU pragma: exports
 
-#ifndef ASBIND20_FOREACH_HPP
+#ifndef ASBIND20_HAS_AS_FOREACH
 #    warning Current AngelScript version does not support foreach loop
 #endif
 
