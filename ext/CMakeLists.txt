@@ -18,4 +18,3 @@ endmacro()
 
 add_subdirectory(container)
 add_subdirectory(utility)
-add_subdirectory(testing)
