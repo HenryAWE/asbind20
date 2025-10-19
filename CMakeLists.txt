@@ -44,14 +44,14 @@ endif()
 target_compile_features(asbind20 INTERFACE cxx_std_${asbind_cxxstd})
 
 if(${asbind_build_test})
-    message(STATUS "Fetching GoogleTest v1.14.0 from GitHub")
+    message(STATUS "Fetching GoogleTest v1.17.0 from GitHub")
 
     include(FetchContent)
 
     FetchContent_Declare(
         googletest
         GIT_REPOSITORY https://github.com/google/googletest.git
-        GIT_TAG v1.14.0
+        GIT_TAG v1.17.0
     )
     set(BUILD_GMOCK OFF)
     set(INSTALL_GTEST OFF)

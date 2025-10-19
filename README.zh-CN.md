@@ -5,12 +5,9 @@
 
 **asbind20** 是一个基于模板的 C++20 [AngelScript](https://www.angelcode.com/angelscript/) 绑定库。
 
-尽管与其他脚本语言的大多数绑定 API 相比，AngelScript 的接口对 C++ 非常友好，
-它在绑定构造函数等场景时，仍然需要许多额外的代理函数。
-这些代理大多数逻辑相似，可以通过一些模板技巧来生成。
+尽管与其他脚本语言的大多数绑定 API 相比，AngelScript 的接口对 C++ 非常友好，但在绑定构造函数等场景时，仍然需要许多额外的代理函数。这些代理函数大多逻辑相似，可以通过一些模板技巧来生成。
 
-该库还提供了用于轻松调用脚本函数的工具，
-以及用于管理 AngelScript 对象生命周期的 RAII 辅助函数。
+该库还提供了用于轻松调用脚本函数的工具，以及用于管理 AngelScript 对象生命周期的 RAII 辅助函数。
 
 总的来说，该库旨在自动化所有可以通过模板元编程生成的内容。
 
@@ -69,8 +66,8 @@ void mul_obj_first(my_value_class* this_, int val);
 void add_obj_last(int val, my_value_class* this_);
 void my_op_gen(asIScriptGeneric* gen);
 ```
+向 AngelScript 引擎注册该 C++ 类：
 
-Register the C++ class to the AngelScript engine:
 ```c++
 asIScriptEngine* engine = /* 获取脚本引擎 */;
 asbind20::value_class<my_value_class>(
