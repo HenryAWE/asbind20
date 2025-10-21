@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <iterator>
 #include "meta.hpp"
 #include "bind.hpp" // IWYU pragma: exports
 
@@ -18,27 +19,25 @@
 
 namespace asbind20
 {
-template <typename ValueType, typename IteratorRegister, bool Const>
-class basic_foreach_register
+template <typename IteratorRegister, bool Const = true>
+class foreach
 {
 public:
-    using value_type = ValueType;
     using iterator = typename IteratorRegister::class_type;
 
     const IteratorRegister& iter;
 
-    constexpr basic_foreach_register(const IteratorRegister& it) noexcept
+    constexpr foreach(const IteratorRegister& it) noexcept
         : iter(it) {}
 
+private:
     template <typename RegisterHelper>
-    void operator()(RegisterHelper& helper)
+    static void setup_foreach_controller(const std::string& it_name, RegisterHelper& helper)
     {
         using this_type = std::conditional_t<
             Const,
             const typename RegisterHelper::class_type,
             typename RegisterHelper::class_type>;
-
-        const std::string& it_name = iter.get_name();
 
         helper.method(
             string_concat(it_name, Const ? " opForBegin()const" : " opForBegin()"),
@@ -69,13 +68,29 @@ public:
             [](this_type& this_, const iterator& it) -> iterator
             {
                 (void)this_;
-                iterator tmp(it);
-                return ++tmp;
+                return std::next(it);
             }
         );
+    }
+
+public:
+    template <typename RegisterHelper>
+    void operator()(RegisterHelper& helper)
+    {
+        using this_type = std::conditional_t<
+            Const,
+            const typename RegisterHelper::class_type,
+            typename RegisterHelper::class_type>;
+
+        const std::string& it_name = iter.get_name();
+
+        setup_foreach_controller(it_name, helper);
+
+        using return_type = typename std::iterator_traits<iterator>::reference;
+
         helper.method(
-            string_concat(name_of<value_type>(), " opForValue(const ", it_name, Const ? "&in)const" : "&in)"),
-            [](this_type& this_, const iterator& it) -> value_type
+            string_concat(name_of<return_type>(), " opForValue(const ", it_name, Const ? "&in)const" : "&in)"),
+            [](this_type& this_, const iterator& it) -> return_type
             {
                 (void)this_;
                 return *it;

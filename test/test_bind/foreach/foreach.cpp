@@ -9,11 +9,19 @@ namespace test_bind
 class int_generator
 {
 public:
-    struct iterator
+    class iterator
     {
+    public:
+        using iterator_category = std::input_iterator_tag;
+        using value_type = int;
+        using reference = int; // Placeholder to make std::iterator_traits happy
+        using difference_type = std::ptrdiff_t;
+
         iterator() = default;
         iterator(const iterator&) = default;
         iterator& operator=(const iterator&) = default;
+
+        bool operator==(const iterator&) const noexcept = default;
 
         iterator(int val)
             : value(val) {}
@@ -29,8 +37,15 @@ public:
             return *this;
         }
 
+        void operator++(int)
+        {
+            ++*this;
+        }
+
         int value;
     };
+
+    static_assert(std::input_iterator<iterator>);
 
     struct sentinel
     {
@@ -76,7 +91,7 @@ void register_int_generator(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         "int_generator",
         AS_NAMESPACE_QUALIFIER asOBJ_NOCOUNT
     )
-        .use(basic_foreach_register<int, decltype(iter), true>(iter));
+        .use(foreach(iter));
 
     global(engine)
         .property("int_generator int_gen", g_int_gen);
