@@ -70,7 +70,7 @@ public:
 
 static inline int_generator g_int_gen{};
 
-template <bool UseGeneric>
+template <bool Const, bool Explict, bool UseGeneric>
 void register_int_generator(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     using namespace asbind20;
@@ -86,13 +86,25 @@ void register_int_generator(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         .copy_constructor()
         .destructor();
 
-    ref_class<int_generator, UseGeneric>(
+    ref_class<int_generator, UseGeneric> c(
         engine,
         "int_generator",
         AS_NAMESPACE_QUALIFIER asOBJ_NOCOUNT
-    )
-        .use(foreach(iter));
-
+    );
+    if constexpr(Const)
+    {
+        if constexpr(Explict)
+            c.use(const_foreach(iter));
+        else
+            c.use(const_foreach(iter)->template value<int>());
+    }
+    else
+    {
+        if constexpr(Explict)
+            c.use(foreach(iter));
+        else
+            c.use(foreach(iter)->template value<int>());
+    }
     global(engine)
         .property("int_generator int_gen", g_int_gen);
 }
@@ -128,7 +140,7 @@ TEST(test_foreach, int_seq_generic)
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine, true);
 
-    test_bind::register_int_generator<true>(engine);
+    test_bind::register_int_generator<true, false, true>(engine);
     auto* f = test_bind::prepare_int_seq_test(engine);
 
     request_context ctx(engine);
@@ -147,7 +159,42 @@ TEST(test_foreach, int_seq_native)
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine, true);
 
-    test_bind::register_int_generator<false>(engine);
+    test_bind::register_int_generator<true, false, false>(engine);
+    auto* f = test_bind::prepare_int_seq_test(engine);
+
+    request_context ctx(engine);
+    auto result = script_invoke<int>(ctx, f);
+    EXPECT_TRUE(asbind_test::result_has_value(result));
+    EXPECT_EQ(result.value(), 10 + 11 + 12 + 13 + 14);
+}
+
+TEST(test_foreach, int_seq_explicit_generic)
+{
+    using namespace asbind20;
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine, true);
+
+    test_bind::register_int_generator<true, true, true>(engine);
+    auto* f = test_bind::prepare_int_seq_test(engine);
+
+    request_context ctx(engine);
+    auto result = script_invoke<int>(ctx, f);
+    EXPECT_TRUE(asbind_test::result_has_value(result));
+    EXPECT_EQ(result.value(), 10 + 11 + 12 + 13 + 14);
+}
+
+TEST(test_foreach, int_seq_explicit_native)
+{
+    using namespace asbind20;
+
+    if(has_max_portability())
+        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine, true);
+
+    test_bind::register_int_generator<true, true, false>(engine);
     auto* f = test_bind::prepare_int_seq_test(engine);
 
     request_context ctx(engine);
