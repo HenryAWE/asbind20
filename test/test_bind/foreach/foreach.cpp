@@ -78,7 +78,7 @@ void register_int_generator(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     value_class<int_generator::iterator, UseGeneric> iter(
         engine,
         "int_generator_iterator",
-        AS_NAMESPACE_QUALIFIER asOBJ_POD
+        AS_NAMESPACE_QUALIFIER asOBJ_POD | AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_ALLINTS
     );
     iter
         .default_constructor()
@@ -137,6 +137,23 @@ TEST(test_foreach, int_seq_generic)
     EXPECT_EQ(result.value(), 10 + 11 + 12 + 13 + 14);
 }
 
-// TODO: native test
+TEST(test_foreach, int_seq_native)
+{
+    using namespace asbind20;
+
+    if(has_max_portability())
+        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine, true);
+
+    test_bind::register_int_generator<false>(engine);
+    auto* f = test_bind::prepare_int_seq_test(engine);
+
+    request_context ctx(engine);
+    auto result = script_invoke<int>(ctx, f);
+    EXPECT_TRUE(asbind_test::result_has_value(result));
+    EXPECT_EQ(result.value(), 10 + 11 + 12 + 13 + 14);
+}
 
 #endif
