@@ -19,7 +19,7 @@
 
 namespace asbind20
 {
-template <typename IteratorRegister, bool Const = true>
+template <typename IteratorRegister, bool Const>
 class foreach_impl
 {
 private:
@@ -201,7 +201,7 @@ namespace detail
 } // namespace detail
 
 inline constexpr detail::foreach_func_t<false> foreach{};
-inline constexpr detail::foreach_func_t<false> const_foreach{};
+inline constexpr detail::foreach_func_t<true> const_foreach{};
 } // namespace asbind20
 
 #endif

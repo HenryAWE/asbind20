@@ -70,7 +70,7 @@ public:
 
 static inline int_generator g_int_gen{};
 
-template <bool Const, bool Explict, bool UseGeneric>
+template <bool Const, bool Explicit, bool UseGeneric>
 void register_int_generator(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     using namespace asbind20;
@@ -93,14 +93,14 @@ void register_int_generator(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     );
     if constexpr(Const)
     {
-        if constexpr(Explict)
+        if constexpr(Explicit)
             c.use(const_foreach(iter));
         else
             c.use(const_foreach(iter)->template value<int>());
     }
     else
     {
-        if constexpr(Explict)
+        if constexpr(Explicit)
             c.use(foreach(iter));
         else
             c.use(foreach(iter)->template value<int>());

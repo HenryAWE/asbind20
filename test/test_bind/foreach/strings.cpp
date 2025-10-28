@@ -98,7 +98,7 @@ public:
 
         value_class<string_generator::iterator, UseGeneric> iter(
             m_engine,
-            "int_generator_iterator",
+            "string_generator_iterator",
             AS_NAMESPACE_QUALIFIER asOBJ_POD | AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_ALLINTS
         );
         iter
