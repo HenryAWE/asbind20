@@ -20,6 +20,8 @@ Update
 - Experimental support for enum with custom underlying type in AngelScript 2.39 WIP.
 - Utility for quickly implementing conversion rules for enums with underlying type other than ``int`` such as ``std::byte``.
 
+- Experimental support for script ``foreach``.
+
 - ``script_invoke_result`` now supports ``operator->`` for pointer type,
   which is useful for accessing members of returned reference types.
 

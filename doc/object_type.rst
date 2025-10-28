@@ -822,6 +822,31 @@ Here is an example from the unit test of asbind20.
         )
         .property("ostream cout", std::cout);
 
+Operators for ``foreach`` (Experimental)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+AngelScript has introduced ``foreach`` loop in version 2.38.
+Here is a simple way to add support for a container-like type:
+
+.. code-block:: c++
+
+    // Register the iterator
+    value_class<iterator_type> iter(engine, "iterator_name");
+
+    ref_class<int_container>(engine, "int_container")
+        .use(foreach(iter))
+        // If you prefer the constant variation, i.e., iterators acquired by cbegin / cend
+        .use(const_foreach(iter))
+        // Or more explicitly
+        .use(foreach(iter)->template value<int>()); // Note that you need a "template" keyword for dependent name
+
+If the name of your value type cannot be auto-generated, e.g. non-primitive types, you can specify them manually.
+
+.. code-block:: c++
+
+    ref_class(/* ... */)
+        .use(foreach(iter)->template value<std::string>("string"))
+
 Member Aliases
 --------------
 You can register a member ``funcdef``.
