@@ -32,6 +32,7 @@ private:
             typename RegisterHelper::class_type>;
 
         helper.method(
+            use_generic,
             string_concat(it_name, Const ? " opForBegin()const" : " opForBegin()"),
             [](this_type& this_) -> iterator
             {
@@ -56,6 +57,7 @@ private:
             }
         );
         helper.method(
+            use_generic,
             string_concat(it_name, " opForNext(const ", it_name, Const ? "&in)const" : "&in)"),
             [](this_type& this_, const iterator& it) -> iterator
             {
@@ -95,6 +97,7 @@ public:
             const std::string& it_name = m_this.iter.get_name();
             setup_foreach_controller(it_name, helper);
             helper.method(
+                use_generic,
                 string_concat(name_of<ValueType>(), " opForValue(const ", it_name, Const ? "&in)const" : "&in)"),
                 [](this_type& this_, const iterator& it) -> ValueType
                 {
@@ -128,6 +131,7 @@ public:
             const std::string& it_name = m_this.iter.get_name();
             setup_foreach_controller(it_name, helper);
             helper.method(
+                use_generic,
                 string_concat(m_name, " opForValue(const ", it_name, Const ? "&in)const" : "&in)"),
                 [](this_type& this_, const iterator& it) -> ValueType
                 {
@@ -170,6 +174,7 @@ public:
         setup_foreach_controller(it_name, helper);
         using value_type = typename std::iterator_traits<iterator>::reference;
         helper.method(
+            use_generic,
             string_concat(name_of<value_type>(), " opForValue(const ", it_name, Const ? "&in)const" : "&in)"),
             [](this_type& this_, const iterator& it) -> value_type
             {
