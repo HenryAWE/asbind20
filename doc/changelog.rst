@@ -6,6 +6,8 @@ Changelog since the version 1.5.0.
 1.8.0
 -----
 
+2025-10-29
+
 Update
 ~~~~~~
 
