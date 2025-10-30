@@ -1125,7 +1125,7 @@ namespace detail
     struct MethodMetadata
     {
         std::string declaration;                               // e.g., "void SetNetName(const string &in)"
-        void* functionPtr;                                     // The actual function pointer (as void*)
+        AS_NAMESPACE_QUALIFIER asSFuncPtr functionPtr;         // The actual function pointer
         AS_NAMESPACE_QUALIFIER asECallConvTypes callConv;      // Calling convention
         void* auxiliary;                                       // Auxiliary data (if any)
         int compositeOffset;                                   // Composite offset (if any)
@@ -1285,7 +1285,7 @@ protected:
         // Store metadata for automatic inheritance
         detail::MethodMetadata metadata;
         metadata.declaration = std::string(decl);
-        metadata.functionPtr = reinterpret_cast<void*>(funcPtr.ptr.f.func);
+        metadata.functionPtr = funcPtr;  // Store the entire asSFuncPtr struct
         metadata.callConv = CallConv;
         metadata.auxiliary = aux;
         metadata.compositeOffset = 0;
@@ -5583,16 +5583,13 @@ public:
                 if (alreadyInherited)
                     continue;  // Skip, already inherited from another base
                 
-                // Reconstruct asSFuncPtr from stored data
-                AS_NAMESPACE_QUALIFIER asSFuncPtr funcPtr;
-                funcPtr.ptr.f.func = reinterpret_cast<AS_NAMESPACE_QUALIFIER asFUNCTION_t>(method.functionPtr);
-                
+                // Use the stored asSFuncPtr directly (no reconstruction needed)
                 // Re-register for derived class
                 // Note: We silently ignore asALREADY_REGISTERED errors (method overriding)
                 int r = m_engine->RegisterObjectMethod(
                     m_name.c_str(),
                     method.declaration.c_str(),
-                    funcPtr,
+                    method.functionPtr,
                     method.callConv,
                     method.auxiliary
                 );
