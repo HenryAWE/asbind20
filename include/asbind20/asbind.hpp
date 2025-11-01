@@ -13,8 +13,8 @@
 
 // clang-format off: Used by CMakeLists.txt for parsing version
 
-#define ASBIND20_VERSION_MAJOR 1
-#define ASBIND20_VERSION_MINOR 8
+#define ASBIND20_VERSION_MAJOR 2
+#define ASBIND20_VERSION_MINOR 0
 #define ASBIND20_VERSION_PATCH 0
 
 // clang-format on
