@@ -372,6 +372,8 @@ jobs:
 
       - name: Setup emsdk
         uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 4.0.18
 
       - name: Install AngelScript
         working-directory: /tmp
