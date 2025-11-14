@@ -3,11 +3,11 @@ name: Build
 on:
   push:
     paths-ignore:
-      - 'docs/**'
+      - 'doc/**'
       - README.*
   pull_request:
     paths-ignore:
-      - 'docs/**'
+      - 'doc/**'
       - README.*
 
 jobs:
