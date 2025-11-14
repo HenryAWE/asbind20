@@ -4,6 +4,13 @@ name: Nightly
 
 on:
   push:
+    paths-ignore:
+      - 'docs/**'
+      - README.*
+  pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - README.*
   schedule:
     - cron: '0 0 * * *' # Runs every day at midnight UTC
 

@@ -1,6 +1,14 @@
 name: Build
 
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - 'docs/**'
+      - README.*
+  pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - README.*
 
 jobs:
     MSVC:
