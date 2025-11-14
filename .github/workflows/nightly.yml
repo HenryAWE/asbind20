@@ -24,8 +24,6 @@ jobs:
 
       name: Linux x64 Clang 19 C++${{matrix.cxxstd}}
 
-      env:
-        VCPKG_BUILD_TYPE: release
 
       steps:
       - uses: actions/checkout@v4
@@ -34,8 +32,8 @@ jobs:
         run: |
             sudo apt-get update
             sudo apt-get install -y cmake ninja-build clang-19 clang++-19
-            sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-19 100
-            sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-19 100
+            sudo update-alternatives --install /usr/bin/cc cc /usr/bin/clang-19 100
+            sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++-19 100
 
       - name: Install AngelScript WIP
         working-directory: ${{github.workspace}}/ci
@@ -54,7 +52,6 @@ jobs:
           -Dasbind_build_ext=1
           -Dasbind_build_test=1
           -Dasbind_build_bench=1
-          -DAngelscript_DIR=/tmp/installed/lib/cmake/Angelscript
 
       - name: Build
         run: cmake --build ${{github.workspace}}/build
@@ -65,11 +62,4 @@ jobs:
 
       - name: Benchmark
         working-directory: ${{github.workspace}}/build/bench
-        # Run all executables start with "bench_"
-        run: |
-          for exe in bench_*; do
-            if [ -x "$exe" ]; then
-              echo "Running benchmark: $exe"
-              ./$exe
-            fi
-          done
+        run: ${{github.workspace}}/ci/run_benchmarks.sh
