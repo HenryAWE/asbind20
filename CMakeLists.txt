@@ -70,6 +70,7 @@ if(${asbind_build_bench})
         GIT_REPOSITORY https://github.com/google/benchmark.git
         GIT_TAG v1.9.4
     )
+    set(BENCHMARK_ENABLE_WERROR OFF)
     set(BENCHMARK_ENABLE_INSTALL OFF)
     set(BENCHMARK_ENABLE_TESTING OFF)
     set(BENCHMARK_ENABLE_GTEST_TESTS OFF)
