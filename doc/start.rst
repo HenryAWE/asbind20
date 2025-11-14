@@ -38,7 +38,7 @@ However, asbind20 on other platforms, architectures or compiler toolchains suppo
    * - Linux arm64
      - Clang 18
    * - Emscripten
-     - emsdk latest
+     - emsdk 4.0.18
 
 \* The Clang 15 toolchain only supports features available under C++20.
 
