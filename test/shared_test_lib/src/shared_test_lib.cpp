@@ -64,28 +64,30 @@ void setup_message_callback(
     }
 }
 
+static void exception_translator(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, void*)
+{
+    try
+    {
+        throw;
+    }
+    catch(const std::exception& e)
+    {
+        ctx->SetException(e.what());
+    }
+    catch(...)
+    {
+        ctx->SetException("...");
+    }
+}
+
 void setup_exception_translator(
     AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
 )
 {
+    if(!asbind20::has_exceptions())
+        return;
     asbind20::global(engine)
-        .exception_translator(
-            +[](AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, void*)
-            {
-                try
-                {
-                    throw;
-                }
-                catch(std::exception& e)
-                {
-                    ctx->SetException(e.what());
-                }
-                catch(...)
-                {
-                    ctx->SetException("Caught unknown exception");
-                }
-            }
-        );
+        .exception_translator(&exception_translator);
 }
 
 void output_gc_statistics(
