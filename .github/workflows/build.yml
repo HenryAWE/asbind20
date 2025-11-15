@@ -51,6 +51,12 @@ jobs:
         working-directory: ${{github.workspace}}/build
         run: ctest --output-on-failure
 
+      - name: Test Installation
+        run: |
+          cmake -GNinja -S ${{github.workspace}}/ci/test_install/ -B build/asbind20_test_install -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/asbind20_test_install
+          build/asbind20_test_install/asbind20_test_install
+
       - name: Benchmark
         working-directory: ${{github.workspace}}/build/bench
         # Run all executables start with "bench_", using PowerShell
@@ -175,15 +181,9 @@ jobs:
 
       - name: Test Installation
         run: |
-          cmake -GNinja -S test/test_install/ -B build/asbind20_test_install
+          cmake -GNinja -S ${{github.workspace}}/ci/test_install/ -B build/asbind20_test_install -DCMAKE_BUILD_TYPE=Release
           cmake --build build/asbind20_test_install
           build/asbind20_test_install/asbind20_test_install
-
-      - name: Test add_subdirectory
-        run: |
-          cmake -GNinja -S test/test_subdir/ -B build/asbind20_test_subdir
-          cmake --build build/asbind20_test_subdir
-          build/asbind20_test_subdir/asbind20_test_subdir
 
       - name: Test
         working-directory: ${{github.workspace}}/build
