@@ -261,8 +261,7 @@ static void check_ref_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 
 TEST(TestBind, RefClassNative)
 {
-    if(asbind20::has_max_portability())
-        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
     asbind20::ext::register_script_assert(
@@ -417,8 +416,7 @@ static void check_ref_class_for_helper(AS_NAMESPACE_QUALIFIER asIScriptEngine* e
 
 TEST(TestBind, RefClassForHelperNative)
 {
-    if(asbind20::has_max_portability())
-        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
     asbind20::ext::register_script_assert(
@@ -586,8 +584,7 @@ static void setup_ref_class_comp_prop_test(AS_NAMESPACE_QUALIFIER asIScriptEngin
 
 TEST(RefClassCompProperty, OffsetCompOffsetNative)
 {
-    if(asbind20::has_max_portability())
-        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     using namespace test_bind;
     auto engine = asbind20::make_script_engine();
@@ -605,8 +602,7 @@ TEST(RefClassCompProperty, OffsetCompOffsetGeneric)
 
 TEST(RefClassCompProperty, MPCompOffsetNative)
 {
-    if(asbind20::has_max_portability())
-        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     using namespace test_bind;
     auto engine = asbind20::make_script_engine();
@@ -624,8 +620,7 @@ TEST(RefClassCompProperty, MPCompOffsetGeneric)
 
 TEST(RefClassCompProperty, OffsetCompMPNative)
 {
-    if(asbind20::has_max_portability())
-        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     using namespace test_bind;
     auto engine = asbind20::make_script_engine();
@@ -643,8 +638,7 @@ TEST(RefClassCompProperty, OffsetCompMPGeneric)
 
 TEST(RefClassCompProperty, MPCompMPNative)
 {
-    if(asbind20::has_max_portability())
-        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     using namespace test_bind;
     auto engine = asbind20::make_script_engine();

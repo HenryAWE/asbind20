@@ -307,10 +307,7 @@ public:
     void SetUp() override
     {
         if constexpr(!UseGeneric)
-        {
-            if(asbind20::has_max_portability())
-                GTEST_SKIP() << "max portability";
-        }
+            ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
         m_engine = asbind20::make_script_engine();
 

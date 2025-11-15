@@ -132,8 +132,7 @@ TEST(TestBind, BuiltinInt128TypeNative)
 {
     using namespace asbind20;
 
-    if(has_max_portability())
-        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);

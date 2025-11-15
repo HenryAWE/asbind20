@@ -320,8 +320,7 @@ static void check_from_span(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 
 TEST(InitListNative, ValueAsIterators)
 {
-    if(asbind20::has_max_portability())
-        GTEST_SKIP() << "max portability";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
     test_bind::setup_initlist_test_env(engine);
@@ -341,8 +340,7 @@ TEST(InitListGeneric, ValueAsIterators)
 
 TEST(InitListNative, ValueRepeatListProxy)
 {
-    if(asbind20::has_max_portability())
-        GTEST_SKIP() << "max portability";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
     test_bind::setup_initlist_test_env(engine);
@@ -366,8 +364,7 @@ TEST(InitListGeneric, ValueRepeatListProxy)
 
 TEST(InitListNative, ValuePointerAndSize)
 {
-    if(asbind20::has_max_portability())
-        GTEST_SKIP() << "max portability";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
     test_bind::setup_initlist_test_env(engine);
@@ -391,8 +388,7 @@ TEST(InitListGeneric, ValuePointerAndSize)
 
 TEST(InitListNative, ValueAsInitializerList)
 {
-    if(asbind20::has_max_portability())
-        GTEST_SKIP() << "max portability";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
     test_bind::setup_initlist_test_env(engine);
@@ -412,8 +408,7 @@ TEST(InitListGeneric, ValueAsInitializerList)
 
 TEST(InitListNative, ValueAsSpan)
 {
-    if(asbind20::has_max_portability())
-        GTEST_SKIP() << "max portability";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
     test_bind::setup_initlist_test_env(engine);
@@ -435,8 +430,7 @@ TEST(InitListGeneric, ValueAsSpan)
 
 TEST(InitListNative, ValueFromRange)
 {
-    if(asbind20::has_max_portability())
-        GTEST_SKIP() << "max portability";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
     test_bind::setup_initlist_test_env(engine);
@@ -674,8 +668,7 @@ static void check_ref_test_vector(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
 
 TEST(InitListNative, RefApplyTo)
 {
-    if(asbind20::has_max_portability())
-        GTEST_SKIP() << "max portability";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
     test_bind::setup_initlist_test_env(engine);
@@ -695,8 +688,7 @@ TEST(InitListGeneric, RefApplyTo)
 
 TEST(InitListNative, RefAsIterators)
 {
-    if(asbind20::has_max_portability())
-        GTEST_SKIP() << "max portability";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
     test_bind::setup_initlist_test_env(engine);
@@ -720,8 +712,7 @@ TEST(InitListGeneric, RefAsIterators)
 
 TEST(InitListNative, RefRepeatListProxy)
 {
-    if(asbind20::has_max_portability())
-        GTEST_SKIP() << "max portability";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
     test_bind::setup_initlist_test_env(engine);
@@ -745,8 +736,7 @@ TEST(InitListGeneric, RefRepeatListProxy)
 
 TEST(InitListNative, RefPointerAndSize)
 {
-    if(asbind20::has_max_portability())
-        GTEST_SKIP() << "max portability";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
     test_bind::setup_initlist_test_env(engine);
@@ -770,8 +760,7 @@ TEST(InitListGeneric, RefPointerAndSize)
 
 TEST(InitListNative, RefAsInitializerList)
 {
-    if(asbind20::has_max_portability())
-        GTEST_SKIP() << "max portability";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
     test_bind::setup_initlist_test_env(engine);
@@ -795,8 +784,7 @@ TEST(InitListGeneric, RefAsInitializerList)
 
 TEST(InitListNative, RefAsSpan)
 {
-    if(asbind20::has_max_portability())
-        GTEST_SKIP() << "max portability";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
     test_bind::setup_initlist_test_env(engine);
@@ -822,8 +810,7 @@ TEST(InitListGeneric, RefAsSpan)
 
 TEST(InitListNative, RefFromRange)
 {
-    if(asbind20::has_max_portability())
-        GTEST_SKIP() << "max portability";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
     test_bind::setup_initlist_test_env(engine);

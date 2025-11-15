@@ -101,8 +101,7 @@ void check_int_array(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 
 TEST(TestCArray, Native)
 {
-    if(asbind20::has_max_portability())
-        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
     asbind_test::setup_message_callback(engine, true);

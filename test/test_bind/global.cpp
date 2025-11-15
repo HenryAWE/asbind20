@@ -110,8 +110,8 @@ static void register_global_funcs(
 
 TEST(TestBind, GlobalNative)
 {
-    if(asbind20::has_max_portability())
-        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
+
     auto engine = asbind20::make_script_engine();
     asbind20::ext::register_std_string(engine);
 

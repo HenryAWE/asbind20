@@ -245,8 +245,7 @@ static void run_vec2_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 
 TEST(BindVec2, Native)
 {
-    if(asbind20::has_max_portability())
-        GTEST_SKIP() << "max portability";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
     test_bind::setup_bind_vec2_env(engine, false);

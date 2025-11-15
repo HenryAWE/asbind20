@@ -266,8 +266,7 @@ TEST(ValClassCompMethod, NativeOffset)
 {
     using namespace asbind20;
 
-    if(has_max_portability())
-        GTEST_SKIP();
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
@@ -279,8 +278,7 @@ TEST(ValClassCompMethod, NativeMP)
 {
     using namespace asbind20;
 
-    if(has_max_portability())
-        GTEST_SKIP();
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
@@ -292,8 +290,7 @@ TEST(ValClassCompMethod, NativeOffsetNontype)
 {
     using namespace asbind20;
 
-    if(has_max_portability())
-        GTEST_SKIP();
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
@@ -305,8 +302,7 @@ TEST(ValClassCompMethod, NativeMPNontype)
 {
     using namespace asbind20;
 
-    if(has_max_portability())
-        GTEST_SKIP();
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
@@ -318,8 +314,7 @@ TEST(ValClassCompMethod, GenericOffset)
 {
     using namespace asbind20;
 
-    if(has_max_portability())
-        GTEST_SKIP();
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
@@ -456,8 +451,7 @@ TEST(RefClassCompMethod, NativeMP)
 {
     using namespace asbind20;
 
-    if(has_max_portability())
-        GTEST_SKIP();
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);

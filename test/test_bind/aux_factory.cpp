@@ -168,8 +168,7 @@ TEST(AuxFactoryNative, AsGlobal)
 {
     using namespace asbind20;
 
-    if(has_max_portability())
-        GTEST_SKIP() << "max portability";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
     test_bind::setup_env(engine);
@@ -223,8 +222,7 @@ TEST(AuxFactoryNative, AuxFirst)
 {
     using namespace asbind20;
 
-    if(has_max_portability())
-        GTEST_SKIP() << "max portability";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
     test_bind::setup_env(engine);
@@ -278,8 +276,7 @@ TEST(AuxFactoryNative, AuxLast)
 {
     using namespace asbind20;
 
-    if(has_max_portability())
-        GTEST_SKIP() << "max portability";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
     test_bind::setup_env(engine);
@@ -486,8 +483,7 @@ TEST(AuxFactoryTemplateNative, AsGlobal)
 {
     using namespace asbind20;
 
-    if(has_max_portability())
-        GTEST_SKIP() << "max portability";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
     test_bind::setup_env(engine);
@@ -541,8 +537,7 @@ TEST(AuxFactoryTemplateNative, AuxFirst)
 {
     using namespace asbind20;
 
-    if(has_max_portability())
-        GTEST_SKIP() << "max portability";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
     test_bind::setup_env(engine);
@@ -596,8 +591,7 @@ TEST(AuxFactoryTemplateNative, AuxLast)
 {
     using namespace asbind20;
 
-    if(has_max_portability())
-        GTEST_SKIP() << "max portability";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
     test_bind::setup_env(engine);

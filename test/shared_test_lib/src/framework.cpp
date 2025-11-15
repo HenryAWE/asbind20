@@ -8,6 +8,48 @@
 
 namespace asbind_test
 {
+template <bool PropagateError>
+static void message_callback_impl(const AS_NAMESPACE_QUALIFIER asSMessageInfo* msg, void*)
+{
+#define ASBIND_TEST_MSG_CALLBACK_WRITE_SRC(lvl_str) \
+    lvl_str << " (" << msg->section << ":" << msg->row << ":" << msg->col << "): "
+
+    switch(msg->type)
+    {
+    case AS_NAMESPACE_QUALIFIER asMSGTYPE_ERROR:
+        if constexpr(PropagateError)
+        {
+            FAIL()
+                << ASBIND_TEST_MSG_CALLBACK_WRITE_SRC("ERROR")
+                << msg->message;
+            // FAIL() contains return statement
+        }
+        else
+        {
+            std::cerr
+                << ASBIND_TEST_MSG_CALLBACK_WRITE_SRC("ERROR")
+                << msg->message
+                << std::endl;
+            break;
+        }
+
+    case AS_NAMESPACE_QUALIFIER asMSGTYPE_WARNING:
+        std::cerr
+            << ASBIND_TEST_MSG_CALLBACK_WRITE_SRC("WARNING")
+            << msg->message
+            << std::endl;
+        break;
+
+    case AS_NAMESPACE_QUALIFIER asMSGTYPE_INFORMATION:
+        std::cerr
+            << ASBIND_TEST_MSG_CALLBACK_WRITE_SRC("INFO")
+            << msg->message
+            << std::endl;
+    }
+
+#undef ASBIND_TEST_MSG_CALLBACK_WRITE_SRC
+}
+
 void setup_message_callback(
     AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
     bool propagate_error_to_gtest
@@ -16,55 +58,18 @@ void setup_message_callback(
     if(propagate_error_to_gtest)
     {
         asbind20::global(engine)
-            .message_callback(
-                +[](const AS_NAMESPACE_QUALIFIER asSMessageInfo* msg, void*)
-                {
-#define ASBIND_TEST_MSG_CALLBACK_WRITE_SRC() \
-    " (" << msg->section                     \
-         << ":" << msg->row                  \
-         << ":" << msg->col << "): "
-                    switch(msg->type)
-                    {
-                    case AS_NAMESPACE_QUALIFIER asMSGTYPE_ERROR:
-                        FAIL() << "ERROR" << ASBIND_TEST_MSG_CALLBACK_WRITE_SRC() << msg->message;
-                        // FAIL() contains return statement
-
-                    case AS_NAMESPACE_QUALIFIER asMSGTYPE_WARNING:
-                        std::cerr << "WARNING" << ASBIND_TEST_MSG_CALLBACK_WRITE_SRC();
-                        break;
-                    case AS_NAMESPACE_QUALIFIER asMSGTYPE_INFORMATION:
-                        std::cerr << "INFO" << ASBIND_TEST_MSG_CALLBACK_WRITE_SRC();
-                    }
-                    std::cerr << msg->message << std::endl;
-
-#undef ASBIND_TEST_MSG_CALLBACK_WRITE_SRC
-                }
-            );
+            .message_callback(&message_callback_impl<true>);
     }
     else
     {
         asbind20::global(engine)
-            .message_callback(
-                +[](const AS_NAMESPACE_QUALIFIER asSMessageInfo* msg, void*)
-                {
-                    switch(msg->type)
-                    {
-                    case AS_NAMESPACE_QUALIFIER asMSGTYPE_ERROR:
-                        std::cerr << "ERROR: ";
-                        break;
-                    case AS_NAMESPACE_QUALIFIER asMSGTYPE_WARNING:
-                        std::cerr << "WARNING: ";
-                        break;
-                    case AS_NAMESPACE_QUALIFIER asMSGTYPE_INFORMATION:
-                        std::cerr << "INFO: ";
-                    }
-                    std::cerr << msg->message << std::endl;
-                }
-            );
+            .message_callback(&message_callback_impl<false>);
     }
 }
 
-static void exception_translator(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, void*)
+static void exception_translator_impl(
+    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, void*
+)
 {
     try
     {
@@ -87,7 +92,7 @@ void setup_exception_translator(
     if(!asbind20::has_exceptions())
         return;
     asbind20::global(engine)
-        .exception_translator(&exception_translator);
+        .exception_translator(&exception_translator_impl);
 }
 
 void output_gc_statistics(

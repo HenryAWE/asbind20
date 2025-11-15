@@ -189,8 +189,7 @@ static void run_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 
 TEST(BindRefString, Native)
 {
-    if(asbind20::has_max_portability())
-        GTEST_SKIP() << "max portability";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
     test_bind::setup_bind_ref_string_env(engine, false);
