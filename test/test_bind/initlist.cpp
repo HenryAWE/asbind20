@@ -1,4 +1,3 @@
-#include <asbind20/ext/assert.hpp>
 #include <asbind_test/framework.hpp>
 
 namespace test_bind

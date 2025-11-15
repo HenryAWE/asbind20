@@ -2,7 +2,6 @@
 #include <asbind_test/framework.hpp>
 #include <asbind20/asbind.hpp>
 #include <asbind20/ext/stdstring.hpp>
-#include <asbind20/ext/assert.hpp>
 
 namespace test_bind
 {
@@ -329,11 +328,7 @@ TEST(TestBind, TemplateValClassNative)
     auto engine = asbind20::make_script_engine();
     asbind_test::setup_message_callback(engine, true);
     asbind20::ext::register_std_string(engine);
-    asbind20::ext::register_script_assert(
-        engine,
-        [](std::string_view msg)
-        { FAIL() << msg; }
-    );
+    asbind_test::setup_script_assertion(engine);
 
     test_bind::register_template_val_class(engine);
     check_template_val_class(engine);
@@ -344,11 +339,7 @@ TEST(TestBind, TemplateValClassGeneric)
     auto engine = asbind20::make_script_engine();
     asbind_test::setup_message_callback(engine, true);
     asbind20::ext::register_std_string(engine);
-    asbind20::ext::register_script_assert(
-        engine,
-        [](std::string_view msg)
-        { FAIL() << msg; }
-    );
+    asbind_test::setup_script_assertion(engine);
 
     test_bind::register_template_val_class(asbind20::use_generic, engine);
     check_template_val_class(engine);

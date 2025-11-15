@@ -2,7 +2,6 @@
 #include <asbind_test/framework.hpp>
 #include <vector>
 #include <asbind20/asbind.hpp>
-#include <asbind20/ext/assert.hpp>
 #include <iterator>
 
 namespace test_gc
@@ -312,13 +311,7 @@ public:
         m_engine = asbind20::make_script_engine();
 
         asbind_test::setup_message_callback(m_engine, true);
-        asbind20::ext::register_script_assert(
-            m_engine,
-            [](std::string_view msg)
-            {
-                FAIL() << "initlist GC assertion failed: " << msg;
-            }
-        );
+        asbind_test::setup_script_assertion(m_engine);
         register_gc_init_list<IListPolicy, UseGeneric>(m_engine);
     }
 
@@ -391,13 +384,7 @@ public:
         m_engine = asbind20::make_script_engine();
 
         asbind_test::setup_message_callback(m_engine, true);
-        asbind20::ext::register_script_assert(
-            m_engine,
-            [](std::string_view msg)
-            {
-                FAIL() << "initlist GC assertion failed: " << msg;
-            }
-        );
+        asbind_test::setup_script_assertion(m_engine);
         register_gc_init_list_simple<UseGeneric>(m_engine);
     }
 
@@ -497,13 +484,7 @@ public:
         m_engine = asbind20::make_script_engine();
 
         asbind_test::setup_message_callback(m_engine, true);
-        asbind20::ext::register_script_assert(
-            m_engine,
-            [](std::string_view msg)
-            {
-                FAIL() << "initlist GC assertion failed: " << msg;
-            }
-        );
+        asbind_test::setup_script_assertion(m_engine);
         register_gc_init_list<asbind20::policies::apply_to<Size>, UseGeneric>(m_engine);
     }
 
@@ -719,13 +700,7 @@ public:
         m_engine = asbind20::make_script_engine();
 
         asbind_test::setup_message_callback(m_engine, true);
-        asbind20::ext::register_script_assert(
-            m_engine,
-            [](std::string_view msg)
-            {
-                FAIL() << "initlist GC assertion failed: " << msg;
-            }
-        );
+        asbind_test::setup_script_assertion(m_engine);
 
         using namespace asbind20;
         auto c = register_gc_init_list_basic_methods<UseGeneric>(m_engine);
@@ -984,13 +959,7 @@ public:
         m_engine = asbind20::make_script_engine();
 
         asbind_test::setup_message_callback(m_engine, true);
-        asbind20::ext::register_script_assert(
-            m_engine,
-            [](std::string_view msg)
-            {
-                FAIL() << "initlist GC assertion failed: " << msg;
-            }
-        );
+        asbind_test::setup_script_assertion(m_engine);
         register_gc_init_list_temp_methods<ListElemType, UseGeneric>(m_engine);
     }
 

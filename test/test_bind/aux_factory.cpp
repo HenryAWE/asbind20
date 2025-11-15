@@ -1,4 +1,3 @@
-#include <asbind20/ext/assert.hpp>
 #include <asbind_test/framework.hpp>
 
 namespace test_bind
@@ -93,14 +92,7 @@ static test_aux_factory* create_aux_auxlast_list(void* list_buf, aux_factory_hel
 static void setup_env(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     asbind_test::setup_message_callback(engine);
-
-    asbind20::ext::register_script_assert(
-        engine,
-        [](std::string_view msg)
-        {
-            GTEST_FAIL() << "assertion failure: " << msg;
-        }
-    );
+    asbind_test::setup_script_assertion(engine);
 }
 
 struct register_refcount_helper

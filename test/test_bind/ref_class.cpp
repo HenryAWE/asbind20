@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 #include <asbind_test/framework.hpp>
 #include <asbind20/asbind.hpp>
-#include <asbind20/ext/assert.hpp>
 
 namespace test_bind
 {
@@ -264,11 +263,7 @@ TEST(TestBind, RefClassNative)
     ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
-    asbind20::ext::register_script_assert(
-        engine,
-        [](std::string_view msg)
-        { FAIL() << msg; }
-    );
+    asbind_test::setup_script_assertion(engine);
     register_ref_class(engine);
 
     check_ref_class(engine);
@@ -277,11 +272,7 @@ TEST(TestBind, RefClassNative)
 TEST(TestBind, RefClassGeneric)
 {
     auto engine = asbind20::make_script_engine();
-    asbind20::ext::register_script_assert(
-        engine,
-        [](std::string_view msg)
-        { FAIL() << msg; }
-    );
+    asbind_test::setup_script_assertion(engine);
     register_ref_class(asbind20::use_generic, engine);
 
     check_ref_class(engine);
@@ -419,11 +410,7 @@ TEST(TestBind, RefClassForHelperNative)
     ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
-    asbind20::ext::register_script_assert(
-        engine,
-        [](std::string_view msg)
-        { FAIL() << msg; }
-    );
+    asbind_test::setup_script_assertion(engine);
     test_bind::ref_helper helper;
     test_bind::register_ref_class_for_helper<false>(engine, helper);
 
@@ -433,11 +420,7 @@ TEST(TestBind, RefClassForHelperNative)
 TEST(TestBind, RefClassForHelperGeneric)
 {
     auto engine = asbind20::make_script_engine();
-    asbind20::ext::register_script_assert(
-        engine,
-        [](std::string_view msg)
-        { FAIL() << msg; }
-    );
+    asbind_test::setup_script_assertion(engine);
     test_bind::ref_helper helper;
     test_bind::register_ref_class_for_helper<true>(engine, helper);
 
@@ -568,15 +551,8 @@ static void check_ref_class_comp_property(AS_NAMESPACE_QUALIFIER asIScriptEngine
 template <bool UseGeneric, bool UseMP, bool CompUseMP>
 static void setup_ref_class_comp_prop_test(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
-    using namespace asbind20;
-
-    ext::register_script_assert(
-        engine,
-        [](std::string_view msg)
-        {
-            FAIL() << "ref_class_comp_prop failed: " << msg;
-        }
-    );
+    asbind_test::setup_message_callback(engine);
+    asbind_test::setup_script_assertion(engine);
 
     register_base_ref_class<UseGeneric, UseMP, CompUseMP>(engine);
 }

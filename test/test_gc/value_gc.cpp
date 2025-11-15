@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 #include <asbind_test/framework.hpp>
 #include <asbind20/asbind.hpp>
-#include <asbind20/ext/assert.hpp>
 #include <asbind20/ext/vocabulary.hpp>
 
 static constexpr char optional_gc_test_script[] = R"(bool test0()
@@ -41,13 +40,7 @@ public:
         asbind_test::setup_message_callback(m_engine, true);
 
         namespace ext = asbind20::ext;
-        ext::register_script_assert(
-            m_engine,
-            [](std::string_view msg)
-            {
-                FAIL() << "optional_gc assertion failed: " << msg;
-            }
-        );
+        asbind_test::setup_script_assertion(m_engine);
         ext::register_script_optional(m_engine, UseGeneric);
 
         asbind20::global<true>(m_engine)

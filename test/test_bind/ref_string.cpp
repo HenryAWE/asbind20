@@ -1,4 +1,3 @@
-#include <asbind20/ext/assert.hpp>
 #include <asbind_test/framework.hpp>
 
 constexpr char ref_string_test_script[] = R"(void test0()
@@ -152,13 +151,7 @@ static void setup_bind_ref_string_env(
     else
         register_ref_string(engine);
 
-    asbind20::ext::register_script_assert(
-        engine,
-        [](std::string_view msg)
-        {
-            FAIL() << "vec2 assertion failed: " << msg;
-        }
-    );
+    asbind_test::setup_script_assertion(engine);
 }
 
 static void run_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)

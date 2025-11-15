@@ -3,6 +3,13 @@
 #include <gtest/gtest.h>
 #include <asbind20/asbind.hpp>
 
+// IWYU pragma: begin_exports
+
+#include "assertion.hpp"
+#include "test_exceptions.hpp"
+
+// IWYU pragma: end_exports
+
 namespace asbind_test
 {
 template <typename T>
