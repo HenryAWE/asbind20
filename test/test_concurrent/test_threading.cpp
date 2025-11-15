@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <asbind_test/framework.hpp>
 #include <thread>
+#include <chrono>
 #include <asbind20/concurrent/threading.hpp>
 
 TEST(Threading, AutoCleanUp)
