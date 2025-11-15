@@ -79,9 +79,3 @@ TEST(test_io, memory_wrapper)
         EXPECT_EQ(result.value(), 1013);
     }
 }
-
-int main(int argc, char* argv[])
-{
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}

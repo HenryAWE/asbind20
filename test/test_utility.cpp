@@ -494,26 +494,32 @@ TEST(utility, script_flags)
     script_flags_test_helper<float[2]>();
 }
 
+static void output_info(std::ostream& os)
+{
+    if(asbind20::has_max_portability())
+        os << "AS_MAX_PORTABILITY" << std::endl;
+
+#ifdef AS_USE_NAMESPACE
+    os << "AS_USE_NAMESPACE defined" << std::endl;
+#endif
+
+#ifdef ASBIND20_HAS_STANDALONE_STDCALL
+    os << "ASBIND20_HAS_STANDALONE_STDCALL defined" << std::endl;
+#endif
+
+#ifdef ASBIND20_HAS_STATIC_ENUM_NAME
+    os << "ASBIND20_HAS_STATIC_ENUM_NAME: "
+       << ASBIND20_HAS_STATIC_ENUM_NAME
+       << std::endl;
+#endif
+}
+
 int main(int argc, char* argv[])
 {
     ::testing::InitGoogleTest(&argc, argv);
 
-    if(asbind20::has_max_portability())
-        std::cerr << "AS_MAX_PORTABILITY" << std::endl;
-
-#ifdef AS_USE_NAMESPACE
-    std::cerr << "AS_USE_NAMESPACE defined" << std::endl;
-#endif
-
-#ifdef ASBIND20_HAS_STANDALONE_STDCALL
-    std::cerr << "ASBIND20_HAS_STANDALONE_STDCALL defined" << std::endl;
-#endif
-
-#ifdef ASBIND20_HAS_STATIC_ENUM_NAME
-    std::cerr << "ASBIND20_HAS_STATIC_ENUM_NAME: "
-              << ASBIND20_HAS_STATIC_ENUM_NAME
-              << std::endl;
-#endif
+    // Output information so we can read them when CMake is configuring tests
+    output_info(std::cerr);
 
     return RUN_ALL_TESTS();
 }

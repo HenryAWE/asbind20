@@ -377,15 +377,21 @@ TEST(test_invoke, suspension)
     }
 }
 
+static void output_info(std::ostream& os)
+{
+#ifdef ASBIND20_HAS_EXPECTED
+    os << "ASBIND20_HAS_EXPECTED: " << ASBIND20_HAS_EXPECTED << std::endl;
+#else
+    os << "ASBIND20_HAS_EXPECTED not defined" << std::endl;
+#endif
+}
+
 int main(int argc, char* argv[])
 {
     ::testing::InitGoogleTest(&argc, argv);
 
-#ifdef ASBIND20_HAS_EXPECTED
-    std::cerr << "ASBIND20_HAS_EXPECTED: " << ASBIND20_HAS_EXPECTED << std::endl;
-#else
-    std::cerr << "ASBIND20_HAS_EXPECTED not defined" << std::endl;
-#endif
+    // Output information so we can read them when CMake is configuring tests
+    output_info(std::cerr);
 
     return RUN_ALL_TESTS();
 }
