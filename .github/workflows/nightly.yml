@@ -24,7 +24,6 @@ jobs:
 
       name: Linux x64 Clang 19 C++${{matrix.cxxstd}}
 
-
       steps:
       - uses: actions/checkout@v4
 
@@ -46,8 +45,6 @@ jobs:
           -B build
           -G Ninja
           -Dasbind_cxxstd=${{matrix.cxxstd}}
-          -DCMAKE_C_COMPILER=clang-19
-          -DCMAKE_CXX_COMPILER=clang++-19
           -DCMAKE_BUILD_TYPE=Release
           -Dasbind_build_ext=1
           -Dasbind_build_test=1

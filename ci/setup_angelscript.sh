@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Variables
-VERSION="2.37"
+VERSION="2.38.0"
 USE_EMSDK=false
 CMAKE_EXTRA_ARGS=()
 
@@ -39,6 +39,7 @@ parse_arguments() {
 }
 
 clone_angelscript() {
+    echo Cloning AS $VERSION
     if [ $VERSION == "latest" ]; then
         git clone --depth 1 https://github.com/anjo76/angelscript.git
         cd angelscript
@@ -46,11 +47,12 @@ clone_angelscript() {
         cd ..
     elif [ $VERSION == "2.37.0" ]; then
         # Official GitHub repo only has tag for version 2.38+
-        git clone https://github.com/anjo76/angelscript.git \
-                --depth 1 \
-                --branch 0beef466371f36cae4e39d84505bb5a19804ed08 # v2.37.0 commit
+        # The --branch is for v2.37.0 commit
+        git clone --depth 1 \
+                --branch 0beef466371f36cae4e39d84505bb5a19804ed08 \
+                https://github.com/anjo76/angelscript.git
     else
-        git clone --depth 1 --branch v$VERSION
+        git clone --depth 1 --branch v$VERSION https://github.com/anjo76/angelscript.git
     fi
 }
 

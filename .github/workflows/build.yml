@@ -12,7 +12,7 @@ on:
 
 jobs:
     MSVC:
-      runs-on: windows-2022
+      runs-on: windows-2025
       strategy:
           fail-fast: false
           matrix:
@@ -140,9 +140,6 @@ jobs:
 
       name: Linux x64 GCC ${{matrix.gcc}} C++${{matrix.cxxstd}}
 
-      env:
-        VCPKG_BUILD_TYPE: release
-
       steps:
       - uses: actions/checkout@v4
 
@@ -150,17 +147,12 @@ jobs:
         run: |
             sudo apt-get update
             sudo apt-get install -y cmake ninja-build gcc-${{matrix.gcc}} g++-${{matrix.gcc}}
+            sudo update-alternatives --install /usr/bin/cc cc /usr/bin/gcc-${{matrix.gcc}} 100
+            sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/g++-${{matrix.gcc}} 100
 
       - name: Install AngelScript
-        working-directory: /tmp
-        run: |
-          git clone https://github.com/anjo76/angelscript.git
-          cd angelscript
-          git reset --hard 535fa4e13037c659e726dcfac8791b19da463360 # 2.38.0
-          cd sdk/angelscript/projects/cmake
-          cmake -GNinja cmake -GNinja -DCMAKE_BUILD_TYPE=Release -S . -B build
-          cmake --build build
-          sudo cmake --install build
+        working-directory: ${{github.workspace}}/ci
+        run: ./setup_angelscript.sh --version 2.38.0
 
       - name: Configure
         run: >
@@ -169,8 +161,6 @@ jobs:
           -B build
           -G Ninja
           -Dasbind_cxxstd=${{matrix.cxxstd}}
-          -DCMAKE_C_COMPILER=gcc-${{matrix.gcc}}
-          -DCMAKE_CXX_COMPILER=g++-${{matrix.gcc}}
           -DCMAKE_BUILD_TYPE=Release
           -Dasbind_build_ext=1
           -Dasbind_build_test=1
@@ -185,13 +175,13 @@ jobs:
 
       - name: Test Installation
         run: |
-          cmake -GNinja -S test/test_install/ -B build/asbind20_test_install -DCMAKE_CXX_COMPILER=g++-${{matrix.gcc}}
+          cmake -GNinja -S test/test_install/ -B build/asbind20_test_install
           cmake --build build/asbind20_test_install
           build/asbind20_test_install/asbind20_test_install
 
       - name: Test add_subdirectory
         run: |
-          cmake -GNinja -S test/test_subdir/ -B build/asbind20_test_subdir -DCMAKE_CXX_COMPILER=g++-${{matrix.gcc}}
+          cmake -GNinja -S test/test_subdir/ -B build/asbind20_test_subdir
           cmake --build build/asbind20_test_subdir
           build/asbind20_test_subdir/asbind20_test_subdir
 
@@ -226,10 +216,12 @@ jobs:
         run: |
             sudo apt-get update
             sudo apt-get install -y cmake ninja-build clang-${{matrix.clang}} clang++-${{matrix.clang}}
+            sudo update-alternatives --install /usr/bin/cc cc /usr/bin/clang-${{matrix.clang}} 100
+            sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++-${{matrix.clang}} 100
 
       - name: Install AngelScript
-        working-directory: /usr/local/share/vcpkg
-        run: ./vcpkg install angelscript
+        working-directory: ${{github.workspace}}/ci
+        run: ./setup_angelscript.sh --version 2.38.0
 
       - name: Configure
         run: >
@@ -238,10 +230,7 @@ jobs:
           -B build
           -G Ninja
           -Dasbind_cxxstd=${{matrix.cxxstd}}
-          -DCMAKE_C_COMPILER=clang-${{matrix.clang}}
-          -DCMAKE_CXX_COMPILER=clang++-${{matrix.clang}}
           -DCMAKE_BUILD_TYPE=Release
-          -DCMAKE_TOOLCHAIN_FILE="${VCPKG_INSTALLATION_ROOT}/scripts/buildsystems/vcpkg.cmake"
           -Dasbind_build_ext=1
           -Dasbind_build_test=1
           -Dasbind_build_bench=1
@@ -273,17 +262,12 @@ jobs:
         run: |
             sudo apt-get update
             sudo apt-get install -y cmake ninja-build clang-18 clang++-18
+            sudo update-alternatives --install /usr/bin/cc cc /usr/bin/clang-18 100
+            sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++-18 100
 
       - name: Install AngelScript
-        working-directory: /tmp
-        run: |
-          git clone https://github.com/anjo76/angelscript.git
-          cd angelscript
-          git reset --hard 535fa4e13037c659e726dcfac8791b19da463360 # 2.38.0
-          cd sdk/angelscript/projects/cmake
-          cmake -GNinja -DCMAKE_C_COMPILER=clang-18 -DCMAKE_CXX_COMPILER=clang++-18 -DCMAKE_BUILD_TYPE=Release -S . -B build -DCMAKE_INSTALL_PREFIX=/tmp/arm
-          cmake --build build
-          cmake --install build
+        working-directory: ${{github.workspace}}/ci
+        run: ./setup_angelscript.sh
 
       - name: Configure
         run: >
@@ -295,7 +279,6 @@ jobs:
           -DCMAKE_C_COMPILER=clang-18
           -DCMAKE_CXX_COMPILER=clang++-18
           -DCMAKE_BUILD_TYPE=Release
-          -DAngelscript_DIR=/tmp/arm/lib/cmake/Angelscript
           -Dasbind_build_ext=1
           -Dasbind_build_test=1
           -Dasbind_build_bench=1
@@ -326,10 +309,12 @@ jobs:
         run: |
             sudo apt-get update
             sudo apt-get install -y cmake ninja-build clang-18 clang++-18
+            sudo update-alternatives --install /usr/bin/cc cc /usr/bin/clang-18 100
+            sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++-18 100
 
       - name: Install AngelScript
-        working-directory: /usr/local/share/vcpkg
-        run: ./vcpkg install angelscript
+        working-directory: ${{github.workspace}}/ci
+        run: ./setup_angelscript.sh
 
       - name: Configure
         run: >
@@ -339,10 +324,7 @@ jobs:
           -G Ninja
           -Dasbind_cxxstd=20
           -DCMAKE_CXX_FLAGS=-DAS_USE_NAMESPACE=1
-          -DCMAKE_C_COMPILER=clang-18
-          -DCMAKE_CXX_COMPILER=clang++-18
           -DCMAKE_BUILD_TYPE=Release
-          -DCMAKE_TOOLCHAIN_FILE="${VCPKG_INSTALLATION_ROOT}/scripts/buildsystems/vcpkg.cmake"
           -Dasbind_build_ext=1
           -Dasbind_build_test=1
 
@@ -376,18 +358,9 @@ jobs:
           version: 4.0.18
 
       - name: Install AngelScript
-        working-directory: /tmp
-        run: |
-          git clone https://github.com/anjo76/angelscript.git
-          cd angelscript
-          git reset --hard 535fa4e13037c659e726dcfac8791b19da463360 # 2.38.0
-          cd sdk/angelscript/projects/cmake
-          emcmake cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS=-fexceptions -S . -B build
-          cmake --build build
-          cmake --install build
+        working-directory: ${{github.workspace}}/ci
+        run: ./setup_angelscript.sh --use-emsdk -- -DCMAKE_CXX_FLAGS=-fexceptions
 
-        # latest toolchain may emit warnings we can't fix yet,
-        # so disable "treat warnings as errors" here
       - name: Configure
         run: >
           emcmake cmake
@@ -397,7 +370,6 @@ jobs:
           -Dasbind_cxxstd=${{matrix.cxxstd}}
           -DCMAKE_BUILD_TYPE=Release
           -DCMAKE_CXX_FLAGS=-fexceptions
-          -Dasbind_dev_warning_as_error=OFF
           -Dasbind_build_ext=1
           -Dasbind_build_test=1
           -Dasbind_build_bench=1
@@ -425,9 +397,6 @@ jobs:
 
       name: Clang 18 (ASan)
 
-      env:
-        VCPKG_BUILD_TYPE: release
-
       steps:
       - uses: actions/checkout@v4
 
@@ -435,17 +404,12 @@ jobs:
         run: |
             sudo apt-get update
             sudo apt-get install -y cmake ninja-build clang-18 clang++-18 llvm-18
+            sudo update-alternatives --install /usr/bin/cc cc /usr/bin/clang-18 100
+            sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++-18 100
 
       - name: Install AngelScript
-        working-directory: /tmp
-        run: |
-          git clone https://github.com/anjo76/angelscript.git
-          cd angelscript
-          git reset --hard 535fa4e13037c659e726dcfac8791b19da463360 # 2.38.0
-          cd sdk/angelscript/projects/cmake
-          cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-fsanitize=address -fno-omit-frame-pointer" -S . -B build -DCMAKE_INSTALL_PREFIX=/tmp/asan
-          cmake --build build
-          cmake --install build
+        working-directory: ${{github.workspace}}/ci
+        run: ./setup_angelscript.sh --version 2.38.0 -- -DCMAKE_CXX_FLAGS="-fsanitize=address -fno-omit-frame-pointer"
 
       - name: Configure
         run: >
@@ -454,11 +418,8 @@ jobs:
           -B build
           -G Ninja
           -Dasbind_cxxstd=20
-          -DCMAKE_C_COMPILER=clang-18
-          -DCMAKE_CXX_COMPILER=clang++-18
           -DCMAKE_BUILD_TYPE=Release
           -DCMAKE_CXX_FLAGS="-fsanitize=address -fno-omit-frame-pointer"
-          -DAngelscript_DIR=/tmp/asan/lib/cmake/Angelscript
           -Dasbind_build_ext=1
           -Dasbind_build_test=1
 
