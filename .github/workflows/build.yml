@@ -384,13 +384,7 @@ jobs:
       - name: Benchmark
         working-directory: ${{github.workspace}}/build/bench
         # List all files start with "bench_" and end with ".js"
-        run: |
-          for file in bench_*.js; do
-            if [ -f "$file" ]; then
-              echo "Running benchmark: $file"
-              node "$file"
-            fi
-          done
+        run: ${{github.workspace}}/ci/run_benchmarks.sh --node-js
 
     ASan:
       runs-on: ubuntu-24.04
