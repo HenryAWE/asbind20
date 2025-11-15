@@ -136,6 +136,7 @@ void register_throw_on_copy(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         .behaviours_by_traits(flags);
 }
 
+// TODO: Make a better test suite
 class asbind_test_suite : public ::testing::Test
 {
 public:

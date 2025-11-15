@@ -908,7 +908,7 @@ static void setup_val_class_comp_prop_test(AS_NAMESPACE_QUALIFIER asIScriptEngin
 }
 } // namespace test_bind
 
-TEST(val_class_comp_prop, native_off_off)
+TEST(ValClassCompProperty, OffsetCompOffsetNative)
 {
     if(asbind20::has_max_portability())
         GTEST_SKIP() << "AS_MAX_PORTABILITY";
@@ -919,7 +919,7 @@ TEST(val_class_comp_prop, native_off_off)
     check_val_class_comp_property(engine);
 }
 
-TEST(val_class_comp_prop, generic_off_off)
+TEST(ValClassCompProperty, OffsetCompOffsetGeneric)
 {
     using namespace test_bind;
     auto engine = asbind20::make_script_engine();
@@ -927,7 +927,7 @@ TEST(val_class_comp_prop, generic_off_off)
     check_val_class_comp_property(engine);
 }
 
-TEST(val_class_comp_prop, native_mp_off)
+TEST(ValClassCompProperty, MPCompOffsetNative)
 {
     if(asbind20::has_max_portability())
         GTEST_SKIP() << "AS_MAX_PORTABILITY";
@@ -938,7 +938,7 @@ TEST(val_class_comp_prop, native_mp_off)
     check_val_class_comp_property(engine);
 }
 
-TEST(val_class_comp_prop, generic_mp_off)
+TEST(ValClassCompProperty, MPCompOffsetGeneric)
 {
     using namespace test_bind;
     auto engine = asbind20::make_script_engine();
@@ -946,7 +946,7 @@ TEST(val_class_comp_prop, generic_mp_off)
     check_val_class_comp_property(engine);
 }
 
-TEST(val_class_comp_prop, native_off_mp)
+TEST(ValClassCompProperty, OffsetCompMPNative)
 {
     if(asbind20::has_max_portability())
         GTEST_SKIP() << "AS_MAX_PORTABILITY";
@@ -957,7 +957,7 @@ TEST(val_class_comp_prop, native_off_mp)
     check_val_class_comp_property(engine);
 }
 
-TEST(val_class_comp_prop, generic_off_mp)
+TEST(ValClassCompProperty, OffsetCompMPGeneric)
 {
     using namespace test_bind;
     auto engine = asbind20::make_script_engine();
@@ -965,7 +965,7 @@ TEST(val_class_comp_prop, generic_off_mp)
     check_val_class_comp_property(engine);
 }
 
-TEST(val_class_comp_prop, native_mp_mp)
+TEST(ValClassCompProperty, MPCompMPNative)
 {
     if(asbind20::has_max_portability())
         GTEST_SKIP() << "AS_MAX_PORTABILITY";
@@ -976,7 +976,7 @@ TEST(val_class_comp_prop, native_mp_mp)
     check_val_class_comp_property(engine);
 }
 
-TEST(val_class_comp_prop, generic_mp_mp)
+TEST(ValClassCompProperty, MPCompMPGeneric)
 {
     using namespace test_bind;
     auto engine = asbind20::make_script_engine();

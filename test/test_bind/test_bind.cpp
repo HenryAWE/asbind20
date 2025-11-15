@@ -5,7 +5,7 @@
 
 using namespace asbind_test;
 
-TEST(detail, generate_member_funcdef)
+TEST(Detail, GenerateMemberFuncdef)
 {
     using namespace asbind20;
     using detail::generate_member_funcdef;
@@ -46,9 +46,9 @@ TEST(detail, generate_member_funcdef)
     );
 }
 
-TEST_F(asbind_test_suite, interface)
+TEST(TestBind, Interface)
 {
-    auto* engine = get_engine();
+    auto engine = asbind20::make_script_engine();
 
     {
         asbind20::interface i(engine, "my_interface");
@@ -87,9 +87,9 @@ TEST_F(asbind_test_suite, interface)
     m->Discard();
 }
 
-TEST_F(asbind_test_suite, funcdef_and_typedef)
+TEST(TestBind, FuncdefAndTypedef)
 {
-    auto* engine = get_engine();
+    auto engine = asbind20::make_script_engine();
 
     asbind20::global(engine)
         .funcdef("bool callback(int, int)")

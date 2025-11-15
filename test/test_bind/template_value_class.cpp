@@ -322,7 +322,7 @@ static void check_template_val_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* eng
     check_int_result(6, AS_NAMESPACE_QUALIFIER asTYPEID_INT32);
 }
 
-TEST_F(asbind_test_suite, template_val_class)
+TEST_F(asbind_test_suite, TemplateValClass)
 {
     if(asbind20::has_max_portability())
         GTEST_SKIP() << "AS_MAX_PORTABILITY";
@@ -333,7 +333,7 @@ TEST_F(asbind_test_suite, template_val_class)
     check_template_val_class(engine);
 }
 
-TEST_F(asbind_test_suite_generic, template_val_class)
+TEST_F(asbind_test_suite_generic, TemplateValClass)
 {
     auto* engine = get_engine();
 

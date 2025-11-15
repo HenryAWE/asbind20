@@ -4,7 +4,7 @@
 #include <asbind20/io/stream.hpp>
 #include <sstream>
 
-TEST(test_io, iostream_wrapper)
+TEST(TestIO, IOStreamWrapper)
 {
     std::stringstream ss;
 
@@ -40,7 +40,7 @@ TEST(test_io, iostream_wrapper)
     }
 }
 
-TEST(test_io, memory_wrapper)
+TEST(TestIO, MemoryWrapper)
 {
     std::vector<std::byte> buf;
 

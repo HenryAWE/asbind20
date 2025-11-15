@@ -452,7 +452,7 @@ static void check_ref_comp(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 }
 } // namespace test_bind
 
-TEST(ref_comp, native_mp)
+TEST(RefClassCompMethod, NativeMP)
 {
     using namespace asbind20;
 
@@ -465,7 +465,7 @@ TEST(ref_comp, native_mp)
     test_bind::check_ref_comp(engine);
 }
 
-TEST(ref_comp, generic_mp)
+TEST(RefClassCompMethod, GenericMP)
 {
     using namespace asbind20;
 

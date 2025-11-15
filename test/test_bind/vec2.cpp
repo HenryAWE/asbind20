@@ -243,7 +243,7 @@ static void run_vec2_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 }
 } // namespace test_bind
 
-TEST(bind_vec2, native)
+TEST(BindVec2, Native)
 {
     if(asbind20::has_max_portability())
         GTEST_SKIP() << "max portability";
@@ -254,7 +254,7 @@ TEST(bind_vec2, native)
     test_bind::run_vec2_test_script(engine);
 }
 
-TEST(bind_vec2, generic)
+TEST(BindVec2, Generic)
 {
     auto engine = asbind20::make_script_engine();
     test_bind::setup_bind_vec2_env(engine, true);

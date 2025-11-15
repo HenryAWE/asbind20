@@ -282,7 +282,7 @@ static const AS_NAMESPACE_QUALIFIER asQWORD pair2i_flags =
     AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_ALLINTS |
     AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_MORE_CONSTRUCTORS;
 
-TEST(test_operators, my_pair2i_native)
+TEST(TestOperators, MyPair2iNative)
 {
     using namespace asbind20;
 
@@ -317,7 +317,7 @@ TEST(test_operators, my_pair2i_native)
     test_operators::run_pair2i_test_script(engine);
 }
 
-TEST(test_operators, my_pair2i_generic)
+TEST(TestOperators, MyPair2iGeneric)
 {
     using namespace asbind20;
 
@@ -345,7 +345,7 @@ TEST(test_operators, my_pair2i_generic)
     test_operators::run_pair2i_test_script(engine);
 }
 
-TEST(test_operators, my_pair2i_native_with_decl)
+TEST(TestOperators, MyPair2iNativeWithDecl)
 {
     using namespace asbind20;
 
@@ -376,7 +376,7 @@ TEST(test_operators, my_pair2i_native_with_decl)
     test_operators::run_pair2i_test_script(engine);
 }
 
-TEST(test_operators, my_pair2i_generic_with_decl)
+TEST(TestOperators, MyPair2iGenericWithDecl)
 {
     using namespace asbind20;
 

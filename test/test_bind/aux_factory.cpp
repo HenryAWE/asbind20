@@ -164,7 +164,7 @@ static void check_aux_factory_list(AS_NAMESPACE_QUALIFIER asIScriptEngine* engin
 }
 } // namespace test_bind
 
-TEST(aux_factory_native, as_global)
+TEST(AuxFactoryNative, AsGlobal)
 {
     using namespace asbind20;
 
@@ -193,7 +193,7 @@ TEST(aux_factory_native, as_global)
     EXPECT_EQ(helper.created, 3);
 }
 
-TEST(aux_factory_generic, as_global)
+TEST(AuxFactoryGeneric, AsGlobal)
 {
     using namespace asbind20;
 
@@ -219,7 +219,7 @@ TEST(aux_factory_generic, as_global)
     EXPECT_EQ(helper.created, 3);
 }
 
-TEST(aux_factory_native, auxfirst)
+TEST(AuxFactoryNative, AuxFirst)
 {
     using namespace asbind20;
 
@@ -248,7 +248,7 @@ TEST(aux_factory_native, auxfirst)
     EXPECT_EQ(helper.created, 3);
 }
 
-TEST(aux_factory_generic, auxfirst)
+TEST(AuxFactoryGeneric, AuxFirst)
 {
     using namespace asbind20;
 
@@ -274,7 +274,7 @@ TEST(aux_factory_generic, auxfirst)
     EXPECT_EQ(helper.created, 3);
 }
 
-TEST(aux_factory_native, auxlast)
+TEST(AuxFactoryNative, AuxLast)
 {
     using namespace asbind20;
 
@@ -303,7 +303,7 @@ TEST(aux_factory_native, auxlast)
     EXPECT_EQ(helper.created, 3);
 }
 
-TEST(aux_factory_generic, auxlast)
+TEST(AuxFactoryGeneric, AuxLast)
 {
     using namespace asbind20;
 
@@ -482,7 +482,7 @@ static void check_aux_factory_template_list(AS_NAMESPACE_QUALIFIER asIScriptEngi
 }
 } // namespace test_bind
 
-TEST(aux_factory_template_native, as_global)
+TEST(AuxFactoryTemplateNative, AsGlobal)
 {
     using namespace asbind20;
 
@@ -511,7 +511,7 @@ TEST(aux_factory_template_native, as_global)
     EXPECT_EQ(helper.created, 3);
 }
 
-TEST(aux_factory_template_generic, as_global)
+TEST(AuxFactoryTemplateGeneric, AsGlobal)
 {
     using namespace asbind20;
 
@@ -537,7 +537,7 @@ TEST(aux_factory_template_generic, as_global)
     EXPECT_EQ(helper.created, 3);
 }
 
-TEST(aux_factory_template_native, auxfirst)
+TEST(AuxFactoryTemplateNative, AuxFirst)
 {
     using namespace asbind20;
 
@@ -566,7 +566,7 @@ TEST(aux_factory_template_native, auxfirst)
     EXPECT_EQ(helper.created, 3);
 }
 
-TEST(aux_factory_template_generic, auxfirst)
+TEST(AuxFactoryTemplateGeneric, AuxFirst)
 {
     using namespace asbind20;
 
@@ -592,7 +592,7 @@ TEST(aux_factory_template_generic, auxfirst)
     EXPECT_EQ(helper.created, 3);
 }
 
-TEST(aux_factory_template_native, auxlast)
+TEST(AuxFactoryTemplateNative, AuxLast)
 {
     using namespace asbind20;
 
@@ -621,7 +621,7 @@ TEST(aux_factory_template_native, auxlast)
     EXPECT_EQ(helper.created, 3);
 }
 
-TEST(aux_factory_template_generic, auxlast)
+TEST(AuxFactoryTemplateGeneric, AuxLast)
 {
     using namespace asbind20;
 

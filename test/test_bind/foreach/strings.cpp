@@ -161,9 +161,9 @@ private:
 string_generator foreach_string_suite::m_instance{};
 } // namespace test_bind
 
-using test_bind::foreach_string_suite;
+using ForeachString = test_bind::foreach_string_suite;
 
-TEST_F(foreach_string_suite, run_script_generic)
+TEST_F(ForeachString, RunScriptGeneric)
 {
     prepare_env<false, true>();
     auto* f = get_script_func();
@@ -175,7 +175,7 @@ TEST_F(foreach_string_suite, run_script_generic)
     EXPECT_EQ(result.value(), "1011121314");
 }
 
-TEST_F(foreach_string_suite, run_script_native)
+TEST_F(ForeachString, RunScriptNative)
 {
     if(asbind20::has_max_portability())
         GTEST_SKIP() << "AS_MAX_PORTABILITY";
@@ -190,7 +190,7 @@ TEST_F(foreach_string_suite, run_script_native)
     EXPECT_EQ(result.value(), "1011121314");
 }
 
-TEST_F(foreach_string_suite, const_run_script_generic)
+TEST_F(ForeachString, ConstRunScriptGeneric)
 {
     prepare_env<true, true>();
     auto* f = get_script_func();
@@ -202,7 +202,7 @@ TEST_F(foreach_string_suite, const_run_script_generic)
     EXPECT_EQ(result.value(), "1011121314");
 }
 
-TEST_F(foreach_string_suite, const_run_script_native)
+TEST_F(ForeachString, ConstRunScriptNative)
 {
     if(asbind20::has_max_portability())
         GTEST_SKIP() << "AS_MAX_PORTABILITY";

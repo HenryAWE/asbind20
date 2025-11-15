@@ -2,7 +2,7 @@
 #include <shared_test_lib.hpp>
 #include <asbind20/asbind.hpp>
 
-TEST(script_function, ownership)
+TEST(ScriptFunction, Ownership)
 {
     using namespace asbind20;
 
@@ -56,7 +56,7 @@ TEST(script_function, ownership)
     }
 }
 
-TEST(script_method, ownership)
+TEST(ScriptMethod, Ownership)
 {
     using namespace asbind20;
 

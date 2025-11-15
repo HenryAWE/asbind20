@@ -187,7 +187,7 @@ static void run_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 }
 } // namespace test_bind
 
-TEST(bind_ref_string, native)
+TEST(BindRefString, Native)
 {
     if(asbind20::has_max_portability())
         GTEST_SKIP() << "max portability";
@@ -198,7 +198,7 @@ TEST(bind_ref_string, native)
     test_bind::run_script(engine);
 }
 
-TEST(bind_ref_string, generic)
+TEST(BindRefString, Generic)
 {
     auto engine = asbind20::make_script_engine();
     test_bind::setup_bind_ref_string_env(engine, true);

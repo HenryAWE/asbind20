@@ -600,14 +600,8 @@ public:
 
 using test_gc::list_policies_name;
 
-template <asbind20::policies::initialization_list_policy IListPolicy>
-using initlist_gc_test_native = test_gc::basic_initlist_gc_test<IListPolicy, false>;
-
-template <asbind20::policies::initialization_list_policy IListPolicy>
-using initlist_gc_test_generic = test_gc::basic_initlist_gc_test<IListPolicy, true>;
-
-using initlist_gc_test_simple_native = test_gc::simple_initlist_gc_test<false>;
-using initlist_gc_test_simple_generic = test_gc::simple_initlist_gc_test<true>;
+using InitListGCTestSimpleNative = test_gc::simple_initlist_gc_test<false>;
+using InitListGCTestSimpleGeneric = test_gc::simple_initlist_gc_test<true>;
 
 using initlist_policies = ::testing::Types<
     asbind20::policies::apply_to<2>,
@@ -620,31 +614,37 @@ using initlist_policies = ::testing::Types<
 #endif
     asbind20::policies::repeat_list_proxy>;
 
-TEST_F(initlist_gc_test_simple_native, run_script)
+TEST_F(InitListGCTestSimpleNative, RunScript)
 {
-    AS_NAMESPACE_QUALIFIER asIScriptModule* m = initlist_gc_test_simple_native::build_script();
-    test_gc::run_initlist_gc_test(m, initlist_gc_test_simple_native::max_test_idx());
+    auto* m = build_script();
+    test_gc::run_initlist_gc_test(m, max_test_idx());
 }
 
-TEST_F(initlist_gc_test_simple_generic, run_script)
+TEST_F(InitListGCTestSimpleGeneric, RunScript)
 {
-    AS_NAMESPACE_QUALIFIER asIScriptModule* m = initlist_gc_test_simple_generic::build_script();
-    test_gc::run_initlist_gc_test(m, initlist_gc_test_simple_generic::max_test_idx());
+    auto* m = build_script();
+    test_gc::run_initlist_gc_test(m, max_test_idx());
 }
 
-TYPED_TEST_SUITE(initlist_gc_test_native, initlist_policies, list_policies_name);
-TYPED_TEST_SUITE(initlist_gc_test_generic, initlist_policies, list_policies_name);
+template <asbind20::policies::initialization_list_policy IListPolicy>
+using InitListGCTestNative = test_gc::basic_initlist_gc_test<IListPolicy, false>;
 
-TYPED_TEST(initlist_gc_test_native, run_script)
+template <asbind20::policies::initialization_list_policy IListPolicy>
+using InitListGCTestGeneric = test_gc::basic_initlist_gc_test<IListPolicy, true>;
+
+TYPED_TEST_SUITE(InitListGCTestNative, initlist_policies, list_policies_name);
+TYPED_TEST_SUITE(InitListGCTestGeneric, initlist_policies, list_policies_name);
+
+TYPED_TEST(InitListGCTestNative, RunScript)
 {
-    AS_NAMESPACE_QUALIFIER asIScriptModule* m = TestFixture::build_script();
-    test_gc::run_initlist_gc_test(m, TestFixture::max_test_idx());
+    auto* m = this->build_script();
+    test_gc::run_initlist_gc_test(m, this->max_test_idx());
 }
 
-TYPED_TEST(initlist_gc_test_generic, run_script)
+TYPED_TEST(InitListGCTestGeneric, RunScript)
 {
-    AS_NAMESPACE_QUALIFIER asIScriptModule* m = TestFixture::build_script();
-    test_gc::run_initlist_gc_test(m, TestFixture::max_test_idx());
+    auto* m = this->build_script();
+    test_gc::run_initlist_gc_test(m, this->max_test_idx());
 }
 
 namespace test_gc
@@ -772,33 +772,33 @@ private:
 };
 } // namespace test_gc
 
-using custom_list_function_objfirst_generic = test_gc::basic_custom_function_suite<true, true>;
-using custom_list_function_objfirst_native = test_gc::basic_custom_function_suite<true, false>;
+using CustomListFunctionObjFirstGeneric = test_gc::basic_custom_function_suite<true, true>;
+using CustomListFunctionObjFirstNative = test_gc::basic_custom_function_suite<true, false>;
 
-using custom_list_function_objlast_generic = test_gc::basic_custom_function_suite<false, true>;
-using custom_list_function_objlast_native = test_gc::basic_custom_function_suite<false, false>;
-
-TEST_F(custom_list_function_objfirst_native, run_script)
+TEST_F(CustomListFunctionObjFirstNative, RunScript)
 {
-    AS_NAMESPACE_QUALIFIER asIScriptModule* m = build_script();
+    auto* m = build_script();
     test_gc::run_initlist_gc_test(m, max_test_idx());
 }
 
-TEST_F(custom_list_function_objfirst_generic, run_script)
+TEST_F(CustomListFunctionObjFirstGeneric, RunScript)
 {
-    AS_NAMESPACE_QUALIFIER asIScriptModule* m = build_script();
+    auto* m = build_script();
     test_gc::run_initlist_gc_test(m, max_test_idx());
 }
 
-TEST_F(custom_list_function_objlast_native, run_script)
+using CustomListFunctionObjLastGeneric = test_gc::basic_custom_function_suite<false, true>;
+using CustomListFunctionObjLastNative = test_gc::basic_custom_function_suite<false, false>;
+
+TEST_F(CustomListFunctionObjLastNative, RunScript)
 {
-    AS_NAMESPACE_QUALIFIER asIScriptModule* m = build_script();
+    auto* m = build_script();
     test_gc::run_initlist_gc_test(m, max_test_idx());
 }
 
-TEST_F(custom_list_function_objlast_generic, run_script)
+TEST_F(CustomListFunctionObjLastGeneric, RunScript)
 {
-    AS_NAMESPACE_QUALIFIER asIScriptModule* m = build_script();
+    auto* m = build_script();
     test_gc::run_initlist_gc_test(m, max_test_idx());
 }
 
@@ -1051,32 +1051,32 @@ static void run_templ_gc_list_test(AS_NAMESPACE_QUALIFIER asIScriptModule* m)
 }
 } // namespace test_gc
 
-using void_temp_initlist_gc_native = test_gc::basic_temp_initlist_gc_test<void, false>;
-using void_temp_initlist_gc_generic = test_gc::basic_temp_initlist_gc_test<void, true>;
+using VoidTempInitListGCNative = test_gc::basic_temp_initlist_gc_test<void, false>;
+using VoidTempInitListGCGeneric = test_gc::basic_temp_initlist_gc_test<void, true>;
 
-TEST_F(void_temp_initlist_gc_native, run_script)
+TEST_F(VoidTempInitListGCNative, RunScript)
 {
-    auto* m = void_temp_initlist_gc_native::build_script();
+    auto* m = build_script();
     test_gc::run_templ_gc_list_test(m);
 }
 
-TEST_F(void_temp_initlist_gc_generic, run_script)
+TEST_F(VoidTempInitListGCGeneric, RunScript)
 {
-    auto* m = void_temp_initlist_gc_generic::build_script();
+    auto* m = build_script();
     test_gc::run_templ_gc_list_test(m);
 }
 
-using int_temp_initlist_gc_native = test_gc::basic_temp_initlist_gc_test<int, false>;
-using int_temp_initlist_gc_generic = test_gc::basic_temp_initlist_gc_test<int, true>;
+using IntTempInitListGCNative = test_gc::basic_temp_initlist_gc_test<int, false>;
+using IntTempInitListGCGeneric = test_gc::basic_temp_initlist_gc_test<int, true>;
 
-TEST_F(int_temp_initlist_gc_native, run_script)
+TEST_F(IntTempInitListGCNative, RunScript)
 {
-    auto* m = int_temp_initlist_gc_native::build_script();
+    auto* m = build_script();
     test_gc::run_templ_gc_list_test(m);
 }
 
-TEST_F(int_temp_initlist_gc_generic, run_script)
+TEST_F(IntTempInitListGCGeneric, RunScript)
 {
-    auto* m = int_temp_initlist_gc_generic::build_script();
+    auto* m = build_script();
     test_gc::run_templ_gc_list_test(m);
 }

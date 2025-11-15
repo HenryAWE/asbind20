@@ -318,7 +318,7 @@ static void check_from_span(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 }
 } // namespace test_bind
 
-TEST(initlist_native, value_as_iterators)
+TEST(InitListNative, ValueAsIterators)
 {
     if(asbind20::has_max_portability())
         GTEST_SKIP() << "max portability";
@@ -330,7 +330,7 @@ TEST(initlist_native, value_as_iterators)
     test_bind::check_vector_ints(engine);
 }
 
-TEST(initlist_generic, value_as_iterators)
+TEST(InitListGeneric, ValueAsIterators)
 {
     auto engine = asbind20::make_script_engine();
     test_bind::setup_initlist_test_env(engine);
@@ -339,7 +339,7 @@ TEST(initlist_generic, value_as_iterators)
     test_bind::check_vector_ints(engine);
 }
 
-TEST(initlist_native, value_repeat_list_proxy)
+TEST(InitListNative, ValueRepeatListProxy)
 {
     if(asbind20::has_max_portability())
         GTEST_SKIP() << "max portability";
@@ -353,7 +353,7 @@ TEST(initlist_native, value_repeat_list_proxy)
     test_bind::check_my_vec_ints(engine);
 }
 
-TEST(initlist_generic, value_repeat_list_proxy)
+TEST(InitListGeneric, ValueRepeatListProxy)
 {
     auto engine = asbind20::make_script_engine();
     test_bind::setup_initlist_test_env(engine);
@@ -364,7 +364,7 @@ TEST(initlist_generic, value_repeat_list_proxy)
     test_bind::check_my_vec_ints(engine);
 }
 
-TEST(initlist_native, value_pointer_size)
+TEST(InitListNative, ValuePointerAndSize)
 {
     if(asbind20::has_max_portability())
         GTEST_SKIP() << "max portability";
@@ -378,7 +378,7 @@ TEST(initlist_native, value_pointer_size)
     test_bind::check_my_vec_ints(engine);
 }
 
-TEST(initlist_generic, value_pointer_size)
+TEST(InitListGeneric, ValuePointerAndSize)
 {
     auto engine = asbind20::make_script_engine();
     test_bind::setup_initlist_test_env(engine);
@@ -389,7 +389,7 @@ TEST(initlist_generic, value_pointer_size)
     test_bind::check_my_vec_ints(engine);
 }
 
-TEST(initlist_native, value_as_initializer_list)
+TEST(InitListNative, ValueAsInitializerList)
 {
     if(asbind20::has_max_portability())
         GTEST_SKIP() << "max portability";
@@ -401,7 +401,7 @@ TEST(initlist_native, value_as_initializer_list)
     test_bind::check_from_init_list(engine);
 }
 
-TEST(initlist_generic, value_as_initializer_list)
+TEST(InitListGeneric, ValueAsInitializerList)
 {
     auto engine = asbind20::make_script_engine();
     test_bind::setup_initlist_test_env(engine);
@@ -410,7 +410,7 @@ TEST(initlist_generic, value_as_initializer_list)
     test_bind::check_from_init_list(engine);
 }
 
-TEST(initlist_native, value_as_span)
+TEST(InitListNative, ValueAsSpan)
 {
     if(asbind20::has_max_portability())
         GTEST_SKIP() << "max portability";
@@ -422,7 +422,7 @@ TEST(initlist_native, value_as_span)
     test_bind::check_from_span(engine);
 }
 
-TEST(initlist_generic, value_as_span)
+TEST(InitListGeneric, ValueAsSpan)
 {
     auto engine = asbind20::make_script_engine();
     test_bind::setup_initlist_test_env(engine);
@@ -433,7 +433,7 @@ TEST(initlist_generic, value_as_span)
 
 #ifdef ASBIND20_HAS_CONTAINERS_RANGES
 
-TEST(initlist_native, value_from_range)
+TEST(InitListNative, ValueFromRange)
 {
     if(asbind20::has_max_portability())
         GTEST_SKIP() << "max portability";
@@ -447,7 +447,7 @@ TEST(initlist_native, value_from_range)
     test_bind::check_my_vec_ints(engine);
 }
 
-TEST(initlist_generic, value_from_range)
+TEST(InitListGeneric, ValueFromRange)
 {
     auto engine = asbind20::make_script_engine();
     test_bind::setup_initlist_test_env(engine);
@@ -672,7 +672,7 @@ static void check_ref_test_vector(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
 }
 } // namespace test_bind
 
-TEST(initlist_native, ref_apply_to)
+TEST(InitListNative, RefApplyTo)
 {
     if(asbind20::has_max_portability())
         GTEST_SKIP() << "max portability";
@@ -684,7 +684,7 @@ TEST(initlist_native, ref_apply_to)
     test_bind::check_ref_test_apply(engine);
 }
 
-TEST(initlist_generic, ref_apply_to)
+TEST(InitListGeneric, RefApplyTo)
 {
     auto engine = asbind20::make_script_engine();
     test_bind::setup_initlist_test_env(engine);
@@ -693,7 +693,7 @@ TEST(initlist_generic, ref_apply_to)
     test_bind::check_ref_test_apply(engine);
 }
 
-TEST(initlist_native, ref_test_vector)
+TEST(InitListNative, RefAsIterators)
 {
     if(asbind20::has_max_portability())
         GTEST_SKIP() << "max portability";
@@ -707,7 +707,7 @@ TEST(initlist_native, ref_test_vector)
     test_bind::check_ref_test_vector(engine);
 }
 
-TEST(initlist_generic, ref_test_vector)
+TEST(InitListGeneric, RefAsIterators)
 {
     auto engine = asbind20::make_script_engine();
     test_bind::setup_initlist_test_env(engine);
@@ -718,7 +718,7 @@ TEST(initlist_generic, ref_test_vector)
     test_bind::check_ref_test_vector(engine);
 }
 
-TEST(initlist_native, ref_test_repeat_list_proxy)
+TEST(InitListNative, RefRepeatListProxy)
 {
     if(asbind20::has_max_portability())
         GTEST_SKIP() << "max portability";
@@ -732,7 +732,7 @@ TEST(initlist_native, ref_test_repeat_list_proxy)
     test_bind::check_ref_test_vector(engine);
 }
 
-TEST(initlist_generic, ref_test_repeat_list_proxy)
+TEST(InitListGeneric, RefRepeatListProxy)
 {
     auto engine = asbind20::make_script_engine();
     test_bind::setup_initlist_test_env(engine);
@@ -743,7 +743,7 @@ TEST(initlist_generic, ref_test_repeat_list_proxy)
     test_bind::check_ref_test_vector(engine);
 }
 
-TEST(initlist_native, ref_test_pointer_and_size)
+TEST(InitListNative, RefPointerAndSize)
 {
     if(asbind20::has_max_portability())
         GTEST_SKIP() << "max portability";
@@ -757,7 +757,7 @@ TEST(initlist_native, ref_test_pointer_and_size)
     test_bind::check_ref_test_vector(engine);
 }
 
-TEST(initlist_generic, ref_test_pointer_and_size)
+TEST(InitListGeneric, RefPointerAndSize)
 {
     auto engine = asbind20::make_script_engine();
     test_bind::setup_initlist_test_env(engine);
@@ -768,7 +768,7 @@ TEST(initlist_generic, ref_test_pointer_and_size)
     test_bind::check_ref_test_vector(engine);
 }
 
-TEST(initlist_native, ref_test_as_initializer_list)
+TEST(InitListNative, RefAsInitializerList)
 {
     if(asbind20::has_max_portability())
         GTEST_SKIP() << "max portability";
@@ -782,7 +782,7 @@ TEST(initlist_native, ref_test_as_initializer_list)
     test_bind::check_ref_test_vector(engine);
 }
 
-TEST(initlist_generic, ref_test_as_initializer_list)
+TEST(InitListGeneric, RefAsInitializerList)
 {
     auto engine = asbind20::make_script_engine();
     test_bind::setup_initlist_test_env(engine);
@@ -793,7 +793,7 @@ TEST(initlist_generic, ref_test_as_initializer_list)
     test_bind::check_ref_test_vector(engine);
 }
 
-TEST(initlist_native, ref_test_as_span)
+TEST(InitListNative, RefAsSpan)
 {
     if(asbind20::has_max_portability())
         GTEST_SKIP() << "max portability";
@@ -807,7 +807,7 @@ TEST(initlist_native, ref_test_as_span)
     test_bind::check_ref_test_vector(engine);
 }
 
-TEST(initlist_generic, ref_test_as_span)
+TEST(InitListGeneric, RefAsSpan)
 {
     auto engine = asbind20::make_script_engine();
     test_bind::setup_initlist_test_env(engine);
@@ -820,7 +820,7 @@ TEST(initlist_generic, ref_test_as_span)
 
 #ifdef ASBIND20_HAS_CONTAINERS_RANGES
 
-TEST(initlist_native, ref_test_from_range)
+TEST(InitListNative, RefFromRange)
 {
     if(asbind20::has_max_portability())
         GTEST_SKIP() << "max portability";
@@ -834,7 +834,7 @@ TEST(initlist_native, ref_test_from_range)
     test_bind::check_ref_test_vector(engine);
 }
 
-TEST(initlist_generic, ref_test_from_range)
+TEST(InitListGeneric, RefFromRange)
 {
     auto engine = asbind20::make_script_engine();
     test_bind::setup_initlist_test_env(engine);

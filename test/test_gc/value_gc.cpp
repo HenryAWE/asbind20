@@ -124,15 +124,15 @@ private:
 };
 } // namespace test_gc
 
-using optional_gc_generic = test_gc::basic_optional_gc_test<true>;
-using optional_gc_native = test_gc::basic_optional_gc_test<false>;
+using OptionalGCGeneric = test_gc::basic_optional_gc_test<true>;
+using OptionalGCNative = test_gc::basic_optional_gc_test<false>;
 
-TEST_F(optional_gc_generic, run_script)
+TEST_F(OptionalGCGeneric, RunScript)
 {
     this->run_script();
 }
 
-TEST_F(optional_gc_native, run_script)
+TEST_F(OptionalGCNative, RunScript)
 {
     this->run_script();
 }

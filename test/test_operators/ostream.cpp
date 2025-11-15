@@ -75,7 +75,7 @@ static void run_ostream_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engi
 }
 } // namespace test_operators
 
-TEST(test_operators, ostream_native)
+TEST(TestOperators, OStreamNative)
 {
     using namespace asbind20;
 
@@ -90,7 +90,7 @@ TEST(test_operators, ostream_native)
     test_operators::run_ostream_test_script(engine);
 }
 
-TEST(test_operators, ostream_generic)
+TEST(TestOperators, OStreamGeneric)
 {
     using namespace asbind20;
 

@@ -128,7 +128,7 @@ static void check_int128(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 }
 } // namespace test_bind
 
-TEST(test_bind, builtin_int128_type_native)
+TEST(TestBind, BuiltinInt128TypeNative)
 {
     using namespace asbind20;
 
@@ -141,7 +141,7 @@ TEST(test_bind, builtin_int128_type_native)
     test_bind::check_int128(engine);
 }
 
-TEST(test_bind, builtin_int128_type_generic)
+TEST(TestBind, BuiltinInt128TypeGeneric)
 {
     using namespace asbind20;
 

@@ -107,7 +107,7 @@ static void register_global_funcs(
         .property("string val", global_val);
 }
 
-TEST_F(asbind_test_suite, global)
+TEST_F(asbind_test_suite, Global)
 {
     if(asbind20::has_max_portability())
         GTEST_SKIP() << "AS_MAX_PORTABILITY";
@@ -175,7 +175,7 @@ TEST_F(asbind_test_suite, global)
     }
 }
 
-TEST_F(asbind_test_suite_generic, global)
+TEST_F(asbind_test_suite_generic, Global)
 {
     auto* engine = get_engine();
 

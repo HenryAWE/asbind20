@@ -7,7 +7,7 @@
 
 using namespace asbind_test;
 
-TEST(test_invoke, common_types)
+TEST(TestInvoke, CommonTypes)
 {
     using namespace asbind20;
     using asbind_test::result_has_value;
@@ -136,7 +136,7 @@ TEST(test_invoke, common_types)
     }
 }
 
-TEST(test_invoke, custom_rule_byte)
+TEST(TestInvoke, CustomRuleByte)
 {
     using namespace asbind20;
     using asbind_test::result_has_value;
@@ -202,7 +202,7 @@ static ::testing::AssertionResult check_result_ex(
 }
 } // namespace test_invoke
 
-TEST(test_invoke, bad_result)
+TEST(TestInvoke, BadResult)
 {
     using namespace asbind20;
     using asbind_test::result_has_value;
@@ -330,7 +330,7 @@ TEST(test_invoke, bad_result)
     }
 }
 
-TEST(test_invoke, suspension)
+TEST(TestInvoke, suspension)
 {
     using namespace asbind20;
     using asbind_test::result_has_value;

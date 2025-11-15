@@ -78,7 +78,7 @@ static void test_c_api(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 }
 } // namespace test_bind
 
-TEST(c_api, native)
+TEST(CAPI, Native)
 {
     if(asbind20::has_max_portability())
         GTEST_SKIP() << "AS_MAX_PORTABILITY";
@@ -90,7 +90,7 @@ TEST(c_api, native)
     test_bind::test_c_api(engine);
 }
 
-TEST(c_api, generic)
+TEST(CAPI, Generic)
 {
     auto engine = asbind20::make_script_engine();
     asbind_test::setup_message_callback(engine, true);
