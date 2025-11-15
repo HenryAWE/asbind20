@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <shared_test_lib.hpp>
+#include <asbind_test/framework.hpp>
 #include <thread>
 #include <asbind20/concurrent/threading.hpp>
 

@@ -1,7 +1,7 @@
 #include <angelscript.h>
 #include <cstdint>
 #include <gtest/gtest.h>
-#include <shared_test_lib.hpp>
+#include <asbind_test/framework.hpp>
 #include <asbind20/asbind.hpp>
 #include <asbind20/ext/exec.hpp>
 

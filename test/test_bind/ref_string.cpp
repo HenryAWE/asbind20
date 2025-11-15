@@ -1,5 +1,5 @@
 #include <asbind20/ext/assert.hpp>
-#include <shared_test_lib.hpp>
+#include <asbind_test/framework.hpp>
 
 constexpr char ref_string_test_script[] = R"(void test0()
 {

@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <shared_test_lib.hpp>
+#include <asbind_test/framework.hpp>
 
 static void output_info(std::ostream& os)
 {

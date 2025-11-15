@@ -1,6 +1,6 @@
 #include <asbind20/asbind.hpp>
 #include <asbind20/container/small_vector.hpp>
-#include <shared_test_lib.hpp>
+#include <asbind_test/framework.hpp>
 #include <gtest/gtest.h>
 #include <asbind20/ext/stdstring.hpp>
 

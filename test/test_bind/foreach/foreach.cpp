@@ -1,4 +1,4 @@
-#include <shared_test_lib.hpp>
+#include <asbind_test/framework.hpp>
 
 #ifdef ASBIND20_HAS_AS_FOREACH
 

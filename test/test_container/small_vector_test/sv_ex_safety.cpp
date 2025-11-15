@@ -1,4 +1,4 @@
-#include <shared_test_lib.hpp>
+#include <asbind_test/framework.hpp>
 #include <asbind20/container/small_vector.hpp>
 
 TEST(SmallVector, ExceptionSafety)

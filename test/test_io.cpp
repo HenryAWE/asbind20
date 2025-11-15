@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <asbind20/asbind.hpp>
-#include <shared_test_lib.hpp>
+#include <asbind_test/framework.hpp>
 #include <asbind20/io/stream.hpp>
 #include <sstream>
 

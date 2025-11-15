@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <shared_test_lib.hpp>
+#include <asbind_test/framework.hpp>
 #include <asbind20/asbind.hpp>
 
 TEST(StringViewCompat, ClassType)

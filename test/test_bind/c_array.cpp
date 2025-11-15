@@ -1,4 +1,4 @@
-#include <shared_test_lib.hpp>
+#include <asbind_test/framework.hpp>
 
 namespace test_bind
 {
