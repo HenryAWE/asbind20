@@ -259,20 +259,30 @@ static void check_ref_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     check_int_result(8, 1);
 }
 
-TEST_F(asbind_test_suite, RefClass)
+TEST(TestBind, RefClassNative)
 {
     if(asbind20::has_max_portability())
         GTEST_SKIP() << "AS_MAX_PORTABILITY";
 
-    auto* engine = get_engine();
+    auto engine = asbind20::make_script_engine();
+    asbind20::ext::register_script_assert(
+        engine,
+        [](std::string_view msg)
+        { FAIL() << msg; }
+    );
     register_ref_class(engine);
 
     check_ref_class(engine);
 }
 
-TEST_F(asbind_test_suite_generic, RefClass)
+TEST(TestBind, RefClassGeneric)
 {
-    auto* engine = get_engine();
+    auto engine = asbind20::make_script_engine();
+    asbind20::ext::register_script_assert(
+        engine,
+        [](std::string_view msg)
+        { FAIL() << msg; }
+    );
     register_ref_class(asbind20::use_generic, engine);
 
     check_ref_class(engine);
@@ -405,21 +415,31 @@ static void check_ref_class_for_helper(AS_NAMESPACE_QUALIFIER asIScriptEngine* e
 }
 } // namespace test_bind
 
-TEST_F(asbind_test_suite, ref_class_for_helper)
+TEST(TestBind, RefClassForHelperNative)
 {
     if(asbind20::has_max_portability())
         GTEST_SKIP() << "AS_MAX_PORTABILITY";
 
-    auto* engine = get_engine();
+    auto engine = asbind20::make_script_engine();
+    asbind20::ext::register_script_assert(
+        engine,
+        [](std::string_view msg)
+        { FAIL() << msg; }
+    );
     test_bind::ref_helper helper;
     test_bind::register_ref_class_for_helper<false>(engine, helper);
 
     test_bind::check_ref_class_for_helper(engine, helper);
 }
 
-TEST_F(asbind_test_suite_generic, ref_class_for_helper)
+TEST(TestBind, RefClassForHelperGeneric)
 {
-    auto* engine = get_engine();
+    auto engine = asbind20::make_script_engine();
+    asbind20::ext::register_script_assert(
+        engine,
+        [](std::string_view msg)
+        { FAIL() << msg; }
+    );
     test_bind::ref_helper helper;
     test_bind::register_ref_class_for_helper<true>(engine, helper);
 

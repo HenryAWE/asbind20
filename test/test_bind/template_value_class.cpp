@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
 #include <shared_test_lib.hpp>
 #include <asbind20/asbind.hpp>
+#include <asbind20/ext/stdstring.hpp>
+#include <asbind20/ext/assert.hpp>
 
 namespace test_bind
 {
@@ -243,9 +245,6 @@ static void register_template_val_class(asbind20::use_generic_t, AS_NAMESPACE_QU
 }
 } // namespace test_bind
 
-using asbind_test::asbind_test_suite;
-using asbind_test::asbind_test_suite_generic;
-
 const char* template_value_class_test_script = R"(
 int test_0()
 {
@@ -322,20 +321,34 @@ static void check_template_val_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* eng
     check_int_result(6, AS_NAMESPACE_QUALIFIER asTYPEID_INT32);
 }
 
-TEST_F(asbind_test_suite, TemplateValClass)
+TEST(TestBind, TemplateValClassNative)
 {
     if(asbind20::has_max_portability())
         GTEST_SKIP() << "AS_MAX_PORTABILITY";
 
-    auto* engine = get_engine();
+    auto engine = asbind20::make_script_engine();
+    asbind_test::setup_message_callback(engine, true);
+    asbind20::ext::register_std_string(engine);
+    asbind20::ext::register_script_assert(
+        engine,
+        [](std::string_view msg)
+        { FAIL() << msg; }
+    );
 
     test_bind::register_template_val_class(engine);
     check_template_val_class(engine);
 }
 
-TEST_F(asbind_test_suite_generic, TemplateValClass)
+TEST(TestBind, TemplateValClassGeneric)
 {
-    auto* engine = get_engine();
+    auto engine = asbind20::make_script_engine();
+    asbind_test::setup_message_callback(engine, true);
+    asbind20::ext::register_std_string(engine);
+    asbind20::ext::register_script_assert(
+        engine,
+        [](std::string_view msg)
+        { FAIL() << msg; }
+    );
 
     test_bind::register_template_val_class(asbind20::use_generic, engine);
     check_template_val_class(engine);

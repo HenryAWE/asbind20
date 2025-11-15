@@ -4,7 +4,7 @@
 #include <gtest/gtest.h>
 #include <asbind20/ext/stdstring.hpp>
 
-TEST(small_vector, int)
+TEST(SmallVector, IntAsElement)
 {
     using namespace asbind20;
 
@@ -83,7 +83,7 @@ TEST(small_vector, int)
     EXPECT_EQ(*(int*)v[1], 13);
 }
 
-TEST(small_vector, script_object)
+TEST(SmallVector, ScriptObjectAsElement)
 {
     using namespace asbind20;
 
@@ -287,7 +287,7 @@ TEST(small_vector, script_object)
     }
 }
 
-TEST(small_vector, script_string)
+TEST(SmallVector, ScriptStringAsElement)
 {
     using namespace asbind20;
     auto engine = make_script_engine();

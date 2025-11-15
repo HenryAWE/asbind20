@@ -493,18 +493,18 @@ private:
 };
 } // namespace test_bind
 
-using trivial_value_class_native = test_bind::basic_trivial_value_class_suite<false>;
-using trivial_value_class_generic = test_bind::basic_trivial_value_class_suite<true>;
+using TrivialValueClassNative = test_bind::basic_trivial_value_class_suite<false>;
+using TrivialValueClassGeneric = test_bind::basic_trivial_value_class_suite<true>;
 
-TEST_F(trivial_value_class_native, check_trivial_class)
+TEST_F(TrivialValueClassNative, CheckTrivialClass)
 {
-    auto* engine = get_engine();
+    auto engine = get_engine();
     test_bind::check_trivial_class(engine);
 }
 
-TEST_F(trivial_value_class_generic, check_trivial_class)
+TEST_F(TrivialValueClassGeneric, CheckTrivialClass)
 {
-    auto* engine = get_engine();
+    auto engine = get_engine();
     test_bind::check_trivial_class(engine);
 }
 

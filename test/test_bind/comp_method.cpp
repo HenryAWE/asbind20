@@ -262,7 +262,7 @@ static void check_val_comp(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 }
 } // namespace test_bind
 
-TEST(val_comp, native_offset)
+TEST(ValClassCompMethod, NativeOffset)
 {
     using namespace asbind20;
 
@@ -275,7 +275,7 @@ TEST(val_comp, native_offset)
     test_bind::check_val_comp(engine);
 }
 
-TEST(val_comp, native_mp)
+TEST(ValClassCompMethod, NativeMP)
 {
     using namespace asbind20;
 
@@ -288,7 +288,7 @@ TEST(val_comp, native_mp)
     test_bind::check_val_comp(engine);
 }
 
-TEST(val_comp, native_offset_nontype)
+TEST(ValClassCompMethod, NativeOffsetNontype)
 {
     using namespace asbind20;
 
@@ -301,7 +301,7 @@ TEST(val_comp, native_offset_nontype)
     test_bind::check_val_comp(engine);
 }
 
-TEST(val_comp, native_mp_nontype)
+TEST(ValClassCompMethod, NativeMPNontype)
 {
     using namespace asbind20;
 
@@ -314,7 +314,7 @@ TEST(val_comp, native_mp_nontype)
     test_bind::check_val_comp(engine);
 }
 
-TEST(val_comp, generic_offset)
+TEST(ValClassCompMethod, GenericOffset)
 {
     using namespace asbind20;
 
@@ -327,7 +327,7 @@ TEST(val_comp, generic_offset)
     test_bind::check_val_comp(engine);
 }
 
-TEST(val_comp, generic_mp)
+TEST(ValClassCompMethod, GenericMP)
 {
     using namespace asbind20;
 
@@ -337,7 +337,7 @@ TEST(val_comp, generic_mp)
     test_bind::check_val_comp(engine);
 }
 
-TEST(val_comp, generic_offset_explicitly)
+TEST(ValClassCompMethod, GenericOffsetExplicitly)
 {
     using namespace asbind20;
 
@@ -347,7 +347,7 @@ TEST(val_comp, generic_offset_explicitly)
     test_bind::check_val_comp(engine);
 }
 
-TEST(val_comp, generic_mp_explicitly)
+TEST(ValClassCompMethod, GenericMPExplicitly)
 {
     using namespace asbind20;
 

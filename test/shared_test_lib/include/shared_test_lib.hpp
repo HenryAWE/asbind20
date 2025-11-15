@@ -135,38 +135,4 @@ void register_throw_on_copy(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     )
         .behaviours_by_traits(flags);
 }
-
-// TODO: Make a better test suite
-class asbind_test_suite : public ::testing::Test
-{
-public:
-    void msg_callback(const AS_NAMESPACE_QUALIFIER asSMessageInfo* msg);
-    void ex_translator(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx);
-
-    void SetUp() override;
-
-    void TearDown() override;
-
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* get_engine() const noexcept
-    {
-        return m_engine.get();
-    }
-
-    void run_file(
-        const std::filesystem::path& filename,
-        const char* entry_decl = "void main()"
-    );
-
-protected:
-    virtual void register_all();
-
-private:
-    asbind20::script_engine m_engine;
-};
-
-class asbind_test_suite_generic : public asbind_test_suite
-{
-protected:
-    void register_all() override;
-};
 } // namespace asbind_test

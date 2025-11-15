@@ -1,7 +1,7 @@
 #include <shared_test_lib.hpp>
 #include <asbind20/container/small_vector.hpp>
 
-TEST(small_vector, ex_safety)
+TEST(SmallVector, ExceptionSafety)
 {
     using namespace asbind20;
 
