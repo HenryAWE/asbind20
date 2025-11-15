@@ -2,6 +2,7 @@
 #include <shared_test_lib.hpp>
 #include <asbind20/asbind.hpp>
 #include <sstream>
+#include <asbind20/ext/assert.hpp>
 
 using namespace asbind_test;
 
@@ -90,6 +91,13 @@ TEST(TestBind, Interface)
 TEST(TestBind, FuncdefAndTypedef)
 {
     auto engine = asbind20::make_script_engine();
+    asbind20::ext::register_script_assert(
+        engine,
+        [](std::string_view msg)
+        {
+            FAIL() << msg;
+        }
+    );
 
     asbind20::global(engine)
         .funcdef("bool callback(int, int)")
