@@ -3,6 +3,11 @@ Changelog
 
 Changelog since the version 1.5.0.
 
+2.0.0
+-----
+
+First major update after the initial stable version.
+
 1.8.0
 -----
 
