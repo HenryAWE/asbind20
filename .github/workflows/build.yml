@@ -51,6 +51,10 @@ jobs:
         working-directory: ${{github.workspace}}/build
         run: ctest --output-on-failure
 
+      - name: Install
+        working-directory: ${{github.workspace}}/build
+        run: cmake --install .
+
       - name: Test Installation
         run: |
           cmake -GNinja -S ${{github.workspace}}/ci/test_install/ -B build/asbind20_test_install -DCMAKE_BUILD_TYPE=Release
@@ -200,14 +204,14 @@ jobs:
           matrix:
             clang: [15, 18, 19]
             cxxstd: [20, 23]
+            stdlib: ["libc++", "libstdc++"]
             exclude:
               - clang: 15
                 cxxstd: 23 # Clang 15 doesn't fully support C++23 features we want to use yet
+              - clang: 15
+                stdlib: "libstdc++" # Older Clang only supports libc++
 
-      name: Linux x64 Clang ${{matrix.clang}} C++${{matrix.cxxstd}}
-
-      env:
-        VCPKG_BUILD_TYPE: release
+      name: Linux x64 Clang ${{matrix.clang}} C++${{matrix.cxxstd}} ${{matrix.stdlib}}
 
       steps:
       - uses: actions/checkout@v4
@@ -215,13 +219,18 @@ jobs:
       - name: Install Dependencies
         run: |
             sudo apt-get update
-            sudo apt-get install -y cmake ninja-build clang-${{matrix.clang}} clang++-${{matrix.clang}}
+            sudo apt-get install -y cmake ninja-build clang-${{matrix.clang}}
             sudo update-alternatives --install /usr/bin/cc cc /usr/bin/clang-${{matrix.clang}} 100
             sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++-${{matrix.clang}} 100
 
+      - name: Intall Dependencies (for libc++)
+        if: ${{matrix.stdlib == 'libc++'}}
+        run: |
+            sudo apt-get install -y libc++-${{matrix.clang}}-dev libc++abi-${{matrix.clang}}-dev
+
       - name: Install AngelScript
         working-directory: ${{github.workspace}}/ci
-        run: ./setup_angelscript.sh --version 2.38.0
+        run: ./setup_angelscript.sh --version 2.38.0 -- -DCMAKE_CXX_FLAGS=-stdlib=${{matrix.stdlib}}
 
       - name: Configure
         run: >
@@ -230,6 +239,7 @@ jobs:
           -B build
           -G Ninja
           -Dasbind_cxxstd=${{matrix.cxxstd}}
+          -DCMAKE_CXX_FLAGS=-stdlib=${{matrix.stdlib}}
           -DCMAKE_BUILD_TYPE=Release
           -Dasbind_build_ext=1
           -Dasbind_build_test=1
