@@ -36,7 +36,7 @@ However, asbind20 on other platforms, architectures or compiler toolchains suppo
    * - Linux (Ubuntu)
      - x64
      - | GCC 13, 14
-       | Clang 15*, 18, 19
+       | Clang* 15**, 18, 19
    * - Linux (Ubuntu)
      - arm64
      - Clang 18
@@ -44,7 +44,10 @@ However, asbind20 on other platforms, architectures or compiler toolchains suppo
      - wasm
      - emsdk 4.0.18
 
-\* The Clang 15 toolchain only supports features available under C++20.
+\* Newer Clang toolchains (like Clang 18+) support both libstdc++ and libc++,
+while the older toolchains (like Clang 15) on libstdc++ are not guaranteed to work as expected.
+
+\*\* The Clang 15 toolchain only supports features available under C++20.
 
 Additionally, the Clang 18 toolchain on x64 Linux is also tested for compiling with address sanitizer and ``AS_USE_NAMESPACE`` enabled.
 
