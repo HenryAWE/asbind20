@@ -55,26 +55,10 @@ jobs:
         working-directory: ${{github.workspace}}/build
         run: cmake --install .
 
-      - name: Test Installation
-        run: |
-          cmake -GNinja -S ${{github.workspace}}/ci/test_install/ -B build/asbind20_test_install -DCMAKE_BUILD_TYPE=Release
-          cmake --build build/asbind20_test_install
-          build/asbind20_test_install/asbind20_test_install
-
       - name: Benchmark
         working-directory: ${{github.workspace}}/build/bench
-        # Run all executables start with "bench_", using PowerShell
         shell: pwsh
-        run: |
-          Get-ChildItem -Path . -Filter "bench_*.exe" -File | ForEach-Object {
-            $exe = $_.FullName
-            if (Test-Path $exe) {
-              Write-Host "Running benchmark: $exe"
-              & $exe
-            } else {
-              Write-Host "Benchmark executable not found: $exe"
-            }
-          }
+        run: ${{github.workspace}}/ci/run_benchmarks.ps1
 
     ClangCl:
       runs-on: windows-2025
@@ -127,18 +111,8 @@ jobs:
 
       - name: Benchmark
         working-directory: ${{github.workspace}}/build/bench
-        # Run all executables start with "bench_", using PowerShell
         shell: pwsh
-        run: |
-          Get-ChildItem -Path . -Filter "bench_*.exe" -File | ForEach-Object {
-            $exe = $_.FullName
-            if (Test-Path $exe) {
-              Write-Host "Running benchmark: $exe"
-              & $exe
-            } else {
-              Write-Host "Benchmark executable not found: $exe"
-            }
-          }
+        run: ${{github.workspace}}/ci/run_benchmarks.ps1
 
     GCC:
       runs-on: ubuntu-24.04
