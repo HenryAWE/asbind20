@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
 # Variables
 VERSION="2.38.0"
@@ -7,7 +8,7 @@ CMAKE_EXTRA_ARGS=()
 
 parse_arguments() {
     TEMP=$(getopt -o '' \
-                  --long version:,use-emsdk,help \
+                  --long version:,use-emsdk \
                   -n 'setup_angelscript.sh' -- "$@")
 
     if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
 # NOTE: This script should be called from the build output directory of benchmarks
 
