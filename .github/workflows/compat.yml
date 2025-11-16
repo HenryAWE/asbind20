@@ -1,0 +1,56 @@
+# Compatibility tests for special configurations
+
+name: Compatibility
+
+on:
+  push:
+    paths-ignore:
+      - 'doc/**'
+      - README.*
+  pull_request:
+    paths-ignore:
+      - 'doc/**'
+      - README.*
+
+jobs:
+    MultiVersion_AS_USE_NAMESPACE:
+      runs-on: ubuntu-24.04
+      strategy:
+          fail-fast: false
+          matrix:
+            as_ver: ["2.37.0", "2.38.0", "latest"]
+
+      name: AngelScript ${{matrix.as_ver}} Clang 18 (AS_USE_NAMESPACE)
+
+      steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+            sudo apt-get update
+            sudo apt-get install -y cmake ninja-build clang-18 clang++-18
+            sudo update-alternatives --install /usr/bin/cc cc /usr/bin/clang-18 100
+            sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++-18 100
+
+      - name: Install AngelScript
+        working-directory: ${{github.workspace}}/ci
+        run: ./setup_angelscript.sh --version ${{matrix.as_ver}}
+
+      - name: Configure
+        run: >
+          cmake
+          -S ${{github.workspace}}
+          -B build
+          -G Ninja
+          -Dasbind_cxxstd=20
+          -DCMAKE_CXX_FLAGS=-DAS_USE_NAMESPACE=1
+          -DCMAKE_BUILD_TYPE=Release
+          -Dasbind_build_ext=1
+          -Dasbind_build_test=1
+
+      - name: Build
+        run: cmake --build ${{github.workspace}}/build
+
+      - name: Test
+        working-directory: ${{github.workspace}}/build
+        run: ctest --output-on-failure

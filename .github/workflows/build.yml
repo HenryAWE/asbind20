@@ -1,3 +1,5 @@
+# Build script for common platforms & configurations
+
 name: Build
 
 on:
@@ -277,47 +279,6 @@ jobs:
       - name: Benchmark
         working-directory: ${{github.workspace}}/build/bench
         run: ${{github.workspace}}/ci/run_benchmarks.sh
-
-    AS_USE_NAMESPACE:
-      runs-on: ubuntu-24.04
-
-      name: Clang 18 (AS_USE_NAMESPACE)
-
-      env:
-        VCPKG_BUILD_TYPE: release
-
-      steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Dependencies
-        run: |
-            sudo apt-get update
-            sudo apt-get install -y cmake ninja-build clang-18 clang++-18
-            sudo update-alternatives --install /usr/bin/cc cc /usr/bin/clang-18 100
-            sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++-18 100
-
-      - name: Install AngelScript
-        working-directory: ${{github.workspace}}/ci
-        run: ./setup_angelscript.sh
-
-      - name: Configure
-        run: >
-          cmake
-          -S ${{github.workspace}}
-          -B build
-          -G Ninja
-          -Dasbind_cxxstd=20
-          -DCMAKE_CXX_FLAGS=-DAS_USE_NAMESPACE=1
-          -DCMAKE_BUILD_TYPE=Release
-          -Dasbind_build_ext=1
-          -Dasbind_build_test=1
-
-      - name: Build
-        run: cmake --build ${{github.workspace}}/build
-
-      - name: Test
-        working-directory: ${{github.workspace}}/build
-        run: ctest --output-on-failure
 
     Emscripten:
       runs-on: ubuntu-24.04
