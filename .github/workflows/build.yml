@@ -393,7 +393,6 @@ jobs:
 
       - name: Benchmark
         working-directory: ${{github.workspace}}/build/bench
-        # List all files start with "bench_" and end with ".js"
         run: ${{github.workspace}}/ci/run_benchmarks.sh --node-js
 
     ASan:
