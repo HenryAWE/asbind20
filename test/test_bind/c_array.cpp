@@ -1,4 +1,4 @@
-#include <shared_test_lib.hpp>
+#include <asbind_test/framework.hpp>
 
 namespace test_bind
 {
@@ -99,10 +99,9 @@ void check_int_array(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 }
 } // namespace test_bind
 
-TEST(test_c_array, native)
+TEST(TestCArray, Native)
 {
-    if(asbind20::has_max_portability())
-        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
     asbind_test::setup_message_callback(engine, true);
@@ -111,7 +110,7 @@ TEST(test_c_array, native)
     test_bind::check_int_array(engine);
 }
 
-TEST(test_c_array, generic)
+TEST(TestCArray, Generic)
 {
     auto engine = asbind20::make_script_engine();
     asbind_test::setup_message_callback(engine, true);

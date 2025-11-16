@@ -1,11 +1,12 @@
 #include <gtest/gtest.h>
-#include <shared_test_lib.hpp>
+#include <asbind_test/framework.hpp>
 #include <asbind20/asbind.hpp>
 #include <sstream>
+#include <asbind20/ext/stdstring.hpp>
 
 using namespace asbind_test;
 
-TEST(detail, generate_member_funcdef)
+TEST(Detail, GenerateMemberFuncdef)
 {
     using namespace asbind20;
     using detail::generate_member_funcdef;
@@ -46,9 +47,9 @@ TEST(detail, generate_member_funcdef)
     );
 }
 
-TEST_F(asbind_test_suite, interface)
+TEST(TestBind, Interface)
 {
-    auto* engine = get_engine();
+    auto engine = asbind20::make_script_engine();
 
     {
         asbind20::interface i(engine, "my_interface");
@@ -87,9 +88,10 @@ TEST_F(asbind_test_suite, interface)
     m->Discard();
 }
 
-TEST_F(asbind_test_suite, funcdef_and_typedef)
+TEST(TestBind, FuncdefAndTypedef)
 {
-    auto* engine = get_engine();
+    auto engine = asbind20::make_script_engine();
+    asbind_test::setup_script_assertion(engine);
 
     asbind20::global(engine)
         .funcdef("bool callback(int, int)")
@@ -302,11 +304,13 @@ consteval void test_detail_arg_idx()
 } // namespace test_bind
 
 // Testing internal functions
-TEST_F(asbind_test_suite, generic_wrapper)
+TEST(Detail, GenericWrapper)
 {
     using namespace asbind20;
 
-    auto* engine = get_engine();
+    auto engine = asbind20::make_script_engine();
+    ext::register_std_string(engine);
+    asbind_test::setup_script_assertion(engine);
 
     auto my_div_gen = detail::to_asGENFUNC_t(fp<&test_bind::my_div>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>);
     auto my_mul_gen = test_bind::my_mul;
@@ -412,9 +416,9 @@ enum class my_enum : int
 };
 } // namespace test_bind
 
-TEST_F(asbind_test_suite, enum_)
+TEST(TestBind, Enum)
 {
-    auto* engine = get_engine();
+    auto engine = asbind20::make_script_engine();
 
     using test_bind::my_enum;
     {
@@ -484,9 +488,9 @@ struct asbind20::type_traits<test_bind::enum_uint64> :
     public asbind20::underlying_enum_traits<test_bind::enum_uint64>
 {};
 
-TEST_F(asbind_test_suite, enum_uint64)
+TEST(TestBind, EnumUInt64)
 {
-    auto* engine = get_engine();
+    auto engine = asbind20::make_script_engine();
 
     using test_bind::enum_uint64;
 
@@ -530,32 +534,38 @@ TEST_F(asbind_test_suite, enum_uint64)
 
 #endif
 
+static void output_info(std::ostream& os)
+{
+    os << "__cplusplus = " << __cplusplus << 'L' << std::endl;
+    os << "asGetLibraryVersion(): " << AS_NAMESPACE_QUALIFIER asGetLibraryVersion() << std::endl;
+    os << "asGetLibraryOptions(): " << AS_NAMESPACE_QUALIFIER asGetLibraryOptions() << std::endl;
+    os << "asbind20::library_version(): " << asbind20::library_version() << std::endl;
+
+    os << "ASBIND20_HAS_ENUM_UNDERLYING_TYPE";
+#ifndef ASBIND20_HAS_ENUM_UNDERLYING_TYPE
+    os << " not";
+#endif
+    os << " defined" << std::endl;
+
+#ifdef ASBIND20_HAS_AS_INITIALIZER_LIST
+    os << "ASBIND20_HAS_AS_INITIALIZER_LIST: " << ASBIND20_HAS_AS_INITIALIZER_LIST << std::endl;
+#else
+    os << "ASBIND20_HAS_AS_INITIALIZER_LIST not defined" << std::endl;
+#endif
+
+#ifdef ASBIND20_HAS_CONTAINERS_RANGES
+    os << "ASBIND20_HAS_CONTAINERS_RANGES: " << ASBIND20_HAS_CONTAINERS_RANGES << std::endl;
+#else
+    os << "ASBIND20_HAS_CONTAINERS_RANGES not defined" << std::endl;
+#endif
+}
+
 int main(int argc, char* argv[])
 {
     ::testing::InitGoogleTest(&argc, argv);
 
-    std::cerr << "__cplusplus = " << __cplusplus << 'L' << std::endl;
-    std::cerr << "asGetLibraryVersion(): " << AS_NAMESPACE_QUALIFIER asGetLibraryVersion() << std::endl;
-    std::cerr << "asGetLibraryOptions(): " << AS_NAMESPACE_QUALIFIER asGetLibraryOptions() << std::endl;
-    std::cerr << "asbind20::library_version(): " << asbind20::library_version() << std::endl;
-
-    std::cerr << "ASBIND20_HAS_ENUM_UNDERLYING_TYPE";
-#ifndef ASBIND20_HAS_ENUM_UNDERLYING_TYPE
-    std::cerr << " not";
-#endif
-    std::cerr << " defined" << std::endl;
-
-#ifdef ASBIND20_HAS_AS_INITIALIZER_LIST
-    std::cerr << "ASBIND20_HAS_AS_INITIALIZER_LIST: " << ASBIND20_HAS_AS_INITIALIZER_LIST << std::endl;
-#else
-    std::cerr << "ASBIND20_HAS_AS_INITIALIZER_LIST not defined" << std::endl;
-#endif
-
-#ifdef ASBIND20_HAS_CONTAINERS_RANGES
-    std::cerr << "ASBIND20_HAS_CONTAINERS_RANGES: " << ASBIND20_HAS_CONTAINERS_RANGES << std::endl;
-#else
-    std::cerr << "ASBIND20_HAS_CONTAINERS_RANGES not defined" << std::endl;
-#endif
+    // Output information so we can read them when CMake is configuring tests
+    output_info(std::cerr);
 
     return RUN_ALL_TESTS();
 }

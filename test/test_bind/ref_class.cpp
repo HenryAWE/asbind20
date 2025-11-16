@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
-#include <shared_test_lib.hpp>
+#include <asbind_test/framework.hpp>
 #include <asbind20/asbind.hpp>
-#include <asbind20/ext/assert.hpp>
 
 namespace test_bind
 {
@@ -259,20 +258,21 @@ static void check_ref_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     check_int_result(8, 1);
 }
 
-TEST_F(asbind_test_suite, ref_class)
+TEST(TestBind, RefClassNative)
 {
-    if(asbind20::has_max_portability())
-        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
-    auto* engine = get_engine();
+    auto engine = asbind20::make_script_engine();
+    asbind_test::setup_script_assertion(engine);
     register_ref_class(engine);
 
     check_ref_class(engine);
 }
 
-TEST_F(asbind_test_suite_generic, ref_class)
+TEST(TestBind, RefClassGeneric)
 {
-    auto* engine = get_engine();
+    auto engine = asbind20::make_script_engine();
+    asbind_test::setup_script_assertion(engine);
     register_ref_class(asbind20::use_generic, engine);
 
     check_ref_class(engine);
@@ -405,21 +405,22 @@ static void check_ref_class_for_helper(AS_NAMESPACE_QUALIFIER asIScriptEngine* e
 }
 } // namespace test_bind
 
-TEST_F(asbind_test_suite, ref_class_for_helper)
+TEST(TestBind, RefClassForHelperNative)
 {
-    if(asbind20::has_max_portability())
-        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
-    auto* engine = get_engine();
+    auto engine = asbind20::make_script_engine();
+    asbind_test::setup_script_assertion(engine);
     test_bind::ref_helper helper;
     test_bind::register_ref_class_for_helper<false>(engine, helper);
 
     test_bind::check_ref_class_for_helper(engine, helper);
 }
 
-TEST_F(asbind_test_suite_generic, ref_class_for_helper)
+TEST(TestBind, RefClassForHelperGeneric)
 {
-    auto* engine = get_engine();
+    auto engine = asbind20::make_script_engine();
+    asbind_test::setup_script_assertion(engine);
     test_bind::ref_helper helper;
     test_bind::register_ref_class_for_helper<true>(engine, helper);
 
@@ -550,24 +551,16 @@ static void check_ref_class_comp_property(AS_NAMESPACE_QUALIFIER asIScriptEngine
 template <bool UseGeneric, bool UseMP, bool CompUseMP>
 static void setup_ref_class_comp_prop_test(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
-    using namespace asbind20;
-
-    ext::register_script_assert(
-        engine,
-        [](std::string_view msg)
-        {
-            FAIL() << "ref_class_comp_prop failed: " << msg;
-        }
-    );
+    asbind_test::setup_message_callback(engine);
+    asbind_test::setup_script_assertion(engine);
 
     register_base_ref_class<UseGeneric, UseMP, CompUseMP>(engine);
 }
 } // namespace test_bind
 
-TEST(ref_class_comp_prop, native_off_off)
+TEST(RefClassCompProperty, OffsetCompOffsetNative)
 {
-    if(asbind20::has_max_portability())
-        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     using namespace test_bind;
     auto engine = asbind20::make_script_engine();
@@ -575,7 +568,7 @@ TEST(ref_class_comp_prop, native_off_off)
     check_ref_class_comp_property(engine);
 }
 
-TEST(ref_class_comp_prop, generic_off_off)
+TEST(RefClassCompProperty, OffsetCompOffsetGeneric)
 {
     using namespace test_bind;
     auto engine = asbind20::make_script_engine();
@@ -583,10 +576,9 @@ TEST(ref_class_comp_prop, generic_off_off)
     check_ref_class_comp_property(engine);
 }
 
-TEST(ref_class_comp_prop, native_mp_off)
+TEST(RefClassCompProperty, MPCompOffsetNative)
 {
-    if(asbind20::has_max_portability())
-        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     using namespace test_bind;
     auto engine = asbind20::make_script_engine();
@@ -594,7 +586,7 @@ TEST(ref_class_comp_prop, native_mp_off)
     check_ref_class_comp_property(engine);
 }
 
-TEST(ref_class_comp_prop, generic_mp_off)
+TEST(RefClassCompProperty, MPCompOffsetGeneric)
 {
     using namespace test_bind;
     auto engine = asbind20::make_script_engine();
@@ -602,10 +594,9 @@ TEST(ref_class_comp_prop, generic_mp_off)
     check_ref_class_comp_property(engine);
 }
 
-TEST(ref_class_comp_prop, native_off_mp)
+TEST(RefClassCompProperty, OffsetCompMPNative)
 {
-    if(asbind20::has_max_portability())
-        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     using namespace test_bind;
     auto engine = asbind20::make_script_engine();
@@ -613,7 +604,7 @@ TEST(ref_class_comp_prop, native_off_mp)
     check_ref_class_comp_property(engine);
 }
 
-TEST(ref_class_comp_prop, generic_off_mp)
+TEST(RefClassCompProperty, OffsetCompMPGeneric)
 {
     using namespace test_bind;
     auto engine = asbind20::make_script_engine();
@@ -621,10 +612,9 @@ TEST(ref_class_comp_prop, generic_off_mp)
     check_ref_class_comp_property(engine);
 }
 
-TEST(ref_class_comp_prop, native_mp_mp)
+TEST(RefClassCompProperty, MPCompMPNative)
 {
-    if(asbind20::has_max_portability())
-        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     using namespace test_bind;
     auto engine = asbind20::make_script_engine();
@@ -632,7 +622,7 @@ TEST(ref_class_comp_prop, native_mp_mp)
     check_ref_class_comp_property(engine);
 }
 
-TEST(ref_class_comp_prop, generic_mp_mp)
+TEST(RefClassCompProperty, MPCompMPGeneric)
 {
     using namespace test_bind;
     auto engine = asbind20::make_script_engine();

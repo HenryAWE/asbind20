@@ -1,5 +1,0 @@
-aux_source_directory(. test_ext_vocabulary_src)
-
-add_executable(test_ext_vocabulary ${test_ext_vocabulary_src})
-target_link_libraries(test_ext_vocabulary PRIVATE shared_test_lib)
-gtest_discover_tests(test_ext_vocabulary)

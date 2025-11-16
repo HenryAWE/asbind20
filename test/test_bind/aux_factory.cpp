@@ -1,5 +1,4 @@
-#include <asbind20/ext/assert.hpp>
-#include <shared_test_lib.hpp>
+#include <asbind_test/framework.hpp>
 
 namespace test_bind
 {
@@ -93,14 +92,7 @@ static test_aux_factory* create_aux_auxlast_list(void* list_buf, aux_factory_hel
 static void setup_env(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     asbind_test::setup_message_callback(engine);
-
-    asbind20::ext::register_script_assert(
-        engine,
-        [](std::string_view msg)
-        {
-            GTEST_FAIL() << "assertion failure: " << msg;
-        }
-    );
+    asbind_test::setup_script_assertion(engine);
 }
 
 struct register_refcount_helper
@@ -164,12 +156,11 @@ static void check_aux_factory_list(AS_NAMESPACE_QUALIFIER asIScriptEngine* engin
 }
 } // namespace test_bind
 
-TEST(aux_factory_native, as_global)
+TEST(AuxFactoryNative, AsGlobal)
 {
     using namespace asbind20;
 
-    if(has_max_portability())
-        GTEST_SKIP() << "max portability";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
     test_bind::setup_env(engine);
@@ -193,7 +184,7 @@ TEST(aux_factory_native, as_global)
     EXPECT_EQ(helper.created, 3);
 }
 
-TEST(aux_factory_generic, as_global)
+TEST(AuxFactoryGeneric, AsGlobal)
 {
     using namespace asbind20;
 
@@ -219,12 +210,11 @@ TEST(aux_factory_generic, as_global)
     EXPECT_EQ(helper.created, 3);
 }
 
-TEST(aux_factory_native, auxfirst)
+TEST(AuxFactoryNative, AuxFirst)
 {
     using namespace asbind20;
 
-    if(has_max_portability())
-        GTEST_SKIP() << "max portability";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
     test_bind::setup_env(engine);
@@ -248,7 +238,7 @@ TEST(aux_factory_native, auxfirst)
     EXPECT_EQ(helper.created, 3);
 }
 
-TEST(aux_factory_generic, auxfirst)
+TEST(AuxFactoryGeneric, AuxFirst)
 {
     using namespace asbind20;
 
@@ -274,12 +264,11 @@ TEST(aux_factory_generic, auxfirst)
     EXPECT_EQ(helper.created, 3);
 }
 
-TEST(aux_factory_native, auxlast)
+TEST(AuxFactoryNative, AuxLast)
 {
     using namespace asbind20;
 
-    if(has_max_portability())
-        GTEST_SKIP() << "max portability";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
     test_bind::setup_env(engine);
@@ -303,7 +292,7 @@ TEST(aux_factory_native, auxlast)
     EXPECT_EQ(helper.created, 3);
 }
 
-TEST(aux_factory_generic, auxlast)
+TEST(AuxFactoryGeneric, AuxLast)
 {
     using namespace asbind20;
 
@@ -482,12 +471,11 @@ static void check_aux_factory_template_list(AS_NAMESPACE_QUALIFIER asIScriptEngi
 }
 } // namespace test_bind
 
-TEST(aux_factory_template_native, as_global)
+TEST(AuxFactoryTemplateNative, AsGlobal)
 {
     using namespace asbind20;
 
-    if(has_max_portability())
-        GTEST_SKIP() << "max portability";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
     test_bind::setup_env(engine);
@@ -511,7 +499,7 @@ TEST(aux_factory_template_native, as_global)
     EXPECT_EQ(helper.created, 3);
 }
 
-TEST(aux_factory_template_generic, as_global)
+TEST(AuxFactoryTemplateGeneric, AsGlobal)
 {
     using namespace asbind20;
 
@@ -537,12 +525,11 @@ TEST(aux_factory_template_generic, as_global)
     EXPECT_EQ(helper.created, 3);
 }
 
-TEST(aux_factory_template_native, auxfirst)
+TEST(AuxFactoryTemplateNative, AuxFirst)
 {
     using namespace asbind20;
 
-    if(has_max_portability())
-        GTEST_SKIP() << "max portability";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
     test_bind::setup_env(engine);
@@ -566,7 +553,7 @@ TEST(aux_factory_template_native, auxfirst)
     EXPECT_EQ(helper.created, 3);
 }
 
-TEST(aux_factory_template_generic, auxfirst)
+TEST(AuxFactoryTemplateGeneric, AuxFirst)
 {
     using namespace asbind20;
 
@@ -592,12 +579,11 @@ TEST(aux_factory_template_generic, auxfirst)
     EXPECT_EQ(helper.created, 3);
 }
 
-TEST(aux_factory_template_native, auxlast)
+TEST(AuxFactoryTemplateNative, AuxLast)
 {
     using namespace asbind20;
 
-    if(has_max_portability())
-        GTEST_SKIP() << "max portability";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
     test_bind::setup_env(engine);
@@ -621,7 +607,7 @@ TEST(aux_factory_template_native, auxlast)
     EXPECT_EQ(helper.created, 3);
 }
 
-TEST(aux_factory_template_generic, auxlast)
+TEST(AuxFactoryTemplateGeneric, AuxLast)
 {
     using namespace asbind20;
 

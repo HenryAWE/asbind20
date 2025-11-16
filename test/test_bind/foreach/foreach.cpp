@@ -1,4 +1,4 @@
-#include <shared_test_lib.hpp>
+#include <asbind_test/framework.hpp>
 
 #ifdef ASBIND20_HAS_AS_FOREACH
 
@@ -133,7 +133,7 @@ auto prepare_int_seq_test(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 }
 } // namespace test_bind
 
-TEST(test_foreach, int_seq_generic)
+TEST(TestForeach, IntSeqGeneric)
 {
     using namespace asbind20;
 
@@ -149,7 +149,7 @@ TEST(test_foreach, int_seq_generic)
     EXPECT_EQ(result.value(), 10 + 11 + 12 + 13 + 14);
 }
 
-TEST(test_foreach, int_seq_native)
+TEST(TestForeach, IntSeqNative)
 {
     using namespace asbind20;
 
@@ -168,7 +168,7 @@ TEST(test_foreach, int_seq_native)
     EXPECT_EQ(result.value(), 10 + 11 + 12 + 13 + 14);
 }
 
-TEST(test_foreach, int_seq_explicit_generic)
+TEST(TestForeach, IntSeqExplicitGeneric)
 {
     using namespace asbind20;
 
@@ -184,7 +184,7 @@ TEST(test_foreach, int_seq_explicit_generic)
     EXPECT_EQ(result.value(), 10 + 11 + 12 + 13 + 14);
 }
 
-TEST(test_foreach, int_seq_explicit_native)
+TEST(TestForeach, IntSeqExplicitNative)
 {
     using namespace asbind20;
 

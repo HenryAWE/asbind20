@@ -1,5 +1,4 @@
-#include <asbind20/ext/assert.hpp>
-#include <shared_test_lib.hpp>
+#include <asbind_test/framework.hpp>
 
 // Template function is added in AngelScript 2.38
 #if ANGELSCRIPT_VERSION >= 23800
@@ -26,7 +25,7 @@ static void temp_f(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
 }
 } // namespace test_bind
 
-TEST(test_bind, temp_func)
+TEST(TestBind, TemplateFunc)
 {
     using namespace asbind20;
 

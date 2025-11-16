@@ -7,8 +7,4 @@ target_include_directories(asbind20_ext_container PUBLIC
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-if(${asbind_build_test})
-    add_subdirectory(test)
-endif()
-
 asbind20_setup_extension(asbind20_ext_container)

@@ -1,10 +1,10 @@
 #include <gtest/gtest.h>
 #include <asbind20/asbind.hpp>
-#include <shared_test_lib.hpp>
+#include <asbind_test/framework.hpp>
 #include <asbind20/io/stream.hpp>
 #include <sstream>
 
-TEST(test_io, iostream_wrapper)
+TEST(TestIO, IOStreamWrapper)
 {
     std::stringstream ss;
 
@@ -40,7 +40,7 @@ TEST(test_io, iostream_wrapper)
     }
 }
 
-TEST(test_io, memory_wrapper)
+TEST(TestIO, MemoryWrapper)
 {
     std::vector<std::byte> buf;
 
@@ -78,10 +78,4 @@ TEST(test_io, memory_wrapper)
         ASSERT_TRUE(asbind_test::result_has_value(result));
         EXPECT_EQ(result.value(), 1013);
     }
-}
-
-int main(int argc, char* argv[])
-{
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
 }

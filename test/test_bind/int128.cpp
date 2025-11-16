@@ -1,7 +1,7 @@
 #include <angelscript.h>
 #include <cstdint>
 #include <gtest/gtest.h>
-#include <shared_test_lib.hpp>
+#include <asbind_test/framework.hpp>
 #include <asbind20/asbind.hpp>
 #include <asbind20/ext/exec.hpp>
 
@@ -128,12 +128,11 @@ static void check_int128(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 }
 } // namespace test_bind
 
-TEST(test_bind, builtin_int128_type_native)
+TEST(TestBind, BuiltinInt128TypeNative)
 {
     using namespace asbind20;
 
-    if(has_max_portability())
-        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
@@ -141,7 +140,7 @@ TEST(test_bind, builtin_int128_type_native)
     test_bind::check_int128(engine);
 }
 
-TEST(test_bind, builtin_int128_type_generic)
+TEST(TestBind, BuiltinInt128TypeGeneric)
 {
     using namespace asbind20;
 

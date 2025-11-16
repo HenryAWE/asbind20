@@ -82,7 +82,7 @@ static int f1()
 }
 } // namespace test_utility
 
-TEST(utility, fp_wrapper)
+TEST(Utility, FpWrapper)
 {
     using namespace asbind20;
 
@@ -91,7 +91,7 @@ TEST(utility, fp_wrapper)
     EXPECT_EQ(f1(), 1013);
 }
 
-TEST(utility, string_concat)
+TEST(Utility, StringConcat)
 {
     using asbind20::string_concat;
 
@@ -118,7 +118,7 @@ enum my_enum
 };
 } // namespace test_utility
 
-TEST(utility, static_enum_name)
+TEST(Utility, StaticEnumName)
 {
     using namespace asbind20;
 
@@ -147,7 +147,7 @@ TEST(utility, static_enum_name)
 #endif
 }
 
-TEST(utility, asEContextState_to_string)
+TEST(Utility, asEContextStateToString)
 {
     using namespace asbind20;
 
@@ -165,7 +165,7 @@ TEST(utility, asEContextState_to_string)
     EXPECT_EQ(to_string(AS_NAMESPACE_QUALIFIER asEContextState(-2)), "asEContextState(-2)");
 }
 
-TEST(utility, asERetCodes_to_string)
+TEST(Utility, asERetCodesToString)
 {
     using namespace asbind20;
 
@@ -203,7 +203,7 @@ TEST(utility, asERetCodes_to_string)
     EXPECT_EQ(to_string(AS_NAMESPACE_QUALIFIER asERetCodes(2)), "asERetCodes(2)");
 }
 
-TEST(utility, version)
+TEST(Utility, Version)
 {
     {
         std::string ver_str;
@@ -224,7 +224,7 @@ TEST(utility, version)
     }
 }
 
-TEST(name_of, arithmetic)
+TEST(NameOf, Arithmetic)
 {
     using namespace asbind20;
     using namespace std::literals;
@@ -245,7 +245,7 @@ TEST(name_of, arithmetic)
     EXPECT_EQ(name_of<double>(), "double"sv);
 }
 
-TEST(meta, fixed_string)
+TEST(Meta, FixedString)
 {
     using namespace asbind20;
 
@@ -290,7 +290,7 @@ TEST(meta, fixed_string)
     }
 }
 
-TEST(with_cstr, with_cstr)
+TEST(WithCStr, WithCStr)
 {
     using namespace asbind20;
     using namespace std::string_view_literals;
@@ -323,7 +323,7 @@ TEST(with_cstr, with_cstr)
     }
 }
 
-TEST(compressed_pair, ordinary)
+TEST(CompressedPair, Ordinary)
 {
     using asbind20::compressed_pair;
 
@@ -369,7 +369,7 @@ class empty_2
 {};
 } // namespace test_utility
 
-TEST(compressed_pair, optimized)
+TEST(CompressedPair, Optimized)
 {
     using asbind20::compressed_pair;
     using asbind20::detail::select_compressed_pair_impl;
@@ -400,7 +400,7 @@ TEST(compressed_pair, optimized)
     EXPECT_EQ(counter_1, 5);
 }
 
-TEST(utility, script_type_traits)
+TEST(Utility, ScriptTypeTraits)
 {
     using namespace asbind20;
 
@@ -475,7 +475,7 @@ void script_flags_test_helper()
 }
 } // namespace test_utility
 
-TEST(utility, script_flags)
+TEST(Utility, script_flags)
 {
     using namespace test_utility;
 
@@ -494,26 +494,32 @@ TEST(utility, script_flags)
     script_flags_test_helper<float[2]>();
 }
 
+static void output_info(std::ostream& os)
+{
+    if(asbind20::has_max_portability())
+        os << "AS_MAX_PORTABILITY" << std::endl;
+
+#ifdef AS_USE_NAMESPACE
+    os << "AS_USE_NAMESPACE defined" << std::endl;
+#endif
+
+#ifdef ASBIND20_HAS_STANDALONE_STDCALL
+    os << "ASBIND20_HAS_STANDALONE_STDCALL defined" << std::endl;
+#endif
+
+#ifdef ASBIND20_HAS_STATIC_ENUM_NAME
+    os << "ASBIND20_HAS_STATIC_ENUM_NAME: "
+       << ASBIND20_HAS_STATIC_ENUM_NAME
+       << std::endl;
+#endif
+}
+
 int main(int argc, char* argv[])
 {
     ::testing::InitGoogleTest(&argc, argv);
 
-    if(asbind20::has_max_portability())
-        std::cerr << "AS_MAX_PORTABILITY" << std::endl;
-
-#ifdef AS_USE_NAMESPACE
-    std::cerr << "AS_USE_NAMESPACE defined" << std::endl;
-#endif
-
-#ifdef ASBIND20_HAS_STANDALONE_STDCALL
-    std::cerr << "ASBIND20_HAS_STANDALONE_STDCALL defined" << std::endl;
-#endif
-
-#ifdef ASBIND20_HAS_STATIC_ENUM_NAME
-    std::cerr << "ASBIND20_HAS_STATIC_ENUM_NAME: "
-              << ASBIND20_HAS_STATIC_ENUM_NAME
-              << std::endl;
-#endif
+    // Output information so we can read them when CMake is configuring tests
+    output_info(std::cerr);
 
     return RUN_ALL_TESTS();
 }

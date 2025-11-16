@@ -1,9 +1,10 @@
 #include <gtest/gtest.h>
-#include <shared_test_lib.hpp>
+#include <asbind_test/framework.hpp>
 #include <thread>
+#include <chrono>
 #include <asbind20/concurrent/threading.hpp>
 
-TEST(threading, auto_clean_up)
+TEST(Threading, AutoCleanUp)
 {
     if(!asbind20::has_threads())
         GTEST_SKIP() << "AS_NO_THREADS";

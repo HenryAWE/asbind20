@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
-#include <shared_test_lib.hpp>
+#include <asbind_test/framework.hpp>
 #include <asbind20/asbind.hpp>
 
-TEST(string_view_compat, class_type)
+TEST(StringViewCompat, ClassType)
 {
     using namespace asbind20;
 
@@ -18,7 +18,7 @@ TEST(string_view_compat, class_type)
     EXPECT_TRUE(engine->GetTypeInfoByDecl("bar"));
 }
 
-TEST(string_view_compat, misc)
+TEST(StringViewCompat, Misc)
 {
     enum class placeholder_enum
     {

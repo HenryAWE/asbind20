@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <shared_test_lib.hpp>
+#include <asbind_test/framework.hpp>
 #include <asbind20/operators.hpp>
 #include <asbind20/ext/stdstring.hpp>
 #include <iostream>
@@ -75,12 +75,11 @@ static void run_ostream_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engi
 }
 } // namespace test_operators
 
-TEST(test_operators, ostream_native)
+TEST(TestOperators, OStreamNative)
 {
     using namespace asbind20;
 
-    if(has_max_portability())
-        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine, true);
@@ -90,7 +89,7 @@ TEST(test_operators, ostream_native)
     test_operators::run_ostream_test_script(engine);
 }
 
-TEST(test_operators, ostream_generic)
+TEST(TestOperators, OStreamGeneric)
 {
     using namespace asbind20;
 

@@ -1,5 +1,4 @@
-#include <asbind20/ext/assert.hpp>
-#include <shared_test_lib.hpp>
+#include <asbind_test/framework.hpp>
 
 constexpr char ref_string_test_script[] = R"(void test0()
 {
@@ -152,13 +151,7 @@ static void setup_bind_ref_string_env(
     else
         register_ref_string(engine);
 
-    asbind20::ext::register_script_assert(
-        engine,
-        [](std::string_view msg)
-        {
-            FAIL() << "vec2 assertion failed: " << msg;
-        }
-    );
+    asbind_test::setup_script_assertion(engine);
 }
 
 static void run_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
@@ -187,10 +180,9 @@ static void run_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 }
 } // namespace test_bind
 
-TEST(bind_ref_string, native)
+TEST(BindRefString, Native)
 {
-    if(asbind20::has_max_portability())
-        GTEST_SKIP() << "max portability";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
     test_bind::setup_bind_ref_string_env(engine, false);
@@ -198,7 +190,7 @@ TEST(bind_ref_string, native)
     test_bind::run_script(engine);
 }
 
-TEST(bind_ref_string, generic)
+TEST(BindRefString, Generic)
 {
     auto engine = asbind20::make_script_engine();
     test_bind::setup_bind_ref_string_env(engine, true);

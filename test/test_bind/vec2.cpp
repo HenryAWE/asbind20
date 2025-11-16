@@ -1,9 +1,8 @@
 #include <sstream>
 #include <stdexcept>
-#include <shared_test_lib.hpp>
+#include <asbind_test/framework.hpp>
 #include <asbind20/operators.hpp>
 #include <asbind20/ext/stdstring.hpp>
-#include <asbind20/ext/assert.hpp>
 
 constexpr char vec2_test_script[] = R"AngelScript(
 void test0()
@@ -203,13 +202,7 @@ void setup_bind_vec2_env(
 {
     asbind_test::setup_message_callback(engine);
     asbind20::ext::register_std_string(engine, true, generic);
-    asbind20::ext::register_script_assert(
-        engine,
-        [](std::string_view msg)
-        {
-            FAIL() << "vec2 assertion failed: " << msg;
-        }
-    );
+    asbind_test::setup_script_assertion(engine);
 
     if(generic)
         register_vec2(asbind20::use_generic, engine);
@@ -243,10 +236,9 @@ static void run_vec2_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 }
 } // namespace test_bind
 
-TEST(bind_vec2, native)
+TEST(BindVec2, Native)
 {
-    if(asbind20::has_max_portability())
-        GTEST_SKIP() << "max portability";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
     test_bind::setup_bind_vec2_env(engine, false);
@@ -254,7 +246,7 @@ TEST(bind_vec2, native)
     test_bind::run_vec2_test_script(engine);
 }
 
-TEST(bind_vec2, generic)
+TEST(BindVec2, Generic)
 {
     auto engine = asbind20::make_script_engine();
     test_bind::setup_bind_vec2_env(engine, true);

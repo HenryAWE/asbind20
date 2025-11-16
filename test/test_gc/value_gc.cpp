@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
-#include <shared_test_lib.hpp>
+#include <asbind_test/framework.hpp>
 #include <asbind20/asbind.hpp>
-#include <asbind20/ext/assert.hpp>
 #include <asbind20/ext/vocabulary.hpp>
 
 static constexpr char optional_gc_test_script[] = R"(bool test0()
@@ -35,22 +34,13 @@ public:
     void SetUp() override
     {
         if constexpr(!UseGeneric)
-        {
-            if(asbind20::has_max_portability())
-                GTEST_SKIP() << "max portability";
-        }
+            ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
         m_engine = asbind20::make_script_engine();
         asbind_test::setup_message_callback(m_engine, true);
 
         namespace ext = asbind20::ext;
-        ext::register_script_assert(
-            m_engine,
-            [](std::string_view msg)
-            {
-                FAIL() << "optional_gc assertion failed: " << msg;
-            }
-        );
+        asbind_test::setup_script_assertion(m_engine);
         ext::register_script_optional(m_engine, UseGeneric);
 
         asbind20::global<true>(m_engine)
@@ -124,15 +114,15 @@ private:
 };
 } // namespace test_gc
 
-using optional_gc_generic = test_gc::basic_optional_gc_test<true>;
-using optional_gc_native = test_gc::basic_optional_gc_test<false>;
+using OptionalGCGeneric = test_gc::basic_optional_gc_test<true>;
+using OptionalGCNative = test_gc::basic_optional_gc_test<false>;
 
-TEST_F(optional_gc_generic, run_script)
+TEST_F(OptionalGCGeneric, RunScript)
 {
     this->run_script();
 }
 
-TEST_F(optional_gc_native, run_script)
+TEST_F(OptionalGCNative, RunScript)
 {
     this->run_script();
 }

@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
-#include <shared_test_lib.hpp>
+#include <asbind_test/framework.hpp>
 #include <asbind20/asbind.hpp>
 #include <asbind20/ext/vocabulary.hpp>
 
-TEST(test_invoke, script_class)
+TEST(TestInvoke, ScriptClass)
 {
     using namespace asbind20;
     using asbind_test::result_has_value;
