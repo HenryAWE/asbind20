@@ -17,7 +17,8 @@ CMake Options for Development
      - Description
 
    * - ``asbind_cxxstd``
-     - C++ standard version for building asbind20. Must be 20 at least.
+     - | C++ standard version for building asbind20. Must be 20 at least.
+       | This can be set to a higher version like 23 for testing some advanced features that are only available in newer standard.
    * - ``asbind_build_test``
      - Build tests and enable ``ctest``.
    * - ``asbind_dev_warning_as_error``
