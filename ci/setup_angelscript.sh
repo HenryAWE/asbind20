@@ -46,11 +46,12 @@ clone_angelscript() {
         git log -1 # Print the latest commit info
         cd ..
     elif [ $VERSION == "2.37.0" ]; then
+        git clone https://github.com/anjo76/angelscript.git
         # Official GitHub repo only has tag for version 2.38+
         # The --branch is for v2.37.0 commit
-        git clone --depth 1 \
-                --branch 0beef466371f36cae4e39d84505bb5a19804ed08 \
-                https://github.com/anjo76/angelscript.git
+        cd angelscript
+        git reset --hard 0beef466371f36cae4e39d84505bb5a19804ed08
+        cd ..
     else
         git clone --depth 1 --branch v$VERSION https://github.com/anjo76/angelscript.git
     fi
