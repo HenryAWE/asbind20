@@ -245,12 +245,12 @@ public:
             EXPECT_TRUE(result.value());
         }
 
-        std::cerr << "After tests\n";
+        std::cerr << "After tests: ";
         asbind_test::output_gc_statistics(
             std::cerr, m_engine, ';'
         );
 
-        m_engine->GarbageCollect();
+        m_engine->GarbageCollect(AS_NAMESPACE_QUALIFIER asGC_FULL_CYCLE);
 
         auto collected = asbind20::debugging::get_gc_statistics(m_engine);
         EXPECT_EQ(collected.current_size, 0);

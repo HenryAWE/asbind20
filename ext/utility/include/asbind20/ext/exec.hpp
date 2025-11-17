@@ -31,15 +31,6 @@ int load_file(
     const std::filesystem::path& filename,
     std::ios_base::openmode mode = std::ios_base::in
 );
-
-/**
- * @brief Execute a piece of AngelScript code
- */
-int exec(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
-    std::string_view code,
-    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx = nullptr
-);
 } // namespace asbind20::ext
 
 #endif

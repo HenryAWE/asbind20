@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 #include <asbind_test/framework.hpp>
 #include <asbind20/asbind.hpp>
-#include <asbind20/ext/vocabulary.hpp>
 
 TEST(TestInvoke, ScriptClass)
 {

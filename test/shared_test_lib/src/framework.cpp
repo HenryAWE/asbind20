@@ -1,8 +1,6 @@
 #include <asbind_test/framework.hpp>
-#include <asbind20/ext/vocabulary.hpp>
 #include <asbind20/ext/array.hpp>
 #include <asbind20/ext/stdstring.hpp>
-#include <asbind20/ext/math.hpp>
 #include <asbind20/ext/exec.hpp>
 
 namespace asbind_test
