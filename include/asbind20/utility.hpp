@@ -19,6 +19,7 @@
 #include <compare>
 #include <functional>
 #include <type_traits>
+#include <stdexcept>
 #include <concepts>
 #include "detail/config.hpp" // IWYU pragma: export configs
 #include "detail/include_as.hpp"
@@ -1428,6 +1429,63 @@ inline void set_script_exception(std::string_view info)
  */
 namespace debugging
 {
+    /**
+     * @brief Extracts the contents from a script string without knowing the underlying type
+     *
+     * @param factory The string factory
+     * @param str The pointer to script string
+     *
+     * @throws std::runtime_error Failed to get the string
+     *
+     * @return std::string Result string
+     */
+    [[nodiscard]]
+    inline std::string extract_string(
+        AS_NAMESPACE_QUALIFIER asIStringFactory* factory, const void* str
+    )
+    {
+        assert(factory != nullptr);
+
+        AS_NAMESPACE_QUALIFIER asUINT sz = 0;
+
+        int r = factory->GetRawStringData(str, nullptr, &sz);
+        if(r < 0) [[unlikely]]
+        {
+            throw std::runtime_error("failed to get raw string length");
+        }
+
+        std::string result;
+        result.resize(sz);
+
+        r = factory->GetRawStringData(str, result.data(), nullptr);
+        if(r < 0) [[unlikely]]
+        {
+            throw std::runtime_error("failed to get raw string data");
+        }
+
+        return result;
+    }
+
+// AngelScript 2.38+ supports retrieving string factory from engine
+#if ANGELSCRIPT_VERSION >= 23800
+
+    [[nodiscard]]
+    inline std::string extract_string(
+        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, const void* str
+    )
+    {
+        AS_NAMESPACE_QUALIFIER asIStringFactory* factory = nullptr;
+        int r = engine->GetStringFactory(nullptr, &factory);
+        if(r != AS_NAMESPACE_QUALIFIER asSUCCESS || !factory) [[unlikely]]
+        {
+            throw std::runtime_error("failed to get string factory");
+        }
+
+        return extract_string(factory, str);
+    }
+
+#endif
+
     /**
      * @brief Get script section name of function
      *
