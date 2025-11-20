@@ -77,7 +77,7 @@ This library will not include the AngelScript library for the second time by det
 The core library of asbind20 is a header-only library.
 You can directly copy all the files under ``include/`` into your project.
 
-Additionally, files under ``io/``, ``container/``, and ``concurrent/`` are optional components.
+Additionally, files under ``container/``, and ``concurrent/`` are optional components.
 You can omit those files if they are unnecessary for your project.
 
 .. note::

@@ -30,6 +30,8 @@
 #include "policies.hpp"
 #include "bind.hpp"
 #include "invoke.hpp"
+#include "io/stream.hpp"
+#include "io/to_string.hpp"
 
 // IWYU pragma: end_exports
 
