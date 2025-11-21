@@ -7,3 +7,5 @@ build/
 CMakeSettings.json
 # clangd
 .cache/
+
+.DS_store

@@ -1,4 +1,3 @@
-#include <angelscript.h>
 #include <cstdint>
 #include <gtest/gtest.h>
 #include <asbind_test/framework.hpp>
