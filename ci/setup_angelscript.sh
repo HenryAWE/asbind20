@@ -20,19 +20,16 @@ parse_arguments() {
             --version)
                 VERSION="$2"
                 shift 2
-                echo Requested AS version: $VERSION
                 ;;
             --use-emsdk)
                 USE_EMSDK=true
                 shift
-                echo Use Emscripten SDK
                 ;;
             --)
                 shift
                 # Remained arguments are extra args for CMake
                 CMAKE_EXTRA_ARGS=("$@")
                 break
-                echo Extra CMake args: $CMAKE_EXTRA_ARGS
                 ;;
             *)
                 echo "Internal error!"
