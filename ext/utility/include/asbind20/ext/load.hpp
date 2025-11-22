@@ -1,14 +1,25 @@
-#include <asbind20/ext/exec.hpp>
+#ifndef ASBIND20_EXT_LOAD_HPP
+#define ASBIND20_EXT_LOAD_HPP
+
+#pragma once
+
+#include <string_view>
+#include <filesystem>
 #include <fstream>
-#include <sstream>
+#include <asbind20/asbind.hpp>
 
 namespace asbind20::ext
 {
-int load_string(
+/**
+ * @brief Load a string as script section
+ *
+ * @return int AngelScript error code
+ */
+inline int load_string(
     AS_NAMESPACE_QUALIFIER asIScriptModule* m,
     const char* section_name,
     std::string_view code,
-    int line_offset
+    int line_offset = 0
 )
 {
     assert(m != nullptr);
@@ -21,10 +32,15 @@ int load_string(
     );
 }
 
-int load_file(
+/**
+ * @brief Load a file as script section
+ *
+ * @return int AngelScript error code
+ */
+inline int load_file(
     AS_NAMESPACE_QUALIFIER asIScriptModule* m,
     const std::filesystem::path& filename,
-    std::ios_base::openmode mode
+    std::ios_base::openmode mode = std::ios_base::in
 )
 {
     assert(m != nullptr);
@@ -46,3 +62,5 @@ int load_file(
     );
 }
 } // namespace asbind20::ext
+
+#endif

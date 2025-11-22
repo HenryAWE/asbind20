@@ -1,0 +1,10 @@
+include_guard()
+
+function(append_script_to_executable exec_target filename)
+    if(EMSCRIPTEN)
+        set_target_properties(${exec_target} PROPERTIES LINK_FLAGS "--preload-file ${CMAKE_CURRENT_SOURCE_DIR}/${filename}@${filename}")
+        set_target_properties(${exec_target} PROPERTIES LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${filename})
+    else()
+        configure_file(${filename} ${CMAKE_CURRENT_BINARY_DIR}/${filename} COPYONLY)
+    endif()
+endfunction()

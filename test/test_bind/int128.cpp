@@ -2,8 +2,6 @@
 #include <gtest/gtest.h>
 #include <asbind_test/framework.hpp>
 #include <asbind20/asbind.hpp>
-#include <asbind20/ext/exec.hpp>
-
 
 #ifdef __GNUC__
 namespace test_bind
