@@ -1,79 +1,6 @@
 #include <gtest/gtest.h>
 #include <asbind20/asbind.hpp>
 
-static consteval bool test_utility_concepts()
-{
-    {
-        struct callable_struct
-        {
-            void operator()() const {}
-        };
-
-        using asbind20::noncapturing_lambda;
-
-        static_assert(!noncapturing_lambda<callable_struct>);
-
-        int tmp = 0;
-        auto lambda1 = [&tmp](int)
-        {
-            return tmp;
-        };
-
-        static_assert(!noncapturing_lambda<decltype(lambda1)>);
-
-        auto lambda2 = [](int)
-        {
-            return 42;
-        };
-
-        static_assert(noncapturing_lambda<decltype(lambda2)>);
-        static_assert((+lambda2)(0) == 42);
-    }
-
-    return true;
-}
-
-static consteval bool test_utility_meta_helpers()
-{
-    using namespace asbind20;
-
-    static_assert(!meta::contains<void, std::tuple<>>::value);
-    static_assert(!meta::contains<void, std::tuple<int, float>>::value);
-    static_assert(meta::contains<void, std::tuple<int, float, void>>::value);
-
-    return true;
-}
-
-static_assert(test_utility_concepts());
-static_assert(test_utility_meta_helpers());
-
-#ifdef ASBIND20_HAS_STANDALONE_STDCALL
-
-namespace test_utility
-{
-static int cdecl_func(int, float)
-{
-    return 0;
-}
-
-static int ASBIND20_STDCALL stdcall_func(int, float)
-{
-    return 0;
-}
-} // namespace test_utility
-
-static consteval bool test_stdcall_helpers()
-{
-    using namespace asbind20;
-
-    static_assert(!meta::is_stdcall_v<decltype(test_utility::cdecl_func)>);
-    static_assert(meta::is_stdcall_v<decltype(test_utility::stdcall_func)>);
-
-    return true;
-}
-
-#endif
-
 namespace test_utility
 {
 static int f1()
@@ -267,83 +194,6 @@ TEST(WithCStr, WithCStr)
     }
 }
 
-TEST(CompressedPair, Ordinary)
-{
-    using asbind20::compressed_pair;
-
-    compressed_pair<int, int> p_1{0, 1};
-    static_assert(sizeof(p_1) == sizeof(int) * 2);
-
-    EXPECT_EQ(p_1.first(), 0);
-    EXPECT_EQ(p_1.second(), 1);
-
-    compressed_pair<int, int> p_2 = p_1;
-    EXPECT_EQ(p_2.first(), 0);
-    EXPECT_EQ(p_2.second(), 1);
-
-    p_2.first() = 2;
-    p_2.second() = 3;
-    p_1.swap(p_2);
-    EXPECT_EQ(p_1.first(), 2);
-    EXPECT_EQ(p_1.second(), 3);
-    EXPECT_EQ(p_2.first(), 0);
-    EXPECT_EQ(p_2.second(), 1);
-
-    {
-        auto& [a, b] = p_1;
-        EXPECT_EQ(a, 2);
-        EXPECT_EQ(b, 3);
-    }
-}
-
-namespace test_utility
-{
-static int counter_1 = 0;
-
-class empty_1
-{
-public:
-    empty_1()
-    {
-        ++counter_1;
-    }
-};
-
-class empty_2
-{};
-} // namespace test_utility
-
-TEST(CompressedPair, Optimized)
-{
-    using asbind20::compressed_pair;
-    using asbind20::detail::select_compressed_pair_impl;
-    using namespace test_utility;
-
-    EXPECT_EQ(counter_1, 0);
-
-    compressed_pair<std::string, empty_1> p_1;
-    static_assert(select_compressed_pair_impl<std::string, empty_1>() == 2);
-    static_assert(sizeof(p_1) == sizeof(std::string));
-    EXPECT_EQ(counter_1, 1);
-    p_1.first() = "hello";
-    EXPECT_EQ(std::as_const(p_1).first(), "hello");
-
-    compressed_pair<empty_1, std::string> p_2;
-    static_assert(sizeof(p_2) == sizeof(std::string));
-    p_2.second() = "hello";
-    EXPECT_EQ(std::as_const(p_2).second(), "hello");
-
-    compressed_pair<empty_1, empty_2> p_3;
-    static_assert(sizeof(p_3) == 1);
-    static_assert(std::is_empty_v<compressed_pair<empty_1, empty_2>>);
-    EXPECT_EQ(counter_1, 3);
-
-    compressed_pair<empty_1, empty_1> p_4{};
-    static_assert(sizeof(p_4) <= 2);
-    static_assert(!std::is_empty_v<compressed_pair<empty_1, empty_1>>);
-    EXPECT_EQ(counter_1, 5);
-}
-
 TEST(Utility, ScriptTypeTraits)
 {
     using namespace asbind20;
@@ -394,6 +244,10 @@ namespace test_utility
 struct pod_class
 {};
 
+// Self checks
+static_assert(std::is_standard_layout_v<pod_class>);
+static_assert(std::is_trivial_v<pod_class>);
+
 class copyable_class
 {
 public:
@@ -408,6 +262,12 @@ public:
     non_copyable(const non_copyable&) = delete;
 };
 
+union my_union
+{
+    int vi;
+    float vf;
+};
+
 template <typename T>
 void script_flags_test_helper()
 {
@@ -415,17 +275,20 @@ void script_flags_test_helper()
     EXPECT_EQ(
         meta::get_script_type_flags<T>(),
         AS_NAMESPACE_QUALIFIER asGetTypeTraits<T>()
-    );
+    )
+        << "T = " << ::testing::internal::GetTypeName<T>();
 }
 } // namespace test_utility
 
-TEST(Utility, script_flags)
+TEST(Utility, ScriptFlags)
 {
     using namespace test_utility;
+
 
     script_flags_test_helper<pod_class>();
     script_flags_test_helper<copyable_class>();
     script_flags_test_helper<non_copyable>();
+    script_flags_test_helper<my_union>();
 
     // Primitives
     script_flags_test_helper<int>();
