@@ -351,8 +351,14 @@ jobs:
             brew install cmake
 
       - name: Install AngelScript
-        working-directory: ${{github.workspace}}/ci
-        run: ./setup_angelscript.sh --version 2.38.0
+        working-directory: /tmp
+        run: |
+            git clone --depth 1 --branch v2.38.0 https://github.com/anjo76/angelscript.git
+            cd angelscript
+            cd sdk/angelscript/projects/cmake
+            cmake -GNinja -S . -B build -DCMAKE_BUILD_TYPE=Release
+            cmake --build build
+            sudo cmake --install build
 
       - name: Configure
         run: >
