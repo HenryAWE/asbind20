@@ -40,6 +40,9 @@ However, asbind20 on other platforms, architectures or compiler toolchains suppo
    * - Linux (Ubuntu)
      - arm64
      - Clang 18
+   * - MacOS
+     - arm64
+     - Xcode latest-stable
    * - Emscripten
      - wasm
      - emsdk 4.0.18
@@ -55,7 +58,7 @@ Additionally, the Clang 18 toolchain on x64 Linux is also tested for compiling w
   - This library on older compiler toolchains, like GCC 12, still works as expected under most situations,
     but it might need some workarounds to deal with defects of the compiler, e.g., additional ``typename`` in template-related code.
     Please use newer compiler toolchains if possible.
-  - The "latest" in the above table means the latest version of compiler toolchain available in CI when asbind20 releases a new stable version.
+  - The "latest" or "latest-stable" in the above table means the (stable) latest version of compiler toolchain available in CI when asbind20 releases a new stable version.
 
 Integrate into Your Project
 ===========================

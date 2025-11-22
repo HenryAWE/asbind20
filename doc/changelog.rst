@@ -8,6 +8,11 @@ Changelog since the version 1.5.0.
 
 First major update after the initial stable version.
 
+Update
+~~~~~~
+
+- MacOS (Apple Clang) support.
+
 1.8.0
 -----
 
