@@ -1,3 +1,9 @@
+/**
+ * @file load.hpp
+ * @author HenryAWE
+ * @brief Helpers for loading script section
+ */
+
 #ifndef ASBIND20_EXT_LOAD_HPP
 #define ASBIND20_EXT_LOAD_HPP
 
@@ -6,6 +12,7 @@
 #include <string_view>
 #include <filesystem>
 #include <fstream>
+#include <sstream>
 #include <asbind20/asbind.hpp>
 
 namespace asbind20::ext
@@ -13,7 +20,7 @@ namespace asbind20::ext
 /**
  * @brief Load a string as script section
  *
- * @return int AngelScript error code
+ * @return AngelScript error code
  */
 inline int load_string(
     AS_NAMESPACE_QUALIFIER asIScriptModule* m,
@@ -35,7 +42,7 @@ inline int load_string(
 /**
  * @brief Load a file as script section
  *
- * @return int AngelScript error code
+ * @return AngelScript error code
  */
 inline int load_file(
     AS_NAMESPACE_QUALIFIER asIScriptModule* m,
