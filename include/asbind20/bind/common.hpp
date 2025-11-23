@@ -303,6 +303,7 @@ public:
         return m_engine;
     }
 
+    [[nodiscard]]
     static constexpr bool force_generic() noexcept
     {
         return ForceGeneric;

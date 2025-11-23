@@ -1565,6 +1565,12 @@ public:
 
     /// @{
 
+    /**
+     * @brief Resize the vector
+     * If new size is greater than the old size, new elements will be default constructed.
+     *
+     * @param new_size New size
+     */
     void resize(size_type new_size)
     {
         return visit_impl(
@@ -1573,6 +1579,11 @@ public:
         );
     }
 
+    /**
+     * @brief Clear stored elements
+     *
+     * @note This method won't deallocate memory
+     */
     void clear() noexcept
     {
         return visit_impl(
