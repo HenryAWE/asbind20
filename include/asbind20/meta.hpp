@@ -47,17 +47,6 @@ namespace meta
     template <typename T, typename... Args>
     constexpr inline bool is_constructible_at_v = is_constructible_at<T, Args...>::value;
 
-    template <typename Target, typename Tuple>
-    struct contains;
-
-    template <typename Target, typename... Ts>
-    struct contains<Target, std::tuple<Ts...>> :
-        std::bool_constant<false || (std::same_as<Target, Ts> || ...)>
-    {};
-
-    template <typename Target, typename Tuple>
-    constexpr inline bool contains_v = contains<Target, Tuple>::value;
-
     template <std::size_t Size>
     class fixed_string
     {
