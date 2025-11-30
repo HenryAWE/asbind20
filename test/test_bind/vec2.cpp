@@ -2,7 +2,6 @@
 #include <stdexcept>
 #include <asbind_test/framework.hpp>
 #include <asbind20/operators.hpp>
-#include <asbind20/ext/stdstring.hpp>
 
 constexpr char vec2_test_script[] = R"AngelScript(
 void test0()
@@ -201,7 +200,7 @@ void setup_bind_vec2_env(
 )
 {
     asbind_test::setup_message_callback(engine);
-    asbind20::ext::register_std_string(engine, true, generic);
+    asbind_test::setup_script_string(engine, generic);
     asbind_test::setup_script_assertion(engine);
 
     if(generic)

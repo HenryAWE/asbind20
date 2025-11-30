@@ -1,9 +1,7 @@
-#include <asbind20/ext/stdstring.hpp>
-#include <concepts>
-#include <cstdint>
-#include <charconv>
+#include <asbind_test/std_string.hpp>
+#include <asbind_test/framework.hpp>
 
-namespace asbind20::ext
+namespace asbind_test
 {
 void configure_engine_for_ext_string(
     AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
@@ -20,10 +18,12 @@ void configure_engine_for_ext_string(
     );
 }
 
-void register_script_char(
+void setup_script_char(
     AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, bool generic
 )
 {
+    using namespace asbind20;
+
     constexpr AS_NAMESPACE_QUALIFIER asQWORD char_flags =
         AS_NAMESPACE_QUALIFIER asOBJ_APP_PRIMITIVE |
         AS_NAMESPACE_QUALIFIER asOBJ_POD;
@@ -58,7 +58,6 @@ namespace script_string
 {
     static std::size_t idx_to_offset(std::string_view str, index_type idx)
     {
-        std::size_t offset;
         if(idx < 0)
         {
             size_type u_idx = static_cast<size_type>(-idx);
@@ -72,7 +71,6 @@ namespace script_string
 
     static std::string_view substr_helper(std::string_view raw_src, index_type pos, size_type len)
     {
-        std::size_t offset;
         if(pos < 0)
         {
             size_type u_pos = static_cast<size_type>(-pos);
@@ -107,19 +105,19 @@ namespace script_string
 
     std::string string_append(const std::string& this_, const std::string& str)
     {
-        return string_concat(this_, str);
+        return asbind20::string_concat(this_, str);
     }
 
     std::string string_append_ch(const std::string& this_, char32_t ch)
     {
         char buf[4];
         unsigned int size_bytes = utf8::u8_int_to_bytes(ch, buf);
-        return string_concat(this_, std::string_view(buf, size_bytes));
+        return asbind20::string_concat(this_, std::string_view(buf, size_bytes));
     }
 
     std::string string_prepend(const std::string& this_, const std::string& str)
     {
-        return string_concat(str, this_);
+        return asbind20::string_concat(str, this_);
     }
 
     std::string string_prepend_ch(const std::string& this_, char32_t ch)
@@ -127,7 +125,7 @@ namespace script_string
         char buf[4];
         unsigned int size_bytes = utf8::u8_int_to_bytes(ch, buf);
 
-        return string_concat(std::string_view(buf, size_bytes), this_);
+        return asbind20::string_concat(std::string_view(buf, size_bytes), this_);
     }
 
     std::string string_remove_prefix(const std::string& this_, size_type n)
@@ -208,11 +206,11 @@ namespace script_string
                 utf8::u8_replace_inplace(result, static_cast<size_type>(where), n, src);
             }
 
-            return std::move(result);
+            return result;
         }
         catch(const std::out_of_range&)
         {
-            set_script_exception("string.replace(): out of range");
+            asbind20::set_script_exception("string.replace(): out of range");
             return std::string();
         }
     }
@@ -231,14 +229,14 @@ namespace script_string
         if(offset == size_type(-1)) [[unlikely]]
         {
             if(where < 0)
-                return string_concat(src, this_);
+                return asbind20::string_concat(src, this_);
             else
-                return string_concat(this_, src);
+                return asbind20::string_concat(this_, src);
         }
 
         std::string result = this_;
         result.insert(offset, src);
-        return std::move(result);
+        return result;
     }
 
     std::string string_erase(
@@ -248,7 +246,7 @@ namespace script_string
         std::size_t offset = idx_to_offset(this_, where);
         if(offset == size_type(-1))
         {
-            set_script_exception("out of range");
+            asbind20::set_script_exception("out of range");
         }
         if(n == 0)
             return this_;
@@ -258,96 +256,132 @@ namespace script_string
             std::string_view(this_).substr(offset), n
         );
         result.erase(offset, bytes_to_erase);
-        return std::move(result);
-    }
-
-    void string_for_each(
-        const std::string& this_, AS_NAMESPACE_QUALIFIER asIScriptFunction* fn
-    )
-    {
-        reuse_active_context ctx(fn->GetEngine());
-        const auto sentinel = utf8::string_cend(this_);
-        for(auto it = utf8::string_cbegin(this_); it != sentinel; ++it)
-        {
-            auto result = script_invoke<void>(ctx, fn, *it);
-            if(!result.has_value())
-                break;
-        }
+        return result;
     }
 } // namespace script_string
 
-static std::string script_bool_to_string(bool val)
-{
-    using namespace std::string_literals;
-    return val ? "true"s : "false"s;
-}
-
-template <std::integral Int>
-static std::string script_int_to_string(Int val, int base)
-{
-    char buf[128];
-    auto result = std::to_chars(buf, buf + 128, val);
-    assert(result.ec != std::errc::value_too_large);
-    if(result.ec != std::errc())
-    {
-        set_script_exception(string_concat(
-            "to_string<", name_of<Int>(), ">(): error"
-        ));
-    }
-
-    return std::string(buf, result.ptr);
-}
-
-template <typename Float>
-static std::string script_float_to_string(Float val, std::chars_format fmt)
-{
-    char buf[128];
-    auto result = std::to_chars(buf, buf + 128, val, fmt);
-    assert(result.ec != std::errc::value_too_large);
-    if(result.ec != std::errc())
-    {
-        set_script_exception(string_concat(
-            "to_string<", name_of<Float>(), ">(): error"
-        ));
-    }
-
-    return std::string(buf, result.ptr);
-}
-
 template <bool UseGeneric>
-static void register_string_utils_impl(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
+static void setup_script_string_impl(
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    bool as_default = true
 )
 {
-    enum_<std::chars_format>(engine, "float_format")
-        .value(std::chars_format::scientific, "scientific")
-        .value(std::chars_format::hex, "hex")
-        .value(std::chars_format::general, "general")
-        .value(std::chars_format::fixed, "fixed");
+    using namespace asbind20;
 
-    global<UseGeneric> g(engine);
-    g
-        .function("string to_string(bool val)", fp<&script_bool_to_string>)
-        .function("string to_string(int val, int base=10)", fp<&script_int_to_string<AS_NAMESPACE_QUALIFIER asINT32>>)
-        .function("string to_string(uint val, int base=10)", fp<&script_int_to_string<AS_NAMESPACE_QUALIFIER asUINT>>)
-        .function("string to_string(int64 val, int base=10)", fp<&script_int_to_string<std::int64_t>>)
-        .function("string to_string(uint64 val, int base=10)", fp<&script_int_to_string<std::uint64_t>>)
-        .function("string to_string(float val, float_format fmt=float_format::general)", fp<&script_float_to_string<float>>)
-        .function("string to_string(double val, float_format fmt=float_format::general)", fp<&script_float_to_string<double>>);
+    using std::string;
+    using namespace script_string;
 
-    if(engine->GetTypeIdByDecl("char") >= 0)
-    {
-        g.function("string chr(char ch)", fp<&script_chr>);
+    bool has_ch_api = engine->GetTypeIdByDecl("char") >= 0;
+
+    AS_NAMESPACE_QUALIFIER asQWORD flags = 0;
+    if(has_ch_api)
+        flags |= AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_MORE_CONSTRUCTORS;
+
+    EXPECT_EQ(
+        engine->GetEngineProperty(AS_NAMESPACE_QUALIFIER asEP_STRING_ENCODING), 0
+    ) << "String extension requires UTF-8 encoding!";
+
+    value_class<string, UseGeneric> c(engine, "string", flags);
+    c
+        .behaviours_by_traits()
+        .opEquals()
+        .method(
+            "int opCmp(const string&in) const",
+            [](const std::string& lhs, const std::string& rhs) -> int
+            {
+                return lhs.compare(rhs);
+            }
+        )
+        .opAdd()
+        .method("string append(const string&in str) const", fp<&string_append>)
+        .method("string prepend(const string&in str) const", fp<&string_prepend>)
+        .method("string substr(int pos, uint len=uint(-1)) const", fp<&string_substr>)
+        .method("bool empty() const", fp<&string::empty>)
+        .method(
+            "bool opConv() const",
+            [](const string& this_) -> bool
+            { return !this_.empty(); }
+        )
+        .method(
+            "uint get_size_bytes() const property",
+            [](const string& this_)
+            {
+                return static_cast<size_type>(this_.size());
+            }
+        )
+        .method("uint get_size() const property", fp<&string_size>)
+        .method(
+            "bool starts_with(const string&in str) const",
+            [](const string& this_, const string& str) -> bool
+            { return this_.starts_with(str); }
+        )
+        .method(
+            "bool ends_with(const string&in str) const",
+            [](const string& this_, const string& str) -> bool
+            { return this_.ends_with(str); }
+        )
+        .method("string remove_prefix(uint n) const", fp<&string_remove_prefix>)
+        .method("string remove_suffix(uint n) const", fp<&string_remove_suffix>)
+        .method("string replace(int where, uint n, const string&in str, int pos=0, uint len=uint(-1)) const", fp<&string_replace>)
+        .method("string insert(int where, const string&in str, int pos=0, uint len=uint(-1)) const", fp<&string_insert>)
+        .method("string erase(int where, uint n=1) const", fp<&string_erase>)
+        .method("bool contains(const string&in str) const", fp<&string_contains>);
+
+    if(has_ch_api)
+    { // Begin APIs for single character
+        c
+            .constructor_function(
+                "uint count, char ch",
+                [](void* mem, size_type count, char32_t ch) -> void
+                {
+                    new(mem) string(string_construct(count, ch));
+                }
+            )
+            .method("string append(char ch) const", fp<&string_append_ch>)
+            .method("string opAdd(char ch) const", fp<&string_append_ch>)
+            .method("string prepend(char ch) const", fp<&string_prepend_ch>)
+            .method("string opAdd_r(char ch) const", fp<&string_prepend_ch>)
+            .method("bool starts_with(char ch) const", fp<&string_starts_with_ch>)
+            .method("bool ends_with(char ch) const", fp<&string_ends_with_ch>)
+            .method("char opIndex(int idx) const", fp<&string_opIndex>)
+            .method("bool contains(char ch) const", fp<&string_contains_ch>);
     }
+
+    if(as_default)
+        c.as_string(&string_factory::get());
 }
 
-void register_string_utils(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, bool generic
+void setup_script_string(
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    bool generic,
+    bool as_default
 )
 {
     if(generic)
-        register_string_utils_impl<true>(engine);
+        setup_script_string_impl<true>(engine, as_default);
     else
-        register_string_utils_impl<false>(engine);
+        setup_script_string_impl<false>(engine, as_default);
 }
-} // namespace asbind20::ext
+
+void setup_string_utils(
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    bool generic
+)
+{
+    using namespace asbind20;
+
+    if(engine->GetTypeInfoByName("char"))
+        return;
+
+    auto helper = [engine]<bool UseGeneric>(std::bool_constant<UseGeneric>)
+    {
+        global<UseGeneric>(engine)
+            .function("string chr(char ch)", fp<&script_chr>);
+    };
+
+    if(generic)
+        helper(std::true_type{});
+    else
+        helper(std::false_type{});
+}
+} // namespace asbind_test

@@ -1,5 +1,4 @@
 #include "shared_bench_lib.hpp"
-#include <asbind20/ext/stdstring.hpp>
 #include <cassert>
 
 // Benchmark for comparing implementing the same logic in different ways:

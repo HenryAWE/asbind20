@@ -8,7 +8,7 @@
 #include <asbind20/container/small_vector.hpp>
 #include <asbind20/operators.hpp>
 
-namespace asbind20::ext
+namespace asbind_test
 {
 consteval auto default_script_array_user_id() noexcept
     -> AS_NAMESPACE_QUALIFIER asPWORD
@@ -84,7 +84,7 @@ namespace detail
             if(cache) [[likely]]
                 return;
 
-            std::lock_guard guard(as_exclusive_lock);
+            std::lock_guard guard(asbind20::as_exclusive_lock);
 
             // Double-check to prevent cache from being created by another thread
             cache = static_cast<array_cache*>(ti->GetUserData(UserDataID));
@@ -96,7 +96,7 @@ namespace detail
             );
             if(!cache) [[unlikely]]
             {
-                set_script_exception("out of memory");
+                asbind20::set_script_exception("out of memory");
                 return;
             }
 
@@ -183,7 +183,7 @@ public:
         m_data.push_back_n(n, value);
     }
 
-    script_array(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, script_init_list_repeat ilist)
+    script_array(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, asbind20::script_init_list_repeat ilist)
         : m_data(ti, ilist)
     {
         setup_cache();
@@ -379,7 +379,7 @@ public:
         {
             if(!m_arr) [[unlikely]]
             {
-                set_script_exception("array_iterator<T>: empty iterator");
+                asbind20::set_script_exception("array_iterator<T>: empty iterator");
                 return nullptr;
             }
             if(m_offset >= m_arr->size())
@@ -426,12 +426,12 @@ public:
         // Set script exception of invalid position
         static void raise_invalid_position()
         {
-            set_script_exception("array_iterator<T>: invalid position");
+            asbind20::set_script_exception("array_iterator<T>: invalid position");
         }
 
         static void raise_incompatible_iterator()
         {
-            set_script_exception("array_iterator<T>: incompatible iterator");
+            asbind20::set_script_exception("array_iterator<T>: incompatible iterator");
         }
     };
 
@@ -460,9 +460,9 @@ public:
             return true;
 
         int subtype_id = element_type_id();
-        if(is_primitive_type(subtype_id))
+        if(asbind20::is_primitive_type(subtype_id))
         {
-            return visit_primitive_type(
+            return asbind20::visit_primitive_type(
                 []<typename T>(
                     const T* lhs_start, const T* lhs_stop, const T* rhs_start
                 ) -> bool
@@ -483,7 +483,7 @@ public:
         {
             array_cache* cache = get_cache();
 
-            reuse_active_context ctx(get_engine());
+            asbind20::reuse_active_context ctx(get_engine());
             for(size_type i = 0; i < size(); ++i)
             {
                 bool eq = elem_opEquals(
@@ -581,7 +581,7 @@ public:
     do {                                                                     \
         if(this->m_within_callback)                                          \
         {                                                                    \
-            set_script_exception(                                            \
+            asbind20::set_script_exception(                                  \
                 "array<T>." #func_name "(): modifying array within callback" \
             );                                                               \
             return ret;                                                      \
@@ -678,9 +678,9 @@ public:
 
         n = std::min(size() - off, n);
 
-        if(is_primitive_type(subtype_id))
+        if(asbind20::is_primitive_type(subtype_id))
         {
-            visit_primitive_type(
+            asbind20::visit_primitive_type(
                 [this, off, n, &removed]<typename T>(
                     const T* data, const T* val
                 )
@@ -706,7 +706,7 @@ public:
         {
             AS_NAMESPACE_QUALIFIER asITypeInfo* ti = get_type_info();
 
-            reuse_active_context ctx(ti->GetEngine());
+            asbind20::reuse_active_context ctx(ti->GetEngine());
             array_cache* cache = get_cache();
             if(!cache) [[unlikely]]
                 return 0;
@@ -757,7 +757,7 @@ public:
         AS_NAMESPACE_QUALIFIER asITypeInfo* ti = get_type_info();
 
         callback_guard guard(this);
-        reuse_active_context ctx(ti->GetEngine());
+        asbind20::reuse_active_context ctx(ti->GetEngine());
         for(size_type i = off; i + removed < n;)
         {
             auto eq = script_invoke<bool>(ctx, pred, m_data[i]);
@@ -784,9 +784,9 @@ public:
         n = std::min(size() - off, n);
 
         int subtype_id = m_data.element_type_id();
-        if(is_primitive_type(subtype_id))
+        if(asbind20::is_primitive_type(subtype_id))
         {
-            return visit_primitive_type(
+            return asbind20::visit_primitive_type(
                 []<typename T>(const T* start, const T* stop, const T* val)
                 {
                     return static_cast<size_type>(std::count(
@@ -804,7 +804,7 @@ public:
         else
         {
             array_cache* cache = get_cache();
-            reuse_active_context ctx(get_engine(), true);
+            asbind20::reuse_active_context ctx(get_engine(), true);
 
             size_type result = 0;
             for(size_type i = off; i < off + n; ++i)
@@ -824,7 +824,7 @@ public:
             return 0;
         if(m_within_callback) [[unlikely]]
         {
-            set_script_exception("array<T>.count_if(): nested callback");
+            asbind20::set_script_exception("array<T>.count_if(): nested callback");
             return 0;
         }
 
@@ -833,7 +833,7 @@ public:
         size_type result = 0;
 
         callback_guard guard(this);
-        reuse_active_context ctx(get_engine(), true);
+        asbind20::reuse_active_context ctx(get_engine(), true);
         for(size_type i = off; i < off + n; ++i)
         {
             auto eq = script_invoke<bool>(ctx, pred, m_data[i]);
@@ -864,7 +864,7 @@ private:
                 );
             }
         }
-        catch(const bad_script_invoke_result_access&)
+        catch(const asbind20::bad_script_invoke_result_access&)
         {
             // Exception caused by comparator.
             // Exception should have already been set to script context
@@ -893,7 +893,7 @@ private:
 
             if constexpr(IsMethod) // opCmp of subtype
             {
-                auto result = script_invoke<int>(
+                auto result = asbind20::script_invoke<int>(
                     ctx, lhs, func, rhs
                 );
                 // Exception will be caught by the outer function
@@ -906,7 +906,7 @@ private:
             }
             else // callback function, whose signature is bool(const T&in, const T&in)
             {
-                auto result = script_invoke<bool>(
+                auto result = asbind20::script_invoke<bool>(
                     ctx, func, lhs, rhs
                 );
                 // Exception will be caught by the outer function
@@ -927,7 +927,7 @@ private:
 
         bool operator()(const T& lhs, const T& rhs) const
         {
-            auto result = script_invoke<bool>(
+            auto result = asbind20::script_invoke<bool>(
                 ctx, func, std::cref(lhs), std::cref(rhs)
             );
             // Exception will be caught by the outer function
@@ -944,7 +944,7 @@ private:
         size_type n
     )
     {
-        reuse_active_context ctx(get_engine());
+        asbind20::reuse_active_context ctx(get_engine());
         if(is_handle)
         {
             if(asc)
@@ -1020,16 +1020,16 @@ public:
         size_type off = index_to_offset(start);
         if(off == size_type(-1)) [[unlikely]]
         {
-            set_script_exception("array<T>.sort(): out of range");
+            asbind20::set_script_exception("array<T>.sort(): out of range");
             return;
         }
 
         n = std::min(size() - off, n);
 
         int subtype_id = element_type_id();
-        if(is_primitive_type(subtype_id))
+        if(asbind20::is_primitive_type(subtype_id))
         {
-            visit_primitive_type(
+            asbind20::visit_primitive_type(
                 // Ignore `stable` for primitive types
                 [asc]<typename T>(T* start, T* stop)
                 {
@@ -1056,21 +1056,21 @@ public:
             array_cache* cache = get_cache();
             if(!cache) [[unlikely]]
             {
-                set_script_exception("array<T>.sort(): internal error");
+                asbind20::set_script_exception("array<T>.sort(): internal error");
                 return;
             }
             if(!cache->subtype_opCmp) [[unlikely]]
             {
                 if(cache->opCmp_status == AS_NAMESPACE_QUALIFIER asMULTIPLE_FUNCTIONS)
-                    set_script_exception("array<T>.sort(): multiple opCmp() functions");
+                    asbind20::set_script_exception("array<T>.sort(): multiple opCmp() functions");
                 else
-                    set_script_exception("array<T>.sort(): opCmp() function not found");
+                    asbind20::set_script_exception("array<T>.sort(): opCmp() function not found");
                 return;
             }
 
             sort_by_script_compare<true>(
                 cache->subtype_opCmp,
-                is_objhandle(subtype_id),
+                asbind20::is_objhandle(subtype_id),
                 asc,
                 off,
                 stable,
@@ -1094,17 +1094,17 @@ public:
         size_type off = index_to_offset(start);
         if(off == size_type(-1)) [[unlikely]]
         {
-            set_script_exception("array<T>.sort_by(): out of range");
+            asbind20::set_script_exception("array<T>.sort_by(): out of range");
             return;
         }
 
         n = std::min(size() - off, n);
 
         int subtype_id = element_type_id();
-        if(is_primitive_type(subtype_id))
+        if(asbind20::is_primitive_type(subtype_id))
         {
-            reuse_active_context ctx(get_engine());
-            visit_primitive_type(
+            asbind20::reuse_active_context ctx(get_engine());
+            asbind20::visit_primitive_type(
                 [&ctx, func, stable]<typename T>(T* start, T* stop)
                 {
                     if(stable)
@@ -1133,7 +1133,7 @@ public:
         {
             sort_by_script_compare<false>(
                 func,
-                is_objhandle(subtype_id),
+                asbind20::is_objhandle(subtype_id),
                 true,
                 stable,
                 off,
@@ -1147,7 +1147,7 @@ public:
         size_type off = index_to_offset(start);
         if(off == size_type(-1))
         {
-            set_script_exception("array<T>.reverse(): out of range");
+            asbind20::set_script_exception("array<T>.reverse(): out of range");
             return;
         }
         m_data.reverse(off, n);
@@ -1202,10 +1202,10 @@ public:
     }
 
 private:
-    using container_type = container::small_vector<
-        container::typeinfo_subtype<0>,
+    using container_type = asbind20::container::small_vector<
+        asbind20::container::typeinfo_subtype<0>,
         4 * sizeof(void*),
-        as_allocator<void>>;
+        asbind20::as_allocator<void>>;
 
     container_type m_data;
 
@@ -1243,7 +1243,7 @@ public:
     {
         if(empty())
         {
-            set_script_exception("get_front(): empty array");
+            asbind20::set_script_exception("get_front(): empty array");
             return nullptr;
         }
 
@@ -1254,7 +1254,7 @@ public:
     {
         if(empty())
         {
-            set_script_exception("get_back(): empty array");
+            asbind20::set_script_exception("get_back(): empty array");
             return nullptr;
         }
 
@@ -1293,7 +1293,7 @@ public:
 
         if(this != it.m_arr) [[unlikely]]
         {
-            set_script_exception("array<T>.erase(): incompatible iterator");
+            asbind20::set_script_exception("array<T>.erase(): incompatible iterator");
             return script_array_iterator();
         }
         size_type where = it.m_offset;
@@ -1313,7 +1313,7 @@ public:
 
         if(this != it.m_arr) [[unlikely]]
         {
-            set_script_exception("array<T>.insert(): incompatible iterator");
+            asbind20::set_script_exception("array<T>.insert(): incompatible iterator");
             return script_array_iterator();
         }
         size_type where = it.m_offset;
@@ -1337,9 +1337,9 @@ private:
 
         n = std::min(size() - start_offset, n);
 
-        if(int subtype_id = element_type_id(); is_primitive_type(subtype_id))
+        if(int subtype_id = element_type_id(); asbind20::is_primitive_type(subtype_id))
         {
-            return visit_primitive_type(
+            return asbind20::visit_primitive_type(
                 [this, start_offset]<typename T>(
                     const T* start, const T* sentinel, const T* val
                 ) -> size_type
@@ -1360,7 +1360,7 @@ private:
         }
         else
         {
-            reuse_active_context ctx(get_engine());
+            asbind20::reuse_active_context ctx(get_engine());
             for(size_type i = start_offset; i < start_offset + n; ++i)
             {
                 bool eq = elem_opEquals(
@@ -1389,7 +1389,7 @@ public:
         array_cache* cache = get_cache();
         if(!cache || !cache->iterator_ti) [[unlikely]]
         {
-            set_script_exception("array<T>: internal error");
+            asbind20::set_script_exception("array<T>: internal error");
             return script_array_iterator();
         }
 
@@ -1414,7 +1414,7 @@ result_found:
         array_cache* cache = get_cache();
         if(!cache) [[unlikely]]
         {
-            set_script_exception("array<T>: internal error");
+            asbind20::set_script_exception("array<T>: internal error");
             return false;
         }
 
@@ -1432,7 +1432,7 @@ private:
         array_cache* cache = get_cache();
         if(!cache || !cache->iterator_ti) [[unlikely]]
         {
-            set_script_exception("array<T>: internal error");
+            asbind20::set_script_exception("array<T>: internal error");
             return script_array_iterator();
         }
         return script_array_iterator(
@@ -1445,7 +1445,7 @@ private:
         array_cache* cache = get_cache();
         if(!cache || !cache->iterator_ti) [[unlikely]]
         {
-            set_script_exception("array<T>: internal error");
+            asbind20::set_script_exception("array<T>: internal error");
             return script_array_iterator();
         }
         return script_array_iterator(
@@ -1459,14 +1459,14 @@ public:
         size_type off = index_to_offset(idx);
         if(off == size_type(-1)) [[unlikely]]
         {
-            set_script_exception("array<T>.opIndex(): out or range");
+            asbind20::set_script_exception("array<T>.opIndex(): out or range");
             return nullptr;
         }
         return (*this)[off];
     }
 
 private:
-    atomic_counter m_refcount;
+    asbind20::atomic_counter m_refcount;
     bool m_gc_flag = false;
     // Prevents array from begin modified within a callback of functions like find_if
     mutable bool m_within_callback = false;
@@ -1501,9 +1501,11 @@ private:
 inline void register_script_array(
     AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
     bool as_default = true,
-    bool generic = has_max_portability()
+    bool generic = asbind20::has_max_portability()
 )
 {
+    using namespace asbind20;
+
     using array_t = script_array;
     using iter_t = script_array::script_array_iterator;
     using size_type = array_t::size_type;
@@ -1511,7 +1513,7 @@ inline void register_script_array(
 
     auto helper = [engine, as_default]<bool UseGeneric>(std::bool_constant<UseGeneric>)
     {
-        template_ref_class<array_t, UseGeneric> c(
+        asbind20::template_ref_class<array_t, UseGeneric> c(
             engine,
             "array<T>",
             AS_NAMESPACE_QUALIFIER asOBJ_GC
@@ -1521,12 +1523,12 @@ inline void register_script_array(
             AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_CDAK |
             AS_NAMESPACE_QUALIFIER asOBJ_GC;
 
-        template_value_class<iter_t, UseGeneric> it(
+        asbind20::template_value_class<iter_t, UseGeneric> it(
             engine,
             "array_iterator<T>",
             iterator_flags
         );
-        template_value_class<iter_t, UseGeneric> cit(
+        asbind20::template_value_class<iter_t, UseGeneric> cit(
             engine,
             "const_array_iterator<T>",
             iterator_flags
@@ -1649,10 +1651,10 @@ inline void register_script_array(
 template <std::size_t Size>
 script_array* new_script_array(
     AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
-    meta::fixed_string<Size> subtype_decl
+    asbind20::meta::fixed_string<Size> subtype_decl
 )
 {
-    using meta::fixed_string;
+    using asbind20::meta::fixed_string;
 
     auto full_decl = fixed_string("array<") + subtype_decl + fixed_string(">");
     AS_NAMESPACE_QUALIFIER asITypeInfo* ti = engine->GetTypeInfoByDecl(
@@ -1667,6 +1669,6 @@ script_array* new_script_array(
     }
     return ptr;
 }
-} // namespace asbind20::ext
+} // namespace asbind_test
 
 #endif

@@ -2,7 +2,6 @@
 #include <asbind20/container/small_vector.hpp>
 #include <asbind_test/framework.hpp>
 #include <gtest/gtest.h>
-#include <asbind20/ext/stdstring.hpp>
 
 TEST(SmallVector, IntAsElement)
 {
@@ -292,7 +291,7 @@ TEST(SmallVector, ScriptStringAsElement)
     using namespace asbind20;
     auto engine = make_script_engine();
 
-    ext::register_std_string(engine, true);
+    asbind_test::setup_script_string(engine, true);
     asbind_test::setup_message_callback(engine, true);
 
     AS_NAMESPACE_QUALIFIER asITypeInfo* string_ti = engine->GetTypeInfoByName("string");

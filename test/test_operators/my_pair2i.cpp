@@ -1,6 +1,5 @@
 #include <asbind_test/framework.hpp>
 #include <asbind20/operators.hpp>
-#include <asbind20/ext/stdstring.hpp>
 
 namespace test_operators
 {
@@ -290,7 +289,7 @@ TEST(TestOperators, MyPair2iNative)
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine, true);
-    ext::register_std_string(engine);
+    asbind_test::setup_script_string(engine, false);
 
     value_class<test_operators::my_pair2i>(
         engine,
@@ -322,7 +321,7 @@ TEST(TestOperators, MyPair2iGeneric)
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine, true);
-    ext::register_std_string(engine);
+    asbind_test::setup_script_string(engine, true);
 
     value_class<test_operators::my_pair2i, true>(engine, "pair2i", pair2i_flags)
         .behaviours_by_traits(pair2i_flags)
@@ -352,7 +351,7 @@ TEST(TestOperators, MyPair2iNativeWithDecl)
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine, true);
-    ext::register_std_string(engine);
+    asbind_test::setup_script_string(engine, false);
 
     value_class<test_operators::my_pair2i>(engine, "pair2i", pair2i_flags)
         .behaviours_by_traits(pair2i_flags)
@@ -380,7 +379,7 @@ TEST(TestOperators, MyPair2iGenericWithDecl)
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine, true);
-    ext::register_std_string(engine);
+    asbind_test::setup_script_string(engine, true);
 
     value_class<test_operators::my_pair2i, true>(engine, "pair2i", pair2i_flags)
         .behaviours_by_traits(pair2i_flags)

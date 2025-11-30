@@ -1,9 +1,9 @@
-#include <asbind20/ext/array.hpp>
+#include <asbind_test/array.hpp>
 #include <cassert>
 #include <cstring>
 #include <asbind20/invoke.hpp>
 
-namespace asbind20::ext
+namespace asbind_test
 {
 namespace detail
 {
@@ -25,9 +25,9 @@ namespace detail
         const array_cache* cache
     )
     {
-        assert(!is_primitive_type(subtype_id));
+        assert(!asbind20::is_primitive_type(subtype_id));
 
-        if(is_objhandle(subtype_id))
+        if(asbind20::is_objhandle(subtype_id))
         {
             if(*(const void* const*)lhs == *(const void* const*)rhs)
                 return true;
@@ -39,7 +39,7 @@ namespace detail
         assert(ctx != nullptr);
         if(cache->subtype_opEquals) [[likely]]
         {
-            auto result = script_invoke<bool>(
+            auto result = asbind20::script_invoke<bool>(
                 ctx,
                 lhs,
                 cache->subtype_opEquals,
@@ -53,7 +53,7 @@ namespace detail
         // Fallback to OpCmp() == 0
         else if(cache->subtype_opCmp)
         {
-            auto result = script_invoke<int>(
+            auto result = asbind20::script_invoke<int>(
                 ctx,
                 lhs,
                 cache->subtype_opCmp,
@@ -72,7 +72,7 @@ namespace detail
         array_cache& out, int subtype_id, AS_NAMESPACE_QUALIFIER asITypeInfo* ti
     )
     {
-        assert(!is_primitive_type(subtype_id));
+        assert(!asbind20::is_primitive_type(subtype_id));
 
         bool must_be_const = subtype_id & AS_NAMESPACE_QUALIFIER asTYPEID_HANDLETOCONST;
 
@@ -165,14 +165,14 @@ namespace detail
         array_cache& out, int subtype_id, AS_NAMESPACE_QUALIFIER asITypeInfo* ti
     )
     {
-        if(!is_primitive_type(subtype_id))
+        if(!asbind20::is_primitive_type(subtype_id))
             find_required_elem_methods(out, subtype_id, ti);
 
         AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = ti->GetEngine();
         {
             const char* subtype_decl = engine->GetTypeDeclaration(subtype_id, true);
             out.iterator_ti = engine->GetTypeInfoByDecl(
-                string_concat("array_iterator<", subtype_decl, '>').c_str()
+                asbind20::string_concat("array_iterator<", subtype_decl, '>').c_str()
             );
         }
     }
@@ -182,14 +182,14 @@ namespace detail
     )
     {
         int subtype_id = ti->GetSubTypeId();
-        if(is_void_type(subtype_id))
+        if(asbind20::is_void_type(subtype_id))
             return false;
 
-        if(is_primitive_type(subtype_id))
+        if(asbind20::is_primitive_type(subtype_id))
         {
             no_gc = true;
         }
-        else if(!is_objhandle(subtype_id))
+        else if(!asbind20::is_objhandle(subtype_id))
         {
             AS_NAMESPACE_QUALIFIER asITypeInfo* subtype_ti = ti->GetSubType();
             assert(subtype_ti != nullptr);
@@ -200,7 +200,7 @@ namespace detail
                 !(flags & AS_NAMESPACE_QUALIFIER asOBJ_POD)
             )
             {
-                if(!get_default_constructor(subtype_ti))
+                if(!asbind20::get_default_constructor(subtype_ti))
                 {
                     ti->GetEngine()->WriteMessage(
                         "array",
@@ -214,7 +214,7 @@ namespace detail
             }
             else if((flags & AS_NAMESPACE_QUALIFIER asOBJ_REF))
             {
-                if(!get_default_factory(ti->GetSubType()))
+                if(!asbind20::get_default_factory(ti->GetSubType()))
                 {
                     ti->GetEngine()->WriteMessage(
                         "array",
@@ -232,7 +232,7 @@ namespace detail
         }
         else
         {
-            assert(is_objhandle(subtype_id));
+            assert(asbind20::is_objhandle(subtype_id));
 
             // According to the official add-on, if a handle cannot refer to an object type
             // that can form a circular reference with the array,

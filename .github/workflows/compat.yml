@@ -45,7 +45,6 @@ jobs:
           -Dasbind_cxxstd=20
           -DCMAKE_CXX_FLAGS=-DAS_USE_NAMESPACE=1
           -DCMAKE_BUILD_TYPE=Release
-          -Dasbind_build_ext=1
           -Dasbind_build_test=1
 
       - name: Build

@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 #include <asbind_test/framework.hpp>
 #include <asbind20/asbind.hpp>
-#include <asbind20/ext/stdstring.hpp>
 
 using namespace asbind_test;
 
@@ -112,7 +111,7 @@ TEST(TestBind, GlobalNative)
     ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
-    asbind20::ext::register_std_string(engine);
+    asbind_test::setup_script_string(engine, false);
 
     std::string val = "val";
     test_bind::class_wrapper wrapper{};
@@ -179,7 +178,7 @@ TEST(TestBind, GlobalNative)
 TEST(TestBind, GlobalGeneric)
 {
     auto engine = asbind20::make_script_engine();
-    asbind20::ext::register_std_string(engine);
+    asbind_test::setup_script_string(engine, true);
 
     std::string val = "val";
     test_bind::class_wrapper wrapper{};

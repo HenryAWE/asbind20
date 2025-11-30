@@ -15,3 +15,5 @@ add_subdirectory(test_gc)
 add_subdirectory(test_operators)
 
 add_subdirectory(test_concurrent)
+
+add_subdirectory(ext)

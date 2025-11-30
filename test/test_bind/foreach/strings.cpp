@@ -1,5 +1,4 @@
 #include <asbind_test/framework.hpp>
-#include <asbind20/ext/stdstring.hpp>
 
 #ifdef ASBIND20_HAS_AS_FOREACH
 
@@ -94,7 +93,7 @@ public:
         using namespace asbind20;
 
         asbind_test::setup_message_callback(m_engine, true);
-        ext::register_std_string(m_engine, UseGeneric);
+        asbind_test::setup_script_string(m_engine, UseGeneric);
 
         value_class<string_generator::iterator, UseGeneric> iter(
             m_engine,

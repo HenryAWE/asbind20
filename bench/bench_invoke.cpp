@@ -1,7 +1,5 @@
 #include "shared_bench_lib.hpp"
-#include <asbind20/ext/stdstring.hpp>
 #include <cassert>
-#include <iostream>
 
 namespace bench_invoke
 {
@@ -98,7 +96,12 @@ static void setup_to_lower_env(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     using namespace asbind20;
 
-    ext::register_std_string(engine, true, UseGeneric);
+    asbind20::value_class<std::string, UseGeneric>(
+        engine,
+        "string",
+        AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_MORE_CONSTRUCTORS
+    )
+        .behaviours_by_traits();
     global<UseGeneric>(engine)
         .function("string to_lower(const string&in)", fp<&str_to_lower>)
         .message_callback(

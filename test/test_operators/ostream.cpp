@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 #include <asbind_test/framework.hpp>
 #include <asbind20/operators.hpp>
-#include <asbind20/ext/stdstring.hpp>
 #include <iostream>
 
 namespace test_operators
@@ -83,7 +82,7 @@ TEST(TestOperators, OStreamNative)
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine, true);
-    ext::register_std_string(engine, true, false);
+    asbind_test::setup_script_string(engine, false);
 
     test_operators::register_ostream<false>(std::cout, engine);
     test_operators::run_ostream_test_script(engine);
@@ -95,7 +94,7 @@ TEST(TestOperators, OStreamGeneric)
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine, true);
-    ext::register_std_string(engine, true, true);
+    asbind_test::setup_script_string(engine, true);
 
     test_operators::register_ostream<true>(std::cout, engine);
     test_operators::run_ostream_test_script(engine);

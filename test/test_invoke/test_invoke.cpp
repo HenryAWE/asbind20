@@ -1,8 +1,7 @@
 #include <gtest/gtest.h>
 #include <asbind_test/framework.hpp>
 #include <asbind20/asbind.hpp>
-#include <asbind20/ext/stdstring.hpp>
-#include <asbind20/ext/array.hpp>
+#include <asbind_test/array.hpp>
 
 using namespace asbind_test;
 
@@ -13,8 +12,8 @@ TEST(TestInvoke, CommonTypes)
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
-    ext::register_std_string(engine);
-    ext::register_script_array(engine);
+    asbind_test::setup_script_string(engine);
+    asbind_test::register_script_array(engine);
     auto* m = engine->GetModule(
         "test_invoke", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
     );
@@ -114,7 +113,7 @@ TEST(TestInvoke, CommonTypes)
 
         asbind20::request_context ctx(engine);
 
-        auto result = asbind20::script_invoke<ext::script_array*>(ctx, fp, 10, 13);
+        auto result = asbind20::script_invoke<asbind_test::script_array*>(ctx, fp, 10, 13);
         ASSERT_TRUE(result_has_value(result));
         EXPECT_EQ(result->size(), 2);
         EXPECT_EQ(*(int*)result->opIndex(0), 10);

@@ -46,7 +46,6 @@ jobs:
           -G Ninja
           -Dasbind_cxxstd=${{matrix.cxxstd}}
           -DCMAKE_BUILD_TYPE=Release
-          -Dasbind_build_ext=1
           -Dasbind_build_test=1
           -Dasbind_build_bench=1
 

@@ -26,7 +26,6 @@ add_library(asbind20 INTERFACE)
 # Add an ALIAS target for using the library by add_subdirectory()
 add_library(asbind20::asbind20 ALIAS asbind20)
 
-option(asbind_build_ext "Build extensions" ON)
 option(asbind_build_doc "Build documentation" OFF)
 
 include(GNUInstallDirs)
@@ -74,10 +73,6 @@ if(${asbind_build_bench})
     set(BENCHMARK_ENABLE_TESTING OFF)
     set(BENCHMARK_ENABLE_GTEST_TESTS OFF)
     FetchContent_MakeAvailable(benchmark)
-endif()
-
-if(${asbind_build_ext})
-    add_subdirectory(ext)
 endif()
 
 if(${asbind_build_doc})

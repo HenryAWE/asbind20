@@ -6,6 +6,7 @@
 // IWYU pragma: begin_exports
 
 #include "assertion.hpp"
+#include "std_string.hpp"
 #include "test_exceptions.hpp"
 
 // IWYU pragma: end_exports

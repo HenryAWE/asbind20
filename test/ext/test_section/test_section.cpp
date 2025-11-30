@@ -1,5 +1,5 @@
 #include <asbind_test/framework.hpp>
-#include <asbind20/ext/load.hpp>
+#include <asbind20/ext/section.hpp>
 
 namespace test_load
 {

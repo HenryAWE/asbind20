@@ -1,11 +1,11 @@
 /**
- * @file load.hpp
+ * @file section.hpp
  * @author HenryAWE
  * @brief Helpers for loading script section
  */
 
-#ifndef ASBIND20_EXT_LOAD_HPP
-#define ASBIND20_EXT_LOAD_HPP
+#ifndef ASBIND20_EXT_SECTION_HPP
+#define ASBIND20_EXT_SECTION_HPP
 
 #pragma once
 
@@ -69,5 +69,6 @@ inline int load_file(
     );
 }
 } // namespace asbind20::ext
+
 
 #endif

@@ -8,22 +8,12 @@ All interfaces of extension library is under the ``asbind20::ext`` namespace.
 There source code are located inside the ``ext/`` directory of repository.
 
 .. toctree::
-   :maxdepth: 1
-   :caption: Container Library
-
-   container/array
-   container/stdstring
-
-.. note::
-   CMake target name is ``asbind20_ext_container``.
 
 .. toctree::
    :maxdepth: 2
    :caption: Utilities
 
-   utility/math
-   utility/vocabulary
-   utility/misc
+   utility/load
 
 .. note::
    CMake target name is ``asbind20_ext_utility``.

@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 #include <asbind_test/framework.hpp>
 #include <asbind20/asbind.hpp>
-#include <asbind20/ext/stdstring.hpp>
 
 namespace test_bind
 {
@@ -327,7 +326,7 @@ TEST(TestBind, TemplateValClassNative)
 
     auto engine = asbind20::make_script_engine();
     asbind_test::setup_message_callback(engine, true);
-    asbind20::ext::register_std_string(engine);
+    asbind_test::setup_script_string(engine, false);
     asbind_test::setup_script_assertion(engine);
 
     test_bind::register_template_val_class(engine);
@@ -338,7 +337,7 @@ TEST(TestBind, TemplateValClassGeneric)
 {
     auto engine = asbind20::make_script_engine();
     asbind_test::setup_message_callback(engine, true);
-    asbind20::ext::register_std_string(engine);
+    asbind_test::setup_script_string(engine, true);
     asbind_test::setup_script_assertion(engine);
 
     test_bind::register_template_val_class(asbind20::use_generic, engine);

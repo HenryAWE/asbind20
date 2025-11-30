@@ -1,11 +1,11 @@
 /**
- * @file utf8.hpp
+ * @file asbind_test/utf8.hpp
  * @author HenryAWE
- * @brief A simple self-contained UTF-8 library for string extension
+ * @brief A simple self-contained UTF-8 library for script string
  */
 
-#ifndef ASBIND20_EXT_UTF8_HPP
-#define ASBIND20_EXT_UTF8_HPP
+#ifndef ASBIND_TEST_UTF8_HPP
+#define ASBIND_TEST_UTF8_HPP
 
 #pragma once
 
@@ -15,7 +15,7 @@
 #include <cstddef>
 #include <string>
 
-namespace asbind20::ext::utf8
+namespace asbind_test::utf8
 {
 /**
  * @defgroup UTF-8 UTF-8 library
@@ -492,6 +492,6 @@ inline const_string_iterator string_cend(std::string_view str)
 {
     return const_string_iterator(str, str.size());
 }
-} // namespace asbind20::ext::utf8
+} // namespace asbind_test::utf8
 
 #endif

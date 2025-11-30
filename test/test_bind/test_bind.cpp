@@ -2,7 +2,6 @@
 #include <asbind_test/framework.hpp>
 #include <asbind20/asbind.hpp>
 #include <sstream>
-#include <asbind20/ext/stdstring.hpp>
 
 using namespace asbind_test;
 
@@ -309,7 +308,7 @@ TEST(Detail, GenericWrapper)
     using namespace asbind20;
 
     auto engine = asbind20::make_script_engine();
-    ext::register_std_string(engine);
+    asbind_test::setup_script_string(engine, true);
     asbind_test::setup_script_assertion(engine);
 
     auto my_div_gen = detail::to_asGENFUNC_t(fp<&test_bind::my_div>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>);
