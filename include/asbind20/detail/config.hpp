@@ -12,6 +12,10 @@
 #include <version>
 #include "include_as.hpp"
 
+#ifndef __cpp_exceptions
+#    define ASBIND20_NO_EXCEPTIONS
+#endif
+
 #if defined(_WIN32) && !defined(_WIN64)
 #    define ASBIND20_HAS_STANDALONE_STDCALL
 #    define ASBIND20_CDECL   __cdecl

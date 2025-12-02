@@ -21,11 +21,7 @@ public:
 class instantly_throw
 {
 public:
-    instantly_throw()
-        : m_placeholder{}
-    {
-        throw expected_ex{};
-    }
+    instantly_throw();
 
     instantly_throw(const instantly_throw&) = default;
 
@@ -42,17 +38,11 @@ public:
     throw_on_copy()
         : m_placeholder{} {}
 
-    throw_on_copy(const throw_on_copy&)
-    {
-        throw expected_ex{};
-    }
+    throw_on_copy(const throw_on_copy&);
 
     ~throw_on_copy() = default;
 
-    throw_on_copy& operator=(const throw_on_copy&)
-    {
-        throw expected_ex{};
-    }
+    throw_on_copy& operator=(const throw_on_copy&);
 
 private:
     [[maybe_unused]]

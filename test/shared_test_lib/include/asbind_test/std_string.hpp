@@ -79,7 +79,9 @@ public:
             it->second += 1;
         else
         {
+#ifndef ASBIND20_NO_EXCEPTIONS
             try
+#endif
             {
                 it = m_cache.emplace_hint(
                     it,
@@ -88,6 +90,7 @@ public:
                     std::make_tuple(1u)
                 );
             }
+#ifndef ASBIND20_NO_EXCEPTIONS
             catch(...)
             {
                 asbind20::set_script_exception(
@@ -95,6 +98,7 @@ public:
                 );
                 return nullptr;
             }
+#endif
         }
 
         return &it->first;

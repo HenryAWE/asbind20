@@ -848,7 +848,9 @@ private:
     template <bool Stable, typename Compare>
     void sort_by_impl(Compare&& comp, size_type off, size_type n)
     {
+#ifndef ASBIND20_NO_EXCEPTIONS
         try
+#endif
         {
             void** data = static_cast<void**>(m_data.data_at(off));
             if constexpr(Stable)
@@ -864,12 +866,14 @@ private:
                 );
             }
         }
+#ifndef ASBIND20_NO_EXCEPTIONS
         catch(const asbind20::bad_script_invoke_result_access&)
         {
             // Exception caused by comparator.
             // Exception should have already been set to script context
             // by reuse_active_context
         }
+#endif
     }
 
     template <bool IsHandle, bool Ascending, bool IsMethod>

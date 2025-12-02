@@ -16,7 +16,7 @@ TEST(TestInvoke, ScriptClass)
         .function(
             "void throw_err()",
             []() -> void
-            { throw std::runtime_error("err"); }
+            { asbind20::detail::throw_<std::runtime_error>("err"); }
         );
 
     m->AddScriptSection(
@@ -64,8 +64,11 @@ TEST(TestInvoke, ScriptClass)
         auto* err = my_class_t->GetMethodByDecl("int err()");
         ASSERT_TRUE(err);
 
+#ifndef ASBIND20_NO_EXCEPTIONS
         auto err_result = script_invoke<int>(ctx, err);
         EXPECT_FALSE(result_has_value(err_result));
         EXPECT_THROW((void)err_result.value(), bad_script_invoke_result_access);
+
+#endif
     }
 }

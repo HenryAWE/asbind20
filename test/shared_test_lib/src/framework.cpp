@@ -66,6 +66,7 @@ static void exception_translator_impl(
     AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, void*
 )
 {
+#ifndef ASBIND20_NO_EXCEPTIONS
     try
     {
         throw;
@@ -78,6 +79,13 @@ static void exception_translator_impl(
     {
         ctx->SetException("...");
     }
+
+#else
+    GTEST_FAIL()
+        << "script exception at context "
+        << static_cast<void*>(ctx);
+
+#endif
 }
 
 void setup_exception_translator(
