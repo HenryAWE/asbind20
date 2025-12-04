@@ -306,6 +306,12 @@ static void output_info(std::ostream& os)
     if(asbind20::has_max_portability())
         os << "AS_MAX_PORTABILITY" << std::endl;
 
+#ifdef ASBIND20_NO_EXCEPTIONS
+    os << "ASBIND20_NO_EXCEPTIONS defined" << std::endl;
+#else
+    os << "ASBIND20_NO_EXCEPTIONS not defined" << std::endl;
+#endif
+
 #ifdef AS_USE_NAMESPACE
     os << "AS_USE_NAMESPACE defined" << std::endl;
 #endif
