@@ -23,6 +23,7 @@
 #include <concepts>
 #include "detail/config.hpp" // IWYU pragma: export configs
 #include "detail/include_as.hpp"
+#include "detail/strutil.hpp"
 
 namespace asbind20
 {
@@ -1288,6 +1289,11 @@ inline void set_script_exception(const char* info)
     AS_NAMESPACE_QUALIFIER asIScriptContext* ctx = current_context();
     if(ctx)
         ctx->SetException(info);
+}
+
+inline void set_script_exception(util::cstring_view csv)
+{
+    set_script_exception(csv.c_str());
 }
 
 inline void set_script_exception(const std::string& info)

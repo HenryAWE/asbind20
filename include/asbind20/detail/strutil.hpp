@@ -11,6 +11,7 @@
 
 #include <iosfwd>
 #include <cassert>
+#include <string>
 #include <string_view>
 
 namespace asbind20
@@ -38,8 +39,15 @@ namespace util
             assert(cstr[sz] == '\0');
         }
 
+        constexpr cstring_view(const std::string& str) noexcept
+            : m_cstr(str.c_str()), m_size(str.size()) {}
+
+        constexpr cstring_view(const char* str) noexcept
+            : m_cstr(str),
+            m_size(std::char_traits<char>::length(str)) {}
+
         template <std::size_t N>
-        constexpr cstring_view(const char (&arr)[N]) noexcept
+        constexpr explicit cstring_view(const char (&arr)[N]) noexcept
             : cstring_view(arr, N - 1)
         {}
 
