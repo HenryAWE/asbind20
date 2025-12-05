@@ -47,7 +47,7 @@ public:
     )
         : m_engine(engine), m_name(std::move(name))
     {
-        register_enum_type(m_name.c_str(), get_underlying());
+        register_enum_type(m_name.c_str(), get_underlying().c_str());
     }
 
     template <std::convertible_to<std::string_view> StringView>
@@ -61,14 +61,12 @@ public:
           )
     {}
 
-    enum_& value(Enum val, std::string_view decl)
+    enum_& value(Enum val, cstring_ref decl)
     {
         [[maybe_unused]]
-        int r = with_cstr(
-            &AS_NAMESPACE_QUALIFIER asIScriptEngine::RegisterEnumValue,
-            m_engine,
-            m_name,
-            decl,
+        int r = m_engine->RegisterEnumValue(
+            m_name.c_str(),
+            decl.c_str(),
             static_cast<script_enum_value_type>(val)
         );
         assert(r >= 0);

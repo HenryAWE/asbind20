@@ -272,7 +272,7 @@ namespace detail
             return_type,
             ' ',
             type,
-            "::"sv,
+            "::",
             std::string_view(name_begin.base(), funcdef.end())
         );
     }

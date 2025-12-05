@@ -31,8 +31,9 @@ TEST(StringViewCompat, Misc)
     auto engine = make_script_engine();
 
     enum_<placeholder_enum>(engine, "placeholder_enum"sv)
-        .value(placeholder_enum::val, "val"sv);
-    interface(engine, "my_intf"sv);
+        .value(placeholder_enum::val, "val");
+    interface(engine, "my_intf"sv)
+        .method("void f()");
 
     auto placeholder_enum_t = engine->GetTypeInfoByDecl("placeholder_enum");
     ASSERT_TRUE(placeholder_enum_t);

@@ -1651,10 +1651,10 @@ inline void register_script_array(
 template <std::size_t Size>
 script_array* new_script_array(
     AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
-    asbind20::meta::fixed_string<Size> subtype_decl
+    asbind20::util::fixed_string<Size> subtype_decl
 )
 {
-    using asbind20::meta::fixed_string;
+    using asbind20::util::fixed_string;
 
     auto full_decl = fixed_string("array<") + subtype_decl + fixed_string(">");
     AS_NAMESPACE_QUALIFIER asITypeInfo* ti = engine->GetTypeInfoByDecl(

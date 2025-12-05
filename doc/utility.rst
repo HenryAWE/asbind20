@@ -62,7 +62,7 @@ Miscellaneous Utilities
 .. doxygenfunction:: asbind20::string_concat
 .. doxygenfunction:: asbind20::with_cstr
 
-.. doxygenclass:: asbind20::meta::fixed_string
+.. doxygenclass:: asbind20::util::fixed_string
    :members:
    :undoc-members:
 

@@ -18,24 +18,6 @@ TEST(Utility, FpWrapper)
     EXPECT_EQ(f1(), 1013);
 }
 
-TEST(Utility, StringConcat)
-{
-    using asbind20::string_concat;
-
-    EXPECT_EQ(string_concat(), "");
-
-    {
-        const char* name = "my_name";
-        EXPECT_EQ(string_concat("void f(", name, ')'), "void f(my_name)");
-    }
-
-    {
-        using namespace std::string_view_literals;
-        const char* name = "my_name";
-        EXPECT_EQ(string_concat("void f("sv, name, ')'), "void f(my_name)");
-    }
-}
-
 namespace test_utility
 {
 enum my_enum
@@ -120,12 +102,12 @@ TEST(Meta, FixedString)
 {
     using namespace asbind20;
 
-    static_assert(meta::fixed_string().empty());
-    static_assert(meta::fixed_string("int").size() == 3);
-    static_assert(meta::fixed_string("int").view() == "int");
+    static_assert(util::fixed_string().empty());
+    static_assert(util::fixed_string("int").size() == 3);
+    static_assert(util::fixed_string("int").view() == "int");
 
     {
-        meta::fixed_string s = "int";
+        util::fixed_string s = "int";
         EXPECT_EQ(s.size(), 3);
         EXPECT_STREQ(s.c_str(), "int");
 
@@ -134,16 +116,16 @@ TEST(Meta, FixedString)
     }
 
     {
-        auto result = string_concat("void f()", meta::fixed_string("{int,int}"));
+        auto result = string_concat("void f()", util::fixed_string("{int,int}"));
         EXPECT_EQ(result, "void f(){int,int}");
     }
 
     {
-        constexpr meta::fixed_string hello = "hello";
-        constexpr meta::fixed_string world = " world";
+        constexpr util::fixed_string hello = "hello";
+        constexpr util::fixed_string world = " world";
         static_assert((hello + world).view() == "hello world");
-        static_assert((hello + meta::fixed_string()).view() == "hello");
-        static_assert((meta::fixed_string() + hello).view() == "hello");
+        static_assert((hello + util::fixed_string()).view() == "hello");
+        static_assert((util::fixed_string() + hello).view() == "hello");
 
         auto result = hello + world;
         EXPECT_EQ(result.size(), 11);
@@ -158,39 +140,6 @@ TEST(Meta, FixedString)
     {
         constexpr auto decl = meta::full_fixed_name_of<const int&>();
         static_assert(decl.view() == "const int&in");
-    }
-}
-
-TEST(WithCStr, WithCStr)
-{
-    using namespace asbind20;
-    using namespace std::string_view_literals;
-
-    {
-        std::string result = with_cstr(
-            [](const char* a, char ch, const char* b)
-            {
-                return string_concat(a, ch, b);
-            },
-            "hello"sv,
-            ' ',
-            "hello world"sv.substr(0, 5)
-        );
-        EXPECT_EQ(result, "hello hello");
-    }
-
-    {
-        std::string result = with_cstr(
-            [](const char* a, char ch, const char* b, const char* c)
-            {
-                return std::string(a) + ch + std::string(b) + c;
-            },
-            "hello"sv,
-            ' ',
-            "hello world"sv.substr(0, 5),
-            std::string(" world")
-        );
-        EXPECT_EQ(result, "hello hello world");
     }
 }
 

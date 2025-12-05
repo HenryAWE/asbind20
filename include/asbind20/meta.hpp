@@ -58,106 +58,6 @@ namespace meta
     template <typename Target, typename Tuple>
     constexpr inline bool contains_v = contains<Target, Tuple>::value;
 
-    template <std::size_t Size>
-    class fixed_string
-    {
-    public:
-        using value_type = char;
-        using size_type = std::size_t;
-
-        /**
-         * @brief **INTERNAL DATA. DO NOT USE!**
-         *
-         * This member is exposed for satisfying the NTTP requirements of C++.
-         *
-         * @note It includes `\0` at the end.
-         */
-        char internal_data[Size + 1] = {};
-
-        constexpr fixed_string(const fixed_string&) noexcept = default;
-
-        template <std::convertible_to<char>... Chars>
-        requires(sizeof...(Chars) == Size)
-        explicit constexpr fixed_string(Chars... chs)
-            : internal_data{static_cast<char>(chs)..., '\0'}
-        {}
-
-        constexpr fixed_string(const char (&str)[Size + 1])
-        {
-            for(size_type i = 0; i < Size; ++i)
-            {
-                internal_data[i] = str[i];
-            }
-            internal_data[Size] = '\0';
-        }
-
-        constexpr bool operator==(const fixed_string&) const noexcept = default;
-
-        template <std::size_t N>
-        requires(N != Size)
-        constexpr bool operator==(const fixed_string<N>&) const noexcept
-        {
-            return false;
-        }
-
-        static constexpr size_type size() noexcept
-        {
-            return Size;
-        };
-
-        static constexpr bool empty() noexcept
-        {
-            return Size == 0;
-        }
-
-        constexpr const value_type* data() const noexcept
-        {
-            return internal_data;
-        }
-
-        constexpr const value_type* c_str() const noexcept
-        {
-            return data();
-        }
-
-        constexpr operator const char*() const noexcept
-        {
-            return c_str();
-        }
-
-        constexpr std::string_view view() const noexcept
-        {
-            return std::string_view(data(), size());
-        }
-
-        constexpr operator std::string_view() const noexcept
-        {
-            return view();
-        }
-    };
-
-    template <std::convertible_to<char>... Chars>
-    fixed_string(Chars...) -> fixed_string<sizeof...(Chars)>;
-
-    template <std::size_t N>
-    fixed_string(const char (&str)[N]) -> fixed_string<N - 1>;
-
-    template <std::size_t SizeL, std::size_t SizeR>
-    constexpr auto operator+(const fixed_string<SizeL>& lhs, const fixed_string<SizeR>& rhs) -> fixed_string<SizeL + SizeR>
-    {
-        if constexpr(SizeL == 0)
-            return rhs;
-        else if constexpr(SizeR == 0)
-            return lhs;
-        else
-        {
-            return [&]<std::size_t... I1, std::size_t... I2>(std::index_sequence<I1...>, std::index_sequence<I2...>)
-            {
-                return fixed_string<SizeL + SizeR>(lhs.internal_data[I1]..., rhs.internal_data[I2]...);
-            }(std::make_index_sequence<SizeL>(), std::make_index_sequence<SizeR>());
-        }
-    }
-
     /**
      * @brief Get the script type flags.
      *
@@ -362,32 +262,32 @@ requires(std::is_arithmetic_v<T> && !std::same_as<std::remove_cv_t<T>, char>)
 consteval auto name_of() noexcept
 {
     if constexpr(std::same_as<T, bool>)
-        return meta::fixed_string("bool");
+        return util::fixed_string("bool");
     else if constexpr(std::integral<T>)
     {
         if constexpr(std::is_unsigned_v<T>)
         {
             if constexpr(sizeof(T) == 1)
-                return meta::fixed_string("uint8");
+                return util::fixed_string("uint8");
             else if constexpr(sizeof(T) == 2)
-                return meta::fixed_string("uint16");
+                return util::fixed_string("uint16");
             else if constexpr(sizeof(T) == 4)
-                return meta::fixed_string("uint");
+                return util::fixed_string("uint");
             else if constexpr(sizeof(T) == 8)
-                return meta::fixed_string("uint64");
+                return util::fixed_string("uint64");
             else
                 static_assert(!sizeof(T), "Invalid integral");
         }
         else if constexpr(std::is_signed_v<T>)
         {
             if constexpr(sizeof(T) == 1)
-                return meta::fixed_string("int8");
+                return util::fixed_string("int8");
             else if constexpr(sizeof(T) == 2)
-                return meta::fixed_string("int16");
+                return util::fixed_string("int16");
             else if constexpr(sizeof(T) == 4)
-                return meta::fixed_string("int");
+                return util::fixed_string("int");
             else if constexpr(sizeof(T) == 8)
-                return meta::fixed_string("int64");
+                return util::fixed_string("int64");
             else
                 static_assert(!sizeof(T), "Invalid integral");
         }
@@ -397,9 +297,9 @@ consteval auto name_of() noexcept
     else if constexpr(std::floating_point<T>)
     {
         if constexpr(std::same_as<T, float>)
-            return meta::fixed_string("float");
+            return util::fixed_string("float");
         else if constexpr(std::same_as<T, double>)
-            return meta::fixed_string("double");
+            return util::fixed_string("double");
         else
             static_assert(!sizeof(T), "Invalid floating point");
     }
@@ -418,6 +318,7 @@ namespace meta
     requires(has_static_name<std::remove_cvref_t<T>>)
     consteval auto full_fixed_name_of()
     {
+        using util::fixed_string;
         constexpr bool is_const = std::is_const_v<std::remove_reference_t<T>>;
 
         constexpr auto type_name = []()
@@ -455,7 +356,7 @@ namespace meta
 
         return [&]<std::size_t... Is>(std::index_sequence<Is...>)
         {
-            return fixed_string<size>(name_view[Is]...);
+            return util::fixed_string<size>(name_view[Is]...);
         }(std::make_index_sequence<size>());
     }
 } // namespace meta
