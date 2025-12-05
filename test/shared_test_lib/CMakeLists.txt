@@ -5,7 +5,7 @@ mark_as_advanced(asbind_dev_warning_as_error)
 
 aux_source_directory(src shared_test_lib_src)
 add_library(shared_test_lib STATIC ${shared_test_lib_src})
-target_link_libraries(shared_test_lib PUBLIC asbind20 GTest::gtest GTest::gtest_main)
+target_link_libraries(shared_test_lib PUBLIC asbind20 GTest::gtest GTest::gmock GTest::gtest_main)
 # Enable warnings for development
 if(${asbind_dev_warning_as_error})
     target_compile_options(shared_test_lib PUBLIC

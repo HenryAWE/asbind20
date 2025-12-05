@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <gmock/gmock-matchers.h>
 #include <asbind20/asbind.hpp>
 
 namespace test_utility
@@ -67,6 +68,7 @@ TEST(Utility, Version)
         ver_str += std::to_string(ASBIND20_VERSION_PATCH);
 
         EXPECT_EQ(ver_str, ASBIND20_VERSION_STRING);
+        EXPECT_THAT(asbind20::library_version(), ::testing::StartsWith(ver_str));
     }
 
     {
