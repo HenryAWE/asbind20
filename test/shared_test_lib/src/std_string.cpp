@@ -191,7 +191,9 @@ namespace script_string
         size_type len
     )
     {
+#ifndef ASBIND20_NO_EXCEPTIONS
         try
+#endif
         {
             std::string_view src = substr_helper(str, pos, len);
 
@@ -208,11 +210,13 @@ namespace script_string
 
             return result;
         }
+#ifndef ASBIND20_NO_EXCEPTIONS
         catch(const std::out_of_range&)
         {
             asbind20::set_script_exception("string.replace(): out of range");
             return std::string();
         }
+#endif
     }
 
     std::string string_insert(

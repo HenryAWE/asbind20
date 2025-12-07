@@ -105,7 +105,7 @@ public:
 static float& vec2_opIndex(vec2& v, AS_NAMESPACE_QUALIFIER asUINT i)
 {
     if(i >= 2)
-        throw std::out_of_range("out of range");
+        asbind20::detail::throw_<std::out_of_range>("out of range");
     return v[i];
 }
 

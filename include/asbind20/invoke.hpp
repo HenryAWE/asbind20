@@ -226,7 +226,7 @@ protected:
     [[noreturn]]
     void throw_bad_access() const
     {
-        throw bad_script_invoke_result_access(error());
+        ASBIND20_THROW(bad_script_invoke_result_access, (error()));
     }
 
 private:
@@ -689,7 +689,7 @@ namespace detail
     [[noreturn]]
     inline void throw_bad_call()
     {
-        throw std::bad_function_call();
+        ASBIND20_THROW(std::bad_function_call, ());
     }
 } // namespace detail
 

@@ -14,6 +14,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <string>
+#include <asbind20/detail/throw_helper.hpp>
 
 namespace asbind_test::utf8
 {
@@ -343,7 +344,7 @@ inline void u8_replace_inplace(std::string& target, std::size_t idx, std::size_t
     std::size_t target_start = u8_index(view, idx);
     if(target_start == std::size_t(-1)) [[unlikely]]
     {
-        throw std::out_of_range("out of range");
+        asbind20::detail::throw_<std::out_of_range>("out of range");
     }
     if(n == 0)
         return;
@@ -373,7 +374,7 @@ inline void u8_replace_inplace_r(std::string& target, std::size_t idx, std::size
     std::size_t target_start = u8_index_r(view, idx);
     if(target_start == std::size_t(-1)) [[unlikely]]
     {
-        throw std::out_of_range("out of range");
+        asbind20::detail::throw_<std::out_of_range>("out of range");
     }
     if(n == 0)
         return;

@@ -41,7 +41,7 @@ static void get_int_auto_get(benchmark::State& state)
         auto result = script_invoke<int>(ctx, f);
         assert(result.has_value());
         if(int val = *result; val != 42)
-            throw std::runtime_error("bad result=" + std::to_string(val));
+            asbind20::detail::throw_<std::runtime_error>("bad result=" + std::to_string(val));
     }
 }
 
@@ -66,7 +66,7 @@ static void get_int_manual_get(benchmark::State& state)
 
         auto result = static_cast<int>(ctx->GetReturnDWord());
         if(result != 42)
-            throw std::runtime_error("bad result=" + std::to_string(result));
+            asbind20::detail::throw_<std::runtime_error>("bad result=" + std::to_string(result));
     }
 }
 
@@ -165,7 +165,7 @@ static void native_to_lower_auto_get(benchmark::State& state)
         auto result = run(ctx, bench_invoke::to_lower_input_arg);
         assert(result.has_value());
         if(result.value() != bench_invoke::to_lower_input_expected)
-            throw std::runtime_error("bad result=" + result.value());
+            asbind20::detail::throw_<std::runtime_error>("bad result=" + result.value());
     }
 }
 
@@ -194,7 +194,7 @@ static void native_to_lower_manual_get(benchmark::State& state)
         auto* result = static_cast<std::string*>(ctx->GetReturnObject());
         assert(result != nullptr);
         if(*result != bench_invoke::to_lower_input_expected)
-            throw std::runtime_error("bad result=" + *result);
+            asbind20::detail::throw_<std::runtime_error>("bad result=" + *result);
     }
 }
 
@@ -219,7 +219,7 @@ static void generic_to_lower_auto_get(benchmark::State& state)
         auto result = run(ctx, bench_invoke::to_lower_input_arg);
         assert(result.has_value());
         if(result.value() != bench_invoke::to_lower_input_expected)
-            throw std::runtime_error("bad result=" + result.value());
+            asbind20::detail::throw_<std::runtime_error>("bad result=" + result.value());
     }
 }
 
@@ -248,7 +248,7 @@ static void generic_to_lower_manual_get(benchmark::State& state)
         auto* result = static_cast<std::string*>(ctx->GetReturnObject());
         assert(result != nullptr);
         if(*result != bench_invoke::to_lower_input_expected)
-            throw std::runtime_error("bad result=" + *result);
+            asbind20::detail::throw_<std::runtime_error>("bad result=" + *result);
     }
 }
 

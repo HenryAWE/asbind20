@@ -1,6 +1,8 @@
 #include <asbind_test/framework.hpp>
 #include <asbind20/container/small_vector.hpp>
 
+#ifndef ASBIND20_NO_EXCEPTIONS
+
 TEST(SmallVector, ExceptionSafety)
 {
     using namespace asbind20;
@@ -50,3 +52,5 @@ TEST(SmallVector, ExceptionSafety)
         EXPECT_EQ(sv.size(), 2);
     }
 }
+
+#endif

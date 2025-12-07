@@ -168,6 +168,8 @@ TEST(TestInvoke, CustomRuleByte)
     }
 }
 
+#ifndef ASBIND20_NO_EXCEPTIONS
+
 namespace test_invoke
 {
 template <typename T>
@@ -254,13 +256,13 @@ TEST(TestInvoke, BadResult)
         auto opt = std::optional<int>(result);
         EXPECT_FALSE(opt.has_value());
 
-#ifdef ASBIND20_HAS_EXPECTED
+#    ifdef ASBIND20_HAS_EXPECTED
 
         auto ex = std::expected<int, AS_NAMESPACE_QUALIFIER asEContextState>(result);
         EXPECT_FALSE(ex.has_value());
         EXPECT_EQ(ex.error(), AS_NAMESPACE_QUALIFIER asEXECUTION_EXCEPTION);
 
-#endif
+#    endif
     }
 
     {
@@ -328,7 +330,9 @@ TEST(TestInvoke, BadResult)
     }
 }
 
-TEST(TestInvoke, suspension)
+#endif
+
+TEST(TestInvoke, Suspension)
 {
     using namespace asbind20;
     using asbind_test::result_has_value;
@@ -364,8 +368,10 @@ TEST(TestInvoke, suspension)
         EXPECT_FALSE(result.has_value());
         EXPECT_EQ(result.error(), AS_NAMESPACE_QUALIFIER asEXECUTION_SUSPENDED);
 
+#ifndef ASBIND20_NO_EXCEPTIONS
         EXPECT_THROW((void)result.value(), bad_script_invoke_result_access);
         EXPECT_TRUE(test_invoke::check_result_ex(result, AS_NAMESPACE_QUALIFIER asEXECUTION_SUSPENDED));
+#endif
 
         int r = result.get_context()->Execute();
         EXPECT_EQ(r, AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED);

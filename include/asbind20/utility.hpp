@@ -23,6 +23,7 @@
 #include <concepts>
 #include "detail/config.hpp" // IWYU pragma: export configs
 #include "detail/include_as.hpp"
+#include "detail/throw_helper.hpp"
 #include "detail/strutil.hpp"
 
 namespace asbind20
@@ -1260,7 +1261,7 @@ namespace debugging
         int r = factory->GetRawStringData(str, nullptr, &sz);
         if(r < 0) [[unlikely]]
         {
-            throw std::runtime_error("failed to get raw string length");
+            ASBIND20_THROW(std::runtime_error, ("failed to get raw string length"));
         }
 
         std::string result;
@@ -1269,7 +1270,7 @@ namespace debugging
         r = factory->GetRawStringData(str, result.data(), nullptr);
         if(r < 0) [[unlikely]]
         {
-            throw std::runtime_error("failed to get raw string data");
+            ASBIND20_THROW(std::runtime_error, ("failed to get raw string data"));
         }
 
         return result;
@@ -1287,7 +1288,7 @@ namespace debugging
         int r = engine->GetStringFactory(nullptr, &factory);
         if(r != AS_NAMESPACE_QUALIFIER asSUCCESS || !factory) [[unlikely]]
         {
-            throw std::runtime_error("failed to get string factory");
+            ASBIND20_THROW(std::runtime_error, ("failed to get string factory"));
         }
 
         return extract_string(factory, str);
