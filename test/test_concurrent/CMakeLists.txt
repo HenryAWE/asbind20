@@ -2,4 +2,4 @@ aux_source_directory(. test_concurrent_src)
 
 add_executable(test_concurrent ${test_concurrent_src})
 target_link_libraries(test_concurrent PRIVATE shared_test_lib)
-gtest_discover_tests(test_concurrent)
+gtest_discover_tests(test_concurrent DISCOVERY_TIMEOUT 1000)

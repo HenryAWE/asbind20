@@ -11,131 +11,310 @@
 
 #include <iosfwd>
 #include <cassert>
+#include <string>
 #include <string_view>
 
 namespace asbind20
 {
+/**
+ * @brief String reference with a guaranteed zero at the end
+ */
+class cstring_ref
+{
+public:
+    using size_type = std::size_t;
+    using traits_type = std::char_traits<char>;
+
+    constexpr cstring_ref() noexcept
+        : m_cstr(nullptr) {}
+
+    constexpr cstring_ref(std::nullptr_t) noexcept = delete;
+
+    constexpr cstring_ref(const cstring_ref&) noexcept = default;
+
+    constexpr cstring_ref(const std::string& str) noexcept
+        : m_cstr(str.c_str()) {}
+
+    constexpr cstring_ref(const char* str) noexcept
+        : m_cstr(str) {}
+
+    template <std::size_t N>
+    constexpr explicit cstring_ref(const char (&arr)[N]) noexcept
+        : cstring_ref(arr)
+    {}
+
+    constexpr ~cstring_ref() = default;
+
+    cstring_ref& operator=(const cstring_ref&) noexcept = default;
+
+    constexpr bool operator==(const cstring_ref& rhs) const noexcept
+    {
+        return std::string_view(*this) == rhs;
+    }
+
+    constexpr friend bool operator==(cstring_ref lhs, std::string_view rhs) noexcept
+    {
+        return std::string_view(lhs) == rhs;
+    }
+
+    constexpr friend bool operator==(std::string_view lhs, cstring_ref rhs) noexcept
+    {
+        return lhs == std::string_view(rhs);
+    }
+
+    constexpr friend bool operator==(cstring_ref lhs, const char* rhs) noexcept
+    {
+        return std::string_view(lhs) == rhs;
+    }
+
+    constexpr friend bool operator==(const char* lhs, cstring_ref rhs) noexcept
+    {
+        return lhs == std::string_view(rhs);
+    }
+
+    [[nodiscard]]
+    constexpr size_type size() const noexcept
+    {
+        if(m_cstr == nullptr) [[unlikely]]
+            return 0;
+        return traits_type::length(m_cstr);
+    }
+
+    [[nodiscard]]
+    constexpr const char* c_str() const noexcept
+    {
+        return m_cstr;
+    }
+
+    explicit constexpr operator const char*() const noexcept
+    {
+        return c_str();
+    }
+
+    constexpr operator std::string_view() const noexcept
+    {
+        if(m_cstr == nullptr) [[unlikely]]
+            return std::string_view();
+        return std::string_view(m_cstr);
+    }
+
+    constexpr void remove_prefix(size_type n) noexcept
+    {
+        assert(n <= size());
+        m_cstr += n;
+    }
+
+    [[nodiscard]]
+    constexpr cstring_ref trim_prefix(size_type n) const noexcept
+    {
+        auto tmp(*this);
+        tmp.remove_prefix(n);
+        return tmp;
+    }
+
+    friend std::ostream& operator<<(std::ostream& os, cstring_ref csv)
+    {
+        return os << std::string_view(csv);
+    }
+
+private:
+    const char* m_cstr;
+};
+
 namespace util
 {
-    /**
-     * @brief String view with a guaranteed zero at the end
-     */
-    class cstring_view
+    template <std::size_t Size>
+    class fixed_string
     {
     public:
+        using value_type = char;
         using size_type = std::size_t;
-        using traits_type = std::char_traits<char>;
 
-        constexpr cstring_view() noexcept
-            : m_cstr(nullptr), m_size(0) {}
+        /**
+         * @brief **INTERNAL DATA. DO NOT USE!**
+         *
+         * This member is exposed for satisfying the NTTP requirements of C++.
+         *
+         * @note It includes `\0` at the end.
+         */
+        char internal_data[Size + 1] = {};
 
-        constexpr cstring_view(const cstring_view&) noexcept = default;
+        constexpr fixed_string(const fixed_string&) noexcept = default;
 
-        constexpr cstring_view(const char* cstr, size_type sz) noexcept
-            : m_cstr(cstr),
-              m_size(sz)
-        {
-            assert(cstr[sz] == '\0');
-        }
-
-        template <std::size_t N>
-        constexpr cstring_view(const char (&arr)[N]) noexcept
-            : cstring_view(arr, N - 1)
+        template <std::convertible_to<char>... Chars>
+        requires(sizeof...(Chars) == Size)
+        explicit constexpr fixed_string(Chars... chs)
+            : internal_data{static_cast<char>(chs)..., '\0'}
         {}
 
-        constexpr ~cstring_view() = default;
-
-        cstring_view& operator=(const cstring_view&) noexcept = default;
-
-        constexpr int compare(const cstring_view& rhs) const noexcept
+        constexpr fixed_string(const char (&str)[Size + 1])
         {
-            return std::string_view(*this).compare(
-                std::string_view(rhs)
-            );
+            for(size_type i = 0; i < Size; ++i)
+            {
+                internal_data[i] = str[i];
+            }
+            internal_data[Size] = '\0';
         }
 
-        constexpr std::strong_ordering operator<=>(
-            const cstring_view& rhs
-        ) const noexcept
+        constexpr bool operator==(const fixed_string&) const noexcept = default;
+
+        template <std::size_t N>
+        requires(N != Size)
+        constexpr bool operator==(const fixed_string<N>&) const noexcept
         {
-            return compare(rhs) <=> 0;
+            return false;
         }
 
-        constexpr bool operator==(const cstring_view& rhs) const noexcept
+        static constexpr size_type size() noexcept
         {
-            if(size() != rhs.size())
-                return false;
-            return compare(rhs) == 0;
+            return Size;
+        };
+
+        static constexpr bool empty() noexcept
+        {
+            return Size == 0;
         }
 
-        constexpr friend bool operator==(cstring_view lhs, std::string_view rhs) noexcept
+        constexpr const value_type* data() const noexcept
         {
-            return std::string_view(lhs) == rhs;
+            return internal_data;
         }
 
-        constexpr friend bool operator==(std::string_view lhs, cstring_view rhs) noexcept
+        constexpr const value_type* c_str() const noexcept
         {
-            return lhs == std::string_view(rhs);
+            return data();
         }
 
-        constexpr friend bool operator==(cstring_view lhs, const char* rhs) noexcept
+        constexpr operator cstring_ref() const noexcept
         {
-            return std::string_view(lhs) == rhs;
+            return cstring_ref(c_str());
         }
 
-        constexpr friend bool operator==(const char* lhs, cstring_view rhs) noexcept
+        constexpr std::string_view view() const noexcept
         {
-            return lhs == std::string_view(rhs);
-        }
-
-        constexpr size_type size() const noexcept
-        {
-            return m_size;
-        }
-
-        constexpr const char* c_str() const
-        {
-            return m_cstr;
-        }
-
-        [[nodiscard]]
-        constexpr bool empty() const noexcept
-        {
-            return m_size == 0;
+            return std::string_view(data(), size());
         }
 
         constexpr operator std::string_view() const noexcept
         {
-            return std::string_view(m_cstr, m_size);
+            return view();
         }
-
-        constexpr void remove_prefix(size_type n) noexcept
-        {
-            assert(n <= size());
-            m_cstr += n;
-            m_size -= n;
-        }
-
-        friend std::ostream& operator<<(std::ostream& os, cstring_view csv)
-        {
-            return os << std::string_view(csv);
-        }
-
-    private:
-        const char* m_cstr;
-        size_type m_size;
     };
 
-    inline namespace cstring_view_literals
-    {
-        constexpr cstring_view operator""_csv(const char* str, std::size_t sz)
-        {
-            return cstring_view(str, sz);
-        }
-    }; // namespace cstring_view_literals
-} // namespace util
+    template <std::convertible_to<char>... Chars>
+    fixed_string(Chars...) -> fixed_string<sizeof...(Chars)>;
 
-using namespace util::cstring_view_literals;
+    template <std::size_t N>
+    fixed_string(const char (&str)[N]) -> fixed_string<N - 1>;
+
+    template <std::size_t SizeL, std::size_t SizeR>
+    constexpr auto operator+(const fixed_string<SizeL>& lhs, const fixed_string<SizeR>& rhs) -> fixed_string<SizeL + SizeR>
+    {
+        if constexpr(SizeL == 0)
+            return rhs;
+        else if constexpr(SizeR == 0)
+            return lhs;
+        else
+        {
+            return [&]<std::size_t... I1, std::size_t... I2>(std::index_sequence<I1...>, std::index_sequence<I2...>)
+            {
+                return fixed_string<SizeL + SizeR>(lhs.internal_data[I1]..., rhs.internal_data[I2]...);
+            }(std::make_index_sequence<SizeL>(), std::make_index_sequence<SizeR>());
+        }
+    }
+
+    template <typename T>
+    struct is_fixed_string : public std::false_type
+    {};
+
+    template <std::size_t Size>
+    struct is_fixed_string<fixed_string<Size>> : public std::true_type
+    {};
+
+    namespace detail
+    {
+        template <typename Fn, typename Tuple>
+        decltype(auto) with_cstr_impl(Fn&& fn, Tuple&& tp)
+        {
+            return std::apply(std::forward<Fn>(fn), std::forward<Tuple>(tp));
+        }
+
+        template <typename Fn, typename Tuple, typename Arg, typename... Args>
+        decltype(auto) with_cstr_impl(Fn&& fn, Tuple&& tp, Arg&& arg, Args&&... args)
+        {
+            using arg_type = std::remove_cvref_t<Arg>;
+
+            if constexpr(std::same_as<arg_type, std::string_view>)
+            {
+                if(arg.data()[arg.size()] == '\0')
+                {
+                    return with_cstr_impl(
+                        std::forward<Fn>(fn),
+                        std::tuple_cat(
+                            tp,
+                            std::tuple<const char*>(arg.data())
+                        ),
+                        std::forward<Args>(args)...
+                    );
+                }
+                else
+                {
+                    return with_cstr_impl(
+                        std::forward<Fn>(fn),
+                        std::tuple_cat(
+                            tp,
+                            std::tuple<const char*>(std::string(arg).c_str())
+                        ),
+                        std::forward<Args>(args)...
+                    );
+                }
+            }
+            else if constexpr(
+                std::same_as<arg_type, std::string> ||
+                std::same_as<arg_type, cstring_ref> ||
+                is_fixed_string<arg_type>::value
+            )
+            {
+                return with_cstr_impl(
+                    std::forward<Fn>(fn),
+                    std::tuple_cat(
+                        tp,
+                        std::tuple<const char*>(arg.c_str())
+                    ),
+                    std::forward<Args>(args)...
+                );
+            }
+            else
+            {
+                return with_cstr_impl(
+                    std::forward<Fn>(fn),
+                    std::tuple_cat(
+                        tp,
+                        std::make_tuple<Arg&&>(std::forward<Arg>(arg))
+                    ),
+                    std::forward<Args>(args)...
+                );
+            }
+        }
+    } // namespace detail
+
+    /**
+     * @brief This function will convert `string` and `string_view` in parameters to null-terminated `const char*`
+     *        for APIs receiving C-style string.
+     *
+     * @details This function will make a copy of string view if it is not null-terminated.
+     */
+    template <typename Fn, typename... Args>
+    [[nodiscard]]
+    decltype(auto) with_cstr(Fn&& fn, Args&&... args)
+    {
+        return detail::with_cstr_impl(
+            std::forward<Fn>(fn),
+            std::tuple<>(),
+            std::forward<Args>(args)...
+        );
+    }
+} // namespace util
 } // namespace asbind20
 
 #endif

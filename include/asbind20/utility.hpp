@@ -24,6 +24,7 @@
 #include "detail/config.hpp" // IWYU pragma: export configs
 #include "detail/include_as.hpp"
 #include "detail/throw_helper.hpp"
+#include "detail/strutil.hpp"
 
 namespace asbind20
 {
@@ -1200,83 +1201,6 @@ inline std::strong_ordering translate_opCmp(int cmp) noexcept
         return std::strong_ordering::equivalent;
 }
 
-namespace detail
-{
-    template <typename Fn, typename Tuple>
-    decltype(auto) with_cstr_impl(Fn&& fn, Tuple&& tp)
-    {
-        return std::apply(std::forward<Fn>(fn), std::forward<Tuple>(tp));
-    }
-
-    template <typename Fn, typename Tuple, typename Arg, typename... Args>
-    decltype(auto) with_cstr_impl(Fn&& fn, Tuple&& tp, Arg&& arg, Args&&... args)
-    {
-        if constexpr(std::same_as<std::remove_cvref_t<Arg>, std::string_view>)
-        {
-            if(arg.data()[arg.size()] == '\0')
-            {
-                return with_cstr_impl(
-                    std::forward<Fn>(fn),
-                    std::tuple_cat(
-                        tp,
-                        std::tuple<const char*>(arg.data())
-                    ),
-                    std::forward<Args>(args)...
-                );
-            }
-            else
-            {
-                return with_cstr_impl(
-                    std::forward<Fn>(fn),
-                    std::tuple_cat(
-                        tp,
-                        std::tuple<const char*>(std::string(arg).c_str())
-                    ),
-                    std::forward<Args>(args)...
-                );
-            }
-        }
-        else if constexpr(std::same_as<std::remove_cvref_t<Arg>, std::string>)
-        {
-            return with_cstr_impl(
-                std::forward<Fn>(fn),
-                std::tuple_cat(
-                    tp,
-                    std::tuple<const char*>(arg.c_str())
-                ),
-                std::forward<Args>(args)...
-            );
-        }
-        else
-        {
-            return with_cstr_impl(
-                std::forward<Fn>(fn),
-                std::tuple_cat(
-                    tp,
-                    std::make_tuple<Arg&&>(std::forward<Arg>(arg))
-                ),
-                std::forward<Args>(args)...
-            );
-        }
-    }
-} // namespace detail
-
-/**
- * @brief This function will convert `string` and `string_view` in parameters to null-terminated `const char*`
- *        for APIs receiving C-style string.
- *
- * @details This function will make a copy of string view if it is not null-terminated.
- */
-template <typename Fn, typename... Args>
-decltype(auto) with_cstr(Fn&& fn, Args&&... args)
-{
-    return detail::with_cstr_impl(
-        std::forward<Fn>(fn),
-        std::tuple<>(),
-        std::forward<Args>(args)...
-    );
-}
-
 /**
  * @brief Set the script exception to currently active context.
  *
@@ -1291,6 +1215,11 @@ inline void set_script_exception(const char* info)
         ctx->SetException(info);
 }
 
+inline void set_script_exception(cstring_ref csv)
+{
+    set_script_exception(csv.c_str());
+}
+
 inline void set_script_exception(const std::string& info)
 {
     set_script_exception(info.c_str());
@@ -1298,7 +1227,7 @@ inline void set_script_exception(const std::string& info)
 
 inline void set_script_exception(std::string_view info)
 {
-    with_cstr(
+    util::with_cstr(
         [](const char* info)
         { set_script_exception(info); },
         info

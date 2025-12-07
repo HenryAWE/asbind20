@@ -84,7 +84,7 @@ public:
             {
                 if(m_prev.empty())
                 {
-                    with_cstr(
+                    util::with_cstr(
                         [this](const char* ns)
                         { set_ns_impl(ns); },
                         ns
@@ -100,7 +100,7 @@ public:
         }
         else
         {
-            with_cstr(
+            util::with_cstr(
                 [this](const char* ns)
                 { set_ns_impl(ns); },
                 ns
@@ -162,14 +162,12 @@ public:
           )
     {}
 
-    interface& method(std::string_view decl)
+    interface& method(cstring_ref decl)
     {
         [[maybe_unused]]
-        int r = with_cstr(
-            &AS_NAMESPACE_QUALIFIER asIScriptEngine::RegisterInterfaceMethod,
-            m_engine,
-            m_name,
-            decl
+        int r = m_engine->RegisterInterfaceMethod(
+            m_name.c_str(),
+            decl.c_str()
         );
         assert(r >= 0);
 
@@ -184,7 +182,7 @@ public:
 
         [[maybe_unused]]
         int r = 0;
-        r = m_engine->RegisterFuncdef(full_decl.data());
+        r = m_engine->RegisterFuncdef(full_decl.c_str());
         assert(r >= 0);
 
         return *this;

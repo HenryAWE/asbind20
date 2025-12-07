@@ -46,7 +46,7 @@ public:
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
     requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
     global& function(
-        std::string_view decl,
+        cstring_ref decl,
         Fn&& fn,
         call_conv_t<CallConv>
     ) requires(!ForceGeneric)
@@ -57,16 +57,10 @@ public:
         );
 
         [[maybe_unused]]
-        int r = with_cstr(
-            [this, &fn](const char* decl)
-            {
-                return m_engine->RegisterGlobalFunction(
-                    decl,
-                    detail::to_asSFuncPtr(fn),
-                    CallConv
-                );
-            },
-            decl
+        int r = m_engine->RegisterGlobalFunction(
+            decl.c_str(),
+            detail::to_asSFuncPtr(fn),
+            CallConv
         );
         assert(r >= 0);
 
@@ -75,7 +69,7 @@ public:
 
     template <native_function Fn>
     global& function(
-        std::string_view decl,
+        cstring_ref decl,
         Fn&& fn
     ) requires(!ForceGeneric)
     {
@@ -88,22 +82,16 @@ public:
     }
 
     global& function(
-        std::string_view decl,
+        cstring_ref decl,
         AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
         call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
     )
     {
         [[maybe_unused]]
-        int r = with_cstr(
-            [this, &gfn](const char* decl)
-            {
-                return m_engine->RegisterGlobalFunction(
-                    decl,
-                    detail::to_asSFuncPtr(gfn),
-                    AS_NAMESPACE_QUALIFIER asCALL_GENERIC
-                );
-            },
-            decl
+        int r = m_engine->RegisterGlobalFunction(
+            decl.c_str(),
+            detail::to_asSFuncPtr(gfn),
+            AS_NAMESPACE_QUALIFIER asCALL_GENERIC
         );
         assert(r >= 0);
 
@@ -115,7 +103,7 @@ public:
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
     global& function(
         use_generic_t,
-        std::string_view decl,
+        cstring_ref decl,
         fp_wrapper<Function>,
         call_conv_t<CallConv>
     )
@@ -139,7 +127,7 @@ public:
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
     requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
     global& function(
-        std::string_view decl,
+        cstring_ref decl,
         fp_wrapper<Function>,
         call_conv_t<CallConv>
     )
@@ -164,7 +152,7 @@ public:
     template <auto Function>
     global& function(
         use_generic_t,
-        std::string_view decl,
+        cstring_ref decl,
         fp_wrapper<Function>
     )
     {
@@ -178,7 +166,7 @@ public:
 
     template <auto Function>
     global& function(
-        std::string_view decl,
+        cstring_ref decl,
         fp_wrapper<Function>
     )
     {
@@ -200,7 +188,7 @@ public:
     template <noncapturing_lambda Lambda>
     global& function(
         use_generic_t,
-        std::string_view decl,
+        cstring_ref decl,
         const Lambda&
     )
     {
@@ -215,7 +203,7 @@ public:
 
     template <noncapturing_lambda Lambda>
     global& function(
-        std::string_view decl,
+        cstring_ref decl,
         const Lambda&
     )
     {
@@ -229,24 +217,18 @@ public:
 
     template <typename Auxiliary>
     global& function(
-        std::string_view decl,
+        cstring_ref decl,
         AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
         auxiliary_wrapper<Auxiliary> aux,
         call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
     )
     {
         [[maybe_unused]]
-        int r = with_cstr(
-            [this, &gfn, &aux](const char* decl)
-            {
-                return m_engine->RegisterGlobalFunction(
-                    decl,
-                    detail::to_asSFuncPtr(gfn),
-                    AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
-                    get_auxiliary_address(aux)
-                );
-            },
-            decl
+        int r = m_engine->RegisterGlobalFunction(
+            decl.c_str(),
+            detail::to_asSFuncPtr(gfn),
+            AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
+            get_auxiliary_address(aux)
         );
         assert(r >= 0);
 
@@ -256,24 +238,18 @@ public:
     template <typename Fn, typename Auxiliary>
     requires(std::is_member_function_pointer_v<Fn>)
     global& function(
-        std::string_view decl,
+        cstring_ref decl,
         Fn&& fn,
         auxiliary_wrapper<Auxiliary> aux,
         call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL> = {}
     ) requires(!ForceGeneric)
     {
         [[maybe_unused]]
-        int r = with_cstr(
-            [this, &fn, &aux](const char* decl)
-            {
-                return m_engine->RegisterGlobalFunction(
-                    decl,
-                    detail::to_asSFuncPtr(fn),
-                    AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL,
-                    get_auxiliary_address(aux)
-                );
-            },
-            decl
+        int r = m_engine->RegisterGlobalFunction(
+            decl.c_str(),
+            detail::to_asSFuncPtr(fn),
+            AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL,
+            get_auxiliary_address(aux)
         );
         assert(r >= 0);
 
@@ -285,7 +261,7 @@ public:
         typename Auxiliary>
     global& function(
         use_generic_t,
-        std::string_view decl,
+        cstring_ref decl,
         fp_wrapper<Function>,
         auxiliary_wrapper<Auxiliary> aux,
         call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL> = {}
@@ -310,7 +286,7 @@ public:
         auto Function,
         typename Auxiliary>
     global& function(
-        std::string_view decl,
+        cstring_ref decl,
         fp_wrapper<Function>,
         auxiliary_wrapper<Auxiliary> aux,
         call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL> = {}
@@ -334,15 +310,13 @@ public:
      */
     template <typename T>
     global& property(
-        std::string_view decl,
+        cstring_ref decl,
         T& val
     )
     {
         [[maybe_unused]]
-        int r = with_cstr(
-            &AS_NAMESPACE_QUALIFIER asIScriptEngine::RegisterGlobalProperty,
-            m_engine,
-            decl,
+        int r = m_engine->RegisterGlobalProperty(
+            decl.c_str(),
             (void*)std::addressof(val)
         );
         assert(r >= 0);
@@ -356,14 +330,12 @@ public:
      * @param decl Function declaration
      */
     global& funcdef(
-        std::string_view decl
+        cstring_ref decl
     )
     {
         [[maybe_unused]]
-        int r = with_cstr(
-            &AS_NAMESPACE_QUALIFIER asIScriptEngine::RegisterFuncdef,
-            m_engine,
-            decl
+        int r = m_engine->RegisterFuncdef(
+            decl.c_str()
         );
         assert(r >= 0);
 
@@ -377,16 +349,14 @@ public:
      * @param new_name Aliased type name
      */
     global& typedef_(
-        std::string_view type_decl,
-        std::string_view new_name
+        cstring_ref type_decl,
+        cstring_ref new_name
     )
     {
         [[maybe_unused]]
-        int r = with_cstr(
-            &AS_NAMESPACE_QUALIFIER asIScriptEngine::RegisterTypedef,
-            m_engine,
-            new_name,
-            type_decl
+        int r = m_engine->RegisterTypedef(
+            new_name.c_str(),
+            type_decl.c_str()
         );
         assert(r >= 0);
 
@@ -400,8 +370,8 @@ public:
      * @param type_decl Type declaration
      */
     global& using_(
-        std::string_view new_name,
-        std::string_view type_decl
+        cstring_ref new_name,
+        cstring_ref type_decl
     )
     {
         typedef_(type_decl, new_name);
