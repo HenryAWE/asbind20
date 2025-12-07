@@ -642,6 +642,14 @@ concept script_object_handle =
     };
 
 template <script_object_handle Object>
+int set_script_object(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, const void* obj)
+{
+    return ctx->SetObject(
+        const_cast<void*>(obj)
+    );
+}
+
+template <script_object_handle Object>
 int set_script_object(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, Object&& obj)
 {
     return ctx->SetObject(
@@ -902,7 +910,7 @@ public:
         : my_base(rf.target()) {}
 
     result_type operator()(
-        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, Args&&... args
+        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, Args... args
     ) const
     {
         handle_type fp = target();
@@ -952,14 +960,25 @@ public:
 
     template <script_object_handle Object>
     result_type operator()(
-        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, Object&& obj, Args&&... args
+        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, Object&& obj, Args... args
     ) const
     {
         handle_type fp = target();
         if(!fp)
             detail::throw_bad_call();
 
-        return script_invoke<R>(ctx, std::forward<Object>(obj), fp, std::forward<Args>(args)...);
+        return script_invoke<R>(ctx, std::forward<Object>(obj), fp, args...);
+    }
+
+    result_type operator()(
+        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, const void* obj, Args... args
+    ) const
+    {
+        handle_type fp = target();
+        if(!fp)
+            detail::throw_bad_call();
+
+        return script_invoke<R>(ctx, obj, fp, args...);
     }
 
     void swap(script_method& other) noexcept
