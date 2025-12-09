@@ -1,9 +1,10 @@
 #include <asbind20/asbind.hpp>
+#include <asbind20/detail/compressed_pair.hpp>
 #include <asbind_test/framework.hpp>
 
 TEST(CompressedPair, Ordinary)
 {
-    using asbind20::compressed_pair;
+    using asbind20::util::compressed_pair;
 
     compressed_pair<int, int> p_1{0, 1};
     static_assert(sizeof(p_1) == sizeof(int) * 2);
@@ -49,8 +50,9 @@ class empty_2
 
 TEST(CompressedPair, Optimized)
 {
-    using asbind20::compressed_pair;
-    using asbind20::detail::select_compressed_pair_impl;
+    using namespace asbind20;
+    using util::compressed_pair;
+    using util::detail::select_compressed_pair_impl;
     using namespace test_utility;
 
     EXPECT_EQ(counter_1, 0);

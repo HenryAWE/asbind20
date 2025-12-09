@@ -15,6 +15,7 @@
 #include <algorithm>
 #include "../utility.hpp"
 #include "../memory.hpp"
+#include "../detail/compressed_pair.hpp"
 #include "options.hpp"
 
 #ifdef _MSC_VER
@@ -589,7 +590,11 @@ private:
         pointer m_p_end;
         pointer m_p_capacity;
 
-        alignas(value_type) compressed_pair<std::byte[StaticCapacityBytes], allocator_type> m_alloc;
+        using internal_data_type = util::compressed_pair<
+            std::byte[StaticCapacityBytes],
+            allocator_type>;
+
+        alignas(value_type) internal_data_type m_alloc;
     };
 
     template <int TypeId>
