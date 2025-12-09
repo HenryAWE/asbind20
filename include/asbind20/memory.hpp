@@ -11,6 +11,7 @@
 
 #include <cassert>
 #include <cstddef>
+#include <new>
 #include <utility>
 #include <type_traits>
 #include <string>
@@ -35,26 +36,54 @@ public:
     using propagate_on_container_move_assignment = std::true_type;
     using is_always_equal = std::true_type;
 
-    as_allocator() noexcept = default;
+    constexpr as_allocator() noexcept = default;
 
     template <typename U>
-    as_allocator(const as_allocator<U>&) noexcept
+    constexpr as_allocator(const as_allocator<U>&) noexcept
     {}
 
-    as_allocator& operator=(const as_allocator&) = default;
+    constexpr as_allocator& operator=(const as_allocator&) noexcept = default;
 
-    ~as_allocator() = default;
+    constexpr ~as_allocator() = default;
 
-    static pointer allocate(size_type n)
+    [[nodiscard]]
+    static constexpr pointer allocate(size_type n)
     {
-        size_type size = n * sizeof(value_type);
-        return (pointer)(AS_NAMESPACE_QUALIFIER asAllocMem(size));
+        if(std::is_constant_evaluated())
+        {
+            std::allocator<T> tmp;
+            return tmp.allocate(n);
+        }
+        else
+        {
+            check_length(n);
+
+            void* mem = AS_NAMESPACE_QUALIFIER asAllocMem(n * sizeof(T));
+            if(!mem) [[unlikely]]
+                ASBIND20_THROW(std::bad_alloc, ());
+            return pointer(mem);
+        }
     }
 
-    static void deallocate(pointer mem, size_type n) noexcept
+    static constexpr void deallocate(pointer mem, size_type n) noexcept
     {
-        (void)n; // unused
-        AS_NAMESPACE_QUALIFIER asFreeMem(static_cast<void*>(mem));
+        if(std::is_constant_evaluated())
+        {
+            std::allocator<T> tmp;
+            tmp.deallocate(mem, n);
+        }
+        else
+        {
+            (void)n; // unused
+            AS_NAMESPACE_QUALIFIER asFreeMem(static_cast<void*>(mem));
+        }
+    }
+
+private:
+    static void check_length(size_type n)
+    {
+        if(std::numeric_limits<size_type>::max() / sizeof(T) < n) [[unlikely]]
+            ASBIND20_THROW(std::bad_array_new_length, ());
     }
 };
 
