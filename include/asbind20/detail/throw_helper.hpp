@@ -7,9 +7,13 @@
 #ifndef ASBIND20_DETAIL_THROW_HELPER
 #define ASBIND20_DETAIL_THROW_HELPER
 
-#include <exception> // IWYU pragma: exports
-#include <utility> // IWYU pragma: exports
+// IWYU pragma: begin_exports
+
+#include <exception>
+#include <utility>
 #include "config.hpp"
+
+// IWYU pragma: end_exports
 
 namespace asbind20::detail
 {
