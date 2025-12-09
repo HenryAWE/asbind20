@@ -99,7 +99,7 @@ namespace detail
 template <
     typeinfo_policy TypeInfoPolicy,
     std::size_t StaticCapacityBytes = 4 * sizeof(void*),
-    typename Allocator = as_allocator<void>>
+    typename Allocator = script_allocator<void>>
 requires(StaticCapacityBytes > 0)
 class small_vector
 #ifndef ASBIND20_DOXYGEN

@@ -24,7 +24,7 @@ namespace asbind20
  * @brief Wrap `asAllocMem()` and `asFreeMem()` as a C++ allocator
  */
 template <typename T>
-class as_allocator
+class script_allocator
 {
 public:
     using size_type = std::size_t;
@@ -36,15 +36,15 @@ public:
     using propagate_on_container_move_assignment = std::true_type;
     using is_always_equal = std::true_type;
 
-    constexpr as_allocator() noexcept = default;
+    constexpr script_allocator() noexcept = default;
 
     template <typename U>
-    constexpr as_allocator(const as_allocator<U>&) noexcept
+    constexpr script_allocator(const script_allocator<U>&) noexcept
     {}
 
-    constexpr as_allocator& operator=(const as_allocator&) noexcept = default;
+    constexpr script_allocator& operator=(const script_allocator&) noexcept = default;
 
-    constexpr ~as_allocator() = default;
+    constexpr ~script_allocator() = default;
 
     [[nodiscard]]
     static constexpr pointer allocate(size_type n)
