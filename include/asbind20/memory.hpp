@@ -192,6 +192,8 @@ public:
 
     reuse_active_context& operator=(const reuse_active_context&) = delete;
 
+    explicit reuse_active_context(std::nullptr_t) = delete;
+
     explicit reuse_active_context(
         AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, bool propagate_error = true
     )
@@ -200,56 +202,34 @@ public:
         assert(m_engine != nullptr);
 
         m_ctx = current_context();
-        if(m_ctx)
+        if(m_ctx) [[likely]]
         {
-            if(m_ctx->GetEngine() == engine && m_ctx->PushState() >= 0)
+            assert(m_ctx->GetEngine() == engine);
+            if(m_ctx->PushState() >= 0)
+            {
                 m_is_nested = true;
+                return;
+            }
             else
-                m_ctx = nullptr;
+                goto fallback;
         }
 
-        if(!m_ctx)
-        {
-            m_ctx = engine->RequestContext();
-        }
+fallback:
+        m_ctx = engine->RequestContext();
     }
 
     ~reuse_active_context()
     {
-        if(m_ctx)
+        if(!m_ctx) [[unlikely]]
+            return;
+
+        if(!m_is_nested)
         {
-            if(m_is_nested)
-            {
-                if(m_propagate_error)
-                {
-                    std::string ex;
-                    AS_NAMESPACE_QUALIFIER asEContextState state =
-                        m_ctx->GetState();
-                    if(state == AS_NAMESPACE_QUALIFIER asEXECUTION_EXCEPTION)
-                        ex = m_ctx->GetExceptionString();
-
-                    m_ctx->PopState();
-
-                    switch(state)
-                    {
-                    case AS_NAMESPACE_QUALIFIER asEXECUTION_EXCEPTION:
-                        m_ctx->SetException(ex.c_str());
-                        break;
-
-                    case AS_NAMESPACE_QUALIFIER asEXECUTION_ABORTED:
-                        m_ctx->Abort();
-                        break;
-
-                    default:
-                        break;
-                    }
-                }
-                else
-                    m_ctx->PopState();
-            }
-            else
-                m_engine->ReturnContext(m_ctx);
+            m_engine->ReturnContext(m_ctx);
+            return;
         }
+
+        pop_state_impl();
     }
 
     [[nodiscard]]
@@ -295,6 +275,40 @@ private:
     handle_type m_ctx = nullptr;
     bool m_is_nested = false;
     bool m_propagate_error = true;
+
+    void pop_state_impl() noexcept
+    {
+        assert(m_is_nested);
+
+        if(!m_propagate_error)
+        {
+            m_ctx->PopState();
+            return;
+        }
+
+        // Propagating error
+        std::string ex;
+        AS_NAMESPACE_QUALIFIER asEContextState state =
+            m_ctx->GetState();
+        if(state == AS_NAMESPACE_QUALIFIER asEXECUTION_EXCEPTION)
+            ex = m_ctx->GetExceptionString();
+
+        m_ctx->PopState();
+
+        switch(state)
+        {
+        case AS_NAMESPACE_QUALIFIER asEXECUTION_EXCEPTION:
+            m_ctx->SetException(ex.c_str());
+            break;
+
+        case AS_NAMESPACE_QUALIFIER asEXECUTION_ABORTED:
+            m_ctx->Abort();
+            break;
+
+        default:
+            break;
+        }
+    }
 };
 
 /**
@@ -310,6 +324,8 @@ public:
 
     request_context& operator=(const request_context&) = delete;
 
+    explicit request_context(std::nullptr_t) = delete;
+
     explicit request_context(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         : m_engine(engine)
     {
@@ -319,7 +335,7 @@ public:
 
     ~request_context()
     {
-        if(m_ctx)
+        if(m_ctx) [[likely]]
             m_engine->ReturnContext(m_ctx);
     }
 
