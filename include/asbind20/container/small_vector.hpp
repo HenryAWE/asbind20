@@ -229,7 +229,10 @@ private:
         using pointer = value_type*;
         using const_pointer = const value_type*;
 
-        using allocator_type = typename std::allocator_traits<Allocator>::template rebind_alloc<value_type>;
+        using allocator_type = typename std::allocator_traits<Allocator>::
+            template rebind_alloc<value_type>;
+
+        using alloc_traits = std::allocator_traits<allocator_type>;
 
         template <typename... Args>
         impl_storage(Args&&... args)
@@ -242,12 +245,7 @@ private:
 
         ~impl_storage()
         {
-            if(m_p_begin != get_static_storage())
-            {
-                std::allocator_traits<allocator_type>::deallocate(
-                    m_alloc.second(), m_p_begin, size()
-                );
-            }
+            deallocate_if_nonstatic(m_p_begin, capacity());
         }
 
         void from_ilist(script_init_list_repeat ilist)
@@ -324,17 +322,12 @@ private:
             assert(new_cap > static_capacity());
             new_cap = detail::accommodate(new_cap, capacity());
             size_type current_size = size();
-            pointer tmp = std::allocator_traits<allocator_type>::allocate(
-                m_alloc.second(), new_cap
+            pointer tmp = alloc_traits::allocate(
+                my_alloc(), new_cap
             );
             std::memcpy(tmp, m_p_begin, current_size * sizeof(value_type));
 
-            if(m_p_begin != get_static_storage())
-            {
-                std::allocator_traits<allocator_type>::deallocate(
-                    m_alloc.second(), m_p_begin, capacity()
-                );
-            }
+            deallocate_if_nonstatic(m_p_begin, capacity());
 
             m_p_begin = tmp;
             m_p_end = m_p_begin + current_size;
@@ -354,26 +347,22 @@ private:
                     m_p_begin,
                     current_size * sizeof(value_type)
                 );
-                std::allocator_traits<allocator_type>::deallocate(
-                    m_alloc.second(), m_p_begin, capacity()
-                );
+                deallocate_if_nonstatic(m_p_begin, capacity());
                 m_p_begin = get_static_storage();
                 m_p_end = m_p_begin + current_size;
                 m_p_capacity = m_p_begin + static_capacity();
             }
             else
             {
-                pointer tmp = std::allocator_traits<allocator_type>::allocate(
-                    m_alloc.second(), current_size
+                pointer tmp = alloc_traits::allocate(
+                    my_alloc(), current_size
                 );
                 std::memcpy(
                     tmp,
                     m_p_begin,
                     current_size * sizeof(value_type)
                 );
-                std::allocator_traits<allocator_type>::deallocate(
-                    m_alloc.second(), m_p_begin, capacity()
-                );
+                deallocate_if_nonstatic(m_p_begin, capacity());
 
                 m_p_begin = tmp;
                 m_p_end = m_p_begin + current_size;
@@ -476,8 +465,8 @@ private:
             {
                 size_type new_cap = detail::accommodate(size() + 1, capacity());
                 size_type current_size = size();
-                pointer tmp = std::allocator_traits<allocator_type>::allocate(
-                    m_alloc.second(), new_cap
+                pointer tmp = alloc_traits::allocate(
+                    my_alloc(), new_cap
                 );
 
                 std::memcpy(
@@ -490,12 +479,7 @@ private:
                     (current_size - where) * sizeof(value_type)
                 );
 
-                if(m_p_begin != get_static_storage())
-                {
-                    std::allocator_traits<allocator_type>::deallocate(
-                        m_alloc.second(), m_p_begin, capacity()
-                    );
-                }
+                deallocate_if_nonstatic(m_p_begin, capacity());
 
                 m_p_begin = tmp;
                 m_p_end = m_p_begin + current_size + 1;
@@ -571,12 +555,25 @@ private:
     protected:
         pointer get_static_storage() noexcept
         {
-            return reinterpret_cast<pointer>(m_alloc.first());
+            return reinterpret_cast<pointer>(m_internal.first());
         }
 
         const_pointer get_static_storage() const noexcept
         {
-            return reinterpret_cast<pointer>(m_alloc.first());
+            return reinterpret_cast<pointer>(m_internal.first());
+        }
+
+        allocator_type& my_alloc() noexcept
+        {
+            return m_internal;
+        }
+
+        // Deallocate the memory if it's dynamically allocated
+        void deallocate_if_nonstatic(pointer p, size_type n) noexcept
+        {
+            if(p == get_static_storage())
+                return;
+            alloc_traits::deallocate(my_alloc(), p, n);
         }
 
         void emplace_back_impl(value_type val) noexcept
@@ -590,11 +587,12 @@ private:
         pointer m_p_end;
         pointer m_p_capacity;
 
+        // Static storage and allocator
         using internal_data_type = util::compressed_pair<
             std::byte[StaticCapacityBytes],
             allocator_type>;
 
-        alignas(value_type) internal_data_type m_alloc;
+        alignas(value_type) internal_data_type m_internal;
     };
 
     template <int TypeId>
@@ -615,6 +613,8 @@ private:
         using pointer = void**;
         using const_pointer = void* const*;
         using allocator_type = typename my_base::allocator_type;
+
+        using alloc_traits = std::allocator_traits<allocator_type>;
 
         using my_base::my_base;
 
@@ -679,45 +679,43 @@ private:
             size_type old_size = this->size();
             if(new_size == old_size)
                 return;
-            else if(new_size == 0)
+            if(new_size == 0)
             {
                 clear();
                 return;
             }
-
-            if(new_size > old_size)
+            if(new_size <= old_size)
             {
-                this->reserve(new_size);
-                size_type new_elems = new_size - old_size;
+                erase_n(new_size, size_type(-1));
+                return;
+            }
 
-                if constexpr(IsHandle)
-                {
-                    std::memset(
-                        this->m_p_end,
-                        0,
-                        new_elems * sizeof(value_type)
-                    );
-                    this->m_p_end += new_elems;
-                }
-                else
-                {
-                    AS_NAMESPACE_QUALIFIER asITypeInfo* ti = this->elem_type_info();
-                    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = ti->GetEngine();
-                    assert(ti != nullptr);
+            this->reserve(new_size);
+            size_type new_elems = new_size - old_size;
 
-                    for(size_type i = 0; i < new_elems; ++i)
-                    {
-                        void* obj = engine->CreateScriptObject(ti);
-                        if(!obj) [[unlikely]]
-                            break; // exception
-                        *this->m_p_end = obj;
-                        ++this->m_p_end;
-                    }
-                }
+            if constexpr(IsHandle)
+            {
+                std::memset(
+                    this->m_p_end,
+                    0,
+                    new_elems * sizeof(value_type)
+                );
+                this->m_p_end += new_elems;
             }
             else
             {
-                erase_n(new_size, size_type(-1));
+                AS_NAMESPACE_QUALIFIER asITypeInfo* ti = this->elem_type_info();
+                AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = ti->GetEngine();
+                assert(ti != nullptr);
+
+                for(size_type i = 0; i < new_elems; ++i)
+                {
+                    void* obj = engine->CreateScriptObject(ti);
+                    if(!obj) [[unlikely]]
+                        break; // exception
+                    *this->m_p_end = obj;
+                    ++this->m_p_end;
+                }
             }
         }
 
@@ -774,7 +772,7 @@ private:
                 if constexpr(!IsHandle)
                 {
                     if(!obj) [[unlikely]]
-                        break; // exception
+                        break; // script exception raised
                 }
                 *this->m_p_end = obj;
 
@@ -799,7 +797,7 @@ private:
                 {
                     void* obj = engine->CreateScriptObject(ti);
                     if(!obj) [[unlikely]]
-                        return; // exception
+                        return; // script exception raised
                     *this->m_p_end = obj;
                     ++this->m_p_end;
                 }
@@ -856,8 +854,8 @@ private:
             {
                 size_type new_cap = detail::accommodate(this->size() + 1, this->capacity());
                 size_type current_size = this->size();
-                pointer tmp = std::allocator_traits<allocator_type>::allocate(
-                    this->m_alloc.second(), new_cap
+                pointer tmp = alloc_traits::allocate(
+                    this->my_alloc(), new_cap
                 );
 
                 std::memcpy(
@@ -870,12 +868,9 @@ private:
                     (current_size - where) * sizeof(value_type)
                 );
 
-                if(this->m_p_begin != this->get_static_storage())
-                {
-                    std::allocator_traits<allocator_type>::deallocate(
-                        this->m_alloc.second(), this->m_p_begin, this->capacity()
-                    );
-                }
+                this->deallocate_if_nonstatic(
+                    this->m_p_begin, this->capacity()
+                );
 
                 this->m_p_begin = tmp;
                 this->m_p_end = this->m_p_begin + current_size + 1;
