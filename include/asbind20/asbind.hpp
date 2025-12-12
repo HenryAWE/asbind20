@@ -30,6 +30,7 @@
 #include "policies.hpp"
 #include "bind.hpp"
 #include "invoke.hpp"
+#include "debugging.hpp"
 #include "io/stream.hpp"
 #include "io/to_string.hpp"
 
