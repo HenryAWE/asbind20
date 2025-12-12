@@ -262,11 +262,10 @@ private:
             }
         }
 
-        void copy_from(const impl_storage& other)
+    protected:
+        void copy_from_impl(const impl_storage& other) noexcept
         {
-            assert(this->size() == 0);
-            assert(this != &other);
-            reserve(other.size());
+            assert(capacity() >= other.size());
 
             size_type new_size = other.size();
             std::memcpy(
@@ -277,9 +276,61 @@ private:
             m_p_end += new_size;
         }
 
+    public:
+        // For implementing copy constructor
+        void copy_from(const impl_storage& other)
+        {
+            assert(this->size() == 0);
+            assert(this != &other);
+            if(other.size() == 0)
+                return;
+            reserve(other.size());
+
+            copy_from_impl(other);
+        }
+
+    protected:
+        void exchange_ptrs(impl_storage& other) noexcept
+        {
+            assert(other.is_nonstatic());
+
+            const pointer other_ptr = other.get_static_storage();
+            m_p_begin = std::exchange(other.m_p_begin, other_ptr);
+            m_p_end = std::exchange(other.m_p_end, other_ptr);
+            m_p_capacity = std::exchange(
+                other.m_p_capacity, other_ptr + other.static_capacity()
+            );
+        }
+
+    public:
+        // For implementing move constructor
+        void take_own(impl_storage& other) noexcept
+        {
+            assert(this->size() == 0);
+            assert(this != &other);
+            if(other.size() == 0)
+                return;
+
+            if(other.is_nonstatic())
+            {
+                exchange_ptrs(other);
+                return;
+            }
+
+            // For primitive types,
+            // this won't erase the existing data in container.
+            // Object types need another implementation. (see below)
+            copy_from_impl(other);
+        }
+
         static constexpr size_type max_static_size() noexcept
         {
             return StaticCapacityBytes / sizeof(value_type);
+        }
+
+        bool is_nonstatic() const noexcept
+        {
+            return m_p_begin != get_static_storage();
         }
 
         constexpr size_type static_capacity() const noexcept
@@ -560,7 +611,7 @@ private:
 
         const_pointer get_static_storage() const noexcept
         {
-            return reinterpret_cast<pointer>(m_internal.first());
+            return reinterpret_cast<const_pointer>(m_internal.first());
         }
 
         allocator_type& my_alloc() noexcept
@@ -662,6 +713,25 @@ private:
 
             for(size_type i = 0; i < other.size(); ++i)
                 this->emplace_back_impl(other.value_ref_at(i));
+        }
+
+        // For implementing move constructor
+        void take_own(impl_object& other) noexcept
+        {
+            assert(this->size() == 0);
+            assert(this != &other);
+            if(other.size() == 0)
+                return;
+
+            if(other.is_nonstatic())
+            {
+                this->exchange_ptrs(other);
+                return;
+            }
+
+            this->copy_from_impl(other);
+            // Reset the another container
+            other.m_p_end = other.m_p_begin;
         }
 
         void* value_ref_at(size_type idx) const
@@ -1235,6 +1305,15 @@ public:
         visit_impl(
             [&]<typename ImplType>(ImplType& impl)
             { impl.copy_from(static_cast<const ImplType&>(other.impl())); }
+        );
+    }
+
+    small_vector(small_vector&& other) noexcept
+    {
+        init_impl(other.element_type_id(), other.get_type_info());
+        visit_impl(
+            [&]<typename ImplType>(ImplType& impl)
+            { impl.take_own(static_cast<ImplType&>(other.impl())); }
         );
     }
 
