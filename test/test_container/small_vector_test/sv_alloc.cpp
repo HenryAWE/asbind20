@@ -19,7 +19,7 @@ class counted_alloc :
 
 public:
     using size_type = std::size_t;
-    using value_type = base_alloc::value_type;
+    using value_type = typename base_alloc::value_type;
 
     using base_alloc::base_alloc;
 
