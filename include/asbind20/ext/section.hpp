@@ -1,5 +1,5 @@
 /**
- * @file section.hpp
+ * @file ext/section.hpp
  * @author HenryAWE
  * @brief Helpers for loading script section
  */
@@ -62,13 +62,15 @@ inline int load_file(
         code = std::move(ss).str();
     }
 
+    // Force UTF-8 encoding
+    // This can prevent some issues on Windows
+    auto section_name = filename.u8string();
     return load_string(
         m,
-        reinterpret_cast<const char*>(filename.u8string().c_str()),
+        reinterpret_cast<const char*>(section_name.c_str()),
         code
     );
 }
 } // namespace asbind20::ext
-
 
 #endif
