@@ -10,6 +10,7 @@
 #pragma once
 
 #include <cassert>
+#include <utility>
 #include "../detail/include_as.hpp"
 
 namespace asbind20::debugging
@@ -28,6 +29,24 @@ struct gc_statistics
     value_type total_new_destroyed;
 
     bool operator==(const gc_statistics&) const noexcept = default;
+
+    template <std::size_t I>
+    friend value_type get(
+        const gc_statistics& stats
+    ) noexcept
+    {
+        static_assert(I < 5, "Index out of range");
+        if constexpr(I == 0)
+            return stats.current_size;
+        else if constexpr(I == 1)
+            return stats.total_destroyed;
+        else if constexpr(I == 2)
+            return stats.total_detected;
+        else if constexpr(I == 3)
+            return stats.new_objects;
+        else // I == 4
+            return stats.total_new_destroyed;
+    }
 };
 
 /**
@@ -40,7 +59,7 @@ inline gc_statistics get_gc_statistics(AS_NAMESPACE_QUALIFIER asIScriptEngine* e
 {
     assert(engine != nullptr);
 
-    gc_statistics result{};
+    gc_statistics result;
     engine->GetGCStatistics(
         &result.current_size,
         &result.total_destroyed,
@@ -51,5 +70,17 @@ inline gc_statistics get_gc_statistics(AS_NAMESPACE_QUALIFIER asIScriptEngine* e
     return result;
 }
 } // namespace asbind20::debugging
+
+template <>
+struct std::tuple_size<asbind20::debugging::gc_statistics> :
+    public std::integral_constant<std::size_t, 5>
+{};
+
+template <std::size_t Index>
+requires(Index < 5)
+struct std::tuple_element<Index, asbind20::debugging::gc_statistics>
+{
+    using type = asbind20::debugging::gc_statistics::value_type;
+};
 
 #endif
