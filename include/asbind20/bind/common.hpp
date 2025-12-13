@@ -223,7 +223,7 @@ namespace detail
         // unreachable
     }
 
-    template <typename Class, noncapturing_lambda Lambda>
+    template <typename Class, noncapturing_native_lambda Lambda>
     consteval auto deduce_lambda_callconv()
         -> AS_NAMESPACE_QUALIFIER asECallConvTypes
     {

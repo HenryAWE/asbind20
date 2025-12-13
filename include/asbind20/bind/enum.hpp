@@ -42,6 +42,8 @@ public:
     enum_() = delete;
     enum_(const enum_&) = default;
 
+    enum_& operator=(const enum_&) = delete;
+
     enum_(
         AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, std::string name
     )

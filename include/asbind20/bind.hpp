@@ -31,6 +31,8 @@ public:
     access_mask() = delete;
     access_mask(const access_mask&) = delete;
 
+    access_mask& operator=(const access_mask&) = delete;
+
     access_mask(
         AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
         mask_type mask
@@ -50,6 +52,12 @@ public:
         -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
     {
         return m_engine;
+    }
+
+    [[nodiscard]]
+    mask_type previous() const noexcept
+    {
+        return m_prev;
     }
 
 private:
@@ -120,11 +128,17 @@ public:
         return m_engine;
     }
 
+    [[nodiscard]]
+    const std::string& previous() const noexcept
+    {
+        return m_prev;
+    }
+
 private:
     AS_NAMESPACE_QUALIFIER asIScriptEngine* m_engine;
     std::string m_prev;
 
-    void set_ns_impl(const char* ns)
+    void set_ns_impl(const char* ns) const
     {
         [[maybe_unused]]
         int r = m_engine->SetDefaultNamespace(
@@ -139,6 +153,8 @@ class interface
 public:
     interface() = delete;
     interface(const interface&) = default;
+
+    interface& operator=(const interface&) = delete;
 
     interface(
         AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, std::string name

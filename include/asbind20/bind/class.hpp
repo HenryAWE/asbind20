@@ -1930,7 +1930,7 @@ private:
 
 #define ASBIND20_CLASS_WRAPPED_LAMBDA_METHOD(register_type)                 \
     template <                                                              \
-        noncapturing_lambda Lambda,                                         \
+        noncapturing_native_lambda Lambda,                                  \
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>                   \
     register_type& method(                                                  \
         use_generic_t,                                                      \
@@ -1946,7 +1946,7 @@ private:
         );                                                                  \
         return *this;                                                       \
     }                                                                       \
-    template <noncapturing_lambda Lambda>                                   \
+    template <noncapturing_native_lambda Lambda>                            \
     register_type& method(                                                  \
         use_generic_t,                                                      \
         cstring_ref decl,                                                   \
@@ -1959,7 +1959,7 @@ private:
         return *this;                                                       \
     }                                                                       \
     template <                                                              \
-        noncapturing_lambda Lambda,                                         \
+        noncapturing_native_lambda Lambda,                                  \
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>                   \
     register_type& method(                                                  \
         cstring_ref decl,                                                   \
@@ -1973,7 +1973,7 @@ private:
             this->method_impl(decl, +Lambda{}, call_conv<CallConv>);        \
         return *this;                                                       \
     }                                                                       \
-    template <noncapturing_lambda Lambda>                                   \
+    template <noncapturing_native_lambda Lambda>                            \
     register_type& method(                                                  \
         cstring_ref decl,                                                   \
         const Lambda&                                                       \
@@ -2175,7 +2175,7 @@ private:
 
 #define ASBIND20_CLASS_WRAPPED_LAMBDA_VAR_TYPE_METHOD(register_type)                         \
     template <                                                                               \
-        noncapturing_lambda Lambda,                                                          \
+        noncapturing_native_lambda Lambda,                                                   \
         std::size_t... Is,                                                                   \
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>                                    \
     register_type& method(                                                                   \
@@ -2194,7 +2194,7 @@ private:
         return *this;                                                                        \
     }                                                                                        \
     template <                                                                               \
-        noncapturing_lambda Lambda,                                                          \
+        noncapturing_native_lambda Lambda,                                                   \
         std::size_t... Is,                                                                   \
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>                                    \
     register_type& method(                                                                   \
@@ -2217,7 +2217,7 @@ private:
         return *this;                                                                        \
     }                                                                                        \
     template <                                                                               \
-        noncapturing_lambda Lambda,                                                          \
+        noncapturing_native_lambda Lambda,                                                   \
         std::size_t... Is>                                                                   \
     register_type& method(                                                                   \
         use_generic_t,                                                                       \
@@ -2238,7 +2238,7 @@ private:
         return *this;                                                                        \
     }                                                                                        \
     template <                                                                               \
-        noncapturing_lambda Lambda,                                                          \
+        noncapturing_native_lambda Lambda,                                                   \
         std::size_t... Is>                                                                   \
     register_type& method(                                                                   \
         cstring_ref decl,                                                                    \
@@ -2425,12 +2425,16 @@ public:
           )
     {}
 
+    basic_value_class(const basic_value_class&) = default;
+
+    basic_value_class& operator=(const basic_value_class&) = delete;
+
 private:
     template <typename Method>
     static consteval auto method_callconv() noexcept
         -> AS_NAMESPACE_QUALIFIER asECallConvTypes
     {
-        if constexpr(noncapturing_lambda<Method>)
+        if constexpr(noncapturing_native_lambda<Method>)
             return detail::deduce_lambda_callconv<Class, Method>();
         else
             return detail::deduce_method_callconv<Class, Method>();
@@ -2758,7 +2762,7 @@ public:
     }
 
     template <
-        noncapturing_lambda ConstructorLambda,
+        noncapturing_native_lambda ConstructorLambda,
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
     requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
     basic_value_class& constructor_function(
@@ -2778,7 +2782,7 @@ public:
     }
 
     template <
-        noncapturing_lambda ConstructorLambda,
+        noncapturing_native_lambda ConstructorLambda,
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
     requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
     basic_value_class& constructor_function(
@@ -2800,7 +2804,7 @@ public:
     }
 
     template <
-        noncapturing_lambda Constructor,
+        noncapturing_native_lambda Constructor,
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
     requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
     basic_value_class& constructor_function(
@@ -2831,7 +2835,7 @@ public:
     }
 
     template <
-        noncapturing_lambda Constructor,
+        noncapturing_native_lambda Constructor,
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
     requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
     basic_value_class& constructor_function(
@@ -2864,7 +2868,7 @@ public:
         return *this;
     }
 
-    template <noncapturing_lambda Constructor>
+    template <noncapturing_native_lambda Constructor>
     basic_value_class& constructor_function(
         use_generic_t,
         std::string_view params,
@@ -2883,7 +2887,7 @@ public:
         return *this;
     }
 
-    template <noncapturing_lambda Constructor>
+    template <noncapturing_native_lambda Constructor>
     basic_value_class& constructor_function(
         use_generic_t,
         std::string_view params,
@@ -2904,7 +2908,7 @@ public:
         return *this;
     }
 
-    template <noncapturing_lambda Constructor>
+    template <noncapturing_native_lambda Constructor>
     basic_value_class& constructor_function(
         std::string_view params,
         const Constructor&
@@ -2921,7 +2925,7 @@ public:
         return *this;
     }
 
-    template <noncapturing_lambda Constructor>
+    template <noncapturing_native_lambda Constructor>
     basic_value_class& constructor_function(
         std::string_view params,
         use_explicit_t,
@@ -3820,12 +3824,16 @@ public:
           )
     {}
 
+    basic_ref_class(const basic_ref_class&) = default;
+
+    basic_ref_class& operator=(const basic_ref_class&) = delete;
+
 private:
     template <typename Method>
     static constexpr auto method_callconv() noexcept
         -> AS_NAMESPACE_QUALIFIER asECallConvTypes
     {
-        if constexpr(noncapturing_lambda<Method>)
+        if constexpr(noncapturing_native_lambda<Method>)
             return detail::deduce_lambda_callconv<Class, Method>();
         else
             return detail::deduce_method_callconv<Class, Method>();

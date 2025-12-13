@@ -31,14 +31,12 @@ public:
     template <typename Auxiliary>
     static void* get_auxiliary_address(auxiliary_wrapper<Auxiliary> aux)
     {
-        if constexpr(std::same_as<Auxiliary, this_type_t>)
-        {
-            static_assert(!sizeof(Auxiliary), "auxiliary(this_type) is invalid for a global function!");
-        }
-        else
-        {
-            return aux.get_address();
-        }
+        static_assert(
+            !std::same_as<Auxiliary, this_type_t>,
+            "auxiliary(this_type) is invalid for a global function!"
+        );
+
+        return aux.get_address();
     }
 
     template <
@@ -185,7 +183,7 @@ public:
         return *this;
     }
 
-    template <noncapturing_lambda Lambda>
+    template <noncapturing_native_lambda Lambda>
     global& function(
         use_generic_t,
         cstring_ref decl,
@@ -201,7 +199,7 @@ public:
         return *this;
     }
 
-    template <noncapturing_lambda Lambda>
+    template <noncapturing_native_lambda Lambda>
     global& function(
         cstring_ref decl,
         const Lambda&

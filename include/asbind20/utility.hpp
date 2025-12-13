@@ -72,7 +72,7 @@ concept native_function =
  * @note This concept will also reject the function for generic calling convention
  */
 template <typename Lambda>
-concept noncapturing_lambda = requires() {
+concept noncapturing_native_lambda = requires() {
     { +Lambda{} } -> native_function;
 } && std::is_empty_v<Lambda>;
 
