@@ -143,7 +143,6 @@ using var_type_tag = std::bool_constant<var_type_tag_helper(VarType{}, RawIdx)>;
     template <typename VarType>                                                                 \
     static void var_type_wrapper_thiscall(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)         \
     {                                                                                           \
-        using traits = function_traits<function_type>;                                          \
         static constexpr auto indices = gen_script_arg_idx<traits::arg_count_v>(VarType{});     \
         [gen]<std::size_t... Is>(std::index_sequence<Is...>)                                    \
         {                                                                                       \
@@ -162,7 +161,6 @@ using var_type_tag = std::bool_constant<var_type_tag_helper(VarType{}, RawIdx)>;
     template <typename VarType>                                                                 \
     static void var_type_wrapper_objfirst(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)         \
     {                                                                                           \
-        using traits = function_traits<function_type>;                                          \
         static constexpr auto indices = gen_script_arg_idx<traits::arg_count_v - 1>(VarType{}); \
         [gen]<std::size_t... Is>(std::index_sequence<Is...>)                                    \
         {                                                                                       \
@@ -181,7 +179,6 @@ using var_type_tag = std::bool_constant<var_type_tag_helper(VarType{}, RawIdx)>;
     template <typename VarType>                                                                 \
     static void var_type_wrapper_objlast(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)          \
     {                                                                                           \
-        using traits = function_traits<function_type>;                                          \
         static constexpr auto indices = gen_script_arg_idx<traits::arg_count_v - 1>(VarType{}); \
         [gen]<std::size_t... Is>(std::index_sequence<Is...>)                                    \
         {                                                                                       \
@@ -200,7 +197,6 @@ using var_type_tag = std::bool_constant<var_type_tag_helper(VarType{}, RawIdx)>;
     template <typename VarType>                                                                 \
     static void var_type_wrapper_general(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)          \
     {                                                                                           \
-        using traits = function_traits<function_type>;                                          \
         static constexpr auto indices = gen_script_arg_idx<traits::arg_count_v>(VarType{});     \
         [gen]<std::size_t... Is>(std::index_sequence<Is...>)                                    \
         {                                                                                       \
@@ -345,7 +341,6 @@ private:
     template <typename VarType>
     static void var_type_wrapper_thiscall_objfirst(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
     {
-        using traits = function_traits<function_type>;
         static constexpr auto indices = gen_script_arg_idx<traits::arg_count_v - 1>(VarType{});
         [gen]<std::size_t... Is>(std::index_sequence<Is...>)
         {
@@ -366,7 +361,6 @@ private:
     template <typename VarType>
     static void var_type_wrapper_thiscall_objlast(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
     {
-        using traits = function_traits<function_type>;
         static constexpr auto indices = gen_script_arg_idx<traits::arg_count_v - 1>(VarType{});
         [gen]<std::size_t... Is>(std::index_sequence<Is...>)
         {
