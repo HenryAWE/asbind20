@@ -65,7 +65,7 @@ public:
         std::size_t,
         string_hash,
         std::equal_to<>,
-        asbind20::as_allocator<std::pair<const std::string, std::size_t>>>;
+        asbind20::script_allocator<std::pair<const std::string, std::size_t>>>;
 
     const void* GetStringConstant(
         const char* data, AS_NAMESPACE_QUALIFIER asUINT length

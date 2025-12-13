@@ -252,8 +252,13 @@ public:
 
         m_engine->GarbageCollect(AS_NAMESPACE_QUALIFIER asGC_FULL_CYCLE);
 
-        auto collected = asbind20::debugging::get_gc_statistics(m_engine);
-        EXPECT_EQ(collected.current_size, 0);
+        {
+            auto collected = asbind20::debugging::get_gc_statistics(m_engine);
+            auto [curr_size, total_destroyed, total_detected, new_obj, total_new_destroyed] =
+                collected;
+
+            EXPECT_EQ(curr_size, 0);
+        }
 
         std::cerr << "Collected: ";
         asbind_test::output_gc_statistics(

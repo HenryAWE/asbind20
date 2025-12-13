@@ -319,9 +319,15 @@ TEST(SmallVector, ScriptStringAsElement)
     EXPECT_EQ(*(std::string*)v[1], "hello");
 
     v.reserve(128);
+    EXPECT_GE(v.capacity(), 128);
     EXPECT_EQ(v.size(), 2);
     EXPECT_EQ(((std::string*)v[0])->size(), 0);
     EXPECT_EQ(*(std::string*)v[0], "");
     EXPECT_EQ(((std::string*)v[1])->size(), 5);
     EXPECT_EQ(*(std::string*)v[1], "hello");
+
+    v.clear();
+    EXPECT_GE(v.capacity(), 128);
+    EXPECT_EQ(v.size(), 0);
+    EXPECT_TRUE(v.empty());
 }

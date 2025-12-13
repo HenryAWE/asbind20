@@ -15,6 +15,7 @@
 #include <algorithm>
 #include "../utility.hpp"
 #include "../memory.hpp"
+#include "../detail/compressed_pair.hpp"
 #include "options.hpp"
 
 #ifdef _MSC_VER
@@ -99,7 +100,7 @@ namespace detail
 template <
     typeinfo_policy TypeInfoPolicy,
     std::size_t StaticCapacityBytes = 4 * sizeof(void*),
-    typename Allocator = as_allocator<void>>
+    typename Allocator = script_allocator<void>>
 requires(StaticCapacityBytes > 0)
 class small_vector
 #ifndef ASBIND20_DOXYGEN
@@ -228,7 +229,10 @@ private:
         using pointer = value_type*;
         using const_pointer = const value_type*;
 
-        using allocator_type = typename std::allocator_traits<Allocator>::template rebind_alloc<value_type>;
+        using allocator_type = typename std::allocator_traits<Allocator>::
+            template rebind_alloc<value_type>;
+
+        using alloc_traits = std::allocator_traits<allocator_type>;
 
         template <typename... Args>
         impl_storage(Args&&... args)
@@ -241,12 +245,7 @@ private:
 
         ~impl_storage()
         {
-            if(m_p_begin != get_static_storage())
-            {
-                std::allocator_traits<allocator_type>::deallocate(
-                    m_alloc.second(), m_p_begin, size()
-                );
-            }
+            deallocate_if_nonstatic(m_p_begin, capacity());
         }
 
         void from_ilist(script_init_list_repeat ilist)
@@ -263,11 +262,10 @@ private:
             }
         }
 
-        void copy_from(const impl_storage& other)
+    protected:
+        void copy_from_impl(const impl_storage& other) noexcept
         {
-            assert(this->size() == 0);
-            assert(this != &other);
-            reserve(other.size());
+            assert(capacity() >= other.size());
 
             size_type new_size = other.size();
             std::memcpy(
@@ -278,9 +276,61 @@ private:
             m_p_end += new_size;
         }
 
+    public:
+        // For implementing copy constructor
+        void copy_from(const impl_storage& other)
+        {
+            assert(this->size() == 0);
+            assert(this != &other);
+            if(other.size() == 0)
+                return;
+            reserve(other.size());
+
+            copy_from_impl(other);
+        }
+
+    protected:
+        void exchange_ptrs(impl_storage& other) noexcept
+        {
+            assert(other.is_nonstatic());
+
+            const pointer other_ptr = other.get_static_storage();
+            m_p_begin = std::exchange(other.m_p_begin, other_ptr);
+            m_p_end = std::exchange(other.m_p_end, other_ptr);
+            m_p_capacity = std::exchange(
+                other.m_p_capacity, other_ptr + other.static_capacity()
+            );
+        }
+
+    public:
+        // For implementing move constructor
+        void take_own(impl_storage& other) noexcept
+        {
+            assert(this->size() == 0);
+            assert(this != &other);
+            if(other.size() == 0)
+                return;
+
+            if(other.is_nonstatic())
+            {
+                exchange_ptrs(other);
+                return;
+            }
+
+            // For primitive types,
+            // this won't erase the existing data in container.
+            // Object types need another implementation. (see below)
+            copy_from_impl(other);
+        }
+
         static constexpr size_type max_static_size() noexcept
         {
             return StaticCapacityBytes / sizeof(value_type);
+        }
+
+        bool is_nonstatic() const noexcept
+        {
+            return m_p_begin != get_static_storage();
         }
 
         constexpr size_type static_capacity() const noexcept
@@ -323,17 +373,12 @@ private:
             assert(new_cap > static_capacity());
             new_cap = detail::accommodate(new_cap, capacity());
             size_type current_size = size();
-            pointer tmp = std::allocator_traits<allocator_type>::allocate(
-                m_alloc.second(), new_cap
+            pointer tmp = alloc_traits::allocate(
+                my_alloc(), new_cap
             );
             std::memcpy(tmp, m_p_begin, current_size * sizeof(value_type));
 
-            if(m_p_begin != get_static_storage())
-            {
-                std::allocator_traits<allocator_type>::deallocate(
-                    m_alloc.second(), m_p_begin, capacity()
-                );
-            }
+            deallocate_if_nonstatic(m_p_begin, capacity());
 
             m_p_begin = tmp;
             m_p_end = m_p_begin + current_size;
@@ -353,26 +398,22 @@ private:
                     m_p_begin,
                     current_size * sizeof(value_type)
                 );
-                std::allocator_traits<allocator_type>::deallocate(
-                    m_alloc.second(), m_p_begin, capacity()
-                );
+                deallocate_if_nonstatic(m_p_begin, capacity());
                 m_p_begin = get_static_storage();
                 m_p_end = m_p_begin + current_size;
                 m_p_capacity = m_p_begin + static_capacity();
             }
             else
             {
-                pointer tmp = std::allocator_traits<allocator_type>::allocate(
-                    m_alloc.second(), current_size
+                pointer tmp = alloc_traits::allocate(
+                    my_alloc(), current_size
                 );
                 std::memcpy(
                     tmp,
                     m_p_begin,
                     current_size * sizeof(value_type)
                 );
-                std::allocator_traits<allocator_type>::deallocate(
-                    m_alloc.second(), m_p_begin, capacity()
-                );
+                deallocate_if_nonstatic(m_p_begin, capacity());
 
                 m_p_begin = tmp;
                 m_p_end = m_p_begin + current_size;
@@ -475,8 +516,8 @@ private:
             {
                 size_type new_cap = detail::accommodate(size() + 1, capacity());
                 size_type current_size = size();
-                pointer tmp = std::allocator_traits<allocator_type>::allocate(
-                    m_alloc.second(), new_cap
+                pointer tmp = alloc_traits::allocate(
+                    my_alloc(), new_cap
                 );
 
                 std::memcpy(
@@ -489,12 +530,7 @@ private:
                     (current_size - where) * sizeof(value_type)
                 );
 
-                if(m_p_begin != get_static_storage())
-                {
-                    std::allocator_traits<allocator_type>::deallocate(
-                        m_alloc.second(), m_p_begin, capacity()
-                    );
-                }
+                deallocate_if_nonstatic(m_p_begin, capacity());
 
                 m_p_begin = tmp;
                 m_p_end = m_p_begin + current_size + 1;
@@ -570,12 +606,25 @@ private:
     protected:
         pointer get_static_storage() noexcept
         {
-            return reinterpret_cast<pointer>(m_alloc.first());
+            return reinterpret_cast<pointer>(m_internal.first());
         }
 
         const_pointer get_static_storage() const noexcept
         {
-            return reinterpret_cast<pointer>(m_alloc.first());
+            return reinterpret_cast<const_pointer>(m_internal.first());
+        }
+
+        allocator_type& my_alloc() noexcept
+        {
+            return m_internal;
+        }
+
+        // Deallocate the memory if it's dynamically allocated
+        void deallocate_if_nonstatic(pointer p, size_type n) noexcept
+        {
+            if(p == get_static_storage())
+                return;
+            alloc_traits::deallocate(my_alloc(), p, n);
         }
 
         void emplace_back_impl(value_type val) noexcept
@@ -589,7 +638,12 @@ private:
         pointer m_p_end;
         pointer m_p_capacity;
 
-        alignas(value_type) compressed_pair<std::byte[StaticCapacityBytes], allocator_type> m_alloc;
+        // Static storage and allocator
+        using internal_data_type = util::compressed_pair<
+            std::byte[StaticCapacityBytes],
+            allocator_type>;
+
+        alignas(value_type) internal_data_type m_internal;
     };
 
     template <int TypeId>
@@ -610,6 +664,8 @@ private:
         using pointer = void**;
         using const_pointer = void* const*;
         using allocator_type = typename my_base::allocator_type;
+
+        using alloc_traits = std::allocator_traits<allocator_type>;
 
         using my_base::my_base;
 
@@ -659,6 +715,25 @@ private:
                 this->emplace_back_impl(other.value_ref_at(i));
         }
 
+        // For implementing move constructor
+        void take_own(impl_object& other) noexcept
+        {
+            assert(this->size() == 0);
+            assert(this != &other);
+            if(other.size() == 0)
+                return;
+
+            if(other.is_nonstatic())
+            {
+                this->exchange_ptrs(other);
+                return;
+            }
+
+            this->copy_from_impl(other);
+            // Reset the another container
+            other.m_p_end = other.m_p_begin;
+        }
+
         void* value_ref_at(size_type idx) const
         {
             if(idx >= this->size())
@@ -674,45 +749,43 @@ private:
             size_type old_size = this->size();
             if(new_size == old_size)
                 return;
-            else if(new_size == 0)
+            if(new_size == 0)
             {
                 clear();
                 return;
             }
-
-            if(new_size > old_size)
+            if(new_size <= old_size)
             {
-                this->reserve(new_size);
-                size_type new_elems = new_size - old_size;
+                erase_n(new_size, size_type(-1));
+                return;
+            }
 
-                if constexpr(IsHandle)
-                {
-                    std::memset(
-                        this->m_p_end,
-                        0,
-                        new_elems * sizeof(value_type)
-                    );
-                    this->m_p_end += new_elems;
-                }
-                else
-                {
-                    AS_NAMESPACE_QUALIFIER asITypeInfo* ti = this->elem_type_info();
-                    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = ti->GetEngine();
-                    assert(ti != nullptr);
+            this->reserve(new_size);
+            size_type new_elems = new_size - old_size;
 
-                    for(size_type i = 0; i < new_elems; ++i)
-                    {
-                        void* obj = engine->CreateScriptObject(ti);
-                        if(!obj) [[unlikely]]
-                            break; // exception
-                        *this->m_p_end = obj;
-                        ++this->m_p_end;
-                    }
-                }
+            if constexpr(IsHandle)
+            {
+                std::memset(
+                    this->m_p_end,
+                    0,
+                    new_elems * sizeof(value_type)
+                );
+                this->m_p_end += new_elems;
             }
             else
             {
-                erase_n(new_size, size_type(-1));
+                AS_NAMESPACE_QUALIFIER asITypeInfo* ti = this->elem_type_info();
+                AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = ti->GetEngine();
+                assert(ti != nullptr);
+
+                for(size_type i = 0; i < new_elems; ++i)
+                {
+                    void* obj = engine->CreateScriptObject(ti);
+                    if(!obj) [[unlikely]]
+                        break; // exception
+                    *this->m_p_end = obj;
+                    ++this->m_p_end;
+                }
             }
         }
 
@@ -769,7 +842,7 @@ private:
                 if constexpr(!IsHandle)
                 {
                     if(!obj) [[unlikely]]
-                        break; // exception
+                        break; // script exception raised
                 }
                 *this->m_p_end = obj;
 
@@ -794,7 +867,7 @@ private:
                 {
                     void* obj = engine->CreateScriptObject(ti);
                     if(!obj) [[unlikely]]
-                        return; // exception
+                        return; // script exception raised
                     *this->m_p_end = obj;
                     ++this->m_p_end;
                 }
@@ -851,8 +924,8 @@ private:
             {
                 size_type new_cap = detail::accommodate(this->size() + 1, this->capacity());
                 size_type current_size = this->size();
-                pointer tmp = std::allocator_traits<allocator_type>::allocate(
-                    this->m_alloc.second(), new_cap
+                pointer tmp = alloc_traits::allocate(
+                    this->my_alloc(), new_cap
                 );
 
                 std::memcpy(
@@ -865,12 +938,9 @@ private:
                     (current_size - where) * sizeof(value_type)
                 );
 
-                if(this->m_p_begin != this->get_static_storage())
-                {
-                    std::allocator_traits<allocator_type>::deallocate(
-                        this->m_alloc.second(), this->m_p_begin, this->capacity()
-                    );
-                }
+                this->deallocate_if_nonstatic(
+                    this->m_p_begin, this->capacity()
+                );
 
                 this->m_p_begin = tmp;
                 this->m_p_end = this->m_p_begin + current_size + 1;
@@ -1235,6 +1305,15 @@ public:
         visit_impl(
             [&]<typename ImplType>(ImplType& impl)
             { impl.copy_from(static_cast<const ImplType&>(other.impl())); }
+        );
+    }
+
+    small_vector(small_vector&& other) noexcept
+    {
+        init_impl(other.element_type_id(), other.get_type_info());
+        visit_impl(
+            [&]<typename ImplType>(ImplType& impl)
+            { impl.take_own(static_cast<ImplType&>(other.impl())); }
         );
     }
 

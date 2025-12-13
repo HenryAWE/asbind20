@@ -4,6 +4,8 @@ add_subdirectory(test_utility)
 
 add_subdirectory(test_io)
 
+add_subdirectory(test_memory)
+
 add_subdirectory(test_bind)
 
 add_subdirectory(test_invoke)

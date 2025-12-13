@@ -8,9 +8,9 @@ static consteval bool test_utility_concepts()
             void operator()() const {}
         };
 
-        using asbind20::noncapturing_lambda;
+        using asbind20::noncapturing_native_lambda;
 
-        static_assert(!noncapturing_lambda<callable_struct>);
+        static_assert(!noncapturing_native_lambda<callable_struct>);
 
         int tmp = 0;
         auto lambda1 = [&tmp](int)
@@ -18,14 +18,14 @@ static consteval bool test_utility_concepts()
             return tmp;
         };
 
-        static_assert(!noncapturing_lambda<decltype(lambda1)>);
+        static_assert(!noncapturing_native_lambda<decltype(lambda1)>);
 
         auto lambda2 = [](int)
         {
             return 42;
         };
 
-        static_assert(noncapturing_lambda<decltype(lambda2)>);
+        static_assert(noncapturing_native_lambda<decltype(lambda2)>);
         static_assert((+lambda2)(0) == 42);
     }
 

@@ -1209,7 +1209,7 @@ private:
     using container_type = asbind20::container::small_vector<
         asbind20::container::typeinfo_subtype<0>,
         4 * sizeof(void*),
-        asbind20::as_allocator<void>>;
+        asbind20::script_allocator<void>>;
 
     container_type m_data;
 

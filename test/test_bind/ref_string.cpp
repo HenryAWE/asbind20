@@ -11,6 +11,11 @@ void test1()
     string str = "hello";
     assert(str.size == 5);
 }
+
+string@ get_str()
+{
+    return "test";
+}
 )";
 
 namespace test_bind
@@ -154,28 +159,41 @@ static void setup_bind_ref_string_env(
     asbind_test::setup_script_assertion(engine);
 }
 
-static void run_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static auto build_module(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+    -> AS_NAMESPACE_QUALIFIER asIScriptModule*
 {
-    using asbind_test::result_has_value;
-
     auto m = engine->GetModule("vec2_test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
 
     m->AddScriptSection("ref_string_test_script.as", ref_string_test_script);
-    ASSERT_GE(m->Build(), 0);
+    int r = m->Build();
+    if(r < 0)
+    {
+        ADD_FAILURE() << "failed to build module, r = " << r;
+        return nullptr;
+    }
+
+    return m;
+}
+
+static void run_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
+    auto* m = build_module(engine);
+    if(!m)
+        return;
 
     for(int idx : {0, 1})
     {
+        SCOPED_TRACE("func index = " + std::to_string(idx));
+
         auto f = m->GetFunctionByDecl(
             asbind20::string_concat("void test", std::to_string(idx), "()").c_str()
         );
-        ASSERT_NE(f, nullptr)
-            << "func index: " << idx;
+        ASSERT_NE(f, nullptr);
 
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<void>(ctx, f);
 
-        EXPECT_TRUE(result_has_value(result))
-            << "func index: " << idx;
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
     }
 }
 } // namespace test_bind
@@ -196,4 +214,32 @@ TEST(BindRefString, Generic)
     test_bind::setup_bind_ref_string_env(engine, true);
 
     test_bind::run_script(engine);
+}
+
+TEST(BindRefString, Extract)
+{
+    auto engine = asbind20::make_script_engine();
+    test_bind::setup_bind_ref_string_env(
+        engine, asbind20::has_max_portability()
+    );
+
+    auto* m = test_bind::build_module(engine);
+    if(!m)
+        return;
+
+    auto* f = m->GetFunctionByDecl("string@ get_str()");
+    ASSERT_NE(f, nullptr);
+
+    asbind20::request_context ctx(engine);
+    auto result = asbind20::script_invoke<test_bind::ref_string*>(ctx, f);
+    ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
+
+    namespace debugging = asbind20::debugging;
+
+    EXPECT_NE(result.value(), nullptr);
+    auto extracted = debugging::extract_string(
+        test_bind::ref_string_factory::get(), *result
+    );
+    ASSERT_TRUE(extracted.has_value());
+    EXPECT_EQ(extracted.value(), "test");
 }
