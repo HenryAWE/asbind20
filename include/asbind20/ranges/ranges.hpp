@@ -228,8 +228,8 @@ namespace views
 
         public:
             using value_type = std::pair<
-                AS_NAMESPACE_QUALIFIER asIScriptFunction*,
-                AS_NAMESPACE_QUALIFIER asEBehaviours>;
+                AS_NAMESPACE_QUALIFIER asEBehaviours,
+                AS_NAMESPACE_QUALIFIER asIScriptFunction*>;
             using reference = value_type;
             using size_type = AS_NAMESPACE_QUALIFIER asUINT;
             using difference_type = std::make_signed_t<size_type>;
@@ -284,7 +284,7 @@ namespace views
                 assert(*this);
                 AS_NAMESPACE_QUALIFIER asEBehaviours beh;
                 auto* f = m_view->m_ti->GetBehaviourByIndex(idx, &beh);
-                return {f, beh};
+                return {beh, f};
             }
 
         public:

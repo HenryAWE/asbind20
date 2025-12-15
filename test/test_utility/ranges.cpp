@@ -67,17 +67,25 @@ TEST(Ranges, AllBehavioursWithStdView)
     ASSERT_NE(ti, nullptr);
 
     auto v = abv::all_behaviours(ti);
+    static_assert(std::ranges::sized_range<decltype(v)>);
     EXPECT_EQ(std::ranges::size(v), ti->GetBehaviourCount());
 
-    std::vector<AS_NAMESPACE_QUALIFIER asEBehaviours> bs;
-    for(auto beh : v | std::views::values)
-    {
-        bs.push_back(beh);
-    }
-
+    auto beh_view = v | std::views::keys;
     EXPECT_THAT(
-        bs,
+        std::vector(beh_view.begin(), beh_view.end()),
         ::testing::Contains(AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT)
+    );
+
+    auto fn_decl_view =
+        v |
+        std::views::values |
+        std::views::transform(
+            [](AS_NAMESPACE_QUALIFIER asIScriptFunction* f) -> std::string
+            { return f->GetDeclaration(false); }
+        );
+    EXPECT_THAT(
+        std::vector(fn_decl_view.begin(), fn_decl_view.end()),
+        ::testing::Contains("foo()") // The default constructor
     );
 }
 
