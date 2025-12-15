@@ -19,7 +19,7 @@ namespace views
     namespace detail
     {
         template <typename Derived>
-        class iterator_base
+        class indexed_iterator_interface
         {
         public:
             using iterator_category = std::random_access_iterator_tag;
@@ -93,10 +93,10 @@ namespace views
             }
 
         protected:
-            constexpr iterator_base() noexcept = default;
-            constexpr iterator_base(const iterator_base&) noexcept = default;
+            constexpr indexed_iterator_interface() noexcept = default;
+            constexpr indexed_iterator_interface(const indexed_iterator_interface&) noexcept = default;
 
-            iterator_base& operator=(const iterator_base&) noexcept = default;
+            indexed_iterator_interface& operator=(const indexed_iterator_interface&) noexcept = default;
 
         private:
             constexpr Derived& derived() noexcept
@@ -117,7 +117,7 @@ namespace views
 #endif
     {
     public:
-        class iterator : public detail::iterator_base<iterator>
+        class iterator : public detail::indexed_iterator_interface<iterator>
         {
             friend all_methods;
 
@@ -236,7 +236,7 @@ namespace views
 #endif
     {
     public:
-        class iterator : public detail::iterator_base<iterator>
+        class iterator : public detail::indexed_iterator_interface<iterator>
         {
             friend all_behaviours;
 
