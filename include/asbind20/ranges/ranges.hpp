@@ -4,8 +4,13 @@
 #pragma once
 
 #include <cassert>
-#include <ranges>
+#include <version>
+#include <iterator>
 #include "../detail/include_as.hpp"
+#ifdef __cpp_lib_ranges
+#    define ASBIND20_HAS_LIB_RANGES __cpp_lib_ranges
+#    include <ranges>
+#endif
 
 namespace asbind20
 {
@@ -107,6 +112,9 @@ namespace views
     } // namespace detail
 
     class all_methods
+#ifdef ASBIND20_HAS_LIB_RANGES
+        : public std::ranges::view_interface<all_methods>
+#endif
     {
     public:
         class iterator : public detail::iterator_base<iterator>
@@ -181,6 +189,8 @@ namespace views
             size_type index = 0;
         };
 
+        using size_type = iterator::size_type;
+
         all_methods() = delete;
         all_methods(const all_methods&) noexcept = default;
 
@@ -196,6 +206,14 @@ namespace views
         }
 
         [[nodiscard]]
+        size_type size() const
+        {
+            if(m_ti == nullptr) [[unlikely]]
+                return 0;
+            return m_ti->GetMethodCount();
+        }
+
+        [[nodiscard]]
         iterator begin() const noexcept
         {
             return {this, 0};
@@ -204,7 +222,7 @@ namespace views
         [[nodiscard]]
         iterator end() const noexcept
         {
-            return {this, m_ti->GetMethodCount()};
+            return {this, size()};
         }
 
     private:
@@ -213,6 +231,9 @@ namespace views
     };
 
     class all_behaviours
+#ifdef ASBIND20_HAS_LIB_RANGES
+        : public std::ranges::view_interface<all_behaviours>
+#endif
     {
     public:
         class iterator : public detail::iterator_base<iterator>
@@ -291,6 +312,8 @@ namespace views
             size_type index = 0;
         };
 
+        using size_type = iterator::size_type;
+
         all_behaviours() = delete;
         all_behaviours(const all_behaviours&) noexcept = default;
 
@@ -303,6 +326,14 @@ namespace views
         {}
 
         [[nodiscard]]
+        size_type size() const
+        {
+            if(m_ti == nullptr) [[unlikely]]
+                return 0;
+            return m_ti->GetBehaviourCount();
+        }
+
+        [[nodiscard]]
         iterator begin() const noexcept
         {
             return {this, 0};
@@ -311,7 +342,7 @@ namespace views
         [[nodiscard]]
         iterator end() const noexcept
         {
-            return {this, m_ti->GetBehaviourCount()};
+            return {this, size()};
         }
 
     private:

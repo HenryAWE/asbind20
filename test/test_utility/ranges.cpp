@@ -4,8 +4,7 @@
 #include <asbind20/ranges/ranges.hpp>
 #include <gmock/gmock-matchers.h>
 
-#ifdef __cpp_lib_ranges
-#    include <ranges>
+#ifdef ASBIND20_HAS_LIB_RANGES
 
 namespace test_utility
 {
@@ -39,6 +38,10 @@ TEST(Ranges, AllMethodsWithStdViews)
             [](AS_NAMESPACE_QUALIFIER asIScriptFunction* f) -> std::string
             { return f->GetDeclaration(false); }
         );
+    EXPECT_EQ(std::ranges::size(v), ti->GetMethodCount());
+    EXPECT_EQ(v.end() - v.begin(), ti->GetMethodCount());
+    EXPECT_FALSE(std::ranges::empty(v));
+    EXPECT_TRUE(v);
     using v_t = decltype(v);
     static_assert(std::ranges::sized_range<v_t>);
 
@@ -69,6 +72,9 @@ TEST(Ranges, AllBehavioursWithStdView)
     auto v = abv::all_behaviours(ti);
     static_assert(std::ranges::sized_range<decltype(v)>);
     EXPECT_EQ(std::ranges::size(v), ti->GetBehaviourCount());
+    EXPECT_EQ(v.end() - v.begin(), ti->GetBehaviourCount());
+    EXPECT_FALSE(std::ranges::empty(v));
+    EXPECT_TRUE(v);
 
     auto beh_view = v | std::views::keys;
     EXPECT_THAT(
