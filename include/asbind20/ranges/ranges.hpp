@@ -13,143 +13,309 @@ namespace views
 {
     namespace detail
     {
-        class sentinel_base
+        template <typename Derived>
+        class iterator_base
         {
         public:
+            using iterator_category = std::random_access_iterator_tag;
             using size_type = AS_NAMESPACE_QUALIFIER asUINT;
+            using difference_type = std::make_signed_t<size_type>;
 
-            constexpr sentinel_base(const sentinel_base&) noexcept = default;
-
-            [[nodiscard]]
-            constexpr size_type max_index() const noexcept
+            Derived& operator++() noexcept
             {
-                return m_max_index;
+                ++derived().index;
+                return derived();
+            }
+
+            Derived operator++(int) noexcept
+            {
+                Derived tmp(*this);
+                ++derived().index;
+                return tmp;
+            }
+
+            Derived& operator--() noexcept
+            {
+                assert(derived().index > 0);
+                --derived().index;
+                return derived();
+            }
+
+            Derived operator--(int) noexcept
+            {
+                Derived tmp(*this);
+                --derived().index;
+                return tmp;
+            }
+
+            Derived& operator+=(difference_type n) noexcept
+            {
+                derived().index += n;
+                return derived();
+            }
+
+            Derived& operator-=(difference_type n) noexcept
+            {
+                derived().index -= n;
+                return derived();
+            }
+
+            friend Derived operator+(const Derived& lhs, difference_type rhs) noexcept
+            {
+                Derived tmp(lhs);
+                tmp += rhs;
+                return tmp;
+            }
+
+            friend Derived operator+(difference_type lhs, const Derived& rhs) noexcept
+            {
+                Derived tmp(rhs);
+                tmp += lhs;
+                return tmp;
+            }
+
+            friend Derived operator-(const Derived& lhs, difference_type rhs) noexcept
+            {
+                Derived tmp(lhs);
+                tmp -= rhs;
+                return tmp;
+            }
+
+            friend difference_type operator-(const Derived& lhs, const Derived& rhs) noexcept
+            {
+                return static_cast<difference_type>(lhs.index) -
+                       static_cast<difference_type>(rhs.index);
             }
 
         protected:
-            constexpr sentinel_base(size_type max_idx) noexcept
-                : m_max_index(max_idx)
-            {}
+            constexpr iterator_base() noexcept = default;
+            constexpr iterator_base(const iterator_base&) noexcept = default;
+
+            iterator_base& operator=(const iterator_base&) noexcept = default;
 
         private:
-            size_type m_max_index;
+            constexpr Derived& derived() noexcept
+            {
+                return static_cast<Derived&>(*this);
+            }
+
+            constexpr const Derived& derived() const noexcept
+            {
+                return static_cast<const Derived&>(*this);
+            }
         };
     } // namespace detail
 
     class all_methods
     {
     public:
-        using size_type = AS_NAMESPACE_QUALIFIER asUINT;
-
-        class iterator
+        class iterator : public detail::iterator_base<iterator>
         {
             friend all_methods;
 
             iterator(
-                const AS_NAMESPACE_QUALIFIER asITypeInfo* ti,
-                size_type idx,
-                bool get_virtual = true
+                const all_methods* v,
+                size_type idx
             ) noexcept
-                : m_ti(ti), m_index(idx), m_get_virtual(get_virtual)
+                : m_view(v), index(idx)
             {}
 
         public:
-            using iterator_category = std::bidirectional_iterator_tag;
             using value_type = AS_NAMESPACE_QUALIFIER asIScriptFunction*;
             using reference = value_type;
             using size_type = AS_NAMESPACE_QUALIFIER asUINT;
             using difference_type = std::make_signed_t<size_type>;
 
-            iterator() noexcept
-                : m_ti(nullptr), m_index(0), m_get_virtual(true)
-            {}
+            iterator() noexcept = default;
 
             iterator(const iterator&) noexcept = default;
 
-            iterator& operator++() noexcept
-            {
-                ++m_index;
-                return *this;
-            }
-
-            iterator operator++(int) noexcept
-            {
-                iterator tmp(*this);
-                ++m_index;
-                return tmp;
-            }
-
-            iterator& operator--() noexcept
-            {
-                assert(m_index > 0);
-                --m_index;
-                return *this;
-            }
-
-            iterator operator--(int) noexcept
-            {
-                iterator tmp(*this);
-                --m_index;
-                return tmp;
-            }
+            iterator& operator=(const iterator&) noexcept = default;
 
             bool operator==(const iterator& rhs) const noexcept
             {
                 assert(
-                    (m_ti == rhs.m_ti && m_get_virtual == rhs.m_get_virtual) &&
+                    m_view == rhs.m_view &&
                     "Comparing unmatched iterator pair"
                 );
-                return m_index == rhs.m_index;
+                return index == rhs.index;
             }
 
             std::strong_ordering operator<=>(const iterator& rhs) const noexcept
             {
                 assert(
-                    (m_ti == rhs.m_ti && m_get_virtual == rhs.m_get_virtual) &&
+                    m_view == rhs.m_view &&
                     "Comparing unmatched iterator pair"
                 );
-                return m_index <=> rhs.m_index;
+                return index <=> rhs.index;
+            }
+
+            explicit operator bool() const noexcept
+            {
+                return m_view != nullptr;
             }
 
             value_type operator*() const
             {
-                assert(m_ti != nullptr);
-                return m_ti->GetMethodByIndex(m_index, m_get_virtual);
+                return get_value(index);
+            }
+
+            value_type operator[](difference_type n) const
+            {
+                auto idx = static_cast<size_type>(
+                    static_cast<difference_type>(index) + n
+                );
+                return get_value(idx);
             }
 
         private:
-            const AS_NAMESPACE_QUALIFIER asITypeInfo* m_ti;
-            size_type m_index;
-            bool m_get_virtual;
+            const all_methods* m_view = nullptr;
+
+            value_type get_value(size_type idx) const
+            {
+                assert(*this);
+                return m_view->m_ti->GetMethodByIndex(idx, m_view->m_get_virtual);
+            }
+
+        public:
+            size_type index = 0;
         };
 
         all_methods() = delete;
         all_methods(const all_methods&) noexcept = default;
 
-        all_methods(std::nullptr_t) = delete;
+        explicit all_methods(std::nullptr_t) = delete;
 
-        all_methods(
+        explicit all_methods(
             const AS_NAMESPACE_QUALIFIER asITypeInfo* ti,
             bool get_virtual = true
-        )
+        ) noexcept
             : m_ti(ti), m_get_virtual(get_virtual)
         {
             assert(m_ti != nullptr);
         }
 
+        [[nodiscard]]
         iterator begin() const noexcept
         {
-            return iterator(m_ti, 0, m_get_virtual);
+            return {this, 0};
         }
 
+        [[nodiscard]]
         iterator end() const noexcept
         {
-            return iterator(m_ti, m_ti->GetMethodCount(), m_get_virtual);
+            return {this, m_ti->GetMethodCount()};
         }
 
     private:
         const AS_NAMESPACE_QUALIFIER asITypeInfo* m_ti;
         bool m_get_virtual;
+    };
+
+    class all_behaviours
+    {
+    public:
+        class iterator : public detail::iterator_base<iterator>
+        {
+            friend all_behaviours;
+
+            iterator(
+                const all_behaviours* v,
+                size_type idx
+            ) noexcept
+                : m_view(v), index(idx)
+            {}
+
+        public:
+            using value_type = std::pair<
+                AS_NAMESPACE_QUALIFIER asIScriptFunction*,
+                AS_NAMESPACE_QUALIFIER asEBehaviours>;
+            using reference = value_type;
+            using size_type = AS_NAMESPACE_QUALIFIER asUINT;
+            using difference_type = std::make_signed_t<size_type>;
+
+            iterator() noexcept = default;
+
+            iterator(const iterator&) noexcept = default;
+
+            iterator& operator=(const iterator&) noexcept = default;
+
+            bool operator==(const iterator& rhs) const noexcept
+            {
+                assert(
+                    m_view == rhs.m_view &&
+                    "Comparing unmatched iterator pair"
+                );
+                return index == rhs.index;
+            }
+
+            std::strong_ordering operator<=>(const iterator& rhs) const noexcept
+            {
+                assert(
+                    m_view == rhs.m_view &&
+                    "Comparing unmatched iterator pair"
+                );
+                return index <=> rhs.index;
+            }
+
+            explicit operator bool() const noexcept
+            {
+                return m_view != nullptr;
+            }
+
+            value_type operator*() const
+            {
+                return get_value(index);
+            }
+
+            value_type operator[](difference_type n) const
+            {
+                auto idx = static_cast<size_type>(
+                    static_cast<difference_type>(index) + n
+                );
+                return get_value(idx);
+            }
+
+        private:
+            const all_behaviours* m_view = nullptr;
+
+            value_type get_value(size_type idx) const
+            {
+                assert(*this);
+                AS_NAMESPACE_QUALIFIER asEBehaviours beh;
+                auto* f = m_view->m_ti->GetBehaviourByIndex(idx, &beh);
+                return {f, beh};
+            }
+
+        public:
+            size_type index = 0;
+        };
+
+        all_behaviours() = delete;
+        all_behaviours(const all_behaviours&) noexcept = default;
+
+        explicit all_behaviours(std::nullptr_t) = delete;
+
+        explicit all_behaviours(
+            const AS_NAMESPACE_QUALIFIER asITypeInfo* ti
+        )
+            : m_ti(ti)
+        {}
+
+        [[nodiscard]]
+        iterator begin() const noexcept
+        {
+            return {this, 0};
+        }
+
+        [[nodiscard]]
+        iterator end() const noexcept
+        {
+            return {this, m_ti->GetBehaviourCount()};
+        }
+
+    private:
+        const AS_NAMESPACE_QUALIFIER asITypeInfo* m_ti;
     };
 } // namespace views
 

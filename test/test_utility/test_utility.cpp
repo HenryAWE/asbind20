@@ -263,6 +263,12 @@ static void output_info(std::ostream& os)
     os << "ASBIND20_NO_EXCEPTIONS not defined" << std::endl;
 #endif
 
+#ifdef __cpp_lib_ranges
+    os << "__cpp_lib_ranges defined: " << __cpp_lib_ranges << 'L' << std::endl;
+#else
+    os << "__cpp_lib_ranges not defined" << std::endl;
+#endif
+
 #ifdef AS_USE_NAMESPACE
     os << "AS_USE_NAMESPACE defined" << std::endl;
 #endif
