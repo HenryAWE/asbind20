@@ -40,6 +40,8 @@ TEST(Ranges, AllMethodsWithStdViews)
         );
     EXPECT_EQ(std::ranges::size(v), ti->GetMethodCount());
     EXPECT_EQ(v.end() - v.begin(), ti->GetMethodCount());
+    EXPECT_EQ(v.begin() + ti->GetMethodCount(), v.end());
+    EXPECT_LT(v.begin(), v.end());
     EXPECT_FALSE(std::ranges::empty(v));
     EXPECT_TRUE(v);
     using v_t = decltype(v);
@@ -73,6 +75,8 @@ TEST(Ranges, AllBehavioursWithStdView)
     static_assert(std::ranges::sized_range<decltype(v)>);
     EXPECT_EQ(std::ranges::size(v), ti->GetBehaviourCount());
     EXPECT_EQ(v.end() - v.begin(), ti->GetBehaviourCount());
+    EXPECT_EQ(v.begin() + ti->GetBehaviourCount(), v.end());
+    EXPECT_LT(v.begin(), v.end());
     EXPECT_FALSE(std::ranges::empty(v));
     EXPECT_TRUE(v);
 
@@ -92,6 +96,47 @@ TEST(Ranges, AllBehavioursWithStdView)
     EXPECT_THAT(
         std::vector(fn_decl_view.begin(), fn_decl_view.end()),
         ::testing::Contains("foo()") // The default constructor
+    );
+}
+
+TEST(Ranges, AllEnumsWithStdView)
+{
+    namespace abv = asbind20::views;
+
+    auto engine = asbind20::make_script_engine();
+    asbind_test::setup_message_callback(engine, true);
+    auto* m = engine->GetModule(
+        "foo", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
+    );
+    m->AddScriptSection(
+        "foo",
+        "enum E{ A = 0, B = 1 };"
+    );
+    ASSERT_GE(m->Build(), 0);
+
+    auto* ti = m->GetTypeInfoByName("E");
+    ASSERT_NE(ti, nullptr);
+
+    auto v = abv::all_enums(ti);
+    static_assert(std::ranges::sized_range<decltype(v)>);
+    EXPECT_EQ(std::ranges::size(v), ti->GetEnumValueCount());
+    EXPECT_EQ(v.end() - v.begin(), ti->GetEnumValueCount());
+    EXPECT_EQ(v.begin() + ti->GetEnumValueCount(), v.end());
+    EXPECT_LT(v.begin(), v.end());
+
+    auto enum_names =
+        v |
+        std::views::keys;
+    EXPECT_THAT(
+        std::vector<std::string>(enum_names.begin(), enum_names.end()),
+        ::testing::ElementsAre("A", "B")
+    );
+    auto enum_values =
+        v |
+        std::views::values;
+    EXPECT_THAT(
+        std::vector(enum_values.begin(), enum_values.end()),
+        ::testing::ElementsAre(0, 1)
     );
 }
 
