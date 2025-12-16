@@ -4,9 +4,9 @@
 #pragma once
 
 #include <cassert>
-#include <version>
 #include <iterator>
 #include "../detail/config.hpp"
+#include "../detail/strutil.hpp"
 #include "../detail/include_as.hpp"
 #ifdef __cpp_lib_ranges
 #    define ASBIND20_HAS_LIB_RANGES __cpp_lib_ranges
@@ -412,7 +412,7 @@ namespace views
             size_type index;
         };
 
-        using size_type = iterator::size_type;
+        using size_type = typename iterator::size_type;
 
         all_enums_of() = delete;
         all_enums_of(const all_enums_of&) noexcept = default;
