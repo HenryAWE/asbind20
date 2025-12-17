@@ -21,10 +21,11 @@ void setup_abc_interface(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 
 TEST(Ranges, AllMethodsWithStdViews)
 {
+    namespace abr = asbind20::ranges;
     namespace abv = asbind20::views;
 
-    static_assert(std::random_access_iterator<abv::all_methods::iterator>);
-    static_assert(std::ranges::input_range<abv::all_methods>);
+    static_assert(std::random_access_iterator<abr::all_methods_view::iterator>);
+    static_assert(std::ranges::input_range<abr::all_methods_view>);
 
     auto engine = asbind20::make_script_engine();
     test_utility::setup_abc_interface(engine);
@@ -110,7 +111,7 @@ TEST(Ranges, AllEnumsWithStdView)
     );
     m->AddScriptSection(
         "foo",
-        "enum E{ A = 0, B = 1 };"
+        "enum E{ A = 0, B = 1, C = 0 };"
     );
     ASSERT_GE(m->Build(), 0);
 
@@ -129,14 +130,14 @@ TEST(Ranges, AllEnumsWithStdView)
         std::views::keys;
     EXPECT_THAT(
         std::vector<std::string>(enum_names.begin(), enum_names.end()),
-        ::testing::ElementsAre("A", "B")
+        ::testing::ElementsAre("A", "B", "C")
     );
     auto enum_values =
         v |
         std::views::values;
     EXPECT_THAT(
         std::vector(enum_values.begin(), enum_values.end()),
-        ::testing::ElementsAre(0, 1)
+        ::testing::ElementsAre(0, 1, 0)
     );
 }
 

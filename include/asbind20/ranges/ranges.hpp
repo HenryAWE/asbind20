@@ -15,10 +15,22 @@
 
 namespace asbind20
 {
-namespace views
+namespace ranges
 {
     namespace detail
     {
+#ifdef ASBIND20_HAS_LIB_RANGES
+        template <typename View>
+        using view_interface = std::ranges::view_interface<View>;
+
+#else
+        // Placeholder if standard library doesn't provide ranges library
+        template <typename View>
+        class view_interface
+        {};
+
+#endif
+
         template <typename Derived>
         class indexed_iterator_interface
         {
@@ -125,62 +137,57 @@ namespace views
         };
     } // namespace detail
 
-    class all_methods
-#ifdef ASBIND20_HAS_LIB_RANGES
-        : public std::ranges::view_interface<all_methods>
-#endif
+#define ASBIND20_VIEWS_COMMON_ITER_MEMBERS_IMPL()                        \
+    iterator() noexcept = default;                                       \
+    iterator(const iterator&) noexcept = default;                        \
+    iterator& operator=(const iterator&) noexcept = default;             \
+    bool operator==(const iterator& rhs) const noexcept                  \
+    {                                                                    \
+        assert(                                                          \
+            this->m_view == rhs.m_view &&                                \
+            "Comparing unmatched iterator pair"                          \
+        );                                                               \
+        return this->index == rhs.index;                                 \
+    }                                                                    \
+    std::strong_ordering operator<=>(const iterator& rhs) const noexcept \
+    {                                                                    \
+        assert(                                                          \
+            this->m_view == rhs.m_view &&                                \
+            "Comparing unmatched iterator pair"                          \
+        );                                                               \
+        return this->index <=> rhs.index;                                \
+    }                                                                    \
+    explicit operator bool() const noexcept                              \
+    {                                                                    \
+        return this->m_view != nullptr;                                  \
+    }
+
+    class all_methods_view : public detail::view_interface<all_methods_view>
     {
     public:
         class iterator : public detail::indexed_iterator_interface<iterator>
         {
             using my_base = detail::indexed_iterator_interface<iterator>;
-            friend all_methods;
+            friend all_methods_view;
             friend my_base;
 
+        public:
+            using value_type = AS_NAMESPACE_QUALIFIER asIScriptFunction*;
+            using size_type = typename my_base::size_type;
+
+        private:
             iterator(
-                const all_methods* v,
+                const all_methods_view* v,
                 size_type idx
             ) noexcept
                 : m_view(v), index(idx)
             {}
 
         public:
-            using value_type = AS_NAMESPACE_QUALIFIER asIScriptFunction*;
-            using reference = value_type;
-            using size_type = AS_NAMESPACE_QUALIFIER asUINT;
-            using difference_type = std::make_signed_t<size_type>;
-
-            iterator() noexcept = default;
-
-            iterator(const iterator&) noexcept = default;
-
-            iterator& operator=(const iterator&) noexcept = default;
-
-            bool operator==(const iterator& rhs) const noexcept
-            {
-                assert(
-                    m_view == rhs.m_view &&
-                    "Comparing unmatched iterator pair"
-                );
-                return index == rhs.index;
-            }
-
-            std::strong_ordering operator<=>(const iterator& rhs) const noexcept
-            {
-                assert(
-                    m_view == rhs.m_view &&
-                    "Comparing unmatched iterator pair"
-                );
-                return index <=> rhs.index;
-            }
-
-            explicit operator bool() const noexcept
-            {
-                return m_view != nullptr;
-            }
+            ASBIND20_VIEWS_COMMON_ITER_MEMBERS_IMPL()
 
         private:
-            const all_methods* m_view = nullptr;
+            const all_methods_view* m_view = nullptr;
 
             value_type get_value(size_type idx) const
             {
@@ -192,14 +199,14 @@ namespace views
             size_type index = 0;
         };
 
-        using size_type = iterator::size_type;
+        using size_type = typename iterator::size_type;
 
-        all_methods() = delete;
-        all_methods(const all_methods&) noexcept = default;
+        all_methods_view() = delete;
+        all_methods_view(const all_methods_view&) noexcept = default;
 
-        explicit all_methods(std::nullptr_t) = delete;
+        explicit all_methods_view(std::nullptr_t) = delete;
 
-        explicit all_methods(
+        explicit all_methods_view(
             const AS_NAMESPACE_QUALIFIER asITypeInfo* ti,
             bool get_virtual = true
         ) noexcept
@@ -233,64 +240,34 @@ namespace views
         bool m_get_virtual;
     };
 
-    class all_behaviours
-#ifdef ASBIND20_HAS_LIB_RANGES
-        : public std::ranges::view_interface<all_behaviours>
-#endif
+    class all_behaviours_view : public detail::view_interface<all_behaviours_view>
     {
     public:
         class iterator : public detail::indexed_iterator_interface<iterator>
         {
             using my_base = detail::indexed_iterator_interface<iterator>;
-            friend all_behaviours;
+            friend all_behaviours_view;
             friend my_base;
 
+        public:
+            using value_type = std::pair<
+                AS_NAMESPACE_QUALIFIER asEBehaviours,
+                AS_NAMESPACE_QUALIFIER asIScriptFunction*>;
+            using size_type = typename my_base::size_type;
+
+        private:
             iterator(
-                const all_behaviours* v,
+                const all_behaviours_view* v,
                 size_type idx
             ) noexcept
                 : m_view(v), index(idx)
             {}
 
         public:
-            using value_type = std::pair<
-                AS_NAMESPACE_QUALIFIER asEBehaviours,
-                AS_NAMESPACE_QUALIFIER asIScriptFunction*>;
-            using reference = value_type;
-            using size_type = AS_NAMESPACE_QUALIFIER asUINT;
-            using difference_type = std::make_signed_t<size_type>;
-
-            iterator() noexcept = default;
-
-            iterator(const iterator&) noexcept = default;
-
-            iterator& operator=(const iterator&) noexcept = default;
-
-            bool operator==(const iterator& rhs) const noexcept
-            {
-                assert(
-                    m_view == rhs.m_view &&
-                    "Comparing unmatched iterator pair"
-                );
-                return index == rhs.index;
-            }
-
-            std::strong_ordering operator<=>(const iterator& rhs) const noexcept
-            {
-                assert(
-                    m_view == rhs.m_view &&
-                    "Comparing unmatched iterator pair"
-                );
-                return index <=> rhs.index;
-            }
-
-            explicit operator bool() const noexcept
-            {
-                return m_view != nullptr;
-            }
+            ASBIND20_VIEWS_COMMON_ITER_MEMBERS_IMPL()
 
         private:
-            const all_behaviours* m_view = nullptr;
+            const all_behaviours_view* m_view = nullptr;
 
             value_type get_value(size_type idx) const
             {
@@ -304,12 +281,12 @@ namespace views
             size_type index = 0;
         };
 
-        using size_type = iterator::size_type;
+        using size_type = typename iterator::size_type;
 
-        all_behaviours() = delete;
-        all_behaviours(const all_behaviours&) noexcept = default;
+        all_behaviours_view() = delete;
+        all_behaviours_view(const all_behaviours_view&) noexcept = default;
 
-        explicit all_behaviours(
+        explicit all_behaviours_view(
             const AS_NAMESPACE_QUALIFIER asITypeInfo* ti
         ) noexcept
             : m_ti(ti)
@@ -339,21 +316,24 @@ namespace views
         const AS_NAMESPACE_QUALIFIER asITypeInfo* m_ti;
     };
 
-    template <typename UnderlyingType>
-    class all_enums_of
+    template <typename UnderlyingType = int>
+    class all_enums_view : public detail::view_interface<all_enums_view<UnderlyingType>>
     {
     public:
+#ifndef ASBIND20_HAS_ENUM_UNDERLYING_TYPE
         static_assert(
             std::same_as<UnderlyingType, int>,
             "Older AngelScript (<= 2.38) only allows int as underlying type of enum"
         );
+
+#endif
 
         using underlying_type = UnderlyingType;
 
         class iterator : public detail::indexed_iterator_interface<iterator>
         {
             using my_base = detail::indexed_iterator_interface<iterator>;
-            friend all_enums_of;
+            friend all_enums_view;
             friend my_base;
 
             // TODO: Merge this alias with that in bind/enum.hpp
@@ -367,38 +347,15 @@ namespace views
             using size_type = AS_NAMESPACE_QUALIFIER asUINT;
             using value_type = std::pair<cstring_ref, UnderlyingType>;
 
-            iterator() noexcept = default;
-
         private:
-            iterator(const all_enums_of* view, size_type idx)
+            iterator(const all_enums_view* view, size_type idx) noexcept
                 : m_view(view), index(idx) {}
 
         public:
-            bool operator==(const iterator& rhs) const noexcept
-            {
-                assert(
-                    m_view == rhs.m_view &&
-                    "Comparing unmatched iterator pair"
-                );
-                return index == rhs.index;
-            }
-
-            std::strong_ordering operator<=>(const iterator& rhs) const noexcept
-            {
-                assert(
-                    m_view == rhs.m_view &&
-                    "Comparing unmatched iterator pair"
-                );
-                return index <=> rhs.index;
-            }
-
-            explicit operator bool() const noexcept
-            {
-                return m_view != nullptr;
-            }
+            ASBIND20_VIEWS_COMMON_ITER_MEMBERS_IMPL()
 
         private:
-            const all_enums_of* m_view;
+            const all_enums_view* m_view = nullptr;
 
             value_type get_value(size_type idx) const
             {
@@ -409,15 +366,15 @@ namespace views
             }
 
         public:
-            size_type index;
+            size_type index = 0;
         };
 
         using size_type = typename iterator::size_type;
 
-        all_enums_of() = delete;
-        all_enums_of(const all_enums_of&) noexcept = default;
+        all_enums_view() = delete;
+        all_enums_view(const all_enums_view&) noexcept = default;
 
-        explicit all_enums_of(
+        explicit all_enums_view(
             const AS_NAMESPACE_QUALIFIER asITypeInfo* ti
         ) noexcept
             : m_ti(ti)
@@ -447,13 +404,62 @@ namespace views
         const AS_NAMESPACE_QUALIFIER asITypeInfo* m_ti;
     };
 
-    using all_enums = all_enums_of<int>;
-} // namespace views
+#undef ASBIND20_VIEWS_COMMON_ITER_MEMBERS_IMPL
 
-namespace ranges
-{
+    namespace views
+    {
+        namespace detail
+        {
+            struct all_methods_t
+            {
+                all_methods_view operator()(
+                    AS_NAMESPACE_QUALIFIER asITypeInfo* ti,
+                    bool get_virtual = true
+                ) const
+                {
+                    return all_methods_view(ti, get_virtual);
+                }
+            };
+        } // namespace detail
 
-}
+        inline constexpr detail::all_methods_t all_methods{};
+
+        namespace detail
+        {
+            struct all_behaviours_t
+            {
+                all_behaviours_view operator()(
+                    const AS_NAMESPACE_QUALIFIER asITypeInfo* ti
+                ) const
+                {
+                    return all_behaviours_view(ti);
+                }
+            };
+        } // namespace detail
+
+        inline constexpr detail::all_behaviours_t all_behaviours{};
+
+        namespace detail
+        {
+            template <typename UnderlyingType>
+            struct all_enums_of_t
+            {
+                all_enums_view<UnderlyingType> operator()(
+                    const AS_NAMESPACE_QUALIFIER asITypeInfo* ti
+                ) const
+                {
+                    return all_enums_view<int>(ti);
+                }
+            };
+        } // namespace detail
+
+        inline constexpr detail::all_enums_of_t<int> all_enums{};
+        template <typename Underlying>
+        inline constexpr detail::all_enums_of_t<Underlying> all_enums_of{};
+    } // namespace views
+} // namespace ranges
+
+namespace views = ranges::views;
 } // namespace asbind20
 
 #endif
