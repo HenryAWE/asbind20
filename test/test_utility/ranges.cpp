@@ -33,6 +33,14 @@ TEST(Ranges, AllMethodsWithStdViews)
     auto* ti = engine->GetTypeInfoByName("abc");
     ASSERT_NE(ti, nullptr);
 
+    // Check empty view
+    {
+        auto empty_v = abv::all_methods(nullptr);
+        EXPECT_FALSE(empty_v);
+        EXPECT_EQ(std::ranges::size(empty_v), 0);
+        EXPECT_EQ(empty_v.begin(), empty_v.end());
+    }
+
     auto v =
         abv::all_methods(ti) |
         std::views::transform(
@@ -71,6 +79,14 @@ TEST(Ranges, AllBehavioursWithStdView)
 
     auto* ti = m->GetTypeInfoByName("foo");
     ASSERT_NE(ti, nullptr);
+
+    // Check empty view
+    {
+        auto empty_v = abv::all_behaviours(nullptr);
+        EXPECT_FALSE(empty_v);
+        EXPECT_EQ(std::ranges::size(empty_v), 0);
+        EXPECT_EQ(empty_v.begin(), empty_v.end());
+    }
 
     auto v = abv::all_behaviours(ti);
     static_assert(std::ranges::sized_range<decltype(v)>);
@@ -118,12 +134,21 @@ TEST(Ranges, AllEnumsWithStdView)
     auto* ti = m->GetTypeInfoByName("E");
     ASSERT_NE(ti, nullptr);
 
+    // Check empty view
+    {
+        auto empty_v = abv::all_enums(nullptr);
+        EXPECT_FALSE(empty_v);
+        EXPECT_EQ(std::ranges::size(empty_v), 0);
+        EXPECT_EQ(empty_v.begin(), empty_v.end());
+    }
+
     auto v = abv::all_enums(ti);
     static_assert(std::ranges::sized_range<decltype(v)>);
     EXPECT_EQ(std::ranges::size(v), ti->GetEnumValueCount());
     EXPECT_EQ(v.end() - v.begin(), ti->GetEnumValueCount());
     EXPECT_EQ(v.begin() + ti->GetEnumValueCount(), v.end());
     EXPECT_LT(v.begin(), v.end());
+    EXPECT_TRUE(v);
 
     auto enum_names =
         v |

@@ -166,9 +166,14 @@ namespace ranges
     [[nodiscard]]                                                 \
     size_type size() const                                        \
     {                                                             \
-        if(m_ti == nullptr) [[unlikely]]                          \
+        if(this->m_ti == nullptr) [[unlikely]]                    \
             return 0;                                             \
-        return m_ti->size_getter();                               \
+        return this->m_ti->size_getter();                         \
+    }                                                             \
+    [[nodiscard]]                                                 \
+    bool empty() const                                            \
+    {                                                             \
+        return size() == 0;                                       \
     }                                                             \
     [[nodiscard]]                                                 \
     iterator begin() const noexcept                               \
@@ -228,9 +233,7 @@ namespace ranges
             bool get_virtual = true
         ) noexcept
             : m_ti(ti), m_get_virtual(get_virtual)
-        {
-            assert(m_ti != nullptr);
-        }
+        {}
 
         ASBIND20_VIEWS_TYPEINFO_BASED_VIEW_ITER_IMPL(GetMethodCount)
 
