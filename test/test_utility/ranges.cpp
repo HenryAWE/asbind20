@@ -160,7 +160,7 @@ TEST(Ranges, AllFactoriesWithStdView)
     );
 }
 
-TEST(Ranges, AllEnumsWithStdView)
+TEST(Ranges, AllEnumValuesWithStdView)
 {
     namespace abv = asbind20::views;
 
@@ -180,13 +180,13 @@ TEST(Ranges, AllEnumsWithStdView)
 
     // Check empty view
     {
-        auto empty_v = abv::all_enums(nullptr);
+        auto empty_v = abv::all_enum_values(nullptr);
         EXPECT_FALSE(empty_v);
         EXPECT_EQ(std::ranges::size(empty_v), 0);
         EXPECT_EQ(empty_v.begin(), empty_v.end());
     }
 
-    auto v = abv::all_enums(ti);
+    auto v = abv::all_enum_values(ti);
     static_assert(std::ranges::sized_range<decltype(v)>);
     EXPECT_EQ(std::ranges::size(v), ti->GetEnumValueCount());
     EXPECT_EQ(v.end() - v.begin(), ti->GetEnumValueCount());

@@ -356,7 +356,8 @@ namespace ranges
     };
 
     template <typename UnderlyingType = int>
-    class all_enums_view : public detail::view_interface<all_enums_view<UnderlyingType>>
+    class all_enum_values_view :
+        public detail::view_interface<all_enum_values_view<UnderlyingType>>
     {
     public:
 #ifndef ASBIND20_HAS_ENUM_UNDERLYING_TYPE
@@ -372,7 +373,7 @@ namespace ranges
         class iterator : public detail::indexed_iterator_interface<iterator>
         {
             using my_base = detail::indexed_iterator_interface<iterator>;
-            friend all_enums_view;
+            friend all_enum_values_view;
             friend my_base;
 
         public:
@@ -380,14 +381,14 @@ namespace ranges
             using value_type = std::pair<cstring_ref, UnderlyingType>;
 
         private:
-            iterator(const all_enums_view* view, size_type idx) noexcept
+            iterator(const all_enum_values_view* view, size_type idx) noexcept
                 : m_view(view), index(idx) {}
 
         public:
             ASBIND20_VIEWS_COMMON_ITER_MEMBERS_IMPL()
 
         private:
-            const all_enums_view* m_view = nullptr;
+            const all_enum_values_view* m_view = nullptr;
 
             value_type get_value(size_type idx) const
             {
@@ -403,10 +404,10 @@ namespace ranges
 
         using size_type = typename iterator::size_type;
 
-        all_enums_view() = delete;
-        all_enums_view(const all_enums_view&) noexcept = default;
+        all_enum_values_view() = delete;
+        all_enum_values_view(const all_enum_values_view&) noexcept = default;
 
-        explicit all_enums_view(
+        explicit all_enum_values_view(
             const AS_NAMESPACE_QUALIFIER asITypeInfo* ti
         ) noexcept
             : m_ti(ti)
@@ -472,20 +473,20 @@ namespace ranges
         namespace detail
         {
             template <typename UnderlyingType>
-            struct all_enums_of_t
+            struct all_enum_values_of_t
             {
-                all_enums_view<UnderlyingType> operator()(
+                all_enum_values_view<UnderlyingType> operator()(
                     const AS_NAMESPACE_QUALIFIER asITypeInfo* ti
                 ) const
                 {
-                    return all_enums_view<int>(ti);
+                    return all_enum_values_view<int>(ti);
                 }
             };
         } // namespace detail
 
-        inline constexpr detail::all_enums_of_t<int> all_enums{};
+        inline constexpr detail::all_enum_values_of_t<int> all_enum_values{};
         template <typename Underlying>
-        inline constexpr detail::all_enums_of_t<Underlying> all_enums_of{};
+        inline constexpr detail::all_enum_values_of_t<Underlying> all_enum_values_of{};
     } // namespace views
 } // namespace ranges
 
