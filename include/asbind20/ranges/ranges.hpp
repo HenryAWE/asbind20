@@ -204,8 +204,6 @@ namespace ranges
         all_methods_view() = delete;
         all_methods_view(const all_methods_view&) noexcept = default;
 
-        explicit all_methods_view(std::nullptr_t) = delete;
-
         explicit all_methods_view(
             const AS_NAMESPACE_QUALIFIER asITypeInfo* ti,
             bool get_virtual = true
