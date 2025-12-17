@@ -8,6 +8,7 @@
 #include "../detail/config.hpp"
 #include "../detail/strutil.hpp"
 #include "../detail/include_as.hpp"
+#include "../detail/compat.hpp"
 #ifdef __cpp_lib_ranges
 #    define ASBIND20_HAS_LIB_RANGES __cpp_lib_ranges
 #    include <ranges>
@@ -374,13 +375,6 @@ namespace ranges
             friend all_enums_view;
             friend my_base;
 
-            // TODO: Merge this alias with that in bind/enum.hpp
-#ifndef ASBIND20_HAS_ENUM_UNDERLYING_TYPE
-            using script_enum_value_type = int;
-#else
-            using script_enum_value_type = AS_NAMESPACE_QUALIFIER asINT64;
-#endif
-
         public:
             using size_type = AS_NAMESPACE_QUALIFIER asUINT;
             using value_type = std::pair<cstring_ref, UnderlyingType>;
@@ -398,7 +392,7 @@ namespace ranges
             value_type get_value(size_type idx) const
             {
                 assert(*this);
-                script_enum_value_type val;
+                compat::script_enum_value_type val;
                 const char* name = m_view->m_ti->GetEnumValueByIndex(idx, &val);
                 return {name, static_cast<UnderlyingType>(val)};
             }

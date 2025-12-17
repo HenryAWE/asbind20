@@ -12,23 +12,14 @@
 #include <concepts>
 #include <string>
 #include "../detail/include_as.hpp"
+#include "../detail/compat.hpp"
 #include "../meta.hpp"
 
 namespace asbind20
 {
-class enum_register_base
-{
-public:
-#ifndef ASBIND20_HAS_ENUM_UNDERLYING_TYPE
-    using script_enum_value_type = int;
-#else
-    using script_enum_value_type = AS_NAMESPACE_QUALIFIER asINT64;
-#endif
-};
-
 template <typename Enum, typename UnderlyingType = int>
 requires(std::is_enum_v<Enum> || std::integral<Enum>)
-class enum_ : public enum_register_base
+class enum_
 {
 public:
 #ifndef ASBIND20_HAS_ENUM_UNDERLYING_TYPE
@@ -69,7 +60,7 @@ public:
         int r = m_engine->RegisterEnumValue(
             m_name.c_str(),
             decl.c_str(),
-            static_cast<script_enum_value_type>(val)
+            static_cast<compat::script_enum_value_type>(val)
         );
         assert(r >= 0);
 
@@ -92,7 +83,7 @@ public:
         r = m_engine->RegisterEnumValue(
             m_name.c_str(),
             meta::fixed_enum_name<Value>().c_str(),
-            static_cast<script_enum_value_type>(Value)
+            static_cast<compat::script_enum_value_type>(Value)
         );
         assert(r >= 0);
 
