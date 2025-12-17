@@ -116,6 +116,50 @@ TEST(Ranges, AllBehavioursWithStdView)
     );
 }
 
+TEST(Ranges, AllFactoriesWithStdView)
+{
+    namespace abv = asbind20::views;
+
+    auto engine = asbind20::make_script_engine();
+    asbind_test::setup_message_callback(engine, true);
+    auto* m = engine->GetModule(
+        "foo", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
+    );
+    m->AddScriptSection(
+        "foo",
+        "class foo{};"
+    );
+    ASSERT_GE(m->Build(), 0);
+
+    auto* ti = m->GetTypeInfoByName("foo");
+    ASSERT_NE(ti, nullptr);
+
+    // Check empty view
+    {
+        auto empty_v = abv::all_factories(nullptr);
+        EXPECT_FALSE(empty_v);
+        EXPECT_EQ(std::ranges::size(empty_v), 0);
+        EXPECT_EQ(empty_v.begin(), empty_v.end());
+    }
+
+    auto v = abv::all_factories(ti);
+    static_assert(std::ranges::sized_range<decltype(v)>);
+    EXPECT_EQ(std::ranges::size(v), ti->GetFactoryCount());
+    EXPECT_EQ(v.end() - v.begin(), ti->GetFactoryCount());
+    EXPECT_EQ(v.begin() + ti->GetFactoryCount(), v.end());
+    EXPECT_LT(v.begin(), v.end());
+    EXPECT_FALSE(std::ranges::empty(v));
+    EXPECT_TRUE(v);
+
+    EXPECT_TRUE(
+        std::ranges::all_of(
+            v,
+            [](AS_NAMESPACE_QUALIFIER asIScriptFunction* f)
+            { return f != nullptr; }
+        )
+    );
+}
+
 TEST(Ranges, AllEnumsWithStdView)
 {
     namespace abv = asbind20::views;

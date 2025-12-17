@@ -300,6 +300,60 @@ namespace ranges
         const AS_NAMESPACE_QUALIFIER asITypeInfo* m_ti;
     };
 
+    class all_factories_view : public detail::view_interface<all_factories_view>
+    {
+    public:
+        class iterator : public detail::indexed_iterator_interface<iterator>
+        {
+            using my_base = detail::indexed_iterator_interface<iterator>;
+            friend all_factories_view;
+            friend my_base;
+
+        public:
+            using value_type = AS_NAMESPACE_QUALIFIER asIScriptFunction*;
+            using size_type = typename my_base::size_type;
+
+        private:
+            iterator(
+                const all_factories_view* v,
+                size_type idx
+            ) noexcept
+                : m_view(v), index(idx)
+            {}
+
+        public:
+            ASBIND20_VIEWS_COMMON_ITER_MEMBERS_IMPL()
+
+        private:
+            const all_factories_view* m_view = nullptr;
+
+            value_type get_value(size_type idx) const
+            {
+                assert(*this);
+                return m_view->m_ti->GetFactoryByIndex(idx);
+            }
+
+        public:
+            size_type index = 0;
+        };
+
+        using size_type = typename iterator::size_type;
+
+        all_factories_view() = delete;
+        all_factories_view(const all_factories_view&) noexcept = default;
+
+        explicit all_factories_view(
+            const AS_NAMESPACE_QUALIFIER asITypeInfo* ti
+        ) noexcept
+            : m_ti(ti)
+        {}
+
+        ASBIND20_VIEWS_TYPEINFO_BASED_VIEW_ITER_IMPL(GetFactoryCount)
+
+    private:
+        const AS_NAMESPACE_QUALIFIER asITypeInfo* m_ti;
+    };
+
     template <typename UnderlyingType = int>
     class all_enums_view : public detail::view_interface<all_enums_view<UnderlyingType>>
     {
@@ -405,6 +459,21 @@ namespace ranges
         } // namespace detail
 
         inline constexpr detail::all_behaviours_t all_behaviours{};
+
+        namespace detail
+        {
+            struct all_factories_t
+            {
+                all_factories_view operator()(
+                    const AS_NAMESPACE_QUALIFIER asITypeInfo* ti
+                ) const
+                {
+                    return all_factories_view(ti);
+                }
+            };
+        } // namespace detail
+
+        inline constexpr detail::all_factories_t all_factories{};
 
         namespace detail
         {
