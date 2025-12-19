@@ -187,6 +187,7 @@ TEST(Ranges, AllEnumValuesWithStdView)
     }
 
     auto v = abv::all_enum_values(ti);
+    EXPECT_EQ(v.get_type_info(), ti);
     static_assert(std::ranges::sized_range<decltype(v)>);
     EXPECT_EQ(std::ranges::size(v), ti->GetEnumValueCount());
     EXPECT_EQ(v.end() - v.begin(), ti->GetEnumValueCount());
@@ -219,7 +220,11 @@ TEST(Ranges, Tokenize)
 
     auto v =
         "class foo{};"sv |
-        abv::tokenize(engine) |
+        abv::tokenize(engine);
+    EXPECT_EQ(v.get_engine(), engine.get());
+
+    auto no_ws_view =
+        v |
         std::views::filter(
             // Skip whitespaces
             [](const auto& token) -> bool
@@ -228,7 +233,7 @@ TEST(Ranges, Tokenize)
 
     std::vector<AS_NAMESPACE_QUALIFIER asETokenClass> tcs;
     std::vector<std::string> tokens;
-    for(auto&& [tc, token] : v)
+    for(auto&& [tc, token] : no_ws_view)
     {
         tcs.push_back(tc);
         tokens.emplace_back(token);

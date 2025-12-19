@@ -124,6 +124,13 @@ public:
         return {};
     }
 
+    [[nodiscard]]
+    auto get_engine() const noexcept
+        -> const AS_NAMESPACE_QUALIFIER asIScriptEngine*
+    {
+        return m_engine;
+    }
+
 private:
     const AS_NAMESPACE_QUALIFIER asIScriptEngine* m_engine;
     std::string_view m_sv;

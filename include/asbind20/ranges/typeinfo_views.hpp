@@ -144,28 +144,34 @@ namespace detail
         return this->m_view != nullptr;                                  \
     }
 
-#define ASBIND20_VIEWS_TYPEINFO_BASED_VIEW_ITER_IMPL(size_getter) \
-    [[nodiscard]]                                                 \
-    size_type size() const                                        \
-    {                                                             \
-        if(this->m_ti == nullptr) [[unlikely]]                    \
-            return 0;                                             \
-        return this->m_ti->size_getter();                         \
-    }                                                             \
-    [[nodiscard]]                                                 \
-    bool empty() const                                            \
-    {                                                             \
-        return size() == 0;                                       \
-    }                                                             \
-    [[nodiscard]]                                                 \
-    iterator begin() const noexcept                               \
-    {                                                             \
-        return {this, 0};                                         \
-    }                                                             \
-    [[nodiscard]]                                                 \
-    iterator end() const noexcept                                 \
-    {                                                             \
-        return {this, this->size()};                              \
+#define ASBIND20_VIEWS_TYPEINFO_BASED_VIEW_COMMON_MEMBERS_IMPL(size_getter) \
+    [[nodiscard]]                                                           \
+    size_type size() const                                                  \
+    {                                                                       \
+        if(this->m_ti == nullptr) [[unlikely]]                              \
+            return 0;                                                       \
+        return this->m_ti->size_getter();                                   \
+    }                                                                       \
+    [[nodiscard]]                                                           \
+    bool empty() const                                                      \
+    {                                                                       \
+        return size() == 0;                                                 \
+    }                                                                       \
+    [[nodiscard]]                                                           \
+    iterator begin() const noexcept                                         \
+    {                                                                       \
+        return {this, 0};                                                   \
+    }                                                                       \
+    [[nodiscard]]                                                           \
+    iterator end() const noexcept                                           \
+    {                                                                       \
+        return {this, this->size()};                                        \
+    }                                                                       \
+    [[nodiscard]]                                                           \
+    auto get_type_info() const noexcept                                     \
+        -> const AS_NAMESPACE_QUALIFIER asITypeInfo*                        \
+    {                                                                       \
+        return this->m_ti;                                                  \
     }
 
 class all_methods_view : public detail::view_interface<all_methods_view>
@@ -217,7 +223,7 @@ public:
         : m_ti(ti), m_get_virtual(get_virtual)
     {}
 
-    ASBIND20_VIEWS_TYPEINFO_BASED_VIEW_ITER_IMPL(GetMethodCount)
+    ASBIND20_VIEWS_TYPEINFO_BASED_VIEW_COMMON_MEMBERS_IMPL(GetMethodCount)
 
 private:
     const AS_NAMESPACE_QUALIFIER asITypeInfo* m_ti;
@@ -276,7 +282,7 @@ public:
         : m_ti(ti)
     {}
 
-    ASBIND20_VIEWS_TYPEINFO_BASED_VIEW_ITER_IMPL(GetBehaviourCount)
+    ASBIND20_VIEWS_TYPEINFO_BASED_VIEW_COMMON_MEMBERS_IMPL(GetBehaviourCount)
 
 private:
     const AS_NAMESPACE_QUALIFIER asITypeInfo* m_ti;
@@ -330,7 +336,7 @@ public:
         : m_ti(ti)
     {}
 
-    ASBIND20_VIEWS_TYPEINFO_BASED_VIEW_ITER_IMPL(GetFactoryCount)
+    ASBIND20_VIEWS_TYPEINFO_BASED_VIEW_COMMON_MEMBERS_IMPL(GetFactoryCount)
 
 private:
     const AS_NAMESPACE_QUALIFIER asITypeInfo* m_ti;
@@ -394,14 +400,14 @@ public:
         : m_ti(ti)
     {}
 
-    ASBIND20_VIEWS_TYPEINFO_BASED_VIEW_ITER_IMPL(GetEnumValueCount)
+    ASBIND20_VIEWS_TYPEINFO_BASED_VIEW_COMMON_MEMBERS_IMPL(GetEnumValueCount)
 
 private:
     const AS_NAMESPACE_QUALIFIER asITypeInfo* m_ti;
 };
 
 #undef ASBIND20_VIEWS_COMMON_ITER_MEMBERS_IMPL
-#undef ASBIND20_VIEWS_TYPEINFO_BASED_VIEW_ITER_IMPL
+#undef ASBIND20_VIEWS_TYPEINFO_BASED_VIEW_COMMON_MEMBERS_IMPL
 
 namespace views
 {
