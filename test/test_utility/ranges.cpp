@@ -8,7 +8,7 @@
 
 namespace test_utility
 {
-void setup_abc_interface(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void setup_abc_interface(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     asbind20::interface bi(engine, "abc");
 
