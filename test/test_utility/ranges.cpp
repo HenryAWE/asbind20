@@ -213,11 +213,13 @@ TEST(Ranges, AllEnumValuesWithStdView)
 TEST(Ranges, Tokenize)
 {
     namespace abv = asbind20::views;
+    using namespace std::string_view_literals;
 
     auto engine = asbind20::make_script_engine();
 
     auto v =
-        abv::tokenize(engine, "class foo{};") |
+        "class foo{};"sv |
+        abv::tokenize(engine) |
         std::views::filter(
             // Skip whitespaces
             [](const auto& token) -> bool

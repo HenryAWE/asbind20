@@ -142,6 +142,37 @@ namespace views
             {
                 return tokenize_view(engine, code);
             }
+
+            class proxy
+            {
+            public:
+                proxy() = delete;
+                proxy(const proxy&) = default;
+
+                explicit proxy(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine) noexcept
+                    : m_engine(engine)
+                {}
+
+                template <std::ranges::contiguous_range R>
+                requires(std::same_as<std::ranges::range_value_t<R>, char>)
+                friend tokenize_view operator|(R&& lhs, const proxy& rhs)
+                {
+                    return tokenize_view(
+                        rhs.m_engine,
+                        std::string_view(
+                            std::ranges::cdata(lhs), std::ranges::size(lhs)
+                        )
+                    );
+                }
+
+            private:
+                AS_NAMESPACE_QUALIFIER asIScriptEngine* m_engine;
+            };
+
+            proxy operator()(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine) const noexcept
+            {
+                return proxy(engine);
+            }
         };
     } // namespace detail
 
