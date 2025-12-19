@@ -11,7 +11,34 @@ First major update after the initial stable version.
 Update
 ~~~~~~
 
-- MacOS (Apple Clang) support.
+- Official MacOS (Apple Clang) support.
+
+- The library can be compiled with exceptions disabled (``-fno-exceptions`` or ``/EHs-c-``).
+
+  The interfaces depending on exceptions will be redirected to an error handling macro defined by the user.
+  Its default behavior is calling ``std::terminate`` immediately.
+
+- Wrapper of AngelScript memory APIs (``script_allocator``) now can be used in constant evaluation.
+  It will automatically fallback to constexpr allocation under this situation.
+
+- Merge the extension library and core library, dropping parts that is not customizable (see the Breaking Change part below).
+
+  Now, the library is **completely header-only**.
+
+- Add more tools for implementing script debugging functionality.
+- Update I/O module to support formatting script types when ``<format>`` header is available.
+  It also provides tools for quick integration with other formatting library like {fmt}.
+
+Breaking Change
+~~~~~~~~~~~~~~~
+
+- String tools and compressed pair are moved into the namespace ``asbind20::util``.
+- ``as_allocator`` is renamed to ``script_allocator``.
+- **Extension library is removed**.
+
+  Since asbind20 originated from a submodule of personal project, many of extensions were built for private repository.
+  I decide to migrate them to a separated open-source library in the future.
+  Some of the extensions, like string extraction helper and section loader, are merged into the core library.
 
 1.8.0
 -----

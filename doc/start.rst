@@ -36,7 +36,7 @@ However, asbind20 on other platforms, architectures or compiler toolchains suppo
    * - Linux (Ubuntu)
      - x64
      - | GCC 13, 14
-       | Clang* 15**, 18, 19
+       | Clang 15, 18, 19
    * - Linux (Ubuntu)
      - arm64
      - Clang 18
@@ -47,18 +47,18 @@ However, asbind20 on other platforms, architectures or compiler toolchains suppo
      - wasm
      - emsdk 4.0.18
 
-\* Newer Clang toolchains (like Clang 18+) support both libstdc++ and libc++,
-while the older toolchains (like Clang 15) on libstdc++ are not guaranteed to work as expected.
+- The "latest" or "latest-stable" in the above table means the (stable) latest version of compiler toolchain available in CI when asbind20 releases a new stable version.
+  You can check the release date of history version in the `changelog <changelog>`.
 
-\*\* The Clang 15 toolchain only supports features available under C++20.
+- Newer Clang toolchains (like Clang 18+) support both libstdc++ and libc++,
+  while the older toolchains (like Clang 15) on libstdc++ are not guaranteed to work as expected.
 
-Additionally, the Clang 18 toolchain on x64 Linux is also tested for compiling with address sanitizer and ``AS_USE_NAMESPACE`` enabled.
+- Additionally, the Clang 18 toolchain on x64 Linux is tested for compiling with address sanitizer and ``AS_USE_NAMESPACE`` enabled.
 
 .. note::
-  - This library on older compiler toolchains, like GCC 12, still works as expected under most situations,
-    but it might need some workarounds to deal with defects of the compiler, e.g., additional ``typename`` in template-related code.
-    Please use newer compiler toolchains if possible.
-  - The "latest" or "latest-stable" in the above table means the (stable) latest version of compiler toolchain available in CI when asbind20 releases a new stable version.
+  This library on older compiler toolchains, like GCC 12, still works as expected under most situations,
+  but it might need some workarounds to deal with defects of the compiler, e.g., additional ``typename`` in template-related code.
+  Please use newer compiler toolchains if possible.
 
 Integrate into Your Project
 ===========================
@@ -74,29 +74,14 @@ This library will not include the AngelScript library for the second time by det
 1. Copy into Your Project
 -------------------------
 
-The core library of asbind20 is a header-only library.
-You can directly copy all the files under ``include/`` into your project.
-
-Additionally, files under ``container/``, and ``concurrent/`` are optional components.
-You can omit those files if they are unnecessary for your project.
-
-.. note::
-   **About The Extension Library** (``asbind20::ext``)
-
-   The extension part of library (under ``ext/``) is not header-only.
-   If you wish to use this part of library without building asbind20 separately,
-   you need to copy necessary source files as well.
+This a header-only library.
+You can directly copy all the files under ``include/`` into your project,
+then set a correct include directory for your project.
 
 2. Integration Using CMake
---------------------------------
+--------------------------
 
 CMake 3.20 or newer is required.
-
-If you don't want to build the extension library, you can set the CMake option ``asbind_build_ext`` to ``OFF``.
-
-.. code-block:: sh
-
-    cmake -Dasbind_build_ext=OFF # ...
 
 A. Submodule
 ~~~~~~~~~~~~
@@ -141,8 +126,5 @@ You can easily add asbind20 as a dependency of your project.
     target("main")
         -- ... --
         add_packages("asbind20")
-
-The package includes the extension library by default.
-You can set the ``ext`` flag to ``false`` to disable it.
 
 Please check the `official documentation of XMake about adding packages <https://xmake.io/guide/project-configuration/add-packages.html>`_ for more details.
