@@ -7,6 +7,7 @@
 // IWYU pragma: begin_exports
 
 #include "typeinfo_views.hpp"
+#include "tokenize_view.hpp"
 
 // IWYU pragma: end_exports
 

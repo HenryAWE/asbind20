@@ -210,4 +210,43 @@ TEST(Ranges, AllEnumValuesWithStdView)
     );
 }
 
+TEST(Ranges, Tokenize)
+{
+    namespace abv = asbind20::views;
+
+    auto engine = asbind20::make_script_engine();
+
+    auto v =
+        abv::tokenize(engine, "class foo{};") |
+        std::views::filter(
+            // Skip whitespaces
+            [](const auto& token) -> bool
+            { return token.first != AS_NAMESPACE_QUALIFIER asTC_WHITESPACE; }
+        );
+
+    std::vector<AS_NAMESPACE_QUALIFIER asETokenClass> tcs;
+    std::vector<std::string> tokens;
+    for(auto&& [tc, token] : v)
+    {
+        tcs.push_back(tc);
+        tokens.emplace_back(token);
+    }
+
+    EXPECT_EQ(tokens.size(), tcs.size());
+    EXPECT_THAT(
+        tcs,
+        testing::ElementsAre(
+            AS_NAMESPACE_QUALIFIER asTC_KEYWORD,
+            AS_NAMESPACE_QUALIFIER asTC_IDENTIFIER,
+            AS_NAMESPACE_QUALIFIER asTC_KEYWORD,
+            AS_NAMESPACE_QUALIFIER asTC_KEYWORD,
+            AS_NAMESPACE_QUALIFIER asTC_KEYWORD
+        )
+    );
+    EXPECT_THAT(
+        tokens,
+        testing::ElementsAre("class", "foo", "{", "}", ";")
+    );
+}
+
 #endif
