@@ -87,9 +87,3 @@ Contents:
    extra/troubleshooting
    extra/known_issue
    contribute/full_build
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Extension Library
-
-   ext/ext

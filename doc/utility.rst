@@ -58,6 +58,13 @@ IO Helpers
    :members:
    :undoc-members:
 
+Loading Script Sections
+-----------------------
+
+.. doxygenfunction:: asbind20::io::load_string
+.. doxygenfunction:: asbind20::io::load_file
+
+
 Miscellaneous Utilities
 =======================
 
