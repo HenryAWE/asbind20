@@ -8,8 +8,8 @@ This library can automatically convert arguments in C++ for invoking an AngelScr
 
 .. doxygenfunction:: asbind20::script_invoke(asIScriptContext*, asIScriptFunction*, Args&&...)
 
-This example uses the string extension from asbind20 as an example,
-you can change the ``std::string`` to your underlying string type.
+This example assumes the ``std::string`` is registered as script string type.
+You can change the ``std::string`` to your underlying string type.
 
 AngelScript function:
 
@@ -36,7 +36,7 @@ C++ code:
 
     int val = 0;
     auto result = asbind20::script_invoke<std::string>(
-        ctx, func, 1, std::ref(val) // The reference of primitive type needs a wrapper
+        ctx, func, 1, std::ref(val) // The reference needs a wrapper
     );
 
     assert(result.value() == "test");
@@ -50,8 +50,10 @@ The library provides tools for instantiating a script class.
 .. doxygenfunction:: asbind20::instantiate_class
 
 The ``script_invoke`` also supports invoking a method, a.k.a., member function.
-You need to put the script object in front of the script function in arguments,
+You need to put the script object in front of the script function pointer in arguments,
 this is designed to simulate a method call ``obj.method()``.
+
+The type of script object can be either ``(const) void*`` or type that can be cast into ``(const) asIScriptObject*``.
 
 .. doxygenfunction:: asbind20::script_invoke(asIScriptContext*, Object&&, asIScriptFunction*, Args&&...)
 

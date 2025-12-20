@@ -1,5 +1,5 @@
 #include <asbind_test/framework.hpp>
-#include <asbind20/ext/section.hpp>
+#include <asbind20/io/section.hpp>
 
 namespace test_load
 {
@@ -61,7 +61,7 @@ TEST_F(TestLoad, LoadStringView)
 {
     auto engine = get_engine();
 
-    using asbind20::ext::load_string;
+    using asbind20::io::load_string;
 
     auto* m = engine->GetModule(
         "TestLoad", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
@@ -85,7 +85,7 @@ TEST_F(TestLoad, LoadString)
 {
     auto engine = get_engine();
 
-    using asbind20::ext::load_string;
+    using asbind20::io::load_string;
 
     auto* m = engine->GetModule(
         "TestLoad", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
@@ -109,7 +109,7 @@ TEST_F(TestLoad, LoadFile)
 {
     auto engine = get_engine();
 
-    using asbind20::ext::load_file;
+    using asbind20::io::load_file;
 
     auto* m = engine->GetModule(
         "TestLoad", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE

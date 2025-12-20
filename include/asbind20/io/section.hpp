@@ -15,7 +15,7 @@
 #include <sstream>
 #include <asbind20/asbind.hpp>
 
-namespace asbind20::ext
+namespace asbind20::io
 {
 /**
  * @brief Load a string as script section
@@ -71,6 +71,6 @@ inline int load_file(
         code
     );
 }
-} // namespace asbind20::ext
+} // namespace asbind20::io
 
 #endif

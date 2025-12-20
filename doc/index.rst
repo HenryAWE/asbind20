@@ -30,15 +30,6 @@ Core Features
 
 - Container for storing script objects.
 
-Extension Library
------------------
-
-The extension library was developed for personal project at first,
-but most of them are general purpose and can be used in other projects.
-Actually, the whole asbind20 was a submodule of personal project long time ago.
-
-It also contains demonstration for how to register some common types like array or string by asbind20.
-
 License
 -------
 
@@ -96,9 +87,3 @@ Contents:
    extra/troubleshooting
    extra/known_issue
    contribute/full_build
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Extension Library
-
-   ext/ext

@@ -4,9 +4,10 @@ Registering Template Types
 Constructors and Factories
 --------------------------
 
-AngelScript will pass a hidden ``asITypeInfo*`` in the front of arguments to indicating an instantiation fo template.
-It will be automatically handled by asbind with the special binding generators of templated types,
-which are ``template_value_class`` and ``template_ref_class``.
+For template types, AngelScript will pass a hidden ``asITypeInfo*`` in the front of arguments,
+indicating an instantiation fo template.
+It will be automatically handled by the library with the special binding generators of templated types,
+which are named ``template_value_class`` and ``template_ref_class``.
 
 .. note::
    ``asGetTypeTraits<T>()`` cannot determine the type flags for a template value type,
@@ -15,7 +16,7 @@ which are ``template_value_class`` and ``template_ref_class``.
    As a result, you need to manually pass the flags to the binding generator.
    This also applies to the ``.behaviours_by_traits()`` helper.
 
-Here are examples from the extension library.
+Here are examples from the unit tests.
 
 .. code-block:: c++
 

@@ -18,4 +18,4 @@ add_subdirectory(test_operators)
 
 add_subdirectory(test_concurrent)
 
-add_subdirectory(ext)
+add_subdirectory(test_section)
