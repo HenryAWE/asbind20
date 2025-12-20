@@ -211,6 +211,67 @@ TEST(Ranges, AllEnumValuesWithStdView)
     );
 }
 
+#    ifdef ASBIND20_HAS_ENUM_UNDERLYING_TYPE
+
+TEST(Ranges, AllEnumValuesCustomUnderlying)
+{
+    namespace abv = asbind20::views;
+
+    auto engine = asbind20::make_script_engine();
+    asbind_test::setup_message_callback(engine, true);
+
+    enum my_enum : std::int64_t
+    {
+        a = std::numeric_limits<std::int64_t>::min(),
+        b = std::numeric_limits<std::int64_t>::max()
+    };
+
+    asbind20::enum_underlying<my_enum>(engine, "my_enum")
+        .value(my_enum::a, "a")
+        .value(my_enum::b, "b");
+
+    auto* ti = engine->GetTypeInfoByName("my_enum");
+    ASSERT_NE(ti, nullptr);
+
+    // Check empty view
+    {
+        auto empty_v = abv::all_enum_values(nullptr);
+        EXPECT_FALSE(empty_v);
+        EXPECT_EQ(std::ranges::size(empty_v), 0);
+        EXPECT_EQ(empty_v.begin(), empty_v.end());
+    }
+
+    auto v = abv::all_enum_values_of<std::int64_t>(ti);
+    EXPECT_EQ(v.get_type_info(), ti);
+    static_assert(std::ranges::sized_range<decltype(v)>);
+    EXPECT_EQ(std::ranges::size(v), ti->GetEnumValueCount());
+    EXPECT_EQ(v.end() - v.begin(), ti->GetEnumValueCount());
+    EXPECT_EQ(v.begin() + ti->GetEnumValueCount(), v.end());
+    EXPECT_LT(v.begin(), v.end());
+    EXPECT_TRUE(v);
+
+    auto enum_names =
+        v |
+        std::views::keys;
+    EXPECT_THAT(
+        std::vector<std::string>(enum_names.begin(), enum_names.end()),
+        ::testing::ElementsAre("a", "b")
+    );
+    auto enum_values =
+        v |
+        std::views::values;
+    static_assert(std::same_as<std::int64_t, std::ranges::range_value_t<decltype(enum_values)>>);
+    EXPECT_THAT(
+        std::vector(enum_values.begin(), enum_values.end()),
+        ::testing::ElementsAre(
+            std::numeric_limits<std::int64_t>::min(),
+            std::numeric_limits<std::int64_t>::max()
+        )
+    );
+}
+
+#    endif
+
 TEST(Ranges, Tokenize)
 {
     namespace abv = asbind20::views;

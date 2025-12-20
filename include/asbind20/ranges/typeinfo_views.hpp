@@ -342,7 +342,7 @@ private:
     const AS_NAMESPACE_QUALIFIER asITypeInfo* m_ti;
 };
 
-template <typename UnderlyingType = int>
+template <std::integral UnderlyingType = int>
 class all_enum_values_view :
     public detail::view_interface<all_enum_values_view<UnderlyingType>>
 {
@@ -462,17 +462,18 @@ namespace views
         template <typename UnderlyingType>
         struct all_enum_values_of_t
         {
+
             all_enum_values_view<UnderlyingType> operator()(
                 const AS_NAMESPACE_QUALIFIER asITypeInfo* ti
             ) const
             {
-                return all_enum_values_view<int>(ti);
+                return all_enum_values_view<UnderlyingType>(ti);
             }
         };
     } // namespace detail
 
     inline constexpr detail::all_enum_values_of_t<int> all_enum_values{};
-    template <typename Underlying>
+    template <std::integral Underlying>
     inline constexpr detail::all_enum_values_of_t<Underlying> all_enum_values_of{};
 } // namespace views
 } // namespace asbind20::ranges
