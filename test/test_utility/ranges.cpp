@@ -277,6 +277,15 @@ TEST(Ranges, Tokenize)
     namespace abv = asbind20::views;
     using namespace std::string_view_literals;
 
+    {
+        auto guard_null =
+            "class"sv |
+            abv::tokenize(nullptr);
+        EXPECT_FALSE(guard_null);
+        EXPECT_FALSE(guard_null.begin());
+        EXPECT_EQ(guard_null.begin(), guard_null.end());
+    }
+
     auto engine = asbind20::make_script_engine();
 
     auto v =

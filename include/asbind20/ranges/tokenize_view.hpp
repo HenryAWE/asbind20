@@ -31,7 +31,8 @@ public:
         explicit iterator(const tokenize_view* view) noexcept
             : m_view(view)
         {
-            update_cache();
+            if(m_view)
+                update_cache();
         }
 
     public:
@@ -114,9 +115,16 @@ public:
         }
     };
 
+    bool empty() const noexcept
+    {
+        if(m_engine == nullptr) [[unlikely]]
+            return true;
+        return m_sv.empty();
+    }
+
     iterator begin() const noexcept
     {
-        return iterator(this);
+        return iterator(m_engine == nullptr ? nullptr : this);
     }
 
     static sentinel end() noexcept
