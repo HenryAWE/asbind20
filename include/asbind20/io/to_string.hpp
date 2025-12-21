@@ -13,8 +13,7 @@
 #include <string>
 #include "../detail/include_as.hpp"
 
-#ifdef __cpp_lib_format
-#    define ASBIND20_HAS_LIB_FORMAT __cpp_lib_format
+#ifdef ASBIND20_HAS_LIB_FORMAT
 #    include <format>
 #endif
 

@@ -26,6 +26,10 @@
 #    define ASBIND20_STDCALL
 #endif
 
+#ifdef __cpp_lib_format
+#    define ASBIND20_HAS_LIB_FORMAT __cpp_lib_format
+#endif
+
 #if ANGELSCRIPT_VERSION >= 23800
 #    define ASBIND20_HAS_AS_FOREACH
 #endif
