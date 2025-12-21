@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock-matchers.h>
 #include <asbind20/asbind.hpp>
+#include <asbind20/ranges/ranges.hpp>
 
 namespace test_utility
 {
@@ -261,6 +262,12 @@ static void output_info(std::ostream& os)
     os << "ASBIND20_NO_EXCEPTIONS defined" << std::endl;
 #else
     os << "ASBIND20_NO_EXCEPTIONS not defined" << std::endl;
+#endif
+
+#ifdef ASBIND20_HAS_LIB_RANGES
+    os << "ASBIND20_HAS_LIB_RANGES defined: " << __cpp_lib_ranges << 'L' << std::endl;
+#else
+    os << "ASBIND20_HAS_LIB_RANGES not defined" << std::endl;
 #endif
 
 #ifdef AS_USE_NAMESPACE
