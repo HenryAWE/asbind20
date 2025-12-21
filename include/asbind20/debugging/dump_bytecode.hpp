@@ -35,7 +35,12 @@ std::pair<OutputIt, int> dump_single_bytecode(
     if(!bc) [[unlikely]]
         return {std::move(out), 0};
 
-    const auto c = *reinterpret_cast<const AS_NAMESPACE_QUALIFIER asBYTE*>(bc);
+#ifdef AS_USE_NAMESPACE
+    // Workaround for macros
+    using namespace AngelScript;
+#endif
+
+    const auto c = *reinterpret_cast<const asBYTE*>(bc);
     auto& info = asBCInfo[c];
 
     std::string_view name = info.name;
@@ -103,7 +108,7 @@ std::pair<OutputIt, int> dump_single_bytecode(
                 "{:<8s} v{}, {:#x}",
                 name,
                 asBC_WORDARG0(bc),
-                static_cast<AS_NAMESPACE_QUALIFIER asBYTE>(asBC_DWORDARG(bc))
+                static_cast<asBYTE>(asBC_DWORDARG(bc))
             );
         }
         else if(c == asBC_SetV2)
@@ -113,7 +118,7 @@ std::pair<OutputIt, int> dump_single_bytecode(
                 "{:<8s} v{}, {:#x}",
                 name,
                 asBC_WORDARG0(bc),
-                static_cast<AS_NAMESPACE_QUALIFIER asWORD>(asBC_DWORDARG(bc))
+                static_cast<asWORD>(asBC_DWORDARG(bc))
             );
         }
         else if(c == asBC_SetV4)
@@ -123,7 +128,7 @@ std::pair<OutputIt, int> dump_single_bytecode(
                 "{:<8s} v{}, {:#x} (i:{}, f:{})",
                 name,
                 asBC_WORDARG0(bc),
-                static_cast<AS_NAMESPACE_QUALIFIER asUINT>(asBC_DWORDARG(bc)),
+                static_cast<asUINT>(asBC_DWORDARG(bc)),
                 asBC_INTARG(bc),
                 asBC_FLOATARG(bc)
             );
@@ -141,7 +146,7 @@ std::pair<OutputIt, int> dump_single_bytecode(
                 "{:<8s} v{}, {}",
                 name,
                 asBC_WORDARG0(bc),
-                static_cast<AS_NAMESPACE_QUALIFIER asUINT>(asBC_DWORDARG(bc))
+                static_cast<asUINT>(asBC_DWORDARG(bc))
             );
         }
         break;
