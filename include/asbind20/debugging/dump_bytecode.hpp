@@ -6,6 +6,7 @@
 #ifdef ASBIND20_HAS_LIB_FORMAT
 #    include <format>
 #endif
+#include <iterator>
 #include <iostream>
 #include "../detail/include_as.hpp"
 
@@ -35,10 +36,11 @@ std::pair<OutputIt, int> dump_single_bytecode(
     if(!bc) [[unlikely]]
         return {std::move(out), 0};
 
-#ifdef AS_USE_NAMESPACE
+#    ifdef AS_USE_NAMESPACE
     // Workaround for macros
+    // See: https://github.com/anjo76/angelscript/issues/36
     using namespace AngelScript;
-#endif
+#    endif
 
     const auto c = *reinterpret_cast<const asBYTE*>(bc);
     auto& info = asBCInfo[c];
