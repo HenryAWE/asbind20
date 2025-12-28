@@ -9,10 +9,9 @@
 
 #pragma once
 
-#include <version>
 #include <string>
+#include "../detail/config.hpp"
 #include "../detail/include_as.hpp"
-
 #ifdef ASBIND20_HAS_LIB_FORMAT
 #    include <format>
 #endif
@@ -116,6 +115,22 @@ namespace detail
             return nullptr;
         }
     }
+
+    constexpr const char* msg_type_to_cstr(AS_NAMESPACE_QUALIFIER asEMsgType msg_type) noexcept
+    {
+        switch(msg_type)
+        {
+        case AS_NAMESPACE_QUALIFIER asMSGTYPE_ERROR:
+            return "asMSGTYPE_ERROR";
+        case AS_NAMESPACE_QUALIFIER asMSGTYPE_WARNING:
+            return "asMSGTYPE_WARNING";
+        case AS_NAMESPACE_QUALIFIER asMSGTYPE_INFORMATION:
+            return "asMSGTYPE_INFORMATION";
+
+        [[unlikely]] default:
+            return nullptr;
+        }
+    }
 } // namespace detail
 
 /**
@@ -163,6 +178,23 @@ inline std::string to_string(AS_NAMESPACE_QUALIFIER asERetCodes ret)
 #else
         return "asERetCodes(" +
                std::to_string(static_cast<int>(ret)) +
+               ')';
+#endif
+    }
+}
+
+inline std::string to_string(AS_NAMESPACE_QUALIFIER asEMsgType msg_type)
+{
+    const char* cstr = detail::msg_type_to_cstr(msg_type);
+    if(cstr) [[likely]]
+        return cstr;
+    else
+    {
+#ifdef ASBIND20_HAS_LIB_FORMAT
+        return std::format("asEMsgType({})", static_cast<int>(msg_type));
+#else
+        return "asEMsgType(" +
+               std::to_string(static_cast<int>(msg_type)) +
                ')';
 #endif
     }
