@@ -51,7 +51,7 @@ public:
     }
 
     [[nodiscard]]
-    constexpr bool has_opEquals() const noexcept
+    bool has_opEquals() const noexcept
     {
         return static_cast<bool>(m_opEquals);
     }
@@ -63,7 +63,7 @@ public:
     }
 
     [[nodiscard]]
-    constexpr bool has_opCmp() const noexcept
+    bool has_opCmp() const noexcept
     {
         return static_cast<bool>(m_opCmp);
     }
@@ -134,13 +134,11 @@ class get_comparator_result
     );
 
 public:
-    using error_type = AS_NAMESPACE_QUALIFIER asERetCodes;
-
     get_comparator_result(const get_comparator_result&) = default;
 
     struct status
     {
-        using error_type = error_type;
+        using error_type = AS_NAMESPACE_QUALIFIER asERetCodes;
 
         error_type opEquals = AS_NAMESPACE_QUALIFIER asNO_FUNCTION;
         error_type opCmp = AS_NAMESPACE_QUALIFIER asNO_FUNCTION;
@@ -156,6 +154,8 @@ public:
             return good();
         }
     };
+
+    using error_type = status::error_type;
 
     [[nodiscard]]
     status get_status() const noexcept
