@@ -2449,6 +2449,56 @@ public:
         return derived();
     }
 
+    Derived& property(cstring_ref decl, std::size_t off)
+    {
+        this->property_impl(decl, off);
+        return derived();
+    }
+
+    template <typename MemberPointer>
+    requires(std::is_member_object_pointer_v<MemberPointer>)
+    Derived& property(cstring_ref decl, MemberPointer mp)
+    {
+        this->template property_impl<MemberPointer>(decl, mp);
+        return derived();
+    }
+
+    Derived& property(
+        cstring_ref decl, std::size_t off, composite_wrapper comp
+    )
+    {
+        this->comp_property_impl(decl, off, comp.get_offset());
+        return derived();
+    }
+
+    template <typename MemberPointer>
+    requires(std::is_member_object_pointer_v<MemberPointer>)
+    Derived& property(cstring_ref decl, MemberPointer mp, composite_wrapper comp)
+    {
+        this->comp_property_impl(decl, mp, comp.get_offset());
+        return derived();
+    }
+
+    Derived& funcdef(cstring_ref decl)
+    {
+        this->member_funcdef_impl(decl);
+        return derived();
+    }
+
+    Derived& as_string(
+        AS_NAMESPACE_QUALIFIER asIStringFactory* str_factory
+    )
+    {
+        this->as_string_impl(this->m_name.c_str(), str_factory);
+        return derived();
+    }
+
+    template <detail::auto_register<Derived> AutoRegister>
+    Derived& use(AutoRegister&& ar)
+    {
+        ar(derived());
+        return derived();
+    }
 
 private:
     Derived& derived() noexcept
@@ -3746,65 +3796,6 @@ public:
     ASBIND20_VALUE_CLASS_BEH(release_refs, asBEHAVE_RELEASEREFS)
 
 #undef ASBIND20_VALUE_CLASS_BEH
-
-    using my_base::method;
-
-    template <detail::auto_register<basic_value_class> AutoRegister>
-    basic_value_class& use(AutoRegister&& ar)
-    {
-        ar(*this);
-
-        return *this;
-    }
-
-    basic_value_class& property(cstring_ref decl, std::size_t off)
-    {
-        this->property_impl(decl, off);
-
-        return *this;
-    }
-
-    template <typename MemberPointer>
-    requires(std::is_member_object_pointer_v<MemberPointer>)
-    basic_value_class& property(cstring_ref decl, MemberPointer mp)
-    {
-        this->template property_impl<MemberPointer>(decl, mp);
-
-        return *this;
-    }
-
-    basic_value_class& property(
-        cstring_ref decl, std::size_t off, composite_wrapper comp
-    )
-    {
-        this->comp_property_impl(decl, off, comp.get_offset());
-
-        return *this;
-    }
-
-    template <typename MemberPointer>
-    requires(std::is_member_object_pointer_v<MemberPointer>)
-    basic_value_class& property(cstring_ref decl, MemberPointer mp, composite_wrapper comp)
-    {
-        this->comp_property_impl(decl, mp, comp.get_offset());
-
-        return *this;
-    }
-
-    basic_value_class& funcdef(std::string_view decl)
-    {
-        this->member_funcdef_impl(decl);
-
-        return *this;
-    }
-
-    basic_value_class& as_string(
-        AS_NAMESPACE_QUALIFIER asIStringFactory* str_factory
-    )
-    {
-        this->as_string_impl(m_name.c_str(), str_factory);
-        return *this;
-    }
 };
 
 template <typename Class, bool ForceGeneric = false>
@@ -3873,17 +3864,6 @@ public:
     basic_ref_class(const basic_ref_class&) = default;
 
     basic_ref_class& operator=(const basic_ref_class&) = delete;
-
-public:
-    using my_base::method;
-
-    template <detail::auto_register<basic_ref_class> AutoRegister>
-    basic_ref_class& use(AutoRegister&& ar)
-    {
-        ar(*this);
-
-        return *this;
-    }
 
 private:
     std::string decl_factory(std::string_view params) const
@@ -5289,55 +5269,6 @@ public:
     ASBIND20_REFERENCE_CLASS_BEH(release_refs, asBEHAVE_RELEASEREFS)
 
 #undef ASBIND20_REFERENCE_CLASS_BEH
-
-    basic_ref_class& property(cstring_ref decl, std::size_t off)
-    {
-        this->property_impl(decl, off);
-
-        return *this;
-    }
-
-    template <typename MemberPointer>
-    requires(std::is_member_object_pointer_v<MemberPointer>)
-    basic_ref_class& property(cstring_ref decl, MemberPointer mp)
-    {
-        this->template property_impl<MemberPointer>(decl, mp);
-
-        return *this;
-    }
-
-    basic_ref_class& property(
-        cstring_ref decl, std::size_t off, composite_wrapper comp
-    )
-    {
-        this->comp_property_impl(decl, off, comp.get_offset());
-
-        return *this;
-    }
-
-    template <typename MemberPointer>
-    requires(std::is_member_object_pointer_v<MemberPointer>)
-    basic_ref_class& property(cstring_ref decl, MemberPointer mp, composite_wrapper comp)
-    {
-        this->comp_property_impl(decl, mp, comp.get_offset());
-
-        return *this;
-    }
-
-    basic_ref_class& funcdef(cstring_ref decl)
-    {
-        this->member_funcdef_impl(decl);
-
-        return *this;
-    }
-
-    basic_ref_class& as_string(
-        AS_NAMESPACE_QUALIFIER asIStringFactory* str_factory
-    )
-    {
-        this->as_string_impl(m_name.c_str(), str_factory);
-        return *this;
-    }
 
     basic_ref_class& as_array() requires(Template)
     {
