@@ -316,13 +316,13 @@ namespace detail
 } // namespace detail
 
 template <bool ForceGeneric>
-class register_helper_base
+class binding_generator_base
 {
 public:
-    register_helper_base() = delete;
-    register_helper_base(const register_helper_base&) noexcept = default;
+    binding_generator_base() = delete;
+    binding_generator_base(const binding_generator_base&) noexcept = default;
 
-    register_helper_base(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+    binding_generator_base(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         : m_engine(engine)
     {
         assert(engine != nullptr);

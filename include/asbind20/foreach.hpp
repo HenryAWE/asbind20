@@ -192,7 +192,7 @@ namespace detail
     {
     public:
         template <typename RegisterHelper>
-        requires(std::derived_from<RegisterHelper, register_helper_base<true>> || std::derived_from<RegisterHelper, register_helper_base<false>>)
+        requires(std::derived_from<RegisterHelper, binding_generator_base<true>> || std::derived_from<RegisterHelper, binding_generator_base<false>>)
         auto operator()(RegisterHelper& helper) const
         {
             return foreach_impl<RegisterHelper, Const>(helper);

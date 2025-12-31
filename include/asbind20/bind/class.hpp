@@ -1118,9 +1118,9 @@ namespace detail
 } // namespace detail
 
 template <bool ForceGeneric>
-class class_register_helper_base : public register_helper_base<ForceGeneric>
+class class_binding_generator_base : public binding_generator_base<ForceGeneric>
 {
-    using my_base = register_helper_base<ForceGeneric>;
+    using my_base = binding_generator_base<ForceGeneric>;
 
 public:
     [[nodiscard]]
@@ -1154,10 +1154,10 @@ protected:
     std::string m_name;
     int m_this_type_id = 0; // asTYPEID_VOID
 
-    class_register_helper_base() = delete;
-    class_register_helper_base(const class_register_helper_base&) = default;
+    class_binding_generator_base() = delete;
+    class_binding_generator_base(const class_binding_generator_base&) = default;
 
-    class_register_helper_base(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, std::string name)
+    class_binding_generator_base(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, std::string name)
         : my_base(engine), m_name(std::move(name)) {}
 
     template <typename Class>
@@ -1644,52 +1644,74 @@ private:
     }
 };
 
-#define ASBIND20_CLASS_TEMPLATE_CALLBACK(register_type)                                      \
-    register_type& template_callback(                                                        \
-        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn                                               \
-    ) requires(Template)                                                                     \
-    {                                                                                        \
-        this->behaviour_impl(                                                                \
-            AS_NAMESPACE_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK,                               \
-            "bool f(int&in,bool&out)",                                                       \
-            gfn,                                                                             \
-            generic_call_conv                                                                \
-        );                                                                                   \
-        return *this;                                                                        \
-    }                                                                                        \
-    template <native_function Fn>                                                            \
-    register_type& template_callback(Fn&& fn) requires(Template && !ForceGeneric)            \
-    {                                                                                        \
-        this->behaviour_impl(                                                                \
-            AS_NAMESPACE_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK,                               \
-            "bool f(int&in,bool&out)",                                                       \
-            fn,                                                                              \
-            call_conv<detail::deduce_function_callconv<std::decay_t<Fn>>()>                  \
-        );                                                                                   \
-        return *this;                                                                        \
-    }                                                                                        \
-    template <auto Callback>                                                                 \
-    register_type& template_callback(use_generic_t, fp_wrapper<Callback>) requires(Template) \
-    {                                                                                        \
-        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =                             \
-            detail::deduce_beh_callconv<                                                     \
-                AS_NAMESPACE_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK,                           \
-                Class,                                                                       \
-                std::decay_t<decltype(Callback)>>();                                         \
-        template_callback(                                                                   \
-            detail::to_asGENFUNC_t(fp<Callback>, call_conv<conv>)                            \
-        );                                                                                   \
-        return *this;                                                                        \
-    }                                                                                        \
-    template <auto Callback>                                                                 \
-    register_type& template_callback(fp_wrapper<Callback>) requires(Template)                \
-    {                                                                                        \
-        if constexpr(ForceGeneric)                                                           \
-            template_callback(use_generic, fp<Callback>);                                    \
-        else                                                                                 \
-            template_callback(Callback);                                                     \
-        return *this;                                                                        \
+/**
+ * @brief CRTP interface for binding generators of classes
+ */
+template <typename Derived, typename Class, bool Template, bool ForceGeneric>
+class class_binding_generator_interface :
+    public class_binding_generator_base<ForceGeneric>
+{
+    using my_base = class_binding_generator_base<ForceGeneric>;
+
+protected:
+    using my_base::my_base;
+
+public:
+    Derived& template_callback(
+        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn
+    ) requires(Template)
+    {
+        this->behaviour_impl(
+            AS_NAMESPACE_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK,
+            "bool f(int&in,bool&out)",
+            gfn,
+            generic_call_conv
+        );
+        return derived();
     }
+
+    template <native_function Fn>
+    Derived& template_callback(Fn&& fn) requires(Template && !ForceGeneric)
+    {
+        this->behaviour_impl(
+            AS_NAMESPACE_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK,
+            "bool f(int&in,bool&out)",
+            fn,
+            call_conv<detail::deduce_function_callconv<std::decay_t<Fn>>()>
+        );
+        return derived();
+    }
+
+    template <auto Callback>
+    Derived& template_callback(use_generic_t, fp_wrapper<Callback>) requires(Template)
+    {
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
+            detail::deduce_beh_callconv<
+                AS_NAMESPACE_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK,
+                Class,
+                std::decay_t<decltype(Callback)>>();
+        template_callback(
+            detail::to_asGENFUNC_t(fp<Callback>, call_conv<conv>)
+        );
+        return derived();
+    }
+
+    template <auto Callback>
+    Derived& template_callback(fp_wrapper<Callback>) requires(Template)
+    {
+        if constexpr(ForceGeneric)
+            template_callback(use_generic, fp<Callback>);
+        else
+            template_callback(Callback);
+        return derived();
+    }
+
+private:
+    Derived& derived() noexcept
+    {
+        return static_cast<Derived&>(*this);
+    }
+};
 
 #define ASBIND20_CLASS_METHOD(register_type)                                \
     template <                                                              \
@@ -2376,9 +2398,18 @@ private:
  * @tparam ForceGeneric Force all registered methods and behaviors to use the generic calling convention
  */
 template <typename Class, bool Template = false, bool ForceGeneric = false>
-class basic_value_class final : public class_register_helper_base<ForceGeneric>
+class basic_value_class final :
+    public class_binding_generator_interface<
+        basic_value_class<Class, Template, ForceGeneric>,
+        Class,
+        Template,
+        ForceGeneric>
 {
-    using my_base = class_register_helper_base<ForceGeneric>;
+    using my_base = class_binding_generator_interface<
+        basic_value_class<Class, Template, ForceGeneric>,
+        Class,
+        Template,
+        ForceGeneric>;
 
     using my_base::m_engine;
     using my_base::m_name;
@@ -3680,8 +3711,6 @@ public:
 
 #undef ASBIND20_VALUE_CLASS_BEH
 
-    ASBIND20_CLASS_TEMPLATE_CALLBACK(basic_value_class)
-
     ASBIND20_CLASS_METHOD(basic_value_class)
     ASBIND20_CLASS_METHOD_AUXILIARY(basic_value_class)
     ASBIND20_CLASS_WRAPPED_METHOD(basic_value_class)
@@ -3777,9 +3806,18 @@ template <typename Class, bool ForceGeneric = false>
 using template_value_class = basic_value_class<Class, true, ForceGeneric>;
 
 template <typename Class, bool Template = false, bool ForceGeneric = false>
-class basic_ref_class : public class_register_helper_base<ForceGeneric>
+class basic_ref_class :
+    public class_binding_generator_interface<
+        basic_ref_class<Class, Template, ForceGeneric>,
+        Class,
+        Template,
+        ForceGeneric>
 {
-    using my_base = class_register_helper_base<ForceGeneric>;
+    using my_base = class_binding_generator_interface<
+        basic_ref_class<Class, Template, ForceGeneric>,
+        Class,
+        Template,
+        ForceGeneric>;
 
     using my_base::m_engine;
     using my_base::m_name;
@@ -3861,8 +3899,6 @@ private:
     }
 
 public:
-    ASBIND20_CLASS_TEMPLATE_CALLBACK(basic_ref_class)
-
     ASBIND20_CLASS_METHOD(basic_ref_class)
     ASBIND20_CLASS_METHOD_AUXILIARY(basic_ref_class)
     ASBIND20_CLASS_WRAPPED_METHOD(basic_ref_class)
@@ -5365,8 +5401,6 @@ public:
         return *this;
     }
 };
-
-#undef ASBIND20_CLASS_TEMPLATE_CALLBACK
 
 #undef ASBIND20_CLASS_METHOD
 #undef ASBIND20_CLASS_METHOD_AUXILIARY
