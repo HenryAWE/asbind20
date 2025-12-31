@@ -2500,6 +2500,70 @@ public:
         return derived();
     }
 
+    template <typename To>
+    Derived& opConv(use_generic_t, std::string_view to_decl)
+    {
+        this->template opConv_impl_generic<Class, To>(to_decl, false);
+        return derived();
+    }
+
+    template <typename To>
+    Derived& opConv(std::string_view to_decl)
+    {
+        if constexpr(ForceGeneric)
+            opConv<To>(use_generic, to_decl);
+        else
+        {
+            this->template opConv_impl_native<Class, To>(to_decl, false);
+        }
+        return derived();
+    }
+
+    template <typename To>
+    Derived& opImplConv(use_generic_t, std::string_view to_decl)
+    {
+        this->template opConv_impl_generic<Class, To>(to_decl, true);
+        return derived();
+    }
+
+    template <typename To>
+    Derived& opImplConv(std::string_view to_decl)
+    {
+        if constexpr(ForceGeneric)
+            opImplConv<To>(use_generic, to_decl);
+        else
+            this->template opConv_impl_native<Class, To>(to_decl, true);
+        return derived();
+    }
+
+    template <has_static_name To>
+    Derived& opConv(use_generic_t)
+    {
+        opConv<To>(use_generic, name_of<To>());
+        return derived();
+    }
+
+    template <has_static_name To>
+    Derived& opConv()
+    {
+        opConv<To>(name_of<To>());
+        return derived();
+    }
+
+    template <has_static_name To>
+    Derived& opImplConv(use_generic_t)
+    {
+        opImplConv<To>(use_generic, name_of<To>());
+        return derived();
+    }
+
+    template <has_static_name To>
+    Derived& opImplConv()
+    {
+        opImplConv<To>(name_of<To>());
+        return derived();
+    }
+
 private:
     Derived& derived() noexcept
     {
@@ -3635,79 +3699,8 @@ public:
 
 #undef ASBIND20_VALUE_CLASS_OP
 
-    template <typename To>
-    basic_value_class& opConv(use_generic_t, std::string_view to_decl)
-    {
-        this->template opConv_impl_generic<Class, To>(to_decl, false);
-
-        return *this;
-    }
-
-    template <typename To>
-    basic_value_class& opConv(std::string_view to_decl)
-    {
-        if constexpr(ForceGeneric)
-            opConv<To>(use_generic, to_decl);
-        else
-        {
-            this->template opConv_impl_native<Class, To>(to_decl, false);
-        }
-
-        return *this;
-    }
-
-    template <typename To>
-    basic_value_class& opImplConv(use_generic_t, std::string_view to_decl)
-    {
-        this->template opConv_impl_generic<Class, To>(to_decl, true);
-
-        return *this;
-    }
-
-    template <typename To>
-    basic_value_class& opImplConv(std::string_view to_decl)
-    {
-        if constexpr(ForceGeneric)
-            opImplConv<To>(use_generic, to_decl);
-        else
-        {
-            this->template opConv_impl_native<Class, To>(to_decl, true);
-        }
-
-        return *this;
-    }
-
-    template <has_static_name To>
-    basic_value_class& opConv(use_generic_t)
-    {
-        opConv<To>(use_generic, name_of<To>());
-
-        return *this;
-    }
-
-    template <has_static_name To>
-    basic_value_class& opConv()
-    {
-        opConv<To>(name_of<To>());
-
-        return *this;
-    }
-
-    template <has_static_name To>
-    basic_value_class& opImplConv(use_generic_t)
-    {
-        opImplConv<To>(use_generic, name_of<To>());
-
-        return *this;
-    }
-
-    template <has_static_name To>
-    basic_value_class& opImplConv()
-    {
-        opImplConv<To>(name_of<To>());
-
-        return *this;
-    }
+    using my_base::opConv;
+    using my_base::opImplConv;
 
     template <typename OtherClass, bool OtherUseGeneric>
     requires(!std::same_as<Class, OtherClass>)
@@ -5140,80 +5133,6 @@ public:
     // TODO: Operators returning by value for reference type
 
 #undef ASBIND20_REFERENCE_CLASS_OP
-
-    template <typename To>
-    basic_ref_class& opConv(use_generic_t, std::string_view to_decl)
-    {
-        this->template opConv_impl_generic<Class, To>(to_decl, false);
-
-        return *this;
-    }
-
-    template <typename To>
-    basic_ref_class& opConv(std::string_view to_decl)
-    {
-        if constexpr(ForceGeneric)
-            opConv<To>(use_generic, to_decl);
-        else
-        {
-            this->template opConv_impl_native<Class, To>(to_decl, false);
-        }
-
-        return *this;
-    }
-
-    template <typename To>
-    basic_ref_class& opImplConv(use_generic_t, std::string_view to_decl)
-    {
-        this->template opConv_impl_generic<Class, To>(to_decl, true);
-
-        return *this;
-    }
-
-    template <typename To>
-    basic_ref_class& opImplConv(std::string_view to_decl)
-    {
-        if constexpr(ForceGeneric)
-            opImplConv<To>(use_generic, to_decl);
-        else
-        {
-            this->template opConv_impl_native<Class, To>(to_decl, true);
-        }
-
-        return *this;
-    }
-
-    template <has_static_name To>
-    basic_ref_class& opConv(use_generic_t)
-    {
-        opConv<To>(use_generic, name_of<To>());
-
-        return *this;
-    }
-
-    template <has_static_name To>
-    basic_ref_class& opConv()
-    {
-        opConv<To>(name_of<To>());
-
-        return *this;
-    }
-
-    template <has_static_name To>
-    basic_ref_class& opImplConv(use_generic_t)
-    {
-        opImplConv<To>(use_generic, name_of<To>());
-
-        return *this;
-    }
-
-    template <has_static_name To>
-    basic_ref_class& opImplConv()
-    {
-        opImplConv<To>(name_of<To>());
-
-        return *this;
-    }
 
 #define ASBIND20_REFERENCE_CLASS_BEH(func_name, as_beh)                                  \
     template <native_function Fn>                                                        \
