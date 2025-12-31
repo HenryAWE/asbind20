@@ -28,6 +28,38 @@ struct use_explicit_t
 
 constexpr inline use_explicit_t use_explicit{};
 
+template <bool First>
+struct obj_arg_loc_t;
+
+// Object first
+template <>
+struct obj_arg_loc_t<true>
+{
+    static consteval auto get_conv(bool is_thiscall) noexcept
+        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    {
+        return is_thiscall ?
+                   AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJFIRST :
+                   AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST;
+    }
+};
+
+// Object last
+template <>
+struct obj_arg_loc_t<false>
+{
+    static consteval auto get_conv(bool is_thiscall) noexcept
+        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    {
+        return is_thiscall ?
+                   AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJLAST :
+                   AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
+    }
+};
+
+inline constexpr obj_arg_loc_t<true> objfirst{};
+inline constexpr obj_arg_loc_t<false> objlast{};
+
 namespace detail
 {
     template <typename Func>
