@@ -1294,70 +1294,70 @@ protected:
         register_comp_property(decl, member_offset(mp), member_offset(comp_mp));
     }
 
-#define ASBIND20_IMP_REGISTER_UNARY_PREFIX_OP(as_op_sig, cpp_op, decl_arg_list, return_type, const_) \
-    std::string decl_##as_op_sig() const                                                             \
-    {                                                                                                \
-        return string_concat decl_arg_list;                                                          \
-    }                                                                                                \
-    template <typename Class>                                                                        \
-    void register_##as_op_sig##_generic()                                                            \
-    {                                                                                                \
-        register_method(                                                                             \
-            decl_##as_op_sig(),                                                                      \
-            +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void                                \
-            {                                                                                        \
-                using this_arg_t = std::conditional_t<(#const_[0] != '\0'), const Class&, Class&>;   \
-                set_generic_return<return_type>(                                                     \
-                    gen,                                                                             \
-                    cpp_op get_generic_object<this_arg_t>(gen)                                       \
-                );                                                                                   \
-            },                                                                                       \
-            call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>                                         \
-        );                                                                                           \
-    }                                                                                                \
-    template <typename Class>                                                                        \
-    void register_##as_op_sig##_native()                                                             \
-    {                                                                                                \
-        static constexpr bool has_member_func = requires() {                                         \
-            static_cast<return_type (Class::*)() const_>(&Class::operator cpp_op);                   \
-        };                                                                                           \
-        if constexpr(has_member_func)                                                                \
-        {                                                                                            \
-            register_method(                                                                         \
-                decl_##as_op_sig(),                                                                  \
-                static_cast<return_type (Class::*)() const_>(&Class::operator cpp_op),               \
-                call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>                                    \
-            );                                                                                       \
-        }                                                                                            \
-        else                                                                                         \
-        {                                                                                            \
-            using this_arg_t = std::conditional_t<(#const_[0] != '\0'), const Class&, Class&>;       \
-            this->register_method(                                                                   \
-                decl_##as_op_sig(),                                                                  \
-                +[](this_arg_t this_) -> return_type                                                 \
-                {                                                                                    \
-                    return cpp_op this_;                                                             \
-                },                                                                                   \
-                call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>                              \
-            );                                                                                       \
-        }                                                                                            \
+#define ASBIND20_IMPL_REGISTER_UNARY_PREFIX_OP(as_op_sig, cpp_op, decl_arg_list, return_type, const_) \
+    std::string decl_##as_op_sig() const                                                              \
+    {                                                                                                 \
+        return string_concat decl_arg_list;                                                           \
+    }                                                                                                 \
+    template <typename Class>                                                                         \
+    void register_##as_op_sig##_generic()                                                             \
+    {                                                                                                 \
+        register_method(                                                                              \
+            decl_##as_op_sig(),                                                                       \
+            +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void                                 \
+            {                                                                                         \
+                using this_arg_t = std::conditional_t<(#const_[0] != '\0'), const Class&, Class&>;    \
+                set_generic_return<return_type>(                                                      \
+                    gen,                                                                              \
+                    cpp_op get_generic_object<this_arg_t>(gen)                                        \
+                );                                                                                    \
+            },                                                                                        \
+            call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>                                          \
+        );                                                                                            \
+    }                                                                                                 \
+    template <typename Class>                                                                         \
+    void register_##as_op_sig##_native()                                                              \
+    {                                                                                                 \
+        static constexpr bool has_member_func = requires() {                                          \
+            static_cast<return_type (Class::*)() const_>(&Class::operator cpp_op);                    \
+        };                                                                                            \
+        if constexpr(has_member_func)                                                                 \
+        {                                                                                             \
+            register_method(                                                                          \
+                decl_##as_op_sig(),                                                                   \
+                static_cast<return_type (Class::*)() const_>(&Class::operator cpp_op),                \
+                call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>                                     \
+            );                                                                                        \
+        }                                                                                             \
+        else                                                                                          \
+        {                                                                                             \
+            using this_arg_t = std::conditional_t<(#const_[0] != '\0'), const Class&, Class&>;        \
+            this->register_method(                                                                    \
+                decl_##as_op_sig(),                                                                   \
+                +[](this_arg_t this_) -> return_type                                                  \
+                {                                                                                     \
+                    return cpp_op this_;                                                              \
+                },                                                                                    \
+                call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>                               \
+            );                                                                                        \
+        }                                                                                             \
     }
 
-    ASBIND20_IMP_REGISTER_UNARY_PREFIX_OP(
+    ASBIND20_IMPL_REGISTER_UNARY_PREFIX_OP(
         opNeg, -, (m_name, " opNeg() const"), Class, const
     )
 
-    ASBIND20_IMP_REGISTER_UNARY_PREFIX_OP(
+    ASBIND20_IMPL_REGISTER_UNARY_PREFIX_OP(
         opPreInc, ++, (m_name, "& opPreInc()"), Class&,
     )
-    ASBIND20_IMP_REGISTER_UNARY_PREFIX_OP(
+    ASBIND20_IMPL_REGISTER_UNARY_PREFIX_OP(
         opPreDec, --, (m_name, "& opPreDec()"), Class&,
     )
 
 #undef ASBIND20_CLASS_REGISTER_UNARY_PREFIX_OP
 
     // Only for operator++/--(int)
-#define ASBIND20_IMP_REGISTER_UNARY_SUFFIX_OP(as_op_sig, cpp_op)            \
+#define ASBIND20_IMPL_REGISTER_UNARY_SUFFIX_OP(as_op_sig, cpp_op)           \
     std::string decl_##as_op_sig() const                                    \
     {                                                                       \
         return string_concat(m_name, " " #as_op_sig "()");                  \
@@ -1389,10 +1389,10 @@ protected:
         );                                                                  \
     }
 
-    ASBIND20_IMP_REGISTER_UNARY_SUFFIX_OP(opPostInc, ++)
-    ASBIND20_IMP_REGISTER_UNARY_SUFFIX_OP(opPostDec, --)
+    ASBIND20_IMPL_REGISTER_UNARY_SUFFIX_OP(opPostInc, ++)
+    ASBIND20_IMPL_REGISTER_UNARY_SUFFIX_OP(opPostDec, --)
 
-#undef ASBIND20_IMP_REGISTER_UNARY_SUFFIX_OP
+#undef ASBIND20_IMPL_REGISTER_UNARY_SUFFIX_OP
 
 #define ASBIND20_IMPL_REGISTER_BINARY_OP_GENERIC(as_decl, cpp_op, return_type, const_, rhs_type)   \
     do {                                                                                           \
