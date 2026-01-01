@@ -29,6 +29,7 @@ public:
         : my_base(engine) {}
 
     template <typename Auxiliary>
+    [[nodiscard]]
     static void* get_auxiliary_address(auxiliary_wrapper<Auxiliary> aux)
     {
         static_assert(
