@@ -2558,8 +2558,60 @@ public:
     ASBIND20_BG_INTERFACE_DEFINE_OP(Derived, opPreInc)
     ASBIND20_BG_INTERFACE_DEFINE_OP(Derived, opPreDec)
 
-    // #undef this macro at the end of this file
-    // because value class will use this.
+#define ASBIND20_BG_INTERFACE_DEFINE_BEH(bg_type, as_beh, func_name)                     \
+    template <native_function Fn>                                                        \
+    bg_type& func_name(Fn&& fn) requires(!ForceGeneric)                                  \
+    {                                                                                    \
+        using func_t = std::decay_t<Fn>;                                                 \
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =                         \
+            detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER as_beh, Class, func_t>(); \
+        this->register_behaviour(                                                        \
+            AS_NAMESPACE_QUALIFIER as_beh,                                               \
+            decl::decl_of_beh<AS_NAMESPACE_QUALIFIER as_beh>(),                          \
+            fn,                                                                          \
+            call_conv<conv>                                                              \
+        );                                                                               \
+        return static_cast<bg_type&>(*this);                                             \
+    }                                                                                    \
+    bg_type& func_name(AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn)                           \
+    {                                                                                    \
+        this->register_behaviour(                                                        \
+            AS_NAMESPACE_QUALIFIER as_beh,                                               \
+            decl::decl_of_beh<AS_NAMESPACE_QUALIFIER as_beh>(),                          \
+            gfn,                                                                         \
+            call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>                             \
+        );                                                                               \
+        return static_cast<bg_type&>(*this);                                             \
+    }                                                                                    \
+    template <auto Function>                                                             \
+    bg_type& func_name(use_generic_t, fp_wrapper<Function>)                              \
+    {                                                                                    \
+        using func_t = std::decay_t<decltype(Function)>;                                 \
+        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =                         \
+            detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER as_beh, Class, func_t>(); \
+        this->func_name(detail::to_asGENFUNC_t(fp<Function>, call_conv<conv>));          \
+        return static_cast<bg_type&>(*this);                                             \
+    }                                                                                    \
+    template <auto Function>                                                             \
+    bg_type& func_name(fp_wrapper<Function>)                                             \
+    {                                                                                    \
+        if constexpr(ForceGeneric)                                                       \
+            this->func_name(use_generic, fp<Function>);                                  \
+        else                                                                             \
+            this->func_name(Function);                                                   \
+        return static_cast<bg_type&>(*this);                                             \
+    }
+
+    // Reference types with GC flag support all GC-related behaviours.
+    // For garbage collected value types,
+    // please check the official document:
+    // https://www.angelcode.com/angelscript/sdk/docs/manual/doc_gc_object.html#doc_reg_gcref_value
+
+    ASBIND20_BG_INTERFACE_DEFINE_BEH(Derived, asBEHAVE_ENUMREFS, enum_refs)
+    ASBIND20_BG_INTERFACE_DEFINE_BEH(Derived, asBEHAVE_RELEASEREFS, release_refs)
+
+    // #undef these macros at the end of this file
+    // because the following generators will use them.
 
 private:
     Derived& derived() noexcept
@@ -3704,58 +3756,6 @@ public:
         this->opImplConv<OtherClass>(other.get_name());
         return *this;
     }
-
-#define ASBIND20_VALUE_CLASS_BEH(func_name, as_beh)                                      \
-    template <native_function Fn>                                                        \
-    basic_value_class& func_name(Fn&& fn) requires(!ForceGeneric)                        \
-    {                                                                                    \
-        using func_t = std::decay_t<Fn>;                                                 \
-        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =                         \
-            detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER as_beh, Class, func_t>(); \
-        this->register_behaviour(                                                        \
-            AS_NAMESPACE_QUALIFIER as_beh,                                               \
-            decl::decl_of_beh<AS_NAMESPACE_QUALIFIER as_beh>(),                          \
-            fn,                                                                          \
-            call_conv<conv>                                                              \
-        );                                                                               \
-        return *this;                                                                    \
-    }                                                                                    \
-    basic_value_class& func_name(AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn)                 \
-    {                                                                                    \
-        this->register_behaviour(                                                        \
-            AS_NAMESPACE_QUALIFIER as_beh,                                               \
-            decl::decl_of_beh<AS_NAMESPACE_QUALIFIER as_beh>(),                          \
-            gfn,                                                                         \
-            call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>                             \
-        );                                                                               \
-        return *this;                                                                    \
-    }                                                                                    \
-    template <auto Function>                                                             \
-    basic_value_class& func_name(use_generic_t, fp_wrapper<Function>)                    \
-    {                                                                                    \
-        using func_t = std::decay_t<decltype(Function)>;                                 \
-        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =                         \
-            detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER as_beh, Class, func_t>(); \
-        this->func_name(detail::to_asGENFUNC_t(fp<Function>, call_conv<conv>));          \
-        return *this;                                                                    \
-    }                                                                                    \
-    template <auto Function>                                                             \
-    basic_value_class& func_name(fp_wrapper<Function>)                                   \
-    {                                                                                    \
-        if constexpr(ForceGeneric)                                                       \
-            this->func_name(use_generic, fp<Function>);                                  \
-        else                                                                             \
-            this->func_name(Function);                                                   \
-        return *this;                                                                    \
-    }
-
-    // For garbage collected value type
-    // See: https://www.angelcode.com/angelscript/sdk/docs/manual/doc_gc_object.html#doc_reg_gcref_value
-
-    ASBIND20_VALUE_CLASS_BEH(enum_refs, asBEHAVE_ENUMREFS)
-    ASBIND20_VALUE_CLASS_BEH(release_refs, asBEHAVE_RELEASEREFS)
-
-#undef ASBIND20_VALUE_CLASS_BEH
 };
 
 template <typename Class, bool ForceGeneric = false>
@@ -5071,60 +5071,14 @@ public:
 
     // TODO: Operators returning by value for reference type
 
-#define ASBIND20_REFERENCE_CLASS_BEH(func_name, as_beh)                                  \
-    template <native_function Fn>                                                        \
-    basic_ref_class& func_name(Fn&& fn) requires(!ForceGeneric)                          \
-    {                                                                                    \
-        using func_t = std::decay_t<Fn>;                                                 \
-        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =                         \
-            detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER as_beh, Class, func_t>(); \
-        this->register_behaviour(                                                        \
-            AS_NAMESPACE_QUALIFIER as_beh,                                               \
-            decl::decl_of_beh<AS_NAMESPACE_QUALIFIER as_beh>(),                          \
-            fn,                                                                          \
-            call_conv<conv>                                                              \
-        );                                                                               \
-        return *this;                                                                    \
-    }                                                                                    \
-    basic_ref_class& func_name(AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn)                   \
-    {                                                                                    \
-        this->register_behaviour(                                                        \
-            AS_NAMESPACE_QUALIFIER as_beh,                                               \
-            decl::decl_of_beh<AS_NAMESPACE_QUALIFIER as_beh>(),                          \
-            gfn,                                                                         \
-            call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>                             \
-        );                                                                               \
-        return *this;                                                                    \
-    }                                                                                    \
-    template <auto Function>                                                             \
-    basic_ref_class& func_name(use_generic_t, fp_wrapper<Function>)                      \
-    {                                                                                    \
-        using func_t = std::decay_t<decltype(Function)>;                                 \
-        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =                         \
-            detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER as_beh, Class, func_t>(); \
-        this->func_name(detail::to_asGENFUNC_t(fp<Function>, call_conv<conv>));          \
-        return *this;                                                                    \
-    }                                                                                    \
-    template <auto Function>                                                             \
-    basic_ref_class& func_name(fp_wrapper<Function>)                                     \
-    {                                                                                    \
-        if constexpr(ForceGeneric)                                                       \
-            this->func_name(use_generic, fp<Function>);                                  \
-        else                                                                             \
-            this->func_name(Function);                                                   \
-        return *this;                                                                    \
-    }
+    // reference type-only GC behaviours
 
-    ASBIND20_REFERENCE_CLASS_BEH(get_weakref_flag, asBEHAVE_GET_WEAKREF_FLAG)
-    ASBIND20_REFERENCE_CLASS_BEH(addref, asBEHAVE_ADDREF)
-    ASBIND20_REFERENCE_CLASS_BEH(release, asBEHAVE_RELEASE)
-    ASBIND20_REFERENCE_CLASS_BEH(get_refcount, asBEHAVE_GETREFCOUNT)
-    ASBIND20_REFERENCE_CLASS_BEH(set_gc_flag, asBEHAVE_SETGCFLAG)
-    ASBIND20_REFERENCE_CLASS_BEH(get_gc_flag, asBEHAVE_GETGCFLAG)
-    ASBIND20_REFERENCE_CLASS_BEH(enum_refs, asBEHAVE_ENUMREFS)
-    ASBIND20_REFERENCE_CLASS_BEH(release_refs, asBEHAVE_RELEASEREFS)
-
-#undef ASBIND20_REFERENCE_CLASS_BEH
+    ASBIND20_BG_INTERFACE_DEFINE_BEH(basic_ref_class, asBEHAVE_GET_WEAKREF_FLAG, get_weakref_flag)
+    ASBIND20_BG_INTERFACE_DEFINE_BEH(basic_ref_class, asBEHAVE_ADDREF, addref)
+    ASBIND20_BG_INTERFACE_DEFINE_BEH(basic_ref_class, asBEHAVE_RELEASE, release)
+    ASBIND20_BG_INTERFACE_DEFINE_BEH(basic_ref_class, asBEHAVE_GETREFCOUNT, get_refcount)
+    ASBIND20_BG_INTERFACE_DEFINE_BEH(basic_ref_class, asBEHAVE_SETGCFLAG, set_gc_flag)
+    ASBIND20_BG_INTERFACE_DEFINE_BEH(basic_ref_class, asBEHAVE_GETGCFLAG, get_gc_flag)
 
     basic_ref_class& as_array() requires(Template)
     {
@@ -5139,6 +5093,7 @@ public:
 
 // #undef macros defined by binding generator inteface here
 #undef ASBIND20_BG_INTERFACE_DEFINE_OP
+#undef ASBIND20_BG_INTERFACE_DEFINE_BEH
 
 template <typename Class, bool ForceGeneric = false>
 using ref_class = basic_ref_class<Class, false, ForceGeneric>;
