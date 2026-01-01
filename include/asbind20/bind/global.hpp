@@ -81,7 +81,7 @@ public:
 
     global& function(
         cstring_ref decl,
-        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
+        generic_function gfn,
         call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
     )
     {
@@ -216,7 +216,7 @@ public:
     template <typename Auxiliary>
     global& function(
         cstring_ref decl,
-        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
+        generic_function gfn,
         auxiliary_wrapper<Auxiliary> aux,
         call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
     )
@@ -381,7 +381,7 @@ public:
      * @brief Generic calling convention for message callback is not supported.
      */
     global& message_callback(
-        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
+        generic_function gfn,
         void* obj = nullptr
     ) = delete;
 
@@ -427,7 +427,7 @@ public:
      * @brief Generic calling convention for exception translator is not supported.
      */
     global& exception_translator(
-        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
+        generic_function gfn,
         void* obj = nullptr
     ) = delete;
 

@@ -1652,7 +1652,7 @@ protected:
 
 public:
     Derived& template_callback(
-        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn
+        generic_function gfn
     ) requires(Template)
     {
         this->register_behaviour(
@@ -1732,7 +1732,7 @@ public:
 
     Derived& method(
         cstring_ref decl,
-        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
+        generic_function gfn,
         call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
     )
     {
@@ -1788,7 +1788,7 @@ public:
     template <typename Auxiliary>
     Derived& method(
         cstring_ref decl,
-        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
+        generic_function gfn,
         auxiliary_wrapper<Auxiliary> aux,
         call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
     )
@@ -2574,7 +2574,7 @@ public:
         );                                                                               \
         return static_cast<bg_type&>(*this);                                             \
     }                                                                                    \
-    bg_type& func_name(AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn)                           \
+    bg_type& func_name(generic_function gfn)                                             \
     {                                                                                    \
         this->register_behaviour(                                                        \
             AS_NAMESPACE_QUALIFIER as_beh,                                               \
@@ -2728,7 +2728,7 @@ private:
 public:
     basic_value_class& constructor_function(
         std::string_view params,
-        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
+        generic_function gfn,
         call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
     )
     {
@@ -2745,7 +2745,7 @@ public:
     basic_value_class& constructor_function(
         std::string_view params,
         use_explicit_t,
-        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
+        generic_function gfn,
         call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
     )
     {
@@ -3516,7 +3516,7 @@ private:
 public:
     basic_value_class& list_constructor_function(
         std::string_view pattern,
-        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
+        generic_function gfn,
         call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
     )
     {
@@ -4052,7 +4052,7 @@ public:
 
     basic_ref_class& factory_function(
         std::string_view params,
-        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
+        generic_function gfn,
         call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
     )
     {
@@ -4069,7 +4069,7 @@ public:
     basic_ref_class& factory_function(
         std::string_view params,
         use_explicit_t,
-        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
+        generic_function gfn,
         call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
     )
     {
@@ -4086,7 +4086,7 @@ public:
     template <typename Auxiliary>
     basic_ref_class& factory_function(
         std::string_view params,
-        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
+        generic_function gfn,
         auxiliary_wrapper<Auxiliary> aux,
         call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
     )
@@ -4106,7 +4106,7 @@ public:
     basic_ref_class& factory_function(
         std::string_view params,
         use_explicit_t,
-        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
+        generic_function gfn,
         auxiliary_wrapper<Auxiliary> aux,
         call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
     )
@@ -4377,7 +4377,7 @@ private:
         std::string_view params, use_policy_t<Policy>, bool explicit_
     )
     {
-        AS_NAMESPACE_QUALIFIER asGENFUNC_t wrapper =
+        generic_function wrapper =
             detail::factory<Class, Template, Policy, Args...>::generate(generic_call_conv);
 
         void* aux = nullptr;
@@ -4569,7 +4569,7 @@ public:
 
     basic_ref_class& list_factory_function(
         std::string_view pattern,
-        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
+        generic_function gfn,
         call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
     )
     {
@@ -4613,7 +4613,7 @@ public:
     template <typename Auxiliary>
     basic_ref_class& list_factory_function(
         std::string_view pattern,
-        AS_NAMESPACE_QUALIFIER asGENFUNC_t ctor,
+        generic_function ctor,
         auxiliary_wrapper<Auxiliary> aux,
         call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
     )
@@ -4669,7 +4669,7 @@ public:
         call_conv_t<CallConv>
     )
     {
-        AS_NAMESPACE_QUALIFIER asGENFUNC_t wrapper = nullptr;
+        generic_function wrapper = nullptr;
 
         using traits = function_traits<std::decay_t<decltype(ListFactory)>>;
         if constexpr(Template)
@@ -4962,7 +4962,7 @@ public:
         use_policy_t<IListPolicy> = {}
     )
     {
-        AS_NAMESPACE_QUALIFIER asGENFUNC_t wrapper =
+        generic_function wrapper =
             detail::list_factory<Class, Template, ListElementType, IListPolicy, void>::generate(generic_call_conv);
 
         list_factory_function(
