@@ -2493,10 +2493,10 @@ public:
         return derived();
     }
 
-    template <detail::auto_register<Derived> AutoRegister>
-    Derived& use(AutoRegister&& ar)
+    template <usable_by_generator<Derived> Usable>
+    Derived& use(Usable&& u)
     {
-        ar(derived());
+        u(derived());
         return derived();
     }
 

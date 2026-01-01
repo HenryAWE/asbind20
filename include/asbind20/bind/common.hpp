@@ -308,12 +308,12 @@ namespace detail
             std::string_view(name_begin.base(), funcdef.end())
         );
     }
-
-    template <typename T, typename RegisterHelper>
-    concept auto_register = requires(T&& ar, RegisterHelper& c) {
-        ar(c);
-    };
 } // namespace detail
+
+template <typename T, typename BindingGenerator>
+concept usable_by_generator = requires(T&& t, BindingGenerator& gen) {
+    t(gen);
+};
 
 template <bool ForceGeneric>
 class binding_generator_base

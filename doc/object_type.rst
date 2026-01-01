@@ -583,7 +583,7 @@ then it is possible to register the properties of the composite members without 
 Registering Types with Similar Interfaces
 -----------------------------------------
 
-Sometimes you may want to reuse code for binding similar type.
+Sometimes you may want to reuse code for binding similar types.
 The binding generators of classes provide ``.use`` for reusing a certain set of registering code.
 
 For example,
@@ -594,13 +594,13 @@ you can create a helper to register those behaviors.
 
     struct register_refcount_helper
     {
-        template <typename AutoRegister>
-        void operator()(AutoRegister& ar) const
+        template <typename BindingGenerator>
+        void operator()(BindingGenerator& c) const
         {
-            using class_type = typename AutoRegister::class_type;
+            using class_type = typename BindingGenerator::class_type;
 
             // Assuming those types have the same interfaces
-            ar
+            c
                 .addref(&class_type::addref)
                 .release(&class_type::release);
         }
