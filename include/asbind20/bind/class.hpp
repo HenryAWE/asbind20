@@ -1123,6 +1123,8 @@ class class_binding_generator_base : public binding_generator_base<ForceGeneric>
     using my_base = binding_generator_base<ForceGeneric>;
 
 public:
+    using my_base::get_engine;
+
     [[nodiscard]]
     int get_type_id() const noexcept
     {
@@ -1135,7 +1137,7 @@ public:
     {
         if constexpr(std::same_as<Auxiliary, this_type_t>)
         {
-            return m_engine->GetTypeInfoById(get_type_id());
+            return get_engine()->GetTypeInfoById(get_type_id());
         }
         else
         {
@@ -1149,23 +1151,25 @@ public:
         return m_name;
     }
 
-protected:
-    using my_base::m_engine;
+private:
     std::string m_name;
-    int m_this_type_id = 0; // asTYPEID_VOID
+    // 0 == asTYPEID_VOID, as a placeholder
+    int m_this_type_id = 0;
 
+public:
     class_binding_generator_base() = delete;
     class_binding_generator_base(const class_binding_generator_base&) = default;
 
     class_binding_generator_base(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, std::string name)
         : my_base(engine), m_name(std::move(name)) {}
 
+protected:
     template <typename Class>
     void register_object_type(AS_NAMESPACE_QUALIFIER asQWORD flags, int size)
     {
         [[maybe_unused]]
         int r = 0;
-        r = m_engine->RegisterObjectType(
+        r = get_engine()->RegisterObjectType(
             m_name.c_str(),
             size,
             flags
@@ -1182,7 +1186,7 @@ protected:
     )
     {
         [[maybe_unused]]
-        int r = m_engine->RegisterObjectMethod(
+        int r = get_engine()->RegisterObjectMethod(
             m_name.c_str(),
             decl.c_str(),
             detail::to_asSFuncPtr(fn),
@@ -1202,7 +1206,7 @@ protected:
     )
     {
         [[maybe_unused]]
-        int r = m_engine->RegisterObjectMethod(
+        int r = get_engine()->RegisterObjectMethod(
             m_name.c_str(),
             decl.c_str(),
             detail::to_asSFuncPtr(fn),
@@ -1227,7 +1231,7 @@ protected:
     {
         [[maybe_unused]]
         int r = 0;
-        r = m_engine->RegisterObjectBehaviour(
+        r = get_engine()->RegisterObjectBehaviour(
             m_name.c_str(),
             beh,
             decl,
@@ -1241,7 +1245,7 @@ protected:
     void property_impl(cstring_ref decl, std::size_t off)
     {
         [[maybe_unused]]
-        int r = m_engine->RegisterObjectProperty(
+        int r = get_engine()->RegisterObjectProperty(
             m_name.c_str(),
             decl.c_str(),
             static_cast<int>(off)
@@ -1259,7 +1263,7 @@ protected:
     void comp_property_impl(cstring_ref decl, std::size_t off, std::size_t comp_off)
     {
         [[maybe_unused]]
-        int r = m_engine->RegisterObjectProperty(
+        int r = get_engine()->RegisterObjectProperty(
             m_name.c_str(),
             decl.c_str(),
             static_cast<int>(off),
@@ -1582,13 +1586,12 @@ protected:
     }
 
     void as_string_impl(
-        const char* name,
         AS_NAMESPACE_QUALIFIER asIStringFactory* factory
     )
     {
         [[maybe_unused]]
         int r = 0;
-        r = m_engine->RegisterStringFactory(name, factory);
+        r = get_engine()->RegisterStringFactory(get_name().c_str(), factory);
         assert(r >= 0);
     }
 
@@ -1597,7 +1600,7 @@ private:
     {
         [[maybe_unused]]
         int r = 0;
-        r = m_engine->RegisterFuncdef(decl);
+        r = get_engine()->RegisterFuncdef(decl);
         assert(r >= 0);
     }
 };
@@ -2447,7 +2450,7 @@ public:
         AS_NAMESPACE_QUALIFIER asIStringFactory* str_factory
     )
     {
-        this->as_string_impl(this->m_name.c_str(), str_factory);
+        this->as_string_impl(str_factory);
         return derived();
     }
 
@@ -2550,9 +2553,6 @@ class basic_value_class final :
         Template,
         ForceGeneric>;
 
-    using my_base::m_engine;
-    using my_base::m_name;
-
 public:
     using class_type = Class;
 
@@ -2598,6 +2598,8 @@ public:
     basic_value_class(const basic_value_class&) = default;
 
     basic_value_class& operator=(const basic_value_class&) = delete;
+
+    using my_base::get_name;
 
 private:
     std::string decl_constructor_impl(std::string_view params, bool explicit_) const
@@ -3239,7 +3241,7 @@ public:
 private:
     std::string decl_copy_ctor() const
     {
-        return string_concat("void f(const ", m_name, "&in)");
+        return string_concat("void f(const ", get_name(), "&in)");
     }
 
 public:
@@ -3259,7 +3261,7 @@ public:
         {
             constructor<const Class&>(
                 use_generic,
-                string_concat("const ", m_name, " &in")
+                string_concat("const ", get_name(), " &in")
             );
         }
 
@@ -3287,7 +3289,7 @@ public:
             else
             {
                 constructor<const Class&>(
-                    string_concat("const ", m_name, " &in")
+                    string_concat("const ", get_name(), " &in")
                 );
             }
         }
@@ -3769,9 +3771,6 @@ class basic_ref_class :
         Template,
         ForceGeneric>;
 
-    using my_base::m_engine;
-    using my_base::m_name;
-
 public:
     using class_type = Class;
 
@@ -3816,20 +3815,23 @@ public:
 
     basic_ref_class& operator=(const basic_ref_class&) = delete;
 
+    using my_base::get_engine;
+    using my_base::get_name;
+
 private:
     std::string decl_factory(std::string_view params) const
     {
         if constexpr(Template)
         {
             return params.empty() ?
-                       string_concat(m_name, "@f(int&in)") :
-                       string_concat(m_name, "@f(int&in,", params, ')');
+                       string_concat(get_name(), "@f(int&in)") :
+                       string_concat(get_name(), "@f(int&in,", params, ')');
         }
         else
         {
             return params.empty() ?
-                       string_concat(m_name, "@f()") :
-                       string_concat(m_name, "@f(", params, ')');
+                       string_concat(get_name(), "@f()") :
+                       string_concat(get_name(), "@f(", params, ')');
         }
     }
 
@@ -3838,14 +3840,14 @@ private:
         if constexpr(Template)
         {
             return params.empty() ?
-                       string_concat(m_name, "@f(int&in)explicit") :
-                       string_concat(m_name, "@f(int&in,", params, ")explicit");
+                       string_concat(get_name(), "@f(int&in)explicit") :
+                       string_concat(get_name(), "@f(int&in,", params, ")explicit");
         }
         else
         {
             return params.empty() ?
-                       string_concat(m_name, "@f()explicit") :
-                       string_concat(m_name, "@f(", params, ")explicit");
+                       string_concat(get_name(), "@f()explicit") :
+                       string_concat(get_name(), "@f(", params, ")explicit");
         }
     }
 
@@ -4372,7 +4374,7 @@ private:
 
         void* aux = nullptr;
         if constexpr(std::same_as<Policy, policies::notify_gc> && !Template)
-            aux = m_engine->GetTypeInfoById(this->get_type_id());
+            aux = get_engine()->GetTypeInfoById(this->get_type_id());
 
         if(explicit_)
         {
@@ -4405,7 +4407,7 @@ private:
             auto wrapper =
                 detail::factory<Class, Template, Policy, Args...>::generate(call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>);
 
-            AS_NAMESPACE_QUALIFIER asITypeInfo* ti = m_engine->GetTypeInfoById(this->get_type_id());
+            AS_NAMESPACE_QUALIFIER asITypeInfo* ti = get_engine()->GetTypeInfoById(this->get_type_id());
 
             if(explicit_)
             {
@@ -4511,9 +4513,9 @@ private:
     std::string decl_list_factory(std::string_view pattern) const
     {
         if constexpr(Template)
-            return string_concat(m_name, "@f(int&in,int&in){", pattern, "}");
+            return string_concat(get_name(), "@f(int&in,int&in){", pattern, "}");
         else
-            return string_concat(m_name, "@f(int&in){", pattern, "}");
+            return string_concat(get_name(), "@f(int&in){", pattern, "}");
     }
 
 public:
@@ -4866,7 +4868,7 @@ private:
         void* aux = nullptr;
         if constexpr(std::same_as<FactoryPolicy, policies::notify_gc> && !Template)
         {
-            aux = m_engine->GetTypeInfoById(this->get_type_id());
+            aux = get_engine()->GetTypeInfoById(this->get_type_id());
             assert(aux != nullptr);
         }
         return aux;
@@ -5151,7 +5153,7 @@ public:
     {
         [[maybe_unused]]
         int r = 0;
-        r = m_engine->RegisterDefaultArrayType(m_name.c_str());
+        r = get_engine()->RegisterDefaultArrayType(get_name().c_str());
         assert(r >= 0);
 
         return *this;
