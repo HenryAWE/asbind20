@@ -1199,7 +1199,7 @@ protected:
         call_conv_t<CallConv>,
         composite_wrapper comp,
         void* aux = nullptr
-    ) requires(!ForceGeneric)
+    )
     {
         [[maybe_unused]]
         int r = m_engine->RegisterObjectMethod(
@@ -1207,27 +1207,6 @@ protected:
             decl.c_str(),
             detail::to_asSFuncPtr(fn),
             CallConv,
-            aux,
-            static_cast<int>(comp.get_offset()),
-            true
-        );
-        assert(r >= 0);
-    }
-
-    void method_impl_comp(
-        cstring_ref decl,
-        AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn,
-        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>,
-        composite_wrapper comp,
-        void* aux = nullptr
-    )
-    {
-        [[maybe_unused]]
-        int r = m_engine->RegisterObjectMethod(
-            m_name.c_str(),
-            decl,
-            detail::to_asSFuncPtr(gfn),
-            AS_NAMESPACE_QUALIFIER asCALL_GENERIC,
             aux,
             static_cast<int>(comp.get_offset()),
             true
