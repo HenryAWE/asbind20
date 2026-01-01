@@ -1181,7 +1181,7 @@ protected:
     }
 
     template <typename Fn, AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-    void method_impl(
+    void register_method(
         cstring_ref decl, Fn&& fn, call_conv_t<CallConv>, void* aux = nullptr
     )
     {
@@ -1197,7 +1197,7 @@ protected:
     }
 
     template <typename Fn, AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-    void method_impl_comp(
+    void register_comp_method(
         cstring_ref decl,
         Fn&& fn,
         call_conv_t<CallConv>,
@@ -1221,7 +1221,7 @@ protected:
     template <
         typename Fn,
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-    void behaviour_impl(
+    void register_behaviour(
         AS_NAMESPACE_QUALIFIER asEBehaviours beh,
         const char* decl,
         Fn&& fn,
@@ -1242,7 +1242,7 @@ protected:
         assert(r >= 0);
     }
 
-    void property_impl(cstring_ref decl, std::size_t off)
+    void register_property(cstring_ref decl, std::size_t off)
     {
         [[maybe_unused]]
         int r = get_engine()->RegisterObjectProperty(
@@ -1255,12 +1255,12 @@ protected:
 
     template <typename MemberPointer>
     requires(std::is_member_object_pointer_v<MemberPointer>)
-    void property_impl(cstring_ref decl, MemberPointer mp)
+    void register_property(cstring_ref decl, MemberPointer mp)
     {
-        property_impl(decl, member_offset(mp));
+        register_property(decl, member_offset(mp));
     }
 
-    void comp_property_impl(cstring_ref decl, std::size_t off, std::size_t comp_off)
+    void register_comp_property(cstring_ref decl, std::size_t off, std::size_t comp_off)
     {
         [[maybe_unused]]
         int r = get_engine()->RegisterObjectProperty(
@@ -1275,35 +1275,35 @@ protected:
 
     template <typename CompMemberPointer>
     requires(std::is_member_object_pointer_v<CompMemberPointer>)
-    void comp_property_impl(cstring_ref decl, std::size_t off, CompMemberPointer comp_mp)
+    void register_comp_property(cstring_ref decl, std::size_t off, CompMemberPointer comp_mp)
     {
-        comp_property_impl(decl, off, member_offset(comp_mp));
+        register_comp_property(decl, off, member_offset(comp_mp));
     }
 
     template <typename MemberPointer>
     requires(std::is_member_object_pointer_v<MemberPointer>)
-    void comp_property_impl(cstring_ref decl, MemberPointer mp, std::size_t comp_off)
+    void register_comp_property(cstring_ref decl, MemberPointer mp, std::size_t comp_off)
     {
-        comp_property_impl(decl, member_offset(mp), comp_off);
+        register_comp_property(decl, member_offset(mp), comp_off);
     }
 
     template <typename CompMemberPointer, typename MemberPointer>
     requires(std::is_member_object_pointer_v<MemberPointer> && std::is_member_object_pointer_v<CompMemberPointer>)
-    void comp_property_impl(cstring_ref decl, MemberPointer mp, CompMemberPointer comp_mp)
+    void register_comp_property(cstring_ref decl, MemberPointer mp, CompMemberPointer comp_mp)
     {
-        comp_property_impl(decl, member_offset(mp), member_offset(comp_mp));
+        register_comp_property(decl, member_offset(mp), member_offset(comp_mp));
     }
 
 #define ASBIND20_CLASS_UNARY_PREFIX_OP(as_op_sig, cpp_op, decl_arg_list, return_type, const_)      \
-    std::string as_op_sig##_decl() const                                                           \
+    std::string decl_##as_op_sig() const                                                           \
     {                                                                                              \
         return string_concat decl_arg_list;                                                        \
     }                                                                                              \
     template <typename Class>                                                                      \
-    void as_op_sig##_impl_generic()                                                                \
+    void register_##as_op_sig##_generic()                                                          \
     {                                                                                              \
-        method_impl(                                                                               \
-            as_op_sig##_decl(),                                                                    \
+        register_method(                                                                           \
+            decl_##as_op_sig(),                                                                      \
             +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void                              \
             {                                                                                      \
                 using this_arg_t = std::conditional_t<(#const_[0] != '\0'), const Class&, Class&>; \
@@ -1316,15 +1316,15 @@ protected:
         );                                                                                         \
     }                                                                                              \
     template <typename Class>                                                                      \
-    void as_op_sig##_impl_native()                                                                 \
+    void register_##as_op_sig##_native()                                                           \
     {                                                                                              \
         static constexpr bool has_member_func = requires() {                                       \
             static_cast<return_type (Class::*)() const_>(&Class::operator cpp_op);                 \
         };                                                                                         \
         if constexpr(has_member_func)                                                              \
         {                                                                                          \
-            method_impl(                                                                           \
-                as_op_sig##_decl(),                                                                \
+            register_method(                                                                       \
+                decl_##as_op_sig(),                                                                \
                 static_cast<return_type (Class::*)() const_>(&Class::operator cpp_op),             \
                 call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>                                  \
             );                                                                                     \
@@ -1332,8 +1332,8 @@ protected:
         else                                                                                       \
         {                                                                                          \
             using this_arg_t = std::conditional_t<(#const_[0] != '\0'), const Class&, Class&>;     \
-            this->method_impl(                                                                     \
-                as_op_sig##_decl(),                                                                \
+            this->register_method(                                                                 \
+                decl_##as_op_sig(),                                                                \
                 +[](this_arg_t this_) -> return_type                                               \
                 {                                                                                  \
                     return cpp_op this_;                                                           \
@@ -1358,15 +1358,15 @@ protected:
 
     // Only for operator++/--(int)
 #define ASBIND20_CLASS_UNARY_SUFFIX_OP(as_op_sig, cpp_op)                   \
-    std::string as_op_sig##_decl() const                                    \
+    std::string decl_##as_op_sig() const                                  \
     {                                                                       \
         return string_concat(m_name, " " #as_op_sig "()");                  \
     }                                                                       \
     template <typename Class>                                               \
-    void as_op_sig##_impl_generic()                                         \
+    void register_##as_op_sig##_generic()                                   \
     {                                                                       \
-        method_impl(                                                        \
-            as_op_sig##_decl(),                                             \
+        register_method(                                                    \
+            decl_##as_op_sig(),                                             \
             +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void       \
             {                                                               \
                 set_generic_return<Class>(                                  \
@@ -1378,11 +1378,11 @@ protected:
         );                                                                  \
     }                                                                       \
     template <typename Class>                                               \
-    void as_op_sig##_impl_native()                                          \
+    void register_##as_op_sig##_native()                                    \
     {                                                                       \
         /* Use a wrapper to deal with the hidden int of postfix operator */ \
-        method_impl(                                                        \
-            as_op_sig##_decl(),                                             \
+        register_method(                                                    \
+            decl_##as_op_sig(),                                             \
             +[](Class& this_) -> Class                                      \
             { return this_ cpp_op; },                                       \
             call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>          \
@@ -1396,7 +1396,7 @@ protected:
 
 #define ASBIND20_CLASS_BINARY_OP_GENERIC(as_decl, cpp_op, return_type, const_, rhs_type)           \
     do {                                                                                           \
-        this->method_impl(                                                                         \
+        this->register_method(                                                                     \
             as_decl,                                                                               \
             +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void                              \
             {                                                                                      \
@@ -1417,7 +1417,7 @@ protected:
         };                                                                                     \
         if constexpr(has_member_func)                                                          \
         {                                                                                      \
-            this->method_impl(                                                                 \
+            this->register_method(                                                             \
                 as_decl,                                                                       \
                 static_cast<return_type (Class::*)(rhs_type) const_>(&Class::operator cpp_op), \
                 call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>                              \
@@ -1426,7 +1426,7 @@ protected:
         else                                                                                   \
         {                                                                                      \
             using this_arg_t = std::conditional_t<(#const_[0] != '\0'), const Class&, Class&>; \
-            this->method_impl(                                                                 \
+            this->register_method(                                                             \
                 as_decl,                                                                       \
                 +[](this_arg_t lhs, rhs_type rhs) -> return_type                               \
                 {                                                                              \
@@ -1438,22 +1438,22 @@ protected:
     } while(0)
 
 #define ASBIND20_CLASS_BINARY_OP_IMPL(as_op_sig, cpp_op, decl_arg_list, return_type, const_, rhs_type) \
-    std::string as_op_sig##_decl() const                                                               \
+    std::string decl_##as_op_sig() const                                                               \
     {                                                                                                  \
         return string_concat decl_arg_list;                                                            \
     }                                                                                                  \
     template <typename Class>                                                                          \
-    void as_op_sig##_impl_generic()                                                                    \
+    void register_##as_op_sig##_generic()                                                              \
     {                                                                                                  \
         ASBIND20_CLASS_BINARY_OP_GENERIC(                                                              \
-            as_op_sig##_decl(), cpp_op, return_type, const_, rhs_type                                  \
+            decl_##as_op_sig(), cpp_op, return_type, const_, rhs_type                                  \
         );                                                                                             \
     }                                                                                                  \
     template <typename Class>                                                                          \
-    void as_op_sig##_impl_native()                                                                     \
+    void register_##as_op_sig##_native()                                                               \
     {                                                                                                  \
         ASBIND20_CLASS_BINARY_OP_NATIVE(                                                               \
-            as_op_sig##_decl(), cpp_op, return_type, const_, rhs_type                                  \
+            decl_##as_op_sig(), cpp_op, return_type, const_, rhs_type                                  \
         );                                                                                             \
     }
 
@@ -1489,16 +1489,16 @@ protected:
 
     // opCmp needs special logic to translate the result of operator<=> from C++
 
-    std::string opCmp_decl() const
+    std::string decl_opCmp() const
     {
         return string_concat("int opCmp(const ", m_name, "&in) const");
     }
 
     template <typename Class>
-    void opCmp_impl_generic()
+    void register_opCmp_generic()
     {
-        method_impl(
-            opCmp_decl(),
+        register_method(
+            decl_opCmp(),
             +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
             {
                 set_generic_return<int>(
@@ -1513,10 +1513,10 @@ protected:
     }
 
     template <typename Class>
-    void opCmp_impl_native()
+    void register_opCmp_native()
     {
-        method_impl(
-            opCmp_decl(),
+        register_method(
+            decl_opCmp(),
             +[](const Class& lhs, const Class& rhs) -> int
             {
                 return translate_three_way(lhs <=> rhs);
@@ -1545,10 +1545,10 @@ protected:
 #undef ASBIND20_CLASS_BINARY_OP_NATIVE
 #undef ASBIND20_CLASS_BINARY_OP_IMPL
 
-    void member_funcdef_impl(std::string_view decl)
+    void register_member_funcdef(std::string_view decl)
     {
         std::string full_decl = detail::generate_member_funcdef(m_name, decl);
-        full_funcdef(full_decl.c_str());
+        register_full_funcdef(full_decl.c_str());
     }
 
     static std::string decl_opConv(std::string_view ret, bool implicit)
@@ -1566,7 +1566,7 @@ protected:
             call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
         );
 
-        method_impl(
+        register_method(
             decl_opConv(ret, implicit),
             wrapper,
             call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
@@ -1578,14 +1578,14 @@ protected:
     {
         auto wrapper = detail::opConv<std::add_const_t<Class>, To>::generate(generic_call_conv);
 
-        method_impl(
+        register_method(
             decl_opConv(ret, implicit),
             wrapper,
             generic_call_conv
         );
     }
 
-    void as_string_impl(
+    void register_as_string(
         AS_NAMESPACE_QUALIFIER asIStringFactory* factory
     )
     {
@@ -1596,7 +1596,8 @@ protected:
     }
 
 private:
-    void full_funcdef(const char* decl)
+    // Internal interface because AS doesn't provide a direct interface to register member funcdef
+    void register_full_funcdef(const char* decl)
     {
         [[maybe_unused]]
         int r = 0;
@@ -1653,7 +1654,7 @@ public:
         AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn
     ) requires(Template)
     {
-        this->behaviour_impl(
+        this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK,
             "bool f(int&in,bool&out)",
             gfn,
@@ -1665,7 +1666,7 @@ public:
     template <native_function Fn>
     Derived& template_callback(Fn&& fn) requires(Template && !ForceGeneric)
     {
-        this->behaviour_impl(
+        this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK,
             "bool f(int&in,bool&out)",
             fn,
@@ -1708,7 +1709,7 @@ public:
         call_conv_t<CallConv>
     ) requires(!ForceGeneric)
     {
-        this->method_impl(decl, std::forward<Fn>(fn), call_conv<CallConv>);
+        this->register_method(decl, std::forward<Fn>(fn), call_conv<CallConv>);
         return derived();
     }
 
@@ -1720,7 +1721,7 @@ public:
     {
         constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
             method_callconv<Fn>();
-        this->method_impl(
+        this->register_method(
             decl,
             fn,
             call_conv<conv>
@@ -1734,7 +1735,7 @@ public:
         call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
     )
     {
-        this->method_impl(
+        this->register_method(
             decl,
             gfn,
             generic_call_conv
@@ -1754,7 +1755,7 @@ public:
         call_conv_t<CallConv>
     ) requires(!ForceGeneric)
     {
-        this->method_impl(
+        this->register_method(
             decl,
             std::forward<Fn>(fn),
             call_conv<CallConv>,
@@ -1791,7 +1792,7 @@ public:
         call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
     )
     {
-        this->method_impl(
+        this->register_method(
             decl,
             gfn,
             generic_call_conv,
@@ -1810,7 +1811,7 @@ public:
         call_conv_t<CallConv>
     )
     {
-        this->method_impl(
+        this->register_method(
             decl,
             detail::to_asGENFUNC_t(fp<Method>, call_conv<CallConv>),
             generic_call_conv
@@ -1827,7 +1828,7 @@ public:
     {
         constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
             method_callconv<Method>();
-        this->method_impl(
+        this->register_method(
             decl,
             detail::to_asGENFUNC_t(fp<Method>, call_conv<conv>),
             generic_call_conv
@@ -1878,7 +1879,7 @@ public:
         call_conv_t<CallConv>
     )
     {
-        this->method_impl(
+        this->register_method(
             decl,
             detail::to_asGENFUNC_t(fp<Method>, call_conv<CallConv>),
             generic_call_conv,
@@ -1897,7 +1898,7 @@ public:
     {
         constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
             method_callconv_aux<Method, Auxiliary>();
-        this->method_impl(
+        this->register_method(
             decl,
             detail::to_asGENFUNC_t(fp<Method>, call_conv<conv>),
             generic_call_conv,
@@ -1951,7 +1952,7 @@ public:
         call_conv_t<CallConv>
     )
     {
-        this->method_impl(
+        this->register_method(
             decl,
             detail::to_asGENFUNC_t(Lambda{}, call_conv<CallConv>),
             generic_call_conv
@@ -1984,7 +1985,7 @@ public:
         if constexpr(ForceGeneric)
             this->method(use_generic, decl, Lambda{}, call_conv<CallConv>);
         else
-            this->method_impl(decl, +Lambda{}, call_conv<CallConv>);
+            this->register_method(decl, +Lambda{}, call_conv<CallConv>);
         return derived();
     }
 
@@ -2012,7 +2013,7 @@ public:
         call_conv_t<CallConv>
     )
     {
-        this->method_impl(
+        this->register_method(
             decl,
             detail::to_asGENFUNC_t(fp<Function>, call_conv<CallConv>, var_type<Is...>),
             generic_call_conv
@@ -2035,7 +2036,7 @@ public:
             this->method(use_generic, decl, fp<Function>, var_type<Is...>, call_conv<CallConv>);
         else
         {
-            this->method_impl(
+            this->register_method(
                 decl,
                 Function,
                 call_conv<CallConv>
@@ -2081,7 +2082,7 @@ public:
             this->method(use_generic, decl, fp<Function>, var_type<Is...>, call_conv<conv>);
         else
         {
-            this->method_impl(
+            this->register_method(
                 decl,
                 Function,
                 call_conv<conv>
@@ -2104,7 +2105,7 @@ public:
         call_conv_t<CallConv>
     )
     {
-        this->method_impl(
+        this->register_method(
             decl,
             detail::to_asGENFUNC_t(fp<Function>, call_conv<CallConv>, var_type<Is...>),
             generic_call_conv,
@@ -2130,7 +2131,7 @@ public:
             this->method(use_generic, decl, fp<Function>, var_type<Is...>, aux, call_conv<CallConv>);
         else
         {
-            this->method_impl(
+            this->register_method(
                 decl,
                 Function,
                 call_conv<CallConv>,
@@ -2182,7 +2183,7 @@ public:
             this->method(use_generic, decl, fp<Function>, var_type<Is...>, aux, call_conv<conv>);
         else
         {
-            this->method_impl(
+            this->register_method(
                 decl,
                 Function,
                 call_conv<conv>,
@@ -2204,7 +2205,7 @@ public:
         call_conv_t<CallConv>
     )
     {
-        this->method_impl(
+        this->register_method(
             decl,
             detail::to_asGENFUNC_t(Lambda{}, call_conv<CallConv>, var_type<Is...>),
             generic_call_conv
@@ -2227,7 +2228,7 @@ public:
             this->method(use_generic, decl, Lambda{}, var_type<Is...>, call_conv<CallConv>);
         else
         {
-            this->method_impl(
+            this->register_method(
                 decl,
                 +Lambda{},
                 call_conv<CallConv>
@@ -2273,7 +2274,7 @@ public:
             this->method(use_generic, decl, Lambda{}, var_type<Is...>, call_conv<conv>);
         else
         {
-            this->method_impl(
+            this->register_method(
                 decl,
                 +Lambda{},
                 call_conv<conv>
@@ -2291,7 +2292,7 @@ public:
         call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_THISCALL> = {}
     ) requires(!ForceGeneric)
     {
-        this->method_impl_comp(
+        this->register_comp_method(
             decl,
             fn,
             call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>,
@@ -2310,7 +2311,7 @@ public:
         call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_THISCALL> = {}
     )
     {
-        this->method_impl(
+        this->register_method(
             decl,
             detail::to_asGENFUNC_t(
                 fp<Fn>,
@@ -2364,7 +2365,7 @@ public:
         call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_THISCALL> = {}
     )
     {
-        this->method_impl(
+        this->register_method(
             decl,
             detail::to_asGENFUNC_t(
                 fp<Fn>,
@@ -2412,7 +2413,7 @@ public:
 
     Derived& property(cstring_ref decl, std::size_t off)
     {
-        this->property_impl(decl, off);
+        this->register_property(decl, off);
         return derived();
     }
 
@@ -2420,7 +2421,7 @@ public:
     requires(std::is_member_object_pointer_v<MemberPointer>)
     Derived& property(cstring_ref decl, MemberPointer mp)
     {
-        this->template property_impl<MemberPointer>(decl, mp);
+        this->template register_property<MemberPointer>(decl, mp);
         return derived();
     }
 
@@ -2428,7 +2429,7 @@ public:
         cstring_ref decl, std::size_t off, composite_wrapper comp
     )
     {
-        this->comp_property_impl(decl, off, comp.get_offset());
+        this->register_comp_property(decl, off, comp.get_offset());
         return derived();
     }
 
@@ -2436,13 +2437,13 @@ public:
     requires(std::is_member_object_pointer_v<MemberPointer>)
     Derived& property(cstring_ref decl, MemberPointer mp, composite_wrapper comp)
     {
-        this->comp_property_impl(decl, mp, comp.get_offset());
+        this->register_comp_property(decl, mp, comp.get_offset());
         return derived();
     }
 
     Derived& funcdef(cstring_ref decl)
     {
-        this->member_funcdef_impl(decl);
+        this->register_member_funcdef(decl);
         return derived();
     }
 
@@ -2450,7 +2451,7 @@ public:
         AS_NAMESPACE_QUALIFIER asIStringFactory* str_factory
     )
     {
-        this->as_string_impl(str_factory);
+        this->register_as_string(str_factory);
         return derived();
     }
 
@@ -2643,7 +2644,7 @@ public:
         call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
     )
     {
-        this->behaviour_impl(
+        this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
             decl_constructor_impl(params, false).c_str(),
             gfn,
@@ -2660,7 +2661,7 @@ public:
         call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
     )
     {
-        this->behaviour_impl(
+        this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
             decl_constructor_impl(params, true).c_str(),
             gfn,
@@ -2683,7 +2684,7 @@ public:
         call_conv_t<CallConv>
     ) requires(!ForceGeneric)
     {
-        this->behaviour_impl(
+        this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
             decl_constructor_impl(params, false).c_str(),
             ctor,
@@ -2707,7 +2708,7 @@ public:
         call_conv_t<CallConv>
     ) requires(!ForceGeneric)
     {
-        this->behaviour_impl(
+        this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
             decl_constructor_impl(params, true).c_str(),
             ctor,
@@ -3208,7 +3209,7 @@ public:
     basic_value_class& default_constructor(use_generic_t)
     {
         using gen_t = detail::constructor<Class, Template>;
-        this->behaviour_impl(
+        this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
             decl_default_ctor(),
             gen_t::generate(generic_call_conv),
@@ -3226,7 +3227,7 @@ public:
         else
         {
             using gen_t = detail::constructor<Class, Template>;
-            this->behaviour_impl(
+            this->register_behaviour(
                 AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
                 decl_default_ctor(),
                 gen_t::generate(call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>),
@@ -3250,7 +3251,7 @@ public:
         if constexpr(std::is_array_v<Class>)
         {
             detail::arr_copy_constructor<Class, const Class&> wrapper;
-            this->behaviour_impl(
+            this->register_behaviour(
                 AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
                 decl_copy_ctor().c_str(),
                 wrapper.generate(generic_call_conv),
@@ -3279,7 +3280,7 @@ public:
             if constexpr(std::is_array_v<Class>)
             {
                 detail::arr_copy_constructor<Class, const Class&> wrapper;
-                this->behaviour_impl(
+                this->register_behaviour(
                     AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
                     decl_copy_ctor().c_str(),
                     wrapper.generate(call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>),
@@ -3299,7 +3300,7 @@ public:
 
     basic_value_class& destructor(use_generic_t)
     {
-        this->behaviour_impl(
+        this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_DESTRUCT,
             "void f()",
             +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
@@ -3318,7 +3319,7 @@ public:
             destructor(use_generic);
         else
         {
-            this->behaviour_impl(
+            this->register_behaviour(
                 AS_NAMESPACE_QUALIFIER asBEHAVE_DESTRUCT,
                 "void f()",
                 +[](Class* ptr) -> void
@@ -3431,7 +3432,7 @@ public:
         call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
     )
     {
-        this->behaviour_impl(
+        this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_CONSTRUCT,
             decl_list_constructor(pattern).c_str(),
             gfn,
@@ -3454,7 +3455,7 @@ public:
         call_conv_t<CallConv>
     ) requires(!ForceGeneric)
     {
-        this->behaviour_impl(
+        this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_CONSTRUCT,
             decl_list_constructor(pattern).c_str(),
             ctor,
@@ -3619,19 +3620,19 @@ public:
         return *this;
     }
 
-#define ASBIND20_VALUE_CLASS_OP(op_name)                   \
-    basic_value_class& op_name(use_generic_t)              \
-    {                                                      \
-        this->template op_name##_impl_generic<Class>();    \
-        return *this;                                      \
-    }                                                      \
-    basic_value_class& op_name()                           \
-    {                                                      \
-        if constexpr(ForceGeneric)                         \
-            this->op_name(use_generic);                    \
-        else                                               \
-            this->template op_name##_impl_native<Class>(); \
-        return *this;                                      \
+#define ASBIND20_VALUE_CLASS_OP(op_name)                         \
+    basic_value_class& op_name(use_generic_t)                    \
+    {                                                            \
+        this->template register_##op_name##_generic<Class>();    \
+        return *this;                                            \
+    }                                                            \
+    basic_value_class& op_name()                                 \
+    {                                                            \
+        if constexpr(ForceGeneric)                               \
+            this->op_name(use_generic);                          \
+        else                                                     \
+            this->template register_##op_name##_native<Class>(); \
+        return *this;                                            \
     }
 
     ASBIND20_VALUE_CLASS_OP(opNeg);
@@ -3705,7 +3706,7 @@ public:
         using func_t = std::decay_t<Fn>;                                                 \
         constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =                         \
             detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER as_beh, Class, func_t>(); \
-        this->behaviour_impl(                                                            \
+        this->register_behaviour(                                                        \
             AS_NAMESPACE_QUALIFIER as_beh,                                               \
             decl::decl_of_beh<AS_NAMESPACE_QUALIFIER as_beh>(),                          \
             fn,                                                                          \
@@ -3715,7 +3716,7 @@ public:
     }                                                                                    \
     basic_value_class& func_name(AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn)                 \
     {                                                                                    \
-        this->behaviour_impl(                                                            \
+        this->register_behaviour(                                                        \
             AS_NAMESPACE_QUALIFIER as_beh,                                               \
             decl::decl_of_beh<AS_NAMESPACE_QUALIFIER as_beh>(),                          \
             gfn,                                                                         \
@@ -3877,7 +3878,7 @@ public:
         Factory fn
     ) requires(!ForceGeneric)
     {
-        this->behaviour_impl(
+        this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
             decl_factory(params).c_str(),
             fn,
@@ -3894,7 +3895,7 @@ public:
         Factory fn
     ) requires(!ForceGeneric)
     {
-        this->behaviour_impl(
+        this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
             decl_factory(params, use_explicit).c_str(),
             fn,
@@ -3917,7 +3918,7 @@ public:
         call_conv_t<CallConv>
     ) requires(!ForceGeneric)
     {
-        this->behaviour_impl(
+        this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
             decl_factory(params).c_str(),
             fn,
@@ -3941,7 +3942,7 @@ public:
         call_conv_t<CallConv>
     ) requires(!ForceGeneric)
     {
-        this->behaviour_impl(
+        this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
             decl_factory(params, use_explicit).c_str(),
             fn,
@@ -3962,7 +3963,7 @@ public:
         call_conv_t<CallConv>
     ) requires(!ForceGeneric)
     {
-        this->behaviour_impl(
+        this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
             decl_factory(params).c_str(),
             fn,
@@ -3985,7 +3986,7 @@ public:
         call_conv_t<CallConv>
     ) requires(!ForceGeneric)
     {
-        this->behaviour_impl(
+        this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
             decl_factory(params, use_explicit).c_str(),
             fn,
@@ -4048,7 +4049,7 @@ public:
         call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
     )
     {
-        this->behaviour_impl(
+        this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
             decl_factory(params).c_str(),
             gfn,
@@ -4065,7 +4066,7 @@ public:
         call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
     )
     {
-        this->behaviour_impl(
+        this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
             decl_factory(params, use_explicit).c_str(),
             gfn,
@@ -4083,7 +4084,7 @@ public:
         call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
     )
     {
-        this->behaviour_impl(
+        this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
             decl_factory(params).c_str(),
             gfn,
@@ -4103,7 +4104,7 @@ public:
         call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
     )
     {
-        this->behaviour_impl(
+        this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
             decl_factory(params, use_explicit).c_str(),
             gfn,
@@ -4532,7 +4533,7 @@ public:
         call_conv_t<CallConv>
     ) requires(!ForceGeneric)
     {
-        this->behaviour_impl(
+        this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY,
             decl_list_factory(pattern).c_str(),
             ctor,
@@ -4565,7 +4566,7 @@ public:
         call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
     )
     {
-        this->behaviour_impl(
+        this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY,
             decl_list_factory(pattern).c_str(),
             gfn,
@@ -4591,7 +4592,7 @@ public:
         call_conv_t<CallConv>
     ) requires(!ForceGeneric)
     {
-        this->behaviour_impl(
+        this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY,
             decl_list_factory(pattern).c_str(),
             ctor,
@@ -4610,7 +4611,7 @@ public:
         call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
     )
     {
-        this->behaviour_impl(
+        this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY,
             decl_list_factory(pattern).c_str(),
             ctor,
@@ -4633,7 +4634,7 @@ public:
         constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
             detail::deduce_beh_callconv_aux<AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY, Class, std::decay_t<ListFactory>, Auxiliary>();
 
-        this->behaviour_impl(
+        this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY,
             decl_list_factory(pattern).c_str(),
             ctor,
@@ -4750,7 +4751,7 @@ public:
             }
         }
 
-        this->behaviour_impl(
+        this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY,
             decl_list_factory(pattern).c_str(),
             wrapper,
@@ -5062,19 +5063,19 @@ public:
         return *this;
     }
 
-#define ASBIND20_REFERENCE_CLASS_OP(op_name)               \
-    basic_ref_class& op_name(use_generic_t)                \
-    {                                                      \
-        this->template op_name##_impl_generic<Class>();    \
-        return *this;                                      \
-    }                                                      \
-    basic_ref_class& op_name()                             \
-    {                                                      \
-        if constexpr(ForceGeneric)                         \
-            this->op_name(use_generic);                    \
-        else                                               \
-            this->template op_name##_impl_native<Class>(); \
-        return *this;                                      \
+#define ASBIND20_REFERENCE_CLASS_OP(op_name)                     \
+    basic_ref_class& op_name(use_generic_t)                      \
+    {                                                            \
+        this->template register_##op_name##_generic<Class>();    \
+        return *this;                                            \
+    }                                                            \
+    basic_ref_class& op_name()                                   \
+    {                                                            \
+        if constexpr(ForceGeneric)                               \
+            this->op_name(use_generic);                          \
+        else                                                     \
+            this->template register_##op_name##_native<Class>(); \
+        return *this;                                            \
     }
 
     ASBIND20_REFERENCE_CLASS_OP(opAssign)
@@ -5101,7 +5102,7 @@ public:
         using func_t = std::decay_t<Fn>;                                                 \
         constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =                         \
             detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER as_beh, Class, func_t>(); \
-        this->behaviour_impl(                                                            \
+        this->register_behaviour(                                                        \
             AS_NAMESPACE_QUALIFIER as_beh,                                               \
             decl::decl_of_beh<AS_NAMESPACE_QUALIFIER as_beh>(),                          \
             fn,                                                                          \
@@ -5111,7 +5112,7 @@ public:
     }                                                                                    \
     basic_ref_class& func_name(AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn)                   \
     {                                                                                    \
-        this->behaviour_impl(                                                            \
+        this->register_behaviour(                                                        \
             AS_NAMESPACE_QUALIFIER as_beh,                                               \
             decl::decl_of_beh<AS_NAMESPACE_QUALIFIER as_beh>(),                          \
             gfn,                                                                         \
