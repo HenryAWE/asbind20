@@ -29,6 +29,8 @@ Update
 - Update I/O module to support formatting script types when ``<format>`` header is available.
   It also provides tools for quick integration with other formatting library like {fmt}.
 
+- Unify implementation of binding generators to make the codebase easier to maintain.
+
 Breaking Change
 ~~~~~~~~~~~~~~~
 
