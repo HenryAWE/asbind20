@@ -1133,6 +1133,7 @@ public:
     }
 
     template <typename Auxiliary>
+    [[nodiscard]]
     void* get_auxiliary_address(auxiliary_wrapper<Auxiliary> aux) const
     {
         if constexpr(std::same_as<Auxiliary, this_type_t>)
