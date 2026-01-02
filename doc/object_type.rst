@@ -408,7 +408,7 @@ member functions taking an object parameter from a helper object can also be reg
 .. note::
   The parameter for receiving object will be located by the following logic:
 
-  1. Check if the first/last parameter is a reference/pointer to the type being registered
+  1. Check if the first/last parameter is a reference/pointer to the type being registered.
   2. If both first and last parameters satisfy the condition, asbind20 will prefer the first one.
 
      This is designed to keep consistency with existing C++ paradigm,
@@ -424,10 +424,10 @@ member functions taking an object parameter from a helper object can also be reg
     using namespace asbind20;
 
     // ...
-        .method("void foobar_0(int arg)", &foobar_0, call_conv<asCALL_CDECL_OBJFIRST>)
-        .method("float foobar_1(float arg) const", &foobar_1, call_conv<asCALL_CDECL_OBJLAST>)
-        .method("void foobar_3(int arg)", &helper::foobar_3, call_conv<asCALL_THISCALL_OBJFIRST>, auxiliary(instance))
-        .method("float foobar_4(float arg) const", &helper::foobar_4, call_conv<asCALL_THISCALL_OBJLAST>, auxiliary(instance));
+        .method("void foobar_0(int arg)", &foobar_0, objfirst)
+        .method("float foobar_1(float arg) const", &foobar_1, objlast)
+        .method("void foobar_3(int arg)", &helper::foobar_3, auxiliary(instance), objfirst)
+        .method("float foobar_4(float arg) const", &helper::foobar_4, auxiliary(instance), objlast);
 
 Function Receiving ``asIScriptGeneric*``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
