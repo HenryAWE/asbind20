@@ -12,6 +12,7 @@
 
 #pragma once
 
+#include "bind/common.hpp"
 #include "meta.hpp"
 #include "utility.hpp"
 
@@ -275,9 +276,10 @@ namespace operators
                     {                                                                                          \
                         return lhs cpp_op rhs;                                                                 \
                     },                                                                                         \
-                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>                                    \
+                    objfirst                                                                                   \
                 );                                                                                             \
             }                                                                                                  \
+                                                                                                               \
         private:                                                                                               \
             const op_name* m_proxy;                                                                            \
         };                                                                                                     \
@@ -310,9 +312,10 @@ namespace operators
                     {                                                                                          \
                         return lhs cpp_op rhs;                                                                 \
                     },                                                                                         \
-                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>                                    \
+                    objfirst                                                                                   \
                 );                                                                                             \
             }                                                                                                  \
+                                                                                                               \
         private:                                                                                               \
             const op_name* m_proxy;                                                                            \
             std::string_view m_ret_decl;                                                                       \
@@ -340,6 +343,7 @@ namespace operators
         public binary_operator                                                                                 \
     {                                                                                                          \
         using param_type = param_placeholder<Rhs, AutoDecl>;                                                   \
+                                                                                                               \
     public:                                                                                                    \
         op_name(const param_type& param)                                                                       \
             : param_type(param) {}                                                                             \
@@ -368,9 +372,10 @@ namespace operators
                     {                                                                                          \
                         return lhs cpp_op rhs;                                                                 \
                     },                                                                                         \
-                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>                                    \
+                    objfirst                                                                                   \
                 );                                                                                             \
             }                                                                                                  \
+                                                                                                               \
         private:                                                                                               \
             const op_name* m_proxy;                                                                            \
         };                                                                                                     \
@@ -399,9 +404,10 @@ namespace operators
                     {                                                                                          \
                         return lhs cpp_op rhs;                                                                 \
                     },                                                                                         \
-                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>                                    \
+                    objfirst                                                                                   \
                 );                                                                                             \
             }                                                                                                  \
+                                                                                                               \
         private:                                                                                               \
             const op_name* m_proxy;                                                                            \
             std::string_view m_ret_decl;                                                                       \
@@ -572,8 +578,8 @@ namespace operators
                     [](this_arg_type& this_, index_arg_type& idx) -> Return
                     {
                         return this_[idx];
-                    },
-                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>
+                    }
+                    // TODO: use new objfirst API
                 );
             }
 
@@ -610,7 +616,7 @@ namespace operators
                     {
                         return this_[idx];
                     },
-                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>
+                    objfirst
                 );
             }
 
@@ -674,8 +680,7 @@ namespace operators
                     [](this_arg_type& this_, Index idx) -> Return
                     {
                         return this_[idx];
-                    },
-                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>
+                    }
                 );
             }
 
@@ -707,8 +712,7 @@ namespace operators
                     [](this_arg_type& this_, Index idx) -> Return
                     {
                         return this_[idx];
-                    },
-                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>
+                    }
                 );
             }
 
@@ -838,7 +842,7 @@ namespace operators
                     {                                                               \
                         return cpp_op std::move(this_);                             \
                     },                                                              \
-                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>          \
+                    objlast                                                         \
                 );                                                                  \
             }                                                                       \
                                                                                     \
@@ -869,7 +873,7 @@ namespace operators
                     {                                                               \
                         return cpp_op std::move(this_);                             \
                     },                                                              \
-                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>          \
+                    objlast                                                         \
                 );                                                                  \
             }                                                                       \
                                                                                     \
@@ -920,9 +924,10 @@ namespace operators
                     {                                                               \
                         return std::move(this_) cpp_op;                             \
                     },                                                              \
-                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>          \
+                    objlast                                                         \
                 );                                                                  \
             }                                                                       \
+                                                                                    \
         private:                                                                    \
             const op_name* m_proxy;                                                 \
         };                                                                          \
@@ -950,9 +955,10 @@ namespace operators
                     {                                                               \
                         return std::move(this_) cpp_op;                             \
                     },                                                              \
-                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>          \
+                    objlast                                                         \
                 );                                                                  \
             }                                                                       \
+                                                                                    \
         private:                                                                    \
             const op_name* m_proxy;                                                 \
             std::string_view m_ret_decl;                                            \
@@ -1018,9 +1024,10 @@ namespace operators
                     {                                                                                          \
                         return lhs cpp_op rhs;                                                                 \
                     },                                                                                         \
-                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>                                    \
+                    objfirst                                                                                   \
                 );                                                                                             \
             }                                                                                                  \
+                                                                                                               \
         private:                                                                                               \
             const op_name* m_proxy;                                                                            \
         };                                                                                                     \
@@ -1053,7 +1060,7 @@ namespace operators
                     {                                                                                          \
                         return lhs cpp_op rhs;                                                                 \
                     },                                                                                         \
-                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>                                    \
+                    objfirst                                                                                   \
                 );                                                                                             \
             }                                                                                                  \
                                                                                                                \
@@ -1084,6 +1091,7 @@ namespace operators
         public binary_operator                                                                                 \
     {                                                                                                          \
         using param_type = param_placeholder<Rhs, AutoDecl>;                                                   \
+                                                                                                               \
     public:                                                                                                    \
         op_name(const param_type& param)                                                                       \
             : param_type(param) {}                                                                             \
@@ -1112,9 +1120,10 @@ namespace operators
                     {                                                                                          \
                         return lhs cpp_op rhs;                                                                 \
                     },                                                                                         \
-                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>                                    \
+                    objfirst                                                                                   \
                 );                                                                                             \
             }                                                                                                  \
+                                                                                                               \
         private:                                                                                               \
             const op_name* m_proxy;                                                                            \
         };                                                                                                     \
@@ -1143,9 +1152,10 @@ namespace operators
                     {                                                                                          \
                         return lhs cpp_op rhs;                                                                 \
                     },                                                                                         \
-                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>                                    \
+                    objfirst                                                                                   \
                 );                                                                                             \
             }                                                                                                  \
+                                                                                                               \
         private:                                                                                               \
             const op_name* m_proxy;                                                                            \
             std::string_view m_ret_decl;                                                                       \
@@ -1169,6 +1179,7 @@ namespace operators
         public binary_operator                                                                                 \
     {                                                                                                          \
         using param_type = param_placeholder<Lhs, AutoDecl>;                                                   \
+                                                                                                               \
     public:                                                                                                    \
         op_name(const param_type& param)                                                                       \
             : param_type(param) {}                                                                             \
@@ -1197,9 +1208,10 @@ namespace operators
                     {                                                                                          \
                         return lhs cpp_op rhs;                                                                 \
                     },                                                                                         \
-                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>                                     \
+                    objlast                                                                                    \
                 );                                                                                             \
             }                                                                                                  \
+                                                                                                               \
         private:                                                                                               \
             const op_name* m_proxy;                                                                            \
         };                                                                                                     \
@@ -1228,9 +1240,10 @@ namespace operators
                     {                                                                                          \
                         return lhs cpp_op rhs;                                                                 \
                     },                                                                                         \
-                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>                                     \
+                    objlast                                                                                    \
                 );                                                                                             \
             }                                                                                                  \
+                                                                                                               \
         private:                                                                                               \
             const op_name* m_proxy;                                                                            \
             std::string_view m_ret_decl;                                                                       \
