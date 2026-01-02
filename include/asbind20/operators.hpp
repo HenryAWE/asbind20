@@ -578,8 +578,8 @@ namespace operators
                     [](this_arg_type& this_, index_arg_type& idx) -> Return
                     {
                         return this_[idx];
-                    }
-                    // TODO: use new objfirst API
+                    },
+                    objfirst
                 );
             }
 
