@@ -2034,25 +2034,6 @@ public:
 
     template <
         noncapturing_native_lambda Lambda,
-        std::size_t... Is,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-    Derived& method(
-        use_generic_t,
-        cstring_ref decl,
-        const Lambda&,
-        var_type_t<Is...>
-    )
-    {
-        this->register_method(
-            decl,
-            detail::to_asGENFUNC_t(Lambda{}, call_conv<CallConv>, var_type<Is...>),
-            generic_call_conv
-        );
-        return derived();
-    }
-
-    template <
-        noncapturing_native_lambda Lambda,
         std::size_t... Is>
     Derived& method(
         use_generic_t,
