@@ -42,6 +42,10 @@ Breaking Change
   I decide to migrate them to a separated open-source library in the future.
   Some of the extensions, like string extraction helper and section loader, are merged into the core library.
 
+- Use ``asbind20::objfirst`` / ``objlast`` to specify the position of object pointer/reference,
+  if you want to specify them explicitly,
+  instead of dealing with underlying calling convention details of AngelScript.
+
 1.8.0
 -----
 
