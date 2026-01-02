@@ -572,6 +572,16 @@ struct friend_ops_helper
             this_.value += *(int*)ref;
         return std::exchange(predefined_value, 0);
     }
+
+    int by_functor_binary_objfirst(const friend_ops& this_, const friend_ops& val)
+    {
+        return val.value + this_.value + std::exchange(predefined_value, val.value);
+    }
+
+    int by_functor_binary_objlast(const friend_ops& val, const friend_ops& this_)
+    {
+        return val.value + this_.value + std::exchange(predefined_value, val.value);
+    }
 };
 
 template <bool UseGeneric>
@@ -597,6 +607,8 @@ static void register_friend_ops(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, 
         .method("int by_functor_objlast(int)", fp<&friend_ops_helper::by_functor_objlast>, auxiliary(helper))
         .method("int by_functor_objfirst_var(int, const ?&in)", fp<&friend_ops_helper::by_functor_objfirst_var>, var_type<1>, auxiliary(helper))
         .method("int by_functor_objlast_var(int, const ?&in)", fp<&friend_ops_helper::by_functor_objlast_var>, var_type<1>, auxiliary(helper))
+        .method("int by_functor_binary_objfirst(const friend_ops&in val)", fp<&friend_ops_helper::by_functor_binary_objfirst>, auxiliary(helper))
+        .method("int by_functor_binary_objlast(const friend_ops&in val)", fp<&friend_ops_helper::by_functor_binary_objlast>, auxiliary(helper), objlast)
         .property("int value", offsetof(friend_ops, value));
 }
 
@@ -653,6 +665,18 @@ int test_7()
     assert(val.by_functor_objlast_var(10, 3) == 182376);
     return val.value;
 }
+int test_8()
+{
+    friend_ops val(1000);
+    assert(val.by_functor_binary_objfirst(friend_ops(13)) == 1013);
+    return val.value;
+}
+int test_9()
+{
+    friend_ops val(1000);
+    assert(val.by_functor_binary_objlast(friend_ops(13)) == 1013);
+    return val.value;
+}
 )";
 
 static void check_friend_ops(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, friend_ops_helper& helper)
@@ -698,6 +722,12 @@ static void check_friend_ops(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, fri
     helper.predefined_value = 182376;
     check_int_result(7, 1013);
     EXPECT_EQ(helper.predefined_value, 0);
+    helper.predefined_value = 0;
+    check_int_result(8, 1000);
+    EXPECT_EQ(helper.predefined_value, 13);
+    helper.predefined_value = 0;
+    check_int_result(9, 1000);
+    EXPECT_EQ(helper.predefined_value, 13);
 }
 
 template <bool UseGeneric>

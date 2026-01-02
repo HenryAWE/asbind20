@@ -1856,6 +1856,51 @@ public:
         return derived();
     }
 
+    template <auto Method, typename Auxiliary, bool ObjFirst>
+    Derived& method(
+        use_generic_t,
+        cstring_ref decl,
+        fp_wrapper<Method>,
+        auxiliary_wrapper<Auxiliary> aux,
+        obj_arg_loc_t<ObjFirst>
+    )
+    {
+        constexpr auto conv = obj_arg_loc_t<ObjFirst>::get_conv(true);
+        this->register_method(
+            decl,
+            detail::to_asGENFUNC_t(
+                fp<Method>,
+                call_conv<conv>
+            ),
+            generic_call_conv,
+            my_base::get_auxiliary_address(aux)
+        );
+        return derived();
+    }
+
+    template <auto Method, typename Auxiliary, bool ObjFirst>
+    Derived& method(
+        cstring_ref decl,
+        fp_wrapper<Method>,
+        auxiliary_wrapper<Auxiliary> aux,
+        obj_arg_loc_t<ObjFirst>
+    )
+    {
+        if constexpr(ForceGeneric)
+            this->method(use_generic, decl, fp<Method>, aux, obj_arg_loc_t<ObjFirst>{});
+        else
+        {
+            constexpr auto conv = obj_arg_loc_t<ObjFirst>::get_conv(true);
+            this->register_method(
+                decl,
+                Method,
+                call_conv<conv>,
+                my_base::get_auxiliary_address(aux)
+            );
+        }
+        return derived();
+    }
+
     template <noncapturing_native_lambda Lambda>
     Derived& method(
         use_generic_t,
