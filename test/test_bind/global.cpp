@@ -59,8 +59,7 @@ static void register_global_funcs(
         )
         .function(
             "int stdcall_func2(int a, float b)",
-            &test_bind::stdcall_func2,
-            call_conv<AS_NAMESPACE_QUALIFIER asCALL_STDCALL>
+            &test_bind::stdcall_func2
         )
         .function(
             "void set_val(int val)",
@@ -95,8 +94,7 @@ static void register_global_funcs(
         )
         .function(
             "int stdcall_func2(int a, float b)",
-            fp<&test_bind::stdcall_func2>,
-            call_conv<AS_NAMESPACE_QUALIFIER asCALL_STDCALL>
+            fp<&test_bind::stdcall_func2>
         )
         .function(
             "int from_aux()",
