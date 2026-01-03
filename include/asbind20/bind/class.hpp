@@ -1224,7 +1224,7 @@ protected:
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
     void register_behaviour(
         AS_NAMESPACE_QUALIFIER asEBehaviours beh,
-        const char* decl,
+        cstring_ref decl,
         Fn&& fn,
         call_conv_t<CallConv>,
         void* aux = nullptr
@@ -1235,7 +1235,7 @@ protected:
         r = get_engine()->RegisterObjectBehaviour(
             m_name.c_str(),
             beh,
-            decl,
+            decl.c_str(),
             detail::to_asSFuncPtr(fn),
             CallConv,
             aux
@@ -1396,7 +1396,8 @@ protected:
 #undef ASBIND20_IMPL_REGISTER_UNARY_SUFFIX_OP
 
 #define ASBIND20_IMPL_REGISTER_BINARY_OP_GENERIC(as_decl, cpp_op, return_type, const_, rhs_type)   \
-    do {                                                                                           \
+    do                                                                                             \
+    {                                                                                              \
         this->register_method(                                                                     \
             as_decl,                                                                               \
             +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void                              \
@@ -1412,7 +1413,8 @@ protected:
     } while(0)
 
 #define ASBIND20_IMPL_REGISTER_BINARY_OP_NATIVE(as_decl, cpp_op, return_type, const_, rhs_type) \
-    do {                                                                                        \
+    do                                                                                          \
+    {                                                                                           \
         static constexpr bool has_member_func = requires() {                                    \
             static_cast<return_type (Class::*)(rhs_type) const_>(&Class::operator cpp_op);      \
         };                                                                                      \
@@ -3690,127 +3692,52 @@ private:
         }
     }
 
+    std::string decl_factory(std::string_view params, bool explicit_) const
+    {
+        return explicit_ ?
+                   decl_factory(params, use_explicit) :
+                   decl_factory(params);
+    }
+
 public:
     template <typename Factory>
+    requires(!std::is_member_function_pointer_v<Factory>)
     basic_ref_class& factory_function(
         std::string_view params,
         Factory fn
     ) requires(!ForceGeneric)
     {
+        constexpr auto conv = detail::deduce_beh_callconv<
+            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
+            Class,
+            std::decay_t<Factory>>();
         this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
-            decl_factory(params).c_str(),
+            decl_factory(params),
             fn,
-            call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
+            call_conv<conv>
         );
 
         return *this;
     }
 
     template <typename Factory>
+    requires(!std::is_member_function_pointer_v<Factory>)
     basic_ref_class& factory_function(
         std::string_view params,
         use_explicit_t,
         Factory fn
     ) requires(!ForceGeneric)
     {
+        constexpr auto conv = detail::deduce_beh_callconv<
+            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
+            Class,
+            std::decay_t<Factory>>();
         this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
-            decl_factory(params, use_explicit).c_str(),
+            decl_factory(params, use_explicit),
             fn,
-            call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
-        );
-
-        return *this;
-    }
-
-    template <
-        typename Factory,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-    requires(
-        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL ||
-        CallConv == AS_NAMESPACE_QUALIFIER asCALL_STDCALL
-    )
-    basic_ref_class& factory_function(
-        std::string_view params,
-        Factory fn,
-        call_conv_t<CallConv>
-    ) requires(!ForceGeneric)
-    {
-        this->register_behaviour(
-            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
-            decl_factory(params).c_str(),
-            fn,
-            call_conv<CallConv>
-        );
-
-        return *this;
-    }
-
-    template <
-        typename Factory,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-    requires(
-        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL ||
-        CallConv == AS_NAMESPACE_QUALIFIER asCALL_STDCALL
-    )
-    basic_ref_class& factory_function(
-        std::string_view params,
-        use_explicit_t,
-        Factory fn,
-        call_conv_t<CallConv>
-    ) requires(!ForceGeneric)
-    {
-        this->register_behaviour(
-            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
-            decl_factory(params, use_explicit).c_str(),
-            fn,
-            call_conv<CallConv>
-        );
-
-        return *this;
-    }
-
-    template <
-        typename Factory,
-        typename Auxiliary,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-    basic_ref_class& factory_function(
-        std::string_view params,
-        Factory fn,
-        auxiliary_wrapper<Auxiliary> aux,
-        call_conv_t<CallConv>
-    ) requires(!ForceGeneric)
-    {
-        this->register_behaviour(
-            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
-            decl_factory(params).c_str(),
-            fn,
-            call_conv<CallConv>,
-            my_base::get_auxiliary_address(aux)
-        );
-
-        return *this;
-    }
-
-    template <
-        typename Factory,
-        typename Auxiliary,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-    basic_ref_class& factory_function(
-        std::string_view params,
-        use_explicit_t,
-        Factory fn,
-        auxiliary_wrapper<Auxiliary> aux,
-        call_conv_t<CallConv>
-    ) requires(!ForceGeneric)
-    {
-        this->register_behaviour(
-            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
-            decl_factory(params, use_explicit).c_str(),
-            fn,
-            call_conv<CallConv>,
-            my_base::get_auxiliary_address(aux)
+            call_conv<conv>
         );
 
         return *this;
@@ -3825,14 +3752,17 @@ public:
         auxiliary_wrapper<Auxiliary> aux
     ) requires(!ForceGeneric)
     {
-        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
-            detail::deduce_beh_callconv_aux<AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY, Class, std::decay_t<Factory>, Auxiliary>();
-
-        this->factory_function(
-            params,
+        constexpr auto conv = detail::deduce_beh_callconv_aux<
+            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
+            Class,
+            std::decay_t<Factory>,
+            Auxiliary>();
+        this->register_behaviour(
+            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
+            decl_factory(params),
             fn,
-            aux,
-            call_conv<conv>
+            call_conv<conv>,
+            my_base::get_auxiliary_address(aux)
         );
 
         return *this;
@@ -3848,15 +3778,17 @@ public:
         auxiliary_wrapper<Auxiliary> aux
     ) requires(!ForceGeneric)
     {
-        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
-            detail::deduce_beh_callconv_aux<AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY, Class, std::decay_t<Factory>, Auxiliary>();
-
-        this->factory_function(
-            params,
-            use_explicit,
+        constexpr auto conv = detail::deduce_beh_callconv_aux<
+            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
+            Class,
+            std::decay_t<Factory>,
+            Auxiliary>();
+        this->register_behaviour(
+            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
+            decl_factory(params, use_explicit),
             fn,
-            aux,
-            call_conv<conv>
+            call_conv<conv>,
+            my_base::get_auxiliary_address(aux)
         );
 
         return *this;
@@ -3864,13 +3796,12 @@ public:
 
     basic_ref_class& factory_function(
         std::string_view params,
-        generic_function gfn,
-        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
+        generic_function gfn
     )
     {
         this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
-            decl_factory(params).c_str(),
+            decl_factory(params),
             gfn,
             generic_call_conv
         );
@@ -3881,13 +3812,12 @@ public:
     basic_ref_class& factory_function(
         std::string_view params,
         use_explicit_t,
-        generic_function gfn,
-        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
+        generic_function gfn
     )
     {
         this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
-            decl_factory(params, use_explicit).c_str(),
+            decl_factory(params, use_explicit),
             gfn,
             generic_call_conv
         );
@@ -3899,13 +3829,12 @@ public:
     basic_ref_class& factory_function(
         std::string_view params,
         generic_function gfn,
-        auxiliary_wrapper<Auxiliary> aux,
-        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
+        auxiliary_wrapper<Auxiliary> aux
     )
     {
         this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
-            decl_factory(params).c_str(),
+            decl_factory(params),
             gfn,
             generic_call_conv,
             my_base::get_auxiliary_address(aux)
@@ -3919,13 +3848,12 @@ public:
         std::string_view params,
         use_explicit_t,
         generic_function gfn,
-        auxiliary_wrapper<Auxiliary> aux,
-        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
+        auxiliary_wrapper<Auxiliary> aux
     )
     {
         this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
-            decl_factory(params, use_explicit).c_str(),
+            decl_factory(params, use_explicit),
             gfn,
             generic_call_conv,
             my_base::get_auxiliary_address(aux)
@@ -3938,13 +3866,20 @@ public:
     basic_ref_class& factory_function(
         use_generic_t,
         std::string_view params,
-        fp_wrapper<Factory>,
-        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_CDECL> = {}
+        fp_wrapper<Factory>
     )
     {
-        factory_function(
-            params,
-            detail::to_asGENFUNC_t(fp<Factory>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>),
+        constexpr auto conv = detail::deduce_beh_callconv<
+            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
+            Class,
+            std::decay_t<decltype(Factory)>>();
+        this->register_behaviour(
+            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
+            decl_factory(params),
+            detail::to_asGENFUNC_t(
+                fp<Factory>,
+                call_conv<conv>
+            ),
             generic_call_conv
         );
 
@@ -3956,14 +3891,20 @@ public:
         use_generic_t,
         std::string_view params,
         use_explicit_t,
-        fp_wrapper<Factory>,
-        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_CDECL> = {}
+        fp_wrapper<Factory>
     )
     {
-        this->factory_function(
-            params,
-            use_explicit,
-            detail::to_asGENFUNC_t(fp<Factory>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>),
+        constexpr auto conv = detail::deduce_beh_callconv<
+            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
+            Class,
+            std::decay_t<decltype(Factory)>>();
+        this->register_behaviour(
+            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
+            decl_factory(params, use_explicit),
+            detail::to_asGENFUNC_t(
+                fp<Factory>,
+                call_conv<conv>
+            ),
             generic_call_conv
         );
 
@@ -3982,11 +3923,20 @@ public:
         call_conv_t<CallConv>
     )
     {
-        factory_function(
-            params,
-            detail::auxiliary_factory_to_asGENFUNC_t<Template>(fp<AuxFactoryFunc>, call_conv<CallConv>),
-            aux,
-            generic_call_conv
+        constexpr auto conv = detail::deduce_beh_callconv_aux<
+            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
+            Class,
+            std::decay_t<decltype(AuxFactoryFunc)>,
+            Auxiliary>();
+        this->register_behaviour(
+            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
+            decl_factory(params),
+            detail::auxiliary_factory_to_asGENFUNC_t<Template>(
+                fp<AuxFactoryFunc>,
+                call_conv<conv>
+            ),
+            generic_call_conv,
+            my_base::get_auxiliary_address(aux)
         );
 
         return *this;
@@ -3994,23 +3944,29 @@ public:
 
     template <
         auto AuxFactoryFunc,
-        typename Auxiliary,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        typename Auxiliary>
     basic_ref_class& factory_function(
         use_generic_t,
         std::string_view params,
         use_explicit_t,
         fp_wrapper<AuxFactoryFunc>,
-        auxiliary_wrapper<Auxiliary> aux,
-        call_conv_t<CallConv>
+        auxiliary_wrapper<Auxiliary> aux
     )
     {
-        factory_function(
-            params,
-            use_explicit,
-            detail::auxiliary_factory_to_asGENFUNC_t<Template>(fp<AuxFactoryFunc>, call_conv<CallConv>),
-            aux,
-            generic_call_conv
+        constexpr auto conv = detail::deduce_beh_callconv_aux<
+            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
+            Class,
+            std::decay_t<decltype(AuxFactoryFunc)>,
+            Auxiliary>();
+        this->register_behaviour(
+            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
+            decl_factory(params, use_explicit),
+            detail::auxiliary_factory_to_asGENFUNC_t<Template>(
+                fp<AuxFactoryFunc>,
+                call_conv<conv>
+            ),
+            generic_call_conv,
+            my_base::get_auxiliary_address(aux)
         );
 
         return *this;
@@ -4023,9 +3979,9 @@ public:
     )
     {
         if constexpr(ForceGeneric)
-            factory_function(use_generic, params, fp<Factory>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>);
+            factory_function(use_generic, params, fp<Factory>);
         else
-            factory_function(params, Factory, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>);
+            factory_function(params, Factory);
 
         return *this;
     }
@@ -4038,83 +3994,9 @@ public:
     )
     {
         if constexpr(ForceGeneric)
-            factory_function(use_generic, params, use_explicit, fp<Factory>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>);
+            factory_function(use_generic, params, use_explicit, fp<Factory>);
         else
-            factory_function(params, use_explicit, Factory, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>);
-
-        return *this;
-    }
-
-    template <auto Factory, AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-    requires(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL)
-    basic_ref_class& factory_function(
-        std::string_view params,
-        fp_wrapper<Factory>,
-        call_conv_t<CallConv>
-    )
-    {
-        if constexpr(ForceGeneric)
-            factory_function(use_generic, params, fp<Factory>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>);
-        else
-            factory_function(params, Factory, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>);
-
-        return *this;
-    }
-
-    template <auto Factory, AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-    requires(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL)
-    basic_ref_class& factory_function(
-        std::string_view params,
-        use_explicit_t,
-        fp_wrapper<Factory>,
-        call_conv_t<CallConv>
-    )
-    {
-        if constexpr(ForceGeneric)
-            factory_function(use_generic, params, use_explicit, fp<Factory>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>);
-        else
-            factory_function(params, use_explicit, Factory, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>);
-
-        return *this;
-    }
-
-    template <
-        auto Factory,
-        typename Auxiliary,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-    requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-    basic_ref_class& factory_function(
-        std::string_view params,
-        fp_wrapper<Factory>,
-        auxiliary_wrapper<Auxiliary> aux,
-        call_conv_t<CallConv>
-    )
-    {
-        if constexpr(ForceGeneric)
-            factory_function(use_generic, params, fp<Factory>, aux, call_conv<CallConv>);
-        else
-            factory_function(params, Factory, aux, call_conv<CallConv>);
-
-        return *this;
-    }
-
-    template <
-        auto Factory,
-        typename Auxiliary,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-    requires(CallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-    basic_ref_class& factory_function(
-        std::string_view params,
-        use_explicit_t,
-        fp_wrapper<Factory>,
-        auxiliary_wrapper<Auxiliary> aux,
-        call_conv_t<CallConv>
-    )
-    {
-        if constexpr(ForceGeneric)
-            factory_function(use_generic, params, use_explicit, fp<Factory>, aux, call_conv<CallConv>);
-        else
-            factory_function(params, use_explicit, Factory, aux, call_conv<CallConv>);
+            factory_function(params, use_explicit, Factory);
 
         return *this;
     }
@@ -4128,13 +4010,10 @@ public:
         auxiliary_wrapper<Auxiliary> aux
     )
     {
-        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
-            detail::deduce_beh_callconv_aux<AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY, Class, std::decay_t<decltype(Factory)>, Auxiliary>();
-
         if constexpr(ForceGeneric)
-            factory_function(use_generic, params, fp<Factory>, aux, call_conv<conv>);
+            factory_function(use_generic, params, fp<Factory>, aux);
         else
-            factory_function(params, Factory, aux, call_conv<conv>);
+            factory_function(params, Factory, aux);
 
         return *this;
     }
@@ -4149,13 +4028,10 @@ public:
         auxiliary_wrapper<Auxiliary> aux
     )
     {
-        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
-            detail::deduce_beh_callconv_aux<AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY, Class, std::decay_t<decltype(Factory)>, Auxiliary>();
-
         if constexpr(ForceGeneric)
-            factory_function(use_generic, params, use_explicit, fp<Factory>, aux, call_conv<conv>);
+            factory_function(use_generic, params, use_explicit, fp<Factory>, aux);
         else
-            factory_function(params, use_explicit, Factory, aux, call_conv<conv>);
+            factory_function(params, use_explicit, Factory, aux);
 
         return *this;
     }
@@ -4185,92 +4061,67 @@ public:
 
 private:
     template <typename... Args, typename Policy>
-    void factory_impl_generic(
+    void register_factory_generic(
         std::string_view params, use_policy_t<Policy>, bool explicit_
     )
     {
+        std::string decl = decl_factory(params, explicit_);
         generic_function wrapper =
             detail::factory<Class, Template, Policy, Args...>::generate(generic_call_conv);
 
         void* aux = nullptr;
+        // For non-template class that notifies GC,
+        // store the type information as the auxiliary pointer.
         if constexpr(std::same_as<Policy, policies::notify_gc> && !Template)
             aux = get_engine()->GetTypeInfoById(this->get_type_id());
 
-        if(explicit_)
-        {
-            factory_function(
-                params,
-                use_explicit,
-                wrapper,
-                auxiliary(aux),
-                generic_call_conv
-            );
-        }
-        else
-        {
-            factory_function(
-                params,
-                wrapper,
-                auxiliary(aux),
-                generic_call_conv
-            );
-        }
+        this->register_behaviour(
+            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
+            decl,
+            wrapper,
+            generic_call_conv,
+            aux
+        );
     }
 
     template <typename... Args, typename Policy>
-    void factory_impl_native(
+    void register_factory_native(
         std::string_view params, use_policy_t<Policy>, bool explicit_
     ) requires(!ForceGeneric)
     {
+        std::string decl = decl_factory(params, explicit_);
         if constexpr(std::same_as<Policy, policies::notify_gc> && !Template)
         {
             auto wrapper =
-                detail::factory<Class, Template, Policy, Args...>::generate(call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>);
-
-            AS_NAMESPACE_QUALIFIER asITypeInfo* ti = get_engine()->GetTypeInfoById(this->get_type_id());
-
-            if(explicit_)
-            {
-                factory_function(
-                    params,
-                    use_explicit,
-                    wrapper,
-                    auxiliary(ti),
+                detail::factory<Class, Template, Policy, Args...>::generate(
                     call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
                 );
-            }
-            else
-            {
-                factory_function(
-                    params,
-                    wrapper,
-                    auxiliary(ti),
-                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
-                );
-            }
+
+            // For non-template class that notifies GC,
+            // store the type information as the auxiliary pointer.
+            void* ti = get_engine()->GetTypeInfoById(this->get_type_id());
+
+            this->register_behaviour(
+                AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
+                decl,
+                wrapper,
+                call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>,
+                ti // auxiliary
+            );
         }
         else
         {
             auto wrapper =
-                detail::factory<Class, Template, Policy, Args...>::generate(call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>);
+                detail::factory<Class, Template, Policy, Args...>::generate(
+                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
+                );
 
-            if(explicit_)
-            {
-                factory_function(
-                    params,
-                    use_explicit,
-                    wrapper,
-                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
-                );
-            }
-            else
-            {
-                factory_function(
-                    params,
-                    wrapper,
-                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
-                );
-            }
+            this->register_behaviour(
+                AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
+                decl,
+                wrapper,
+                call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
+            );
         }
     }
 
@@ -4280,8 +4131,9 @@ public:
         use_generic_t, std::string_view params, use_policy_t<Policy> = {}
     )
     {
-        this->factory_impl_generic<Args...>(params, use_policy<Policy>, false);
-
+        this->template register_factory_generic<Args...>(
+            params, use_policy<Policy>, false
+        );
         return *this;
     }
 
@@ -4290,8 +4142,9 @@ public:
         use_generic_t, std::string_view params, use_explicit_t, use_policy_t<Policy> = {}
     )
     {
-        this->factory_impl_generic<Args...>(params, use_policy<Policy>, true);
-
+        this->template register_factory_generic<Args...>(
+            params, use_policy<Policy>, true
+        );
         return *this;
     }
 
@@ -4301,12 +4154,12 @@ public:
     )
     {
         if constexpr(ForceGeneric)
-        {
             factory<Args...>(use_generic, params, use_policy<Policy>);
-        }
         else
         {
-            this->factory_impl_native<Args...>(params, use_policy<Policy>, false);
+            this->template register_factory_native<Args...>(
+                params, use_policy<Policy>, false
+            );
         }
 
         return *this;
@@ -4318,12 +4171,12 @@ public:
     )
     {
         if constexpr(ForceGeneric)
-        {
             factory<Args...>(use_generic, params, use_explicit, use_policy<Policy>);
-        }
         else
         {
-            this->factory_impl_native<Args...>(params, use_policy<Policy>, true);
+            this->template register_factory_native<Args...>(
+                params, use_policy<Policy>, true
+            );
         }
 
         return *this;
