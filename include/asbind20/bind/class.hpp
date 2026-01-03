@@ -3447,6 +3447,27 @@ private:
                    decl_factory(params);
     }
 
+    template <
+        typename Fn,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    void register_factory_function(
+        bool explicit_,
+        std::string_view params,
+        Fn&& fn,
+        call_conv_t<CallConv>,
+        void* aux = nullptr
+    )
+    {
+        std::string decl = decl_factory(params, explicit_);
+        this->register_behaviour(
+            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
+            decl,
+            std::forward<Fn>(fn),
+            call_conv<CallConv>,
+            aux
+        );
+    }
+
 public:
     template <typename Factory>
     requires(!std::is_member_function_pointer_v<Factory>)
@@ -3459,9 +3480,9 @@ public:
             AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
             Class,
             std::decay_t<Factory>>();
-        this->register_behaviour(
-            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
-            decl_factory(params),
+        this->register_factory_function(
+            false,
+            params,
             fn,
             call_conv<conv>
         );
@@ -3481,9 +3502,9 @@ public:
             AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
             Class,
             std::decay_t<Factory>>();
-        this->register_behaviour(
-            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
-            decl_factory(params, use_explicit),
+        this->register_factory_function(
+            true,
+            params,
             fn,
             call_conv<conv>
         );
@@ -3505,9 +3526,9 @@ public:
             Class,
             std::decay_t<Factory>,
             Auxiliary>();
-        this->register_behaviour(
-            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
-            decl_factory(params),
+        this->register_factory_function(
+            false,
+            params,
             fn,
             call_conv<conv>,
             my_base::get_auxiliary_address(aux)
@@ -3531,9 +3552,9 @@ public:
             Class,
             std::decay_t<Factory>,
             Auxiliary>();
-        this->register_behaviour(
-            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
-            decl_factory(params, use_explicit),
+        this->register_factory_function(
+            true,
+            params,
             fn,
             call_conv<conv>,
             my_base::get_auxiliary_address(aux)
@@ -3547,9 +3568,9 @@ public:
         generic_function gfn
     )
     {
-        this->register_behaviour(
-            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
-            decl_factory(params),
+        this->register_factory_function(
+            false,
+            params,
             gfn,
             generic_call_conv
         );
@@ -3563,9 +3584,9 @@ public:
         generic_function gfn
     )
     {
-        this->register_behaviour(
-            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
-            decl_factory(params, use_explicit),
+        this->register_factory_function(
+            true,
+            params,
             gfn,
             generic_call_conv
         );
@@ -3580,9 +3601,9 @@ public:
         auxiliary_wrapper<Auxiliary> aux
     )
     {
-        this->register_behaviour(
-            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
-            decl_factory(params),
+        this->register_factory_function(
+            false,
+            params,
             gfn,
             generic_call_conv,
             my_base::get_auxiliary_address(aux)
@@ -3599,9 +3620,9 @@ public:
         auxiliary_wrapper<Auxiliary> aux
     )
     {
-        this->register_behaviour(
-            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
-            decl_factory(params, use_explicit),
+        this->register_factory_function(
+            true,
+            params,
             gfn,
             generic_call_conv,
             my_base::get_auxiliary_address(aux)
@@ -3621,12 +3642,11 @@ public:
             AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
             Class,
             std::decay_t<decltype(Factory)>>();
-        this->register_behaviour(
-            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
-            decl_factory(params),
+        this->register_factory_function(
+            false,
+            params,
             detail::to_asGENFUNC_t(
-                fp<Factory>,
-                call_conv<conv>
+                fp<Factory>, call_conv<conv>
             ),
             generic_call_conv
         );
@@ -3646,12 +3666,11 @@ public:
             AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
             Class,
             std::decay_t<decltype(Factory)>>();
-        this->register_behaviour(
-            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
-            decl_factory(params, use_explicit),
+        this->register_factory_function(
+            true,
+            params,
             detail::to_asGENFUNC_t(
-                fp<Factory>,
-                call_conv<conv>
+                fp<Factory>, call_conv<conv>
             ),
             generic_call_conv
         );
@@ -3676,12 +3695,11 @@ public:
             Class,
             std::decay_t<decltype(AuxFactoryFunc)>,
             Auxiliary>();
-        this->register_behaviour(
-            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
-            decl_factory(params),
+        this->register_factory_function(
+            false,
+            params,
             detail::auxiliary_factory_to_asGENFUNC_t<Template>(
-                fp<AuxFactoryFunc>,
-                call_conv<conv>
+                fp<AuxFactoryFunc>, call_conv<conv>
             ),
             generic_call_conv,
             my_base::get_auxiliary_address(aux)
@@ -3706,12 +3724,11 @@ public:
             Class,
             std::decay_t<decltype(AuxFactoryFunc)>,
             Auxiliary>();
-        this->register_behaviour(
-            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
-            decl_factory(params, use_explicit),
+        this->register_factory_function(
+            true,
+            params,
             detail::auxiliary_factory_to_asGENFUNC_t<Template>(
-                fp<AuxFactoryFunc>,
-                call_conv<conv>
+                fp<AuxFactoryFunc>, call_conv<conv>
             ),
             generic_call_conv,
             my_base::get_auxiliary_address(aux)
