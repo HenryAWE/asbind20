@@ -1719,10 +1719,10 @@ public:
     Derived& method(
         const char* decl,
         Fn&& fn,
-        obj_arg_loc_t<ObjFirst>
+        obj_loc_t<ObjFirst>
     ) requires(!ForceGeneric)
     {
-        constexpr auto conv = obj_arg_loc_t<ObjFirst>::get_conv(false);
+        constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, false);
         this->register_method(
             decl,
             fn,
@@ -1862,10 +1862,10 @@ public:
         cstring_ref decl,
         fp_wrapper<Method>,
         auxiliary_wrapper<Auxiliary> aux,
-        obj_arg_loc_t<ObjFirst>
+        obj_loc_t<ObjFirst>
     )
     {
-        constexpr auto conv = obj_arg_loc_t<ObjFirst>::get_conv(true);
+        constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, true);
         this->register_method(
             decl,
             detail::to_asGENFUNC_t(
@@ -1883,14 +1883,14 @@ public:
         cstring_ref decl,
         fp_wrapper<Method>,
         auxiliary_wrapper<Auxiliary> aux,
-        obj_arg_loc_t<ObjFirst>
+        obj_loc_t<ObjFirst>
     )
     {
         if constexpr(ForceGeneric)
-            this->method(use_generic, decl, fp<Method>, aux, obj_arg_loc_t<ObjFirst>{});
+            this->method(use_generic, decl, fp<Method>, aux, obj_loc<ObjFirst>);
         else
         {
-            constexpr auto conv = obj_arg_loc_t<ObjFirst>::get_conv(true);
+            constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, true);
             this->register_method(
                 decl,
                 Method,
@@ -1922,10 +1922,10 @@ public:
         use_generic_t,
         cstring_ref decl,
         const Lambda&,
-        obj_arg_loc_t<ObjFirst>
+        obj_loc_t<ObjFirst>
     )
     {
-        constexpr auto conv = obj_arg_loc_t<ObjFirst>::get_conv(false);
+        constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, false);
         this->register_method(
             decl,
             detail::to_asGENFUNC_t(Lambda{}, call_conv<conv>),
@@ -1958,14 +1958,14 @@ public:
     Derived& method(
         cstring_ref decl,
         const Lambda&,
-        obj_arg_loc_t<ObjFirst>
+        obj_loc_t<ObjFirst>
     )
     {
         if constexpr(ForceGeneric)
-            this->method(use_generic, decl, Lambda{}, obj_arg_loc_t<ObjFirst>{});
+            this->method(use_generic, decl, Lambda{}, obj_loc<ObjFirst>);
         else
         {
-            constexpr auto conv = obj_arg_loc_t<ObjFirst>::get_conv(false);
+            constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, false);
             this->register_method(
                 decl,
                 detail::to_asGENFUNC_t(Lambda{}, call_conv<conv>),

@@ -28,40 +28,38 @@ struct use_explicit_t
 
 constexpr inline use_explicit_t use_explicit{};
 
-template <bool First>
-struct obj_arg_loc_t;
-
-// Object first
-template <>
-struct obj_arg_loc_t<true>
+template <bool ObjFirst>
+struct obj_loc_t
 {
-    static consteval auto get_conv(bool is_thiscall) noexcept
-        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
-    {
-        return is_thiscall ?
-                   AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJFIRST :
-                   AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST;
-    }
+    static constexpr bool is_obj_first = ObjFirst;
 };
 
-// Object last
-template <>
-struct obj_arg_loc_t<false>
-{
-    static consteval auto get_conv(bool is_thiscall) noexcept
-        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
-    {
-        return is_thiscall ?
-                   AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJLAST :
-                   AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
-    }
-};
+template <bool ObjFirst>
+inline constexpr obj_loc_t<ObjFirst> obj_loc;
 
-inline constexpr obj_arg_loc_t<true> objfirst{};
-inline constexpr obj_arg_loc_t<false> objlast{};
+inline constexpr obj_loc_t<true> objfirst{};
+inline constexpr obj_loc_t<false> objlast{};
 
 namespace detail
 {
+    template <bool ObjFirst>
+    consteval auto conv_of_loc(obj_loc_t<ObjFirst>, bool is_thiscall)
+        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    {
+        if constexpr(ObjFirst)
+        {
+            return is_thiscall ?
+                       AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJFIRST :
+                       AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST;
+        }
+        else
+        {
+            return is_thiscall ?
+                       AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJLAST :
+                       AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
+        }
+    }
+
     template <typename Func>
     auto to_asSFuncPtr(Func f)
         -> AS_NAMESPACE_QUALIFIER asSFuncPtr
