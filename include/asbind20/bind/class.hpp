@@ -2854,7 +2854,7 @@ public:
         use_explicit_t
     ) requires(check_constructible<Args...>())
     {
-        this->template register_constructor_generic<Args...>(params, true);
+        this->register_constructor_generic<Args...>(params, true);
         return *this;
     }
 
@@ -2869,7 +2869,7 @@ public:
         if constexpr(ForceGeneric)
             constructor<Args...>(use_generic, params);
         else
-            this->template register_constructor_native<Args...>(params, false);
+            this->register_constructor_native<Args...>(params, false);
         return *this;
     }
 
@@ -2885,7 +2885,7 @@ public:
         if constexpr(ForceGeneric)
             constructor<Args...>(use_generic, params, use_explicit);
         else
-            this->template register_constructor_native<Args...>(params, true);
+            this->register_constructor_native<Args...>(params, true);
         return *this;
     }
 
@@ -2943,7 +2943,7 @@ public:
             detail::arr_copy_constructor<Class, const Class&> wrapper;
             this->register_behaviour(
                 AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
-                decl_copy_ctor().c_str(),
+                decl_copy_ctor(),
                 wrapper.generate(generic_call_conv),
                 generic_call_conv
             );
@@ -2962,9 +2962,7 @@ public:
     basic_value_class& copy_constructor()
     {
         if constexpr(ForceGeneric)
-        {
             this->copy_constructor(use_generic);
-        }
         else
         {
             if constexpr(std::is_array_v<Class>)
@@ -2972,7 +2970,7 @@ public:
                 detail::arr_copy_constructor<Class, const Class&> wrapper;
                 this->register_behaviour(
                     AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
-                    decl_copy_ctor().c_str(),
+                    decl_copy_ctor(),
                     wrapper.generate(call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>),
                     call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
                 );
@@ -3107,7 +3105,7 @@ public:
     }
 
 private:
-    constexpr std::string decl_list_constructor(std::string_view pattern) const
+    static constexpr std::string decl_list_constructor(std::string_view pattern)
     {
         if constexpr(Template)
             return string_concat("void f(int&in,int&in){", pattern, '}');
