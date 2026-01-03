@@ -3690,25 +3690,6 @@ private:
         }
     }
 
-    template <typename... Args>
-    static consteval bool check_factory_args()
-    {
-        if constexpr(Template)
-        {
-            using args_tuple = std::tuple<Args...>;
-            if constexpr(std::tuple_size_v<args_tuple> >= 1)
-            {
-                return std::convertible_to<
-                    AS_NAMESPACE_QUALIFIER asITypeInfo*,
-                    std::tuple_element_t<0, args_tuple>>;
-            }
-            else
-                return false;
-        }
-        else
-            return true;
-    }
-
 public:
     template <typename Factory>
     basic_ref_class& factory_function(
