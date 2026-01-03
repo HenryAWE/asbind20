@@ -3055,12 +3055,11 @@ private:
     }
 
     template <typename... Args>
-    static consteval bool check_constructible()
+    static consteval bool check_constructible(bool has_hidden_arg = Template)
     {
-        if constexpr(Template)
-            return meta::is_constructible_at_v<Class, AS_NAMESPACE_QUALIFIER asITypeInfo*, Args...>;
-        else
-            return meta::is_constructible_at_v<Class, Args...>;
+        return has_hidden_arg ?
+                   meta::is_constructible_at_v<Class, AS_NAMESPACE_QUALIFIER asITypeInfo*, Args...> :
+                   meta::is_constructible_at_v<Class, Args...>;
     }
 
 public:
@@ -4734,8 +4733,6 @@ public:
 
         return *this;
     }
-
-    // TODO: Operators returning by value for reference type
 
     // reference type-only GC behaviours
 
