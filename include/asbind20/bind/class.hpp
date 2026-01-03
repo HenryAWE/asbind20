@@ -1703,7 +1703,7 @@ public:
 
     template <native_function Fn>
     Derived& method(
-        const char* decl,
+        cstring_ref decl,
         Fn&& fn
     ) requires(!ForceGeneric)
     {
@@ -1718,7 +1718,7 @@ public:
 
     template <native_function Fn, bool ObjFirst>
     Derived& method(
-        const char* decl,
+        cstring_ref decl,
         Fn&& fn,
         obj_loc_t<ObjFirst>
     ) requires(!ForceGeneric)
@@ -1805,14 +1805,7 @@ public:
         if constexpr(ForceGeneric)
             this->method(use_generic, decl, fp<Method>);
         else
-        {
-            constexpr auto conv = method_callconv<std::decay_t<decltype(Method)>>();
-            this->register_method(
-                decl,
-                Method,
-                call_conv<conv>
-            );
-        }
+            this->method(decl, Method);
         return derived();
     }
 
@@ -1844,16 +1837,7 @@ public:
         if constexpr(ForceGeneric)
             this->method(use_generic, decl, fp<Method>, aux);
         else
-        {
-            constexpr auto conv =
-                method_callconv_aux<std::decay_t<decltype(Method)>, Auxiliary>();
-            this->register_method(
-                decl,
-                Method,
-                call_conv<conv>,
-                my_base::get_auxiliary_address(aux)
-            );
-        }
+            this->method(decl, Method, aux);
         return derived();
     }
 
@@ -1866,6 +1850,8 @@ public:
         obj_loc_t<ObjFirst>
     )
     {
+        // For method with auxiliary object,
+        // its calling convention should be THISCALL_OBJFIRST/LAST
         constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, true);
         this->register_method(
             decl,
@@ -1891,6 +1877,8 @@ public:
             this->method(use_generic, decl, fp<Method>, aux, obj_loc<ObjFirst>);
         else
         {
+            // For method with auxiliary object,
+            // its calling convention should be THISCALL_OBJFIRST/LAST
             constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, true);
             this->register_method(
                 decl,
@@ -2011,14 +1999,7 @@ public:
         if constexpr(ForceGeneric)
             this->method(use_generic, decl, fp<Function>, var_type<Is...>);
         else
-        {
-            constexpr auto conv = method_callconv<Function>();
-            this->register_method(
-                decl,
-                Function,
-                call_conv<conv>
-            );
-        }
+            this->method(decl, Function);
         return derived();
     }
 
