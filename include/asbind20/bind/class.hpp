@@ -4301,7 +4301,7 @@ private:
     // For non-templated types,
     // GC notifier needs to access the typeinfo through the auxiliary pointer
     template <typename FactoryPolicy>
-    void* aux_for_notifying_gc() const
+    void* aux_for_policy() const
     {
         void* aux = nullptr;
         if constexpr(std::same_as<FactoryPolicy, policies::notify_gc> && !Template)
@@ -4329,7 +4329,7 @@ public:
         this->list_factory_function(
             pattern,
             gen_t::generate(generic_call_conv),
-            auxiliary(this->aux_for_notifying_gc<FactoryPolicy>()),
+            auxiliary(this->aux_for_policy<FactoryPolicy>()),
             generic_call_conv
         );
 
@@ -4361,7 +4361,7 @@ public:
                     gen_t::generate(
                         call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
                     ),
-                    auxiliary(this->aux_for_notifying_gc<FactoryPolicy>()),
+                    auxiliary(this->aux_for_policy<FactoryPolicy>()),
                     call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
                 );
             }
@@ -4449,7 +4449,7 @@ public:
         list_factory_function(
             pattern,
             gen_t::generate(generic_call_conv),
-            auxiliary(this->aux_for_notifying_gc<FactoryPolicy>()),
+            auxiliary(this->aux_for_policy<FactoryPolicy>()),
             generic_call_conv
         );
 
@@ -4491,7 +4491,7 @@ public:
                     gen_t::generate(
                         call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
                     ),
-                    auxiliary(this->aux_for_notifying_gc<FactoryPolicy>()),
+                    auxiliary(this->aux_for_policy<FactoryPolicy>()),
                     call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
                 );
             }
