@@ -3956,39 +3956,35 @@ private:
             return string_concat(get_name(), "@f(int&in){", pattern, "}");
     }
 
-public:
-    template <
-        native_function ListFactory,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-    requires(
-        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL ||
-        CallConv == AS_NAMESPACE_QUALIFIER asCALL_STDCALL
-    )
-    basic_ref_class& list_factory_function(
+    template <typename Fn, AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    void register_list_factory_func(
         std::string_view pattern,
-        ListFactory ctor,
-        call_conv_t<CallConv>
-    ) requires(!ForceGeneric)
+        Fn&& fn,
+        call_conv_t<CallConv>,
+        void* aux = nullptr
+    )
     {
         this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY,
-            decl_list_factory(pattern).c_str(),
-            ctor,
-            call_conv<CallConv>
+            decl_list_factory(pattern),
+            fn,
+            call_conv<CallConv>,
+            aux
         );
-
-        return *this;
     }
 
+public:
     template <native_function ListFactory>
     basic_ref_class& list_factory_function(
         std::string_view pattern,
         ListFactory ctor
     ) requires(!ForceGeneric)
     {
-        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
-            detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY, Class, std::decay_t<ListFactory>>();
-        this->list_factory_function(
+        constexpr auto conv = detail::deduce_beh_callconv<
+            AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY,
+            Class,
+            std::decay_t<ListFactory>>();
+        this->register_list_factory_func(
             pattern,
             ctor,
             call_conv<conv>
@@ -3999,42 +3995,13 @@ public:
 
     basic_ref_class& list_factory_function(
         std::string_view pattern,
-        generic_function gfn,
-        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
+        generic_function gfn
     )
     {
-        this->register_behaviour(
-            AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY,
-            decl_list_factory(pattern).c_str(),
+        this->register_list_factory_func(
+            pattern,
             gfn,
             generic_call_conv
-        );
-
-        return *this;
-    }
-
-    template <
-        native_function ListFactory,
-        typename Auxiliary,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-    requires(
-        CallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL ||
-        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
-        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
-    )
-    basic_ref_class& list_factory_function(
-        std::string_view pattern,
-        ListFactory ctor,
-        auxiliary_wrapper<Auxiliary> aux,
-        call_conv_t<CallConv>
-    ) requires(!ForceGeneric)
-    {
-        this->register_behaviour(
-            AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY,
-            decl_list_factory(pattern).c_str(),
-            ctor,
-            call_conv<CallConv>,
-            my_base::get_auxiliary_address(aux)
         );
 
         return *this;
@@ -4044,13 +4011,11 @@ public:
     basic_ref_class& list_factory_function(
         std::string_view pattern,
         generic_function ctor,
-        auxiliary_wrapper<Auxiliary> aux,
-        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
+        auxiliary_wrapper<Auxiliary> aux
     )
     {
-        this->register_behaviour(
-            AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY,
-            decl_list_factory(pattern).c_str(),
+        this->register_list_factory_func(
+            pattern,
             ctor,
             generic_call_conv,
             my_base::get_auxiliary_address(aux)
@@ -4068,12 +4033,13 @@ public:
         auxiliary_wrapper<Auxiliary> aux
     ) requires(!ForceGeneric)
     {
-        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
-            detail::deduce_beh_callconv_aux<AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY, Class, std::decay_t<ListFactory>, Auxiliary>();
-
-        this->register_behaviour(
+        constexpr auto conv = detail::deduce_beh_callconv_aux<
             AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY,
-            decl_list_factory(pattern).c_str(),
+            Class,
+            std::decay_t<ListFactory>,
+            Auxiliary>();
+        this->register_list_factory_func(
+            pattern,
             ctor,
             call_conv<conv>,
             my_base::get_auxiliary_address(aux)
@@ -4084,27 +4050,28 @@ public:
 
     template <
         auto ListFactory,
-        typename Auxiliary,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-    requires(
-        CallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL ||
-        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
-        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
-    )
+        typename Auxiliary>
     basic_ref_class& list_factory_function(
         use_generic_t,
         std::string_view pattern,
         fp_wrapper<ListFactory>,
-        auxiliary_wrapper<Auxiliary> aux,
-        call_conv_t<CallConv>
+        auxiliary_wrapper<Auxiliary> aux
     )
     {
         generic_function wrapper = nullptr;
 
+        constexpr auto conv = detail::deduce_beh_callconv_aux<
+            AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY,
+            Class,
+            std::decay_t<decltype(ListFactory)>,
+            Auxiliary>();
+
+
+        // TODO: Move following branches to wrappers.hpp
         using traits = function_traits<std::decay_t<decltype(ListFactory)>>;
         if constexpr(Template)
         {
-            if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL)
+            if constexpr(conv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL)
             {
                 wrapper = +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
                 {
@@ -4117,7 +4084,7 @@ public:
                     gen->SetReturnAddress(ptr);
                 };
             }
-            else if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
+            else if constexpr(conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
             {
                 using first_arg_type = typename traits::first_arg_type;
                 wrapper = +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
@@ -4148,7 +4115,7 @@ public:
         }
         else // !Template
         {
-            if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL)
+            if constexpr(conv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL)
             {
                 wrapper = +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
                 {
@@ -4160,7 +4127,7 @@ public:
                     gen->SetReturnAddress(ptr);
                 };
             }
-            else if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
+            else if constexpr(conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
             {
                 using first_arg_type = typename traits::first_arg_type;
                 wrapper = +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
@@ -4188,9 +4155,8 @@ public:
             }
         }
 
-        this->register_behaviour(
-            AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY,
-            decl_list_factory(pattern).c_str(),
+        this->register_list_factory_func(
+            pattern,
             wrapper,
             generic_call_conv,
             my_base::get_auxiliary_address(aux)
@@ -4201,28 +4167,20 @@ public:
 
     template <
         auto ListFactory,
-        typename Auxiliary,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-    requires(
-        CallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL ||
-        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
-        CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
-    )
+        typename Auxiliary>
     basic_ref_class& list_factory_function(
         std::string_view pattern,
         fp_wrapper<ListFactory>,
-        auxiliary_wrapper<Auxiliary> aux,
-        call_conv_t<CallConv>
+        auxiliary_wrapper<Auxiliary> aux
     )
     {
-        if(ForceGeneric)
+        if constexpr(ForceGeneric)
         {
             this->list_factory_function(
                 use_generic,
                 pattern,
                 fp<ListFactory>,
-                aux,
-                call_conv<CallConv>
+                aux
             );
         }
         else
@@ -4230,67 +4188,7 @@ public:
             this->list_factory_function(
                 pattern,
                 ListFactory,
-                aux,
-                call_conv<CallConv>
-            );
-        }
-
-        return *this;
-    }
-
-    template <
-        auto ListFactory,
-        typename Auxiliary>
-    basic_ref_class& list_factory_function(
-        use_generic_t,
-        std::string_view pattern,
-        fp_wrapper<ListFactory>,
-        auxiliary_wrapper<Auxiliary> aux
-    )
-    {
-        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
-            detail::deduce_beh_callconv_aux<AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY, Class, std::decay_t<decltype(ListFactory)>, Auxiliary>();
-
-        this->list_factory_function(
-            use_generic,
-            pattern,
-            fp<ListFactory>,
-            aux,
-            call_conv<conv>
-        );
-
-        return *this;
-    }
-
-    template <
-        auto ListFactory,
-        typename Auxiliary>
-    basic_ref_class& list_factory_function(
-        std::string_view pattern,
-        fp_wrapper<ListFactory>,
-        auxiliary_wrapper<Auxiliary> aux
-    )
-    {
-        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
-            detail::deduce_beh_callconv_aux<AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY, Class, std::decay_t<decltype(ListFactory)>, Auxiliary>();
-
-        if constexpr(ForceGeneric)
-        {
-            this->list_factory_function(
-                use_generic,
-                pattern,
-                fp<ListFactory>,
-                aux,
-                call_conv<conv>
-            );
-        }
-        else
-        {
-            this->list_factory_function(
-                pattern,
-                fp<ListFactory>,
-                aux,
-                call_conv<conv>
+                aux
             );
         }
 
@@ -4323,14 +4221,17 @@ public:
         use_policy_t<IListPolicy, FactoryPolicy>
     )
     {
-        using gen_t =
-            detail::list_factory<Class, Template, ListElementType, IListPolicy, FactoryPolicy>;
-
-        this->list_factory_function(
+        using gen_t = detail::list_factory<
+            Class,
+            Template,
+            ListElementType,
+            IListPolicy,
+            FactoryPolicy>;
+        this->register_list_factory_func(
             pattern,
             gen_t::generate(generic_call_conv),
-            auxiliary(this->aux_for_policy<FactoryPolicy>()),
-            generic_call_conv
+            generic_call_conv,
+            this->aux_for_policy<FactoryPolicy>()
         );
 
         return *this;
@@ -4353,24 +4254,30 @@ public:
         {
             if constexpr(std::same_as<FactoryPolicy, policies::notify_gc> && !Template)
             {
-                using gen_t =
-                    detail::list_factory<Class, Template, ListElementType, IListPolicy, FactoryPolicy>;
-
-                this->list_factory_function(
+                using gen_t = detail::list_factory<
+                    Class,
+                    Template,
+                    ListElementType,
+                    IListPolicy,
+                    FactoryPolicy>;
+                this->register_list_factory_func(
                     pattern,
                     gen_t::generate(
                         call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
                     ),
-                    auxiliary(this->aux_for_policy<FactoryPolicy>()),
-                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>,
+                    this->aux_for_policy<FactoryPolicy>()
                 );
             }
             else
             {
-                using gen_t =
-                    detail::list_factory<Class, Template, ListElementType, IListPolicy, FactoryPolicy>;
-
-                list_factory_function(
+                using gen_t = detail::list_factory<
+                    Class,
+                    Template,
+                    ListElementType,
+                    IListPolicy,
+                    FactoryPolicy>;
+                this->register_list_factory_func(
                     pattern,
                     gen_t::generate(
                         call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
@@ -4392,10 +4299,13 @@ public:
         use_policy_t<IListPolicy> = {}
     )
     {
-        generic_function wrapper =
-            detail::list_factory<Class, Template, ListElementType, IListPolicy, void>::generate(generic_call_conv);
-
-        list_factory_function(
+        generic_function wrapper = detail::list_factory<
+            Class,
+            Template,
+            ListElementType,
+            IListPolicy,
+            void>::generate(generic_call_conv);
+        this->register_list_factory_func(
             pattern,
             wrapper,
             generic_call_conv
@@ -4418,10 +4328,13 @@ public:
         }
         else
         {
-            using gen_t =
-                detail::list_factory<Class, Template, ListElementType, IListPolicy, void>;
-
-            list_factory_function(
+            using gen_t = detail::list_factory<
+                Class,
+                Template,
+                ListElementType,
+                IListPolicy,
+                void>;
+            this->register_list_factory_func(
                 pattern,
                 gen_t::generate(
                     call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
@@ -4443,14 +4356,17 @@ public:
         use_policy_t<FactoryPolicy> = {}
     )
     {
-        using gen_t =
-            detail::list_factory<Class, Template, ListElementType, void, FactoryPolicy>;
-
-        list_factory_function(
+        using gen_t = detail::list_factory<
+            Class,
+            Template,
+            ListElementType,
+            void,
+            FactoryPolicy>;
+        this->register_list_factory_func(
             pattern,
             gen_t::generate(generic_call_conv),
-            auxiliary(this->aux_for_policy<FactoryPolicy>()),
-            generic_call_conv
+            generic_call_conv,
+            this->aux_for_policy<FactoryPolicy>()
         );
 
         return *this;
@@ -4471,12 +4387,16 @@ public:
         }
         else
         {
-            using gen_t =
-                detail::list_factory<Class, Template, ListElementType, void, FactoryPolicy>;
+            using gen_t = detail::list_factory<
+                Class,
+                Template,
+                ListElementType,
+                void,
+                FactoryPolicy>;
 
             if constexpr(Template)
             {
-                list_factory_function(
+                this->register_list_factory_func(
                     pattern,
                     gen_t::generate(
                         call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
@@ -4486,13 +4406,13 @@ public:
             }
             else
             {
-                list_factory_function(
+                this->register_list_factory_func(
                     pattern,
                     gen_t::generate(
                         call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
                     ),
-                    auxiliary(this->aux_for_policy<FactoryPolicy>()),
-                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>,
+                    this->aux_for_policy<FactoryPolicy>()
                 );
             }
         }
