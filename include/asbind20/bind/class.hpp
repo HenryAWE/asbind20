@@ -4058,106 +4058,21 @@ public:
         auxiliary_wrapper<Auxiliary> aux
     )
     {
-        generic_function wrapper = nullptr;
-
         constexpr auto conv = detail::deduce_beh_callconv_aux<
             AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY,
             Class,
             std::decay_t<decltype(ListFactory)>,
             Auxiliary>();
-
-
-        // TODO: Move following branches to wrappers.hpp
-        using traits = function_traits<std::decay_t<decltype(ListFactory)>>;
-        if constexpr(Template)
-        {
-            if constexpr(conv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL)
-            {
-                wrapper = +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
-                {
-                    Class* ptr = std::invoke(
-                        ListFactory,
-                        get_generic_auxiliary<Auxiliary>(gen),
-                        *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
-                        *(void**)gen->GetAddressOfArg(1)
-                    );
-                    gen->SetReturnAddress(ptr);
-                };
-            }
-            else if constexpr(conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
-            {
-                using first_arg_type = typename traits::first_arg_type;
-                wrapper = +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
-                {
-                    Class* ptr = std::invoke(
-                        ListFactory,
-                        get_generic_auxiliary<first_arg_type>(gen),
-                        *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
-                        *(void**)gen->GetAddressOfArg(1)
-                    );
-                    gen->SetReturnAddress(ptr);
-                };
-            }
-            else // CallConv == asCALL_CDECL_OBJLAST
-            {
-                using last_arg_type = typename traits::last_arg_type;
-                wrapper = +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
-                {
-                    Class* ptr = std::invoke(
-                        ListFactory,
-                        *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
-                        *(void**)gen->GetAddressOfArg(1),
-                        get_generic_auxiliary<last_arg_type>(gen)
-                    );
-                    gen->SetReturnAddress(ptr);
-                };
-            }
-        }
-        else // !Template
-        {
-            if constexpr(conv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL)
-            {
-                wrapper = +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
-                {
-                    Class* ptr = std::invoke(
-                        ListFactory,
-                        get_generic_auxiliary<Auxiliary>(gen),
-                        *(void**)gen->GetAddressOfArg(0)
-                    );
-                    gen->SetReturnAddress(ptr);
-                };
-            }
-            else if constexpr(conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
-            {
-                using first_arg_type = typename traits::first_arg_type;
-                wrapper = +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
-                {
-                    Class* ptr = std::invoke(
-                        ListFactory,
-                        get_generic_auxiliary<first_arg_type>(gen),
-                        *(void**)gen->GetAddressOfArg(0)
-                    );
-                    gen->SetReturnAddress(ptr);
-                };
-            }
-            else // CallConv == asCALL_CDECL_OBJLAST
-            {
-                using last_arg_type = typename traits::last_arg_type;
-                wrapper = +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
-                {
-                    Class* ptr = std::invoke(
-                        ListFactory,
-                        *(void**)gen->GetAddressOfArg(0),
-                        get_generic_auxiliary<last_arg_type>(gen)
-                    );
-                    gen->SetReturnAddress(ptr);
-                };
-            }
-        }
+        using gen_t = detail::list_factory_func<
+            Class,
+            Auxiliary,
+            ListFactory,
+            Template,
+            conv>;
 
         this->register_list_factory_func(
             pattern,
-            wrapper,
+            gen_t::generate(),
             generic_call_conv,
             my_base::get_auxiliary_address(aux)
         );

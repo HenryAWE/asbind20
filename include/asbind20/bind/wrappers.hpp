@@ -1066,6 +1066,132 @@ constexpr auto auxiliary_factory_to_asGENFUNC_t(
         CallConv>;
     return gen_t::generate();
 }
+
+template <
+    typename Class,
+    typename Auxiliary,
+    native_function auto ListFactoryFunc,
+    bool IsTemplate,
+    AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv>
+requires(
+    OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL ||
+    OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
+    OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
+)
+class list_factory_func;
+
+// Non-template
+template <
+    typename Class,
+    typename Auxiliary,
+    native_function auto ListFactoryFunc,
+    AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv>
+class list_factory_func<Class, Auxiliary, ListFactoryFunc, false, OriginalCallConv>
+{
+    using traits = function_traits<std::decay_t<decltype(ListFactoryFunc)>>;
+
+    static void wrapper_thiscall_asglobal(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+    {
+        Class* ptr = std::invoke(
+            ListFactoryFunc,
+            get_generic_auxiliary<Auxiliary>(gen),
+            *(void**)gen->GetAddressOfArg(0)
+        );
+        gen->SetReturnAddress(ptr);
+    }
+
+    static void wrapper_objfirst(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+    {
+        using first_arg_type = typename traits::first_arg_type;
+        Class* ptr = std::invoke(
+            ListFactoryFunc,
+            get_generic_auxiliary<first_arg_type>(gen),
+            *(void**)gen->GetAddressOfArg(0)
+        );
+        gen->SetReturnAddress(ptr);
+    }
+
+    static void wrapper_objlast(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+    {
+        using last_arg_type = typename traits::last_arg_type;
+        Class* ptr = std::invoke(
+            ListFactoryFunc,
+            *(void**)gen->GetAddressOfArg(0),
+            get_generic_auxiliary<last_arg_type>(gen)
+        );
+        gen->SetReturnAddress(ptr);
+    }
+
+public:
+    static constexpr auto generate() noexcept
+        -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
+    {
+        if constexpr(OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL)
+            return &wrapper_thiscall_asglobal;
+        else if constexpr(OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
+            return &wrapper_objfirst;
+        else // CallConv == asCALL_CDECL_OBJLAST
+            return &wrapper_objlast;
+    }
+};
+
+// Template
+template <
+    typename Class,
+    typename Auxiliary,
+    native_function auto ListFactoryFunc,
+    AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv>
+class list_factory_func<Class, Auxiliary, ListFactoryFunc, true, OriginalCallConv>
+{
+    using traits = function_traits<std::decay_t<decltype(ListFactoryFunc)>>;
+
+    static void wrapper_thiscall_asglobal(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+    {
+        Class* ptr = std::invoke(
+            ListFactoryFunc,
+            get_generic_auxiliary<Auxiliary>(gen),
+            *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
+            *(void**)gen->GetAddressOfArg(1)
+        );
+        gen->SetReturnAddress(ptr);
+    }
+
+    static void wrapper_objfirst(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+    {
+        using first_arg_type = typename traits::first_arg_type;
+        Class* ptr = std::invoke(
+            ListFactoryFunc,
+            get_generic_auxiliary<first_arg_type>(gen),
+            *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
+            *(void**)gen->GetAddressOfArg(1)
+        );
+        gen->SetReturnAddress(ptr);
+    }
+
+    static void wrapper_objlast(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+    {
+        using last_arg_type = typename traits::last_arg_type;
+        Class* ptr = std::invoke(
+            ListFactoryFunc,
+            *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
+            *(void**)gen->GetAddressOfArg(1),
+            get_generic_auxiliary<last_arg_type>(gen)
+        );
+        gen->SetReturnAddress(ptr);
+    }
+
+public:
+    static constexpr auto generate() noexcept
+        -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
+    {
+        if constexpr(OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL)
+            return &wrapper_thiscall_asglobal;
+        else if constexpr(OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
+            return &wrapper_objfirst;
+        else // CallConv == asCALL_CDECL_OBJLAST
+            return &wrapper_objlast;
+    }
+};
 } // namespace asbind20::detail
 
 #endif
