@@ -50,12 +50,20 @@ public:
           )
     {}
 
-    enum_& value(Enum val, cstring_ref decl)
+    enum_& value(cstring_ref decl, Enum val)
     {
         register_enum_val(
             decl,
             static_cast<compat::script_enum_value_type>(val)
         );
+
+        return *this;
+    }
+
+    // Kept for consistency with .value<EnumVal>(name)
+    enum_& value(Enum val, cstring_ref decl)
+    {
+        this->value(decl, val);
 
         return *this;
     }

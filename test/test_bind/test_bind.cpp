@@ -424,8 +424,8 @@ TEST(TestBind, Enum)
         asbind20::enum_<my_enum> e(engine, "my_enum");
 #ifndef ASBIND20_HAS_STATIC_ENUM_NAME
         e
-            .value(my_enum::A, "A")
-            .value(my_enum::B, "B");
+            .value("A", my_enum::A)
+            .value("B", my_enum::B);
 
 #else
         e
@@ -495,8 +495,8 @@ TEST(TestBind, EnumUInt64)
 
     asbind20::enum_underlying<enum_uint64> e(engine, "enum_uint64");
     e
-        .value(enum_uint64::flag_a, "flag_a")
-        .value(enum_uint64::flag_b, "flag_b");
+        .value("flag_a", enum_uint64::flag_a)
+        .value("flag_b", enum_uint64::flag_b);
     EXPECT_EQ(std::string_view(e.get_underlying()), "uint64");
 
     auto* m = engine->GetModule(
