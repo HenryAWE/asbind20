@@ -315,35 +315,48 @@ concept usable_by_generator = requires(T&& t, BindingGenerator& gen) {
 
 using generic_function = AS_NAMESPACE_QUALIFIER asGENFUNC_t;
 
-template <bool ForceGeneric>
 class binding_generator_base
 {
 public:
+    using engine_pointer = AS_NAMESPACE_QUALIFIER asIScriptEngine*;
+
     binding_generator_base() = delete;
     binding_generator_base(const binding_generator_base&) noexcept = default;
 
-    binding_generator_base(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+    binding_generator_base& operator=(const binding_generator_base&) noexcept = default;
+
+    [[nodiscard]]
+    engine_pointer get_engine() const noexcept
+    {
+        return m_engine;
+    }
+
+protected:
+    binding_generator_base(engine_pointer engine) noexcept
         : m_engine(engine)
     {
         assert(engine != nullptr);
     }
 
-    [[nodiscard]]
-    auto get_engine() const noexcept
-        -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
-    {
-        return m_engine;
-    }
+private:
+    engine_pointer m_engine;
+};
+
+template <bool ForceGeneric>
+class binding_generator_interface : public binding_generator_base
+{
+public:
+    using binding_generator_base::binding_generator_base;
 
     [[nodiscard]]
     static constexpr bool force_generic() noexcept
     {
         return ForceGeneric;
     }
-
-protected:
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* const m_engine;
 };
+
+template <typename T>
+concept binding_generator = std::derived_from<T, binding_generator_base>;
 } // namespace asbind20
 
 #endif

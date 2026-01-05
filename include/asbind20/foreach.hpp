@@ -191,11 +191,10 @@ namespace detail
     class foreach_func_t
     {
     public:
-        template <typename RegisterHelper>
-        requires(std::derived_from<RegisterHelper, binding_generator_base<true>> || std::derived_from<RegisterHelper, binding_generator_base<false>>)
-        auto operator()(RegisterHelper& helper) const
+        template <class_bind_generator CBG>
+        auto operator()(CBG& c) const
         {
-            return foreach_impl<RegisterHelper, Const>(helper);
+            return foreach_impl<CBG, Const>(c);
         }
     };
 } // namespace detail

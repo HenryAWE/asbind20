@@ -15,9 +15,9 @@
 namespace asbind20
 {
 template <bool ForceGeneric>
-class global final : public binding_generator_base<ForceGeneric>
+class global final : public binding_generator_interface<ForceGeneric>
 {
-    using my_base = binding_generator_base<ForceGeneric>;
+    using my_base = binding_generator_interface<ForceGeneric>;
 
 private:
     template <

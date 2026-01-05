@@ -12,6 +12,7 @@
 #include <cassert>
 #include <concepts>
 #include "utility.hpp"
+#include "bind/common.hpp"
 
 // IWYU pragma: begin_exports
 
@@ -148,7 +149,7 @@ private:
     }
 };
 
-class interface
+class interface : public binding_generator_base
 {
 public:
     interface() = delete;
@@ -156,14 +157,12 @@ public:
 
     interface& operator=(const interface&) = delete;
 
-    interface(
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, std::string name
-    )
-        : m_engine(engine), m_name(std::move(name))
+    interface(engine_pointer engine, std::string name)
+        : binding_generator_base(engine), m_name(std::move(name))
     {
         [[maybe_unused]]
         int r = 0;
-        r = m_engine->RegisterInterface(m_name.c_str());
+        r = get_engine()->RegisterInterface(m_name.c_str());
         assert(r >= 0);
     }
 
@@ -181,7 +180,7 @@ public:
     interface& method(cstring_ref decl)
     {
         [[maybe_unused]]
-        int r = m_engine->RegisterInterfaceMethod(
+        int r = get_engine()->RegisterInterfaceMethod(
             m_name.c_str(),
             decl.c_str()
         );
@@ -198,17 +197,10 @@ public:
 
         [[maybe_unused]]
         int r = 0;
-        r = m_engine->RegisterFuncdef(full_decl.c_str());
+        r = get_engine()->RegisterFuncdef(full_decl.c_str());
         assert(r >= 0);
 
         return *this;
-    }
-
-    [[nodiscard]]
-    auto get_engine() const noexcept
-        -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
-    {
-        return m_engine;
     }
 
     [[nodiscard]]
@@ -218,7 +210,6 @@ public:
     }
 
 private:
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* m_engine;
     std::string m_name;
 };
 } // namespace asbind20

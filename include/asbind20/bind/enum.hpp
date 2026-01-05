@@ -14,12 +14,13 @@
 #include "../detail/include_as.hpp"
 #include "../detail/compat.hpp"
 #include "../meta.hpp"
+#include "common.hpp"
 
 namespace asbind20
 {
 template <typename Enum, typename UnderlyingType = int>
 requires(std::is_enum_v<Enum> || std::integral<Enum>)
-class enum_
+class enum_ : public binding_generator_base
 {
 public:
 #ifndef ASBIND20_HAS_ENUM_UNDERLYING_TYPE
@@ -35,19 +36,14 @@ public:
 
     enum_& operator=(const enum_&) = delete;
 
-    enum_(
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, std::string name
-    )
-        : m_engine(engine), m_name(std::move(name))
+    enum_(engine_pointer engine, std::string name)
+        : binding_generator_base(engine), m_name(std::move(name))
     {
-        register_enum_type(m_name.c_str(), get_underlying().c_str());
+        register_enum_type(m_name, get_underlying());
     }
 
     template <std::convertible_to<std::string_view> StringView>
-    enum_(
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
-        StringView name
-    )
+    enum_(engine_pointer engine, StringView&& name)
         : enum_(
               engine,
               std::string(static_cast<std::string_view>(name))
@@ -56,13 +52,10 @@ public:
 
     enum_& value(Enum val, cstring_ref decl)
     {
-        [[maybe_unused]]
-        int r = m_engine->RegisterEnumValue(
-            m_name.c_str(),
-            decl.c_str(),
+        register_enum_val(
+            decl,
             static_cast<compat::script_enum_value_type>(val)
         );
-        assert(r >= 0);
 
         return *this;
     }
@@ -78,23 +71,12 @@ public:
     requires(std::is_enum_v<Enum>)
     enum_& value()
     {
-        [[maybe_unused]]
-        int r = 0;
-        r = m_engine->RegisterEnumValue(
-            m_name.c_str(),
-            meta::fixed_enum_name<Value>().c_str(),
+        register_enum_val(
+            meta::fixed_enum_name<Value>(),
             static_cast<compat::script_enum_value_type>(Value)
         );
-        assert(r >= 0);
 
         return *this;
-    }
-
-    [[nodiscard]]
-    auto get_engine() const noexcept
-        -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
-    {
-        return m_engine;
     }
 
     [[nodiscard]]
@@ -113,21 +95,39 @@ public:
     }
 
 private:
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* m_engine;
     std::string m_name;
 
     void register_enum_type(
-        const char* name,
-        [[maybe_unused]] const char* underlying
+        cstring_ref name,
+        [[maybe_unused]] cstring_ref underlying
     )
     {
         [[maybe_unused]]
         int r = 0;
+
+        // clang-format off
+        r = get_engine()->RegisterEnum(
+            name.c_str()
 #ifdef ASBIND20_HAS_ENUM_UNDERLYING_TYPE
-        r = m_engine->RegisterEnum(name, underlying);
-#else // AngelScript <= 2.38
-        r = m_engine->RegisterEnum(name);
+            , underlying.c_str()
 #endif
+        );
+        // clang-format on
+
+        assert(r >= 0);
+    }
+
+    void register_enum_val(
+        cstring_ref name,
+        compat::script_enum_value_type val
+    )
+    {
+        [[maybe_unused]]
+        int r = get_engine()->RegisterEnumValue(
+            m_name.c_str(),
+            name.c_str(),
+            val
+        );
         assert(r >= 0);
     }
 };

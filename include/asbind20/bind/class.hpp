@@ -1118,9 +1118,9 @@ namespace detail
 } // namespace detail
 
 template <bool ForceGeneric>
-class class_binding_generator_base : public binding_generator_base<ForceGeneric>
+class class_binding_generator_base : public binding_generator_interface<ForceGeneric>
 {
-    using my_base = binding_generator_base<ForceGeneric>;
+    using my_base = binding_generator_interface<ForceGeneric>;
 
 public:
     using my_base::get_engine;
@@ -2457,6 +2457,7 @@ class basic_value_class final :
 
 public:
     using class_type = Class;
+    using class_binding_generator_tag = void;
 
     basic_value_class(
         AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
@@ -3362,6 +3363,7 @@ class basic_ref_class :
 
 public:
     using class_type = Class;
+    using class_binding_generator_tag = void;
 
     basic_ref_class(
         AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
@@ -4334,6 +4336,11 @@ using ref_class = basic_ref_class<Class, false, ForceGeneric>;
 
 template <typename Class, bool ForceGeneric = false>
 using template_ref_class = basic_ref_class<Class, true, ForceGeneric>;
+
+template <typename T>
+concept class_bind_generator = requires() {
+    typename T::class_binding_generator_tag;
+};
 } // namespace asbind20
 
 #endif
