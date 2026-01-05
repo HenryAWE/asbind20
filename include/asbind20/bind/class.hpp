@@ -2485,15 +2485,15 @@ public:
         );
     }
 
-    template <std::convertible_to<std::string_view> StringView>
+    template <string_view_like StringView>
     basic_value_class(
         AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
-        StringView name,
+        StringView&& name,
         AS_NAMESPACE_QUALIFIER asQWORD flags = 0
     )
         : basic_value_class(
               engine,
-              std::string(static_cast<std::string_view>(name)),
+              detail::sv_to_str(std::forward<StringView>(name)),
               flags
           )
     {}
@@ -3389,15 +3389,15 @@ public:
         this->register_object_type(flags, 0);
     }
 
-    template <std::convertible_to<std::string_view> StringView>
+    template <string_view_like StringView>
     basic_ref_class(
         AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
-        StringView name,
+        StringView&& name,
         AS_NAMESPACE_QUALIFIER asQWORD flags = 0
     )
         : basic_ref_class(
               engine,
-              std::string(static_cast<std::string_view>(name)),
+              detail::sv_to_str(std::forward<StringView>(name)),
               flags
           )
     {}

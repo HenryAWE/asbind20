@@ -315,6 +315,9 @@ namespace util
         );
     }
 } // namespace util
+
+template <typename T>
+concept string_view_like = std::convertible_to<T, std::string_view>;
 } // namespace asbind20
 
 #endif

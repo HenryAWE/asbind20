@@ -166,14 +166,14 @@ public:
         assert(r >= 0);
     }
 
-    template <std::convertible_to<std::string_view> StringView>
+    template <string_view_like StringView>
     interface(
         AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
-        StringView name
+        StringView&& name
     )
         : interface(
               engine,
-              std::string(static_cast<std::string_view>(name))
+              detail::sv_to_str(std::forward<StringView>(name))
           )
     {}
 

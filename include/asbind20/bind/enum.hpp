@@ -42,11 +42,11 @@ public:
         register_enum_type(m_name, get_underlying());
     }
 
-    template <std::convertible_to<std::string_view> StringView>
+    template <string_view_like StringView>
     enum_(engine_pointer engine, StringView&& name)
         : enum_(
               engine,
-              std::string(static_cast<std::string_view>(name))
+              detail::sv_to_str(std::forward<StringView>(name))
           )
     {}
 
