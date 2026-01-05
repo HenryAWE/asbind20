@@ -3680,36 +3680,6 @@ public:
 
     template <
         auto AuxFactoryFunc,
-        typename Auxiliary,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-    basic_ref_class& factory_function(
-        use_generic_t,
-        std::string_view params,
-        fp_wrapper<AuxFactoryFunc>,
-        auxiliary_wrapper<Auxiliary> aux,
-        call_conv_t<CallConv>
-    )
-    {
-        constexpr auto conv = detail::deduce_beh_callconv_aux<
-            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
-            Class,
-            std::decay_t<decltype(AuxFactoryFunc)>,
-            Auxiliary>();
-        this->register_factory_function(
-            false,
-            params,
-            detail::auxiliary_factory_to_asGENFUNC_t<Template>(
-                fp<AuxFactoryFunc>, call_conv<conv>
-            ),
-            generic_call_conv,
-            my_base::get_auxiliary_address(aux)
-        );
-
-        return *this;
-    }
-
-    template <
-        auto AuxFactoryFunc,
         typename Auxiliary>
     basic_ref_class& factory_function(
         use_generic_t,
