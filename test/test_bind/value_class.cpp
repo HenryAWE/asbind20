@@ -737,10 +737,7 @@ public:
     void SetUp() override
     {
         if constexpr(!UseGeneric)
-        {
-            if(asbind20::has_max_portability())
-                GTEST_SKIP() << "AS_MAX_PORTABILITY";
-        }
+            ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
         m_engine = asbind20::make_script_engine();
         m_helper = friend_ops_helper{};
@@ -772,16 +769,16 @@ private:
 };
 } // namespace test_bind
 
-using friend_ops_native = test_bind::basic_friend_ops_suite<false>;
-using friend_ops_generic = test_bind::basic_friend_ops_suite<true>;
+using FriendOpsNative = test_bind::basic_friend_ops_suite<false>;
+using FriendOpsGeneric = test_bind::basic_friend_ops_suite<true>;
 
-TEST_F(friend_ops_native, check_friend_ops)
+TEST_F(FriendOpsNative, CheckFriendOps)
 {
     auto* engine = get_engine();
     check_friend_ops(engine, get_helper());
 }
 
-TEST_F(friend_ops_generic, check_friend_ops)
+TEST_F(FriendOpsGeneric, CheckFriendOps)
 {
     auto* engine = get_engine();
     check_friend_ops(engine, get_helper());
