@@ -10,7 +10,7 @@
 #pragma once
 
 #include "common.hpp"
-#include "wrappers.hpp"
+#include "genfunc.hpp"
 
 namespace asbind20
 {

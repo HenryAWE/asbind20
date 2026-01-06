@@ -1,11 +1,11 @@
 /**
- * @file bind/wrappers.hpp
+ * @file bind/genfunc.hpp
  * @author HenryAWE
- * @brief Generator of generic wrappers
+ * @brief Wrapper generator for generic functions
  */
 
-#ifndef ASBIND20_DETAIL_WRAPPERS_HPP
-#define ASBIND20_DETAIL_WRAPPERS_HPP
+#ifndef ASBIND20_DETAIL_GENFUNC_HPP
+#define ASBIND20_DETAIL_GENFUNC_HPP
 
 #pragma once
 
