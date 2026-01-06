@@ -191,7 +191,7 @@ namespace detail
     class foreach_func_t
     {
     public:
-        template <class_bind_generator CBG>
+        template <class_binding_generator CBG>
         auto operator()(CBG& c) const
         {
             return foreach_impl<CBG, Const>(c);

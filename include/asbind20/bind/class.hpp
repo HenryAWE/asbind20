@@ -4287,9 +4287,11 @@ template <typename Class, bool ForceGeneric = false>
 using template_ref_class = basic_ref_class<Class, true, ForceGeneric>;
 
 template <typename T>
-concept class_bind_generator = requires() {
-    typename T::class_binding_generator_tag;
-};
+concept class_binding_generator =
+    binding_generator<T> &&
+    requires() {
+        typename T::class_binding_generator_tag;
+    };
 } // namespace asbind20
 
 #endif
