@@ -13,6 +13,7 @@
 #include <string_view>
 #include <algorithm>
 #include <concepts>
+#include "../detail/fwd.hpp"
 #include "../meta.hpp"
 #include "../utility.hpp"
 
@@ -320,8 +321,6 @@ template <typename T, typename BindingGenerator>
 concept usable_by_generator = requires(T&& t, BindingGenerator& gen) {
     t(gen);
 };
-
-using generic_function = AS_NAMESPACE_QUALIFIER asGENFUNC_t;
 
 class binding_generator_base
 {

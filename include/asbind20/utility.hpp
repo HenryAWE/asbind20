@@ -22,6 +22,7 @@
 #include <stdexcept>
 #include <concepts>
 #include "detail/config.hpp" // IWYU pragma: export configs
+#include "detail/fwd.hpp"
 #include "detail/include_as.hpp"
 #include "detail/throw_helper.hpp"
 #include "detail/strutil.hpp"
@@ -1018,7 +1019,7 @@ public:
      * @param idx The parameter index of the list. Usually, this should be 0 for ordinary types and 1 for template classes.
      */
     explicit script_init_list_repeat(
-        AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen,
+        generic_pointer gen,
         size_type idx = 0
     )
         : script_init_list_repeat(*(void**)gen->GetAddressOfArg(idx)) {}

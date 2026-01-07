@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "detail/include_as.hpp"
+#include "detail/fwd.hpp"
 #include "memory.hpp"
 
 namespace asbind20
@@ -23,13 +23,13 @@ struct type_traits
 
 template <typename T>
 T get_generic_arg(
-    AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen,
+    generic_pointer gen,
     AS_NAMESPACE_QUALIFIER asUINT idx
 );
 
 template <typename Return>
 void set_generic_return(
-    AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen,
+    generic_pointer gen,
     std::type_identity_t<Return>&& ret
 );
 
@@ -63,7 +63,7 @@ struct underlying_enum_traits
     }
 
     static Enum get_arg(
-        AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen,
+        generic_pointer gen,
         AS_NAMESPACE_QUALIFIER asUINT arg
     )
     {
@@ -71,7 +71,7 @@ struct underlying_enum_traits
     }
 
     static int set_return(
-        AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen, Enum val
+        generic_pointer gen, Enum val
     )
     {
         return set_generic_return<underlying_type>(gen, static_cast<underlying_type>(val));
@@ -102,7 +102,7 @@ struct type_traits<script_object>
     }
 
     static script_object get_arg(
-        AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen,
+        generic_pointer gen,
         AS_NAMESPACE_QUALIFIER asUINT arg
     )
     {
@@ -112,7 +112,7 @@ struct type_traits<script_object>
     }
 
     static int set_return(
-        AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen, const script_object& val
+        generic_pointer gen, const script_object& val
     )
     {
         return gen->SetReturnObject(val.get());

@@ -11,12 +11,16 @@
 
 #include <cstddef>
 #include <array>
+#include "common.hpp"
 #include "../meta.hpp"
 #include "../utility.hpp"
 #include "../generic.hpp"
 
 namespace asbind20::detail
 { // All contents in this file should NOT be directly used by user code
+
+// Index type for arguments of script generic function
+using gen_idx_t = AS_NAMESPACE_QUALIFIER asUINT;
 
 template <std::size_t RawArgCount, std::size_t... Is>
 consteval auto gen_script_arg_idx(var_type_t<Is...> = {})
@@ -53,18 +57,18 @@ consteval auto gen_script_arg_idx(var_type_t<Is...> = {})
 
 template <typename T> // unused
 int var_type_helper(
-    std::true_type, AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen, std::size_t idx
+    std::true_type, generic_pointer gen, std::size_t idx
 )
 {
-    return gen->GetArgTypeId(static_cast<AS_NAMESPACE_QUALIFIER asUINT>(idx));
+    return gen->GetArgTypeId(static_cast<gen_idx_t>(idx));
 }
 
 template <typename T>
 T var_type_helper(
-    std::false_type, AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen, std::size_t idx
+    std::false_type, generic_pointer gen, std::size_t idx
 )
 {
-    return get_generic_arg<T>(gen, static_cast<AS_NAMESPACE_QUALIFIER asUINT>(idx));
+    return get_generic_arg<T>(gen, static_cast<gen_idx_t>(idx));
 }
 
 template <std::size_t... Is>
@@ -80,68 +84,68 @@ constexpr bool var_type_tag_helper(var_type_t<Is...>, std::size_t raw_idx)
 template <typename VarType, std::size_t RawIdx>
 using var_type_tag = std::bool_constant<var_type_tag_helper(VarType{}, RawIdx)>;
 
-#define ASBIND20_GENERIC_WRAPPER_IMPL(func)                                    \
-    static void wrapper_thiscall(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) \
-    {                                                                          \
-        [gen]<std::size_t... Is>(std::index_sequence<Is...>)                   \
-        {                                                                      \
-            set_generic_return_by<typename traits::return_type>(               \
-                gen,                                                           \
-                func,                                                          \
-                this_(gen),                                                    \
-                get_generic_arg<typename traits::template arg_type<Is>>(       \
-                    gen, static_cast<AS_NAMESPACE_QUALIFIER asUINT>(Is)        \
-                )...                                                           \
-            );                                                                 \
-        }(std::make_index_sequence<traits::arg_count::value>());               \
-    }                                                                          \
-    static void wrapper_objfirst(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) \
-    {                                                                          \
-        static_assert(traits::arg_count::value >= 1);                          \
-        [gen]<std::size_t... Is>(std::index_sequence<Is...>)                   \
-        {                                                                      \
-            set_generic_return_by<typename traits::return_type>(               \
-                gen,                                                           \
-                func,                                                          \
-                this_(gen),                                                    \
-                get_generic_arg<typename traits::template arg_type<Is + 1>>(   \
-                    gen, static_cast<AS_NAMESPACE_QUALIFIER asUINT>(Is)        \
-                )...                                                           \
-            );                                                                 \
-        }(std::make_index_sequence<traits::arg_count::value - 1>());           \
-    }                                                                          \
-    static void wrapper_objlast(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)  \
-    {                                                                          \
-        static_assert(traits::arg_count::value >= 1);                          \
-        [gen]<std::size_t... Is>(std::index_sequence<Is...>)                   \
-        {                                                                      \
-            set_generic_return_by<typename traits::return_type>(               \
-                gen,                                                           \
-                func,                                                          \
-                get_generic_arg<typename traits::template arg_type<Is>>(       \
-                    gen, static_cast<AS_NAMESPACE_QUALIFIER asUINT>(Is)        \
-                )...,                                                          \
-                this_(gen)                                                     \
-            );                                                                 \
-        }(std::make_index_sequence<traits::arg_count::value - 1>());           \
-    }                                                                          \
-    static void wrapper_general(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)  \
-    {                                                                          \
-        [gen]<std::size_t... Is>(std::index_sequence<Is...>)                   \
-        {                                                                      \
-            set_generic_return_by<typename traits::return_type>(               \
-                gen,                                                           \
-                func,                                                          \
-                get_generic_arg<typename traits::template arg_type<Is>>(       \
-                    gen, static_cast<AS_NAMESPACE_QUALIFIER asUINT>(Is)        \
-                )...                                                           \
-            );                                                                 \
-        }(std::make_index_sequence<traits::arg_count::value>());               \
+#define ASBIND20_GENERIC_WRAPPER_IMPL(func)                                  \
+    static void wrapper_thiscall(generic_pointer gen)                        \
+    {                                                                        \
+        [gen]<std::size_t... Is>(std::index_sequence<Is...>)                 \
+        {                                                                    \
+            set_generic_return_by<typename traits::return_type>(             \
+                gen,                                                         \
+                func,                                                        \
+                this_(gen),                                                  \
+                get_generic_arg<typename traits::template arg_type<Is>>(     \
+                    gen, static_cast<gen_idx_t>(Is)                          \
+                )...                                                         \
+            );                                                               \
+        }(std::make_index_sequence<traits::arg_count::value>());             \
+    }                                                                        \
+    static void wrapper_objfirst(generic_pointer gen)                        \
+    {                                                                        \
+        static_assert(traits::arg_count::value >= 1);                        \
+        [gen]<std::size_t... Is>(std::index_sequence<Is...>)                 \
+        {                                                                    \
+            set_generic_return_by<typename traits::return_type>(             \
+                gen,                                                         \
+                func,                                                        \
+                this_(gen),                                                  \
+                get_generic_arg<typename traits::template arg_type<Is + 1>>( \
+                    gen, static_cast<gen_idx_t>(Is)                          \
+                )...                                                         \
+            );                                                               \
+        }(std::make_index_sequence<traits::arg_count::value - 1>());         \
+    }                                                                        \
+    static void wrapper_objlast(generic_pointer gen)                         \
+    {                                                                        \
+        static_assert(traits::arg_count::value >= 1);                        \
+        [gen]<std::size_t... Is>(std::index_sequence<Is...>)                 \
+        {                                                                    \
+            set_generic_return_by<typename traits::return_type>(             \
+                gen,                                                         \
+                func,                                                        \
+                get_generic_arg<typename traits::template arg_type<Is>>(     \
+                    gen, static_cast<gen_idx_t>(Is)                          \
+                )...,                                                        \
+                this_(gen)                                                   \
+            );                                                               \
+        }(std::make_index_sequence<traits::arg_count::value - 1>());         \
+    }                                                                        \
+    static void wrapper_general(generic_pointer gen)                         \
+    {                                                                        \
+        [gen]<std::size_t... Is>(std::index_sequence<Is...>)                 \
+        {                                                                    \
+            set_generic_return_by<typename traits::return_type>(             \
+                gen,                                                         \
+                func,                                                        \
+                get_generic_arg<typename traits::template arg_type<Is>>(     \
+                    gen, static_cast<gen_idx_t>(Is)                          \
+                )...                                                         \
+            );                                                               \
+        }(std::make_index_sequence<traits::arg_count::value>());             \
     }
 
 #define ASBIND20_GENERIC_WRAPPER_VAR_TYPE_IMPL(func)                                            \
     template <typename VarType>                                                                 \
-    static void var_type_wrapper_thiscall(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)         \
+    static void var_type_wrapper_thiscall(generic_pointer gen)                                  \
     {                                                                                           \
         static constexpr auto indices = gen_script_arg_idx<traits::arg_count_v>(VarType{});     \
         [gen]<std::size_t... Is>(std::index_sequence<Is...>)                                    \
@@ -153,13 +157,13 @@ using var_type_tag = std::bool_constant<var_type_tag_helper(VarType{}, RawIdx)>;
                 var_type_helper<typename traits::template arg_type<Is>>(                        \
                     var_type_tag<VarType, Is>{},                                                \
                     gen,                                                                        \
-                    static_cast<AS_NAMESPACE_QUALIFIER asUINT>(indices[Is])                     \
+                    static_cast<gen_idx_t>(indices[Is])                                         \
                 )...                                                                            \
             );                                                                                  \
         }(std::make_index_sequence<indices.size()>());                                          \
     }                                                                                           \
     template <typename VarType>                                                                 \
-    static void var_type_wrapper_objfirst(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)         \
+    static void var_type_wrapper_objfirst(generic_pointer gen)                                  \
     {                                                                                           \
         static constexpr auto indices = gen_script_arg_idx<traits::arg_count_v - 1>(VarType{}); \
         [gen]<std::size_t... Is>(std::index_sequence<Is...>)                                    \
@@ -171,13 +175,13 @@ using var_type_tag = std::bool_constant<var_type_tag_helper(VarType{}, RawIdx)>;
                 var_type_helper<typename traits::template arg_type<Is + 1>>(                    \
                     var_type_tag<VarType, Is>{},                                                \
                     gen,                                                                        \
-                    static_cast<AS_NAMESPACE_QUALIFIER asUINT>(indices[Is])                     \
+                    static_cast<gen_idx_t>(indices[Is])                                         \
                 )...                                                                            \
             );                                                                                  \
         }(std::make_index_sequence<indices.size()>());                                          \
     }                                                                                           \
     template <typename VarType>                                                                 \
-    static void var_type_wrapper_objlast(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)          \
+    static void var_type_wrapper_objlast(generic_pointer gen)                                   \
     {                                                                                           \
         static constexpr auto indices = gen_script_arg_idx<traits::arg_count_v - 1>(VarType{}); \
         [gen]<std::size_t... Is>(std::index_sequence<Is...>)                                    \
@@ -188,14 +192,14 @@ using var_type_tag = std::bool_constant<var_type_tag_helper(VarType{}, RawIdx)>;
                 var_type_helper<typename traits::template arg_type<Is>>(                        \
                     var_type_tag<VarType, Is>{},                                                \
                     gen,                                                                        \
-                    static_cast<AS_NAMESPACE_QUALIFIER asUINT>(indices[Is])                     \
+                    static_cast<gen_idx_t>(indices[Is])                                         \
                 )...,                                                                           \
                 this_(gen)                                                                      \
             );                                                                                  \
         }(std::make_index_sequence<indices.size()>());                                          \
     }                                                                                           \
     template <typename VarType>                                                                 \
-    static void var_type_wrapper_general(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)          \
+    static void var_type_wrapper_general(generic_pointer gen)                                   \
     {                                                                                           \
         static constexpr auto indices = gen_script_arg_idx<traits::arg_count_v>(VarType{});     \
         [gen]<std::size_t... Is>(std::index_sequence<Is...>)                                    \
@@ -206,7 +210,7 @@ using var_type_tag = std::bool_constant<var_type_tag_helper(VarType{}, RawIdx)>;
                 var_type_helper<typename traits::template arg_type<Is>>(                        \
                     var_type_tag<VarType, Is>{},                                                \
                     gen,                                                                        \
-                    static_cast<AS_NAMESPACE_QUALIFIER asUINT>(indices[Is])                     \
+                    static_cast<gen_idx_t>(indices[Is])                                         \
                 )...                                                                            \
             );                                                                                  \
         }(std::make_index_sequence<indices.size()>());                                          \
@@ -224,7 +228,7 @@ public:
 private:
     using traits = function_traits<function_type>;
 
-    static decltype(auto) this_(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+    static decltype(auto) this_(generic_pointer gen)
     {
         return get_generic_this<function_type, OriginalConv>(gen);
     }
@@ -290,7 +294,7 @@ private:
     using function_type = std::decay_t<decltype(Function)>;
     using traits = function_traits<function_type>;
 
-    static decltype(auto) this_(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+    static decltype(auto) this_(generic_pointer gen)
     {
         return get_generic_this<function_type, OriginalConv>(gen);
     }
@@ -304,7 +308,7 @@ private:
     // THISCALL_OBJFIRST/LAST are only available for the member function pointer, i.e.,
     // no lambda support.
 
-    static void wrapper_thiscall_objfirst(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+    static void wrapper_thiscall_objfirst(generic_pointer gen)
     {
         static_assert(traits::arg_count::value >= 1);
         [gen]<std::size_t... Is>(std::index_sequence<Is...>)
@@ -315,13 +319,13 @@ private:
                 get_generic_auxiliary<typename traits::class_type*>(gen),
                 this_(gen),
                 get_generic_arg<typename traits::template arg_type<Is + 1>>(
-                    gen, static_cast<AS_NAMESPACE_QUALIFIER asUINT>(Is)
+                    gen, static_cast<gen_idx_t>(Is)
                 )...
             );
         }(std::make_index_sequence<traits::arg_count::value - 1>());
     }
 
-    static void wrapper_thiscall_objlast(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+    static void wrapper_thiscall_objlast(generic_pointer gen)
     {
         static_assert(traits::arg_count::value >= 1);
         [gen]<std::size_t... Is>(std::index_sequence<Is...>)
@@ -331,7 +335,7 @@ private:
                 Function,
                 get_generic_auxiliary<typename traits::class_type*>(gen),
                 get_generic_arg<typename traits::template arg_type<Is>>(
-                    gen, static_cast<AS_NAMESPACE_QUALIFIER asUINT>(Is)
+                    gen, static_cast<gen_idx_t>(Is)
                 )...,
                 this_(gen)
             );
@@ -339,7 +343,7 @@ private:
     }
 
     template <typename VarType>
-    static void var_type_wrapper_thiscall_objfirst(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+    static void var_type_wrapper_thiscall_objfirst(generic_pointer gen)
     {
         static constexpr auto indices = gen_script_arg_idx<traits::arg_count_v - 1>(VarType{});
         [gen]<std::size_t... Is>(std::index_sequence<Is...>)
@@ -352,14 +356,14 @@ private:
                 var_type_helper<typename traits::template arg_type<Is + 1>>( // Plus 1 to skip the "this_(gen)" argument
                     var_type_tag<VarType, Is>{},
                     gen,
-                    static_cast<AS_NAMESPACE_QUALIFIER asUINT>(indices[Is])
+                    static_cast<gen_idx_t>(indices[Is])
                 )...
             );
         }(std::make_index_sequence<indices.size()>());
     }
 
     template <typename VarType>
-    static void var_type_wrapper_thiscall_objlast(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+    static void var_type_wrapper_thiscall_objlast(generic_pointer gen)
     {
         static constexpr auto indices = gen_script_arg_idx<traits::arg_count_v - 1>(VarType{});
         [gen]<std::size_t... Is>(std::index_sequence<Is...>)
@@ -371,7 +375,7 @@ private:
                 var_type_helper<typename traits::template arg_type<Is>>(
                     var_type_tag<VarType, Is>{},
                     gen,
-                    static_cast<AS_NAMESPACE_QUALIFIER asUINT>(indices[Is])
+                    static_cast<gen_idx_t>(indices[Is])
                 )...,
                 this_(gen)
             );
@@ -503,7 +507,7 @@ private:
     using function_type = std::decay_t<decltype(Function)>;
     using traits = function_traits<function_type>;
 
-    static decltype(auto) this_(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+    static decltype(auto) this_(generic_pointer gen)
     {
         using class_type = std::conditional_t<
             traits::is_const_v,
@@ -513,7 +517,7 @@ private:
         return comp_accessor<class_type, Composite>::get(gen->GetObject());
     }
 
-    static void wrapper_comp(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+    static void wrapper_comp(generic_pointer gen)
     {
         [gen]<std::size_t... Is>(std::index_sequence<Is...>)
         {
@@ -522,14 +526,14 @@ private:
                 Function,
                 this_(gen),
                 get_generic_arg<typename traits::template arg_type<Is>>(
-                    gen, static_cast<AS_NAMESPACE_QUALIFIER asUINT>(Is)
+                    gen, static_cast<gen_idx_t>(Is)
                 )...
             );
         }(std::make_index_sequence<traits::arg_count::value>());
     }
 
     template <typename VarType>
-    static void var_type_wrapper_comp(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+    static void var_type_wrapper_comp(generic_pointer gen)
     {
         static constexpr auto indices = gen_script_arg_idx<traits::arg_count_v>(VarType{});
         [gen]<std::size_t... Is>(std::index_sequence<Is...>)
@@ -541,7 +545,7 @@ private:
                 var_type_helper<typename traits::template arg_type<Is>>(
                     var_type_tag<VarType, Is>{},
                     gen,
-                    static_cast<AS_NAMESPACE_QUALIFIER asUINT>(indices[Is])
+                    static_cast<gen_idx_t>(indices[Is])
                 )...
             );
         }(std::make_index_sequence<indices.size()>());
@@ -656,7 +660,7 @@ private:
     using traits = function_traits<decltype(ConstructorFunc)>;
     using args_tuple = typename traits::args_tuple;
 
-    static void wrapper_objfirst(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+    static void wrapper_objfirst(generic_pointer gen)
     {
         if constexpr(Template)
         {
@@ -668,7 +672,7 @@ private:
                     mem,
                     *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
                     get_generic_arg<std::tuple_element_t<Is + 2, args_tuple>>(
-                        gen, (AS_NAMESPACE_QUALIFIER asUINT)Is + 1
+                        gen, (gen_idx_t)Is + 1
                     )...
                 );
             }(std::make_index_sequence<traits::arg_count_v - 2>());
@@ -682,14 +686,14 @@ private:
                     ConstructorFunc,
                     mem,
                     get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(
-                        gen, (AS_NAMESPACE_QUALIFIER asUINT)Is
+                        gen, (gen_idx_t)Is
                     )...
                 );
             }(std::make_index_sequence<traits::arg_count_v - 1>());
         }
     }
 
-    static void wrapper_objlast(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+    static void wrapper_objlast(generic_pointer gen)
     {
         if constexpr(Template)
         {
@@ -700,7 +704,7 @@ private:
                     ConstructorFunc,
                     *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
                     get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(
-                        gen, (AS_NAMESPACE_QUALIFIER asUINT)Is + 1
+                        gen, (gen_idx_t)Is + 1
                     )...,
                     mem
                 );
@@ -714,7 +718,7 @@ private:
                 std::invoke(
                     ConstructorFunc,
                     get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
-                        gen, (AS_NAMESPACE_QUALIFIER asUINT)Is
+                        gen, (gen_idx_t)Is
                     )...,
                     mem
                 );
@@ -745,7 +749,7 @@ private:
     using traits = function_traits<native_function_type>;
     using args_tuple = typename traits::args_tuple;
 
-    static void wrapper_objfirst(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+    static void wrapper_objfirst(generic_pointer gen)
     {
         if constexpr(Template)
         {
@@ -757,7 +761,7 @@ private:
                     mem,
                     *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
                     get_generic_arg<std::tuple_element_t<Is + 2, args_tuple>>(
-                        gen, (AS_NAMESPACE_QUALIFIER asUINT)Is + 1
+                        gen, (gen_idx_t)Is + 1
                     )...
                 );
             }(std::make_index_sequence<traits::arg_count_v - 2>());
@@ -771,14 +775,14 @@ private:
                     ConstructorLambda{},
                     mem,
                     get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(
-                        gen, (AS_NAMESPACE_QUALIFIER asUINT)Is
+                        gen, (gen_idx_t)Is
                     )...
                 );
             }(std::make_index_sequence<traits::arg_count_v - 1>());
         }
     }
 
-    static void wrapper_objlast(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+    static void wrapper_objlast(generic_pointer gen)
     {
         if constexpr(Template)
         {
@@ -789,7 +793,7 @@ private:
                     ConstructorLambda{},
                     *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
                     get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(
-                        gen, (AS_NAMESPACE_QUALIFIER asUINT)Is + 1
+                        gen, (gen_idx_t)Is + 1
                     )...,
                     mem
                 );
@@ -803,7 +807,7 @@ private:
                 std::invoke(
                     ConstructorLambda{},
                     get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
-                        gen, (AS_NAMESPACE_QUALIFIER asUINT)Is
+                        gen, (gen_idx_t)Is
                     )...,
                     mem
                 );
@@ -879,7 +883,7 @@ class generic_wrapper_list_ctor
     static_assert(traits::arg_count_v == 2);
     static_assert(std::is_void_v<typename traits::return_type>);
 
-    static void wrapper_objfirst(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+    static void wrapper_objfirst(generic_pointer gen)
     {
         using list_buf_t = typename traits::last_arg_type;
         static_assert(std::is_pointer_v<list_buf_t>);
@@ -889,7 +893,7 @@ class generic_wrapper_list_ctor
         );
     }
 
-    static void wrapper_objlast(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+    static void wrapper_objlast(generic_pointer gen)
     {
         using list_buf_t = typename traits::first_arg_type;
         static_assert(std::is_pointer_v<list_buf_t>);
@@ -951,7 +955,7 @@ class generic_wrapper_factory_aux
         typename traits::last_arg_type>;
 
     // For templated classes
-    static void* invoke_factory(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+    static void* invoke_factory(generic_pointer gen)
         requires(Template)
     {
         // Argument count except the typeinfo and auxiliary object
@@ -968,7 +972,7 @@ class generic_wrapper_factory_aux
                     FactoryFunc,
                     get_generic_auxiliary<typename traits::class_type>(gen),
                     *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
-                    get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(gen, (AS_NAMESPACE_QUALIFIER asUINT)Is + 1)...
+                    get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(gen, (gen_idx_t)Is + 1)...
                 );
             }
             else if constexpr(OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
@@ -977,7 +981,7 @@ class generic_wrapper_factory_aux
                     FactoryFunc,
                     get_generic_auxiliary<auxiliary_type>(gen),
                     *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
-                    get_generic_arg<std::tuple_element_t<Is + 2, args_tuple>>(gen, (AS_NAMESPACE_QUALIFIER asUINT)Is + 1)...
+                    get_generic_arg<std::tuple_element_t<Is + 2, args_tuple>>(gen, (gen_idx_t)Is + 1)...
                 );
             }
             else // OriginalCallConv == asCALL_CDECL_OBJLAST
@@ -985,7 +989,7 @@ class generic_wrapper_factory_aux
                 return std::invoke(
                     FactoryFunc,
                     *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
-                    get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(gen, (AS_NAMESPACE_QUALIFIER asUINT)Is + 1)...,
+                    get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(gen, (gen_idx_t)Is + 1)...,
                     get_generic_auxiliary<auxiliary_type>(gen)
                 );
             }
@@ -993,7 +997,7 @@ class generic_wrapper_factory_aux
     }
 
     // For non-templated classes
-    static void* invoke_factory(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+    static void* invoke_factory(generic_pointer gen)
         requires(!Template)
     {
         // Argument count except the auxiliary object
@@ -1009,7 +1013,7 @@ class generic_wrapper_factory_aux
                 return std::invoke(
                     FactoryFunc,
                     get_generic_auxiliary<typename traits::class_type>(gen),
-                    get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (AS_NAMESPACE_QUALIFIER asUINT)Is)...
+                    get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (gen_idx_t)Is)...
                 );
             }
             else if constexpr(OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
@@ -1018,21 +1022,21 @@ class generic_wrapper_factory_aux
                     FactoryFunc,
                     get_generic_auxiliary<auxiliary_type>(gen),
                     // Plus 1 to skip the auxiliary object at the first position
-                    get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(gen, (AS_NAMESPACE_QUALIFIER asUINT)Is)...
+                    get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(gen, (gen_idx_t)Is)...
                 );
             }
             else // OriginalCallConv == asCALL_CDECL_OBJLAST
             {
                 return std::invoke(
                     FactoryFunc,
-                    get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (AS_NAMESPACE_QUALIFIER asUINT)Is)...,
+                    get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (gen_idx_t)Is)...,
                     get_generic_auxiliary<auxiliary_type>(gen)
                 );
             }
         }(std::make_index_sequence<user_arg_v>());
     }
 
-    static void wrapper_impl(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+    static void wrapper_impl(generic_pointer gen)
     {
         void* ptr = invoke_factory(gen);
         gen->SetReturnAddress(ptr);
@@ -1090,7 +1094,7 @@ class list_factory_func<Class, Auxiliary, ListFactoryFunc, false, OriginalCallCo
 {
     using traits = function_traits<std::decay_t<decltype(ListFactoryFunc)>>;
 
-    static void wrapper_thiscall_asglobal(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+    static void wrapper_thiscall_asglobal(generic_pointer gen)
     {
         Class* ptr = std::invoke(
             ListFactoryFunc,
@@ -1100,7 +1104,7 @@ class list_factory_func<Class, Auxiliary, ListFactoryFunc, false, OriginalCallCo
         gen->SetReturnAddress(ptr);
     }
 
-    static void wrapper_objfirst(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+    static void wrapper_objfirst(generic_pointer gen)
     {
         using first_arg_type = typename traits::first_arg_type;
         Class* ptr = std::invoke(
@@ -1111,7 +1115,7 @@ class list_factory_func<Class, Auxiliary, ListFactoryFunc, false, OriginalCallCo
         gen->SetReturnAddress(ptr);
     }
 
-    static void wrapper_objlast(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+    static void wrapper_objlast(generic_pointer gen)
     {
         using last_arg_type = typename traits::last_arg_type;
         Class* ptr = std::invoke(
@@ -1145,7 +1149,7 @@ class list_factory_func<Class, Auxiliary, ListFactoryFunc, true, OriginalCallCon
 {
     using traits = function_traits<std::decay_t<decltype(ListFactoryFunc)>>;
 
-    static void wrapper_thiscall_asglobal(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+    static void wrapper_thiscall_asglobal(generic_pointer gen)
     {
         Class* ptr = std::invoke(
             ListFactoryFunc,
@@ -1156,7 +1160,7 @@ class list_factory_func<Class, Auxiliary, ListFactoryFunc, true, OriginalCallCon
         gen->SetReturnAddress(ptr);
     }
 
-    static void wrapper_objfirst(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+    static void wrapper_objfirst(generic_pointer gen)
     {
         using first_arg_type = typename traits::first_arg_type;
         Class* ptr = std::invoke(
@@ -1168,7 +1172,7 @@ class list_factory_func<Class, Auxiliary, ListFactoryFunc, true, OriginalCallCon
         gen->SetReturnAddress(ptr);
     }
 
-    static void wrapper_objlast(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+    static void wrapper_objlast(generic_pointer gen)
     {
         using last_arg_type = typename traits::last_arg_type;
         Class* ptr = std::invoke(

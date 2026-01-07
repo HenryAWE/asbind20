@@ -30,7 +30,7 @@ namespace asbind20
  * @tparam T Object type, can be a pointer, otherwise the return type will a reference
  */
 template <typename T>
-auto get_generic_object(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+auto get_generic_object(generic_pointer gen)
     -> std::conditional_t<std::is_pointer_v<T>, T, std::add_lvalue_reference_t<T>>
 {
     void* obj = gen->GetObject();
@@ -46,7 +46,7 @@ auto get_generic_object(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
 }
 
 template <typename T>
-auto get_generic_auxiliary(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+auto get_generic_auxiliary(generic_pointer gen)
     -> std::conditional_t<std::is_pointer_v<T>, T, std::add_lvalue_reference_t<T>>
 {
     void* obj = gen->GetAuxiliary();
@@ -63,7 +63,7 @@ auto get_generic_auxiliary(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
 
 template <typename T>
 T get_generic_arg(
-    AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen,
+    generic_pointer gen,
     AS_NAMESPACE_QUALIFIER asUINT idx
 )
 {
@@ -142,7 +142,7 @@ T get_generic_arg(
 
 template <typename Return>
 void set_generic_return(
-    AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen,
+    generic_pointer gen,
     std::type_identity_t<Return>&& ret
 )
 {
@@ -231,7 +231,7 @@ void set_generic_return(
  */
 template <typename Return, typename Fn, typename... Args>
 void set_generic_return_by(
-    AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen,
+    generic_pointer gen,
     Fn&& fn,
     Args&&... args
 )
@@ -276,7 +276,7 @@ template <
     typename FunctionType,
     AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
 decltype(auto) get_generic_this(
-    AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen
+    generic_pointer gen
 )
 {
     using traits = function_traits<FunctionType>;

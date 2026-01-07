@@ -313,7 +313,7 @@ TEST(Detail, GenericWrapper)
 
     auto my_div_gen = detail::to_asGENFUNC_t(fp<&test_bind::my_div>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>);
     auto my_mul_gen = test_bind::my_mul;
-    auto my_add_gen = [](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+    auto my_add_gen = [](generic_pointer gen) -> void
     {
         int a = asbind20::get_generic_arg<int>(gen, 0);
         int b = asbind20::get_generic_arg<int>(gen, 1);

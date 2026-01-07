@@ -76,7 +76,7 @@ namespace detail
     {
         using ex_guard = ctor_ex_guard<Class>;
 
-        static void impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        static void impl_generic(generic_pointer gen)
         {
             using args_tuple = std::tuple<Args...>;
 
@@ -118,7 +118,7 @@ namespace detail
     {
         using ex_guard = ctor_ex_guard<Class>;
 
-        static void impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        static void impl_generic(generic_pointer gen)
         {
             [gen]<std::size_t... Is>(std::index_sequence<Is...>)
             {
@@ -163,7 +163,7 @@ namespace detail
 
         static_assert(!Template, "Default constructor of C-array is invalid for template");
 
-        static void impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        static void impl_generic(generic_pointer gen)
         {
             auto* ptr = static_cast<ElemType*>(gen->GetObject());
 
@@ -210,7 +210,7 @@ namespace detail
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
             {
-                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+                return +[](generic_pointer gen) -> void
                 {
                     auto* ptr = static_cast<ElemType*>(gen->GetObject());
 
@@ -249,7 +249,7 @@ namespace detail
         typename ListElementType>
     class list_constructor<Class, Template, ListElementType, void> // Implementation for default policy
     {
-        static void impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        static void impl_generic(generic_pointer gen)
         {
             if constexpr(Template)
             {
@@ -303,7 +303,7 @@ namespace detail
         typename ListElementType>
     class list_constructor<Class, Template, ListElementType, policies::repeat_list_proxy>
     {
-        static void impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        static void impl_generic(generic_pointer gen)
         {
             if constexpr(Template)
             {
@@ -365,7 +365,7 @@ namespace detail
             }(std::make_index_sequence<Size>());
         }
 
-        static void impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        static void impl_generic(generic_pointer gen)
         {
             apply_helper(
                 gen->GetObject(),
@@ -443,7 +443,7 @@ namespace detail
             }
         }
 
-        static void impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        static void impl_generic(generic_pointer gen)
         {
             from_list_helper(
                 gen->GetObject(),
@@ -484,7 +484,7 @@ namespace detail
         typename... Args>
     class factory<Class, Template, void, Args...>
     {
-        static void impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        static void impl_generic(generic_pointer gen)
         {
             using args_tuple = std::tuple<Args...>;
             if constexpr(Template)
@@ -545,7 +545,7 @@ namespace detail
         // Note: GC notifier for non-templated class expects the typeinfo is passed by auxiliary pointer,
         // a.k.a the "auxiliary(this_type)" helper
 
-        static void impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        static void impl_generic(generic_pointer gen)
         {
             using args_tuple = std::tuple<Args...>;
 
@@ -602,7 +602,7 @@ namespace detail
         // Note: Template callback may remove the asOBJ_GC flag for some instantiations,
         // so the following wrapper implementations will check the flag at runtime.
 
-        static void impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        static void impl_generic(generic_pointer gen)
         {
             using args_tuple = std::tuple<Args...>;
 
@@ -711,7 +711,7 @@ namespace detail
         typename ListElementType>
     class list_factory<Class, Template, ListElementType, void, void>
     {
-        static void impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        static void impl_generic(generic_pointer gen)
         {
             if constexpr(Template)
             {
@@ -767,7 +767,7 @@ namespace detail
     {
         using notifier = notify_gc_helper<policies::notify_gc, Template>;
 
-        static void impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        static void impl_generic(generic_pointer gen)
         {
             if constexpr(Template)
             {
@@ -851,7 +851,7 @@ namespace detail
             }(std::make_index_sequence<Size>());
         }
 
-        static void impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        static void impl_generic(generic_pointer gen)
         {
             Class* ptr = apply_helper(*(ListElementType**)gen->GetAddressOfArg(0));
             if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
@@ -906,7 +906,7 @@ namespace detail
     {
         using notifier = notify_gc_helper<FactoryPolicy, false>;
 
-        static void impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        static void impl_generic(generic_pointer gen)
         {
             if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
             {
@@ -968,7 +968,7 @@ namespace detail
     {
         using notifier = notify_gc_helper<FactoryPolicy, true>;
 
-        static void impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        static void impl_generic(generic_pointer gen)
         {
             auto* ti = *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0);
             Class* ptr = new Class(
@@ -1041,7 +1041,7 @@ namespace detail
             }
         }
 
-        static void impl_generic(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+        static void impl_generic(generic_pointer gen)
         {
             Class* ptr = from_list_helper(script_init_list_repeat(gen));
             if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
@@ -1098,7 +1098,7 @@ namespace detail
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
             {
-                return +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+                return +[](generic_pointer gen) -> void
                 {
                     set_generic_return<To>(
                         gen,
@@ -1304,7 +1304,7 @@ protected:
     {                                                                                                 \
         register_method(                                                                              \
             decl_##as_op_sig(),                                                                       \
-            +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void                                 \
+            +[](generic_pointer gen) -> void                                 \
             {                                                                                         \
                 using this_arg_t = std::conditional_t<(#const_[0] != '\0'), const Class&, Class&>;    \
                 set_generic_return<return_type>(                                                      \
@@ -1367,7 +1367,7 @@ protected:
     {                                                                       \
         register_method(                                                    \
             decl_##as_op_sig(),                                             \
-            +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void       \
+            +[](generic_pointer gen) -> void       \
             {                                                               \
                 set_generic_return<Class>(                                  \
                     gen,                                                    \
@@ -1399,7 +1399,7 @@ protected:
     {                                                                                              \
         this->register_method(                                                                     \
             as_decl,                                                                               \
-            +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void                              \
+            +[](generic_pointer gen) -> void                              \
             {                                                                                      \
                 using this_arg_t = std::conditional_t<(#const_[0] != '\0'), const Class&, Class&>; \
                 set_generic_return<return_type>(                                                   \
@@ -1501,7 +1501,7 @@ protected:
     {
         register_method(
             decl_opCmp(),
-            +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+            +[](generic_pointer gen) -> void
             {
                 set_generic_return<int>(
                     gen,
@@ -2973,7 +2973,7 @@ public:
         this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_DESTRUCT,
             "void f()",
-            +[](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+            +[](generic_pointer gen) -> void
             {
                 std::destroy_at(get_generic_object<Class*>(gen));
             },
