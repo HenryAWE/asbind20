@@ -67,9 +67,8 @@ public:
         Fn&& fn
     ) requires(!ForceGeneric)
     {
-        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
+        constexpr auto conv =
             detail::deduce_function_callconv<std::decay_t<Fn>>();
-
         this->register_function(decl, fn, call_conv<conv>);
 
         return *this;
@@ -109,20 +108,9 @@ public:
     )
     {
         if constexpr(ForceGeneric)
-        {
             function(use_generic, decl, fp<Function>);
-        }
         else
-        {
-            constexpr auto conv =
-                detail::deduce_function_callconv<std::decay_t<decltype(Function)>>();
-            this->register_function(
-                decl,
-                detail::to_asGENFUNC_t(fp<Function>, call_conv<conv>),
-                generic_call_conv
-            );
-        }
-
+            this->function(decl, Function);
         return *this;
     }
 
@@ -133,9 +121,13 @@ public:
         const Lambda&
     )
     {
+        constexpr auto conv =
+            detail::deduce_function_callconv<std::decay_t<decltype(+Lambda{})>>();
         this->register_function(
             decl,
-            detail::to_asGENFUNC_t(Lambda{}, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>),
+            detail::to_asGENFUNC_t(
+                Lambda{}, call_conv<conv>
+            ),
             generic_call_conv
         );
 
@@ -152,7 +144,6 @@ public:
             this->function(use_generic, decl, Lambda{});
         else
             this->function(decl, +Lambda{});
-
         return *this;
     }
 
@@ -160,8 +151,7 @@ public:
     global& function(
         cstring_ref decl,
         generic_function gfn,
-        auxiliary_wrapper<Auxiliary> aux,
-        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> = {}
+        auxiliary_wrapper<Auxiliary> aux
     )
     {
         this->register_function(
@@ -179,8 +169,7 @@ public:
     global& function(
         cstring_ref decl,
         Fn&& fn,
-        auxiliary_wrapper<Auxiliary> aux,
-        call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL> = {}
+        auxiliary_wrapper<Auxiliary> aux
     ) requires(!ForceGeneric)
     {
         this->register_function(
@@ -196,6 +185,7 @@ public:
     template <
         auto Function,
         typename Auxiliary>
+    requires(std::is_member_function_pointer_v<decltype(Function)>)
     global& function(
         use_generic_t,
         cstring_ref decl,
@@ -203,14 +193,11 @@ public:
         auxiliary_wrapper<Auxiliary> aux
     )
     {
-        static_assert(
-            std::is_member_function_pointer_v<std::decay_t<decltype(Function)>>,
-            "Global function with an auxiliary pointer must be a member function"
-        );
-
         this->register_function(
             decl,
-            detail::to_asGENFUNC_t(fp<Function>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL>),
+            detail::to_asGENFUNC_t(
+                fp<Function>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL>
+            ),
             generic_call_conv,
             get_auxiliary_address(aux)
         );
@@ -221,22 +208,17 @@ public:
     template <
         auto Function,
         typename Auxiliary>
+    requires(std::is_member_function_pointer_v<decltype(Function)>)
     global& function(
         cstring_ref decl,
         fp_wrapper<Function>,
         auxiliary_wrapper<Auxiliary> aux
     )
     {
-        static_assert(
-            std::is_member_function_pointer_v<std::decay_t<decltype(Function)>>,
-            "Global function with an auxiliary pointer must be a member function"
-        );
-
         if constexpr(ForceGeneric)
             function(use_generic, decl, fp<Function>, aux);
         else
             function(decl, Function, aux);
-
         return *this;
     }
 
@@ -310,7 +292,6 @@ public:
     )
     {
         typedef_(type_decl, new_name);
-
         return *this;
     }
 
