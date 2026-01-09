@@ -1304,7 +1304,7 @@ protected:
     {                                                                                                 \
         register_method(                                                                              \
             decl_##as_op_sig(),                                                                       \
-            +[](generic_pointer gen) -> void                                 \
+            +[](generic_pointer gen) -> void                                                          \
             {                                                                                         \
                 using this_arg_t = std::conditional_t<(#const_[0] != '\0'), const Class&, Class&>;    \
                 set_generic_return<return_type>(                                                      \
@@ -1367,7 +1367,7 @@ protected:
     {                                                                       \
         register_method(                                                    \
             decl_##as_op_sig(),                                             \
-            +[](generic_pointer gen) -> void       \
+            +[](generic_pointer gen) -> void                                \
             {                                                               \
                 set_generic_return<Class>(                                  \
                     gen,                                                    \
@@ -1399,7 +1399,7 @@ protected:
     {                                                                                              \
         this->register_method(                                                                     \
             as_decl,                                                                               \
-            +[](generic_pointer gen) -> void                              \
+            +[](generic_pointer gen) -> void                                                       \
             {                                                                                      \
                 using this_arg_t = std::conditional_t<(#const_[0] != '\0'), const Class&, Class&>; \
                 set_generic_return<return_type>(                                                   \
@@ -1634,7 +1634,7 @@ protected:
     static constexpr auto method_callconv() noexcept
         -> AS_NAMESPACE_QUALIFIER asECallConvTypes
     {
-        return method_callconv<std::decay_t<decltype(Method)>>();
+        return method_callconv<decltype(Method)>();
     }
 
     template <typename Method, typename Auxiliary>
@@ -1648,7 +1648,22 @@ protected:
     static consteval auto method_callconv_aux() noexcept
         -> AS_NAMESPACE_QUALIFIER asECallConvTypes
     {
-        return method_callconv_aux<std::decay_t<decltype(Method)>, Auxiliary>();
+        return method_callconv_aux<decltype(Method), Auxiliary>();
+    }
+
+private:
+    template <typename Fn, AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    void register_temp_cb(
+        Fn&& fn,
+        call_conv_t<CallConv>
+    )
+    {
+        this->register_behaviour(
+            AS_NAMESPACE_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK,
+            "bool f(int&in,bool&out)",
+            fn,
+            call_conv<CallConv>
+        );
     }
 
 public:
@@ -1656,9 +1671,7 @@ public:
         generic_function gfn
     ) requires(Template)
     {
-        this->register_behaviour(
-            AS_NAMESPACE_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK,
-            "bool f(int&in,bool&out)",
+        this->register_temp_cb(
             gfn,
             generic_call_conv
         );
@@ -1668,11 +1681,13 @@ public:
     template <native_function Fn>
     Derived& template_callback(Fn&& fn) requires(Template && !ForceGeneric)
     {
-        this->register_behaviour(
+        constexpr auto conv = detail::deduce_beh_callconv<
             AS_NAMESPACE_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK,
-            "bool f(int&in,bool&out)",
+            Class,
+            Fn>();
+        this->register_temp_cb(
             fn,
-            call_conv<detail::deduce_function_callconv<std::decay_t<Fn>>()>
+            call_conv<conv>
         );
         return derived();
     }
@@ -1680,13 +1695,13 @@ public:
     template <auto Callback>
     Derived& template_callback(use_generic_t, fp_wrapper<Callback>) requires(Template)
     {
-        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =
-            detail::deduce_beh_callconv<
-                AS_NAMESPACE_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK,
-                Class,
-                std::decay_t<decltype(Callback)>>();
-        template_callback(
-            detail::to_asGENFUNC_t(fp<Callback>, call_conv<conv>)
+        constexpr auto conv = detail::deduce_beh_callconv<
+            AS_NAMESPACE_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK,
+            Class,
+            decltype(Callback)>();
+        this->register_temp_cb(
+            detail::to_asGENFUNC_t(fp<Callback>, call_conv<conv>),
+            generic_call_conv
         );
         return derived();
     }
@@ -1754,7 +1769,7 @@ public:
         auxiliary_wrapper<Auxiliary> aux
     ) requires(!ForceGeneric)
     {
-        constexpr auto conv = method_callconv_aux<std::decay_t<Fn>, Auxiliary>();
+        constexpr auto conv = method_callconv_aux<Fn, Auxiliary>();
         this->register_method(
             decl,
             std::forward<Fn>(fn),
@@ -2372,48 +2387,51 @@ public:
     ASBIND20_BG_INTERFACE_DEFINE_OP(Derived, opPreInc)
     ASBIND20_BG_INTERFACE_DEFINE_OP(Derived, opPreDec)
 
-#define ASBIND20_BG_INTERFACE_DEFINE_BEH(bg_type, as_beh, func_name)                     \
-    template <native_function Fn>                                                        \
-    bg_type& func_name(Fn&& fn) requires(!ForceGeneric)                                  \
-    {                                                                                    \
-        using func_t = std::decay_t<Fn>;                                                 \
-        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =                         \
-            detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER as_beh, Class, func_t>(); \
-        this->register_behaviour(                                                        \
-            AS_NAMESPACE_QUALIFIER as_beh,                                               \
-            decl::decl_of_beh<AS_NAMESPACE_QUALIFIER as_beh>(),                          \
-            fn,                                                                          \
-            call_conv<conv>                                                              \
-        );                                                                               \
-        return static_cast<bg_type&>(*this);                                             \
-    }                                                                                    \
-    bg_type& func_name(generic_function gfn)                                             \
-    {                                                                                    \
-        this->register_behaviour(                                                        \
-            AS_NAMESPACE_QUALIFIER as_beh,                                               \
-            decl::decl_of_beh<AS_NAMESPACE_QUALIFIER as_beh>(),                          \
-            gfn,                                                                         \
-            call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>                             \
-        );                                                                               \
-        return static_cast<bg_type&>(*this);                                             \
-    }                                                                                    \
-    template <auto Function>                                                             \
-    bg_type& func_name(use_generic_t, fp_wrapper<Function>)                              \
-    {                                                                                    \
-        using func_t = std::decay_t<decltype(Function)>;                                 \
-        constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes conv =                         \
-            detail::deduce_beh_callconv<AS_NAMESPACE_QUALIFIER as_beh, Class, func_t>(); \
-        this->func_name(detail::to_asGENFUNC_t(fp<Function>, call_conv<conv>));          \
-        return static_cast<bg_type&>(*this);                                             \
-    }                                                                                    \
-    template <auto Function>                                                             \
-    bg_type& func_name(fp_wrapper<Function>)                                             \
-    {                                                                                    \
-        if constexpr(ForceGeneric)                                                       \
-            this->func_name(use_generic, fp<Function>);                                  \
-        else                                                                             \
-            this->func_name(Function);                                                   \
-        return static_cast<bg_type&>(*this);                                             \
+#define ASBIND20_BG_INTERFACE_DEFINE_BEH(bg_type, as_beh, func_name)            \
+    template <native_function Fn>                                               \
+    bg_type& func_name(Fn&& fn) requires(!ForceGeneric)                         \
+    {                                                                           \
+        constexpr auto conv = detail::deduce_beh_callconv<                      \
+            AS_NAMESPACE_QUALIFIER as_beh,                                      \
+            Class,                                                              \
+            Fn>();                                                              \
+        this->register_behaviour(                                               \
+            AS_NAMESPACE_QUALIFIER as_beh,                                      \
+            decl::decl_of_beh<AS_NAMESPACE_QUALIFIER as_beh>(),                 \
+            fn,                                                                 \
+            call_conv<conv>                                                     \
+        );                                                                      \
+        return static_cast<bg_type&>(*this);                                    \
+    }                                                                           \
+    bg_type& func_name(generic_function gfn)                                    \
+    {                                                                           \
+        this->register_behaviour(                                               \
+            AS_NAMESPACE_QUALIFIER as_beh,                                      \
+            decl::decl_of_beh<AS_NAMESPACE_QUALIFIER as_beh>(),                 \
+            gfn,                                                                \
+            call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>                    \
+        );                                                                      \
+        return static_cast<bg_type&>(*this);                                    \
+    }                                                                           \
+    template <auto Function>                                                    \
+    bg_type& func_name(use_generic_t, fp_wrapper<Function>)                     \
+    {                                                                           \
+        using func_t = decltype(Function);                                      \
+        constexpr auto conv = detail::deduce_beh_callconv<                      \
+            AS_NAMESPACE_QUALIFIER as_beh,                                      \
+            Class,                                                              \
+            func_t>();                                                          \
+        this->func_name(detail::to_asGENFUNC_t(fp<Function>, call_conv<conv>)); \
+        return static_cast<bg_type&>(*this);                                    \
+    }                                                                           \
+    template <auto Function>                                                    \
+    bg_type& func_name(fp_wrapper<Function>)                                    \
+    {                                                                           \
+        if constexpr(ForceGeneric)                                              \
+            this->func_name(use_generic, fp<Function>);                         \
+        else                                                                    \
+            this->func_name(Function);                                          \
+        return static_cast<bg_type&>(*this);                                    \
     }
 
     // Reference types with GC flag support all GC-related behaviours.
@@ -2603,7 +2621,7 @@ public:
         constexpr auto conv = detail::deduce_beh_callconv<
             AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
             Class,
-            std::decay_t<Constructor>>();
+            Constructor>();
         this->register_constructor_function(
             false,
             params,
@@ -2624,7 +2642,7 @@ public:
         constexpr auto conv = detail::deduce_beh_callconv<
             AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
             Class,
-            std::decay_t<Constructor>>();
+            Constructor>();
         this->register_constructor_function(
             true,
             params,
@@ -2644,7 +2662,7 @@ public:
         constexpr auto conv = detail::deduce_beh_callconv<
             AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
             Class,
-            std::decay_t<decltype(ConstructorFunc)>>();
+            decltype(ConstructorFunc)>();
         this->register_constructor_function(
             false,
             params,
@@ -2669,7 +2687,7 @@ public:
         constexpr auto conv = detail::deduce_beh_callconv<
             AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
             Class,
-            std::decay_t<decltype(ConstructorFunc)>>();
+            decltype(ConstructorFunc)>();
         this->register_constructor_function(
             true,
             params,
@@ -3136,7 +3154,7 @@ public:
         constexpr auto conv = detail::deduce_beh_callconv<
             AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_CONSTRUCT,
             Class,
-            std::decay_t<ListConstructorFunc>>();
+            ListConstructorFunc>();
         this->register_list_ctor_func(
             pattern,
             ctor,
@@ -3156,7 +3174,7 @@ public:
         constexpr auto conv = detail::deduce_beh_callconv<
             AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_CONSTRUCT,
             Class,
-            std::decay_t<decltype(ListConstructorFunc)>>();
+            decltype(ListConstructorFunc)>();
         this->register_list_ctor_func(
             pattern,
             detail::list_constructor_to_asGENFUNC_t<Class, Template>(
@@ -3430,7 +3448,7 @@ public:
         constexpr auto conv = detail::deduce_beh_callconv<
             AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
             Class,
-            std::decay_t<Factory>>();
+            Factory>();
         this->register_factory_function(
             false,
             params,
@@ -3452,7 +3470,7 @@ public:
         constexpr auto conv = detail::deduce_beh_callconv<
             AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
             Class,
-            std::decay_t<Factory>>();
+            Factory>();
         this->register_factory_function(
             true,
             params,
@@ -3475,7 +3493,7 @@ public:
         constexpr auto conv = detail::deduce_beh_callconv_aux<
             AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
             Class,
-            std::decay_t<Factory>,
+            Factory,
             Auxiliary>();
         this->register_factory_function(
             false,
@@ -3501,7 +3519,7 @@ public:
         constexpr auto conv = detail::deduce_beh_callconv_aux<
             AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
             Class,
-            std::decay_t<Factory>,
+            Factory,
             Auxiliary>();
         this->register_factory_function(
             true,
@@ -3592,7 +3610,7 @@ public:
         constexpr auto conv = detail::deduce_beh_callconv<
             AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
             Class,
-            std::decay_t<decltype(Factory)>>();
+            decltype(Factory)>();
         this->register_factory_function(
             false,
             params,
@@ -3616,7 +3634,7 @@ public:
         constexpr auto conv = detail::deduce_beh_callconv<
             AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
             Class,
-            std::decay_t<decltype(Factory)>>();
+            decltype(Factory)>();
         this->register_factory_function(
             true,
             params,
@@ -3643,7 +3661,7 @@ public:
         constexpr auto conv = detail::deduce_beh_callconv_aux<
             AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
             Class,
-            std::decay_t<decltype(AuxFactoryFunc)>,
+            decltype(AuxFactoryFunc),
             Auxiliary>();
         this->register_factory_function(
             true,
@@ -3904,7 +3922,7 @@ public:
         constexpr auto conv = detail::deduce_beh_callconv<
             AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY,
             Class,
-            std::decay_t<ListFactory>>();
+            ListFactory>();
         this->register_list_factory_func(
             pattern,
             ctor,
@@ -3957,7 +3975,7 @@ public:
         constexpr auto conv = detail::deduce_beh_callconv_aux<
             AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY,
             Class,
-            std::decay_t<ListFactory>,
+            ListFactory,
             Auxiliary>();
         this->register_list_factory_func(
             pattern,
@@ -3982,7 +4000,7 @@ public:
         constexpr auto conv = detail::deduce_beh_callconv_aux<
             AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY,
             Class,
-            std::decay_t<decltype(ListFactory)>,
+            decltype(ListFactory),
             Auxiliary>();
         using gen_t = detail::list_factory_func<
             Class,

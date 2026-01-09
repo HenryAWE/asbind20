@@ -68,7 +68,7 @@ public:
     ) requires(!ForceGeneric)
     {
         constexpr auto conv =
-            detail::deduce_function_callconv<std::decay_t<Fn>>();
+            detail::deduce_function_callconv<Fn>();
         this->register_function(decl, fn, call_conv<conv>);
 
         return *this;
@@ -91,7 +91,7 @@ public:
     )
     {
         constexpr auto conv =
-            detail::deduce_function_callconv<std::decay_t<decltype(Function)>>();
+            detail::deduce_function_callconv<decltype(Function)>();
         this->register_function(
             decl,
             detail::to_asGENFUNC_t(fp<Function>, call_conv<conv>),
@@ -122,7 +122,7 @@ public:
     )
     {
         constexpr auto conv =
-            detail::deduce_function_callconv<std::decay_t<decltype(+Lambda{})>>();
+            detail::deduce_function_callconv<decltype(+Lambda{})>();
         this->register_function(
             decl,
             detail::to_asGENFUNC_t(
@@ -307,7 +307,7 @@ public:
      * @brief Set the message callback.
      */
     template <native_function Callback>
-    requires(!std::is_member_function_pointer_v<std::decay_t<Callback>>)
+    requires(!std::is_member_function_pointer_v<Callback>)
     global& message_callback(Callback fn, void* obj = nullptr)
     {
         [[maybe_unused]]
@@ -326,7 +326,7 @@ public:
      * @brief Set a member function as the message callback.
      */
     template <native_function Callback, typename T>
-    requires(std::is_member_function_pointer_v<std::decay_t<Callback>>)
+    requires(std::is_member_function_pointer_v<Callback>)
     global& message_callback(Callback fn, T& obj)
     {
         [[maybe_unused]]
@@ -353,7 +353,7 @@ public:
      * @brief Set the exception translator.
      */
     template <native_function Callback>
-    requires(!std::is_member_function_pointer_v<std::decay_t<Callback>>)
+    requires(!std::is_member_function_pointer_v<Callback>)
     global& exception_translator(Callback fn, void* obj = nullptr)
     {
         [[maybe_unused]]
@@ -372,7 +372,7 @@ public:
      * @brief Set a member function as the exception translator.
      */
     template <native_function Callback, typename T>
-    requires(std::is_member_function_pointer_v<std::decay_t<Callback>>)
+    requires(std::is_member_function_pointer_v<Callback>)
     global& exception_translator(Callback fn, T& obj)
     {
         [[maybe_unused]]

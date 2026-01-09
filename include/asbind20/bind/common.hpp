@@ -89,6 +89,8 @@ namespace detail
     requires(!std::is_member_function_pointer_v<FuncSig>)
     constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes deduce_function_callconv()
     {
+        static_assert(!std::convertible_to<FuncSig, AS_NAMESPACE_QUALIFIER asGENFUNC_t>);
+
         /*
         On x64 and many platforms (like arm64), CDECL and STDCALL have the same effect.
         It's safe to treat all global functions as CDECL.
@@ -102,6 +104,7 @@ namespace detail
             return AS_NAMESPACE_QUALIFIER asCALL_STDCALL;
         else
             return AS_NAMESPACE_QUALIFIER asCALL_CDECL;
+
 #else
         return AS_NAMESPACE_QUALIFIER asCALL_CDECL;
 #endif
@@ -143,9 +146,11 @@ namespace detail
             if constexpr(obj_last || obj_first)
             {
                 if(obj_first)
+                {
                     return traits::arg_count_v == 1 ?
                                AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST :
                                AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST;
+                }
                 else
                     return AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
             }
@@ -160,9 +165,11 @@ namespace detail
                 static_assert(void_obj_last || void_obj_first, "Missing object/void* parameter");
 
                 if(void_obj_first)
+                {
                     return traits::arg_count_v == 1 ?
                                AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST :
                                AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST;
+                }
                 else
                     return AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
             }
@@ -243,9 +250,11 @@ namespace detail
                 static_assert(obj_last || obj_first, "Missing auxiliary object parameter");
 
                 if(obj_first)
+                {
                     return traits::arg_count_v == 1 ?
                                AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST :
                                AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST;
+                }
                 else
                     return AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
             }
