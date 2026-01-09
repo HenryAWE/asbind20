@@ -13,7 +13,6 @@
 #include <string_view>
 #include <algorithm>
 #include <concepts>
-#include "../detail/fwd.hpp"
 #include "../meta.hpp"
 #include "../utility.hpp"
 

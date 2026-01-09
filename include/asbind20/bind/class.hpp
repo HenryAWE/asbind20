@@ -1679,10 +1679,7 @@ public:
         generic_function gfn
     ) requires(Template)
     {
-        this->register_temp_cb(
-            gfn,
-            detail::generic_cc
-        );
+        this->register_temp_cb(gfn, detail::generic_cc);
         return derived();
     }
 
@@ -1693,10 +1690,7 @@ public:
             AS_NAMESPACE_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK,
             Class,
             Fn>();
-        this->register_temp_cb(
-            fn,
-            conv
-        );
+        this->register_temp_cb(fn, conv);
         return derived();
     }
 
@@ -1731,11 +1725,7 @@ public:
     ) requires(!ForceGeneric)
     {
         constexpr auto conv = method_callconv<Fn>();
-        this->register_method(
-            decl,
-            fn,
-            conv
-        );
+        this->register_method(decl, fn, conv);
         return derived();
     }
 
