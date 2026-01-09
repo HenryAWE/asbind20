@@ -1510,10 +1510,12 @@ protected:
             decl_opCmp(),
             +[](generic_pointer gen) -> void
             {
+                const Class& lhs = get_generic_object<const Class&>(gen);
+                const Class& rhs = get_generic_arg<const Class&>(gen, 0);
                 set_generic_return<int>(
                     gen,
                     translate_three_way(
-                        get_generic_object<const Class&>(gen) <=> get_generic_arg<const Class&>(gen, 0)
+                        lhs <=> rhs
                     )
                 );
             },
@@ -1556,8 +1558,10 @@ protected:
 
     void register_member_funcdef(std::string_view decl)
     {
-        std::string full_decl = detail::generate_member_funcdef(m_name, decl);
-        register_full_funcdef(full_decl.c_str());
+        std::string full_decl = detail::generate_member_funcdef(
+            m_name, decl
+        );
+        register_full_funcdef(full_decl);
     }
 
     static std::string decl_opConv(std::string_view ret, bool implicit = false)
@@ -1571,13 +1575,12 @@ protected:
     template <typename Class, typename To>
     void opConv_impl_native(std::string_view ret, bool implicit)
     {
-        auto wrapper = detail::opConv<std::add_const_t<Class>, To>::generate(
-            detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
-        );
-
+        using gen_t = detail::opConv<std::add_const_t<Class>, To>;
         register_method(
             decl_opConv(ret, implicit),
-            wrapper,
+            gen_t::generate(
+                detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+            ),
             AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
         );
     }
@@ -1585,12 +1588,10 @@ protected:
     template <typename Class, typename To>
     void opConv_impl_generic(std::string_view ret, bool implicit)
     {
-        auto wrapper = detail::opConv<std::add_const_t<Class>, To>::generate(
-            detail::generic_cc
-        );
+        using gen_t = detail::opConv<std::add_const_t<Class>, To>;
         register_method(
             decl_opConv(ret, implicit),
-            wrapper,
+            gen_t::generate(detail::generic_cc),
             detail::generic_cc
         );
     }
@@ -1607,11 +1608,11 @@ protected:
 
 private:
     // Internal interface because AS doesn't provide a direct interface to register member funcdef
-    void register_full_funcdef(const char* decl)
+    void register_full_funcdef(cstring_ref decl)
     {
         [[maybe_unused]]
         int r = 0;
-        r = get_engine()->RegisterFuncdef(decl);
+        r = get_engine()->RegisterFuncdef(decl.c_str());
         assert(r >= 0);
     }
 };
@@ -2611,16 +2612,16 @@ public:
         return *this;
     }
 
-    template <native_function Constructor>
+    template <native_function ConstructorFunc>
     basic_value_class& constructor_function(
         std::string_view params,
-        Constructor ctor
+        ConstructorFunc ctor
     ) requires(!ForceGeneric)
     {
         constexpr auto conv = detail::deduce_beh_callconv<
             AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
             Class,
-            Constructor>();
+            ConstructorFunc>();
         this->register_constructor_function(
             false,
             params,
@@ -2631,17 +2632,17 @@ public:
         return *this;
     }
 
-    template <native_function Constructor>
+    template <native_function ConstructorFunc>
     basic_value_class& constructor_function(
         std::string_view params,
         use_explicit_t,
-        Constructor ctor
+        ConstructorFunc ctor
     ) requires(!ForceGeneric)
     {
         constexpr auto conv = detail::deduce_beh_callconv<
             AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
             Class,
-            Constructor>();
+            ConstructorFunc>();
         this->register_constructor_function(
             true,
             params,
@@ -2727,22 +2728,22 @@ public:
         return *this;
     }
 
-    template <noncapturing_native_lambda Constructor>
+    template <noncapturing_native_lambda ConstructorFunc>
     basic_value_class& constructor_function(
         use_generic_t,
         std::string_view params,
-        const Constructor&
+        const ConstructorFunc&
     )
     {
         constexpr auto conv = detail::deduce_beh_callconv<
             AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
             Class,
-            decltype(+Constructor{})>();
+            decltype(+ConstructorFunc{})>();
         this->register_constructor_function(
             false,
             params,
             detail::constructor_to_asGENFUNC_t<Class, Template>(
-                Constructor{}, detail::cc<conv>
+                ConstructorFunc{}, detail::cc<conv>
             ),
             detail::generic_cc
         );
@@ -2750,23 +2751,23 @@ public:
         return *this;
     }
 
-    template <noncapturing_native_lambda Constructor>
+    template <noncapturing_native_lambda ConstructorFunc>
     basic_value_class& constructor_function(
         use_generic_t,
         std::string_view params,
         use_explicit_t,
-        const Constructor&
+        const ConstructorFunc&
     )
     {
         constexpr auto conv = detail::deduce_beh_callconv<
             AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
             Class,
-            decltype(+Constructor{})>();
+            decltype(+ConstructorFunc{})>();
         this->register_constructor_function(
             true,
             params,
             detail::constructor_to_asGENFUNC_t<Class, Template>(
-                Constructor{}, detail::cc<conv>
+                ConstructorFunc{}, detail::cc<conv>
             ),
             detail::generic_cc
         );
@@ -2774,30 +2775,30 @@ public:
         return *this;
     }
 
-    template <noncapturing_native_lambda Constructor>
+    template <noncapturing_native_lambda ConstructorFunc>
     basic_value_class& constructor_function(
         std::string_view params,
-        const Constructor&
+        const ConstructorFunc&
     )
     {
         if constexpr(ForceGeneric)
-            this->constructor_function(use_generic, params, Constructor{});
+            this->constructor_function(use_generic, params, ConstructorFunc{});
         else
-            this->constructor_function(params, +Constructor{});
+            this->constructor_function(params, +ConstructorFunc{});
         return *this;
     }
 
-    template <noncapturing_native_lambda Constructor>
+    template <noncapturing_native_lambda ConstructorFunc>
     basic_value_class& constructor_function(
         std::string_view params,
         use_explicit_t,
-        const Constructor&
+        const ConstructorFunc&
     )
     {
         if constexpr(ForceGeneric)
-            this->constructor_function(use_generic, params, use_explicit, Constructor{});
+            this->constructor_function(use_generic, params, use_explicit, ConstructorFunc{});
         else
-            this->constructor_function(params, use_explicit, +Constructor{});
+            this->constructor_function(params, use_explicit, +ConstructorFunc{});
 
         return *this;
     }
