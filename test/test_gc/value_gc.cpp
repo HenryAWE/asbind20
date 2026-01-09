@@ -96,7 +96,7 @@ public:
         m_has_value = false;
     }
 
-    void enum_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+    void enum_refs_impl(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     {
         EXPECT_TRUE((m_ti->GetFlags() & AS_NAMESPACE_QUALIFIER asOBJ_GC))
             << "m_ti->GetFlags(): " << m_ti->GetFlags();
@@ -107,11 +107,21 @@ public:
         );
     }
 
-    void release_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+    friend void val_gc_enum_refs(
+        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, val_gc& this_
+    );
+
+private:
+    void release_refs_impl(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     {
         EXPECT_EQ(engine, m_ti->GetEngine());
         reset();
     }
+
+public:
+    friend void val_gc_release_refs(
+        val_gc& this_, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
+    );
 
     template <bool UseGeneric>
     friend void register_val_gc(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine);
@@ -123,6 +133,20 @@ private:
     bool m_has_value = false;
 };
 
+// Object last
+void val_gc_enum_refs(
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, val_gc& this_
+)
+{
+    this_.enum_refs_impl(engine);
+}
+
+// Object first
+void val_gc_release_refs(val_gc& this_, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
+    this_.release_refs_impl(engine);
+}
+
 template <bool UseGeneric>
 void register_val_gc(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
@@ -132,8 +156,8 @@ void register_val_gc(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         .template_callback(fp<&val_gc_template_callback>)
         .default_constructor()
         .destructor()
-        .enum_refs(fp<&val_gc::enum_refs>)
-        .release_refs(fp<&val_gc::release_refs>)
+        .enum_refs(fp<&val_gc_enum_refs>)
+        .release_refs(fp<&val_gc_release_refs>)
         .property("const bool has_value", &val_gc::m_has_value)
         .method("const T& get_value() const property", fp<overload_cast<>(&val_gc::value, const_)>)
         .method("void set_value(const T&in) property", fp<&val_gc::assign>);
@@ -165,7 +189,7 @@ bool test1()
 namespace test_gc
 {
 template <bool UseGeneric>
-class basic_optional_gc_test : public ::testing::Test
+class basic_value_gc_test : public ::testing::Test
 {
 public:
     void SetUp() override
@@ -271,15 +295,15 @@ private:
 };
 } // namespace test_gc
 
-using OptionalGCGeneric = test_gc::basic_optional_gc_test<true>;
-using OptionalGCNative = test_gc::basic_optional_gc_test<false>;
+using ValueGCGeneric = test_gc::basic_value_gc_test<true>;
+using ValueGCNative = test_gc::basic_value_gc_test<false>;
 
-TEST_F(OptionalGCGeneric, RunScript)
+TEST_F(ValueGCGeneric, RunScript)
 {
     this->run_script();
 }
 
-TEST_F(OptionalGCNative, RunScript)
+TEST_F(ValueGCNative, RunScript)
 {
     this->run_script();
 }
