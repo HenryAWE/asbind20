@@ -44,7 +44,7 @@ static void register_global_funcs(
     AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, test_bind::class_wrapper& wrapper, std::string& global_val
 )
 {
-    using asbind20::fp, asbind20::auxiliary, asbind20::aux_value, asbind20::call_conv;
+    using asbind20::fp, asbind20::auxiliary, asbind20::aux_value;
 
     asbind20::global(engine)
         .function("void set_int(int&out)", fp<&test_bind::set_int>)
@@ -78,7 +78,7 @@ static void register_global_funcs(
     asbind20::use_generic_t, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, test_bind::class_wrapper& wrapper, std::string& global_val
 )
 {
-    using asbind20::fp, asbind20::auxiliary, asbind20::aux_value, asbind20::call_conv;
+    using asbind20::fp, asbind20::auxiliary, asbind20::aux_value;
 
     asbind20::global<true>(engine)
         .function("void set_int(int&out)", fp<&test_bind::set_int>)

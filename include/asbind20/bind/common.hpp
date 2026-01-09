@@ -43,6 +43,21 @@ inline constexpr obj_loc_t<false> objlast{};
 
 namespace detail
 {
+    template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    struct call_conv_t
+    {
+        constexpr operator AS_NAMESPACE_QUALIFIER asECallConvTypes() const noexcept
+        {
+            return CallConv;
+        }
+    };
+
+    // Helper for specifying calling convention
+    template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    constexpr inline call_conv_t<CallConv> cc;
+
+    constexpr inline call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> generic_cc{};
+
     template <bool ObjFirst>
     consteval auto conv_of_loc(obj_loc_t<ObjFirst>, bool is_thiscall)
         -> AS_NAMESPACE_QUALIFIER asECallConvTypes

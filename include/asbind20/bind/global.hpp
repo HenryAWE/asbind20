@@ -20,13 +20,11 @@ class global final : public binding_generator_interface<ForceGeneric>
     using my_base = binding_generator_interface<ForceGeneric>;
 
 private:
-    template <
-        typename Fn,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    template <typename Fn>
     void register_function(
         cstring_ref decl,
         Fn&& fn,
-        call_conv_t<CallConv>,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes conv,
         void* auxiliary = nullptr
     )
     {
@@ -34,7 +32,7 @@ private:
         int r = get_engine()->RegisterGlobalFunction(
             decl.c_str(),
             detail::to_asSFuncPtr(fn),
-            CallConv,
+            conv,
             auxiliary
         );
         assert(r >= 0);
@@ -69,7 +67,7 @@ public:
     {
         constexpr auto conv =
             detail::deduce_function_callconv<Fn>();
-        this->register_function(decl, fn, call_conv<conv>);
+        this->register_function(decl, fn, conv);
 
         return *this;
     }
@@ -79,7 +77,7 @@ public:
         generic_function gfn
     )
     {
-        this->register_function(decl, gfn, generic_call_conv);
+        this->register_function(decl, gfn, detail::generic_cc);
         return *this;
     }
 
@@ -94,8 +92,8 @@ public:
             detail::deduce_function_callconv<decltype(Function)>();
         this->register_function(
             decl,
-            detail::to_asGENFUNC_t(fp<Function>, call_conv<conv>),
-            generic_call_conv
+            detail::to_asGENFUNC_t(fp<Function>, detail::cc<conv>),
+            detail::generic_cc
         );
 
         return *this;
@@ -126,9 +124,9 @@ public:
         this->register_function(
             decl,
             detail::to_asGENFUNC_t(
-                Lambda{}, call_conv<conv>
+                Lambda{}, detail::cc<conv>
             ),
-            generic_call_conv
+            detail::generic_cc
         );
 
         return *this;
@@ -157,7 +155,7 @@ public:
         this->register_function(
             decl,
             gfn,
-            generic_call_conv,
+            detail::generic_cc,
             get_auxiliary_address(aux)
         );
 
@@ -175,7 +173,7 @@ public:
         this->register_function(
             decl,
             fn,
-            call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL>,
+            detail::cc<AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL>,
             get_auxiliary_address(aux)
         );
 
@@ -196,9 +194,9 @@ public:
         this->register_function(
             decl,
             detail::to_asGENFUNC_t(
-                fp<Function>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL>
+                fp<Function>, detail::cc<AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL>
             ),
-            generic_call_conv,
+            detail::generic_cc,
             get_auxiliary_address(aux)
         );
 

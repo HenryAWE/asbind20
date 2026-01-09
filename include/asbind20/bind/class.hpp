@@ -1180,9 +1180,12 @@ protected:
             m_this_type_id = r;
     }
 
-    template <typename Fn, AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    template <typename Fn>
     void register_method(
-        cstring_ref decl, Fn&& fn, call_conv_t<CallConv>, void* aux = nullptr
+        cstring_ref decl,
+        Fn&& fn,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes conv,
+        void* aux = nullptr
     )
     {
         [[maybe_unused]]
@@ -1190,17 +1193,17 @@ protected:
             m_name.c_str(),
             decl.c_str(),
             detail::to_asSFuncPtr(fn),
-            CallConv,
+            conv,
             aux
         );
         assert(r >= 0);
     }
 
-    template <typename Fn, AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    template <typename Fn>
     void register_comp_method(
         cstring_ref decl,
         Fn&& fn,
-        call_conv_t<CallConv>,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes conv,
         composite_wrapper comp,
         void* aux = nullptr
     )
@@ -1210,7 +1213,7 @@ protected:
             m_name.c_str(),
             decl.c_str(),
             detail::to_asSFuncPtr(fn),
-            CallConv,
+            conv,
             aux,
             static_cast<int>(comp.get_offset()),
             true
@@ -1218,14 +1221,12 @@ protected:
         assert(r >= 0);
     }
 
-    template <
-        typename Fn,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    template <typename Fn>
     void register_behaviour(
         AS_NAMESPACE_QUALIFIER asEBehaviours beh,
         cstring_ref decl,
         Fn&& fn,
-        call_conv_t<CallConv>,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes conv,
         void* aux = nullptr
     )
     {
@@ -1236,7 +1237,7 @@ protected:
             beh,
             decl.c_str(),
             detail::to_asSFuncPtr(fn),
-            CallConv,
+            conv,
             aux
         );
         assert(r >= 0);
@@ -1312,7 +1313,7 @@ protected:
                     cpp_op get_generic_object<this_arg_t>(gen)                                        \
                 );                                                                                    \
             },                                                                                        \
-            call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>                                          \
+            detail::generic_cc                                                                        \
         );                                                                                            \
     }                                                                                                 \
     template <typename Class>                                                                         \
@@ -1326,7 +1327,7 @@ protected:
             register_method(                                                                          \
                 decl_##as_op_sig(),                                                                   \
                 static_cast<return_type (Class::*)() const_>(&Class::operator cpp_op),                \
-                call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>                                     \
+                detail::cc<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>                                    \
             );                                                                                        \
         }                                                                                             \
         else                                                                                          \
@@ -1338,7 +1339,7 @@ protected:
                 {                                                                                     \
                     return cpp_op this_;                                                              \
                 },                                                                                    \
-                call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>                               \
+                detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>                              \
             );                                                                                        \
         }                                                                                             \
     }
@@ -1374,7 +1375,7 @@ protected:
                     get_generic_object<Class&>(gen) cpp_op                  \
                 );                                                          \
             },                                                              \
-            call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>                \
+            detail::generic_cc                                              \
         );                                                                  \
     }                                                                       \
     template <typename Class>                                               \
@@ -1385,7 +1386,7 @@ protected:
             decl_##as_op_sig(),                                             \
             +[](Class& this_) -> Class                                      \
             { return this_ cpp_op; },                                       \
-            call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>          \
+            detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>         \
         );                                                                  \
     }
 
@@ -1394,21 +1395,24 @@ protected:
 
 #undef ASBIND20_IMPL_REGISTER_UNARY_SUFFIX_OP
 
-#define ASBIND20_IMPL_REGISTER_BINARY_OP_GENERIC(as_decl, cpp_op, return_type, const_, rhs_type)   \
-    do                                                                                             \
-    {                                                                                              \
-        this->register_method(                                                                     \
-            as_decl,                                                                               \
-            +[](generic_pointer gen) -> void                                                       \
-            {                                                                                      \
-                using this_arg_t = std::conditional_t<(#const_[0] != '\0'), const Class&, Class&>; \
-                set_generic_return<return_type>(                                                   \
-                    gen,                                                                           \
-                    get_generic_object<this_arg_t>(gen) cpp_op get_generic_arg<rhs_type>(gen, 0)   \
-                );                                                                                 \
-            },                                                                                     \
-            call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>                                       \
-        );                                                                                         \
+#define ASBIND20_IMPL_REGISTER_BINARY_OP_GENERIC(as_decl, cpp_op, return_type, const_, rhs_type) \
+    do                                                                                           \
+    {                                                                                            \
+        this->register_method(                                                                   \
+            as_decl,                                                                             \
+            +[](generic_pointer gen) -> void                                                     \
+            {                                                                                    \
+                using this_arg_t = std::conditional_t<                                           \
+                    (#const_[0] != '\0'), /* Check whether const_ is empty */                    \
+                    const Class&,                                                                \
+                    Class&>;                                                                     \
+                set_generic_return<return_type>(                                                 \
+                    gen,                                                                         \
+                    get_generic_object<this_arg_t>(gen) cpp_op get_generic_arg<rhs_type>(gen, 0) \
+                );                                                                               \
+            },                                                                                   \
+            detail::generic_cc                                                                   \
+        );                                                                                       \
     } while(0)
 
 #define ASBIND20_IMPL_REGISTER_BINARY_OP_NATIVE(as_decl, cpp_op, return_type, const_, rhs_type) \
@@ -1422,19 +1426,22 @@ protected:
             this->register_method(                                                              \
                 as_decl,                                                                        \
                 static_cast<return_type (Class::*)(rhs_type) const_>(&Class::operator cpp_op),  \
-                call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>                               \
+                detail::cc<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>                              \
             );                                                                                  \
         }                                                                                       \
         else                                                                                    \
         {                                                                                       \
-            using this_arg_t = std::conditional_t<(#const_[0] != '\0'), const Class&, Class&>;  \
+            using this_arg_t = std::conditional_t<                                              \
+                (#const_[0] != '\0'), /* Check whether const_ is empty */                       \
+                const Class&,                                                                   \
+                Class&>;                                                                        \
             this->register_method(                                                              \
                 as_decl,                                                                        \
                 +[](this_arg_t lhs, rhs_type rhs) -> return_type                                \
                 {                                                                               \
                     return lhs cpp_op rhs;                                                      \
                 },                                                                              \
-                call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>                         \
+                detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>                        \
             );                                                                                  \
         }                                                                                       \
     } while(0)
@@ -1510,7 +1517,7 @@ protected:
                     )
                 );
             },
-            call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>
+            detail::generic_cc
         );
     }
 
@@ -1523,7 +1530,7 @@ protected:
             {
                 return translate_three_way(lhs <=> rhs);
             },
-            call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>
+            AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST
         );
     }
 
@@ -1565,25 +1572,26 @@ protected:
     void opConv_impl_native(std::string_view ret, bool implicit)
     {
         auto wrapper = detail::opConv<std::add_const_t<Class>, To>::generate(
-            call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+            detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
         );
 
         register_method(
             decl_opConv(ret, implicit),
             wrapper,
-            call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+            AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
         );
     }
 
     template <typename Class, typename To>
     void opConv_impl_generic(std::string_view ret, bool implicit)
     {
-        auto wrapper = detail::opConv<std::add_const_t<Class>, To>::generate(generic_call_conv);
-
+        auto wrapper = detail::opConv<std::add_const_t<Class>, To>::generate(
+            detail::generic_cc
+        );
         register_method(
             decl_opConv(ret, implicit),
             wrapper,
-            generic_call_conv
+            detail::generic_cc
         );
     }
 
@@ -1652,17 +1660,17 @@ protected:
     }
 
 private:
-    template <typename Fn, AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    template <typename Fn>
     void register_temp_cb(
         Fn&& fn,
-        call_conv_t<CallConv>
+        AS_NAMESPACE_QUALIFIER asECallConvTypes conv
     )
     {
         this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK,
             "bool f(int&in,bool&out)",
             fn,
-            call_conv<CallConv>
+            conv
         );
     }
 
@@ -1673,7 +1681,7 @@ public:
     {
         this->register_temp_cb(
             gfn,
-            generic_call_conv
+            detail::generic_cc
         );
         return derived();
     }
@@ -1687,7 +1695,7 @@ public:
             Fn>();
         this->register_temp_cb(
             fn,
-            call_conv<conv>
+            conv
         );
         return derived();
     }
@@ -1700,8 +1708,8 @@ public:
             Class,
             decltype(Callback)>();
         this->register_temp_cb(
-            detail::to_asGENFUNC_t(fp<Callback>, call_conv<conv>),
-            generic_call_conv
+            detail::to_asGENFUNC_t(fp<Callback>, detail::cc<conv>),
+            detail::generic_cc
         );
         return derived();
     }
@@ -1726,7 +1734,7 @@ public:
         this->register_method(
             decl,
             fn,
-            call_conv<conv>
+            conv
         );
         return derived();
     }
@@ -1742,7 +1750,7 @@ public:
         this->register_method(
             decl,
             fn,
-            call_conv<conv>
+            conv
         );
         return derived();
     }
@@ -1755,7 +1763,7 @@ public:
         this->register_method(
             decl,
             gfn,
-            generic_call_conv
+            detail::generic_cc
         );
         return derived();
     }
@@ -1773,7 +1781,7 @@ public:
         this->register_method(
             decl,
             std::forward<Fn>(fn),
-            call_conv<conv>,
+            conv,
             my_base::get_auxiliary_address(aux)
         );
         return derived();
@@ -1789,7 +1797,7 @@ public:
         this->register_method(
             decl,
             gfn,
-            generic_call_conv,
+            detail::generic_cc,
             my_base::get_auxiliary_address(aux)
         );
         return derived();
@@ -1805,8 +1813,8 @@ public:
         constexpr auto conv = method_callconv<Method>();
         this->register_method(
             decl,
-            detail::to_asGENFUNC_t(fp<Method>, call_conv<conv>),
-            generic_call_conv
+            detail::to_asGENFUNC_t(fp<Method>, detail::cc<conv>),
+            detail::generic_cc
         );
         return derived();
     }
@@ -1835,8 +1843,8 @@ public:
         constexpr auto conv = method_callconv_aux<Method, Auxiliary>();
         this->register_method(
             decl,
-            detail::to_asGENFUNC_t(fp<Method>, call_conv<conv>),
-            generic_call_conv,
+            detail::to_asGENFUNC_t(fp<Method>, detail::cc<conv>),
+            detail::generic_cc,
             my_base::get_auxiliary_address(aux)
         );
         return derived();
@@ -1866,15 +1874,13 @@ public:
     )
     {
         // For method with auxiliary object,
-        // its calling convention should be THISCALL_OBJFIRST/LAST
+        // its calling convention should be THISCALL_OBJFIRST/LAST,
+        // so we are getting convention with is_thiscall: true here.
         constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, true);
         this->register_method(
             decl,
-            detail::to_asGENFUNC_t(
-                fp<Method>,
-                call_conv<conv>
-            ),
-            generic_call_conv,
+            detail::to_asGENFUNC_t(fp<Method>, detail::cc<conv>),
+            detail::generic_cc,
             my_base::get_auxiliary_address(aux)
         );
         return derived();
@@ -1893,12 +1899,13 @@ public:
         else
         {
             // For method with auxiliary object,
-            // its calling convention should be THISCALL_OBJFIRST/LAST
+            // its calling convention should be THISCALL_OBJFIRST/LAST,
+            // so we are getting convention with is_thiscall: true here.
             constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, true);
             this->register_method(
                 decl,
                 Method,
-                call_conv<conv>,
+                conv,
                 my_base::get_auxiliary_address(aux)
             );
         }
@@ -1915,8 +1922,8 @@ public:
         constexpr auto conv = method_callconv<Lambda>();
         this->register_method(
             decl,
-            detail::to_asGENFUNC_t(Lambda{}, call_conv<conv>),
-            generic_call_conv
+            detail::to_asGENFUNC_t(Lambda{}, detail::cc<conv>),
+            detail::generic_cc
         );
         return derived();
     }
@@ -1932,8 +1939,8 @@ public:
         constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, false);
         this->register_method(
             decl,
-            detail::to_asGENFUNC_t(Lambda{}, call_conv<conv>),
-            generic_call_conv
+            detail::to_asGENFUNC_t(Lambda{}, detail::cc<conv>),
+            detail::generic_cc
         );
         return derived();
     }
@@ -1952,7 +1959,7 @@ public:
             this->register_method(
                 decl,
                 +Lambda{},
-                call_conv<conv>
+                detail::cc<conv>
             );
         }
         return derived();
@@ -1972,8 +1979,8 @@ public:
             constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, false);
             this->register_method(
                 decl,
-                detail::to_asGENFUNC_t(Lambda{}, call_conv<conv>),
-                generic_call_conv
+                detail::to_asGENFUNC_t(Lambda{}, detail::cc<conv>),
+                detail::generic_cc
             );
         }
         return derived();
@@ -1994,10 +2001,10 @@ public:
             decl,
             detail::to_asGENFUNC_t(
                 fp<Function>,
-                call_conv<conv>,
+                detail::cc<conv>,
                 var_type<Is...>
             ),
-            generic_call_conv
+            detail::generic_cc
         );
         return derived();
     }
@@ -2035,10 +2042,10 @@ public:
             decl,
             detail::to_asGENFUNC_t(
                 fp<Function>,
-                call_conv<conv>,
+                detail::cc<conv>,
                 var_type<Is...>
             ),
-            generic_call_conv,
+            detail::generic_cc,
             my_base::get_auxiliary_address(aux)
         );
         return derived();
@@ -2064,10 +2071,10 @@ public:
                 decl,
                 detail::to_asGENFUNC_t(
                     fp<Function>,
-                    call_conv<conv>,
+                    detail::cc<conv>,
                     var_type<Is...>
                 ),
-                generic_call_conv,
+                detail::generic_cc,
                 my_base::get_auxiliary_address(aux)
             );
         }
@@ -2089,10 +2096,10 @@ public:
             decl,
             detail::to_asGENFUNC_t(
                 Lambda{},
-                call_conv<conv>,
+                detail::cc<conv>,
                 var_type<Is...>
             ),
-            generic_call_conv
+            detail::generic_cc
         );
         return derived();
     }
@@ -2114,7 +2121,7 @@ public:
             this->register_method(
                 decl,
                 +Lambda{},
-                call_conv<conv>
+                detail::cc<conv>
             );
         }
         return derived();
@@ -2131,7 +2138,7 @@ public:
         this->register_comp_method(
             decl,
             fn,
-            call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>,
+            detail::cc<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>,
             comp
         );
         return derived();
@@ -2151,10 +2158,10 @@ public:
             // The composite offset will be handled by the generic wrapper
             detail::to_asGENFUNC_t(
                 fp<Fn>,
-                call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>,
+                detail::cc<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>,
                 composite_wrapper_nontype<Composite>{}
             ),
-            generic_call_conv
+            detail::generic_cc
         );
         return derived();
     }
@@ -2201,11 +2208,11 @@ public:
             decl,
             detail::to_asGENFUNC_t(
                 fp<Fn>,
-                call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>,
+                detail::cc<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>,
                 composite_wrapper_nontype<Composite>{},
                 var_type<Is...>
             ),
-            generic_call_conv
+            detail::generic_cc
         );
         return derived();
     }
@@ -2387,51 +2394,53 @@ public:
     ASBIND20_BG_INTERFACE_DEFINE_OP(Derived, opPreInc)
     ASBIND20_BG_INTERFACE_DEFINE_OP(Derived, opPreDec)
 
-#define ASBIND20_BG_INTERFACE_DEFINE_BEH(bg_type, as_beh, func_name)            \
-    template <native_function Fn>                                               \
-    bg_type& func_name(Fn&& fn) requires(!ForceGeneric)                         \
-    {                                                                           \
-        constexpr auto conv = detail::deduce_beh_callconv<                      \
-            AS_NAMESPACE_QUALIFIER as_beh,                                      \
-            Class,                                                              \
-            Fn>();                                                              \
-        this->register_behaviour(                                               \
-            AS_NAMESPACE_QUALIFIER as_beh,                                      \
-            decl::decl_of_beh<AS_NAMESPACE_QUALIFIER as_beh>(),                 \
-            fn,                                                                 \
-            call_conv<conv>                                                     \
-        );                                                                      \
-        return static_cast<bg_type&>(*this);                                    \
-    }                                                                           \
-    bg_type& func_name(generic_function gfn)                                    \
-    {                                                                           \
-        this->register_behaviour(                                               \
-            AS_NAMESPACE_QUALIFIER as_beh,                                      \
-            decl::decl_of_beh<AS_NAMESPACE_QUALIFIER as_beh>(),                 \
-            gfn,                                                                \
-            call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>                    \
-        );                                                                      \
-        return static_cast<bg_type&>(*this);                                    \
-    }                                                                           \
-    template <auto Function>                                                    \
-    bg_type& func_name(use_generic_t, fp_wrapper<Function>)                     \
-    {                                                                           \
-        using func_t = decltype(Function);                                      \
-        constexpr auto conv = detail::deduce_beh_callconv<                      \
-            AS_NAMESPACE_QUALIFIER as_beh,                                      \
-            Class,                                                              \
-            func_t>();                                                          \
-        this->func_name(detail::to_asGENFUNC_t(fp<Function>, call_conv<conv>)); \
-        return static_cast<bg_type&>(*this);                                    \
-    }                                                                           \
-    template <auto Function>                                                    \
-    bg_type& func_name(fp_wrapper<Function>)                                    \
-    {                                                                           \
-        if constexpr(ForceGeneric)                                              \
-            this->func_name(use_generic, fp<Function>);                         \
-        else                                                                    \
-            this->func_name(Function);                                          \
-        return static_cast<bg_type&>(*this);                                    \
+#define ASBIND20_BG_INTERFACE_DEFINE_BEH(bg_type, as_beh, func_name) \
+    template <native_function Fn>                                    \
+    bg_type& func_name(Fn&& fn) requires(!ForceGeneric)              \
+    {                                                                \
+        constexpr auto conv = detail::deduce_beh_callconv<           \
+            AS_NAMESPACE_QUALIFIER as_beh,                           \
+            Class,                                                   \
+            Fn>();                                                   \
+        this->register_behaviour(                                    \
+            AS_NAMESPACE_QUALIFIER as_beh,                           \
+            decl::decl_of_beh<AS_NAMESPACE_QUALIFIER as_beh>(),      \
+            fn,                                                      \
+            conv                                                     \
+        );                                                           \
+        return static_cast<bg_type&>(*this);                         \
+    }                                                                \
+    bg_type& func_name(generic_function gfn)                         \
+    {                                                                \
+        this->register_behaviour(                                    \
+            AS_NAMESPACE_QUALIFIER as_beh,                           \
+            decl::decl_of_beh<AS_NAMESPACE_QUALIFIER as_beh>(),      \
+            gfn,                                                     \
+            detail::generic_cc                                       \
+        );                                                           \
+        return static_cast<bg_type&>(*this);                         \
+    }                                                                \
+    template <auto Function>                                         \
+    bg_type& func_name(use_generic_t, fp_wrapper<Function>)          \
+    {                                                                \
+        using func_t = decltype(Function);                           \
+        constexpr auto conv = detail::deduce_beh_callconv<           \
+            AS_NAMESPACE_QUALIFIER as_beh,                           \
+            Class,                                                   \
+            func_t>();                                               \
+        this->func_name(                                             \
+            detail::to_asGENFUNC_t(fp<Function>, detail::cc<conv>)   \
+        );                                                           \
+        return static_cast<bg_type&>(*this);                         \
+    }                                                                \
+    template <auto Function>                                         \
+    bg_type& func_name(fp_wrapper<Function>)                         \
+    {                                                                \
+        if constexpr(ForceGeneric)                                   \
+            this->func_name(use_generic, fp<Function>);              \
+        else                                                         \
+            this->func_name(Function);                               \
+        return static_cast<bg_type&>(*this);                         \
     }
 
     // Reference types with GC flag support all GC-related behaviours.
@@ -2562,12 +2571,12 @@ private:
                    decl_ctor(params);
     }
 
-    template <typename Fn, AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    template <typename Fn>
     void register_constructor_function(
         bool explicit_,
         std::string_view params,
         Fn&& fn,
-        call_conv_t<CallConv>,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes conv,
         void* aux = nullptr
     )
     {
@@ -2575,7 +2584,7 @@ private:
             AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
             decl_ctor(params, explicit_),
             std::forward<Fn>(fn),
-            call_conv<CallConv>,
+            conv,
             aux
         );
     }
@@ -2590,7 +2599,7 @@ public:
             false,
             params,
             gfn,
-            generic_call_conv
+            detail::generic_cc
         );
 
         return *this;
@@ -2606,7 +2615,7 @@ public:
             true,
             params,
             gfn,
-            generic_call_conv
+            detail::generic_cc
         );
 
         return *this;
@@ -2626,7 +2635,7 @@ public:
             false,
             params,
             ctor,
-            call_conv<conv>
+            conv
         );
 
         return *this;
@@ -2647,7 +2656,7 @@ public:
             true,
             params,
             ctor,
-            call_conv<conv>
+            conv
         );
         return *this;
     }
@@ -2668,9 +2677,9 @@ public:
             params,
             detail::constructor_to_asGENFUNC_t<Class, Template>(
                 fp<ConstructorFunc>,
-                call_conv<conv>
+                conv
             ),
-            generic_call_conv
+            detail::generic_cc
         );
 
         return *this;
@@ -2693,9 +2702,9 @@ public:
             params,
             detail::constructor_to_asGENFUNC_t<Class, Template>(
                 fp<ConstructorFunc>,
-                call_conv<conv>
+                detail::cc<conv>
             ),
-            generic_call_conv
+            detail::generic_cc
         );
 
         return *this;
@@ -2743,9 +2752,9 @@ public:
             false,
             params,
             detail::constructor_to_asGENFUNC_t<Class, Template>(
-                Constructor{}, call_conv<conv>
+                Constructor{}, detail::cc<conv>
             ),
-            generic_call_conv
+            detail::generic_cc
         );
 
         return *this;
@@ -2767,9 +2776,9 @@ public:
             true,
             params,
             detail::constructor_to_asGENFUNC_t<Class, Template>(
-                Constructor{}, call_conv<conv>
+                Constructor{}, detail::cc<conv>
             ),
-            generic_call_conv
+            detail::generic_cc
         );
 
         return *this;
@@ -2811,8 +2820,8 @@ private:
         this->register_constructor_function(
             explicit_,
             params,
-            wrapper.generate(generic_call_conv),
-            generic_call_conv
+            wrapper.generate(detail::generic_cc),
+            detail::generic_cc
         );
     }
 
@@ -2823,8 +2832,10 @@ private:
         this->register_constructor_function(
             explicit_,
             params,
-            wrapper.generate(call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>),
-            call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+            wrapper.generate(
+                detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+            ),
+            detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
         );
     }
 
@@ -2902,8 +2913,8 @@ public:
         this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
             decl_default_ctor(),
-            gen_t::generate(generic_call_conv),
-            generic_call_conv,
+            gen_t::generate(detail::generic_cc),
+            detail::generic_cc,
             nullptr
         );
 
@@ -2920,8 +2931,8 @@ public:
             this->register_behaviour(
                 AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
                 decl_default_ctor(),
-                gen_t::generate(call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>),
-                call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>,
+                gen_t::generate(detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>),
+                detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>,
                 nullptr
             );
         }
@@ -2944,8 +2955,8 @@ public:
             this->register_behaviour(
                 AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
                 decl_copy_ctor(),
-                wrapper.generate(generic_call_conv),
-                generic_call_conv
+                wrapper.generate(detail::generic_cc),
+                detail::generic_cc
             );
         }
         else
@@ -2971,8 +2982,8 @@ public:
                 this->register_behaviour(
                     AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
                     decl_copy_ctor(),
-                    wrapper.generate(call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>),
-                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+                    wrapper.generate(detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>),
+                    detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
                 );
             }
             else
@@ -2995,7 +3006,7 @@ public:
             {
                 std::destroy_at(get_generic_object<Class*>(gen));
             },
-            call_conv<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>
+            detail::generic_cc
         );
 
         return *this;
@@ -3014,7 +3025,7 @@ public:
                 {
                     std::destroy_at(ptr);
                 },
-                call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+                detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
             );
         }
 
@@ -3113,11 +3124,11 @@ private:
             return string_concat("void f(int&in){", pattern, '}');
     }
 
-    template <typename Fn, AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    template <typename Fn>
     void register_list_ctor_func(
         std::string_view pattern,
         Fn&& fn,
-        call_conv_t<CallConv>,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes conv,
         void* aux = nullptr
     )
     {
@@ -3125,7 +3136,7 @@ private:
             AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_CONSTRUCT,
             decl_list_constructor(pattern),
             fn,
-            call_conv<CallConv>,
+            conv,
             aux
         );
     }
@@ -3139,7 +3150,7 @@ public:
         this->register_list_ctor_func(
             pattern,
             gfn,
-            generic_call_conv
+            detail::generic_cc
         );
 
         return *this;
@@ -3156,9 +3167,7 @@ public:
             Class,
             ListConstructorFunc>();
         this->register_list_ctor_func(
-            pattern,
-            ctor,
-            call_conv<conv>
+            pattern, ctor, conv
         );
 
         return *this;
@@ -3178,9 +3187,9 @@ public:
         this->register_list_ctor_func(
             pattern,
             detail::list_constructor_to_asGENFUNC_t<Class, Template>(
-                fp<ListConstructorFunc>, call_conv<conv>
+                fp<ListConstructorFunc>, detail::cc<conv>
             ),
-            generic_call_conv
+            detail::generic_cc
         );
 
         return *this;
@@ -3220,8 +3229,8 @@ public:
             Policy>;
         this->register_list_ctor_func(
             pattern,
-            gen_t::generate(generic_call_conv),
-            generic_call_conv
+            gen_t::generate(detail::generic_cc),
+            detail::generic_cc
         );
 
         return *this;
@@ -3248,9 +3257,9 @@ public:
             this->register_list_ctor_func(
                 pattern,
                 detail::list_constructor<Class, Template, ListElementType, Policy>::generate(
-                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+                    detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
                 ),
-                call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+                AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
             );
         }
 
@@ -3416,14 +3425,12 @@ private:
                    decl_factory(params);
     }
 
-    template <
-        typename Fn,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    template <typename Fn>
     void register_factory_function(
         bool explicit_,
         std::string_view params,
         Fn&& fn,
-        call_conv_t<CallConv>,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes conv,
         void* aux = nullptr
     )
     {
@@ -3432,7 +3439,7 @@ private:
             AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
             decl,
             std::forward<Fn>(fn),
-            call_conv<CallConv>,
+            conv,
             aux
         );
     }
@@ -3450,10 +3457,7 @@ public:
             Class,
             Factory>();
         this->register_factory_function(
-            false,
-            params,
-            fn,
-            call_conv<conv>
+            false, params, fn, conv
         );
 
         return *this;
@@ -3472,10 +3476,7 @@ public:
             Class,
             Factory>();
         this->register_factory_function(
-            true,
-            params,
-            fn,
-            call_conv<conv>
+            true, params, fn, conv
         );
 
         return *this;
@@ -3499,7 +3500,7 @@ public:
             false,
             params,
             fn,
-            call_conv<conv>,
+            conv,
             my_base::get_auxiliary_address(aux)
         );
 
@@ -3525,7 +3526,7 @@ public:
             true,
             params,
             fn,
-            call_conv<conv>,
+            conv,
             my_base::get_auxiliary_address(aux)
         );
 
@@ -3541,7 +3542,7 @@ public:
             false,
             params,
             gfn,
-            generic_call_conv
+            detail::generic_cc
         );
 
         return *this;
@@ -3557,7 +3558,7 @@ public:
             true,
             params,
             gfn,
-            generic_call_conv
+            detail::generic_cc
         );
 
         return *this;
@@ -3574,7 +3575,7 @@ public:
             false,
             params,
             gfn,
-            generic_call_conv,
+            detail::generic_cc,
             my_base::get_auxiliary_address(aux)
         );
 
@@ -3593,7 +3594,7 @@ public:
             true,
             params,
             gfn,
-            generic_call_conv,
+            detail::generic_cc,
             my_base::get_auxiliary_address(aux)
         );
 
@@ -3615,9 +3616,9 @@ public:
             false,
             params,
             detail::to_asGENFUNC_t(
-                fp<Factory>, call_conv<conv>
+                fp<Factory>, detail::cc<conv>
             ),
-            generic_call_conv
+            detail::generic_cc
         );
 
         return *this;
@@ -3639,9 +3640,9 @@ public:
             true,
             params,
             detail::to_asGENFUNC_t(
-                fp<Factory>, call_conv<conv>
+                fp<Factory>, detail::cc<conv>
             ),
-            generic_call_conv
+            detail::generic_cc
         );
 
         return *this;
@@ -3667,9 +3668,9 @@ public:
             true,
             params,
             detail::auxiliary_factory_to_asGENFUNC_t<Template>(
-                fp<AuxFactoryFunc>, call_conv<conv>
+                fp<AuxFactoryFunc>, detail::cc<conv>
             ),
-            generic_call_conv,
+            detail::generic_cc,
             my_base::get_auxiliary_address(aux)
         );
 
@@ -3771,7 +3772,7 @@ private:
     {
         std::string decl = decl_factory(params, explicit_);
         generic_function wrapper =
-            detail::factory<Class, Template, Policy, Args...>::generate(generic_call_conv);
+            detail::factory<Class, Template, Policy, Args...>::generate(detail::generic_cc);
 
         void* aux = nullptr;
         // For non-template class that notifies GC,
@@ -3783,7 +3784,7 @@ private:
             AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
             decl,
             wrapper,
-            generic_call_conv,
+            detail::generic_cc,
             aux
         );
     }
@@ -3793,13 +3794,14 @@ private:
         std::string_view params, use_policy_t<Policy>, bool explicit_
     ) requires(!ForceGeneric)
     {
+        using gen_t = detail::factory<Class, Template, Policy, Args...>;
+
         std::string decl = decl_factory(params, explicit_);
         if constexpr(std::same_as<Policy, policies::notify_gc> && !Template)
         {
-            auto wrapper =
-                detail::factory<Class, Template, Policy, Args...>::generate(
-                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
-                );
+            auto wrapper = gen_t::generate(
+                detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+            );
 
             // For non-template class that notifies GC,
             // store the type information as the auxiliary pointer.
@@ -3809,22 +3811,21 @@ private:
                 AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
                 decl,
                 wrapper,
-                call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>,
+                detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>,
                 ti // auxiliary
             );
         }
         else
         {
-            auto wrapper =
-                detail::factory<Class, Template, Policy, Args...>::generate(
-                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
-                );
+            auto wrapper = gen_t::generate(
+                detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
+            );
 
             this->register_behaviour(
                 AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
                 decl,
                 wrapper,
-                call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
+                detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
             );
         }
     }
@@ -3895,11 +3896,11 @@ private:
             return string_concat(get_name(), "@f(int&in){", pattern, "}");
     }
 
-    template <typename Fn, AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    template <typename Fn>
     void register_list_factory_func(
         std::string_view pattern,
         Fn&& fn,
-        call_conv_t<CallConv>,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes conv,
         void* aux = nullptr
     )
     {
@@ -3907,7 +3908,7 @@ private:
             AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY,
             decl_list_factory(pattern),
             fn,
-            call_conv<CallConv>,
+            conv,
             aux
         );
     }
@@ -3926,7 +3927,7 @@ public:
         this->register_list_factory_func(
             pattern,
             ctor,
-            call_conv<conv>
+            conv
         );
 
         return *this;
@@ -3940,7 +3941,7 @@ public:
         this->register_list_factory_func(
             pattern,
             gfn,
-            generic_call_conv
+            detail::generic_cc
         );
 
         return *this;
@@ -3956,7 +3957,7 @@ public:
         this->register_list_factory_func(
             pattern,
             ctor,
-            generic_call_conv,
+            detail::generic_cc,
             my_base::get_auxiliary_address(aux)
         );
 
@@ -3980,7 +3981,7 @@ public:
         this->register_list_factory_func(
             pattern,
             ctor,
-            call_conv<conv>,
+            conv,
             my_base::get_auxiliary_address(aux)
         );
 
@@ -4012,7 +4013,7 @@ public:
         this->register_list_factory_func(
             pattern,
             gen_t::generate(),
-            generic_call_conv,
+            detail::generic_cc,
             my_base::get_auxiliary_address(aux)
         );
 
@@ -4083,8 +4084,8 @@ public:
             FactoryPolicy>;
         this->register_list_factory_func(
             pattern,
-            gen_t::generate(generic_call_conv),
-            generic_call_conv,
+            gen_t::generate(detail::generic_cc),
+            detail::generic_cc,
             this->aux_for_policy<FactoryPolicy>()
         );
 
@@ -4117,9 +4118,9 @@ public:
                 this->register_list_factory_func(
                     pattern,
                     gen_t::generate(
-                        call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+                        detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
                     ),
-                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>,
+                    detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>,
                     this->aux_for_policy<FactoryPolicy>()
                 );
             }
@@ -4134,9 +4135,9 @@ public:
                 this->register_list_factory_func(
                     pattern,
                     gen_t::generate(
-                        call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
+                        detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
                     ),
-                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
+                    detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
                 );
             }
         }
@@ -4158,11 +4159,11 @@ public:
             Template,
             ListElementType,
             IListPolicy,
-            void>::generate(generic_call_conv);
+            void>::generate(detail::generic_cc);
         this->register_list_factory_func(
             pattern,
             wrapper,
-            generic_call_conv
+            detail::generic_cc
         );
 
         return *this;
@@ -4191,9 +4192,9 @@ public:
             this->register_list_factory_func(
                 pattern,
                 gen_t::generate(
-                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
+                    detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
                 ),
-                call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
+                detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
             );
         }
 
@@ -4218,8 +4219,8 @@ public:
             FactoryPolicy>;
         this->register_list_factory_func(
             pattern,
-            gen_t::generate(generic_call_conv),
-            generic_call_conv,
+            gen_t::generate(detail::generic_cc),
+            detail::generic_cc,
             this->aux_for_policy<FactoryPolicy>()
         );
 
@@ -4253,9 +4254,9 @@ public:
                 this->register_list_factory_func(
                     pattern,
                     gen_t::generate(
-                        call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
+                        detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
                     ),
-                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
+                    detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
                 );
             }
             else
@@ -4263,9 +4264,9 @@ public:
                 this->register_list_factory_func(
                     pattern,
                     gen_t::generate(
-                        call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+                        detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
                     ),
-                    call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>,
+                    detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>,
                     this->aux_for_policy<FactoryPolicy>()
                 );
             }

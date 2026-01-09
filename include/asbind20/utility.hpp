@@ -39,18 +39,6 @@ struct use_policy_t
 template <typename FirstPolicy = void, typename... Policies>
 constexpr inline use_policy_t<FirstPolicy, Policies...> use_policy{};
 
-template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-struct call_conv_t
-{};
-
-/**
- * @brief Helper for specifying calling convention
- */
-template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-constexpr inline call_conv_t<CallConv> call_conv;
-
-constexpr inline call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> generic_call_conv{};
-
 namespace detail
 {
     template <typename T>
