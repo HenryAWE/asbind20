@@ -3435,6 +3435,27 @@ private:
         );
     }
 
+    template <typename FuncSig, typename Auxiliary = void>
+    static consteval auto deduce_factory_cc()
+        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    {
+        if constexpr(std::is_void_v<Auxiliary>)
+        {
+            return detail::deduce_beh_callconv<
+                AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
+                Class,
+                FuncSig>();
+        }
+        else
+        {
+            return detail::deduce_beh_callconv_aux<
+                AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
+                Class,
+                FuncSig,
+                Auxiliary>();
+        }
+    }
+
 public:
     template <typename Factory>
     requires(!std::is_member_function_pointer_v<Factory>)
@@ -3443,10 +3464,7 @@ public:
         Factory fn
     ) requires(!ForceGeneric)
     {
-        constexpr auto conv = detail::deduce_beh_callconv<
-            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
-            Class,
-            Factory>();
+        constexpr auto conv = deduce_factory_cc<Factory>();
         this->register_factory_function(
             false, params, fn, conv
         );
@@ -3462,10 +3480,7 @@ public:
         Factory fn
     ) requires(!ForceGeneric)
     {
-        constexpr auto conv = detail::deduce_beh_callconv<
-            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
-            Class,
-            Factory>();
+        constexpr auto conv = deduce_factory_cc<Factory>();
         this->register_factory_function(
             true, params, fn, conv
         );
@@ -3482,11 +3497,7 @@ public:
         auxiliary_wrapper<Auxiliary> aux
     ) requires(!ForceGeneric)
     {
-        constexpr auto conv = detail::deduce_beh_callconv_aux<
-            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
-            Class,
-            Factory,
-            Auxiliary>();
+        constexpr auto conv = deduce_factory_cc<Factory, Auxiliary>();
         this->register_factory_function(
             false,
             params,
@@ -3508,11 +3519,54 @@ public:
         auxiliary_wrapper<Auxiliary> aux
     ) requires(!ForceGeneric)
     {
-        constexpr auto conv = detail::deduce_beh_callconv_aux<
-            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
-            Class,
-            Factory,
-            Auxiliary>();
+        constexpr auto conv = deduce_factory_cc<Factory, Auxiliary>();
+        this->register_factory_function(
+            true,
+            params,
+            fn,
+            conv,
+            my_base::get_auxiliary_address(aux)
+        );
+
+        return *this;
+    }
+
+    template <
+        typename Factory,
+        typename Auxiliary,
+        bool ObjFirst>
+    basic_ref_class& factory_function(
+        std::string_view params,
+        Factory fn,
+        auxiliary_wrapper<Auxiliary> aux,
+        obj_loc_t<ObjFirst>
+    ) requires(!ForceGeneric)
+    {
+        constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, false);
+        this->register_factory_function(
+            false,
+            params,
+            fn,
+            conv,
+            my_base::get_auxiliary_address(aux)
+        );
+
+        return *this;
+    }
+
+    template <
+        typename Factory,
+        typename Auxiliary,
+        bool ObjFirst>
+    basic_ref_class& factory_function(
+        std::string_view params,
+        use_explicit_t,
+        Factory fn,
+        auxiliary_wrapper<Auxiliary> aux,
+        obj_loc_t<ObjFirst>
+    ) requires(!ForceGeneric)
+    {
+        constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, false);
         this->register_factory_function(
             true,
             params,
@@ -3599,10 +3653,8 @@ public:
         fp_wrapper<Factory>
     )
     {
-        constexpr auto conv = detail::deduce_beh_callconv<
-            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
-            Class,
-            decltype(Factory)>();
+        constexpr auto conv =
+            detail::deduce_function_callconv<decltype(Factory)>();
         this->register_factory_function(
             false,
             params,
@@ -3623,10 +3675,8 @@ public:
         fp_wrapper<Factory>
     )
     {
-        constexpr auto conv = detail::deduce_beh_callconv<
-            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
-            Class,
-            decltype(Factory)>();
+        constexpr auto conv =
+            deduce_factory_cc<decltype(Factory)>();
         this->register_factory_function(
             true,
             params,
@@ -3650,11 +3700,8 @@ public:
         auxiliary_wrapper<Auxiliary> aux
     )
     {
-        constexpr auto conv = detail::deduce_beh_callconv_aux<
-            AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
-            Class,
-            decltype(AuxFactoryFunc),
-            Auxiliary>();
+        constexpr auto conv =
+            deduce_factory_cc<decltype(AuxFactoryFunc), Auxiliary>();
         this->register_factory_function(
             true,
             params,
@@ -3665,6 +3712,96 @@ public:
             my_base::get_auxiliary_address(aux)
         );
 
+        return *this;
+    }
+
+    template <
+        auto AuxFactoryFunc,
+        typename Auxiliary,
+        bool ObjFirst>
+    basic_ref_class& factory_function(
+        use_generic_t,
+        std::string_view params,
+        fp_wrapper<AuxFactoryFunc>,
+        auxiliary_wrapper<Auxiliary> aux,
+        obj_loc_t<ObjFirst>
+    )
+    {
+        constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, false);
+        this->register_factory_function(
+            false,
+            params,
+            detail::auxiliary_factory_to_asGENFUNC_t<Template>(
+                fp<AuxFactoryFunc>, detail::cc<conv>
+            ),
+            detail::generic_cc,
+            my_base::get_auxiliary_address(aux)
+        );
+
+        return *this;
+    }
+
+    template <
+        auto AuxFactoryFunc,
+        typename Auxiliary,
+        bool ObjFirst>
+    basic_ref_class& factory_function(
+        use_generic_t,
+        std::string_view params,
+        use_explicit_t,
+        fp_wrapper<AuxFactoryFunc>,
+        auxiliary_wrapper<Auxiliary> aux,
+        obj_loc_t<ObjFirst>
+    )
+    {
+        constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, false);
+        this->register_factory_function(
+            true,
+            params,
+            detail::auxiliary_factory_to_asGENFUNC_t<Template>(
+                fp<AuxFactoryFunc>, detail::cc<conv>
+            ),
+            detail::generic_cc,
+            my_base::get_auxiliary_address(aux)
+        );
+
+        return *this;
+    }
+
+    template <
+        auto AuxFactoryFunc,
+        typename Auxiliary,
+        bool ObjFirst>
+    basic_ref_class& factory_function(
+        std::string_view params,
+        fp_wrapper<AuxFactoryFunc>,
+        auxiliary_wrapper<Auxiliary> aux,
+        obj_loc_t<ObjFirst>
+    )
+    {
+        if constexpr(ForceGeneric)
+            this->factory_function(use_generic, params, fp<AuxFactoryFunc>, aux, obj_loc<ObjFirst>);
+        else
+            this->factory_function(params, AuxFactoryFunc, aux, obj_loc<ObjFirst>);
+        return *this;
+    }
+
+    template <
+        auto AuxFactoryFunc,
+        typename Auxiliary,
+        bool ObjFirst>
+    basic_ref_class& factory_function(
+        std::string_view params,
+        use_explicit_t,
+        fp_wrapper<AuxFactoryFunc>,
+        auxiliary_wrapper<Auxiliary> aux,
+        obj_loc_t<ObjFirst>
+    )
+    {
+        if constexpr(ForceGeneric)
+            this->factory_function(use_generic, params, use_explicit, fp<AuxFactoryFunc>, aux, obj_loc<ObjFirst>);
+        else
+            this->factory_function(params, use_explicit, AuxFactoryFunc, aux, obj_loc<ObjFirst>);
         return *this;
     }
 
@@ -3980,6 +4117,28 @@ public:
     }
 
     template <
+        native_function ListFactory,
+        typename Auxiliary,
+        bool ObjFirst>
+    basic_ref_class& list_factory_function(
+        std::string_view pattern,
+        ListFactory ctor,
+        auxiliary_wrapper<Auxiliary> aux,
+        obj_loc_t<ObjFirst>
+    ) requires(!ForceGeneric)
+    {
+        constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, false);
+        this->register_list_factory_func(
+            pattern,
+            ctor,
+            conv,
+            my_base::get_auxiliary_address(aux)
+        );
+
+        return *this;
+    }
+
+    template <
         auto ListFactory,
         typename Auxiliary>
     basic_ref_class& list_factory_function(
@@ -4001,6 +4160,35 @@ public:
             Template,
             conv>;
 
+        this->register_list_factory_func(
+            pattern,
+            gen_t::generate(),
+            detail::generic_cc,
+            my_base::get_auxiliary_address(aux)
+        );
+
+        return *this;
+    }
+
+    template <
+        auto ListFactory,
+        typename Auxiliary,
+        bool ObjFirst>
+    basic_ref_class& list_factory_function(
+        use_generic_t,
+        std::string_view pattern,
+        fp_wrapper<ListFactory>,
+        auxiliary_wrapper<Auxiliary> aux,
+        obj_loc_t<ObjFirst>
+    )
+    {
+        constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, false);
+        using gen_t = detail::list_factory_func<
+            Class,
+            Auxiliary,
+            ListFactory,
+            Template,
+            conv>;
         this->register_list_factory_func(
             pattern,
             gen_t::generate(),
@@ -4035,6 +4223,40 @@ public:
                 pattern,
                 ListFactory,
                 aux
+            );
+        }
+
+        return *this;
+    }
+
+    template <
+        auto ListFactory,
+        typename Auxiliary,
+        bool ObjFirst>
+    basic_ref_class& list_factory_function(
+        std::string_view pattern,
+        fp_wrapper<ListFactory>,
+        auxiliary_wrapper<Auxiliary> aux,
+        obj_loc_t<ObjFirst>
+    )
+    {
+        if constexpr(ForceGeneric)
+        {
+            this->list_factory_function(
+                use_generic,
+                pattern,
+                fp<ListFactory>,
+                aux,
+                obj_loc<ObjFirst>
+            );
+        }
+        else
+        {
+            this->list_factory_function(
+                pattern,
+                ListFactory,
+                aux,
+                obj_loc<ObjFirst>
             );
         }
 

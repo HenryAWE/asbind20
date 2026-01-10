@@ -274,14 +274,9 @@ namespace detail
 
                 static_assert(obj_last || obj_first, "Missing auxiliary object parameter");
 
-                if(obj_first)
-                {
-                    return traits::arg_count_v == 1 ?
-                               AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST :
-                               AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST;
-                }
-                else
-                    return AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
+                return cdecl_method_callconv(
+                    traits::arg_count_v, obj_first
+                );
             }
         }
 
