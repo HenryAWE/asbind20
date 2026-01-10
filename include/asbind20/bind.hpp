@@ -10,7 +10,6 @@
 #pragma once
 
 #include <cassert>
-#include <concepts>
 #include "utility.hpp"
 #include "bind/common.hpp"
 
