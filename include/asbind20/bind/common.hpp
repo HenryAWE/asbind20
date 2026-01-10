@@ -140,6 +140,22 @@ namespace detail
                std::same_as<T, const Class&>;
     }
 
+    consteval auto cdecl_method_callconv(std::size_t arg_count, bool obj_first)
+        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    {
+        // The AngelScript itself seems to prefer OBJLAST
+        // if both calling conventions are available.
+        // We are following this convention here.
+        if(obj_first)
+        {
+            return arg_count == 1 ?
+                       AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST :
+                       AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST;
+        }
+        else
+            return AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
+    }
+
     template <typename Class, typename FuncSig, bool TryVoidPtr = false>
     consteval auto deduce_method_callconv() noexcept
         -> AS_NAMESPACE_QUALIFIER asECallConvTypes
@@ -159,14 +175,9 @@ namespace detail
 
             if constexpr(obj_last || obj_first)
             {
-                if(obj_first)
-                {
-                    return traits::arg_count_v == 1 ?
-                               AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST :
-                               AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST;
-                }
-                else
-                    return AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
+                return cdecl_method_callconv(
+                    traits::arg_count_v, obj_first
+                );
             }
             else
             {
@@ -178,14 +189,9 @@ namespace detail
 
                 static_assert(void_obj_last || void_obj_first, "Missing object/void* parameter");
 
-                if(void_obj_first)
-                {
-                    return traits::arg_count_v == 1 ?
-                               AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST :
-                               AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST;
-                }
-                else
-                    return AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
+                return cdecl_method_callconv(
+                    traits::arg_count_v, void_obj_first
+                );
             }
         }
     }
@@ -204,10 +210,15 @@ namespace detail
 
         static_assert(obj_last || obj_first, "Missing object parameter");
 
+        // The AngelScript itself seems to prefer OBJLAST
+        // if both calling conventions are available.
+        // We are following this convention here.
         if(obj_first)
+        {
             return traits::arg_count_v == 1 ?
                        AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJLAST :
                        AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJFIRST;
+        }
         else
             return AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJLAST;
     }
