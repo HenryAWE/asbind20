@@ -94,8 +94,8 @@ It might be useful to call the factory with a helper object.
 
     using namespace asbind20;
     // ...
-        .factory_function("int", &create_from_int, auxiliary(instance), call_conv<asCALL_CDECL_OBJFIRST>)
-        .factory_function("float", &create_from_float, auxiliary(instance), call_conv<asCALL_CDECL_OBJLAST>);
+        .factory_function("int", &create_from_int, auxiliary(instance), objfirst)
+        .factory_function("float", &create_from_float, auxiliary(instance), objlast);
 
 Specially, the auxiliary object can be the ``asITypeInfo*`` of type being registered.
 This can be done by the tag ``this_type``.

@@ -31,6 +31,8 @@ Update
 
 - Unify implementation of binding generators to make the codebase easier to maintain.
 
+- Decouple binding generator interfaces with complex AngelScript calling conventions
+
 Breaking Change
 ~~~~~~~~~~~~~~~
 
