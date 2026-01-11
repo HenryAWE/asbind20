@@ -1089,6 +1089,41 @@ namespace detail
         }
     };
 
+    template <typename Class>
+    class opCmp
+    {
+        static int do_compare(const Class& lhs, const Class& rhs)
+        {
+            return translate_three_way(
+                std::compare_weak_order_fallback(lhs, rhs)
+            );
+        }
+
+        static void impl_generic(generic_pointer gen)
+        {
+            const Class& lhs = get_generic_object<const Class>(gen);
+            const Class& rhs = get_generic_arg<const Class&>(gen, 0);
+            set_generic_return<int>(
+                gen, do_compare(lhs, rhs)
+            );
+        }
+
+        static int impl_objfirst(const Class& lhs, const Class& rhs)
+        {
+            return do_compare(lhs, rhs);
+        }
+
+    public:
+        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        static auto generate(call_conv_t<CallConv>) noexcept
+        {
+            if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
+                return &impl_generic;
+            else // CallConv == asCALL_CDECL_OBJFIRST
+                return &impl_objfirst;
+        }
+    };
+
     template <typename Class, typename To>
     class opConv
     {
@@ -1506,19 +1541,10 @@ protected:
     template <typename Class>
     void register_opCmp_generic()
     {
+        using gen_t = detail::opCmp<Class>;
         register_method(
             decl_opCmp(),
-            +[](generic_pointer gen) -> void
-            {
-                const Class& lhs = get_generic_object<const Class&>(gen);
-                const Class& rhs = get_generic_arg<const Class&>(gen, 0);
-                set_generic_return<int>(
-                    gen,
-                    translate_three_way(
-                        lhs <=> rhs
-                    )
-                );
-            },
+            gen_t::generate(detail::generic_cc),
             detail::generic_cc
         );
     }
@@ -1526,12 +1552,10 @@ protected:
     template <typename Class>
     void register_opCmp_native()
     {
+        using gen_t = detail::opCmp<Class>;
         register_method(
             decl_opCmp(),
-            +[](const Class& lhs, const Class& rhs) -> int
-            {
-                return translate_three_way(lhs <=> rhs);
-            },
+            gen_t::generate(detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>),
             AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST
         );
     }
