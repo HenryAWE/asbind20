@@ -93,7 +93,7 @@ TEST(SmallVector, ScriptObjectAsElement)
     global(engine)
         .function(
             "int counter()",
-            [](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+            [](generic_pointer gen) -> void
             {
                 set_generic_return<int>(
                     gen,
