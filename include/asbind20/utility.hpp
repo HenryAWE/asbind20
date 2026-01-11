@@ -22,6 +22,7 @@
 #include <stdexcept>
 #include <concepts>
 #include "detail/config.hpp" // IWYU pragma: export configs
+#include "detail/fwd.hpp"
 #include "detail/include_as.hpp"
 #include "detail/throw_helper.hpp"
 #include "detail/strutil.hpp"
@@ -37,18 +38,6 @@ struct use_policy_t
 
 template <typename FirstPolicy = void, typename... Policies>
 constexpr inline use_policy_t<FirstPolicy, Policies...> use_policy{};
-
-template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-struct call_conv_t
-{};
-
-/**
- * @brief Helper for specifying calling convention
- */
-template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-constexpr inline call_conv_t<CallConv> call_conv;
-
-constexpr inline call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> generic_call_conv{};
 
 namespace detail
 {
@@ -1018,7 +1007,7 @@ public:
      * @param idx The parameter index of the list. Usually, this should be 0 for ordinary types and 1 for template classes.
      */
     explicit script_init_list_repeat(
-        AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen,
+        generic_pointer gen,
         size_type idx = 0
     )
         : script_init_list_repeat(*(void**)gen->GetAddressOfArg(idx)) {}

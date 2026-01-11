@@ -306,31 +306,32 @@ consteval void test_detail_arg_idx()
 TEST(Detail, GenericWrapper)
 {
     using namespace asbind20;
+    using detail::cc;
 
     auto engine = asbind20::make_script_engine();
     asbind_test::setup_script_string(engine, true);
     asbind_test::setup_script_assertion(engine);
 
-    auto my_div_gen = detail::to_asGENFUNC_t(fp<&test_bind::my_div>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>);
+    auto my_div_gen = detail::to_asGENFUNC_t(fp<&test_bind::my_div>, cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL>);
     auto my_mul_gen = test_bind::my_mul;
-    auto my_add_gen = [](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen) -> void
+    auto my_add_gen = [](generic_pointer gen) -> void
     {
         int a = asbind20::get_generic_arg<int>(gen, 0);
         int b = asbind20::get_generic_arg<int>(gen, 1);
         asbind20::set_generic_return<int>(gen, a + b);
     };
 
-    auto out_str_gen = detail::to_asGENFUNC_t(fp<&test_bind::out_str>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>);
-    auto my_to_str_gen = detail::to_asGENFUNC_t(fp<&test_bind::my_to_str>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>, var_type<0>);
-    auto my_to_str2_gen = detail::to_asGENFUNC_t(fp<&test_bind::my_to_str2>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL>, var_type<1>);
+    auto out_str_gen = detail::to_asGENFUNC_t(fp<&test_bind::out_str>, cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL>);
+    auto my_to_str_gen = detail::to_asGENFUNC_t(fp<&test_bind::my_to_str>, cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL>, var_type<0>);
+    auto my_to_str2_gen = detail::to_asGENFUNC_t(fp<&test_bind::my_to_str2>, cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL>, var_type<1>);
 
     using test_bind::member_var_type;
-    auto mem_to_str1 = detail::to_asGENFUNC_t(fp<&member_var_type::mem_to_str1>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>, var_type<0>);
-    auto mem_to_str2 = detail::to_asGENFUNC_t(fp<&member_var_type::mem_to_str2>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>, var_type<1>);
-    auto mem_to_str3 = detail::to_asGENFUNC_t(fp<&test_bind::mem_to_str3>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>, var_type<0>);
-    auto mem_to_str4 = detail::to_asGENFUNC_t(fp<&test_bind::mem_to_str4>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>, var_type<1>);
-    auto mem_to_str5 = detail::to_asGENFUNC_t(fp<&test_bind::mem_to_str5>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>, var_type<0>);
-    auto mem_to_str6 = detail::to_asGENFUNC_t(fp<&test_bind::mem_to_str6>, call_conv<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>, var_type<1>);
+    auto mem_to_str1 = detail::to_asGENFUNC_t(fp<&member_var_type::mem_to_str1>, cc<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>, var_type<0>);
+    auto mem_to_str2 = detail::to_asGENFUNC_t(fp<&member_var_type::mem_to_str2>, cc<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>, var_type<1>);
+    auto mem_to_str3 = detail::to_asGENFUNC_t(fp<&test_bind::mem_to_str3>, cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>, var_type<0>);
+    auto mem_to_str4 = detail::to_asGENFUNC_t(fp<&test_bind::mem_to_str4>, cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>, var_type<1>);
+    auto mem_to_str5 = detail::to_asGENFUNC_t(fp<&test_bind::mem_to_str5>, cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>, var_type<0>);
+    auto mem_to_str6 = detail::to_asGENFUNC_t(fp<&test_bind::mem_to_str6>, cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>, var_type<1>);
 
     global<true>(engine)
         .function("int my_div(int a, int b)", my_div_gen)
@@ -424,8 +425,8 @@ TEST(TestBind, Enum)
         asbind20::enum_<my_enum> e(engine, "my_enum");
 #ifndef ASBIND20_HAS_STATIC_ENUM_NAME
         e
-            .value(my_enum::A, "A")
-            .value(my_enum::B, "B");
+            .value("A", my_enum::A)
+            .value("B", my_enum::B);
 
 #else
         e
@@ -495,8 +496,8 @@ TEST(TestBind, EnumUInt64)
 
     asbind20::enum_underlying<enum_uint64> e(engine, "enum_uint64");
     e
-        .value(enum_uint64::flag_a, "flag_a")
-        .value(enum_uint64::flag_b, "flag_b");
+        .value("flag_a", enum_uint64::flag_a)
+        .value("flag_b", enum_uint64::flag_b);
     EXPECT_EQ(std::string_view(e.get_underlying()), "uint64");
 
     auto* m = engine->GetModule(

@@ -29,6 +29,10 @@ Update
 - Update I/O module to support formatting script types when ``<format>`` header is available.
   It also provides tools for quick integration with other formatting library like {fmt}.
 
+- Unify implementation of binding generators to make the codebase easier to maintain.
+
+- Decouple binding generator interfaces with complex AngelScript calling conventions
+
 Breaking Change
 ~~~~~~~~~~~~~~~
 
@@ -39,6 +43,10 @@ Breaking Change
   Since asbind20 originated from a submodule of personal project, many of extensions were built for private repository.
   I decide to migrate them to a separated open-source library in the future.
   Some of the extensions, like string extraction helper and section loader, are merged into the core library.
+
+- Use ``asbind20::objfirst`` / ``objlast`` to specify the position of object pointer/reference,
+  if you want to specify them explicitly,
+  instead of dealing with underlying calling convention details of AngelScript.
 
 1.8.0
 -----

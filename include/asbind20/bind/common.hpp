@@ -28,8 +28,53 @@ struct use_explicit_t
 
 constexpr inline use_explicit_t use_explicit{};
 
+template <bool ObjFirst>
+struct obj_loc_t
+{
+    static constexpr bool is_obj_first = ObjFirst;
+};
+
+template <bool ObjFirst>
+inline constexpr obj_loc_t<ObjFirst> obj_loc;
+
+inline constexpr obj_loc_t<true> objfirst{};
+inline constexpr obj_loc_t<false> objlast{};
+
 namespace detail
 {
+    template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    struct call_conv_t
+    {
+        constexpr operator AS_NAMESPACE_QUALIFIER asECallConvTypes() const noexcept
+        {
+            return CallConv;
+        }
+    };
+
+    // Helper for specifying calling convention
+    template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    constexpr inline call_conv_t<CallConv> cc;
+
+    constexpr inline call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> generic_cc{};
+
+    template <bool ObjFirst>
+    consteval auto conv_of_loc(obj_loc_t<ObjFirst>, bool is_thiscall)
+        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    {
+        if constexpr(ObjFirst)
+        {
+            return is_thiscall ?
+                       AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJFIRST :
+                       AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST;
+        }
+        else
+        {
+            return is_thiscall ?
+                       AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJLAST :
+                       AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
+        }
+    }
+
     template <typename Func>
     auto to_asSFuncPtr(Func f)
         -> AS_NAMESPACE_QUALIFIER asSFuncPtr
@@ -58,6 +103,8 @@ namespace detail
     requires(!std::is_member_function_pointer_v<FuncSig>)
     constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes deduce_function_callconv()
     {
+        static_assert(!std::convertible_to<FuncSig, AS_NAMESPACE_QUALIFIER asGENFUNC_t>);
+
         /*
         On x64 and many platforms (like arm64), CDECL and STDCALL have the same effect.
         It's safe to treat all global functions as CDECL.
@@ -71,6 +118,7 @@ namespace detail
             return AS_NAMESPACE_QUALIFIER asCALL_STDCALL;
         else
             return AS_NAMESPACE_QUALIFIER asCALL_CDECL;
+
 #else
         return AS_NAMESPACE_QUALIFIER asCALL_CDECL;
 #endif
@@ -92,6 +140,22 @@ namespace detail
                std::same_as<T, const Class&>;
     }
 
+    consteval auto cdecl_method_callconv(std::size_t arg_count, bool obj_first)
+        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    {
+        // The AngelScript itself seems to prefer OBJLAST
+        // if both calling conventions are available.
+        // We are following this convention here.
+        if(obj_first)
+        {
+            return arg_count == 1 ?
+                       AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST :
+                       AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST;
+        }
+        else
+            return AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
+    }
+
     template <typename Class, typename FuncSig, bool TryVoidPtr = false>
     consteval auto deduce_method_callconv() noexcept
         -> AS_NAMESPACE_QUALIFIER asECallConvTypes
@@ -111,12 +175,9 @@ namespace detail
 
             if constexpr(obj_last || obj_first)
             {
-                if(obj_first)
-                    return traits::arg_count_v == 1 ?
-                               AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST :
-                               AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST;
-                else
-                    return AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
+                return cdecl_method_callconv(
+                    traits::arg_count_v, obj_first
+                );
             }
             else
             {
@@ -128,12 +189,9 @@ namespace detail
 
                 static_assert(void_obj_last || void_obj_first, "Missing object/void* parameter");
 
-                if(void_obj_first)
-                    return traits::arg_count_v == 1 ?
-                               AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST :
-                               AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST;
-                else
-                    return AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
+                return cdecl_method_callconv(
+                    traits::arg_count_v, void_obj_first
+                );
             }
         }
     }
@@ -152,10 +210,15 @@ namespace detail
 
         static_assert(obj_last || obj_first, "Missing object parameter");
 
+        // The AngelScript itself seems to prefer OBJLAST
+        // if both calling conventions are available.
+        // We are following this convention here.
         if(obj_first)
+        {
             return traits::arg_count_v == 1 ?
                        AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJLAST :
                        AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJFIRST;
+        }
         else
             return AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJLAST;
     }
@@ -211,12 +274,9 @@ namespace detail
 
                 static_assert(obj_last || obj_first, "Missing auxiliary object parameter");
 
-                if(obj_first)
-                    return traits::arg_count_v == 1 ?
-                               AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST :
-                               AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST;
-                else
-                    return AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
+                return cdecl_method_callconv(
+                    traits::arg_count_v, obj_first
+                );
             }
         }
 
@@ -277,41 +337,62 @@ namespace detail
         );
     }
 
-    template <typename T, typename RegisterHelper>
-    concept auto_register = requires(T&& ar, RegisterHelper& c) {
-        ar(c);
-    };
+    template <string_view_like StringView>
+    constexpr std::string sv_to_str(StringView&& sv)
+    {
+        return std::string(
+            static_cast<std::string_view>(std::forward<StringView>(sv))
+        );
+    }
 } // namespace detail
 
-template <bool ForceGeneric>
-class register_helper_base
+template <typename T, typename BindingGenerator>
+concept usable_by_generator = requires(T&& t, BindingGenerator& gen) {
+    t(gen);
+};
+
+class binding_generator_base
 {
 public:
-    register_helper_base() = delete;
-    register_helper_base(const register_helper_base&) noexcept = default;
+    using engine_pointer = AS_NAMESPACE_QUALIFIER asIScriptEngine*;
 
-    register_helper_base(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+    binding_generator_base() = delete;
+    binding_generator_base(const binding_generator_base&) noexcept = default;
+
+    binding_generator_base& operator=(const binding_generator_base&) noexcept = default;
+
+    [[nodiscard]]
+    engine_pointer get_engine() const noexcept
+    {
+        return m_engine;
+    }
+
+protected:
+    binding_generator_base(engine_pointer engine) noexcept
         : m_engine(engine)
     {
         assert(engine != nullptr);
     }
 
-    [[nodiscard]]
-    auto get_engine() const noexcept
-        -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
-    {
-        return m_engine;
-    }
+private:
+    engine_pointer m_engine;
+};
+
+template <bool ForceGeneric>
+class binding_generator_interface : public binding_generator_base
+{
+public:
+    using binding_generator_base::binding_generator_base;
 
     [[nodiscard]]
     static constexpr bool force_generic() noexcept
     {
         return ForceGeneric;
     }
-
-protected:
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* const m_engine;
 };
+
+template <typename T>
+concept binding_generator = std::derived_from<T, binding_generator_base>;
 } // namespace asbind20
 
 #endif

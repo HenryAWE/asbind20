@@ -146,7 +146,7 @@ static void handwritten_generic_small_fn(benchmark::State& state)
 
     auto engine = make_script_engine();
 
-    AS_NAMESPACE_QUALIFIER asGENFUNC_t gfn = [](AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+    generic_function gfn = [](generic_pointer gen)
     {
         int a = gen->GetArgDWord(0);
         int b = gen->GetArgDWord(1);

@@ -44,7 +44,7 @@ static void register_global_funcs(
     AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, test_bind::class_wrapper& wrapper, std::string& global_val
 )
 {
-    using asbind20::fp, asbind20::auxiliary, asbind20::aux_value, asbind20::call_conv;
+    using asbind20::fp, asbind20::auxiliary, asbind20::aux_value;
 
     asbind20::global(engine)
         .function("void set_int(int&out)", fp<&test_bind::set_int>)
@@ -59,8 +59,7 @@ static void register_global_funcs(
         )
         .function(
             "int stdcall_func2(int a, float b)",
-            &test_bind::stdcall_func2,
-            call_conv<AS_NAMESPACE_QUALIFIER asCALL_STDCALL>
+            &test_bind::stdcall_func2
         )
         .function(
             "void set_val(int val)",
@@ -79,7 +78,7 @@ static void register_global_funcs(
     asbind20::use_generic_t, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, test_bind::class_wrapper& wrapper, std::string& global_val
 )
 {
-    using asbind20::fp, asbind20::auxiliary, asbind20::aux_value, asbind20::call_conv;
+    using asbind20::fp, asbind20::auxiliary, asbind20::aux_value;
 
     asbind20::global<true>(engine)
         .function("void set_int(int&out)", fp<&test_bind::set_int>)
@@ -95,8 +94,7 @@ static void register_global_funcs(
         )
         .function(
             "int stdcall_func2(int a, float b)",
-            fp<&test_bind::stdcall_func2>,
-            call_conv<AS_NAMESPACE_QUALIFIER asCALL_STDCALL>
+            fp<&test_bind::stdcall_func2>
         )
         .function(
             "int from_aux()",
