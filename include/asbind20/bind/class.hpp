@@ -3012,11 +3012,25 @@ public:
         return *this;
     }
 
-    basic_value_class& destructor(use_generic_t)
+private:
+    template <typename Fn>
+    void register_destructor_fn(
+        Fn fn,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes conv
+    )
     {
         this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_DESTRUCT,
             "void f()",
+            fn,
+            conv
+        );
+    }
+
+public:
+    basic_value_class& destructor(use_generic_t)
+    {
+        this->register_destructor_fn(
             +[](generic_pointer gen) -> void
             {
                 std::destroy_at(get_generic_object<Class*>(gen));
@@ -3033,17 +3047,66 @@ public:
             destructor(use_generic);
         else
         {
-            this->register_behaviour(
-                AS_NAMESPACE_QUALIFIER asBEHAVE_DESTRUCT,
-                "void f()",
+            this->register_destructor_fn(
                 +[](Class* ptr) -> void
                 {
                     std::destroy_at(ptr);
                 },
-                detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+                AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
             );
         }
 
+        return *this;
+    }
+
+    basic_value_class& destructor_function(generic_function destroyer)
+    {
+        this->register_destructor_fn(
+            destroyer, detail::generic_cc
+        );
+        return *this;
+    }
+
+    template <native_function DestructorFunc>
+    basic_value_class& destructor_function(DestructorFunc destroyer)
+        requires(!ForceGeneric)
+    {
+        constexpr auto conv = detail::deduce_beh_callconv<
+            AS_NAMESPACE_QUALIFIER asBEHAVE_DESTRUCT,
+            Class,
+            DestructorFunc>();
+        this->register_destructor_fn(
+            destroyer, conv
+        );
+        return *this;
+    }
+
+    template <auto DestructorFunc>
+    basic_value_class& destructor_function(
+        use_generic_t,
+        fp_wrapper<DestructorFunc>
+    )
+    {
+        constexpr auto conv = detail::deduce_beh_callconv<
+            AS_NAMESPACE_QUALIFIER asBEHAVE_DESTRUCT,
+            Class,
+            decltype(DestructorFunc)>();
+        this->register_destructor_fn(
+            detail::to_asGENFUNC_t(fp<DestructorFunc>, detail::cc<conv>),
+            detail::generic_cc
+        );
+        return *this;
+    }
+
+    template <auto DestructorFunc>
+    basic_value_class& destructor_function(
+        fp_wrapper<DestructorFunc>
+    )
+    {
+        if constexpr(ForceGeneric)
+            this->destructor_function(use_generic, fp<DestructorFunc>);
+        else
+            this->destructor_function(DestructorFunc);
         return *this;
     }
 
