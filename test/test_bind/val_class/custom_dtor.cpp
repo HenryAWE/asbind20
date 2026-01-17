@@ -279,3 +279,71 @@ TEST_F(CustomDestructorAuxGeneric, RunDtorTest)
         .destructor_function(fp<&aux_counter::aux_dtor>, auxiliary(instance));
     run_dtor_test(instance);
 }
+
+namespace test_bind
+{
+static int counter_lambda = 0;
+
+template <bool UseGeneric>
+class custom_dtor_suite_lambda : public custom_dtor_suite_base<UseGeneric>
+{
+    using my_base = custom_dtor_suite_base<UseGeneric>;
+
+    void reset_counters() const override
+    {
+        my_base::reset_counters();
+        counter_lambda = 0;
+    }
+
+public:
+    using my_base::compile_module;
+    using my_base::engine;
+
+    void run_dtor_test()
+    {
+        auto* m = compile_module();
+
+        auto* f = m->GetFunctionByName("test");
+        ASSERT_NE(f, nullptr);
+
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<void>(ctx, f);
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
+        EXPECT_EQ(counter_lambda, 1);
+        EXPECT_EQ(dtor_tester::dtor_counter, 1);
+        EXPECT_EQ(dtor_tester::mfn_counter, 0)
+            << "This should be untouched";
+    }
+};
+} // namespace test_bind
+
+using CustomDestructorLambdaNative = test_bind::custom_dtor_suite_lambda<false>;
+using CustomDestructorLambdaGeneric = test_bind::custom_dtor_suite_lambda<true>;
+
+TEST_F(CustomDestructorLambdaNative, RunDtorTest)
+{
+    using namespace asbind20;
+    setup_dtor_tester()
+        .destructor_function(
+            [](test_bind::dtor_tester* this_)
+            {
+                ++test_bind::counter_lambda;
+                std::destroy_at(this_);
+            }
+        );
+    run_dtor_test();
+}
+
+TEST_F(CustomDestructorLambdaGeneric, RunDtorTest)
+{
+    using namespace asbind20;
+    setup_dtor_tester()
+        .destructor_function(
+            [](test_bind::dtor_tester* this_)
+            {
+                ++test_bind::counter_lambda;
+                std::destroy_at(this_);
+            }
+        );
+    run_dtor_test();
+}

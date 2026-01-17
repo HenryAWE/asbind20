@@ -3189,6 +3189,32 @@ public:
         return *this;
     }
 
+    template <noncapturing_native_lambda DestructorFunc>
+    basic_value_class& destructor_function(
+        use_generic_t,
+        const DestructorFunc&
+    )
+    {
+        constexpr auto conv = deduce_dtor_cc<decltype(+DestructorFunc{})>();
+        this->register_destructor_fn(
+            detail::to_asGENFUNC_t(DestructorFunc{}, detail::cc<conv>),
+            detail::generic_cc
+        );
+        return *this;
+    }
+
+    template <noncapturing_native_lambda DestructorFunc>
+    basic_value_class& destructor_function(
+        const DestructorFunc&
+    )
+    {
+        if constexpr(ForceGeneric)
+            this->destructor_function(use_generic, DestructorFunc{});
+        else
+            this->destructor_function(+DestructorFunc{});
+        return *this;
+    }
+
     /**
      * @brief Automatically register functions based on traits using generic wrapper.
      *
