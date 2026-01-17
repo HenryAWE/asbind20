@@ -279,8 +279,10 @@ namespace detail
                 );
             }
         }
-
-        // unreachable
+        else
+        {
+            return deduce_method_callconv_aux<Class, FuncSig, Auxiliary>();
+        }
     }
 
     template <typename Class, noncapturing_native_lambda Lambda>

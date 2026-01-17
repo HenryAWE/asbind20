@@ -3016,15 +3016,38 @@ private:
     template <typename Fn>
     void register_destructor_fn(
         Fn fn,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes conv
+        AS_NAMESPACE_QUALIFIER asECallConvTypes conv,
+        void* aux = nullptr
     )
     {
         this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_DESTRUCT,
             "void f()",
             fn,
-            conv
+            conv,
+            aux
         );
+    }
+
+    template <typename FuncSig, typename Auxiliary = void>
+    static consteval auto deduce_dtor_cc()
+        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    {
+        if constexpr(std::is_void_v<Auxiliary>)
+        {
+            return detail::deduce_beh_callconv<
+                AS_NAMESPACE_QUALIFIER asBEHAVE_DESTRUCT,
+                Class,
+                FuncSig>();
+        }
+        else
+        {
+            return detail::deduce_beh_callconv_aux<
+                AS_NAMESPACE_QUALIFIER asBEHAVE_DESTRUCT,
+                Class,
+                FuncSig,
+                Auxiliary>();
+        }
     }
 
 public:
@@ -3067,16 +3090,44 @@ public:
         return *this;
     }
 
+    template <typename Auxiliary>
+    basic_value_class& destructor_function(
+        generic_function destroyer,
+        auxiliary_wrapper<Auxiliary> aux
+    )
+    {
+        this->register_destructor_fn(
+            destroyer,
+            detail::generic_cc,
+            this->get_auxiliary_address(aux)
+        );
+        return *this;
+    }
+
     template <native_function DestructorFunc>
     basic_value_class& destructor_function(DestructorFunc destroyer)
         requires(!ForceGeneric)
     {
-        constexpr auto conv = detail::deduce_beh_callconv<
-            AS_NAMESPACE_QUALIFIER asBEHAVE_DESTRUCT,
-            Class,
-            DestructorFunc>();
+        constexpr auto conv = deduce_dtor_cc<DestructorFunc>();
         this->register_destructor_fn(
             destroyer, conv
+        );
+        return *this;
+    }
+
+    template <native_function DestructorFunc, typename Auxiliary>
+    basic_value_class& destructor_function(
+        DestructorFunc destroyer,
+        auxiliary_wrapper<Auxiliary> aux
+    ) requires(!ForceGeneric)
+    {
+        constexpr auto conv = deduce_dtor_cc<
+            DestructorFunc,
+            Auxiliary>();
+        this->register_destructor_fn(
+            destroyer,
+            conv,
+            this->get_auxiliary_address(aux)
         );
         return *this;
     }
@@ -3087,13 +3138,28 @@ public:
         fp_wrapper<DestructorFunc>
     )
     {
-        constexpr auto conv = detail::deduce_beh_callconv<
-            AS_NAMESPACE_QUALIFIER asBEHAVE_DESTRUCT,
-            Class,
-            decltype(DestructorFunc)>();
+        constexpr auto conv = deduce_dtor_cc<decltype(DestructorFunc)>();
         this->register_destructor_fn(
             detail::to_asGENFUNC_t(fp<DestructorFunc>, detail::cc<conv>),
             detail::generic_cc
+        );
+        return *this;
+    }
+
+    template <auto DestructorFunc, typename Auxiliary>
+    basic_value_class& destructor_function(
+        use_generic_t,
+        fp_wrapper<DestructorFunc>,
+        auxiliary_wrapper<Auxiliary> aux
+    )
+    {
+        constexpr auto conv = deduce_dtor_cc<
+            decltype(DestructorFunc),
+            Auxiliary>();
+        this->register_destructor_fn(
+            detail::to_asGENFUNC_t(fp<DestructorFunc>, detail::cc<conv>),
+            detail::generic_cc,
+            this->get_auxiliary_address(aux)
         );
         return *this;
     }
@@ -3107,6 +3173,19 @@ public:
             this->destructor_function(use_generic, fp<DestructorFunc>);
         else
             this->destructor_function(DestructorFunc);
+        return *this;
+    }
+
+    template <auto DestructorFunc, typename Auxiliary>
+    basic_value_class& destructor_function(
+        fp_wrapper<DestructorFunc>,
+        auxiliary_wrapper<Auxiliary> aux
+    )
+    {
+        if constexpr(ForceGeneric)
+            this->destructor_function(use_generic, fp<DestructorFunc>, aux);
+        else
+            this->destructor_function(DestructorFunc, aux);
         return *this;
     }
 

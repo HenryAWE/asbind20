@@ -35,10 +35,27 @@ static void external_dtor(dtor_tester* this_)
 template <bool UseGeneric>
 class custom_dtor_suite : public ::testing::Test
 {
-    static void reset_counters()
+protected:
+   static void reset_counters()
     {
         global_counter = 0;
         dtor_tester::scoped_counter = 0;
+    }
+
+    auto setup_dtor_tester()
+    {
+        using namespace asbind20;
+
+        value_class<dtor_tester, UseGeneric> c(
+            engine,
+            "dtor_tester",
+            AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_ALLINTS
+        );
+        c
+            .default_constructor()
+            .copy_constructor()
+            .opAssign();
+        return c;
     }
 
 public:
@@ -50,14 +67,6 @@ public:
             ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
         engine = asbind20::make_script_engine();
         asbind_test::setup_message_callback(engine, true);
-
-        asbind20::value_class<dtor_tester, UseGeneric>(
-            engine, "dtor_tester", AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_ALLINTS
-        )
-            .default_constructor()
-            .copy_constructor()
-            .opAssign()
-            .destructor_function(asbind20::fp<&external_dtor>);
     }
 
     void TearDown() override
@@ -67,7 +76,8 @@ public:
 
     asbind20::script_engine engine;
 
-    void run_dtor_test() const
+    auto compile_module() const
+        -> AS_NAMESPACE_QUALIFIER asIScriptModule*
     {
         auto* m = engine->GetModule(
             "dtor_test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
@@ -79,7 +89,18 @@ public:
             "    dtor_tester instance;"
             "}"
         );
-        ASSERT_GE(m->Build(), 0);
+        if(m->Build() > 0)
+        {
+            ADD_FAILURE() << "Failed to build script module";
+            return nullptr;
+        }
+
+        return m;
+    }
+
+    void run_dtor_test() const
+    {
+        auto* m = compile_module();
 
         auto* f = m->GetFunctionByName("test");
         ASSERT_NE(f, nullptr);
@@ -98,10 +119,78 @@ using CustomDestructorGeneric = test_bind::custom_dtor_suite<true>;
 
 TEST_F(CustomDestructorNative, RunDtorTest)
 {
+    using test_bind::external_dtor;
+    setup_dtor_tester()
+        .destructor_function(asbind20::fp<&external_dtor>);
     run_dtor_test();
 }
 
 TEST_F(CustomDestructorGeneric, RunDtorTest)
 {
+    using test_bind::external_dtor;
+    setup_dtor_tester()
+        .destructor_function(asbind20::fp<&external_dtor>);
     run_dtor_test();
+}
+
+namespace test_bind
+{
+class counter_class
+{
+public:
+    int counter = 0;
+
+    void dtor_as_global(dtor_tester* obj)
+    {
+        ++counter;
+        obj->~dtor_tester();
+    }
+};
+
+template <bool UseGeneric>
+class custom_dtor_suite_thiscall : public custom_dtor_suite<UseGeneric>
+{
+    using my_base = custom_dtor_suite<UseGeneric>;
+
+public:
+    using my_base::compile_module;
+    using my_base::engine;
+
+    void run_dtor_test(counter_class& instance)
+    {
+        auto* m = compile_module();
+
+        auto* f = m->GetFunctionByName("test");
+        ASSERT_NE(f, nullptr);
+
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<void>(ctx, f);
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
+        EXPECT_EQ(instance.counter, 1);
+        EXPECT_EQ(dtor_tester::scoped_counter, 1);
+    }
+};
+} // namespace test_bind
+
+using CustomDestructorThiscallNative = test_bind::custom_dtor_suite_thiscall<false>;
+using CustomDestructorThiscallGeneric = test_bind::custom_dtor_suite_thiscall<true>;
+
+TEST_F(CustomDestructorThiscallNative, RunDtorTestThiscall)
+{
+    using namespace asbind20;
+    using test_bind::counter_class;
+    counter_class instance{};
+    setup_dtor_tester()
+        .destructor_function(fp<&counter_class::dtor_as_global>, auxiliary(instance));
+    run_dtor_test(instance);
+}
+
+TEST_F(CustomDestructorThiscallGeneric, RunDtorTestThiscall)
+{
+    using namespace asbind20;
+    using test_bind::counter_class;
+    counter_class instance{};
+    setup_dtor_tester()
+        .destructor_function(fp<&counter_class::dtor_as_global>, auxiliary(instance));
+    run_dtor_test(instance);
 }
