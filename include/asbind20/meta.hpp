@@ -90,13 +90,13 @@ namespace meta
             AS_NAMESPACE_QUALIFIER asQWORD flags =
                 AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS;
             if(flag_c)
-                flags |=AS_NAMESPACE_QUALIFIER  asOBJ_APP_CLASS_CONSTRUCTOR;
+                flags |= AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_CONSTRUCTOR;
             if(flag_d)
-                flags |=AS_NAMESPACE_QUALIFIER  asOBJ_APP_CLASS_DESTRUCTOR;
+                flags |= AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_DESTRUCTOR;
             if(flag_a)
-                flags |=AS_NAMESPACE_QUALIFIER  asOBJ_APP_CLASS_ASSIGNMENT;
+                flags |= AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_ASSIGNMENT;
             if(flag_k)
-                flags |=AS_NAMESPACE_QUALIFIER  asOBJ_APP_CLASS_COPY_CONSTRUCTOR;
+                flags |= AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_COPY_CONSTRUCTOR;
             return flags;
         }
 
@@ -258,7 +258,10 @@ namespace meta
 } // namespace meta
 
 template <typename T>
-requires(std::is_arithmetic_v<T> && !std::same_as<std::remove_cv_t<T>, char>)
+requires(
+    std::same_as<std::remove_cvref_t<T>, T> &&
+    !std::same_as<T, char>
+)
 consteval auto name_of() noexcept
 {
     if constexpr(std::same_as<T, bool>)
@@ -291,8 +294,6 @@ consteval auto name_of() noexcept
             else
                 static_assert(!sizeof(T), "Invalid integral");
         }
-        else // Neither signed nor unsigned
-            static_assert(!sizeof(T), "Invalid integral");
     }
     else if constexpr(std::floating_point<T>)
     {
