@@ -2425,6 +2425,25 @@ public:
         );                                                           \
         return static_cast<bg_type&>(*this);                         \
     }                                                                \
+    template <native_function Fn, typename Auxiliary>                \
+    bg_type& func_name(                                              \
+        Fn&& fn, auxiliary_wrapper<Auxiliary> aux                    \
+    ) requires(!ForceGeneric)                                        \
+    {                                                                \
+        constexpr auto conv = detail::deduce_beh_callconv_aux<       \
+            AS_NAMESPACE_QUALIFIER as_beh,                           \
+            Class,                                                   \
+            Fn,                                                      \
+            Auxiliary>();                                            \
+        this->register_behaviour(                                    \
+            AS_NAMESPACE_QUALIFIER as_beh,                           \
+            decl::decl_of_beh<AS_NAMESPACE_QUALIFIER as_beh>(),      \
+            fn,                                                      \
+            conv,                                                    \
+            this->get_auxiliary_address(aux)                         \
+        );                                                           \
+        return static_cast<bg_type&>(*this);                         \
+    }                                                                \
     bg_type& func_name(generic_function gfn)                         \
     {                                                                \
         this->register_behaviour(                                    \
@@ -2432,6 +2451,20 @@ public:
             decl::decl_of_beh<AS_NAMESPACE_QUALIFIER as_beh>(),      \
             gfn,                                                     \
             detail::generic_cc                                       \
+        );                                                           \
+        return static_cast<bg_type&>(*this);                         \
+    }                                                                \
+    template <typename Auxiliary>                                    \
+    bg_type& func_name(                                              \
+        generic_function gfn, auxiliary_wrapper<Auxiliary> aux       \
+    )                                                                \
+    {                                                                \
+        this->register_behaviour(                                    \
+            AS_NAMESPACE_QUALIFIER as_beh,                           \
+            decl::decl_of_beh<AS_NAMESPACE_QUALIFIER as_beh>(),      \
+            gfn,                                                     \
+            detail::generic_cc,                                      \
+            this->get_auxiliary_address(aux)                         \
         );                                                           \
         return static_cast<bg_type&>(*this);                         \
     }                                                                \
@@ -2448,6 +2481,25 @@ public:
         );                                                           \
         return static_cast<bg_type&>(*this);                         \
     }                                                                \
+    template <auto Function, typename Auxiliary>                     \
+    bg_type& func_name(                                              \
+        use_generic_t,                                               \
+        fp_wrapper<Function>,                                        \
+        auxiliary_wrapper<Auxiliary> aux                             \
+    )                                                                \
+    {                                                                \
+        using func_t = decltype(Function);                           \
+        constexpr auto conv = detail::deduce_beh_callconv_aux<       \
+            AS_NAMESPACE_QUALIFIER as_beh,                           \
+            Class,                                                   \
+            func_t,                                                  \
+            Auxiliary>();                                            \
+        this->func_name(                                             \
+            detail::to_asGENFUNC_t(fp<Function>, detail::cc<conv>),  \
+            aux                                                      \
+        );                                                           \
+        return static_cast<bg_type&>(*this);                         \
+    }                                                                \
     template <auto Function>                                         \
     bg_type& func_name(fp_wrapper<Function>)                         \
     {                                                                \
@@ -2455,6 +2507,17 @@ public:
             this->func_name(use_generic, fp<Function>);              \
         else                                                         \
             this->func_name(Function);                               \
+        return static_cast<bg_type&>(*this);                         \
+    }                                                                \
+    template <auto Function, typename Auxiliary>                     \
+    bg_type& func_name(                                              \
+        fp_wrapper<Function>, auxiliary_wrapper<Auxiliary> aux       \
+    )                                                                \
+    {                                                                \
+        if constexpr(ForceGeneric)                                   \
+            this->func_name(use_generic, fp<Function>, aux);         \
+        else                                                         \
+            this->func_name(Function, aux);                          \
         return static_cast<bg_type&>(*this);                         \
     }
 

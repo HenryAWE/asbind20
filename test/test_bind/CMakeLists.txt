@@ -2,6 +2,7 @@ aux_source_directory(. test_bind_src)
 aux_source_directory(c_api test_bind_src)
 aux_source_directory(foreach test_bind_src)
 aux_source_directory(val_class test_bind_src)
+aux_source_directory(ref_class test_bind_src)
 
 add_executable(test_bind ${test_bind_src})
 target_link_libraries(test_bind PRIVATE shared_test_lib)
