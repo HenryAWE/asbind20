@@ -85,7 +85,7 @@ public:
         engine = make_script_engine();
         asbind_test::setup_message_callback(engine, true);
 
-        if constexpr(!UseGeneric)
+        if constexpr(UseGeneric)
             ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
         ref_class<refcount_aux>(engine, "refcount_aux")
