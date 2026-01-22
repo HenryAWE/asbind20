@@ -23,10 +23,6 @@ jobs:
 
       name: Windows ${{matrix.arch}} MSVC C++${{matrix.cxxstd}}
 
-      env:
-        VCPKG_BUILD_TYPE: release
-        VCPKG_DEFAULT_TRIPLET:  ${{ matrix.arch == 'amd64' && 'x64-windows' || 'x86-windows' }}
-
       steps:
       - uses: actions/checkout@v4
       - uses: ilammy/msvc-dev-cmd@v1
@@ -34,7 +30,15 @@ jobs:
           arch: ${{matrix.arch}}
 
       - name: Install AngelScript
-        run: vcpkg install angelscript
+        working-directory: ${{github.workspace}}
+        run: |
+          git clone https://github.com/anjo76/angelscript.git
+          cd angelscript
+          git reset --hard 535fa4e13037c659e726dcfac8791b19da463360 # 2.38.0
+          cd sdk/angelscript/projects/cmake
+          cmake -GNinja -DCMAKE_BUILD_TYPE=Release -S . -B build
+          cmake --build build
+          cmake --install build
 
       - name: Configure
         run: >
@@ -44,7 +48,6 @@ jobs:
           -G Ninja
           -Dasbind_cxxstd=${{matrix.cxxstd}}
           -DCMAKE_BUILD_TYPE=Release
-          -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake"
           -Dasbind_build_test=1
           -Dasbind_build_bench=1
 
