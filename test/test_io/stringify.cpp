@@ -67,6 +67,18 @@ TEST(Stringify, asEMsgTypeToString)
     EXPECT_EQ(to_string(AS_NAMESPACE_QUALIFIER asMSGTYPE_INFORMATION), "asMSGTYPE_INFORMATION");
 }
 
+TEST(Stringify, asETokenClass)
+{
+    using namespace asbind20;
+
+    EXPECT_EQ(to_string(AS_NAMESPACE_QUALIFIER asTC_UNKNOWN), "asTC_UNKNOWN");
+    EXPECT_EQ(to_string(AS_NAMESPACE_QUALIFIER asTC_KEYWORD), "asTC_KEYWORD");
+    EXPECT_EQ(to_string(AS_NAMESPACE_QUALIFIER asTC_VALUE), "asTC_VALUE");
+    EXPECT_EQ(to_string(AS_NAMESPACE_QUALIFIER asTC_IDENTIFIER), "asTC_IDENTIFIER");
+    EXPECT_EQ(to_string(AS_NAMESPACE_QUALIFIER asTC_COMMENT), "asTC_COMMENT");
+    EXPECT_EQ(to_string(AS_NAMESPACE_QUALIFIER asTC_WHITESPACE), "asTC_WHITESPACE");
+}
+
 TEST(Stringify, CopyDebugRepresentation)
 {
     namespace io = asbind20::io;
@@ -133,6 +145,11 @@ TEST(Stringify, Formatter)
     EXPECT_EQ(
         std::format("{}", AS_NAMESPACE_QUALIFIER asMSGTYPE_ERROR),
         "ERROR"
+    );
+
+    EXPECT_EQ(
+        std::format("{}", AS_NAMESPACE_QUALIFIER asTC_IDENTIFIER),
+        "IDENTIFIER"
     );
 }
 

@@ -131,6 +131,28 @@ namespace detail
             return nullptr;
         }
     }
+
+    constexpr const char* tc_to_cstr(AS_NAMESPACE_QUALIFIER asETokenClass tc)
+    {
+        switch(tc)
+        {
+        case AS_NAMESPACE_QUALIFIER asTC_UNKNOWN:
+            return "asTC_UNKNOWN";
+        case AS_NAMESPACE_QUALIFIER asTC_KEYWORD:
+            return "asTC_KEYWORD";
+        case AS_NAMESPACE_QUALIFIER asTC_VALUE:
+            return "asTC_VALUE";
+        case AS_NAMESPACE_QUALIFIER asTC_IDENTIFIER:
+            return "asTC_IDENTIFIER";
+        case AS_NAMESPACE_QUALIFIER asTC_COMMENT:
+            return "asTC_COMMENT";
+        case AS_NAMESPACE_QUALIFIER asTC_WHITESPACE:
+            return "asTC_WHITESPACE";
+
+        [[unlikely]] default:
+            return nullptr;
+        }
+    }
 } // namespace detail
 
 /**
@@ -194,6 +216,23 @@ inline std::string to_string(AS_NAMESPACE_QUALIFIER asEMsgType msg_type)
         return std::format("asEMsgType({})", static_cast<int>(msg_type));
 #else
         return "asEMsgType(" +
+               std::to_string(static_cast<int>(msg_type)) +
+               ')';
+#endif
+    }
+}
+
+inline std::string to_string(AS_NAMESPACE_QUALIFIER asETokenClass tc)
+{
+    const char* cstr = detail::tc_to_cstr(tc);
+    if(cstr) [[likely]]
+        return cstr;
+    else
+    {
+#ifdef ASBIND20_HAS_LIB_FORMAT
+        return std::format("asETokenClass({})", static_cast<int>(tc));
+#else
+        return "asETokenClass(" +
                std::to_string(static_cast<int>(msg_type)) +
                ')';
 #endif
