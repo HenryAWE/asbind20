@@ -233,7 +233,7 @@ inline std::string to_string(AS_NAMESPACE_QUALIFIER asETokenClass tc)
         return std::format("asETokenClass({})", static_cast<int>(tc));
 #else
         return "asETokenClass(" +
-               std::to_string(static_cast<int>(msg_type)) +
+               std::to_string(static_cast<int>(tc)) +
                ')';
 #endif
     }
