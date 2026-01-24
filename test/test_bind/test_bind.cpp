@@ -536,7 +536,12 @@ TEST(TestBind, EnumUInt64)
 
 static void output_info(std::ostream& os)
 {
+#ifdef _MSVC_LANG
+    os << "_MSVC_LANG" << _MSVC_LANG << std::endl;
+#else
     os << "__cplusplus = " << __cplusplus << 'L' << std::endl;
+#endif
+
     os << "asGetLibraryVersion(): " << AS_NAMESPACE_QUALIFIER asGetLibraryVersion() << std::endl;
     os << "asGetLibraryOptions(): " << AS_NAMESPACE_QUALIFIER asGetLibraryOptions() << std::endl;
     os << "asbind20::library_version(): " << asbind20::library_version() << std::endl;

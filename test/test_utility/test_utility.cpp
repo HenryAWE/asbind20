@@ -76,7 +76,8 @@ TEST(Utility, Version)
         std::string_view sv = AS_NAMESPACE_QUALIFIER asGetLibraryOptions();
         bool max_portability_found = sv.find("AS_MAX_PORTABILITY") != sv.npos;
 
-        EXPECT_EQ(asbind20::has_max_portability(), max_portability_found);
+        EXPECT_EQ(asbind20::has_max_portability(), max_portability_found)
+            << "asGetLibraryOptions: " << sv;
     }
 }
 
@@ -236,7 +237,7 @@ TEST(Utility, ScriptFlags)
 {
     using namespace test_utility;
 
-
+    // Classes
     script_flags_test_helper<pod_class>();
     script_flags_test_helper<copyable_class>();
     script_flags_test_helper<non_copyable>();
