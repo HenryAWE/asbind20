@@ -1,8 +1,9 @@
 /**
- * @file enum.hpp
+ * @file bind/enum.hpp
  * @author HenryAWE
  * @brief Bind generator for enumerations
  */
+
 #ifndef ASBIND20_BIND_ENUM_HPP
 #define ASBIND20_BIND_ENUM_HPP
 
