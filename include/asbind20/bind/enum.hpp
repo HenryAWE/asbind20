@@ -42,11 +42,11 @@ public:
         register_enum_type(m_name, get_underlying());
     }
 
-    template <string_view_like StringView>
-    enum_(engine_pointer engine, StringView&& name)
+    template <string_like StringLike>
+    enum_(engine_pointer engine, StringLike&& name)
         : enum_(
               engine,
-              detail::sv_to_str(std::forward<StringView>(name))
+              util::string_like_to_string(std::forward<StringLike>(name))
           )
     {}
 

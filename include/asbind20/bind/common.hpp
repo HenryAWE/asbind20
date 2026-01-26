@@ -338,14 +338,6 @@ namespace detail
             std::string_view(name_begin.base(), funcdef.end())
         );
     }
-
-    template <string_view_like StringView>
-    constexpr std::string sv_to_str(StringView&& sv)
-    {
-        return std::string(
-            static_cast<std::string_view>(std::forward<StringView>(sv))
-        );
-    }
 } // namespace detail
 
 template <typename T, typename BindingGenerator>

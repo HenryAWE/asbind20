@@ -317,7 +317,34 @@ namespace util
 } // namespace util
 
 template <typename T>
-concept string_view_like = std::convertible_to<T, std::string_view>;
+concept string_like =
+    std::convertible_to<T, std::string_view> ||
+    std::convertible_to<T, std::string> ||
+    std::convertible_to<std::decay_t<T>, const char*>;
+
+namespace util
+{
+    template <string_like StringLike>
+    constexpr std::string string_like_to_string(StringLike&& str)
+    {
+        using type = std::remove_cvref_t<StringLike>;
+        using std::convertible_to;
+        if constexpr(convertible_to<type, std::string>)
+        {
+            return std::string(std::forward<StringLike>(str));
+        }
+        else if constexpr(convertible_to<std::decay_t<type>, const char*>)
+        {
+            const char* cstr = str;
+            return std::string(cstr);
+        }
+        else
+        {
+            std::string_view sv(str);
+            return std::string(sv);
+        }
+    }
+} // namespace util
 } // namespace asbind20
 
 #endif
