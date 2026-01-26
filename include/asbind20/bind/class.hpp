@@ -3950,6 +3950,30 @@ public:
     basic_ref_class& factory_function(
         use_generic_t,
         std::string_view params,
+        fp_wrapper<AuxFactoryFunc>,
+        auxiliary_wrapper<Auxiliary> aux
+    )
+    {
+        constexpr auto conv =
+            deduce_factory_cc<decltype(AuxFactoryFunc), Auxiliary>();
+        this->register_factory_function(
+            false,
+            params,
+            detail::auxiliary_factory_to_asGENFUNC_t<Template>(
+                fp<AuxFactoryFunc>, detail::cc<conv>
+            ),
+            detail::generic_cc,
+            my_base::get_auxiliary_address(aux)
+        );
+        return *this;
+    }
+
+    template <
+        auto AuxFactoryFunc,
+        typename Auxiliary>
+    basic_ref_class& factory_function(
+        use_generic_t,
+        std::string_view params,
         use_explicit_t,
         fp_wrapper<AuxFactoryFunc>,
         auxiliary_wrapper<Auxiliary> aux
@@ -4102,7 +4126,6 @@ public:
             factory_function(use_generic, params, fp<Factory>, aux);
         else
             factory_function(params, Factory, aux);
-
         return *this;
     }
 

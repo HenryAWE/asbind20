@@ -88,7 +88,7 @@ public:
         if constexpr(!UseGeneric)
             ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
-        ref_class<refcount_aux>(engine, "refcount_aux")
+        ref_class<refcount_aux, UseGeneric>(engine, "refcount_aux")
             .factory_function("", fp<&refcount_aux_helper::create>, auxiliary(helper))
             .addref(fp<&refcount_aux_helper::addref>, auxiliary(helper))
             .release(fp<&refcount_aux_helper::release>, auxiliary(helper))
