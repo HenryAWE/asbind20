@@ -114,6 +114,25 @@ auto copy_debug_representation_to(
         cstr += sizeof("asMSGTYPE"); // Skip "asMSGTYPE_"
     return detail::copy_cstr_to(cstr, std::move(out));
 }
+
+template <typename OutputIt>
+auto copy_debug_representation_to(
+    AS_NAMESPACE_QUALIFIER asETokenClass tc, bool skip_prefix, OutputIt out
+)
+{
+    const char* cstr = asbind20::detail::tc_to_cstr(tc);
+    if(!cstr) [[unlikely]]
+    {
+        using namespace std::string_view_literals;
+        return detail::output_fallback(
+            out, "asETokenClass"sv, static_cast<int>(tc)
+        );
+    }
+
+    if(skip_prefix)
+        cstr += sizeof("asTC"); // Skip "asTC_"
+    return detail::copy_cstr_to(cstr, std::move(out));
+}
 } // namespace asbind20::io
 
 #ifdef ASBIND20_HAS_LIB_FORMAT
@@ -150,7 +169,8 @@ template <typename ASEnum>
 requires(
     std::same_as<ASEnum, AS_NAMESPACE_QUALIFIER asEContextState> ||
     std::same_as<ASEnum, AS_NAMESPACE_QUALIFIER asERetCodes> ||
-    std::same_as<ASEnum, AS_NAMESPACE_QUALIFIER asEMsgType>
+    std::same_as<ASEnum, AS_NAMESPACE_QUALIFIER asEMsgType> ||
+    std::same_as<ASEnum, AS_NAMESPACE_QUALIFIER asETokenClass>
 )
 class std::formatter<ASEnum> :
     public angelscript_enum_formatter_base
