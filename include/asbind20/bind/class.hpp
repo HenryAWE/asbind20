@@ -1688,15 +1688,40 @@ private:
     template <typename Fn>
     void register_temp_cb(
         Fn&& fn,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes conv
+        AS_NAMESPACE_QUALIFIER asECallConvTypes conv,
+        void* aux = nullptr
     )
     {
         this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK,
             "bool f(int&in,bool&out)",
             fn,
-            conv
+            conv,
+            aux
         );
+    }
+
+    template <
+        typename Fn,
+        typename Auxiliary = void>
+    static consteval auto deduce_temp_cb_cc()
+        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    {
+        if constexpr(std::is_void_v<Auxiliary>)
+        {
+            return detail::deduce_beh_callconv<
+                AS_NAMESPACE_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK,
+                Class,
+                Fn>();
+        }
+        else
+        {
+            return detail::deduce_beh_callconv_aux<
+                AS_NAMESPACE_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK,
+                Class,
+                Fn,
+                Auxiliary>();
+        }
     }
 
 public:
@@ -1708,27 +1733,62 @@ public:
         return derived();
     }
 
+    template <typename Auxiliary>
+    Derived& template_callback(
+        generic_function gfn,
+        auxiliary_wrapper<Auxiliary> aux
+    ) requires(Template)
+    {
+        this->register_temp_cb(
+            gfn,
+            detail::generic_cc,
+            this->get_auxiliary_address(aux)
+        );
+        return derived();
+    }
+
     template <native_function Fn>
     Derived& template_callback(Fn&& fn) requires(Template && !ForceGeneric)
     {
-        constexpr auto conv = detail::deduce_beh_callconv<
-            AS_NAMESPACE_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK,
-            Class,
-            Fn>();
+        constexpr auto conv = deduce_temp_cb_cc<Fn>();
         this->register_temp_cb(fn, conv);
+        return derived();
+    }
+
+    template <native_function Fn, typename Auxiliary>
+    requires(std::is_member_function_pointer_v<Fn>)
+    Derived& template_callback(
+        Fn&& fn, auxiliary_wrapper<Auxiliary> aux
+    ) requires(Template && !ForceGeneric)
+    {
+        constexpr auto conv = this->deduce_temp_cb_cc<Fn, Auxiliary>();
+        this->register_temp_cb(
+            fn, conv, this->get_auxiliary_address(aux)
+        );
         return derived();
     }
 
     template <auto Callback>
     Derived& template_callback(use_generic_t, fp_wrapper<Callback>) requires(Template)
     {
-        constexpr auto conv = detail::deduce_beh_callconv<
-            AS_NAMESPACE_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK,
-            Class,
-            decltype(Callback)>();
+        constexpr auto conv = deduce_temp_cb_cc<decltype(Callback)>();
         this->register_temp_cb(
             detail::to_asGENFUNC_t(fp<Callback>, detail::cc<conv>),
             detail::generic_cc
+        );
+        return derived();
+    }
+
+    template <auto Callback, typename Auxiliary>
+    Derived& template_callback(
+        use_generic_t, fp_wrapper<Callback>, auxiliary_wrapper<Auxiliary> aux
+    ) requires(Template)
+    {
+        constexpr auto conv = deduce_temp_cb_cc<decltype(Callback), Auxiliary>();
+        this->register_temp_cb(
+            detail::to_asGENFUNC_t(fp<Callback>, detail::cc<conv>),
+            detail::generic_cc,
+            this->get_auxiliary_address(aux)
         );
         return derived();
     }
@@ -1740,6 +1800,18 @@ public:
             template_callback(use_generic, fp<Callback>);
         else
             template_callback(Callback);
+        return derived();
+    }
+
+    template <auto Callback, typename Auxiliary>
+    Derived& template_callback(
+        fp_wrapper<Callback>, auxiliary_wrapper<Auxiliary> aux
+    ) requires(Template)
+    {
+        if constexpr(ForceGeneric)
+            template_callback(use_generic, fp<Callback>, aux);
+        else
+            template_callback(Callback, aux);
         return derived();
     }
 
