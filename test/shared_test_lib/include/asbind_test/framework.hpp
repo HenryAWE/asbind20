@@ -61,17 +61,20 @@ void output_gc_statistics(
 } // namespace asbind_test
 
 #define ASBIND_TEST_SKIP_IF_MAX_PORTABILITY()  \
-    do {                                       \
+    do                                         \
+    {                                          \
         if(::asbind20::has_max_portability())  \
             GTEST_SKIP() << "MAX_PORTABILITY"; \
     } while(0)
 
-#define ASBIND_TEST_EXPECT_INVOKE_RESULT(result)                   \
-    do {                                                      \
+#define ASBIND_TEST_EXPECT_INVOKE_RESULT(result)              \
+    do                                                        \
+    {                                                         \
         EXPECT_TRUE(::asbind_test::result_has_value(result)); \
     } while(0)
 
-#define ASBIND_TEST_ASSERT_INVOKE_RESULT(result)                   \
-    do {                                                      \
+#define ASBIND_TEST_ASSERT_INVOKE_RESULT(result)              \
+    do                                                        \
+    {                                                         \
         ASSERT_TRUE(::asbind_test::result_has_value(result)); \
     } while(0)
