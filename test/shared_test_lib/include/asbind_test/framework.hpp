@@ -13,30 +13,14 @@
 
 namespace asbind_test
 {
+::testing::AssertionResult check_context_state(
+    AS_NAMESPACE_QUALIFIER asEContextState state
+);
+
 template <typename T>
 ::testing::AssertionResult result_has_value(const asbind20::script_invoke_result<T>& r)
 {
-    if(r.has_value())
-        return ::testing::AssertionSuccess();
-    else
-    {
-        const char* state_str = "";
-        switch(r.error())
-        {
-        case AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED: state_str = "FINISHED"; break;
-        case AS_NAMESPACE_QUALIFIER asEXECUTION_SUSPENDED: state_str = "SUSPENDED"; break;
-        case AS_NAMESPACE_QUALIFIER asEXECUTION_ABORTED: state_str = "ABORTED"; break;
-        case AS_NAMESPACE_QUALIFIER asEXECUTION_EXCEPTION: state_str = "EXCEPTION"; break;
-        case AS_NAMESPACE_QUALIFIER asEXECUTION_PREPARED: state_str = "PREPARED"; break;
-        case AS_NAMESPACE_QUALIFIER asEXECUTION_UNINITIALIZED: state_str = "UNINITIALIZED"; break;
-        case AS_NAMESPACE_QUALIFIER asEXECUTION_ACTIVE: state_str = "ACTIVE"; break;
-        case AS_NAMESPACE_QUALIFIER asEXECUTION_ERROR: state_str = "ERROR"; break;
-        case AS_NAMESPACE_QUALIFIER asEXECUTION_DESERIALIZATION: state_str = "DESERIALIZATION"; break;
-        }
-
-        return ::testing::AssertionFailure()
-               << "r = " << r.error() << ' ' << state_str;
-    }
+    return check_context_state(r.error());
 }
 
 void setup_message_callback(
