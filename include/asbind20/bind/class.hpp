@@ -2468,6 +2468,7 @@ public:
     // or reference of type being registered.
     // It's safe to have them available for both value and reference classes.
 
+    // FIXME: Handle primitive types
     ASBIND20_BG_INTERFACE_DEFINE_OP(Derived, opAssign)
     ASBIND20_BG_INTERFACE_DEFINE_OP(Derived, opAddAssign)
     ASBIND20_BG_INTERFACE_DEFINE_OP(Derived, opSubAssign)
