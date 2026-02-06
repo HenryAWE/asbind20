@@ -560,7 +560,7 @@ public:
     /**
      * @brief Lock the flag
      */
-    void lock()
+    void lock() const
     {
         assert(*this);
         m_bool->Lock();
@@ -569,7 +569,7 @@ public:
     /**
      * @brief Unlock the flag
      */
-    void unlock() noexcept
+    void unlock() const noexcept
     {
         assert(*this);
         m_bool->Unlock();

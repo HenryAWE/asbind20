@@ -1421,7 +1421,7 @@ protected:
             decl_##as_op_sig(),                                             \
             +[](Class& this_) -> Class                                      \
             { return this_ cpp_op; },                                       \
-            detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>         \
+            detail::cdecl_last_cc         \
         );                                                                  \
     }
 
@@ -1603,7 +1603,7 @@ protected:
         register_method(
             decl_opConv(ret, implicit),
             gen_t::generate(
-                detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+                detail::cdecl_last_cc
             ),
             AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
         );
@@ -2984,9 +2984,9 @@ private:
             explicit_,
             params,
             wrapper.generate(
-                detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+                detail::cdecl_last_cc
             ),
-            detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+            detail::cdecl_last_cc
         );
     }
 
@@ -3082,8 +3082,8 @@ public:
             this->register_behaviour(
                 AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
                 decl_default_ctor(),
-                gen_t::generate(detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>),
-                detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>,
+                gen_t::generate(detail::cdecl_last_cc),
+                detail::cdecl_last_cc,
                 nullptr
             );
         }
@@ -3133,8 +3133,8 @@ public:
                 this->register_behaviour(
                     AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
                     decl_copy_ctor(),
-                    wrapper.generate(detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>),
-                    detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+                    wrapper.generate(detail::cdecl_last_cc),
+                    detail::cdecl_last_cc
                 );
             }
             else
@@ -3211,7 +3211,7 @@ public:
                 {
                     std::destroy_at(ptr);
                 },
-                AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
+                detail::cdecl_last_cc
             );
         }
 
@@ -3573,12 +3573,13 @@ public:
             list_constructor<ListElementType>(use_generic, pattern, use_policy<Policy>);
         else
         {
+            using gen_t = detail::list_constructor<Class, Template, ListElementType, Policy>;
             this->register_list_ctor_func(
                 pattern,
-                detail::list_constructor<Class, Template, ListElementType, Policy>::generate(
-                    detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+                gen_t::generate(
+                    detail::cdecl_last_cc
                 ),
-                AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
+                detail::cdecl_last_cc
             );
         }
 
@@ -3981,8 +3982,7 @@ public:
         fp_wrapper<Factory>
     )
     {
-        constexpr auto conv =
-            detail::deduce_function_callconv<decltype(Factory)>();
+        constexpr auto conv = deduce_factory_cc<decltype(Factory)>();
         this->register_factory_function(
             false,
             params,
@@ -4232,14 +4232,9 @@ public:
     basic_ref_class& default_factory(use_policy_t<Policy> = {})
     {
         if constexpr(ForceGeneric)
-        {
             default_factory(use_generic, use_policy<Policy>);
-        }
         else
-        {
             this->factory<>("", use_policy<Policy>);
-        }
-
         return *this;
     }
 
@@ -4250,8 +4245,7 @@ private:
     )
     {
         std::string decl = decl_factory(params, explicit_);
-        generic_function wrapper =
-            detail::factory<Class, Template, Policy, Args...>::generate(detail::generic_cc);
+        using gen_t = detail::factory<Class, Template, Policy, Args...>;
 
         void* aux = nullptr;
         // For non-template class that notifies GC,
@@ -4262,7 +4256,7 @@ private:
         this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
             decl,
-            wrapper,
+            gen_t::generate(detail::generic_cc),
             detail::generic_cc,
             aux
         );
@@ -4278,10 +4272,6 @@ private:
         std::string decl = decl_factory(params, explicit_);
         if constexpr(std::same_as<Policy, policies::notify_gc> && !Template)
         {
-            auto wrapper = gen_t::generate(
-                detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
-            );
-
             // For non-template class that notifies GC,
             // store the type information as the auxiliary pointer.
             void* ti = get_engine()->GetTypeInfoById(this->get_type_id());
@@ -4289,21 +4279,21 @@ private:
             this->register_behaviour(
                 AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
                 decl,
-                wrapper,
-                detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>,
+                gen_t::generate(
+                    detail::cdecl_last_cc
+                ),
+                detail::cdecl_last_cc,
                 ti // auxiliary
             );
         }
         else
         {
-            auto wrapper = gen_t::generate(
-                detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
-            );
-
             this->register_behaviour(
                 AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
                 decl,
-                wrapper,
+                gen_t::generate(
+                    detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
+                ),
                 detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
             );
         }
@@ -4671,31 +4661,25 @@ public:
         }
         else
         {
+            using gen_t = detail::list_factory<
+                Class,
+                Template,
+                ListElementType,
+                IListPolicy,
+                FactoryPolicy>;
             if constexpr(std::same_as<FactoryPolicy, policies::notify_gc> && !Template)
             {
-                using gen_t = detail::list_factory<
-                    Class,
-                    Template,
-                    ListElementType,
-                    IListPolicy,
-                    FactoryPolicy>;
                 this->register_list_factory_func(
                     pattern,
                     gen_t::generate(
-                        detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+                        detail::cdecl_last_cc
                     ),
-                    detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>,
+                    detail::cdecl_last_cc,
                     this->aux_for_policy<FactoryPolicy>()
                 );
             }
             else
             {
-                using gen_t = detail::list_factory<
-                    Class,
-                    Template,
-                    ListElementType,
-                    IListPolicy,
-                    FactoryPolicy>;
                 this->register_list_factory_func(
                     pattern,
                     gen_t::generate(
@@ -4718,15 +4702,15 @@ public:
         use_policy_t<IListPolicy> = {}
     )
     {
-        generic_function wrapper = detail::list_factory<
+        using gen_t = detail::list_factory<
             Class,
             Template,
             ListElementType,
             IListPolicy,
-            void>::generate(detail::generic_cc);
+            void>;
         this->register_list_factory_func(
             pattern,
-            wrapper,
+            gen_t::generate(detail::generic_cc),
             detail::generic_cc
         );
 
@@ -4828,9 +4812,9 @@ public:
                 this->register_list_factory_func(
                     pattern,
                     gen_t::generate(
-                        detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+                        detail::cdecl_last_cc
                     ),
-                    detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>,
+                    detail::cdecl_last_cc,
                     this->aux_for_policy<FactoryPolicy>()
                 );
             }

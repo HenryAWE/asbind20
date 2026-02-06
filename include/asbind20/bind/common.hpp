@@ -56,6 +56,7 @@ namespace detail
     constexpr inline call_conv_t<CallConv> cc;
 
     constexpr inline call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> generic_cc{};
+    constexpr inline call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST> cdecl_last_cc{};
 
     template <bool ObjFirst>
     consteval auto conv_of_loc(obj_loc_t<ObjFirst>, bool is_thiscall)
