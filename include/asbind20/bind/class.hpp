@@ -3102,11 +3102,11 @@ public:
     {
         if constexpr(std::is_array_v<Class>)
         {
-            detail::arr_copy_constructor<Class, const Class&> wrapper;
+            using gen_t = detail::arr_copy_constructor<Class, const Class&>;
             this->register_behaviour(
                 AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
                 decl_copy_ctor(),
-                wrapper.generate(detail::generic_cc),
+                gen_t::generate(detail::generic_cc),
                 detail::generic_cc
             );
         }
@@ -3129,11 +3129,11 @@ public:
         {
             if constexpr(std::is_array_v<Class>)
             {
-                detail::arr_copy_constructor<Class, const Class&> wrapper;
+                using gen_t = detail::arr_copy_constructor<Class, const Class&>;
                 this->register_behaviour(
                     AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
                     decl_copy_ctor(),
-                    wrapper.generate(detail::cdecl_last_cc),
+                    gen_t::generate(detail::cdecl_last_cc),
                     detail::cdecl_last_cc
                 );
             }
