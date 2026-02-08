@@ -39,9 +39,9 @@ struct apply_to
 
     template <has_static_name ListElementType>
     requires(!std::is_void_v<ListElementType>)
-    static std::string pattern()
+    static constexpr std::string pattern()
     {
-        auto type_name = name_of<ListElementType>();
+        constexpr auto type_name = name_of<ListElementType>();
 
         std::string result;
         result.reserve(2 + type_name.size() * Size + (Size - 1));
@@ -76,15 +76,6 @@ struct repeat_list_proxy
 struct as_iterators
 {
     using initialization_list_policy_tag = void;
-
-    template <typename T, typename Fn>
-    static decltype(auto) apply(Fn&& fn, script_init_list_repeat list)
-    {
-        T* start = (T*)list.data();
-        T* stop = start + list.size();
-
-        return std::invoke(std::forward<Fn>(fn), start, stop);
-    }
 };
 
 /**

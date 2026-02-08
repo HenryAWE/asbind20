@@ -35,7 +35,7 @@ using uint128_t = std::_Unsigned128;
 namespace test_bind
 {
 template <bool UseGeneric>
-void register_int128(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void register_int128(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     using namespace asbind20;
 
@@ -96,8 +96,10 @@ static void check_int128(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 
     m->AddScriptSection(
         "check_int128",
-        "int128 get_i128() { return -int128(42);}\n"
-        "uint128 get_u128() { return uint128(1013);}"
+        "int128 get_i128() { return -int128(42); }\n"
+        "uint128 get_u128() { return uint128(1013); }\n"
+        "uint128 add_u128(uint128 lhs, uint128 rhs)\n"
+        "{ return lhs + rhs; }"
     );
     ASSERT_GE(m->Build(), 0);
 
@@ -122,6 +124,20 @@ static void check_int128(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         ASSERT_TRUE(asbind_test::result_has_value(result));
         EXPECT_EQ(result.value(), 1013);
     }
+
+    // TODO: Enable this case after generated operators for primitive type are fixed
+    // {
+    //     auto * f= m->GetFunctionByName("add_u128");
+    //     ASSERT_NE(f, nullptr);
+    //
+    //     asbind20::request_context ctx(engine);
+    //     auto result = asbind20::script_invoke<uint128_t>(
+    //         ctx, f, uint128_t(40), uint128_t(2)
+    //     );
+    //
+    //     ASSERT_TRUE(asbind_test::result_has_value(result));
+    //     EXPECT_EQ(result.value(), 42);
+    // }
 }
 } // namespace test_bind
 

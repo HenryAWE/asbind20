@@ -53,3 +53,24 @@ TEST(WithCStr, WithCStr)
         EXPECT_EQ(result, "hello hello world");
     }
 }
+
+TEST(StringLike, Adaptor)
+{
+    using asbind20::string_like;
+    using asbind20::util::string_like_to_string;
+
+    static_assert(string_like<char*>);
+    static_assert(string_like<char[]>);
+    static_assert(string_like<const char*>);
+    static_assert(string_like<const char[]>);
+    static_assert(string_like<std::string_view>);
+
+    EXPECT_EQ(string_like_to_string(""), "");
+    EXPECT_EQ(string_like_to_string("test"), "test");
+
+    {
+        std::string_view sv = "view";
+        EXPECT_EQ(string_like_to_string(sv), "view")
+            << "sv = " << sv;
+    }
+}

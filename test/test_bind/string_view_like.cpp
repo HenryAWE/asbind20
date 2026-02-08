@@ -56,7 +56,7 @@ TEST(StringViewCompat, Misc)
     using namespace asbind20;
     using namespace std::string_view_literals;
 
-    static_assert(string_view_like<std::string_view>);
+    static_assert(string_like<std::string_view>);
 
     auto engine = make_script_engine();
 
