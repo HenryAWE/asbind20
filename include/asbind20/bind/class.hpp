@@ -1770,7 +1770,7 @@ public:
         Fn&& fn, auxiliary_wrapper<Auxiliary> aux
     ) requires(Template && !ForceGeneric)
     {
-        constexpr auto conv = this->deduce_temp_cb_cc<Fn, Auxiliary>();
+        constexpr auto conv = deduce_temp_cb_cc<Fn, Auxiliary>();
         this->register_temp_cb(
             fn, conv, this->get_auxiliary_address(aux)
         );

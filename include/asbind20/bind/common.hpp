@@ -250,7 +250,14 @@ namespace detail
     consteval auto deduce_beh_callconv_aux() noexcept
         -> AS_NAMESPACE_QUALIFIER asECallConvTypes
     {
-        if constexpr(
+        if constexpr(Beh == AS_NAMESPACE_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK)
+        {
+            if constexpr(std::is_member_function_pointer_v<FuncSig>)
+                return AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL;
+            else
+                return deduce_function_callconv<FuncSig>();
+        }
+        else if constexpr(
             Beh == AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY ||
             Beh == AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY
         )
