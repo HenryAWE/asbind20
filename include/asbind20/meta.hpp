@@ -41,7 +41,7 @@ namespace meta
      */
     template <typename T, typename... Args>
     struct is_constructible_at :
-        public std::bool_constant<detail::check_placement_new<T, Args...>>
+        std::bool_constant<detail::check_placement_new<T, Args...>>
     {};
 
     template <typename T, typename... Args>

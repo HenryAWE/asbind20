@@ -475,7 +475,12 @@ int set_script_arg(
     else if constexpr(int_size == sizeof(AS_NAMESPACE_QUALIFIER asQWORD))
         return ctx->SetArgQWord(idx, val);
     else
-        static_assert(!sizeof(T), "size of integral type is too large");
+    {
+        void* addr = ctx->GetAddressOfArg(idx);
+        assert(addr != nullptr);
+        new(addr) T(val);
+        return AS_NAMESPACE_QUALIFIER asSUCCESS;
+    }
 }
 
 template <typename Enum>

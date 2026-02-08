@@ -12,5 +12,5 @@ void opaque_addref(opaque_structure* ptr);
 void release_opaque(opaque_structure* ptr);
 
 void opaque_set_data(opaque_structure* ptr, int data);
-int opaque_get_data(opaque_structure* ptr);
+int opaque_get_data(const opaque_structure* ptr);
 } // namespace test_bind

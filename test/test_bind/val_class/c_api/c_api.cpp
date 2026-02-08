@@ -1,6 +1,6 @@
 #include "c_api.hpp"
-#include <cassert>
 #include <new>
+#include <gtest/gtest.h>
 
 namespace test_bind
 {
@@ -12,9 +12,12 @@ struct opaque_structure
 
 opaque_structure* create_opaque()
 {
-    opaque_structure* ptr = new(std::nothrow) opaque_structure{};
+    auto* ptr = new(std::nothrow) opaque_structure{};
     if(!ptr)
+    {
+        ADD_FAILURE() << "out of memory";
         return nullptr;
+    }
 
     ptr->data = 0;
     ptr->ref_count = 1;
@@ -23,39 +26,42 @@ opaque_structure* create_opaque()
 
 opaque_structure* create_opaque_with(int data)
 {
-    opaque_structure* ptr = new(std::nothrow) opaque_structure{};
-    if(!ptr)
-        return nullptr;
+    opaque_structure* ptr = create_opaque();
 
-    ptr->data = data;
-    ptr->ref_count = 1;
+    if(ptr)
+        ptr->data = data;
     return ptr;
 }
 
 void opaque_addref(opaque_structure* ptr)
 {
-    assert(ptr != nullptr);
+    ASSERT_NE(ptr, nullptr);
     ++ptr->ref_count;
 }
 
 void release_opaque(opaque_structure* ptr)
 {
-    assert(ptr != nullptr);
-    assert(ptr->data > 0);
+    ASSERT_NE(ptr, nullptr);
+    EXPECT_GT(ptr->ref_count, 0)
+        << "Bad reference count";
     --ptr->ref_count;
-    if(ptr->ref_count == 0)
+    if(ptr->ref_count <= 0)
         delete ptr;
 }
 
 void opaque_set_data(opaque_structure* ptr, int data)
 {
-    assert(ptr != nullptr);
+    ASSERT_NE(ptr, nullptr);
     ptr->data = data;
 }
 
-int opaque_get_data(opaque_structure* ptr)
+int opaque_get_data(const opaque_structure* ptr)
 {
-    assert(ptr != nullptr);
+    if(ptr == nullptr)
+    {
+        ADD_FAILURE() << "ptr is nullptr";
+        return 0;
+    }
     return ptr->data;
 }
 } // namespace test_bind

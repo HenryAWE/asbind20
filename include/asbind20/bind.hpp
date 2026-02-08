@@ -165,14 +165,14 @@ public:
         assert(r >= 0);
     }
 
-    template <string_view_like StringView>
+    template <string_like StringLike>
     interface(
         AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
-        StringView&& name
+        StringLike&& name
     )
         : interface(
               engine,
-              detail::sv_to_str(std::forward<StringView>(name))
+              util::string_like_to_string(std::forward<StringLike>(name))
           )
     {}
 

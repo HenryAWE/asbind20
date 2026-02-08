@@ -149,7 +149,7 @@ constexpr AS_NAMESPACE_QUALIFIER asQWORD trivial_value_class_flags =
     AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_MORE_CONSTRUCTORS |
     AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_ALLINTS;
 
-void register_trivial_value_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void register_trivial_value_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     using namespace asbind20;
 
@@ -204,7 +204,9 @@ void register_trivial_value_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
     EXPECT_FALSE(c.force_generic());
 }
 
-void register_trivial_value_class(asbind20::use_generic_t, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void register_trivial_value_class(
+    asbind20::use_generic_t, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
+)
 {
     using namespace asbind20;
 

@@ -3,6 +3,18 @@
 
 namespace asbind_test
 {
+::testing::AssertionResult check_context_state(
+    AS_NAMESPACE_QUALIFIER asEContextState state
+)
+{
+    using asbind20::to_string;
+    if(state == AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED)
+        return ::testing::AssertionSuccess();
+
+    return ::testing::AssertionFailure()
+           << "state = " << to_string(state);
+}
+
 template <bool PropagateError>
 static void message_callback_impl(const AS_NAMESPACE_QUALIFIER asSMessageInfo* msg, void*)
 {

@@ -56,6 +56,7 @@ namespace detail
     constexpr inline call_conv_t<CallConv> cc;
 
     constexpr inline call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_GENERIC> generic_cc{};
+    constexpr inline call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST> cdecl_last_cc{};
 
     template <bool ObjFirst>
     consteval auto conv_of_loc(obj_loc_t<ObjFirst>, bool is_thiscall)
@@ -249,7 +250,14 @@ namespace detail
     consteval auto deduce_beh_callconv_aux() noexcept
         -> AS_NAMESPACE_QUALIFIER asECallConvTypes
     {
-        if constexpr(
+        if constexpr(Beh == AS_NAMESPACE_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK)
+        {
+            if constexpr(std::is_member_function_pointer_v<FuncSig>)
+                return AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL;
+            else
+                return deduce_function_callconv<FuncSig>();
+        }
+        else if constexpr(
             Beh == AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY ||
             Beh == AS_NAMESPACE_QUALIFIER asBEHAVE_LIST_FACTORY
         )
@@ -279,8 +287,10 @@ namespace detail
                 );
             }
         }
-
-        // unreachable
+        else
+        {
+            return deduce_method_callconv_aux<Class, FuncSig, Auxiliary>();
+        }
     }
 
     template <typename Class, noncapturing_native_lambda Lambda>
@@ -334,14 +344,6 @@ namespace detail
             type,
             "::",
             std::string_view(name_begin.base(), funcdef.end())
-        );
-    }
-
-    template <string_view_like StringView>
-    constexpr std::string sv_to_str(StringView&& sv)
-    {
-        return std::string(
-            static_cast<std::string_view>(std::forward<StringView>(sv))
         );
     }
 } // namespace detail

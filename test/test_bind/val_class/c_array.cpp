@@ -54,7 +54,7 @@ void register_int_array(
         );
 }
 
-void check_int_array(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void check_int_array(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     auto* m = engine->GetModule(
         "test_int_array", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
@@ -71,15 +71,15 @@ void check_int_array(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         "{\n"
         "    int_arr a(0);\n"
         "    a[0] = 3; a[1] = 4;\n"
-        "    int_arr copied(a);"
+        "    int_arr copied(a);\n"
         "    return a[0] + a[1];\n"
-        "}"
+        "}\n"
     );
     ASSERT_GE(m->Build(), 0);
 
     {
         auto* f = m->GetFunctionByName("test0");
-        ASSERT_TRUE(f);
+        ASSERT_NE(f, nullptr);
         asbind20::request_context ctx(engine);
 
         auto result = asbind20::script_invoke<int>(ctx, f);
@@ -89,7 +89,7 @@ void check_int_array(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 
     {
         auto* f = m->GetFunctionByName("test1");
-        ASSERT_TRUE(f);
+        ASSERT_NE(f, nullptr);
         asbind20::request_context ctx(engine);
 
         auto result = asbind20::script_invoke<int>(ctx, f);

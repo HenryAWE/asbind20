@@ -20,6 +20,16 @@ namespace asbind20
 {
 namespace detail
 {
+    // Helper for the `as_iterators` policy
+    template <typename T, typename Fn>
+    decltype(auto) apply_iter_pair(Fn&& fn, script_init_list_repeat list)
+    {
+        T* const start = (T*)list.data();
+        T* const stop = start + list.size();
+
+        return std::invoke(std::forward<Fn>(fn), start, stop);
+    }
+
     // Wrapper generators for special functions like constructor
 
     /**
@@ -85,7 +95,7 @@ namespace detail
                 void* mem = gen->GetObject();
                 new(mem) Class(
                     get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
-                        gen, (AS_NAMESPACE_QUALIFIER asUINT)Is
+                        gen, static_cast<gen_idx_t>(Is)
                     )...
                 );
 
@@ -126,9 +136,9 @@ namespace detail
 
                 void* mem = gen->GetObject();
                 new(mem) Class(
-                    *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
+                    get_generic_typeinfo(gen),
                     get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
-                        gen, (AS_NAMESPACE_QUALIFIER asUINT)Is + 1
+                        gen, static_cast<gen_idx_t>(Is) + 1
                     )...
                 );
 
@@ -255,7 +265,7 @@ namespace detail
             {
                 void* mem = gen->GetObject();
                 new(mem) Class(
-                    *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
+                    get_generic_typeinfo(gen),
                     *(ListElementType**)gen->GetAddressOfArg(1)
                 );
             }
@@ -309,7 +319,7 @@ namespace detail
             {
                 void* mem = gen->GetObject();
                 new(mem) Class(
-                    *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
+                    get_generic_typeinfo(gen),
                     script_init_list_repeat(gen, 1)
                 );
             }
@@ -415,7 +425,7 @@ namespace detail
         {
             if constexpr(std::same_as<IListPolicy, policies::as_iterators>)
             {
-                policies::as_iterators::apply<ListElementType>(
+                apply_iter_pair<ListElementType>(
                     [mem](auto start, auto stop)
                     {
                         new(mem) Class(start, stop);
@@ -491,9 +501,11 @@ namespace detail
             {
                 [gen]<std::size_t... Is>(std::index_sequence<Is...>)
                 {
-                    Class* ptr = new Class(
-                        *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
-                        get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (AS_NAMESPACE_QUALIFIER asUINT)Is + 1)...
+                    auto* ptr = new Class(
+                        get_generic_typeinfo(gen),
+                        get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
+                            gen, static_cast<gen_idx_t>(Is) + 1
+                        )...
                     );
                     gen->SetReturnAddress(ptr);
                 }(std::index_sequence_for<Args...>());
@@ -502,8 +514,10 @@ namespace detail
             {
                 [gen]<std::size_t... Is>(std::index_sequence<Is...>)
                 {
-                    Class* ptr = new Class(
-                        get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (AS_NAMESPACE_QUALIFIER asUINT)Is)...
+                    auto* ptr = new Class(
+                        get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
+                            gen, static_cast<gen_idx_t>(Is)
+                        )...
                     );
                     gen->SetReturnAddress(ptr);
                 }(std::index_sequence_for<Args...>());
@@ -552,9 +566,9 @@ namespace detail
             [gen]<std::size_t... Is>(std::index_sequence<Is...>)
             {
                 auto* ti = (AS_NAMESPACE_QUALIFIER asITypeInfo*)gen->GetAuxiliary();
-                Class* ptr = new Class(
+                auto* ptr = new Class(
                     get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
-                        gen, (AS_NAMESPACE_QUALIFIER asUINT)Is
+                        gen, static_cast<gen_idx_t>(Is)
                     )...
                 );
                 assert(ti->GetEngine() == gen->GetEngine());
@@ -572,7 +586,7 @@ namespace detail
 
         static Class* impl_objlast(Args... args, AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
         {
-            Class* ptr = new Class(std::forward<Args>(args)...);
+            auto* ptr = new Class(std::forward<Args>(args)...);
             if(has_script_exception()) [[unlikely]]
             {
                 delete ptr;
@@ -608,11 +622,11 @@ namespace detail
 
             [gen]<std::size_t... Is>(std::index_sequence<Is...>)
             {
-                auto* ti = *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0);
-                Class* ptr = new Class(
+                auto* ti = get_generic_typeinfo(gen);
+                auto* ptr = new Class(
                     ti,
                     get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
-                        gen, (AS_NAMESPACE_QUALIFIER asUINT)Is + 1
+                        gen, static_cast<gen_idx_t>(Is) + 1
                     )...
                 );
 
@@ -622,8 +636,7 @@ namespace detail
                     return;
                 }
 
-                auto flags = ti->GetFlags();
-                if(flags & AS_NAMESPACE_QUALIFIER asOBJ_GC)
+                if(ti->GetFlags() & AS_NAMESPACE_QUALIFIER asOBJ_GC)
                 {
                     assert(ti->GetEngine() == gen->GetEngine());
                     gen->GetEngine()->NotifyGarbageCollectorOfNewObject(ptr, ti);
@@ -635,7 +648,7 @@ namespace detail
 
         static Class* impl_cdecl(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, Args... args)
         {
-            Class* ptr = new Class(ti, std::forward<Args>(args)...);
+            auto* ptr = new Class(ti, std::forward<Args>(args)...);
 
             if(has_script_exception()) [[unlikely]]
             {
@@ -643,11 +656,8 @@ namespace detail
                 return nullptr;
             }
 
-            auto flags = ti->GetFlags();
-            if(flags & AS_NAMESPACE_QUALIFIER asOBJ_GC)
-            {
+            if(ti->GetFlags() & AS_NAMESPACE_QUALIFIER asOBJ_GC)
                 ti->GetEngine()->NotifyGarbageCollectorOfNewObject(ptr, ti);
-            }
 
             return ptr;
         }
@@ -716,7 +726,7 @@ namespace detail
             if constexpr(Template)
             {
                 Class* ptr = new Class(
-                    *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
+                    get_generic_typeinfo(gen),
                     *(ListElementType**)gen->GetAddressOfArg(1)
                 );
                 gen->SetReturnAddress(ptr);
@@ -771,9 +781,8 @@ namespace detail
         {
             if constexpr(Template)
             {
-                auto* ti = *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0);
-
-                Class* ptr = new Class(
+                auto* ti = get_generic_typeinfo(gen);
+                auto* ptr = new Class(
                     ti, *(ListElementType**)gen->GetAddressOfArg(1)
                 );
                 notifier::notify_gc_if_necessary(ptr, ti);
@@ -782,12 +791,12 @@ namespace detail
             }
             else
             {
-                Class* ptr = new Class(
+                auto* ptr = new Class(
                     *(ListElementType**)gen->GetAddressOfArg(0)
                 );
 
                 // Expects the typeinfo is passed by auxiliary pointer (see the helper "auxiliary(this_type)")
-                auto* ti = (AS_NAMESPACE_QUALIFIER asITypeInfo*)gen->GetAuxiliary();
+                auto* ti = get_generic_auxiliary<AS_NAMESPACE_QUALIFIER asITypeInfo*>(gen);
                 assert(ti != nullptr);
                 notifier::notify_gc_if_necessary(ptr, ti);
 
@@ -799,7 +808,7 @@ namespace detail
             AS_NAMESPACE_QUALIFIER asITypeInfo* ti, ListElementType* list_buf
         )
         {
-            Class* ptr = new Class(ti, list_buf);
+            auto* ptr = new Class(ti, list_buf);
             notifier::notify_gc_if_necessary(ptr, ti);
             return ptr;
         }
@@ -809,7 +818,7 @@ namespace detail
             ListElementType* list_buf, AS_NAMESPACE_QUALIFIER asITypeInfo* ti
         )
         {
-            Class* ptr = new Class(list_buf);
+            auto* ptr = new Class(list_buf);
             notifier::notify_gc_if_necessary(ptr, ti);
             return ptr;
         }
@@ -853,10 +862,10 @@ namespace detail
 
         static void impl_generic(generic_pointer gen)
         {
-            Class* ptr = apply_helper(*(ListElementType**)gen->GetAddressOfArg(0));
+            auto* ptr = apply_helper(*(ListElementType**)gen->GetAddressOfArg(0));
             if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
             {
-                auto* ti = (AS_NAMESPACE_QUALIFIER asITypeInfo*)gen->GetAuxiliary();
+                auto* ti = get_generic_auxiliary<AS_NAMESPACE_QUALIFIER asITypeInfo*>(gen);
                 assert(ti != nullptr);
                 notifier::notify_gc_if_necessary(ptr, ti);
             }
@@ -910,9 +919,9 @@ namespace detail
         {
             if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
             {
-                Class* ptr = new Class(script_init_list_repeat(gen));
+                auto* ptr = new Class(script_init_list_repeat(gen));
                 // Works together with the helper "auxiliary(this_type)"
-                auto* ti = (AS_NAMESPACE_QUALIFIER asITypeInfo*)gen->GetAuxiliary();
+                auto* ti = get_generic_auxiliary<AS_NAMESPACE_QUALIFIER asITypeInfo*>(gen);
                 assert(ti != nullptr);
                 notifier::notify_gc_if_necessary(ptr, ti);
                 gen->SetReturnAddress(ptr);
@@ -930,7 +939,7 @@ namespace detail
             void* list_buf, AS_NAMESPACE_QUALIFIER asITypeInfo* ti
         )
         {
-            Class* ptr = new Class(script_init_list_repeat(list_buf));
+            auto* ptr = new Class(script_init_list_repeat(list_buf));
             notifier::notify_gc_if_necessary(ptr, ti);
             return ptr;
         }
@@ -970,8 +979,8 @@ namespace detail
 
         static void impl_generic(generic_pointer gen)
         {
-            auto* ti = *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0);
-            Class* ptr = new Class(
+            auto* ti = get_generic_typeinfo(gen);
+            auto* ptr = new Class(
                 ti,
                 script_init_list_repeat(gen, 1)
             );
@@ -983,7 +992,7 @@ namespace detail
             AS_NAMESPACE_QUALIFIER asITypeInfo* ti, void* list_buf
         )
         {
-            Class* ptr = new Class(ti, script_init_list_repeat(list_buf));
+            auto* ptr = new Class(ti, script_init_list_repeat(list_buf));
             notifier::notify_gc_if_necessary(ptr, ti);
             return ptr;
         }
@@ -1013,7 +1022,7 @@ namespace detail
         {
             if constexpr(std::same_as<IListPolicy, policies::as_iterators>)
             {
-                return policies::as_iterators::apply<ListElementType>(
+                return apply_iter_pair<ListElementType>(
                     [](auto start, auto stop) -> Class*
                     {
                         return new Class(start, stop);
@@ -1290,9 +1299,9 @@ protected:
     }
 
     template <typename MemberPointer>
-    requires(std::is_member_object_pointer_v<MemberPointer>)
     void register_property(cstring_ref decl, MemberPointer mp)
     {
+        static_assert(std::is_member_object_pointer_v<MemberPointer>);
         register_property(decl, member_offset(mp));
     }
 
@@ -1421,7 +1430,7 @@ protected:
             decl_##as_op_sig(),                                             \
             +[](Class& this_) -> Class                                      \
             { return this_ cpp_op; },                                       \
-            detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>         \
+            detail::cdecl_last_cc                                           \
         );                                                                  \
     }
 
@@ -1603,7 +1612,7 @@ protected:
         register_method(
             decl_opConv(ret, implicit),
             gen_t::generate(
-                detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+                detail::cdecl_last_cc
             ),
             AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
         );
@@ -1688,15 +1697,40 @@ private:
     template <typename Fn>
     void register_temp_cb(
         Fn&& fn,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes conv
+        AS_NAMESPACE_QUALIFIER asECallConvTypes conv,
+        void* aux = nullptr
     )
     {
         this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK,
             "bool f(int&in,bool&out)",
             fn,
-            conv
+            conv,
+            aux
         );
+    }
+
+    template <
+        typename Fn,
+        typename Auxiliary = void>
+    static consteval auto deduce_temp_cb_cc()
+        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    {
+        if constexpr(std::is_void_v<Auxiliary>)
+        {
+            return detail::deduce_beh_callconv<
+                AS_NAMESPACE_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK,
+                Class,
+                Fn>();
+        }
+        else
+        {
+            return detail::deduce_beh_callconv_aux<
+                AS_NAMESPACE_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK,
+                Class,
+                Fn,
+                Auxiliary>();
+        }
     }
 
 public:
@@ -1708,27 +1742,62 @@ public:
         return derived();
     }
 
+    template <typename Auxiliary>
+    Derived& template_callback(
+        generic_function gfn,
+        auxiliary_wrapper<Auxiliary> aux
+    ) requires(Template)
+    {
+        this->register_temp_cb(
+            gfn,
+            detail::generic_cc,
+            this->get_auxiliary_address(aux)
+        );
+        return derived();
+    }
+
     template <native_function Fn>
     Derived& template_callback(Fn&& fn) requires(Template && !ForceGeneric)
     {
-        constexpr auto conv = detail::deduce_beh_callconv<
-            AS_NAMESPACE_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK,
-            Class,
-            Fn>();
+        constexpr auto conv = deduce_temp_cb_cc<Fn>();
         this->register_temp_cb(fn, conv);
+        return derived();
+    }
+
+    template <native_function Fn, typename Auxiliary>
+    requires(std::is_member_function_pointer_v<Fn>)
+    Derived& template_callback(
+        Fn&& fn, auxiliary_wrapper<Auxiliary> aux
+    ) requires(Template && !ForceGeneric)
+    {
+        constexpr auto conv = deduce_temp_cb_cc<Fn, Auxiliary>();
+        this->register_temp_cb(
+            fn, conv, this->get_auxiliary_address(aux)
+        );
         return derived();
     }
 
     template <auto Callback>
     Derived& template_callback(use_generic_t, fp_wrapper<Callback>) requires(Template)
     {
-        constexpr auto conv = detail::deduce_beh_callconv<
-            AS_NAMESPACE_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK,
-            Class,
-            decltype(Callback)>();
+        constexpr auto conv = deduce_temp_cb_cc<decltype(Callback)>();
         this->register_temp_cb(
             detail::to_asGENFUNC_t(fp<Callback>, detail::cc<conv>),
             detail::generic_cc
+        );
+        return derived();
+    }
+
+    template <auto Callback, typename Auxiliary>
+    Derived& template_callback(
+        use_generic_t, fp_wrapper<Callback>, auxiliary_wrapper<Auxiliary> aux
+    ) requires(Template)
+    {
+        constexpr auto conv = deduce_temp_cb_cc<decltype(Callback), Auxiliary>();
+        this->register_temp_cb(
+            detail::to_asGENFUNC_t(fp<Callback>, detail::cc<conv>),
+            detail::generic_cc,
+            this->get_auxiliary_address(aux)
         );
         return derived();
     }
@@ -1740,6 +1809,18 @@ public:
             template_callback(use_generic, fp<Callback>);
         else
             template_callback(Callback);
+        return derived();
+    }
+
+    template <auto Callback, typename Auxiliary>
+    Derived& template_callback(
+        fp_wrapper<Callback>, auxiliary_wrapper<Auxiliary> aux
+    ) requires(Template)
+    {
+        if constexpr(ForceGeneric)
+            template_callback(use_generic, fp<Callback>, aux);
+        else
+            template_callback(Callback, aux);
         return derived();
     }
 
@@ -2396,6 +2477,7 @@ public:
     // or reference of type being registered.
     // It's safe to have them available for both value and reference classes.
 
+    // FIXME: Handle primitive types
     ASBIND20_BG_INTERFACE_DEFINE_OP(Derived, opAssign)
     ASBIND20_BG_INTERFACE_DEFINE_OP(Derived, opAddAssign)
     ASBIND20_BG_INTERFACE_DEFINE_OP(Derived, opSubAssign)
@@ -2425,6 +2507,25 @@ public:
         );                                                           \
         return static_cast<bg_type&>(*this);                         \
     }                                                                \
+    template <native_function Fn, typename Auxiliary>                \
+    bg_type& func_name(                                              \
+        Fn&& fn, auxiliary_wrapper<Auxiliary> aux                    \
+    ) requires(!ForceGeneric)                                        \
+    {                                                                \
+        constexpr auto conv = detail::deduce_beh_callconv_aux<       \
+            AS_NAMESPACE_QUALIFIER as_beh,                           \
+            Class,                                                   \
+            Fn,                                                      \
+            Auxiliary>();                                            \
+        this->register_behaviour(                                    \
+            AS_NAMESPACE_QUALIFIER as_beh,                           \
+            decl::decl_of_beh<AS_NAMESPACE_QUALIFIER as_beh>(),      \
+            fn,                                                      \
+            conv,                                                    \
+            this->get_auxiliary_address(aux)                         \
+        );                                                           \
+        return static_cast<bg_type&>(*this);                         \
+    }                                                                \
     bg_type& func_name(generic_function gfn)                         \
     {                                                                \
         this->register_behaviour(                                    \
@@ -2432,6 +2533,20 @@ public:
             decl::decl_of_beh<AS_NAMESPACE_QUALIFIER as_beh>(),      \
             gfn,                                                     \
             detail::generic_cc                                       \
+        );                                                           \
+        return static_cast<bg_type&>(*this);                         \
+    }                                                                \
+    template <typename Auxiliary>                                    \
+    bg_type& func_name(                                              \
+        generic_function gfn, auxiliary_wrapper<Auxiliary> aux       \
+    )                                                                \
+    {                                                                \
+        this->register_behaviour(                                    \
+            AS_NAMESPACE_QUALIFIER as_beh,                           \
+            decl::decl_of_beh<AS_NAMESPACE_QUALIFIER as_beh>(),      \
+            gfn,                                                     \
+            detail::generic_cc,                                      \
+            this->get_auxiliary_address(aux)                         \
         );                                                           \
         return static_cast<bg_type&>(*this);                         \
     }                                                                \
@@ -2448,6 +2563,25 @@ public:
         );                                                           \
         return static_cast<bg_type&>(*this);                         \
     }                                                                \
+    template <auto Function, typename Auxiliary>                     \
+    bg_type& func_name(                                              \
+        use_generic_t,                                               \
+        fp_wrapper<Function>,                                        \
+        auxiliary_wrapper<Auxiliary> aux                             \
+    )                                                                \
+    {                                                                \
+        using func_t = decltype(Function);                           \
+        constexpr auto conv = detail::deduce_beh_callconv_aux<       \
+            AS_NAMESPACE_QUALIFIER as_beh,                           \
+            Class,                                                   \
+            func_t,                                                  \
+            Auxiliary>();                                            \
+        this->func_name(                                             \
+            detail::to_asGENFUNC_t(fp<Function>, detail::cc<conv>),  \
+            aux                                                      \
+        );                                                           \
+        return static_cast<bg_type&>(*this);                         \
+    }                                                                \
     template <auto Function>                                         \
     bg_type& func_name(fp_wrapper<Function>)                         \
     {                                                                \
@@ -2455,6 +2589,17 @@ public:
             this->func_name(use_generic, fp<Function>);              \
         else                                                         \
             this->func_name(Function);                               \
+        return static_cast<bg_type&>(*this);                         \
+    }                                                                \
+    template <auto Function, typename Auxiliary>                     \
+    bg_type& func_name(                                              \
+        fp_wrapper<Function>, auxiliary_wrapper<Auxiliary> aux       \
+    )                                                                \
+    {                                                                \
+        if constexpr(ForceGeneric)                                   \
+            this->func_name(use_generic, fp<Function>, aux);         \
+        else                                                         \
+            this->func_name(Function, aux);                          \
         return static_cast<bg_type&>(*this);                         \
     }
 
@@ -2527,15 +2672,15 @@ public:
         );
     }
 
-    template <string_view_like StringView>
+    template <string_like StringLike>
     basic_value_class(
         AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
-        StringView&& name,
+        StringLike&& name,
         AS_NAMESPACE_QUALIFIER asQWORD flags = 0
     )
         : basic_value_class(
               engine,
-              detail::sv_to_str(std::forward<StringView>(name)),
+              util::string_like_to_string(std::forward<StringLike>(name)),
               flags
           )
     {}
@@ -2848,9 +2993,9 @@ private:
             explicit_,
             params,
             wrapper.generate(
-                detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+                detail::cdecl_last_cc
             ),
-            detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+            detail::cdecl_last_cc
         );
     }
 
@@ -2946,8 +3091,8 @@ public:
             this->register_behaviour(
                 AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
                 decl_default_ctor(),
-                gen_t::generate(detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>),
-                detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>,
+                gen_t::generate(detail::cdecl_last_cc),
+                detail::cdecl_last_cc,
                 nullptr
             );
         }
@@ -2966,11 +3111,11 @@ public:
     {
         if constexpr(std::is_array_v<Class>)
         {
-            detail::arr_copy_constructor<Class, const Class&> wrapper;
+            using gen_t = detail::arr_copy_constructor<Class, const Class&>;
             this->register_behaviour(
                 AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
                 decl_copy_ctor(),
-                wrapper.generate(detail::generic_cc),
+                gen_t::generate(detail::generic_cc),
                 detail::generic_cc
             );
         }
@@ -2993,12 +3138,12 @@ public:
         {
             if constexpr(std::is_array_v<Class>)
             {
-                detail::arr_copy_constructor<Class, const Class&> wrapper;
+                using gen_t = detail::arr_copy_constructor<Class, const Class&>;
                 this->register_behaviour(
                     AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT,
                     decl_copy_ctor(),
-                    wrapper.generate(detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>),
-                    detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+                    gen_t::generate(detail::cdecl_last_cc),
+                    detail::cdecl_last_cc
                 );
             }
             else
@@ -3012,11 +3157,48 @@ public:
         return *this;
     }
 
-    basic_value_class& destructor(use_generic_t)
+private:
+    template <typename Fn>
+    void register_destructor_fn(
+        Fn fn,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes conv,
+        void* aux = nullptr
+    )
     {
         this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_DESTRUCT,
             "void f()",
+            fn,
+            conv,
+            aux
+        );
+    }
+
+    template <typename FuncSig, typename Auxiliary = void>
+    static consteval auto deduce_dtor_cc()
+        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    {
+        if constexpr(std::is_void_v<Auxiliary>)
+        {
+            return detail::deduce_beh_callconv<
+                AS_NAMESPACE_QUALIFIER asBEHAVE_DESTRUCT,
+                Class,
+                FuncSig>();
+        }
+        else
+        {
+            return detail::deduce_beh_callconv_aux<
+                AS_NAMESPACE_QUALIFIER asBEHAVE_DESTRUCT,
+                Class,
+                FuncSig,
+                Auxiliary>();
+        }
+    }
+
+public:
+    basic_value_class& destructor(use_generic_t)
+    {
+        this->register_destructor_fn(
             +[](generic_pointer gen) -> void
             {
                 std::destroy_at(get_generic_object<Class*>(gen));
@@ -3033,17 +3215,148 @@ public:
             destructor(use_generic);
         else
         {
-            this->register_behaviour(
-                AS_NAMESPACE_QUALIFIER asBEHAVE_DESTRUCT,
-                "void f()",
+            this->register_destructor_fn(
                 +[](Class* ptr) -> void
                 {
                     std::destroy_at(ptr);
                 },
-                detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+                detail::cdecl_last_cc
             );
         }
 
+        return *this;
+    }
+
+    basic_value_class& destructor_function(generic_function destroyer)
+    {
+        this->register_destructor_fn(
+            destroyer, detail::generic_cc
+        );
+        return *this;
+    }
+
+    template <typename Auxiliary>
+    basic_value_class& destructor_function(
+        generic_function destroyer,
+        auxiliary_wrapper<Auxiliary> aux
+    )
+    {
+        this->register_destructor_fn(
+            destroyer,
+            detail::generic_cc,
+            this->get_auxiliary_address(aux)
+        );
+        return *this;
+    }
+
+    template <native_function DestructorFunc>
+    basic_value_class& destructor_function(DestructorFunc destroyer)
+        requires(!ForceGeneric)
+    {
+        constexpr auto conv = deduce_dtor_cc<DestructorFunc>();
+        this->register_destructor_fn(
+            destroyer, conv
+        );
+        return *this;
+    }
+
+    template <native_function DestructorFunc, typename Auxiliary>
+    basic_value_class& destructor_function(
+        DestructorFunc destroyer,
+        auxiliary_wrapper<Auxiliary> aux
+    ) requires(!ForceGeneric)
+    {
+        constexpr auto conv = deduce_dtor_cc<
+            DestructorFunc,
+            Auxiliary>();
+        this->register_destructor_fn(
+            destroyer,
+            conv,
+            this->get_auxiliary_address(aux)
+        );
+        return *this;
+    }
+
+    template <auto DestructorFunc>
+    basic_value_class& destructor_function(
+        use_generic_t,
+        fp_wrapper<DestructorFunc>
+    )
+    {
+        constexpr auto conv = deduce_dtor_cc<decltype(DestructorFunc)>();
+        this->register_destructor_fn(
+            detail::to_asGENFUNC_t(fp<DestructorFunc>, detail::cc<conv>),
+            detail::generic_cc
+        );
+        return *this;
+    }
+
+    template <auto DestructorFunc, typename Auxiliary>
+    basic_value_class& destructor_function(
+        use_generic_t,
+        fp_wrapper<DestructorFunc>,
+        auxiliary_wrapper<Auxiliary> aux
+    )
+    {
+        constexpr auto conv = deduce_dtor_cc<
+            decltype(DestructorFunc),
+            Auxiliary>();
+        this->register_destructor_fn(
+            detail::to_asGENFUNC_t(fp<DestructorFunc>, detail::cc<conv>),
+            detail::generic_cc,
+            this->get_auxiliary_address(aux)
+        );
+        return *this;
+    }
+
+    template <auto DestructorFunc>
+    basic_value_class& destructor_function(
+        fp_wrapper<DestructorFunc>
+    )
+    {
+        if constexpr(ForceGeneric)
+            this->destructor_function(use_generic, fp<DestructorFunc>);
+        else
+            this->destructor_function(DestructorFunc);
+        return *this;
+    }
+
+    template <auto DestructorFunc, typename Auxiliary>
+    basic_value_class& destructor_function(
+        fp_wrapper<DestructorFunc>,
+        auxiliary_wrapper<Auxiliary> aux
+    )
+    {
+        if constexpr(ForceGeneric)
+            this->destructor_function(use_generic, fp<DestructorFunc>, aux);
+        else
+            this->destructor_function(DestructorFunc, aux);
+        return *this;
+    }
+
+    template <noncapturing_native_lambda DestructorFunc>
+    basic_value_class& destructor_function(
+        use_generic_t,
+        const DestructorFunc&
+    )
+    {
+        constexpr auto conv = deduce_dtor_cc<decltype(+DestructorFunc{})>();
+        this->register_destructor_fn(
+            detail::to_asGENFUNC_t(DestructorFunc{}, detail::cc<conv>),
+            detail::generic_cc
+        );
+        return *this;
+    }
+
+    template <noncapturing_native_lambda DestructorFunc>
+    basic_value_class& destructor_function(
+        const DestructorFunc&
+    )
+    {
+        if constexpr(ForceGeneric)
+            this->destructor_function(use_generic, DestructorFunc{});
+        else
+            this->destructor_function(+DestructorFunc{});
         return *this;
     }
 
@@ -3269,12 +3582,13 @@ public:
             list_constructor<ListElementType>(use_generic, pattern, use_policy<Policy>);
         else
         {
+            using gen_t = detail::list_constructor<Class, Template, ListElementType, Policy>;
             this->register_list_ctor_func(
                 pattern,
-                detail::list_constructor<Class, Template, ListElementType, Policy>::generate(
-                    detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+                gen_t::generate(
+                    detail::cdecl_last_cc
                 ),
-                AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
+                detail::cdecl_last_cc
             );
         }
 
@@ -3380,15 +3694,15 @@ public:
         this->register_object_type(flags, 0);
     }
 
-    template <string_view_like StringView>
+    template <string_like StringLike>
     basic_ref_class(
         AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
-        StringView&& name,
+        StringLike&& name,
         AS_NAMESPACE_QUALIFIER asQWORD flags = 0
     )
         : basic_ref_class(
               engine,
-              detail::sv_to_str(std::forward<StringView>(name)),
+              util::string_like_to_string(std::forward<StringLike>(name)),
               flags
           )
     {}
@@ -3677,8 +3991,7 @@ public:
         fp_wrapper<Factory>
     )
     {
-        constexpr auto conv =
-            detail::deduce_function_callconv<decltype(Factory)>();
+        constexpr auto conv = deduce_factory_cc<decltype(Factory)>();
         this->register_factory_function(
             false,
             params,
@@ -3710,6 +4023,30 @@ public:
             detail::generic_cc
         );
 
+        return *this;
+    }
+
+    template <
+        auto AuxFactoryFunc,
+        typename Auxiliary>
+    basic_ref_class& factory_function(
+        use_generic_t,
+        std::string_view params,
+        fp_wrapper<AuxFactoryFunc>,
+        auxiliary_wrapper<Auxiliary> aux
+    )
+    {
+        constexpr auto conv =
+            deduce_factory_cc<decltype(AuxFactoryFunc), Auxiliary>();
+        this->register_factory_function(
+            false,
+            params,
+            detail::auxiliary_factory_to_asGENFUNC_t<Template>(
+                fp<AuxFactoryFunc>, detail::cc<conv>
+            ),
+            detail::generic_cc,
+            my_base::get_auxiliary_address(aux)
+        );
         return *this;
     }
 
@@ -3871,7 +4208,6 @@ public:
             factory_function(use_generic, params, fp<Factory>, aux);
         else
             factory_function(params, Factory, aux);
-
         return *this;
     }
 
@@ -3905,14 +4241,9 @@ public:
     basic_ref_class& default_factory(use_policy_t<Policy> = {})
     {
         if constexpr(ForceGeneric)
-        {
             default_factory(use_generic, use_policy<Policy>);
-        }
         else
-        {
             this->factory<>("", use_policy<Policy>);
-        }
-
         return *this;
     }
 
@@ -3923,8 +4254,7 @@ private:
     )
     {
         std::string decl = decl_factory(params, explicit_);
-        generic_function wrapper =
-            detail::factory<Class, Template, Policy, Args...>::generate(detail::generic_cc);
+        using gen_t = detail::factory<Class, Template, Policy, Args...>;
 
         void* aux = nullptr;
         // For non-template class that notifies GC,
@@ -3935,7 +4265,7 @@ private:
         this->register_behaviour(
             AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
             decl,
-            wrapper,
+            gen_t::generate(detail::generic_cc),
             detail::generic_cc,
             aux
         );
@@ -3951,10 +4281,6 @@ private:
         std::string decl = decl_factory(params, explicit_);
         if constexpr(std::same_as<Policy, policies::notify_gc> && !Template)
         {
-            auto wrapper = gen_t::generate(
-                detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
-            );
-
             // For non-template class that notifies GC,
             // store the type information as the auxiliary pointer.
             void* ti = get_engine()->GetTypeInfoById(this->get_type_id());
@@ -3962,21 +4288,21 @@ private:
             this->register_behaviour(
                 AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
                 decl,
-                wrapper,
-                detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>,
+                gen_t::generate(
+                    detail::cdecl_last_cc
+                ),
+                detail::cdecl_last_cc,
                 ti // auxiliary
             );
         }
         else
         {
-            auto wrapper = gen_t::generate(
-                detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
-            );
-
             this->register_behaviour(
                 AS_NAMESPACE_QUALIFIER asBEHAVE_FACTORY,
                 decl,
-                wrapper,
+                gen_t::generate(
+                    detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
+                ),
                 detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL>
             );
         }
@@ -4344,31 +4670,25 @@ public:
         }
         else
         {
+            using gen_t = detail::list_factory<
+                Class,
+                Template,
+                ListElementType,
+                IListPolicy,
+                FactoryPolicy>;
             if constexpr(std::same_as<FactoryPolicy, policies::notify_gc> && !Template)
             {
-                using gen_t = detail::list_factory<
-                    Class,
-                    Template,
-                    ListElementType,
-                    IListPolicy,
-                    FactoryPolicy>;
                 this->register_list_factory_func(
                     pattern,
                     gen_t::generate(
-                        detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+                        detail::cdecl_last_cc
                     ),
-                    detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>,
+                    detail::cdecl_last_cc,
                     this->aux_for_policy<FactoryPolicy>()
                 );
             }
             else
             {
-                using gen_t = detail::list_factory<
-                    Class,
-                    Template,
-                    ListElementType,
-                    IListPolicy,
-                    FactoryPolicy>;
                 this->register_list_factory_func(
                     pattern,
                     gen_t::generate(
@@ -4391,15 +4711,15 @@ public:
         use_policy_t<IListPolicy> = {}
     )
     {
-        generic_function wrapper = detail::list_factory<
+        using gen_t = detail::list_factory<
             Class,
             Template,
             ListElementType,
             IListPolicy,
-            void>::generate(detail::generic_cc);
+            void>;
         this->register_list_factory_func(
             pattern,
-            wrapper,
+            gen_t::generate(detail::generic_cc),
             detail::generic_cc
         );
 
@@ -4501,9 +4821,9 @@ public:
                 this->register_list_factory_func(
                     pattern,
                     gen_t::generate(
-                        detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
+                        detail::cdecl_last_cc
                     ),
-                    detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>,
+                    detail::cdecl_last_cc,
                     this->aux_for_policy<FactoryPolicy>()
                 );
             }
