@@ -72,6 +72,9 @@ public:
         return lhs == std::string_view(rhs);
     }
 
+    /**
+     * @warning The cost of this function is O(n) !
+     */
     [[nodiscard]]
     constexpr size_type size() const noexcept
     {
@@ -82,6 +85,12 @@ public:
 
     [[nodiscard]]
     constexpr const char* c_str() const noexcept
+    {
+        return m_cstr;
+    }
+
+    [[nodiscard]]
+    constexpr const char* data() const noexcept
     {
         return m_cstr;
     }
@@ -230,6 +239,13 @@ namespace util
     template <std::size_t Size>
     struct is_fixed_string<fixed_string<Size>> : public std::true_type
     {};
+
+    template <std::size_t Size>
+    std::ostream& operator<<(std::ostream& os, const fixed_string<Size>& str)
+    {
+        os << std::string_view(str);
+        return os;
+    }
 
     namespace detail
     {
