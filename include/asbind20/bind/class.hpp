@@ -20,6 +20,16 @@ namespace asbind20
 {
 namespace detail
 {
+    // Helper for the `as_iterators` policy
+    template <typename T, typename Fn>
+    decltype(auto) apply_iter_pair(Fn&& fn, script_init_list_repeat list)
+    {
+        T* const start = (T*)list.data();
+        T* const stop = start + list.size();
+
+        return std::invoke(std::forward<Fn>(fn), start, stop);
+    }
+
     // Wrapper generators for special functions like constructor
 
     /**
@@ -85,7 +95,7 @@ namespace detail
                 void* mem = gen->GetObject();
                 new(mem) Class(
                     get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
-                        gen, (AS_NAMESPACE_QUALIFIER asUINT)Is
+                        gen, static_cast<gen_idx_t>(Is)
                     )...
                 );
 
@@ -126,9 +136,9 @@ namespace detail
 
                 void* mem = gen->GetObject();
                 new(mem) Class(
-                    *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
+                    get_generic_typeinfo(gen),
                     get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
-                        gen, (AS_NAMESPACE_QUALIFIER asUINT)Is + 1
+                        gen, static_cast<gen_idx_t>(Is) + 1
                     )...
                 );
 
@@ -255,7 +265,7 @@ namespace detail
             {
                 void* mem = gen->GetObject();
                 new(mem) Class(
-                    *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
+                    get_generic_typeinfo(gen),
                     *(ListElementType**)gen->GetAddressOfArg(1)
                 );
             }
@@ -309,7 +319,7 @@ namespace detail
             {
                 void* mem = gen->GetObject();
                 new(mem) Class(
-                    *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
+                    get_generic_typeinfo(gen),
                     script_init_list_repeat(gen, 1)
                 );
             }
@@ -415,7 +425,7 @@ namespace detail
         {
             if constexpr(std::same_as<IListPolicy, policies::as_iterators>)
             {
-                policies::as_iterators::apply<ListElementType>(
+                apply_iter_pair<ListElementType>(
                     [mem](auto start, auto stop)
                     {
                         new(mem) Class(start, stop);
@@ -491,9 +501,11 @@ namespace detail
             {
                 [gen]<std::size_t... Is>(std::index_sequence<Is...>)
                 {
-                    Class* ptr = new Class(
-                        *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
-                        get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (AS_NAMESPACE_QUALIFIER asUINT)Is + 1)...
+                    auto* ptr = new Class(
+                        get_generic_typeinfo(gen),
+                        get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
+                            gen, static_cast<gen_idx_t>(Is) + 1
+                        )...
                     );
                     gen->SetReturnAddress(ptr);
                 }(std::index_sequence_for<Args...>());
@@ -502,8 +514,10 @@ namespace detail
             {
                 [gen]<std::size_t... Is>(std::index_sequence<Is...>)
                 {
-                    Class* ptr = new Class(
-                        get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (AS_NAMESPACE_QUALIFIER asUINT)Is)...
+                    auto* ptr = new Class(
+                        get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
+                            gen, static_cast<gen_idx_t>(Is)
+                        )...
                     );
                     gen->SetReturnAddress(ptr);
                 }(std::index_sequence_for<Args...>());
@@ -552,9 +566,9 @@ namespace detail
             [gen]<std::size_t... Is>(std::index_sequence<Is...>)
             {
                 auto* ti = (AS_NAMESPACE_QUALIFIER asITypeInfo*)gen->GetAuxiliary();
-                Class* ptr = new Class(
+                auto* ptr = new Class(
                     get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
-                        gen, (AS_NAMESPACE_QUALIFIER asUINT)Is
+                        gen, static_cast<gen_idx_t>(Is)
                     )...
                 );
                 assert(ti->GetEngine() == gen->GetEngine());
@@ -572,7 +586,7 @@ namespace detail
 
         static Class* impl_objlast(Args... args, AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
         {
-            Class* ptr = new Class(std::forward<Args>(args)...);
+            auto* ptr = new Class(std::forward<Args>(args)...);
             if(has_script_exception()) [[unlikely]]
             {
                 delete ptr;
@@ -608,11 +622,11 @@ namespace detail
 
             [gen]<std::size_t... Is>(std::index_sequence<Is...>)
             {
-                auto* ti = *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0);
-                Class* ptr = new Class(
+                auto* ti = get_generic_typeinfo(gen);
+                auto* ptr = new Class(
                     ti,
                     get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
-                        gen, (AS_NAMESPACE_QUALIFIER asUINT)Is + 1
+                        gen, static_cast<gen_idx_t>(Is) + 1
                     )...
                 );
 
@@ -622,8 +636,7 @@ namespace detail
                     return;
                 }
 
-                auto flags = ti->GetFlags();
-                if(flags & AS_NAMESPACE_QUALIFIER asOBJ_GC)
+                if(ti->GetFlags() & AS_NAMESPACE_QUALIFIER asOBJ_GC)
                 {
                     assert(ti->GetEngine() == gen->GetEngine());
                     gen->GetEngine()->NotifyGarbageCollectorOfNewObject(ptr, ti);
@@ -635,7 +648,7 @@ namespace detail
 
         static Class* impl_cdecl(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, Args... args)
         {
-            Class* ptr = new Class(ti, std::forward<Args>(args)...);
+            auto* ptr = new Class(ti, std::forward<Args>(args)...);
 
             if(has_script_exception()) [[unlikely]]
             {
@@ -643,11 +656,8 @@ namespace detail
                 return nullptr;
             }
 
-            auto flags = ti->GetFlags();
-            if(flags & AS_NAMESPACE_QUALIFIER asOBJ_GC)
-            {
+            if(ti->GetFlags() & AS_NAMESPACE_QUALIFIER asOBJ_GC)
                 ti->GetEngine()->NotifyGarbageCollectorOfNewObject(ptr, ti);
-            }
 
             return ptr;
         }
@@ -716,7 +726,7 @@ namespace detail
             if constexpr(Template)
             {
                 Class* ptr = new Class(
-                    *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
+                    get_generic_typeinfo(gen),
                     *(ListElementType**)gen->GetAddressOfArg(1)
                 );
                 gen->SetReturnAddress(ptr);
@@ -771,9 +781,8 @@ namespace detail
         {
             if constexpr(Template)
             {
-                auto* ti = *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0);
-
-                Class* ptr = new Class(
+                auto* ti = get_generic_typeinfo(gen);
+                auto* ptr = new Class(
                     ti, *(ListElementType**)gen->GetAddressOfArg(1)
                 );
                 notifier::notify_gc_if_necessary(ptr, ti);
@@ -782,12 +791,12 @@ namespace detail
             }
             else
             {
-                Class* ptr = new Class(
+                auto* ptr = new Class(
                     *(ListElementType**)gen->GetAddressOfArg(0)
                 );
 
                 // Expects the typeinfo is passed by auxiliary pointer (see the helper "auxiliary(this_type)")
-                auto* ti = (AS_NAMESPACE_QUALIFIER asITypeInfo*)gen->GetAuxiliary();
+                auto* ti = get_generic_auxiliary<AS_NAMESPACE_QUALIFIER asITypeInfo*>(gen);
                 assert(ti != nullptr);
                 notifier::notify_gc_if_necessary(ptr, ti);
 
@@ -799,7 +808,7 @@ namespace detail
             AS_NAMESPACE_QUALIFIER asITypeInfo* ti, ListElementType* list_buf
         )
         {
-            Class* ptr = new Class(ti, list_buf);
+            auto* ptr = new Class(ti, list_buf);
             notifier::notify_gc_if_necessary(ptr, ti);
             return ptr;
         }
@@ -809,7 +818,7 @@ namespace detail
             ListElementType* list_buf, AS_NAMESPACE_QUALIFIER asITypeInfo* ti
         )
         {
-            Class* ptr = new Class(list_buf);
+            auto* ptr = new Class(list_buf);
             notifier::notify_gc_if_necessary(ptr, ti);
             return ptr;
         }
@@ -853,10 +862,10 @@ namespace detail
 
         static void impl_generic(generic_pointer gen)
         {
-            Class* ptr = apply_helper(*(ListElementType**)gen->GetAddressOfArg(0));
+            auto* ptr = apply_helper(*(ListElementType**)gen->GetAddressOfArg(0));
             if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
             {
-                auto* ti = (AS_NAMESPACE_QUALIFIER asITypeInfo*)gen->GetAuxiliary();
+                auto* ti = get_generic_auxiliary<AS_NAMESPACE_QUALIFIER asITypeInfo*>(gen);
                 assert(ti != nullptr);
                 notifier::notify_gc_if_necessary(ptr, ti);
             }
@@ -910,9 +919,9 @@ namespace detail
         {
             if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
             {
-                Class* ptr = new Class(script_init_list_repeat(gen));
+                auto* ptr = new Class(script_init_list_repeat(gen));
                 // Works together with the helper "auxiliary(this_type)"
-                auto* ti = (AS_NAMESPACE_QUALIFIER asITypeInfo*)gen->GetAuxiliary();
+                auto* ti = get_generic_auxiliary<AS_NAMESPACE_QUALIFIER asITypeInfo*>(gen);
                 assert(ti != nullptr);
                 notifier::notify_gc_if_necessary(ptr, ti);
                 gen->SetReturnAddress(ptr);
@@ -930,7 +939,7 @@ namespace detail
             void* list_buf, AS_NAMESPACE_QUALIFIER asITypeInfo* ti
         )
         {
-            Class* ptr = new Class(script_init_list_repeat(list_buf));
+            auto* ptr = new Class(script_init_list_repeat(list_buf));
             notifier::notify_gc_if_necessary(ptr, ti);
             return ptr;
         }
@@ -970,8 +979,8 @@ namespace detail
 
         static void impl_generic(generic_pointer gen)
         {
-            auto* ti = *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0);
-            Class* ptr = new Class(
+            auto* ti = get_generic_typeinfo(gen);
+            auto* ptr = new Class(
                 ti,
                 script_init_list_repeat(gen, 1)
             );
@@ -983,7 +992,7 @@ namespace detail
             AS_NAMESPACE_QUALIFIER asITypeInfo* ti, void* list_buf
         )
         {
-            Class* ptr = new Class(ti, script_init_list_repeat(list_buf));
+            auto* ptr = new Class(ti, script_init_list_repeat(list_buf));
             notifier::notify_gc_if_necessary(ptr, ti);
             return ptr;
         }
@@ -1013,7 +1022,7 @@ namespace detail
         {
             if constexpr(std::same_as<IListPolicy, policies::as_iterators>)
             {
-                return policies::as_iterators::apply<ListElementType>(
+                return apply_iter_pair<ListElementType>(
                     [](auto start, auto stop) -> Class*
                     {
                         return new Class(start, stop);
@@ -1290,9 +1299,9 @@ protected:
     }
 
     template <typename MemberPointer>
-    requires(std::is_member_object_pointer_v<MemberPointer>)
     void register_property(cstring_ref decl, MemberPointer mp)
     {
+        static_assert(std::is_member_object_pointer_v<MemberPointer>);
         register_property(decl, member_offset(mp));
     }
 
@@ -1421,7 +1430,7 @@ protected:
             decl_##as_op_sig(),                                             \
             +[](Class& this_) -> Class                                      \
             { return this_ cpp_op; },                                       \
-            detail::cdecl_last_cc         \
+            detail::cdecl_last_cc                                           \
         );                                                                  \
     }
 
