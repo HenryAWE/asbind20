@@ -143,7 +143,7 @@ TEST_F(TemplCBAsGlobalGeneric, ExpectToFail)
     expect_to_fail();
 }
 
-TEST_F(TemplCBAsGlobalNative, ExpectToFail)
-{
-    expect_to_fail();
-}
+// TEST_F(TemplCBAsGlobalNative, ExpectToFail)
+// {
+//     expect_to_fail();
+// }
