@@ -6,6 +6,7 @@ TEST(Compare, EmptyClass)
     using namespace asbind20;
 
     auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine, true);
     auto* m = engine->GetModule(
         "foo", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
     );
@@ -30,7 +31,9 @@ TEST(Compare, EmptyClass)
     {
         auto cmp = result.get();
         EXPECT_EQ(cmp.get_opCmp(), nullptr);
+        EXPECT_FALSE(cmp.has_opCmp());
         EXPECT_EQ(cmp.get_opEquals(), nullptr);
+        EXPECT_FALSE(cmp.has_opEquals());
     }
 }
 
