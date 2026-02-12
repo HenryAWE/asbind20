@@ -9,7 +9,6 @@
 
 #pragma once
 
-#include <version>
 #include <tuple>
 #include <functional>
 #include <optional>
@@ -727,6 +726,7 @@ public:
         m_fp = fp;
     }
 
+    [[nodiscard]]
     handle_type target() const noexcept
     {
         return m_fp;
@@ -776,6 +776,7 @@ public:
         m_fp = fp;
     }
 
+    [[nodiscard]]
     handle_type target() const noexcept
     {
         return m_fp;
