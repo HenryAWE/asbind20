@@ -22,6 +22,7 @@ namespace asbind20::container
 {
 class get_comparator_result;
 
+[[nodiscard]]
 get_comparator_result get_comparator(
     AS_NAMESPACE_QUALIFIER asITypeInfo* ti
 );
@@ -134,7 +135,12 @@ class get_comparator_result
     );
 
 public:
+    get_comparator_result() = delete;
     get_comparator_result(const get_comparator_result&) = default;
+
+    ~get_comparator_result() = default;
+
+    get_comparator_result& operator=(const get_comparator_result&) = default;
 
     struct status
     {
@@ -146,7 +152,7 @@ public:
         [[nodiscard]]
         bool good() const noexcept
         {
-            return opEquals > 0 || opCmp > 0;
+            return opEquals >= 0 || opCmp >= 0;
         }
 
         explicit operator bool() const noexcept

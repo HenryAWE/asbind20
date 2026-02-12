@@ -1,6 +1,4 @@
-aux_source_directory(. test_container_src)
-aux_source_directory(./compare_test test_container_src)
-aux_source_directory(./small_vector_test test_container_src)
+file(GLOB_RECURSE test_container_src "*.cpp")
 
 add_executable(test_container ${test_container_src})
 target_link_libraries(test_container PRIVATE shared_test_lib)
