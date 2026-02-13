@@ -84,6 +84,8 @@ TEST(Compare, ScriptClassEq)
         m->GetFunctionByDecl("foo@ create(int)")
     );
     ASSERT_TRUE(create);
+
+    // Case 1: No equal
     {
         request_context ctx(engine);
 
@@ -99,6 +101,37 @@ TEST(Compare, ScriptClassEq)
 
         ASBIND_TEST_EXPECT_INVOKE_RESULT(is_eq);
         EXPECT_FALSE(is_eq.value());
+        lhs->Release();
+        rhs->Release();
+    }
+
+    // Case 2: Equal
+    {
+        request_context ctx(engine);
+
+        auto* lhs = create(ctx, 1).value();
+        ASSERT_NE(lhs, nullptr);
+        lhs->AddRef();
+        auto* rhs = create(ctx, 1).value();
+        ASSERT_NE(rhs, nullptr);
+        rhs->AddRef();
+        EXPECT_NE(lhs, rhs);
+
+        auto cmp = result.get();
+
+        {
+            auto is_eq = cmp.get_opEquals()(ctx, lhs, rhs);
+            ASBIND_TEST_EXPECT_INVOKE_RESULT(is_eq);
+            EXPECT_TRUE(is_eq.value());
+        }
+
+        // Self compare
+        {
+            auto is_eq = cmp.get_opEquals()(ctx, lhs, lhs);
+            ASBIND_TEST_EXPECT_INVOKE_RESULT(is_eq);
+            EXPECT_TRUE(is_eq.value());
+        }
+
         lhs->Release();
         rhs->Release();
     }
