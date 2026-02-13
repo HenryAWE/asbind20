@@ -1,4 +1,5 @@
 #include <asbind20/asbind.hpp>
+#include <asbind20/meta/validator.hpp>
 
 static consteval bool test_utility_concepts()
 {
@@ -74,3 +75,19 @@ static consteval bool test_stdcall_helpers()
 static_assert(test_stdcall_helpers());
 
 #endif
+
+consteval bool test_meta_validator()
+{
+    {
+        using asbind20::meta::validator::ptrref_of;
+
+        static_assert(!ptrref_of<int, int>);
+        static_assert(ptrref_of<int*, int>);
+        static_assert(ptrref_of<int&, int>);
+        static_assert(ptrref_of<const int&, int>);
+    }
+
+    return true;
+}
+
+static_assert(test_meta_validator());
