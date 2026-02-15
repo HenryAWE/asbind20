@@ -660,19 +660,23 @@ private:
     using traits = function_traits<decltype(ConstructorFunc)>;
     using args_tuple = typename traits::args_tuple;
 
+    static Class* get_mem(generic_pointer gen)
+    {
+        return static_cast<Class*>(gen->GetObject());
+    }
+
     static void wrapper_objfirst(generic_pointer gen)
     {
         if constexpr(Template)
         {
             [gen]<std::size_t... Is>(std::index_sequence<Is...>)
             {
-                Class* mem = (Class*)gen->GetObject();
                 std::invoke(
                     ConstructorFunc,
-                    mem,
-                    *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
+                    get_mem(gen),
+                    get_generic_typeinfo(gen),
                     get_generic_arg<std::tuple_element_t<Is + 2, args_tuple>>(
-                        gen, (gen_idx_t)Is + 1
+                        gen, static_cast<gen_idx_t>(Is) + 1
                     )...
                 );
             }(std::make_index_sequence<traits::arg_count_v - 2>());
@@ -681,12 +685,11 @@ private:
         {
             [gen]<std::size_t... Is>(std::index_sequence<Is...>)
             {
-                Class* mem = (Class*)gen->GetObject();
                 std::invoke(
                     ConstructorFunc,
-                    mem,
+                    get_mem(gen),
                     get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(
-                        gen, (gen_idx_t)Is
+                        gen, static_cast<gen_idx_t>(Is)
                     )...
                 );
             }(std::make_index_sequence<traits::arg_count_v - 1>());
@@ -699,14 +702,13 @@ private:
         {
             [gen]<std::size_t... Is>(std::index_sequence<Is...>)
             {
-                Class* mem = (Class*)gen->GetObject();
                 std::invoke(
                     ConstructorFunc,
-                    *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
+                    get_generic_typeinfo(gen),
                     get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(
-                        gen, (gen_idx_t)Is + 1
+                        gen, static_cast<gen_idx_t>(Is) + 1
                     )...,
-                    mem
+                    get_mem(gen)
                 );
             }(std::make_index_sequence<traits::arg_count_v - 2>());
         }
@@ -714,13 +716,12 @@ private:
         {
             [gen]<std::size_t... Is>(std::index_sequence<Is...>)
             {
-                Class* mem = (Class*)gen->GetObject();
                 std::invoke(
                     ConstructorFunc,
                     get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
-                        gen, (gen_idx_t)Is
+                        gen, static_cast<gen_idx_t>(Is)
                     )...,
-                    mem
+                    get_mem(gen)
                 );
             }(std::make_index_sequence<traits::arg_count_v - 1>());
         }
@@ -744,10 +745,14 @@ template <
     AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv>
 class generic_wrapper_ctor_lambda
 {
-private:
     using native_function_type = std::decay_t<decltype(+ConstructorLambda{})>;
     using traits = function_traits<native_function_type>;
     using args_tuple = typename traits::args_tuple;
+
+    static Class* get_mem(generic_pointer gen)
+    {
+        return static_cast<Class*>(gen->GetObject());
+    }
 
     static void wrapper_objfirst(generic_pointer gen)
     {
@@ -755,13 +760,12 @@ private:
         {
             [gen]<std::size_t... Is>(std::index_sequence<Is...>)
             {
-                Class* mem = (Class*)gen->GetObject();
                 std::invoke(
                     ConstructorLambda{},
-                    mem,
-                    *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
+                    get_mem(gen),
+                    get_generic_typeinfo(gen),
                     get_generic_arg<std::tuple_element_t<Is + 2, args_tuple>>(
-                        gen, (gen_idx_t)Is + 1
+                        gen, static_cast<gen_idx_t>(Is) + 1
                     )...
                 );
             }(std::make_index_sequence<traits::arg_count_v - 2>());
@@ -770,12 +774,11 @@ private:
         {
             [gen]<std::size_t... Is>(std::index_sequence<Is...>)
             {
-                Class* mem = (Class*)gen->GetObject();
                 std::invoke(
                     ConstructorLambda{},
-                    mem,
+                    get_mem(gen),
                     get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(
-                        gen, (gen_idx_t)Is
+                        gen, static_cast<gen_idx_t>(Is)
                     )...
                 );
             }(std::make_index_sequence<traits::arg_count_v - 1>());
@@ -788,14 +791,13 @@ private:
         {
             [gen]<std::size_t... Is>(std::index_sequence<Is...>)
             {
-                Class* mem = (Class*)gen->GetObject();
                 std::invoke(
                     ConstructorLambda{},
-                    *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
+                    get_generic_typeinfo(gen),
                     get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(
-                        gen, (gen_idx_t)Is + 1
+                        gen, static_cast<gen_idx_t>(Is) + 1
                     )...,
-                    mem
+                    get_mem(gen)
                 );
             }(std::make_index_sequence<traits::arg_count_v - 2>());
         }
@@ -803,13 +805,12 @@ private:
         {
             [gen]<std::size_t... Is>(std::index_sequence<Is...>)
             {
-                Class* mem = (Class*)gen->GetObject();
                 std::invoke(
                     ConstructorLambda{},
                     get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
-                        gen, (gen_idx_t)Is
+                        gen, static_cast<gen_idx_t>(Is)
                     )...,
-                    mem
+                    get_mem(gen)
                 );
             }(std::make_index_sequence<traits::arg_count_v - 1>());
         }
@@ -883,22 +884,27 @@ class generic_wrapper_list_ctor
     static_assert(traits::arg_count_v == 2);
     static_assert(std::is_void_v<typename traits::return_type>);
 
+    template <typename BufType>
+    static BufType& get_buf(generic_pointer gen)
+    {
+        static_assert(std::is_pointer_v<BufType>);
+        return *static_cast<BufType*>(gen->GetAddressOfArg(0));
+    }
+
     static void wrapper_objfirst(generic_pointer gen)
     {
         using list_buf_t = typename traits::last_arg_type;
-        static_assert(std::is_pointer_v<list_buf_t>);
         ListConstructorFunc(
             get_generic_object<Class*>(gen),
-            *(list_buf_t*)gen->GetAddressOfArg(0)
+            get_buf<list_buf_t>(gen)
         );
     }
 
     static void wrapper_objlast(generic_pointer gen)
     {
         using list_buf_t = typename traits::first_arg_type;
-        static_assert(std::is_pointer_v<list_buf_t>);
         ListConstructor(
-            *(list_buf_t*)gen->GetAddressOfArg(0),
+            get_buf<list_buf_t>(gen),
             get_generic_object<Class*>(gen)
         );
     }
@@ -971,8 +977,10 @@ class generic_wrapper_factory_aux
                 return std::invoke(
                     FactoryFunc,
                     get_generic_auxiliary<typename traits::class_type>(gen),
-                    *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
-                    get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(gen, (gen_idx_t)Is + 1)...
+                    get_generic_typeinfo(gen),
+                    get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(
+                        gen, static_cast<gen_idx_t>(Is) + 1
+                    )...
                 );
             }
             else if constexpr(OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
@@ -980,16 +988,20 @@ class generic_wrapper_factory_aux
                 return std::invoke(
                     FactoryFunc,
                     get_generic_auxiliary<auxiliary_type>(gen),
-                    *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
-                    get_generic_arg<std::tuple_element_t<Is + 2, args_tuple>>(gen, (gen_idx_t)Is + 1)...
+                    get_generic_typeinfo(gen),
+                    get_generic_arg<std::tuple_element_t<Is + 2, args_tuple>>(
+                        gen, static_cast<gen_idx_t>(Is) + 1
+                    )...
                 );
             }
             else // OriginalCallConv == asCALL_CDECL_OBJLAST
             {
                 return std::invoke(
                     FactoryFunc,
-                    *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
-                    get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(gen, (gen_idx_t)Is + 1)...,
+                    get_generic_typeinfo(gen),
+                    get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(
+                        gen, static_cast<gen_idx_t>(Is) + 1
+                    )...,
                     get_generic_auxiliary<auxiliary_type>(gen)
                 );
             }
@@ -1013,7 +1025,9 @@ class generic_wrapper_factory_aux
                 return std::invoke(
                     FactoryFunc,
                     get_generic_auxiliary<typename traits::class_type>(gen),
-                    get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (gen_idx_t)Is)...
+                    get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
+                        gen, static_cast<gen_idx_t>(Is)
+                    )...
                 );
             }
             else if constexpr(OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
@@ -1022,14 +1036,18 @@ class generic_wrapper_factory_aux
                     FactoryFunc,
                     get_generic_auxiliary<auxiliary_type>(gen),
                     // Plus 1 to skip the auxiliary object at the first position
-                    get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(gen, (gen_idx_t)Is)...
+                    get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(
+                        gen, static_cast<gen_idx_t>(Is)
+                    )...
                 );
             }
             else // OriginalCallConv == asCALL_CDECL_OBJLAST
             {
                 return std::invoke(
                     FactoryFunc,
-                    get_generic_arg<std::tuple_element_t<Is, args_tuple>>(gen, (gen_idx_t)Is)...,
+                    get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
+                        gen, static_cast<gen_idx_t>(Is)
+                    )...,
                     get_generic_auxiliary<auxiliary_type>(gen)
                 );
             }
@@ -1094,12 +1112,17 @@ class list_factory_func<Class, Auxiliary, ListFactoryFunc, false, OriginalCallCo
 {
     using traits = function_traits<std::decay_t<decltype(ListFactoryFunc)>>;
 
+    static void* get_buf(generic_pointer gen)
+    {
+        return *static_cast<void**>(gen->GetAddressOfArg(0));
+    }
+
     static void wrapper_thiscall_asglobal(generic_pointer gen)
     {
         Class* ptr = std::invoke(
             ListFactoryFunc,
             get_generic_auxiliary<Auxiliary>(gen),
-            *(void**)gen->GetAddressOfArg(0)
+            get_buf(gen)
         );
         gen->SetReturnAddress(ptr);
     }
@@ -1110,7 +1133,7 @@ class list_factory_func<Class, Auxiliary, ListFactoryFunc, false, OriginalCallCo
         Class* ptr = std::invoke(
             ListFactoryFunc,
             get_generic_auxiliary<first_arg_type>(gen),
-            *(void**)gen->GetAddressOfArg(0)
+            get_buf(gen)
         );
         gen->SetReturnAddress(ptr);
     }
@@ -1120,7 +1143,7 @@ class list_factory_func<Class, Auxiliary, ListFactoryFunc, false, OriginalCallCo
         using last_arg_type = typename traits::last_arg_type;
         Class* ptr = std::invoke(
             ListFactoryFunc,
-            *(void**)gen->GetAddressOfArg(0),
+            get_buf(gen),
             get_generic_auxiliary<last_arg_type>(gen)
         );
         gen->SetReturnAddress(ptr);
@@ -1149,13 +1172,18 @@ class list_factory_func<Class, Auxiliary, ListFactoryFunc, true, OriginalCallCon
 {
     using traits = function_traits<std::decay_t<decltype(ListFactoryFunc)>>;
 
+    static void* get_buf(generic_pointer gen)
+    {
+        return *static_cast<void**>(gen->GetAddressOfArg(1));
+    }
+
     static void wrapper_thiscall_asglobal(generic_pointer gen)
     {
         Class* ptr = std::invoke(
             ListFactoryFunc,
             get_generic_auxiliary<Auxiliary>(gen),
-            *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
-            *(void**)gen->GetAddressOfArg(1)
+            get_generic_typeinfo(gen),
+            get_buf(gen)
         );
         gen->SetReturnAddress(ptr);
     }
@@ -1166,8 +1194,8 @@ class list_factory_func<Class, Auxiliary, ListFactoryFunc, true, OriginalCallCon
         Class* ptr = std::invoke(
             ListFactoryFunc,
             get_generic_auxiliary<first_arg_type>(gen),
-            *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
-            *(void**)gen->GetAddressOfArg(1)
+            get_generic_typeinfo(gen),
+            get_buf(gen)
         );
         gen->SetReturnAddress(ptr);
     }
@@ -1177,8 +1205,8 @@ class list_factory_func<Class, Auxiliary, ListFactoryFunc, true, OriginalCallCon
         using last_arg_type = typename traits::last_arg_type;
         Class* ptr = std::invoke(
             ListFactoryFunc,
-            *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(0),
-            *(void**)gen->GetAddressOfArg(1),
+            get_generic_typeinfo(gen),
+            get_buf(gen),
             get_generic_auxiliary<last_arg_type>(gen)
         );
         gen->SetReturnAddress(ptr);
