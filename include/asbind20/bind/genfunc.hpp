@@ -64,7 +64,7 @@ int var_type_helper(
 }
 
 template <typename T>
-T var_type_helper(
+decltype(auto) var_type_helper(
     std::false_type, generic_pointer gen, std::size_t idx
 )
 {
