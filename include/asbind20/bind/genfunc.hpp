@@ -157,7 +157,7 @@ using var_type_tag = std::bool_constant<var_type_tag_helper(VarType{}, RawIdx)>;
                 var_type_helper<typename traits::template arg_type<Is>>(                        \
                     var_type_tag<VarType, Is>{},                                                \
                     gen,                                                                        \
-                    static_cast<gen_idx_t>(indices[Is])                                         \
+                    indices[Is]                                                                 \
                 )...                                                                            \
             );                                                                                  \
         }(std::make_index_sequence<indices.size()>());                                          \
@@ -175,7 +175,7 @@ using var_type_tag = std::bool_constant<var_type_tag_helper(VarType{}, RawIdx)>;
                 var_type_helper<typename traits::template arg_type<Is + 1>>(                    \
                     var_type_tag<VarType, Is>{},                                                \
                     gen,                                                                        \
-                    static_cast<gen_idx_t>(indices[Is])                                         \
+                    indices[Is]                                                                 \
                 )...                                                                            \
             );                                                                                  \
         }(std::make_index_sequence<indices.size()>());                                          \
@@ -192,7 +192,7 @@ using var_type_tag = std::bool_constant<var_type_tag_helper(VarType{}, RawIdx)>;
                 var_type_helper<typename traits::template arg_type<Is>>(                        \
                     var_type_tag<VarType, Is>{},                                                \
                     gen,                                                                        \
-                    static_cast<gen_idx_t>(indices[Is])                                         \
+                    indices[Is]                                                                 \
                 )...,                                                                           \
                 this_(gen)                                                                      \
             );                                                                                  \
@@ -375,7 +375,7 @@ private:
                 var_type_helper<typename traits::template arg_type<Is>>(
                     var_type_tag<VarType, Is>{},
                     gen,
-                    static_cast<gen_idx_t>(indices[Is])
+                    indices[Is]
                 )...,
                 this_(gen)
             );
@@ -476,8 +476,9 @@ struct comp_accessor<Class, Offset>
 {
     static Class* get(void* base) noexcept
     {
-        Class* ptr = *(Class**)((std::byte*)base + Offset);
-        return ptr;
+        return *reinterpret_cast<Class**>(
+            static_cast<std::byte*>(base) + Offset
+        );
     }
 };
 
@@ -487,9 +488,9 @@ struct comp_accessor<Class, MemberObject>
 {
     static Class* get(void* base) noexcept
     {
-        std::size_t offset = member_offset(MemberObject);
-        Class* ptr = *(Class**)((std::byte*)base + offset);
-        return ptr;
+        return *reinterpret_cast<Class**>(
+            static_cast<std::byte*>(base) + member_offset(MemberObject)
+        );
     }
 };
 

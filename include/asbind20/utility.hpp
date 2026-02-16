@@ -1171,23 +1171,17 @@ inline auto get_weakref_flag(const AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
 [[nodiscard]]
 inline int translate_three_way(std::weak_ordering ord) noexcept
 {
-    if(ord < 0)
+    if(ord == std::weak_ordering::less)
         return -1;
-    else if(ord > 0)
+    if(ord == std::weak_ordering::greater)
         return 1;
-    else
-        return 0;
+    return 0;
 }
 
 [[nodiscard]]
 inline std::strong_ordering translate_opCmp(int cmp) noexcept
 {
-    if(cmp < 0)
-        return std::strong_ordering::less;
-    else if(cmp > 0)
-        return std::strong_ordering::greater;
-    else
-        return std::strong_ordering::equivalent;
+    return cmp <=> 0;
 }
 
 /**
@@ -1199,7 +1193,7 @@ inline std::strong_ordering translate_opCmp(int cmp) noexcept
  */
 inline void set_script_exception(const char* info)
 {
-    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx = current_context();
+    auto* ctx = current_context();
     if(ctx)
         ctx->SetException(info);
 }
