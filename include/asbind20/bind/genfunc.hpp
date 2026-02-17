@@ -290,7 +290,6 @@ template <
 requires(OriginalConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
 class generic_wrapper_nontype
 {
-private:
     using function_type = std::decay_t<decltype(Function)>;
     using traits = function_traits<function_type>;
 
@@ -504,7 +503,6 @@ template <
     auto Composite>
 class generic_wrapper_composite<Function, composite_wrapper_nontype<Composite>>
 {
-private:
     using function_type = std::decay_t<decltype(Function)>;
     using traits = function_traits<function_type>;
 
