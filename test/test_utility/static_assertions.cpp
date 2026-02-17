@@ -67,12 +67,36 @@ static_assert(test_stdcall_helpers());
 consteval bool test_meta_validator()
 {
     {
-        using asbind20::meta::validator::ptrref_of;
+        using asbind20::meta::ptrref_of;
 
         static_assert(!ptrref_of<int, int>);
         static_assert(ptrref_of<int*, int>);
         static_assert(ptrref_of<int&, int>);
         static_assert(ptrref_of<const int&, int>);
+
+        static_assert(!ptrref_of<bool&, int>);
+    }
+
+    using asbind20::meta::signature_matcher;
+    using namespace asbind20::meta::validator;
+
+    {
+        using templ_cb_matcher = signature_matcher<
+            by_value<bool>,
+            by_addr<AS_NAMESPACE_QUALIFIER asITypeInfo>,
+            by_addr<bool>>;
+
+        using fn_0 = bool();
+        static_assert(!templ_cb_matcher{}(std::in_place_type<fn_0>));
+
+        using fn_1 = bool(AS_NAMESPACE_QUALIFIER asITypeInfo*, bool&);
+        static_assert(templ_cb_matcher{}(std::in_place_type<fn_1>));
+
+        using fn_2 = int(AS_NAMESPACE_QUALIFIER asITypeInfo*, bool&);
+        static_assert(!templ_cb_matcher{}(std::in_place_type<fn_2>));
+
+        using fn_3 = bool(AS_NAMESPACE_QUALIFIER asITypeInfo*, int&);
+        static_assert(!templ_cb_matcher{}(std::in_place_type<fn_3>));
     }
 
     return true;
