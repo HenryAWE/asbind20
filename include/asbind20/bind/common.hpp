@@ -306,22 +306,22 @@ namespace detail
         std::string_view type, std::string_view funcdef
     )
     {
-        // Firstly, find the begin of parameters
-        auto param_being = std::find(funcdef.rbegin(), funcdef.rend(), '(');
-        if(param_being != funcdef.rend())
+        // Firstly, find the start of parameters
+        auto param_begin = std::find(funcdef.rbegin(), funcdef.rend(), '(');
+        if(param_begin != funcdef.rend())
         {
-            ++param_being; // Skip '('
+            ++param_begin; // Skip '('
 
             // Skip possible whitespaces between the function name and the parameters
-            param_being = std::find_if_not(
-                param_being,
+            param_begin = std::find_if_not(
+                param_begin,
                 funcdef.rend(),
                 [](char ch) -> bool
                 { return ch == ' '; }
             );
         }
-        auto name_begin = std::find_if_not(
-            param_being,
+        const auto name_begin = std::find_if_not(
+            param_begin,
             funcdef.rend(),
             [](char ch) -> bool
             {

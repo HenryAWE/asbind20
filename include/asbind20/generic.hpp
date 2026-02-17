@@ -188,7 +188,7 @@ void set_generic_return(
     }
     else if constexpr(std::is_class_v<Return>)
     {
-        if constexpr(meta::is_constructible_at_v<Return, Return&&>)
+        if constexpr(meta::placement_newable_from<Return, Return&&>)
         {
             void* mem = gen->GetAddressOfReturnLocation();
             new(mem) Return(std::forward<Return>(ret));

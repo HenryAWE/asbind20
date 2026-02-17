@@ -23,6 +23,7 @@
 #include <concepts>
 #include "detail/config.hpp" // IWYU pragma: export configs
 #include "detail/fwd.hpp"
+#include "detail/compat.hpp"
 #include "detail/include_as.hpp"
 #include "detail/throw_helper.hpp"
 #include "detail/strutil.hpp"
@@ -498,7 +499,6 @@ inline auto sizeof_script_type(
         case AS_NAMESPACE_QUALIFIER asTYPEID_UINT16:
             return sizeof(std::int16_t);
 
-        default: // enum
         case AS_NAMESPACE_QUALIFIER asTYPEID_INT32:
         case AS_NAMESPACE_QUALIFIER asTYPEID_UINT32:
             return sizeof(std::int32_t);
@@ -511,13 +511,15 @@ inline auto sizeof_script_type(
             return sizeof(float);
         case AS_NAMESPACE_QUALIFIER asTYPEID_DOUBLE:
             return sizeof(double);
+
+        default: // enum
+            return sizeof(compat::script_enum_value_type);
         }
     }
 
-    auto* ti = engine->GetTypeInfoById(type_id);
-    if(!ti)
+    const auto* ti = engine->GetTypeInfoById(type_id);
+    if(!ti) [[unlikely]]
         return 0;
-
     return ti->GetSize();
 }
 
@@ -526,14 +528,21 @@ inline auto sizeof_script_type(
  *
  * @param dst Destination pointer
  * @param src Source pointer
- * @param type_id AngelScript type id
+ * @param type_id AngelScript type id of primitive type
  * @return Bytes copied
  *
  * @warning Please make sure the destination has enough space for the value
  */
 inline std::size_t copy_primitive_value(void* dst, const void* src, int type_id)
 {
+    assert(!dst && !src);
     assert(is_primitive_type(type_id));
+
+    auto helper = [&](std::size_t sz)
+    {
+        std::memcpy(dst, src, sz);
+        return sz;
+    };
 
     switch(type_id)
     {
@@ -543,26 +552,24 @@ inline std::size_t copy_primitive_value(void* dst, const void* src, int type_id)
     case AS_NAMESPACE_QUALIFIER asTYPEID_BOOL:
     case AS_NAMESPACE_QUALIFIER asTYPEID_INT8:
     case AS_NAMESPACE_QUALIFIER asTYPEID_UINT8:
-        *(std::uint8_t*)dst = *(std::uint8_t*)src;
-        return sizeof(std::uint8_t);
+        return helper(sizeof(std::uint8_t));
 
     case AS_NAMESPACE_QUALIFIER asTYPEID_INT16:
     case AS_NAMESPACE_QUALIFIER asTYPEID_UINT16:
-        *(std::uint16_t*)dst = *(std::uint16_t*)src;
-        return sizeof(std::uint16_t);
+        return helper(sizeof(std::uint16_t));
 
-    default: // enums
     case AS_NAMESPACE_QUALIFIER asTYPEID_FLOAT:
     case AS_NAMESPACE_QUALIFIER asTYPEID_INT32:
     case AS_NAMESPACE_QUALIFIER asTYPEID_UINT32:
-        *(std::uint32_t*)dst = *(std::uint32_t*)src;
-        return sizeof(std::uint32_t);
+        return helper(sizeof(std::uint32_t));
 
     case AS_NAMESPACE_QUALIFIER asTYPEID_DOUBLE:
     case AS_NAMESPACE_QUALIFIER asTYPEID_INT64:
     case AS_NAMESPACE_QUALIFIER asTYPEID_UINT64:
-        *(std::uint64_t*)dst = *(std::uint64_t*)src;
-        return sizeof(std::uint64_t);
+        return helper(sizeof(std::uint64_t));
+
+    default: // enums
+        return helper(sizeof(compat::script_enum_value_type));
     }
 }
 
@@ -1171,23 +1178,17 @@ inline auto get_weakref_flag(const AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
 [[nodiscard]]
 inline int translate_three_way(std::weak_ordering ord) noexcept
 {
-    if(ord < 0)
+    if(ord == std::weak_ordering::less)
         return -1;
-    else if(ord > 0)
+    if(ord == std::weak_ordering::greater)
         return 1;
-    else
-        return 0;
+    return 0;
 }
 
 [[nodiscard]]
 inline std::strong_ordering translate_opCmp(int cmp) noexcept
 {
-    if(cmp < 0)
-        return std::strong_ordering::less;
-    else if(cmp > 0)
-        return std::strong_ordering::greater;
-    else
-        return std::strong_ordering::equivalent;
+    return cmp <=> 0;
 }
 
 /**
@@ -1199,7 +1200,7 @@ inline std::strong_ordering translate_opCmp(int cmp) noexcept
  */
 inline void set_script_exception(const char* info)
 {
-    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx = current_context();
+    auto* ctx = current_context();
     if(ctx)
         ctx->SetException(info);
 }

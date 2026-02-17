@@ -22,14 +22,6 @@ namespace asbind20
  */
 namespace meta
 {
-    namespace detail
-    {
-        template <typename T, typename... Args>
-        concept check_placement_new = requires(void* mem) {
-            new(mem) T(std::declval<Args>()...);
-        };
-    } // namespace detail
-
     /**
      * @brief Check if a type is constructible without requiring it to be destructible,
      *        i.e., constructible at a specific memory address by placement new.
@@ -40,23 +32,9 @@ namespace meta
      * See: https://stackoverflow.com/questions/28085847/stdis-constructible-on-type-with-non-public-destructor
      */
     template <typename T, typename... Args>
-    struct is_constructible_at :
-        std::bool_constant<detail::check_placement_new<T, Args...>>
-    {};
-
-    template <typename T, typename... Args>
-    constexpr inline bool is_constructible_at_v = is_constructible_at<T, Args...>::value;
-
-    template <typename Target, typename Tuple>
-    struct contains;
-
-    template <typename Target, typename... Ts>
-    struct contains<Target, std::tuple<Ts...>> :
-        std::bool_constant<false || (std::same_as<Target, Ts> || ...)>
-    {};
-
-    template <typename Target, typename Tuple>
-    constexpr inline bool contains_v = contains<Target, Tuple>::value;
+    concept placement_newable_from = requires(void* mem) {
+        new(mem) T(std::declval<Args>()...);
+    };
 
     /**
      * @brief Get the script type flags.
