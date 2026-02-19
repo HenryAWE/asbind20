@@ -99,7 +99,51 @@ consteval bool test_meta_validator()
         static_assert(!templ_cb_matcher{}(std::in_place_type<fn_3>));
     }
 
+    {
+        using my_matcher = signature_matcher<void_>;
+
+        using fn_0 = bool();
+        static_assert(!my_matcher{}(std::in_place_type<fn_0>));
+
+        using fn_1 = void();
+        static_assert(my_matcher{}(std::in_place_type<fn_1>));
+
+        using fn_2 = void(int);
+        static_assert(!my_matcher{}(std::in_place_type<fn_2>));
+    }
+
+
+
+    return true;
+}
+
+consteval bool test_meta_validator_obj()
+{
+    using asbind20::meta::signature_matcher;
+    using namespace asbind20::meta::validator;
+
+    {
+        struct my_struct
+        {};
+
+        using my_matcher = signature_matcher<void_>;
+
+        using fn_0 = void(my_struct*);
+        static_assert(my_matcher{}(
+            std::in_place_type<fn_0>, AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
+        ));
+        static_assert(my_matcher{}(
+            std::in_place_type<fn_0>, AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST
+        ));
+
+        using fn_1 = void(my_struct*, AS_NAMESPACE_QUALIFIER asIScriptEngine*);
+        static_assert(!my_matcher{}(
+            std::in_place_type<fn_1>, AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
+        ));
+    }
+
     return true;
 }
 
 static_assert(test_meta_validator());
+static_assert(test_meta_validator_obj());

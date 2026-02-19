@@ -12,6 +12,7 @@
 #include <concepts>
 #include <type_traits>
 #include "../meta.hpp"
+#include "../bind/common.hpp"
 
 namespace asbind20::meta
 {
@@ -70,28 +71,67 @@ template <
     validator::descriptor... Args>
 class signature_matcher
 {
-public:
-    template <typename Fn>
-    constexpr bool operator()(std::in_place_type_t<Fn>) const
+    template <typename Fn, std::size_t ScriptArgCount, std::size_t Offset = 0>
+    static consteval bool do_match()
     {
-        using std::tuple_element_t, std::in_place_type_t, std::in_place_type;
-        using traits = function_traits<Fn>;
-        using validator_tuple = std::tuple<Args...>;
-
-        if constexpr(sizeof...(Args) != traits::arg_count_v)
+        if constexpr(ScriptArgCount + Offset > sizeof...(Args))
             return false;
         else
         {
+            using std::tuple_element_t, std::in_place_type_t, std::in_place_type;
+            using traits = function_traits<Fn>;
+            using validator_tuple = std::tuple<Args...>;
+
             return []<std::size_t... Is>(std::index_sequence<Is...>)
             {
                 bool ret = Return{}(in_place_type<typename traits::return_type>);
 
                 return ret &&
                        (tuple_element_t<Is, validator_tuple>{}(
-                            in_place_type<typename traits::template arg_type<Is>>
+                            in_place_type<typename traits::template arg_type<Is + Offset>>
                         ) &&
                         ...);
-            }(std::make_index_sequence<sizeof...(Args)>());
+            }(std::make_index_sequence<ScriptArgCount>());
+        }
+    }
+
+public:
+    template <typename Fn>
+    constexpr bool operator()(std::in_place_type_t<Fn>) const
+    {
+        using traits = function_traits<Fn>;
+        constexpr std::size_t arg_count = traits::arg_count_v;
+
+        if constexpr(arg_count != sizeof...(Args))
+            return false;
+        else
+            return this->do_match<Fn, arg_count>();
+    }
+
+    template <typename Fn>
+    constexpr bool operator()(
+        std::in_place_type_t<Fn>, AS_NAMESPACE_QUALIFIER asECallConvTypes conv
+    ) const
+    {
+        using traits = function_traits<Fn>;
+        constexpr std::size_t arg_count = traits::arg_count_v;
+
+        switch(conv)
+        {
+        case AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST:
+        case AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJFIRST:
+            if constexpr(arg_count - 1 != sizeof...(Args))
+                return false;
+            return this->do_match<Fn, arg_count - 1, (arg_count == 1 ? 0 : 1)>();
+
+        case AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST:
+        case AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJLAST:
+            if constexpr(arg_count - 1 != sizeof...(Args))
+                return false;
+            return this->do_match<Fn, arg_count - 1>();
+
+        default:
+            return (*this)(std::in_place_type<Fn>);
         }
     }
 };
