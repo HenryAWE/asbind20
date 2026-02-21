@@ -9,7 +9,6 @@
 
 #pragma once
 
-#include <version>
 #include <tuple>
 #include <functional>
 #include <optional>
@@ -727,6 +726,7 @@ public:
         m_fp = fp;
     }
 
+    [[nodiscard]]
     handle_type target() const noexcept
     {
         return m_fp;
@@ -776,6 +776,7 @@ public:
         m_fp = fp;
     }
 
+    [[nodiscard]]
     handle_type target() const noexcept
     {
         return m_fp;
@@ -843,9 +844,22 @@ public:
         return *this;
     }
 
+    [[nodiscard]]
     handle_type target() const noexcept
     {
         return m_fp;
+    }
+
+    bool operator==(script_function const& other) const noexcept = default;
+
+    friend bool operator==(script_function const& lhs, handle_type rhs) noexcept
+    {
+        return lhs.target() == rhs;
+    }
+
+    friend bool operator==(handle_type lhs, script_function const& rhs) noexcept
+    {
+        return lhs == rhs.target();
     }
 
     explicit operator bool() const noexcept
