@@ -85,7 +85,7 @@ TEST(Compare, ScriptClassEq)
     );
     ASSERT_TRUE(create);
 
-    // Case 1: No equal
+    // Case 1: Not equal
     {
         request_context ctx(engine);
 
