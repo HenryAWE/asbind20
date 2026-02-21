@@ -645,20 +645,20 @@ concept script_object_handle =
         (AS_NAMESPACE_QUALIFIER asIScriptObject const*)obj;
     };
 
-template <script_object_handle Object>
-int set_script_object(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, const void* obj)
+inline int set_script_object(
+    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, const void* obj
+)
 {
-    return ctx->SetObject(
-        const_cast<void*>(obj)
-    );
+    return ctx->SetObject(const_cast<void*>(obj));
 }
 
 template <script_object_handle Object>
-int set_script_object(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, Object&& obj)
+int set_script_object(
+    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, Object&& obj
+)
 {
-    return ctx->SetObject(
-        const_cast<AS_NAMESPACE_QUALIFIER asIScriptObject*>((AS_NAMESPACE_QUALIFIER asIScriptObject const*)obj)
-    );
+    const void* ptr = (AS_NAMESPACE_QUALIFIER asIScriptObject const*)obj;
+    return set_script_object(ctx, ptr);
 }
 
 /**

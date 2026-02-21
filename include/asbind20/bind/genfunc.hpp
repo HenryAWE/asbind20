@@ -654,7 +654,6 @@ template <
     AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv>
 class generic_wrapper_ctor_func
 {
-private:
     using native_function_type = std::decay_t<decltype(ConstructorFunc)>;
     using traits = function_traits<decltype(ConstructorFunc)>;
     using args_tuple = typename traits::args_tuple;
