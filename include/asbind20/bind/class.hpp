@@ -3003,8 +3003,8 @@ private:
     static consteval bool check_constructible(bool has_hidden_arg = Template)
     {
         return has_hidden_arg ?
-                   meta::is_constructible_at_v<Class, AS_NAMESPACE_QUALIFIER asITypeInfo*, Args...> :
-                   meta::is_constructible_at_v<Class, Args...>;
+                   meta::placement_newable_from<Class, AS_NAMESPACE_QUALIFIER asITypeInfo*, Args...> :
+                   meta::placement_newable_from<Class, Args...>;
     }
 
 public:
@@ -3372,7 +3372,7 @@ public:
     {
         if(traits & (AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_C))
         {
-            if constexpr(meta::is_constructible_at_v<Class>)
+            if constexpr(meta::placement_newable_from<Class>)
                 default_constructor(use_generic);
             else
                 assert(false && "missing default constructor");
@@ -3393,7 +3393,7 @@ public:
         }
         if(traits & (AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_K))
         {
-            if constexpr(meta::is_constructible_at_v<Class, const Class&>)
+            if constexpr(meta::placement_newable_from<Class, const Class&>)
                 copy_constructor(use_generic);
             else
                 assert(false && "missing copy constructor");
@@ -3413,7 +3413,7 @@ public:
     {
         if(traits & (AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_C))
         {
-            if constexpr(meta::is_constructible_at_v<Class>)
+            if constexpr(meta::placement_newable_from<Class>)
                 default_constructor();
             else
                 assert(false && "missing default constructor");
@@ -3434,7 +3434,7 @@ public:
         }
         if(traits & (AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_K))
         {
-            if constexpr(meta::is_constructible_at_v<Class, const Class&>)
+            if constexpr(meta::placement_newable_from<Class, const Class&>)
                 copy_constructor();
             else
                 assert(false && "missing copy constructor");
