@@ -446,6 +446,77 @@ public:
     }
 };
 
+namespace detail
+{
+    template <typename T>
+    struct is_script_invoke_result_impl : std::false_type
+    {};
+
+    template <typename T>
+    struct is_script_invoke_result_impl<script_invoke_result<T>> : std::true_type
+    {};
+} // namespace detail
+
+template <typename T>
+struct is_script_invoke_result :
+    detail::is_script_invoke_result_impl<std::remove_cv_t<T>>
+{};
+
+template <typename T>
+inline constexpr bool is_script_invoke_result_v = is_script_invoke_result<T>::value;
+
+template <typename T, typename U>
+bool operator==(const script_invoke_result<T>& lhs, const script_invoke_result<U>& rhs)
+    requires(std::equality_comparable_with<T, U>)
+{
+    if(lhs.has_value() != rhs.has_value())
+        return false;
+    return lhs.has_value() ?
+               *lhs == *rhs :
+               lhs.error() == rhs.error();
+}
+
+template <typename T, typename U>
+bool operator==(const script_invoke_result<T>& lhs, const U& rhs)
+    requires(!is_script_invoke_result_v<U> && std::equality_comparable_with<T, U>)
+{
+    return lhs.has_value() ? *lhs == rhs : false;
+}
+
+template <typename T, typename U>
+bool operator==(const T& lhs, const script_invoke_result<U>& rhs)
+    requires(!is_script_invoke_result_v<T> && std::equality_comparable_with<T, U>)
+{
+    return rhs.has_value() ? lhs == *rhs : false;
+}
+
+template <typename T, typename U>
+std::partial_ordering operator<=>(const script_invoke_result<T>& lhs, const script_invoke_result<U>& rhs)
+    requires(std::three_way_comparable_with<T, U>)
+{
+    if(!(lhs.has_value() && rhs.has_value()))
+        return std::partial_ordering::unordered;
+    return *lhs <=> *rhs;
+}
+
+template <typename T, typename U>
+std::partial_ordering operator<=>(const script_invoke_result<T>& lhs, const U& rhs)
+    requires(!is_script_invoke_result_v<U> && std::three_way_comparable_with<T, U>)
+{
+    if(!(lhs.has_value() && rhs))
+        return std::partial_ordering::unordered;
+    return *lhs <=> rhs;
+}
+
+template <typename T, typename U>
+std::partial_ordering operator<=>(const T& lhs, const script_invoke_result<U>& rhs)
+    requires(!is_script_invoke_result_v<T> && std::three_way_comparable_with<T, U>)
+{
+    if(!(lhs && rhs.has_value()))
+        return std::partial_ordering::unordered;
+    return lhs <=> *rhs;
+}
+
 template <typename T>
 int set_script_arg(
     AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
@@ -507,7 +578,7 @@ int set_script_arg(
 }
 
 template <std::floating_point T>
-inline int set_script_arg(
+int set_script_arg(
     AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
     AS_NAMESPACE_QUALIFIER asUINT idx,
     T val

@@ -57,6 +57,12 @@ void output_gc_statistics(
         EXPECT_TRUE(::asbind_test::result_has_value(result)); \
     } while(0)
 
+#define ASBIND_TEST_EXPECT_INVOKE_NO_RESULT(result)            \
+    do                                                         \
+    {                                                          \
+        EXPECT_FALSE(::asbind_test::result_has_value(result)); \
+    } while(0)
+
 #define ASBIND_TEST_ASSERT_INVOKE_RESULT(result)              \
     do                                                        \
     {                                                         \
