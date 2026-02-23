@@ -33,6 +33,8 @@ Update
 
 - Decouple binding generator interfaces with complex AngelScript calling conventions
 
+- Tools for comparing script objects.
+
 Breaking Change
 ~~~~~~~~~~~~~~~
 
