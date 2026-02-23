@@ -122,13 +122,15 @@ public:
         case AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJFIRST:
             if constexpr(arg_count - 1 != sizeof...(Args))
                 return false;
-            return do_match<Fn, arg_count - 1, (arg_count == 1 ? 0 : 1)>();
+            else
+                return do_match<Fn, arg_count - 1, (arg_count == 1 ? 0 : 1)>();
 
         case AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST:
         case AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJLAST:
             if constexpr(arg_count - 1 != sizeof...(Args))
                 return false;
-            return do_match<Fn, arg_count - 1>();
+            else
+                return do_match<Fn, arg_count - 1>();
 
         default:
             return (*this)(std::in_place_type<Fn>);

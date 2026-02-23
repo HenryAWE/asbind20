@@ -112,7 +112,18 @@ consteval bool test_meta_validator()
         static_assert(!my_matcher{}(std::in_place_type<fn_2>));
     }
 
+    {
+        using my_matcher = signature_matcher<void_, by_addr<AS_NAMESPACE_QUALIFIER asIScriptEngine>>;
 
+        using fn_0 = void(AS_NAMESPACE_QUALIFIER asIScriptEngine*);
+        static_assert(my_matcher{}(std::in_place_type<fn_0>));
+
+        using fn_1 = void();
+        static_assert(!my_matcher{}(std::in_place_type<fn_1>));
+
+        using fn_2 = void(AS_NAMESPACE_QUALIFIER asIScriptEngine&);
+        static_assert(my_matcher{}(std::in_place_type<fn_2>));
+    }
 
     return true;
 }
@@ -138,7 +149,48 @@ consteval bool test_meta_validator_obj()
 
         using fn_1 = void(my_struct*, AS_NAMESPACE_QUALIFIER asIScriptEngine*);
         static_assert(!my_matcher{}(
+            std::in_place_type<fn_1>, AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST
+        ));
+        static_assert(!my_matcher{}(
             std::in_place_type<fn_1>, AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
+        ));
+
+        using fn_2 = void(my_struct&, AS_NAMESPACE_QUALIFIER asIScriptEngine*);
+        static_assert(!my_matcher{}(
+            std::in_place_type<fn_2>, AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
+        ));
+    }
+
+    {
+        struct my_struct
+        {};
+
+        using my_matcher = signature_matcher<
+            void_,
+            by_addr<AS_NAMESPACE_QUALIFIER asIScriptEngine>>;
+
+        using fn_0 = void(my_struct*);
+        static_assert(!my_matcher{}(
+            std::in_place_type<fn_0>, AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
+        ));
+        static_assert(!my_matcher{}(
+            std::in_place_type<fn_0>, AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST
+        ));
+
+        using fn_1 = void(my_struct*, AS_NAMESPACE_QUALIFIER asIScriptEngine*);
+        static_assert(!my_matcher{}(
+            std::in_place_type<fn_1>, AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
+        ));
+        static_assert(my_matcher{}(
+            std::in_place_type<fn_1>, AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST
+        ));
+
+        using fn_2 = void(AS_NAMESPACE_QUALIFIER asIScriptEngine*, my_struct*);
+        static_assert(my_matcher{}(
+            std::in_place_type<fn_2>, AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
+        ));
+        static_assert(!my_matcher{}(
+            std::in_place_type<fn_2>, AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST
         ));
     }
 
