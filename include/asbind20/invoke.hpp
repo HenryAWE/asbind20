@@ -104,6 +104,7 @@ public:
     bad_script_invoke_result_access(error_code_type r) noexcept
         : m_r(r) {}
 
+    [[nodiscard]]
     const char* what() const noexcept override
     {
         return "bad script invoke result access";
@@ -214,7 +215,7 @@ public:
     /// @}
 
 protected:
-    script_invoke_result_base(
+    explicit script_invoke_result_base(
         AS_NAMESPACE_QUALIFIER asIScriptContext* ctx
     ) noexcept
         : m_ctx(ctx)
@@ -279,9 +280,8 @@ public:
     }
 
     /** @note This function is only available if return type is reference or convertible to pointer */
-    pointer_type operator->() const requires(
-        detail::invoke_result_traits<return_type>::to_pointer_support
-    )
+    pointer_type operator->() const
+        requires(detail::invoke_result_traits<return_type>::to_pointer_support)
     {
         assert(has_value());
         if constexpr(!std::is_reference_v<return_type>)
@@ -312,8 +312,7 @@ public:
     {
         if(has_value())
             return **this;
-        else
-            return static_cast<T>(std::forward<U>(default_val));
+        return static_cast<T>(std::forward<U>(default_val));
     }
 
     /// @}
@@ -323,8 +322,7 @@ public:
     {
         if(!has_value())
             return std::nullopt;
-        else
-            return std::optional<T>(**this);
+        return std::optional<T>(**this);
     }
 
     explicit operator std::optional<T>() const
@@ -339,8 +337,7 @@ public:
     {
         if(has_value())
             return std::expected<T, error_type>(**this);
-        else
-            return std::unexpected<error_type>(error());
+        return std::unexpected<error_type>(error());
     }
 
     operator std::expected<T, error_type>() const
@@ -465,9 +462,22 @@ struct is_script_invoke_result :
 template <typename T>
 inline constexpr bool is_script_invoke_result_v = is_script_invoke_result<T>::value;
 
+namespace detail
+{
+    template <typename T, typename U>
+    concept check_op_eq = requires(const T& lhs, const U& rhs) {
+        { lhs == rhs } -> std::convertible_to<bool>;
+    };
+
+    template <typename T, typename U>
+    concept check_op_cmp = requires(const T& lhs, const U& rhs) {
+        { lhs <=> rhs } -> std::convertible_to<std::partial_ordering>;
+    };
+} // namespace detail
+
 template <typename T, typename U>
 bool operator==(const script_invoke_result<T>& lhs, const script_invoke_result<U>& rhs)
-    requires(std::equality_comparable_with<T, U>)
+    requires(detail::check_op_eq<T, U>)
 {
     if(lhs.has_value() != rhs.has_value())
         return false;
@@ -478,21 +488,21 @@ bool operator==(const script_invoke_result<T>& lhs, const script_invoke_result<U
 
 template <typename T, typename U>
 bool operator==(const script_invoke_result<T>& lhs, const U& rhs)
-    requires(!is_script_invoke_result_v<U> && std::equality_comparable_with<T, U>)
+    requires(!is_script_invoke_result_v<U> && detail::check_op_eq<T, U>)
 {
     return lhs.has_value() ? *lhs == rhs : false;
 }
 
 template <typename T, typename U>
 bool operator==(const T& lhs, const script_invoke_result<U>& rhs)
-    requires(!is_script_invoke_result_v<T> && std::equality_comparable_with<T, U>)
+    requires(!is_script_invoke_result_v<T> && detail::check_op_eq<T, U>)
 {
     return rhs.has_value() ? lhs == *rhs : false;
 }
 
 template <typename T, typename U>
 std::partial_ordering operator<=>(const script_invoke_result<T>& lhs, const script_invoke_result<U>& rhs)
-    requires(std::three_way_comparable_with<T, U>)
+    requires(detail::check_op_cmp<T, U>)
 {
     if(!(lhs.has_value() && rhs.has_value()))
         return std::partial_ordering::unordered;
@@ -501,7 +511,7 @@ std::partial_ordering operator<=>(const script_invoke_result<T>& lhs, const scri
 
 template <typename T, typename U>
 std::partial_ordering operator<=>(const script_invoke_result<T>& lhs, const U& rhs)
-    requires(!is_script_invoke_result_v<U> && std::three_way_comparable_with<T, U>)
+    requires(!is_script_invoke_result_v<U> && detail::check_op_cmp<T, U>)
 {
     if(!(lhs.has_value() && rhs))
         return std::partial_ordering::unordered;
@@ -510,7 +520,7 @@ std::partial_ordering operator<=>(const script_invoke_result<T>& lhs, const U& r
 
 template <typename T, typename U>
 std::partial_ordering operator<=>(const T& lhs, const script_invoke_result<U>& rhs)
-    requires(!is_script_invoke_result_v<T> && std::three_way_comparable_with<T, U>)
+    requires(!is_script_invoke_result_v<T> && detail::check_op_cmp<T, U>)
 {
     if(!(lhs && rhs.has_value()))
         return std::partial_ordering::unordered;
