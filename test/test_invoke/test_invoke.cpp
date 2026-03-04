@@ -56,6 +56,7 @@ TEST(TestInvoke, CommonTypes)
         auto result = asbind20::script_invoke<void>(ctx, fp, 1, std::ref(val));
         static_assert(is_script_invoke_result_v<decltype(result)>);
         static_assert(is_script_invoke_result_v<const decltype(result)>);
+        static_assert(std::is_swappable_v<decltype(result)>);
         EXPECT_TRUE(result.has_value());
         EXPECT_EQ(val, 2);
     }
@@ -67,6 +68,9 @@ TEST(TestInvoke, CommonTypes)
         asbind20::request_context ctx(engine);
 
         auto result = asbind20::script_invoke<float>(ctx, fp, 3.14f);
+        static_assert(is_script_invoke_result_v<decltype(result)>);
+        static_assert(is_script_invoke_result_v<const decltype(result)>);
+        static_assert(std::is_swappable_v<decltype(result)>);
         ASSERT_TRUE(result_has_value(result));
         EXPECT_FLOAT_EQ(result.value(), 3.14f);
     }
@@ -96,6 +100,9 @@ TEST(TestInvoke, CommonTypes)
 
         int val = 0;
         auto result = asbind20::script_invoke<std::string>(ctx, fp, 1, std::ref(val));
+        static_assert(is_script_invoke_result_v<decltype(result)>);
+        static_assert(is_script_invoke_result_v<const decltype(result)>);
+        static_assert(std::is_swappable_v<decltype(result)>);
         ASSERT_TRUE(result_has_value(result));
         EXPECT_EQ(result.value(), "test");
         EXPECT_EQ(result.value_or("hello"s), "test");
@@ -403,19 +410,29 @@ TEST(TestInvoke, Suspension)
     }
 }
 
+namespace test_invoke
+{
+static void setup_bad_call_helper(
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, std::string_view ret_type_decl
+)
+{
+    using namespace asbind20;
+    global(engine)
+        .function(
+            string_concat(ret_type_decl, " bad_call()"),
+            +[](generic_pointer) -> void
+            { set_script_exception("intentional"); }
+        );
+}
+} // namespace test_invoke
+
 TEST(TestInvoke, CompareValueResult)
 {
     using namespace asbind20;
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine, true);
-
-    global(engine)
-        .function(
-            "int bad_call()",
-            +[](generic_pointer) -> void
-            { set_script_exception("intentional"); }
-        );
+    test_invoke::setup_bad_call_helper(engine, "int");
 
     auto* m = engine->GetModule(
         "test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
@@ -477,6 +494,66 @@ TEST(TestInvoke, CompareValueResult)
     EXPECT_FALSE(result_4 < result_3);
     EXPECT_FALSE(result_4 > result_3);
     EXPECT_FALSE(result_4 == result_3);
+}
+
+TEST(TestInvoke, CompareValueClassResult)
+{
+    using std::string;
+    using namespace asbind20;
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_script_string(engine);
+    test_invoke::setup_bad_call_helper(engine, "string");
+
+    auto* m = engine->GetModule(
+        "test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
+    );
+    m->AddScriptSection(
+        "test",
+        "string aaa() { return 'aaa'; }\n"
+        "string bbb() { return 'bbb'; }\n"
+        "string bad() { return bad_call(); }"
+    );
+    ASSERT_GE(m->Build(), 0);
+
+    auto* aaa = m->GetFunctionByName("aaa");
+    ASSERT_NE(aaa, nullptr);
+    auto* bbb = m->GetFunctionByName("bbb");
+    ASSERT_NE(bbb, nullptr);
+    auto* bad = m->GetFunctionByName("bad");
+    ASSERT_NE(bad, nullptr);
+
+    request_context ctx_0(engine);
+    auto result_0 = script_invoke<std::string>(ctx_0, aaa);
+    request_context ctx_1(engine);
+    auto result_1 = script_invoke<std::string>(ctx_1, bbb);
+    request_context ctx_2(engine);
+    auto result_2 = script_invoke<std::string>(ctx_2, bad);
+
+    // Self checks
+    ASBIND_TEST_EXPECT_INVOKE_RESULT(result_0);
+    EXPECT_EQ(result_0.value(), "aaa");
+    ASBIND_TEST_EXPECT_INVOKE_RESULT(result_1);
+    EXPECT_EQ(result_1.value(), "bbb");
+    ASBIND_TEST_EXPECT_INVOKE_NO_RESULT(result_2);
+    EXPECT_EQ(result_2.error(), AS_NAMESPACE_QUALIFIER asEXECUTION_EXCEPTION);
+
+    EXPECT_LT(result_0, result_1);
+    EXPECT_GT(result_1, result_0);
+    EXPECT_NE(result_0, result_2);
+    EXPECT_NE(result_1, result_2);
+    EXPECT_EQ(result_2, result_2);
+    EXPECT_FALSE(result_0 <= result_2);
+    EXPECT_FALSE(result_0 >= result_2);
+    EXPECT_FALSE(result_1 <= result_2);
+    EXPECT_FALSE(result_2 >= "aaa");
+    EXPECT_FALSE(result_2 <= "aaa");
+    EXPECT_FALSE("aaa" <= result_2);
+    EXPECT_FALSE("aaa" >= result_2);
+    EXPECT_NE(result_2, "aaa");
+    EXPECT_TRUE(result_2 <= result_2);
+    EXPECT_TRUE(result_2 >= result_2);
 }
 
 static void output_info(std::ostream& os)

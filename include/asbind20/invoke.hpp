@@ -34,6 +34,7 @@ template <typename T>
 requires(!std::is_const_v<T>)
 decltype(auto) get_script_return(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx)
 {
+    assert(ctx != nullptr);
     assert(ctx->GetState() == (AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED));
 
     constexpr bool is_customized = requires() {
@@ -101,7 +102,7 @@ class bad_script_invoke_result_access : public std::exception
 public:
     using error_code_type = AS_NAMESPACE_QUALIFIER asEContextState;
 
-    bad_script_invoke_result_access(error_code_type r) noexcept
+    explicit bad_script_invoke_result_access(error_code_type r) noexcept
         : m_r(r) {}
 
     [[nodiscard]]
@@ -229,6 +230,11 @@ protected:
         ASBIND20_THROW(bad_script_invoke_result_access, (error()));
     }
 
+    void swap(script_invoke_result_base& other) noexcept
+    {
+        std::swap(m_ctx, other.m_ctx);
+    }
+
 private:
     AS_NAMESPACE_QUALIFIER asIScriptContext* m_ctx;
 };
@@ -346,6 +352,11 @@ public:
     }
 
 #endif
+
+    void swap(script_invoke_result& other) noexcept
+    {
+        swap(other);
+    }
 };
 
 /**
@@ -401,6 +412,11 @@ public:
         else
             return std::forward<U>(default_val);
     }
+
+    void swap(script_invoke_result& other) noexcept
+    {
+        swap(other);
+    }
 };
 
 /**
@@ -425,11 +441,27 @@ public:
         const script_invoke_result& other
     ) noexcept = default;
 
+    template <typename U>
+    explicit script_invoke_result(
+        const script_invoke_result<U>& other
+    ) noexcept
+        : script_invoke_result(other.get_context())
+    {}
+
     ~script_invoke_result() = default;
 
     script_invoke_result& operator=(
         const script_invoke_result& other
     ) noexcept = default;
+
+    template <typename U>
+    script_invoke_result& operator=(
+        const script_invoke_result<U>& other
+    ) noexcept
+    {
+        script_invoke_result(other).swap(*this);
+        return *this;
+    }
 
     void operator*() const noexcept
     {
@@ -441,7 +473,18 @@ public:
         if(!has_value())
             throw_bad_access();
     }
+
+    void swap(script_invoke_result& other) noexcept
+    {
+        script_invoke_result_base::swap(other);
+    }
 };
+
+template <typename T>
+void swap(script_invoke_result<T>& lhs, script_invoke_result<T>& rhs) noexcept
+{
+    lhs.swap(rhs);
+}
 
 namespace detail
 {
@@ -504,8 +547,14 @@ template <typename T, typename U>
 std::partial_ordering operator<=>(const script_invoke_result<T>& lhs, const script_invoke_result<U>& rhs)
     requires(detail::check_op_cmp<T, U>)
 {
-    if(!(lhs.has_value() && rhs.has_value()))
+    if(lhs.has_value() != rhs.has_value())
         return std::partial_ordering::unordered;
+    if(!lhs.has_value())
+    {
+        return lhs.error() == rhs.error() ?
+                   std::partial_ordering::equivalent :
+                   std::partial_ordering::unordered;
+    }
     return *lhs <=> *rhs;
 }
 
@@ -513,7 +562,7 @@ template <typename T, typename U>
 std::partial_ordering operator<=>(const script_invoke_result<T>& lhs, const U& rhs)
     requires(!is_script_invoke_result_v<U> && detail::check_op_cmp<T, U>)
 {
-    if(!(lhs.has_value() && rhs))
+    if(!lhs.has_value())
         return std::partial_ordering::unordered;
     return *lhs <=> rhs;
 }
@@ -522,7 +571,7 @@ template <typename T, typename U>
 std::partial_ordering operator<=>(const T& lhs, const script_invoke_result<U>& rhs)
     requires(!is_script_invoke_result_v<T> && detail::check_op_cmp<T, U>)
 {
-    if(!(lhs && rhs.has_value()))
+    if(!rhs.has_value())
         return std::partial_ordering::unordered;
     return lhs <=> *rhs;
 }
