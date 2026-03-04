@@ -511,11 +511,6 @@ namespace detail
     concept check_op_eq = requires(const T& lhs, const U& rhs) {
         { lhs == rhs } -> std::convertible_to<bool>;
     };
-
-    template <typename T, typename U>
-    concept check_op_cmp = requires(const T& lhs, const U& rhs) {
-        { lhs <=> rhs } -> std::convertible_to<std::partial_ordering>;
-    };
 } // namespace detail
 
 template <typename T, typename U>
@@ -543,6 +538,37 @@ bool operator==(const T& lhs, const script_invoke_result<U>& rhs)
     return rhs.has_value() ? lhs == *rhs : false;
 }
 
+namespace detail
+{
+    template <typename T, typename U>
+    concept check_op_cmp = requires(const T& lhs, const U& rhs) {
+        { lhs == rhs } -> std::convertible_to<bool>;
+        { lhs < rhs } -> std::convertible_to<bool>;
+        { rhs < lhs } -> std::convertible_to<bool>;
+    } || requires(const T& lhs, const U& rhs) {
+        { lhs <=> rhs } -> std::convertible_to<std::partial_ordering>;
+    };
+
+    template <typename T, typename U>
+    std::partial_ordering cmp_weak_ord_helper(T&& lhs, U&& rhs)
+    {
+        using std::partial_ordering;
+        constexpr bool use_three_way = requires() {
+            { lhs <=> rhs } -> std::convertible_to<std::partial_ordering>;
+        };
+        if constexpr(use_three_way)
+            return std::forward<T>(lhs) <=> std::forward<U>(rhs);
+        else
+        {
+            // Logic of std::compare_partial_order_fallback
+            return std::forward<T>(lhs) == std::forward<U>(rhs) ? partial_ordering::equivalent :
+                   std::forward<T>(lhs) < std::forward<U>(rhs)  ? partial_ordering::less :
+                   std::forward<U>(rhs) < std::forward<T>(lhs)  ? partial_ordering::greater :
+                                                                  partial_ordering::unordered;
+        }
+    }
+} // namespace detail
+
 template <typename T, typename U>
 std::partial_ordering operator<=>(const script_invoke_result<T>& lhs, const script_invoke_result<U>& rhs)
     requires(detail::check_op_cmp<T, U>)
@@ -555,7 +581,7 @@ std::partial_ordering operator<=>(const script_invoke_result<T>& lhs, const scri
                    std::partial_ordering::equivalent :
                    std::partial_ordering::unordered;
     }
-    return *lhs <=> *rhs;
+    return detail::cmp_weak_ord_helper(*lhs, *rhs);
 }
 
 template <typename T, typename U>
@@ -564,7 +590,7 @@ std::partial_ordering operator<=>(const script_invoke_result<T>& lhs, const U& r
 {
     if(!lhs.has_value())
         return std::partial_ordering::unordered;
-    return *lhs <=> rhs;
+    return detail::cmp_weak_ord_helper(*lhs, rhs);
 }
 
 template <typename T, typename U>
@@ -573,7 +599,7 @@ std::partial_ordering operator<=>(const T& lhs, const script_invoke_result<U>& r
 {
     if(!rhs.has_value())
         return std::partial_ordering::unordered;
-    return lhs <=> *rhs;
+    return detail::cmp_weak_ord_helper(lhs, *rhs);
 }
 
 template <typename T>
