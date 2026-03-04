@@ -35,6 +35,8 @@ Update
 
 - Tools for comparing script objects.
 
+- Enable CMake script to use local external package.
+
 Breaking Change
 ~~~~~~~~~~~~~~~
 
