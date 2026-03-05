@@ -163,6 +163,7 @@ namespace detail
  *         If the state value is invalid, the result will be `"asEContextState({state})"`,
  *         e.g. `"asEContextState(-1)"`.
  */
+[[nodiscard]]
 inline std::string to_string(AS_NAMESPACE_QUALIFIER asEContextState state)
 {
     const char* cstr = detail::state_to_cstr(state);
@@ -180,6 +181,27 @@ inline std::string to_string(AS_NAMESPACE_QUALIFIER asEContextState state)
     }
 }
 
+[[nodiscard]]
+inline std::wstring to_wstring(AS_NAMESPACE_QUALIFIER asEContextState state)
+{
+    const char* cstr = detail::state_to_cstr(state);
+    if(cstr) [[likely]]
+    {
+        std::string_view sv = cstr;
+        return std::wstring(sv.cbegin(), sv.cend());
+    }
+    else
+    {
+#ifdef ASBIND20_HAS_LIB_FORMAT
+        return std::format(L"asEContextState({})", static_cast<int>(state));
+#else
+        return L"asEContextState(" +
+               std::to_wstring(static_cast<int>(state)) +
+               L')';
+#endif
+    }
+}
+
 /**
  * @brief Convert return code to string
  *
@@ -188,6 +210,7 @@ inline std::string to_string(AS_NAMESPACE_QUALIFIER asEContextState state)
  *         If the value is invalid, the result will be `"asERetCodes({ret})"`,
  *         e.g. `"asERetCodes(1)"`.
  */
+[[nodiscard]]
 inline std::string to_string(AS_NAMESPACE_QUALIFIER asERetCodes ret)
 {
     const char* cstr = detail::ret_to_cstr(ret);
@@ -205,6 +228,28 @@ inline std::string to_string(AS_NAMESPACE_QUALIFIER asERetCodes ret)
     }
 }
 
+[[nodiscard]]
+inline std::wstring to_wstring(AS_NAMESPACE_QUALIFIER asERetCodes ret)
+{
+    const char* cstr = detail::ret_to_cstr(ret);
+    if(cstr) [[unlikely]]
+    {
+        std::string_view sv = cstr;
+        return std::wstring(sv.cbegin(), sv.cend());
+    }
+    else
+    {
+#ifdef ASBIND20_HAS_LIB_FORMAT
+        return std::format(L"asERetCodes({})", static_cast<int>(ret));
+#else
+        return L"asERetCodes(" +
+               std::to_wstring(static_cast<int>(ret)) +
+               L')';
+#endif
+    }
+}
+
+[[nodiscard]]
 inline std::string to_string(AS_NAMESPACE_QUALIFIER asEMsgType msg_type)
 {
     const char* cstr = detail::msg_type_to_cstr(msg_type);
@@ -222,6 +267,28 @@ inline std::string to_string(AS_NAMESPACE_QUALIFIER asEMsgType msg_type)
     }
 }
 
+[[nodiscard]]
+inline std::wstring to_wstring(AS_NAMESPACE_QUALIFIER asEMsgType msg_type)
+{
+    const char* cstr = detail::msg_type_to_cstr(msg_type);
+    if(cstr) [[likely]]
+    {
+        std::string_view sv = cstr;
+        return std::wstring(sv.cbegin(), sv.cend());
+    }
+    else
+    {
+#ifdef ASBIND20_HAS_LIB_FORMAT
+        return std::format(L"asEMsgType({})", static_cast<int>(msg_type));
+#else
+        return L"asEMsgType(" +
+               std::to_wstring(static_cast<int>(msg_type)) +
+               L')';
+#endif
+    }
+}
+
+[[nodiscard]]
 inline std::string to_string(AS_NAMESPACE_QUALIFIER asETokenClass tc)
 {
     const char* cstr = detail::tc_to_cstr(tc);
@@ -235,6 +302,27 @@ inline std::string to_string(AS_NAMESPACE_QUALIFIER asETokenClass tc)
         return "asETokenClass(" +
                std::to_string(static_cast<int>(tc)) +
                ')';
+#endif
+    }
+}
+
+[[nodiscard]]
+inline std::wstring to_wstring(AS_NAMESPACE_QUALIFIER asETokenClass tc)
+{
+    const char* cstr = detail::tc_to_cstr(tc);
+    if(cstr) [[likely]]
+    {
+        std::string_view sv = cstr;
+        return std::wstring(sv.cbegin(), sv.cend());
+    }
+    else
+    {
+#ifdef ASBIND20_HAS_LIB_FORMAT
+        return std::format(L"asETokenClass({})", static_cast<int>(tc));
+#else
+        return L"asETokenClass(" +
+               std::to_wstring(static_cast<int>(tc)) +
+               L')';
 #endif
     }
 }

@@ -18,6 +18,9 @@ TEST(Stringify, asEContextStateToString)
 
     EXPECT_EQ(to_string(AS_NAMESPACE_QUALIFIER asEContextState(-1)), "asEContextState(-1)");
     EXPECT_EQ(to_string(AS_NAMESPACE_QUALIFIER asEContextState(-2)), "asEContextState(-2)");
+
+    EXPECT_EQ(to_wstring(AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED), L"asEXECUTION_FINISHED");
+    EXPECT_EQ(to_wstring(AS_NAMESPACE_QUALIFIER asEContextState(-1)), L"asEContextState(-1)");
 }
 
 TEST(Stringify, asERetCodesToString)
@@ -56,6 +59,9 @@ TEST(Stringify, asERetCodesToString)
 
     EXPECT_EQ(to_string(AS_NAMESPACE_QUALIFIER asERetCodes(1)), "asERetCodes(1)");
     EXPECT_EQ(to_string(AS_NAMESPACE_QUALIFIER asERetCodes(2)), "asERetCodes(2)");
+
+    EXPECT_EQ(to_wstring(AS_NAMESPACE_QUALIFIER asSUCCESS), L"asSUCCESS");
+    EXPECT_EQ(to_wstring(AS_NAMESPACE_QUALIFIER asERetCodes(1)), L"asERetCodes(1)");
 }
 
 TEST(Stringify, asEMsgTypeToString)
@@ -65,6 +71,8 @@ TEST(Stringify, asEMsgTypeToString)
     EXPECT_EQ(to_string(AS_NAMESPACE_QUALIFIER asMSGTYPE_ERROR), "asMSGTYPE_ERROR");
     EXPECT_EQ(to_string(AS_NAMESPACE_QUALIFIER asMSGTYPE_WARNING), "asMSGTYPE_WARNING");
     EXPECT_EQ(to_string(AS_NAMESPACE_QUALIFIER asMSGTYPE_INFORMATION), "asMSGTYPE_INFORMATION");
+
+    EXPECT_EQ(to_wstring(AS_NAMESPACE_QUALIFIER asMSGTYPE_ERROR), L"asMSGTYPE_ERROR");
 }
 
 TEST(Stringify, asETokenClass)
@@ -117,6 +125,10 @@ TEST(Stringify, Formatter)
         "asALREADY_REGISTERED"
     );
     EXPECT_EQ(
+        std::format(L"{:?}", AS_NAMESPACE_QUALIFIER asALREADY_REGISTERED),
+        L"asALREADY_REGISTERED"
+    );
+    EXPECT_EQ(
         std::format("{}", AS_NAMESPACE_QUALIFIER asERetCodes(1)),
         "asERetCodes(1)"
     );
@@ -134,6 +146,10 @@ TEST(Stringify, Formatter)
         "asEXECUTION_FINISHED"
     );
     EXPECT_EQ(
+        std::format(L"{:?}", AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED),
+        L"asEXECUTION_FINISHED"
+    );
+    EXPECT_EQ(
         std::format("{}", AS_NAMESPACE_QUALIFIER asEContextState(-1)),
         "asEContextState(-1)"
     );
@@ -141,15 +157,27 @@ TEST(Stringify, Formatter)
         std::format("{:d}", AS_NAMESPACE_QUALIFIER asEContextState(-1)),
         "-1"
     );
+    EXPECT_EQ(
+        std::format(L"{:d}", AS_NAMESPACE_QUALIFIER asEContextState(-1)),
+        L"-1"
+    );
 
     EXPECT_EQ(
         std::format("{}", AS_NAMESPACE_QUALIFIER asMSGTYPE_ERROR),
         "ERROR"
     );
+    EXPECT_EQ(
+        std::format(L"{}", AS_NAMESPACE_QUALIFIER asMSGTYPE_ERROR),
+        L"ERROR"
+    );
 
     EXPECT_EQ(
         std::format("{}", AS_NAMESPACE_QUALIFIER asTC_IDENTIFIER),
         "IDENTIFIER"
+    );
+    EXPECT_EQ(
+        std::format(L"{}", AS_NAMESPACE_QUALIFIER asTC_IDENTIFIER),
+        L"IDENTIFIER"
     );
 }
 

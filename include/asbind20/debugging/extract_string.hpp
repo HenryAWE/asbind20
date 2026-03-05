@@ -87,7 +87,7 @@ public:
     extract_string_result() = delete;
 
 private:
-    extract_string_result(error_type e) noexcept
+    explicit extract_string_result(error_type e) noexcept
         : m_error(e)
     {
         assert(!has_value());
@@ -108,7 +108,7 @@ public:
             new(m_data) value_type(std::move(*other));
     }
 
-    extract_string_result(std::string str)
+    explicit extract_string_result(std::string str)
         : m_error(AS_NAMESPACE_QUALIFIER asSUCCESS)
     {
         new(m_data) std::string(std::move(str));
@@ -188,7 +188,9 @@ inline extract_string_result extract_string(
     AS_NAMESPACE_QUALIFIER asIStringFactory* factory, const void* str
 )
 {
-    assert(factory != nullptr);
+    if(!factory) [[unlikely]]
+        return extract_string_result(AS_NAMESPACE_QUALIFIER asINVALID_ARG);
+
     std::string result;
     AS_NAMESPACE_QUALIFIER asUINT sz = 0;
 
@@ -217,7 +219,7 @@ inline extract_string_result extract_string(
     AS_NAMESPACE_QUALIFIER asIStringFactory& factory, const void* str
 )
 {
-    return extract_string(&factory, str);
+    return extract_string(std::addressof(factory), str);
 }
 
 #ifdef ASBIND20_HAS_GET_STRING_FACTORY
@@ -227,7 +229,8 @@ inline extract_string_result extract_string(
     AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, const void* str
 )
 {
-    assert(engine != nullptr);
+    if(!engine) [[unlikely]]
+        return extract_string_result(AS_NAMESPACE_QUALIFIER asINVALID_ARG);
 
     AS_NAMESPACE_QUALIFIER asIStringFactory* factory;
     int r = engine->GetStringFactory(nullptr, &factory);
