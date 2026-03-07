@@ -12,6 +12,8 @@ add_subdirectory(test_invoke)
 
 add_subdirectory(test_container)
 
+add_subdirectory(test_debug)
+
 add_subdirectory(test_gc)
 
 add_subdirectory(test_operators)
