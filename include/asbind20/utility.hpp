@@ -1197,30 +1197,49 @@ inline std::strong_ordering translate_opCmp(int cmp) noexcept
  * This function has no effect when calling outside an active AngelScript context.
  *
  * @param info Exception information
+ * @param allow_catch Allow the exception to be caught by script
  */
-inline void set_script_exception(const char* info)
+inline void set_script_exception(
+    const char* info, bool allow_catch = true
+)
 {
-    auto* ctx = current_context();
-    if(ctx)
-        ctx->SetException(info);
+    if(auto* ctx = current_context()) [[likely]]
+        ctx->SetException(info, allow_catch);
 }
 
-inline void set_script_exception(cstring_ref csv)
+inline void set_script_exception(
+    cstring_ref csv, bool allow_catch = true
+)
 {
-    set_script_exception(csv.c_str());
+    set_script_exception(csv.c_str(), allow_catch);
 }
 
-inline void set_script_exception(const std::string& info)
+inline void set_script_exception(
+    const std::string& info, bool allow_catch = true
+)
 {
-    set_script_exception(info.c_str());
+    set_script_exception(info.c_str(), allow_catch);
 }
 
-inline void set_script_exception(std::string_view info)
+inline void set_script_exception(
+    std::string_view info, bool allow_catch = true
+)
 {
     util::with_cstr(
-        [](const char* info)
-        { set_script_exception(info); },
+        [allow_catch](const char* info)
+        { set_script_exception(info, allow_catch); },
         info
+    );
+}
+
+template <std::convertible_to<std::string_view> StringViewLike>
+void set_script_exception(
+    StringViewLike&& str, bool allow_catch = true
+)
+{
+    set_script_exception(
+        std::string_view(std::forward<StringViewLike>(str)),
+        allow_catch
     );
 }
 } // namespace asbind20
