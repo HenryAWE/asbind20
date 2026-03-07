@@ -37,6 +37,8 @@ Update
 
 - Enable CMake script to use local external package.
 
+- Update compatibility with AngelScript 2.39 WIP.
+
 Breaking Change
 ~~~~~~~~~~~~~~~
 
