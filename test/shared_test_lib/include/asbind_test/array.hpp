@@ -7,6 +7,7 @@
 #include <asbind20/asbind.hpp>
 #include <asbind20/container/small_vector.hpp>
 #include <asbind20/operators.hpp>
+#include <asbind20/container/compare.hpp>
 
 namespace asbind_test
 {
@@ -32,11 +33,8 @@ namespace detail
     protected:
         struct array_cache
         {
-            AS_NAMESPACE_QUALIFIER asIScriptFunction* subtype_opCmp;
-            AS_NAMESPACE_QUALIFIER asIScriptFunction* subtype_opEquals;
-            int opCmp_status;
-            int opEquals_status;
-
+            asbind20::container::script_element_comparator comp;
+            asbind20::container::get_comparator_result::status status;
             AS_NAMESPACE_QUALIFIER asITypeInfo* iterator_ti;
 
             ~array_cache() = default;
@@ -1059,9 +1057,9 @@ public:
                 asbind20::set_script_exception("array<T>.sort(): internal error");
                 return;
             }
-            if(!cache->subtype_opCmp) [[unlikely]]
+            if(!cache->comp.has_opCmp()) [[unlikely]]
             {
-                if(cache->opCmp_status == AS_NAMESPACE_QUALIFIER asMULTIPLE_FUNCTIONS)
+                if(cache->status.opCmp == AS_NAMESPACE_QUALIFIER asMULTIPLE_FUNCTIONS)
                     asbind20::set_script_exception("array<T>.sort(): multiple opCmp() functions");
                 else
                     asbind20::set_script_exception("array<T>.sort(): opCmp() function not found");
@@ -1069,7 +1067,7 @@ public:
             }
 
             sort_by_script_compare<true>(
-                cache->subtype_opCmp,
+                cache->comp.get_opCmp().target(),
                 asbind20::is_objhandle(subtype_id),
                 asc,
                 off,
