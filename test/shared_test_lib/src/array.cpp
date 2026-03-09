@@ -1,7 +1,7 @@
 #include <asbind_test/array.hpp>
-#include <cassert>
 #include <cstring>
 #include <asbind20/invoke.hpp>
+#include <asbind_test/framework.hpp>
 
 namespace asbind_test
 {
@@ -25,7 +25,7 @@ namespace detail
         const array_cache* cache
     )
     {
-        assert(!asbind20::is_primitive_type(subtype_id));
+        EXPECT_FALSE(asbind20::is_primitive_type(subtype_id));
 
         if(asbind20::is_objhandle(subtype_id))
         {
@@ -36,7 +36,7 @@ namespace detail
         if(!cache) [[unlikely]]
             return false;
 
-        assert(ctx != nullptr);
+        EXPECT_NE(ctx, nullptr);
         if(cache->comp.has_opEquals()) [[likely]]
         {
             auto result = cache->comp.get_opEquals()(
@@ -70,7 +70,7 @@ namespace detail
         array_cache& out, int subtype_id, AS_NAMESPACE_QUALIFIER asITypeInfo* ti
     )
     {
-        assert(!asbind20::is_primitive_type(subtype_id));
+        EXPECT_FALSE(asbind20::is_primitive_type(subtype_id));
 
         auto* subtype_ti = ti->GetSubType(0);
         out.comp = asbind20::container::get_comparator(subtype_ti).get();
@@ -107,7 +107,7 @@ namespace detail
         else if(!asbind20::is_objhandle(subtype_id))
         {
             AS_NAMESPACE_QUALIFIER asITypeInfo* subtype_ti = ti->GetSubType();
-            assert(subtype_ti != nullptr);
+            EXPECT_NE(subtype_ti, nullptr);
             auto flags = subtype_ti->GetFlags();
 
             if(
@@ -147,7 +147,7 @@ namespace detail
         }
         else
         {
-            assert(asbind20::is_objhandle(subtype_id));
+            EXPECT_TRUE(asbind20::is_objhandle(subtype_id));
 
             // According to the official add-on, if a handle cannot refer to an object type
             // that can form a circular reference with the array,
