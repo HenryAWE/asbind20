@@ -136,6 +136,10 @@ TEST(Stringify, Formatter)
         std::format("{:d}", AS_NAMESPACE_QUALIFIER asERetCodes(1)),
         "1"
     );
+    EXPECT_EQ(
+        std::format(L"{:d}", AS_NAMESPACE_QUALIFIER asERetCodes(1)),
+        L"1"
+    );
 
     EXPECT_EQ(
         std::format("{}", AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED),

@@ -1,11 +1,11 @@
 /**
- * @file ext/section.hpp
+ * @file io/section.hpp
  * @author HenryAWE
  * @brief Helpers for loading script section
  */
 
-#ifndef ASBIND20_EXT_SECTION_HPP
-#define ASBIND20_EXT_SECTION_HPP
+#ifndef ASBIND20_IO_SECTION_HPP
+#define ASBIND20_IO_SECTION_HPP
 
 #pragma once
 
@@ -29,7 +29,8 @@ inline int load_string(
     int line_offset = 0
 )
 {
-    assert(m != nullptr);
+    if(!m) [[unlikely]]
+        return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
 
     return m->AddScriptSection(
         section_name,
@@ -50,7 +51,8 @@ inline int load_file(
     std::ios_base::openmode mode = std::ios_base::in
 )
 {
-    assert(m != nullptr);
+    if(!m) [[unlikely]]
+        return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
 
     std::string code;
     {

@@ -167,21 +167,33 @@ public:
 
         if(char_type ch = *it; ch == char_type('?'))
         {
-            full_representation = true;
+            m_full_representation = true;
             ++it;
         }
         else if(ch == char_type('d'))
         {
-            print_underlying = true;
+            m_print_underlying = true;
             ++it;
         }
 
         return it;
     }
 
-protected:
-    bool full_representation = false;
-    bool print_underlying = false;
+    [[nodiscard]]
+    bool full_representation() const noexcept
+    {
+        return m_full_representation;
+    }
+
+    [[nodiscard]]
+    bool print_underlying() const noexcept
+    {
+        return m_print_underlying;
+    }
+
+private:
+    bool m_full_representation : 1 = false;
+    bool m_print_underlying : 1 = false;
 };
 } // namespace asbind20::io
 
@@ -194,10 +206,9 @@ requires(
     std::same_as<ASEnum, AS_NAMESPACE_QUALIFIER asEMsgType> ||
     std::same_as<ASEnum, AS_NAMESPACE_QUALIFIER asETokenClass>
 )
-class std::formatter<ASEnum, CharT> :
-    public asbind20::io::angelscript_enum_formatter_base
+struct std::formatter<ASEnum, CharT> :
+    asbind20::io::angelscript_enum_formatter_base
 {
-public:
     constexpr formatter() noexcept = default;
     constexpr formatter(const formatter&) noexcept = default;
 
@@ -205,15 +216,22 @@ public:
     constexpr auto format(ASEnum val, FormatContext& ctx) const
         -> typename FormatContext::iterator
     {
-        if(this->print_underlying)
+        static_assert(
+            std::is_same_v<typename FormatContext::char_type, CharT>,
+            "Inconsistent character type"
+        );
+
+        if(print_underlying())
         {
             return std::format_to(
-                ctx.out(), ASBIND20_IO_STATICALLY_WIDEN(char, "{:d}"), static_cast<int>(val)
+                ctx.out(),
+                ASBIND20_IO_STATICALLY_WIDEN(CharT, "{:d}"),
+                static_cast<int>(val)
             );
         }
 
         return asbind20::io::copy_debug_representation_to<CharT>(
-            val, !this->full_representation, ctx.out()
+            val, !full_representation(), ctx.out()
         );
     }
 };
