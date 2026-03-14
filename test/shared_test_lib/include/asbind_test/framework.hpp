@@ -2,7 +2,6 @@
 
 #include <gtest/gtest.h>
 #include <typeinfo>
-#include <source_location>
 #include <asbind20/asbind.hpp>
 
 // IWYU pragma: begin_exports
