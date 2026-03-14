@@ -197,7 +197,7 @@ private:
 };
 } // namespace asbind20::io
 
-#ifdef ASBIND20_HAS_LIB_FORMAT
+#if defined(ASBIND20_HAS_LIB_FORMAT) && !defined(ASBIND20_CONFIG_NO_STD_FORMATTER)
 
 template <typename ASEnum, typename CharT>
 requires(

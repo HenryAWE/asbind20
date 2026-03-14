@@ -145,7 +145,8 @@ namespace io
         memory_reader(const void* mem, std::size_t sz) noexcept
             : m_ptr(static_cast<const std::byte*>(mem)), m_avail(sz)
         {
-            assert(mem != nullptr);
+            if(m_ptr == nullptr) [[unlikely]]
+                m_avail = 0;
         }
 
         int Read(void* ptr, AS_NAMESPACE_QUALIFIER asUINT size) override
@@ -221,6 +222,8 @@ inline int save_byte_code(
     bool strip_debug_info = false
 )
 {
+    if(!m) [[unlikely]]
+        return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
     io::ostream_wrapper wrapper(os);
     return m->SaveByteCode(&wrapper, strip_debug_info);
 }
@@ -243,6 +246,8 @@ int save_byte_code(
     bool strip_debug_info = false
 )
 {
+    if(!m) [[unlikely]]
+        return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
     io::copy_to<decltype(out), OutputIteratorValueType> wrapper(std::move(out));
     return m->SaveByteCode(&wrapper, strip_debug_info);
 }
@@ -259,6 +264,8 @@ inline io::load_byte_code_result load_byte_code(
     AS_NAMESPACE_QUALIFIER asIScriptModule* m
 )
 {
+    if(!m) [[unlikely]]
+        return {AS_NAMESPACE_QUALIFIER asINVALID_ARG, false};
     io::istream_wrapper wrapper(is);
     bool debug_info_stripped;
     int r = m->LoadByteCode(&wrapper, &debug_info_stripped);
@@ -279,10 +286,20 @@ inline io::load_byte_code_result load_byte_code(
     AS_NAMESPACE_QUALIFIER asIScriptModule* m
 )
 {
+    if(!m) [[unlikely]]
+        return {AS_NAMESPACE_QUALIFIER asINVALID_ARG, false};
     io::memory_reader wrapper(mem, size);
     bool debug_info_stripped;
     int r = m->LoadByteCode(&wrapper, &debug_info_stripped);
     return {r, debug_info_stripped};
+}
+
+inline io::load_byte_code_result load_byte_code(
+    std::span<const std::byte> mem,
+    AS_NAMESPACE_QUALIFIER asIScriptModule* m
+)
+{
+    return load_byte_code(mem.data(), mem.size_bytes(), m);
 }
 
 /// @}

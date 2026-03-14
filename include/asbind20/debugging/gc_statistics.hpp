@@ -9,8 +9,7 @@
 
 #pragma once
 
-#include <cassert>
-#include <utility>
+#include <tuple>
 #include "../detail/include_as.hpp"
 
 namespace asbind20::debugging
@@ -28,10 +27,11 @@ struct gc_statistics
     value_type new_objects;
     value_type total_new_destroyed;
 
-    bool operator==(const gc_statistics&) const noexcept = default;
+    constexpr bool operator==(const gc_statistics&) const noexcept = default;
+    constexpr std::strong_ordering operator<=>(const gc_statistics&) const noexcept = default;
 
     template <std::size_t I>
-    friend value_type get(
+    friend constexpr value_type get(
         const gc_statistics& stats
     ) noexcept
     {
@@ -47,6 +47,24 @@ struct gc_statistics
         else // I == 4
             return stats.total_new_destroyed;
     }
+
+    using tuple_type = std::tuple<
+        value_type,
+        value_type,
+        value_type,
+        value_type,
+        value_type>;
+
+    explicit operator tuple_type() const noexcept
+    {
+        return {
+            current_size,
+            total_destroyed,
+            total_detected,
+            new_objects,
+            total_new_destroyed
+        };
+    }
 };
 
 /**
@@ -55,9 +73,12 @@ struct gc_statistics
  * @param engine Script engine. It cannot be nullptr.
  */
 [[nodiscard]]
-inline gc_statistics get_gc_statistics(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+inline gc_statistics get_gc_statistics(
+    const AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
+)
 {
-    assert(engine != nullptr);
+    if(!engine) [[unlikely]]
+        return {};
 
     gc_statistics result;
     engine->GetGCStatistics(
@@ -73,7 +94,7 @@ inline gc_statistics get_gc_statistics(AS_NAMESPACE_QUALIFIER asIScriptEngine* e
 
 template <>
 struct std::tuple_size<asbind20::debugging::gc_statistics> :
-    public std::integral_constant<std::size_t, 5>
+    std::integral_constant<std::size_t, 5>
 {};
 
 template <std::size_t Index>

@@ -25,12 +25,12 @@ namespace asbind20::debugging
 class extract_string_result;
 
 extract_string_result extract_string(
-    AS_NAMESPACE_QUALIFIER asIStringFactory* factory, const void* str
+    const AS_NAMESPACE_QUALIFIER asIStringFactory* factory, const void* str
 );
 
 #ifdef ASBIND20_HAS_GET_STRING_FACTORY
 extract_string_result extract_string(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, const void* str
+    const AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, const void* str
 );
 
 #endif
@@ -70,12 +70,12 @@ private:
 class extract_string_result
 {
     friend extract_string_result extract_string(
-        AS_NAMESPACE_QUALIFIER asIStringFactory* factory, const void* str
+        const AS_NAMESPACE_QUALIFIER asIStringFactory* factory, const void* str
     );
 
 #ifdef ASBIND20_HAS_GET_STRING_FACTORY
     friend extract_string_result extract_string(
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, const void* str
+        const AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, const void* str
     );
 
 #endif
@@ -185,7 +185,7 @@ private:
  */
 [[nodiscard]]
 inline extract_string_result extract_string(
-    AS_NAMESPACE_QUALIFIER asIStringFactory* factory, const void* str
+    const AS_NAMESPACE_QUALIFIER asIStringFactory* factory, const void* str
 )
 {
     if(!factory) [[unlikely]]
@@ -216,7 +216,7 @@ bad_result:
 
 [[nodiscard]]
 inline extract_string_result extract_string(
-    AS_NAMESPACE_QUALIFIER asIStringFactory& factory, const void* str
+    const AS_NAMESPACE_QUALIFIER asIStringFactory& factory, const void* str
 )
 {
     return extract_string(std::addressof(factory), str);
@@ -226,7 +226,7 @@ inline extract_string_result extract_string(
 
 [[nodiscard]]
 inline extract_string_result extract_string(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, const void* str
+    const AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, const void* str
 )
 {
     if(!engine) [[unlikely]]

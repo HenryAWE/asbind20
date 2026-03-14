@@ -6,6 +6,29 @@
 
 namespace test_gc
 {
+consteval bool static_checks()
+{
+    {
+        using expected_tuple_type = std::tuple<
+            AS_NAMESPACE_QUALIFIER asUINT,
+            AS_NAMESPACE_QUALIFIER asUINT,
+            AS_NAMESPACE_QUALIFIER asUINT,
+            AS_NAMESPACE_QUALIFIER asUINT,
+            AS_NAMESPACE_QUALIFIER asUINT>;
+
+        static_assert(
+            std::is_constructible_v<expected_tuple_type, asbind20::debugging::gc_statistics>
+        );
+    }
+
+    return true;
+}
+} // namespace test_gc
+
+static_assert(test_gc::static_checks());
+
+namespace test_gc
+{
 template <typename T>
 struct is_apply_to : public std::false_type
 {};
