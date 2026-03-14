@@ -19,7 +19,6 @@ class global final : public binding_generator_interface<ForceGeneric>
 {
     using my_base = binding_generator_interface<ForceGeneric>;
 
-private:
     template <typename Fn>
     void register_function(
         cstring_ref decl,
@@ -42,7 +41,7 @@ public:
     global() = delete;
     global(const global&) = default;
 
-    global(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+    explicit global(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         : my_base(engine) {}
 
     using my_base::get_engine;
