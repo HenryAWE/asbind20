@@ -210,11 +210,9 @@ public:
                 m_is_nested = true;
                 return;
             }
-            else
-                goto fallback;
         }
 
-fallback:
+        // Fallback
         m_ctx = engine->RequestContext();
     }
 
@@ -276,7 +274,7 @@ private:
     bool m_is_nested = false;
     bool m_propagate_error = true;
 
-    void pop_state_impl() noexcept
+    void pop_state_impl() const
     {
         assert(m_is_nested);
 
