@@ -227,7 +227,7 @@ protected:
     [[noreturn]]
     void throw_bad_access() const
     {
-        ASBIND20_THROW(bad_script_invoke_result_access, (error()));
+        detail::throw_<bad_script_invoke_result_access>(error());
     }
 
     void swap(script_invoke_result_base& other) noexcept
@@ -849,7 +849,7 @@ namespace detail
     [[noreturn]]
     inline void throw_bad_call()
     {
-        ASBIND20_THROW(std::bad_function_call, ());
+        asbind20::detail::throw_<std::bad_function_call>();
     }
 } // namespace detail
 

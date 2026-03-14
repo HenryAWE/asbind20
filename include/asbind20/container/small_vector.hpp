@@ -44,7 +44,7 @@ namespace detail
         [[noreturn]]
         static void throw_out_of_range()
         {
-            ASBIND20_THROW(std::out_of_range, ("small vector out of range"));
+            asbind20::detail::throw_<std::out_of_range>("small vector out of range");
         }
     };
 

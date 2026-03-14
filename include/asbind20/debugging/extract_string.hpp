@@ -159,7 +159,7 @@ private:
     [[noreturn]]
     void throw_bad_access() const
     {
-        ASBIND20_THROW(bad_extract_string_result_access, (m_error));
+        asbind20::detail::throw_<bad_extract_string_result_access>(m_error);
     }
 
     value_type* ptr() noexcept

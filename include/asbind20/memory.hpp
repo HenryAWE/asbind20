@@ -60,7 +60,7 @@ public:
 
             void* mem = AS_NAMESPACE_QUALIFIER asAllocMem(n * sizeof(T));
             if(!mem) [[unlikely]]
-                ASBIND20_THROW(std::bad_alloc, ());
+                asbind20::detail::throw_<std::bad_alloc>();
             return pointer(mem);
         }
     }
@@ -83,7 +83,7 @@ private:
     static void check_length(size_type n)
     {
         if(std::numeric_limits<size_type>::max() / sizeof(T) < n) [[unlikely]]
-            ASBIND20_THROW(std::bad_array_new_length, ());
+            detail::throw_<std::bad_array_new_length>();
     }
 };
 
