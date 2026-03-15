@@ -14,10 +14,11 @@
 
 namespace asbind20
 {
-template <bool ForceGeneric>
-class global final : public binding_generator_interface<ForceGeneric>
+template <bool ForceGeneric, typename Listener = default_listener>
+class global final : public binding_generator_interface<ForceGeneric, Listener>
 {
-    using my_base = binding_generator_interface<ForceGeneric>;
+    using my_base = binding_generator_interface<ForceGeneric, Listener>;
+    using listener_traits_type = listener_traits<Listener>;
 
     template <typename Fn>
     void register_function(
@@ -34,7 +35,7 @@ class global final : public binding_generator_interface<ForceGeneric>
             conv,
             auxiliary
         );
-        assert(r >= 0);
+        listener_traits_type::on_function(this->get_listener(), *this, r);
     }
 
 public:
@@ -233,7 +234,9 @@ public:
             decl.c_str(),
             (void*)std::addressof(val)
         );
-        assert(r >= 0);
+        listener_traits_type::on_global_property(
+            this->get_listener(), *this, r
+        );
 
         return *this;
     }

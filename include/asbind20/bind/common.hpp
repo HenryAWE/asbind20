@@ -15,6 +15,7 @@
 #include <concepts>
 #include "../meta.hpp"
 #include "../utility.hpp"
+#include "listener.hpp"
 
 namespace asbind20
 {
@@ -370,7 +371,7 @@ public:
     }
 
 protected:
-    binding_generator_base(engine_pointer engine) noexcept
+    explicit binding_generator_base(engine_pointer engine) noexcept
         : m_engine(engine)
     {
         assert(engine != nullptr);
@@ -380,17 +381,45 @@ private:
     engine_pointer m_engine;
 };
 
-template <bool ForceGeneric>
+template <bool ForceGeneric, typename Listener = default_listener>
 class binding_generator_interface : public binding_generator_base
 {
 public:
-    using binding_generator_base::binding_generator_base;
+    using engine_pointer = AS_NAMESPACE_QUALIFIER asIScriptEngine*;
 
+    binding_generator_interface(const binding_generator_interface&) noexcept = default;
+
+protected:
+    binding_generator_interface(engine_pointer engine) noexcept(std::is_nothrow_default_constructible_v<Listener>)
+        : binding_generator_base(engine), m_listener() {}
+
+    binding_generator_interface(engine_pointer engine, const Listener& listener)
+        : binding_generator_base(engine), m_listener(listener) {}
+
+    binding_generator_interface(engine_pointer engine, Listener&& listener)
+        : binding_generator_base(engine), m_listener(std::move(listener)) {}
+
+public:
     [[nodiscard]]
     static constexpr bool force_generic() noexcept
     {
         return ForceGeneric;
     }
+
+    [[nodiscard]]
+    Listener& get_listener() noexcept
+    {
+        return m_listener;
+    }
+
+    [[nodiscard]]
+    const Listener& get_listener() const noexcept
+    {
+        return m_listener;
+    }
+
+private:
+    Listener m_listener;
 };
 
 template <typename T>
