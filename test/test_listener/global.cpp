@@ -22,10 +22,32 @@ public:
         auto* f = engine->GetFunctionById(id);
         ASSERT_NE(f, nullptr);
 
-        recorded_func.push_back(f->GetName());
+        recorded_func.emplace_back(f->GetName());
+    }
+
+    template <typename BindGenerator>
+    void on_global_property(BindGenerator& g, int id)
+    {
+        using asbind20::to_string;
+        if(id < 0)
+        {
+            GTEST_FAIL()
+                << "bad global property: " << to_string(static_cast<AS_NAMESPACE_QUALIFIER asERetCodes>(id));
+        }
+
+        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = g.get_engine();
+        ASSERT_NE(engine, nullptr);
+        const char* name;
+        int r = engine->GetGlobalPropertyByIndex(static_cast<AS_NAMESPACE_QUALIFIER asUINT>(id), &name);
+        ASSERT_GE(r, 0)
+            << "r = " << to_string(static_cast<AS_NAMESPACE_QUALIFIER asERetCodes>(r));
+        ASSERT_NE(name, nullptr);
+
+        recorded_prop.emplace_back(name);
     }
 
     std::vector<std::string> recorded_func;
+    std::vector<std::string> recorded_prop;
 };
 
 static int int_func()
@@ -37,6 +59,8 @@ static float float_func()
 {
     return 0.0f;
 }
+
+static int int_prop = 0;
 } // namespace test_listener
 
 TEST(GlobalListener, RecordFunctions)
@@ -57,4 +81,10 @@ TEST(GlobalListener, RecordFunctions)
     EXPECT_THAT(listener.recorded_func, ::testing::SizeIs(2));
     EXPECT_THAT(listener.recorded_func, ::testing::Contains("int_func"));
     EXPECT_THAT(listener.recorded_func, ::testing::Contains("float_func"));
+
+    g
+        .property("int int_prop", test_listener::int_prop);
+
+    EXPECT_THAT(listener.recorded_prop, ::testing::SizeIs(1));
+    EXPECT_THAT(listener.recorded_prop, ::testing::Contains("int_prop"));
 }
