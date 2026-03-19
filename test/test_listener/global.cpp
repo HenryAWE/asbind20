@@ -61,19 +61,38 @@ static float float_func()
 }
 
 static int int_prop = 0;
+static float float_prop = 0.0f;
+
+class global_listener_suite : public ::testing::Test
+{
+public:
+    void SetUp() override
+    {
+        engine = asbind20::make_script_engine();
+        ASSERT_TRUE(engine);
+
+        // Error will be reported by listeners
+        asbind_test::setup_message_callback(engine, false);
+    }
+
+    void TearDown() override
+    {
+        engine.reset();
+    }
+
+    asbind20::script_engine engine;
+};
 } // namespace test_listener
 
-TEST(GlobalListener, RecordFunctions)
+using GlobalListener = test_listener::global_listener_suite;
+
+TEST_F(GlobalListener, RecordFunctions)
 {
-    using namespace asbind20;
-
-    auto engine = make_script_engine();
-    asbind_test::setup_message_callback(engine);
-
-    global<true, test_listener::record_func> g(engine);
+    asbind20::global<true, test_listener::record_func> g(engine);
     auto& listener = g.get_listener();
     EXPECT_TRUE(listener.recorded_func.empty());
 
+    using asbind20::fp;
     g
         .function("int int_func()", fp<&test_listener::int_func>)
         .function("float float_func()", fp<&test_listener::float_func>);
@@ -82,9 +101,24 @@ TEST(GlobalListener, RecordFunctions)
     EXPECT_THAT(listener.recorded_func, ::testing::Contains("int_func"));
     EXPECT_THAT(listener.recorded_func, ::testing::Contains("float_func"));
 
+    EXPECT_THAT(listener.recorded_prop, ::testing::SizeIs(0));
+}
+
+TEST_F(GlobalListener, RecordProperties)
+{
+    asbind20::global<true, test_listener::record_func> g(engine);
+    auto& listener = g.get_listener();
+    EXPECT_TRUE(listener.recorded_prop.empty());
+
     g
         .property("int int_prop", test_listener::int_prop);
-
     EXPECT_THAT(listener.recorded_prop, ::testing::SizeIs(1));
     EXPECT_THAT(listener.recorded_prop, ::testing::Contains("int_prop"));
+
+    g
+        .property("float float_prop", test_listener::float_prop);
+    EXPECT_THAT(listener.recorded_prop, ::testing::SizeIs(2));
+    EXPECT_THAT(listener.recorded_prop, ::testing::Contains("float_prop"));
+
+    EXPECT_THAT(listener.recorded_func, ::testing::SizeIs(0));
 }
