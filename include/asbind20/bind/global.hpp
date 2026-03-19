@@ -254,8 +254,9 @@ public:
         int r = get_engine()->RegisterFuncdef(
             decl.c_str()
         );
-        assert(r >= 0);
-
+        listener_traits_type::on_funcdef(
+            this->get_listener(), *this, r
+        );
         return *this;
     }
 
@@ -275,8 +276,9 @@ public:
             new_name.c_str(),
             type_decl.c_str()
         );
-        assert(r >= 0);
-
+        listener_traits_type::on_typedef(
+            this->get_listener(), *this, r
+        );
         return *this;
     }
 
@@ -294,6 +296,8 @@ public:
         typedef_(type_decl, new_name);
         return *this;
     }
+
+    // TODO: Split message_callback & exception translator into standalone functions
 
     /**
      * @brief Generic calling convention for message callback is not supported.

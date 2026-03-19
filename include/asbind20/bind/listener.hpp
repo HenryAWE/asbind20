@@ -51,6 +51,36 @@ public:
             assert(id < 0);
         }
     }
+
+    template <typename BindingGenerator>
+    static void on_funcdef(Listener& listener, BindingGenerator&& gen, int id)
+    {
+        constexpr bool has_func = requires() {
+            listener.on_funcdef(std::forward<BindingGenerator>(gen), id);
+        };
+        if constexpr(has_func)
+            listener.on_funcdef(std::forward<BindingGenerator>(gen), id);
+        else
+        {
+            // TODO: fallback
+            assert(id < 0);
+        }
+    }
+
+    template <typename BindingGenerator>
+    static void on_typedef(Listener& listener, BindingGenerator&& gen, int id)
+    {
+        constexpr bool has_func = requires() {
+            listener.on_typedef(std::forward<BindingGenerator>(gen), id);
+        };
+        if constexpr(has_func)
+            listener.on_typedef(std::forward<BindingGenerator>(gen), id);
+        else
+        {
+            // TODO: fallback
+            assert(id < 0);
+        }
+    }
 };
 } // namespace asbind20
 
