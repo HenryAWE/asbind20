@@ -4,7 +4,7 @@
 
 namespace test_listener
 {
-class record_func
+class record_func_prop
 {
 public:
     template <typename BindGenerator>
@@ -88,7 +88,7 @@ using GlobalListener = test_listener::global_listener_suite;
 
 TEST_F(GlobalListener, RecordFunctions)
 {
-    asbind20::global<true, test_listener::record_func> g(engine);
+    asbind20::global<true, test_listener::record_func_prop> g(engine);
     auto& listener = g.get_listener();
     EXPECT_TRUE(listener.recorded_func.empty());
 
@@ -106,7 +106,7 @@ TEST_F(GlobalListener, RecordFunctions)
 
 TEST_F(GlobalListener, RecordProperties)
 {
-    asbind20::global<true, test_listener::record_func> g(engine);
+    asbind20::global<true, test_listener::record_func_prop> g(engine);
     auto& listener = g.get_listener();
     EXPECT_TRUE(listener.recorded_prop.empty());
 
