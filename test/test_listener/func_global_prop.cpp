@@ -1,10 +1,13 @@
+// Recording functions and global properties
+
 #include <asbind_test/framework.hpp>
 #include <asbind20/asbind.hpp>
 #include <gmock/gmock-matchers.h>
+#include "listener_suites.hpp"
 
 namespace test_listener
 {
-class record_func_prop
+class record_func_global_prop
 {
 public:
     template <typename BindGenerator>
@@ -62,33 +65,13 @@ static float float_func()
 
 static int int_prop = 0;
 static float float_prop = 0.0f;
-
-class global_listener_suite : public ::testing::Test
-{
-public:
-    void SetUp() override
-    {
-        engine = asbind20::make_script_engine();
-        ASSERT_TRUE(engine);
-
-        // Error will be reported by listeners
-        asbind_test::setup_message_callback(engine, false);
-    }
-
-    void TearDown() override
-    {
-        engine.reset();
-    }
-
-    asbind20::script_engine engine;
-};
 } // namespace test_listener
 
-using GlobalListener = test_listener::global_listener_suite;
+using GlobalListener = test_listener::general_listener_suite;
 
 TEST_F(GlobalListener, RecordFunctions)
 {
-    asbind20::global<true, test_listener::record_func_prop> g(engine);
+    asbind20::global<true, test_listener::record_func_global_prop> g(engine);
     auto& listener = g.get_listener();
     EXPECT_TRUE(listener.recorded_func.empty());
 
@@ -106,7 +89,7 @@ TEST_F(GlobalListener, RecordFunctions)
 
 TEST_F(GlobalListener, RecordProperties)
 {
-    asbind20::global<true, test_listener::record_func_prop> g(engine);
+    asbind20::global<true, test_listener::record_func_global_prop> g(engine);
     auto& listener = g.get_listener();
     EXPECT_TRUE(listener.recorded_prop.empty());
 
