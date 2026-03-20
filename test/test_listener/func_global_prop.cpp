@@ -49,6 +49,20 @@ public:
         recorded_prop.emplace_back(name);
     }
 
+    template <typename BindGenerator>
+    static void on_typedef(BindGenerator& g, int id)
+    {
+        GTEST_FAIL()
+            << "Unreachable. name = " << g.get_name() << " id = " << id;
+    }
+
+    template <typename BindGenerator>
+    static void on_funcdef(BindGenerator& g, int id)
+    {
+        GTEST_FAIL()
+            << "Unreachable. name = " << g.get_name() << " id = " << id;
+    }
+
     std::vector<std::string> recorded_func;
     std::vector<std::string> recorded_prop;
 };
