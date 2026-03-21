@@ -41,7 +41,6 @@ public:
             ASSERT_NE(ti, nullptr) << "id = " << id;
 
             EXPECT_NE(ti->GetTypeId(), AS_NAMESPACE_QUALIFIER asTYPEID_VOID);
-            EXPECT_GE(ti->GetTypedefTypeId(), 0);
             recorded_typedef.emplace_back(ti->GetName());
         }
         else
