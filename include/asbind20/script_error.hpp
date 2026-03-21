@@ -24,7 +24,7 @@ public:
     std::error_condition default_error_condition(int val) const noexcept override
     {
         using std::errc;
-        switch(static_cast<asERetCodes>(val))
+        switch(static_cast<AS_NAMESPACE_QUALIFIER asERetCodes>(val))
         {
         case AS_NAMESPACE_QUALIFIER asINVALID_ARG: return errc::invalid_argument;
         case AS_NAMESPACE_QUALIFIER asOUT_OF_MEMORY: return errc::not_enough_memory;
