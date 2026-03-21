@@ -49,10 +49,16 @@ struct std::is_error_code_enum<AS_NAMESPACE_QUALIFIER asERetCodes> :
     std::true_type
 {};
 
-// Put it in global namespace so it can be found by std::system_error
+BEGIN_AS_NAMESPACE
+
+// Put it in AngelScript namespace so it can be found by std::system_error
 inline std::error_code make_error_code(AS_NAMESPACE_QUALIFIER asERetCodes val)
 {
-    return std::error_code(static_cast<int>(val), asbind20::asERetCodes_category::instance());
+    return std::error_code(
+        static_cast<int>(val), ::asbind20::asERetCodes_category::instance()
+    );
 }
+
+END_AS_NAMESPACE
 
 #endif
