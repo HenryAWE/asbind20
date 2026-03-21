@@ -33,7 +33,6 @@ public:
         else
         {
             // TODO: fallback
-            assert(id < 0);
         }
     }
 
@@ -48,7 +47,6 @@ public:
         else
         {
             // TODO: fallback
-            assert(id < 0);
         }
     }
 
@@ -63,7 +61,6 @@ public:
         else
         {
             // TODO: fallback
-            assert(id < 0);
         }
     }
 
@@ -78,7 +75,6 @@ public:
         else
         {
             // TODO: fallback
-            assert(id < 0);
         }
     }
 };
