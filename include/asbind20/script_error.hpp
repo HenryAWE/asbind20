@@ -11,16 +11,19 @@ namespace asbind20
 class asERetCodes_category : public std::error_category
 {
 public:
+    [[nodiscard]]
     const char* name() const noexcept override
     {
         return "asERetCodes";
     }
 
+    [[nodiscard]]
     std::string message(int val) const override
     {
         return to_string(static_cast<AS_NAMESPACE_QUALIFIER asERetCodes>(val));
     }
 
+    [[nodiscard]]
     std::error_condition default_error_condition(int val) const noexcept override
     {
         using std::errc;
@@ -30,7 +33,7 @@ public:
         case AS_NAMESPACE_QUALIFIER asOUT_OF_MEMORY: return errc::not_enough_memory;
 
         default:
-            return std::error_condition(val, *this);
+            return {val, *this};
         }
     }
 
@@ -40,8 +43,6 @@ public:
         return c;
     }
 };
-
-
 } // namespace asbind20
 
 template <>
@@ -54,9 +55,10 @@ BEGIN_AS_NAMESPACE
 // Put it in AngelScript namespace so it can be found by std::system_error
 inline std::error_code make_error_code(AS_NAMESPACE_QUALIFIER asERetCodes val)
 {
-    return std::error_code(
-        static_cast<int>(val), ::asbind20::asERetCodes_category::instance()
-    );
+    return{
+        static_cast<int>(val),
+        ::asbind20::asERetCodes_category::instance()
+    };
 }
 
 END_AS_NAMESPACE

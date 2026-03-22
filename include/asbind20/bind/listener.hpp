@@ -3,9 +3,10 @@
 
 #pragma once
 
-#include <cassert>
 #include <utility>
+#include "../detail/throw_helper.hpp"
 #include "../detail/include_as.hpp"
+#include "../script_error.hpp"
 
 namespace asbind20
 {
@@ -31,9 +32,7 @@ public:
         if constexpr(has_func)
             listener.on_function(std::forward<BindingGenerator>(gen), id);
         else
-        {
-            // TODO: fallback
-        }
+            default_fallback(id);
     }
 
     template <typename BindingGenerator>
@@ -45,9 +44,7 @@ public:
         if constexpr(has_func)
             listener.on_global_property(std::forward<BindingGenerator>(gen), id);
         else
-        {
-            // TODO: fallback
-        }
+            default_fallback(id);
     }
 
     template <typename BindingGenerator>
@@ -59,9 +56,7 @@ public:
         if constexpr(has_func)
             listener.on_funcdef(std::forward<BindingGenerator>(gen), id);
         else
-        {
-            // TODO: fallback
-        }
+            default_fallback(id);
     }
 
     template <typename BindingGenerator>
@@ -73,9 +68,20 @@ public:
         if constexpr(has_func)
             listener.on_typedef(std::forward<BindingGenerator>(gen), id);
         else
-        {
-            // TODO: fallback
-        }
+            default_fallback(id);
+    }
+
+private:
+    static void default_fallback(int val)
+    {
+        if(val >= 0)
+            return;
+
+        // Report error
+        auto code = static_cast<AS_NAMESPACE_QUALIFIER asERetCodes>(val);
+        ::asbind20::detail::throw_<std::system_error>(
+            make_error_code(code)
+        );
     }
 };
 } // namespace asbind20
