@@ -10,10 +10,11 @@
 
 namespace asbind20
 {
+/**
+ * @brief Default listener. It does nothing.
+ */
 class default_listener
-{
-public:
-};
+{};
 
 template <typename Listener>
 class listener_traits
