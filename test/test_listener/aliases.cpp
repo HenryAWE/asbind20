@@ -74,9 +74,9 @@ public:
 };
 } // namespace test_listener
 
-using GlobalListener = test_listener::general_listener_suite;
+using ListenerTest = test_listener::general_listener_suite;
 
-TEST_F(GlobalListener, RecordTypedefs)
+TEST_F(ListenerTest, RecordTypedefs)
 {
     asbind20::global<true, test_listener::record_aliases> g(engine);
     auto& listener = g.get_listener();
@@ -95,7 +95,7 @@ TEST_F(GlobalListener, RecordTypedefs)
     EXPECT_THAT(listener.recorded_typedef, ::testing::Contains("int64"));
 }
 
-TEST_F(GlobalListener, RecordFuncdefs)
+TEST_F(ListenerTest, RecordFuncdefs)
 {
     asbind20::global<true, test_listener::record_aliases> g(engine);
     auto& listener = g.get_listener();

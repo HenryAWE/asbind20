@@ -41,6 +41,7 @@ public:
     ASBIND20_LISTENER_GENERAL_FUNC_IMPL(on_global_property, "global property")
     ASBIND20_LISTENER_GENERAL_FUNC_IMPL(on_funcdef, "funcdef")
     ASBIND20_LISTENER_GENERAL_FUNC_IMPL(on_typedef, "typedef")
+    ASBIND20_LISTENER_GENERAL_FUNC_IMPL(on_method, "method")
 
 #undef ASBIND20_LISTENER_GENERAL_FUNC_IMPL
 

@@ -81,9 +81,9 @@ static int int_prop = 0;
 static float float_prop = 0.0f;
 } // namespace test_listener
 
-using GlobalListener = test_listener::general_listener_suite;
+using ListenerTest = test_listener::general_listener_suite;
 
-TEST_F(GlobalListener, RecordFunctions)
+TEST_F(ListenerTest, RecordFunctions)
 {
     asbind20::global<true, test_listener::record_func_global_prop> g(engine);
     auto& listener = g.get_listener();
@@ -101,7 +101,7 @@ TEST_F(GlobalListener, RecordFunctions)
     EXPECT_THAT(listener.recorded_prop, ::testing::SizeIs(0));
 }
 
-TEST_F(GlobalListener, RecordProperties)
+TEST_F(ListenerTest, RecordProperties)
 {
     asbind20::global<true, test_listener::record_func_global_prop> g(engine);
     auto& listener = g.get_listener();
