@@ -47,15 +47,27 @@ public:
     void foo() {}
 
     void bar() const {}
+
+    operator int() const
+    {
+        return 0;
+    }
+
+    explicit operator float() const
+    {
+        return 0;
+    }
 };
 } // namespace test_listener
 
 using ListenerTest = test_listener::general_listener_suite;
 
-TEST_F(ListenerTest, RecordMethodsGeneric)
+namespace test_listener
+{
+template <bool UseGeneric>
+static void test_record_method(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     using namespace asbind20;
-    using test_listener::my_class, test_listener::class_listener;
     value_class<my_class, true, class_listener> c(engine, "my_class");
     auto& listener = c.get_listener();
 
@@ -69,9 +81,23 @@ TEST_F(ListenerTest, RecordMethodsGeneric)
     EXPECT_THAT(listener.recorded_method, ::testing::SizeIs(2));
     EXPECT_THAT(listener.recorded_method, ::testing::Contains("bar"));
 
-    c.opEquals();
-    EXPECT_THAT(listener.recorded_method, ::testing::SizeIs(3));
+    c
+        .opEquals()
+        .opImplConv<int>();
+    EXPECT_THAT(listener.recorded_method, ::testing::SizeIs(4));
     EXPECT_THAT(listener.recorded_method, ::testing::Contains("opEquals"));
+    EXPECT_THAT(listener.recorded_method, ::testing::Contains("opImplConv"));
+
+    c
+        .opConv<float>();
+    EXPECT_THAT(listener.recorded_method, ::testing::SizeIs(5));
+    EXPECT_THAT(listener.recorded_method, ::testing::Contains("opConv"));
+}
+} // namespace test_listener
+
+TEST_F(ListenerTest, RecordMethodsGeneric)
+{
+    test_listener::test_record_method<true>(engine);
 }
 
 TEST_F(ListenerTest, RecordMethodsNative)
@@ -80,23 +106,5 @@ TEST_F(ListenerTest, RecordMethodsNative)
     if(has_max_portability())
         ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
-    using test_listener::my_class, test_listener::class_listener;
-    value_class<my_class, false, class_listener> c(
-        engine, "my_class", AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_ALLINTS
-    );
-    auto& listener = c.get_listener();
-
-    c
-        .method("void foo()", &my_class::foo);
-    EXPECT_THAT(listener.recorded_method, ::testing::SizeIs(1));
-    EXPECT_THAT(listener.recorded_method, ::testing::Contains("foo"));
-
-    c
-        .method("void bar() const", &my_class::bar);
-    EXPECT_THAT(listener.recorded_method, ::testing::SizeIs(2));
-    EXPECT_THAT(listener.recorded_method, ::testing::Contains("bar"));
-
-    c.opEquals();
-    EXPECT_THAT(listener.recorded_method, ::testing::SizeIs(3));
-    EXPECT_THAT(listener.recorded_method, ::testing::Contains("opEquals"));
+    test_listener::test_record_method<false>(engine);
 }

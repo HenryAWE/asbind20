@@ -2414,7 +2414,8 @@ public:
     template <typename To>
     Derived& opConv(use_generic_t, std::string_view to_decl)
     {
-        this->template opConv_impl_generic<Class, To>(to_decl, false);
+        int r = this->template opConv_impl_generic<Class, To>(to_decl, false);
+        listener_traits_type::on_method(get_listener(), derived(), r);
         return derived();
     }
 
@@ -2425,7 +2426,8 @@ public:
             opConv<To>(use_generic, to_decl);
         else
         {
-            this->template opConv_impl_native<Class, To>(to_decl, false);
+            int r = this->template opConv_impl_native<Class, To>(to_decl, false);
+            listener_traits_type::on_method(get_listener(), derived(), r);
         }
         return derived();
     }
@@ -2433,7 +2435,8 @@ public:
     template <typename To>
     Derived& opImplConv(use_generic_t, std::string_view to_decl)
     {
-        this->template opConv_impl_generic<Class, To>(to_decl, true);
+        int r = this->template opConv_impl_generic<Class, To>(to_decl, true);
+        listener_traits_type::on_method(get_listener(), derived(), r);
         return derived();
     }
 
@@ -2443,7 +2446,10 @@ public:
         if constexpr(ForceGeneric)
             opImplConv<To>(use_generic, to_decl);
         else
-            this->template opConv_impl_native<Class, To>(to_decl, true);
+        {
+            int r = this->template opConv_impl_native<Class, To>(to_decl, true);
+            listener_traits_type::on_method(get_listener(), derived(), r);
+        }
         return derived();
     }
 
