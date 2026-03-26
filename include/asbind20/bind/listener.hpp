@@ -24,7 +24,7 @@ public:
 
     listener_traits() = delete;
 
-#define ASBIND20_LISTENER_GENERAL_FUNC_IMPL(sig, name)                  \
+#define ASBIND20_IMPL_LISTENER_GENERAL_FUNC(sig, name)                  \
     template <typename BindingGenerator>                                \
     static void sig(Listener& listener, BindingGenerator&& gen, int id) \
     {                                                                   \
@@ -37,13 +37,13 @@ public:
             default_fallback(id, "bad " name);                          \
     }
 
-    ASBIND20_LISTENER_GENERAL_FUNC_IMPL(on_function, "function")
-    ASBIND20_LISTENER_GENERAL_FUNC_IMPL(on_global_property, "global property")
-    ASBIND20_LISTENER_GENERAL_FUNC_IMPL(on_funcdef, "funcdef")
-    ASBIND20_LISTENER_GENERAL_FUNC_IMPL(on_typedef, "typedef")
-    ASBIND20_LISTENER_GENERAL_FUNC_IMPL(on_method, "method")
+    ASBIND20_IMPL_LISTENER_GENERAL_FUNC(on_function, "function")
+    ASBIND20_IMPL_LISTENER_GENERAL_FUNC(on_global_property, "global property")
+    ASBIND20_IMPL_LISTENER_GENERAL_FUNC(on_funcdef, "funcdef")
+    ASBIND20_IMPL_LISTENER_GENERAL_FUNC(on_typedef, "typedef")
+    ASBIND20_IMPL_LISTENER_GENERAL_FUNC(on_method, "method")
 
-#undef ASBIND20_LISTENER_GENERAL_FUNC_IMPL
+#undef ASBIND20_IMPL_LISTENER_GENERAL_FUNC
 
 private:
     static void default_fallback(int val, const char* what)

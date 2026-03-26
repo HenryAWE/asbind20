@@ -229,7 +229,6 @@ public:
         T& val
     )
     {
-        [[maybe_unused]]
         int r = get_engine()->RegisterGlobalProperty(
             decl.c_str(),
             (void*)std::addressof(val)
@@ -250,7 +249,6 @@ public:
         cstring_ref decl
     )
     {
-        [[maybe_unused]]
         int r = get_engine()->RegisterFuncdef(
             decl.c_str()
         );
@@ -271,7 +269,6 @@ public:
         cstring_ref new_name
     )
     {
-        [[maybe_unused]]
         int r = get_engine()->RegisterTypedef(
             new_name.c_str(),
             type_decl.c_str()

@@ -1225,6 +1225,7 @@ protected:
     }
 
     template <typename Fn>
+    [[nodiscard]]
     int register_method(
         cstring_ref decl,
         Fn&& fn,
@@ -1578,12 +1579,12 @@ protected:
 #undef ASBIND20_IMPL_REGISTER_BINARY_OP_NATIVE
 #undef ASBIND20_IMPL_REGISTER_BINARY_OP
 
-    void register_member_funcdef(std::string_view decl)
+    int register_member_funcdef(std::string_view decl) const
     {
         std::string full_decl = detail::generate_member_funcdef(
             m_name, decl
         );
-        register_full_funcdef(full_decl);
+        return register_full_funcdef(full_decl);
     }
 
     static std::string decl_opConv(std::string_view ret, bool implicit = false)
@@ -1630,12 +1631,9 @@ protected:
 
 private:
     // Internal interface because AS doesn't provide a direct interface to register member funcdef
-    void register_full_funcdef(cstring_ref decl)
+    int register_full_funcdef(cstring_ref decl) const
     {
-        [[maybe_unused]]
-        int r = 0;
-        r = get_engine()->RegisterFuncdef(decl.c_str());
-        assert(r >= 0);
+        return get_engine()->RegisterFuncdef(decl.c_str());
     }
 };
 
@@ -2392,7 +2390,10 @@ public:
 
     Derived& funcdef(cstring_ref decl)
     {
-        this->register_member_funcdef(decl);
+        int r = this->register_member_funcdef(decl);
+        listener_traits_type::on_funcdef(
+            this->get_listener(), *this, r
+        );
         return derived();
     }
 
@@ -4897,7 +4898,7 @@ public:
     }
 };
 
-// #undef macros defined by binding generator inteface here
+// #undef macros defined by binding generator interface here
 #undef ASBIND20_BG_INTERFACE_DEFINE_OP
 #undef ASBIND20_BG_INTERFACE_DEFINE_BEH
 
