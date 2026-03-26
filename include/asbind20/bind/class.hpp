@@ -3595,16 +3595,16 @@ public:
         return *this;
     }
 
-    ASBIND20_BG_INTERFACE_DEFINE_OP(basic_value_class, opNeg);
+    ASBIND20_BG_INTERFACE_DEFINE_OP(basic_value_class, opNeg)
 
-    ASBIND20_BG_INTERFACE_DEFINE_OP(basic_value_class, opPostInc);
-    ASBIND20_BG_INTERFACE_DEFINE_OP(basic_value_class, opPostDec);
+    ASBIND20_BG_INTERFACE_DEFINE_OP(basic_value_class, opPostInc)
+    ASBIND20_BG_INTERFACE_DEFINE_OP(basic_value_class, opPostDec)
 
-    ASBIND20_BG_INTERFACE_DEFINE_OP(basic_value_class, opAdd);
-    ASBIND20_BG_INTERFACE_DEFINE_OP(basic_value_class, opSub);
-    ASBIND20_BG_INTERFACE_DEFINE_OP(basic_value_class, opMul);
-    ASBIND20_BG_INTERFACE_DEFINE_OP(basic_value_class, opDiv);
-    ASBIND20_BG_INTERFACE_DEFINE_OP(basic_value_class, opMod);
+    ASBIND20_BG_INTERFACE_DEFINE_OP(basic_value_class, opAdd)
+    ASBIND20_BG_INTERFACE_DEFINE_OP(basic_value_class, opSub)
+    ASBIND20_BG_INTERFACE_DEFINE_OP(basic_value_class, opMul)
+    ASBIND20_BG_INTERFACE_DEFINE_OP(basic_value_class, opDiv)
+    ASBIND20_BG_INTERFACE_DEFINE_OP(basic_value_class, opMod)
 
     using my_base::opConv;
     using my_base::opImplConv;
