@@ -58,6 +58,12 @@ public:
         return 0;
     }
 };
+
+static void outer_func(
+    [[maybe_unused]] my_class* this_, int
+) {}
+
+static void gfn(asbind20::generic_pointer) {}
 } // namespace test_listener
 
 using ListenerTest = test_listener::general_listener_suite;
@@ -92,6 +98,13 @@ static void test_record_method(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         .opConv<float>();
     EXPECT_THAT(listener.recorded_method, ::testing::SizeIs(5));
     EXPECT_THAT(listener.recorded_method, ::testing::Contains("opConv"));
+
+    c
+        .method("void gfn()", &gfn)
+        .method("void outer_func(int)", fp<&outer_func>);
+    EXPECT_THAT(listener.recorded_method, ::testing::SizeIs(7));
+    EXPECT_THAT(listener.recorded_method, ::testing::Contains("gfn"));
+    EXPECT_THAT(listener.recorded_method, ::testing::Contains("outer_func"));
 }
 } // namespace test_listener
 
@@ -102,8 +115,7 @@ TEST_F(ListenerTest, RecordMethodsGeneric)
 
 TEST_F(ListenerTest, RecordMethodsNative)
 {
-    using namespace asbind20;
-    if(has_max_portability())
+    if(asbind20::has_max_portability())
         ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     test_listener::test_record_method<false>(engine);

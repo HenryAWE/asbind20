@@ -77,6 +77,8 @@ static float float_func()
     return 0.0f;
 }
 
+static void gfn(asbind20::generic_pointer) {}
+
 static int int_prop = 0;
 static float float_prop = 0.0f;
 } // namespace test_listener
@@ -99,6 +101,10 @@ TEST_F(ListenerTest, RecordFunctions)
     EXPECT_THAT(listener.recorded_func, ::testing::Contains("float_func"));
 
     EXPECT_THAT(listener.recorded_prop, ::testing::SizeIs(0));
+
+    g.function("void gfn()", &test_listener::gfn);
+    EXPECT_THAT(listener.recorded_func, ::testing::SizeIs(3));
+    EXPECT_THAT(listener.recorded_func, ::testing::Contains("gfn"));
 }
 
 TEST_F(ListenerTest, RecordProperties)
