@@ -136,7 +136,6 @@ private:
         compat::script_enum_value_type val
     )
     {
-        [[maybe_unused]]
         int r = this->get_engine()->RegisterEnumValue(
             m_name.c_str(),
             name.c_str(),

@@ -19,7 +19,6 @@
 #include <compare>
 #include <functional>
 #include <type_traits>
-#include <stdexcept>
 #include <concepts>
 #include "detail/config.hpp" // IWYU pragma: export configs
 #include "detail/fwd.hpp"

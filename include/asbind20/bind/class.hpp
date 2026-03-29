@@ -1212,7 +1212,6 @@ public:
 protected:
     int register_object_type(AS_NAMESPACE_QUALIFIER asQWORD flags, int size)
     {
-        [[maybe_unused]]
         int r = 0;
         r = get_engine()->RegisterObjectType(
             m_name.c_str(),
