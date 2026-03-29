@@ -76,6 +76,7 @@ public:
     namespace_(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         : m_engine(engine), m_prev(engine->GetDefaultNamespace())
     {
+        ASBIND20_ASSERT(engine != nullptr);
         set_ns_impl("");
     }
 
@@ -86,6 +87,7 @@ public:
     )
         : m_engine(engine), m_prev(engine->GetDefaultNamespace())
     {
+        ASBIND20_ASSERT(engine != nullptr);
         if(nested)
         {
             if(!ns.empty()) [[likely]]
@@ -144,7 +146,7 @@ private:
         int r = m_engine->SetDefaultNamespace(
             ns
         );
-        assert(r >= 0);
+        ASBIND20_ASSERT(r >= 0);
     }
 };
 

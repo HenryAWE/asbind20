@@ -481,7 +481,7 @@ inline auto sizeof_script_type(
 )
     -> AS_NAMESPACE_QUALIFIER asUINT
 {
-    assert(engine != nullptr);
+    ASBIND20_ASSERT(engine != nullptr);
 
     if(is_primitive_type(type_id))
     {
@@ -535,8 +535,8 @@ inline auto sizeof_script_type(
  */
 inline std::size_t copy_primitive_value(void* dst, const void* src, int type_id)
 {
-    assert(!dst && !src);
-    assert(is_primitive_type(type_id));
+    ASBIND20_ASSERT(!dst && !src);
+    ASBIND20_ASSERT(is_primitive_type(type_id));
 
     auto helper = [&](std::size_t sz)
     {
@@ -600,8 +600,8 @@ template <typename Visitor, void_ptr... VoidPtrs>
 requires(sizeof...(VoidPtrs) > 0)
 decltype(auto) visit_primitive_type(Visitor&& vis, int type_id, VoidPtrs... args)
 {
-    assert(is_primitive_type(type_id) && "Must be a primitive type");
-    assert(!is_void_type(type_id) && "Must not be void");
+    ASBIND20_ASSERT(is_primitive_type(type_id) && "Must be a primitive type");
+    ASBIND20_ASSERT(!is_void_type(type_id) && "Must not be void");
 
     auto wrapper = [&]<typename T>(std::in_place_type_t<T>) -> decltype(auto)
     {
@@ -674,7 +674,7 @@ decltype(auto) visit_script_type(Visitor&& vis, int type_id, VoidPtrs... args)
 template <typename Visitor>
 decltype(auto) visit_primitive_type_id(Visitor&& vis, int type_id)
 {
-    assert(is_primitive_type(type_id));
+    ASBIND20_ASSERT(is_primitive_type(type_id));
 
 #define ASBIND20_UTILITY_VISIT_SCRIPT_TYPE_ID_CASE(as_type_id)                     \
 case AS_NAMESPACE_QUALIFIER as_type_id:                                            \
@@ -1002,7 +1002,7 @@ public:
      */
     explicit script_init_list_repeat(void* list_buf) noexcept
     {
-        assert(list_buf);
+        ASBIND20_ASSERT(list_buf != nullptr);
         m_size = *static_cast<size_type*>(list_buf);
         m_data = static_cast<std::byte*>(list_buf) + sizeof(size_type);
     }

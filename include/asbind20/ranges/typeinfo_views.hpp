@@ -36,7 +36,7 @@ namespace detail
 
         Derived& operator--() noexcept
         {
-            assert(derived().index > 0);
+            ASBIND20_ASSERT(derived().index > 0);
             --derived().index;
             return derived();
         }
@@ -125,7 +125,7 @@ namespace detail
     iterator& operator=(const iterator&) noexcept = default;             \
     bool operator==(const iterator& rhs) const noexcept                  \
     {                                                                    \
-        assert(                                                          \
+        ASBIND20_ASSERT(                                                          \
             this->m_view == rhs.m_view &&                                \
             "Comparing unmatched iterator pair"                          \
         );                                                               \
@@ -133,7 +133,7 @@ namespace detail
     }                                                                    \
     std::strong_ordering operator<=>(const iterator& rhs) const noexcept \
     {                                                                    \
-        assert(                                                          \
+        ASBIND20_ASSERT(                                                          \
             this->m_view == rhs.m_view &&                                \
             "Comparing unmatched iterator pair"                          \
         );                                                               \
@@ -203,7 +203,7 @@ public:
 
         value_type get_value(size_type idx) const
         {
-            assert(*this);
+            ASBIND20_ASSERT(*this);
             return m_view->m_ti->GetMethodByIndex(idx, m_view->m_get_virtual);
         }
 
@@ -261,7 +261,7 @@ public:
 
         value_type get_value(size_type idx) const
         {
-            assert(*this);
+            ASBIND20_ASSERT(*this);
             AS_NAMESPACE_QUALIFIER asEBehaviours beh;
             auto* f = m_view->m_ti->GetBehaviourByIndex(idx, &beh);
             return {beh, f};
@@ -317,7 +317,7 @@ public:
 
         value_type get_value(size_type idx) const
         {
-            assert(*this);
+            ASBIND20_ASSERT(*this);
             return m_view->m_ti->GetFactoryByIndex(idx);
         }
 
@@ -379,7 +379,7 @@ public:
 
         value_type get_value(size_type idx) const
         {
-            assert(*this);
+            ASBIND20_ASSERT(*this);
             compat::script_enum_value_type val;
             const char* name = m_view->m_ti->GetEnumValueByIndex(idx, &val);
             return {name, static_cast<UnderlyingType>(val)};

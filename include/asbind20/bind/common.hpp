@@ -374,7 +374,7 @@ protected:
     explicit binding_generator_base(engine_pointer engine) noexcept
         : m_engine(engine)
     {
-        assert(engine != nullptr);
+        ASBIND20_ASSERT(engine != nullptr);
     }
 
 private:
