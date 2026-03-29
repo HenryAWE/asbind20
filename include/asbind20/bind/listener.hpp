@@ -42,6 +42,10 @@ public:
     ASBIND20_IMPL_LISTENER_GENERAL_FUNC(on_funcdef, "funcdef")
     ASBIND20_IMPL_LISTENER_GENERAL_FUNC(on_typedef, "typedef")
     ASBIND20_IMPL_LISTENER_GENERAL_FUNC(on_method, "method")
+    ASBIND20_IMPL_LISTENER_GENERAL_FUNC(on_enum, "enum")
+    ASBIND20_IMPL_LISTENER_GENERAL_FUNC(on_class, "class")
+    ASBIND20_IMPL_LISTENER_GENERAL_FUNC(on_interface, "interface")
+    ASBIND20_IMPL_LISTENER_GENERAL_FUNC(on_enum_value, "enum value")
 
 #undef ASBIND20_IMPL_LISTENER_GENERAL_FUNC
 

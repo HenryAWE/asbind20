@@ -150,56 +150,62 @@ private:
     }
 };
 
-class interface : public binding_generator_base
+template <typename Listener = default_listener>
+class basic_interface : public binding_generator_base<Listener>
 {
+    using my_base = binding_generator_base<Listener>;
+    using listener_type_traits = listener_traits<Listener>;
+
 public:
-    interface() = delete;
-    interface(const interface&) = default;
+    using engine_pointer = AS_NAMESPACE_QUALIFIER asIScriptEngine*;
 
-    interface& operator=(const interface&) = delete;
+    basic_interface() = delete;
+    basic_interface(const basic_interface&) = default;
 
-    interface(engine_pointer engine, std::string name)
-        : binding_generator_base(engine), m_name(std::move(name))
+    basic_interface& operator=(const basic_interface&) = delete;
+
+    basic_interface(engine_pointer engine, std::string name)
+        : my_base(engine), m_name(std::move(name))
     {
-        [[maybe_unused]]
-        int r = 0;
-        r = get_engine()->RegisterInterface(m_name.c_str());
-        assert(r >= 0);
+        int r = this->get_engine()->RegisterInterface(m_name.c_str());
+        listener_type_traits::on_interface(
+            this->get_listener(), *this, r
+        );
     }
 
     template <string_like StringLike>
-    interface(
+    basic_interface(
         AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
         StringLike&& name
     )
-        : interface(
+        : basic_interface(
               engine,
               util::string_like_to_string(std::forward<StringLike>(name))
           )
     {}
 
-    interface& method(cstring_ref decl)
+    basic_interface& method(cstring_ref decl)
     {
-        [[maybe_unused]]
-        int r = get_engine()->RegisterInterfaceMethod(
+        int r = this->get_engine()->RegisterInterfaceMethod(
             m_name.c_str(),
             decl.c_str()
         );
-        assert(r >= 0);
-
+        listener_type_traits::on_method(
+            this->get_listener(), *this, r
+        );
         return *this;
     }
 
-    interface& funcdef(std::string_view decl)
+    basic_interface& funcdef(std::string_view decl)
     {
         std::string full_decl = detail::generate_member_funcdef(
             m_name, decl
         );
 
-        [[maybe_unused]]
-        int r = 0;
-        r = get_engine()->RegisterFuncdef(full_decl.c_str());
-        assert(r >= 0);
+        int r = this->get_engine()->RegisterFuncdef(full_decl.c_str());
+        listener_type_traits::on_funcdef(
+            this->get_listener(), *this, r
+        );
 
         return *this;
     }
@@ -213,6 +219,8 @@ public:
 private:
     std::string m_name;
 };
+
+using interface = basic_interface<>;
 } // namespace asbind20
 
 #endif

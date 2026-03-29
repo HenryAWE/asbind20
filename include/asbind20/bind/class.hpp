@@ -571,7 +571,7 @@ namespace detail
                         gen, static_cast<gen_idx_t>(Is)
                     )...
                 );
-                assert(ti->GetEngine() == gen->GetEngine());
+                ASBIND20_ASSERT(ti->GetEngine() == gen->GetEngine());
                 if(has_script_exception()) [[unlikely]]
                 {
                     delete ptr;
@@ -638,7 +638,7 @@ namespace detail
 
                 if(ti->GetFlags() & AS_NAMESPACE_QUALIFIER asOBJ_GC)
                 {
-                    assert(ti->GetEngine() == gen->GetEngine());
+                    ASBIND20_ASSERT(ti->GetEngine() == gen->GetEngine());
                     gen->GetEngine()->NotifyGarbageCollectorOfNewObject(ptr, ti);
                 }
 
@@ -797,7 +797,7 @@ namespace detail
 
                 // Expects the typeinfo is passed by auxiliary pointer (see the helper "auxiliary(this_type)")
                 auto* ti = get_generic_auxiliary<AS_NAMESPACE_QUALIFIER asITypeInfo*>(gen);
-                assert(ti != nullptr);
+                ASBIND20_ASSERT(ti != nullptr);
                 notifier::notify_gc_if_necessary(ptr, ti);
 
                 gen->SetReturnAddress(ptr);
@@ -866,7 +866,7 @@ namespace detail
             if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
             {
                 auto* ti = get_generic_auxiliary<AS_NAMESPACE_QUALIFIER asITypeInfo*>(gen);
-                assert(ti != nullptr);
+                ASBIND20_ASSERT(ti != nullptr);
                 notifier::notify_gc_if_necessary(ptr, ti);
             }
             gen->SetReturnAddress(ptr);
@@ -922,7 +922,7 @@ namespace detail
                 auto* ptr = new Class(script_init_list_repeat(gen));
                 // Works together with the helper "auxiliary(this_type)"
                 auto* ti = get_generic_auxiliary<AS_NAMESPACE_QUALIFIER asITypeInfo*>(gen);
-                assert(ti != nullptr);
+                ASBIND20_ASSERT(ti != nullptr);
                 notifier::notify_gc_if_necessary(ptr, ti);
                 gen->SetReturnAddress(ptr);
             }
@@ -1057,7 +1057,7 @@ namespace detail
             {
                 // Expects the typeinfo is passed by auxiliary pointer (see the helper "auxiliary(this_type)")
                 auto* ti = (AS_NAMESPACE_QUALIFIER asITypeInfo*)gen->GetAuxiliary();
-                assert(ti != nullptr);
+                ASBIND20_ASSERT(ti != nullptr);
                 notifier::notify_gc_if_necessary(ptr, ti);
             }
             gen->SetReturnAddress(ptr);
@@ -1173,7 +1173,7 @@ public:
     [[nodiscard]]
     int get_type_id() const noexcept
     {
-        assert(m_this_type_id > 0);
+        ASBIND20_ASSERT(m_this_type_id > 0);
         return m_this_type_id;
     }
 
@@ -1626,7 +1626,7 @@ protected:
         [[maybe_unused]]
         int r = 0;
         r = get_engine()->RegisterStringFactory(get_name().c_str(), factory);
-        assert(r >= 0);
+        ASBIND20_ASSERT(r >= 0);
     }
 
 private:
@@ -2695,11 +2695,11 @@ public:
     {
         flags |= AS_NAMESPACE_QUALIFIER asOBJ_VALUE;
 
-        assert(!(flags & (AS_NAMESPACE_QUALIFIER asOBJ_REF)));
+        ASBIND20_ASSERT(!(flags & (AS_NAMESPACE_QUALIFIER asOBJ_REF)));
 
         if constexpr(!Template)
         {
-            assert(!(flags & (AS_NAMESPACE_QUALIFIER asOBJ_TEMPLATE)));
+            ASBIND20_ASSERT(!(flags & (AS_NAMESPACE_QUALIFIER asOBJ_TEMPLATE)));
             flags |= AS_NAMESPACE_QUALIFIER asGetTypeTraits<Class>();
         }
         else
@@ -2707,8 +2707,11 @@ public:
             flags |= AS_NAMESPACE_QUALIFIER asOBJ_TEMPLATE;
         }
 
-        this->register_object_type(
+        int r = this->register_object_type(
             flags, static_cast<int>(sizeof(Class))
+        );
+        listener_traits_type::on_class(
+            this->get_listener(), *this, r
         );
     }
 
@@ -3415,28 +3418,28 @@ public:
             if constexpr(meta::placement_newable_from<Class>)
                 default_constructor(use_generic);
             else
-                assert(false && "missing default constructor");
+                ASBIND20_ASSERT(false && "missing default constructor");
         }
         if(traits & (AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_D))
         {
             if constexpr(std::is_destructible_v<Class>)
                 destructor(use_generic);
             else
-                assert(false && "missing destructor");
+                ASBIND20_ASSERT(false && "missing destructor");
         }
         if(traits & (AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_A))
         {
             if constexpr(std::is_copy_assignable_v<Class>)
                 this->opAssign(use_generic);
             else
-                assert(false && "missing assignment operator");
+                ASBIND20_ASSERT(false && "missing assignment operator");
         }
         if(traits & (AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_K))
         {
             if constexpr(meta::placement_newable_from<Class, const Class&>)
                 copy_constructor(use_generic);
             else
-                assert(false && "missing copy constructor");
+                ASBIND20_ASSERT(false && "missing copy constructor");
         }
 
         return *this;
@@ -3456,28 +3459,28 @@ public:
             if constexpr(meta::placement_newable_from<Class>)
                 default_constructor();
             else
-                assert(false && "missing default constructor");
+                ASBIND20_ASSERT(false && "missing default constructor");
         }
         if(traits & (AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_D))
         {
             if constexpr(std::is_destructible_v<Class>)
                 destructor();
             else
-                assert(false && "missing destructor");
+                ASBIND20_ASSERT(false && "missing destructor");
         }
         if(traits & (AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_A))
         {
             if constexpr(std::is_copy_assignable_v<Class>)
                 this->opAssign();
             else
-                assert(false && "missing assignment operator");
+                ASBIND20_ASSERT(false && "missing assignment operator");
         }
         if(traits & (AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_K))
         {
             if constexpr(meta::placement_newable_from<Class, const Class&>)
                 copy_constructor();
             else
-                assert(false && "missing copy constructor");
+                ASBIND20_ASSERT(false && "missing copy constructor");
         }
 
         return *this;
@@ -3653,7 +3656,7 @@ public:
     requires(!std::same_as<Class, OtherClass>)
     basic_value_class& opConv(use_generic_t, const basic_value_class<OtherClass, false, OtherUseGeneric>& other)
     {
-        assert(this->get_engine() == other.get_engine());
+        ASBIND20_ASSERT(this->get_engine() == other.get_engine());
         this->opConv<OtherClass>(use_generic, other.get_name());
         return *this;
     }
@@ -3662,7 +3665,7 @@ public:
     requires(!std::same_as<Class, OtherClass>)
     basic_value_class& opConv(const basic_value_class<OtherClass, false, OtherUseGeneric>& other)
     {
-        assert(this->get_engine() == other.get_engine());
+        ASBIND20_ASSERT(this->get_engine() == other.get_engine());
         this->opConv<OtherClass>(other.get_name());
         return *this;
     }
@@ -3671,7 +3674,7 @@ public:
     requires(!std::same_as<Class, OtherClass>)
     basic_value_class& opImplConv(use_generic_t, const basic_value_class<OtherClass, false, OtherUseGeneric>& other)
     {
-        assert(this->get_engine() == other.get_engine());
+        ASBIND20_ASSERT(this->get_engine() == other.get_engine());
         this->opImplConv<OtherClass>(use_generic, other.get_name());
         return *this;
     }
@@ -3680,7 +3683,7 @@ public:
     requires(!std::same_as<Class, OtherClass>)
     basic_value_class& opImplConv(const basic_value_class<OtherClass, false, OtherUseGeneric>& other)
     {
-        assert(this->get_engine() == other.get_engine());
+        ASBIND20_ASSERT(this->get_engine() == other.get_engine());
         this->opImplConv<OtherClass>(other.get_name());
         return *this;
     }
@@ -3711,6 +3714,7 @@ class basic_ref_class :
         Template,
         ForceGeneric,
         Listener>;
+    using listener_traits_type = listener_traits<Listener>;
 
 public:
     using class_type = Class;
@@ -3724,11 +3728,11 @@ public:
         : my_base(engine, std::move(name))
     {
         flags |= AS_NAMESPACE_QUALIFIER asOBJ_REF;
-        assert(!(flags & (AS_NAMESPACE_QUALIFIER asOBJ_VALUE)));
+        ASBIND20_ASSERT(!(flags & (AS_NAMESPACE_QUALIFIER asOBJ_VALUE)));
 
         if constexpr(!Template)
         {
-            assert(!(flags & (AS_NAMESPACE_QUALIFIER asOBJ_TEMPLATE)));
+            ASBIND20_ASSERT(!(flags & (AS_NAMESPACE_QUALIFIER asOBJ_TEMPLATE)));
         }
         else
         {
@@ -3737,7 +3741,10 @@ public:
 
         // Size is unnecessary for reference type.
         // Use 0 as size to support registering an incomplete type.
-        this->register_object_type(flags, 0);
+        int r = this->register_object_type(flags, 0);
+        listener_traits_type::on_class(
+            this->get_listener(), *this, r
+        );
     }
 
     template <string_like StringLike>
@@ -4669,7 +4676,7 @@ private:
         if constexpr(std::same_as<FactoryPolicy, policies::notify_gc> && !Template)
         {
             aux = get_engine()->GetTypeInfoById(this->get_type_id());
-            assert(aux != nullptr);
+            ASBIND20_ASSERT(aux != nullptr);
         }
         return aux;
     }
@@ -4892,7 +4899,7 @@ public:
         [[maybe_unused]]
         int r = 0;
         r = get_engine()->RegisterDefaultArrayType(get_name().c_str());
-        assert(r >= 0);
+        ASBIND20_ASSERT(r >= 0);
 
         return *this;
     }

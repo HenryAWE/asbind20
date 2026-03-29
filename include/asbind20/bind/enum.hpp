@@ -18,10 +18,16 @@
 
 namespace asbind20
 {
-template <typename Enum, typename UnderlyingType = int>
+template <
+    typename Enum,
+    typename UnderlyingType = int,
+    typename Listener = default_listener>
 requires(std::is_enum_v<Enum> || std::integral<Enum>)
-class enum_ : public binding_generator_base
+class enum_ : public binding_generator_base<Listener>
 {
+    using my_base = binding_generator_base<Listener>;
+    using listener_type_traits = listener_traits<Listener>;
+
 public:
 #ifndef ASBIND20_HAS_ENUM_UNDERLYING_TYPE
     static_assert(
@@ -30,6 +36,7 @@ public:
 #endif
 
     using enum_type = Enum;
+    using engine_pointer = AS_NAMESPACE_QUALIFIER asIScriptEngine*;
 
     enum_() = delete;
     enum_(const enum_&) = default;
@@ -37,7 +44,7 @@ public:
     enum_& operator=(const enum_&) = delete;
 
     enum_(engine_pointer engine, std::string name)
-        : binding_generator_base(engine), m_name(std::move(name))
+        : my_base(engine), m_name(std::move(name))
     {
         register_enum_type(m_name, get_underlying());
     }
@@ -110,11 +117,8 @@ private:
         [[maybe_unused]] cstring_ref underlying
     )
     {
-        [[maybe_unused]]
-        int r = 0;
-
         // clang-format off
-        r = get_engine()->RegisterEnum(
+        int r = this->get_engine()->RegisterEnum(
             name.c_str()
 #ifdef ASBIND20_HAS_ENUM_UNDERLYING_TYPE
             , underlying.c_str()
@@ -122,7 +126,9 @@ private:
         );
         // clang-format on
 
-        assert(r >= 0);
+        listener_type_traits::on_enum(
+            this->get_listener(), *this, r
+        );
     }
 
     void register_enum_val(
@@ -131,12 +137,14 @@ private:
     )
     {
         [[maybe_unused]]
-        int r = get_engine()->RegisterEnumValue(
+        int r = this->get_engine()->RegisterEnumValue(
             m_name.c_str(),
             name.c_str(),
             val
         );
-        assert(r >= 0);
+        listener_type_traits::on_enum_value(
+            this->get_listener(), *this, r
+        );
     }
 };
 

@@ -354,15 +354,15 @@ concept usable_by_generator = requires(T&& t, BindingGenerator& gen) {
     t(gen);
 };
 
-class binding_generator_base
+class engine_ref_holder
 {
 public:
     using engine_pointer = AS_NAMESPACE_QUALIFIER asIScriptEngine*;
 
-    binding_generator_base() = delete;
-    binding_generator_base(const binding_generator_base&) noexcept = default;
+    engine_ref_holder() = delete;
+    engine_ref_holder(const engine_ref_holder&) noexcept = default;
 
-    binding_generator_base& operator=(const binding_generator_base&) noexcept = default;
+    engine_ref_holder& operator=(const engine_ref_holder&) noexcept = default;
 
     [[nodiscard]]
     engine_pointer get_engine() const noexcept
@@ -371,7 +371,7 @@ public:
     }
 
 protected:
-    explicit binding_generator_base(engine_pointer engine) noexcept
+    explicit engine_ref_holder(engine_pointer engine) noexcept
         : m_engine(engine)
     {
         ASBIND20_ASSERT(engine != nullptr);
@@ -381,31 +381,25 @@ private:
     engine_pointer m_engine;
 };
 
-template <bool ForceGeneric, typename Listener = default_listener>
-class binding_generator_interface : public binding_generator_base
+template <typename Listener = default_listener>
+class binding_generator_base : public engine_ref_holder
 {
 public:
     using engine_pointer = AS_NAMESPACE_QUALIFIER asIScriptEngine*;
 
-    binding_generator_interface(const binding_generator_interface&) noexcept = default;
+    binding_generator_base(const binding_generator_base&) noexcept(std::is_nothrow_copy_constructible_v<Listener>) = default;
 
 protected:
-    binding_generator_interface(engine_pointer engine) noexcept(std::is_nothrow_default_constructible_v<Listener>)
-        : binding_generator_base(engine), m_listener() {}
+    binding_generator_base(engine_pointer engine) noexcept(std::is_nothrow_default_constructible_v<Listener>)
+        : engine_ref_holder(engine), m_listener() {}
 
-    binding_generator_interface(engine_pointer engine, const Listener& listener)
-        : binding_generator_base(engine), m_listener(listener) {}
+    binding_generator_base(engine_pointer engine, const Listener& listener)
+        : engine_ref_holder(engine), m_listener(listener) {}
 
-    binding_generator_interface(engine_pointer engine, Listener&& listener)
-        : binding_generator_base(engine), m_listener(std::move(listener)) {}
+    binding_generator_base(engine_pointer engine, Listener&& listener)
+        : engine_ref_holder(engine), m_listener(std::move(listener)) {}
 
 public:
-    [[nodiscard]]
-    static constexpr bool force_generic() noexcept
-    {
-        return ForceGeneric;
-    }
-
     [[nodiscard]]
     Listener& get_listener() noexcept
     {
@@ -422,8 +416,29 @@ private:
     Listener m_listener;
 };
 
+template <bool ForceGeneric, typename Listener = default_listener>
+class binding_generator_interface : public binding_generator_base<Listener>
+{
+    using my_base = binding_generator_base<Listener>;
+
+public:
+    binding_generator_interface(
+        const binding_generator_interface&
+    ) noexcept(std::is_nothrow_copy_constructible_v<my_base>) = default;
+
+protected:
+    using my_base::my_base;
+
+public:
+    [[nodiscard]]
+    static constexpr bool force_generic() noexcept
+    {
+        return ForceGeneric;
+    }
+};
+
 template <typename T>
-concept binding_generator = std::derived_from<T, binding_generator_base>;
+concept binding_generator = std::derived_from<T, engine_ref_holder>;
 } // namespace asbind20
 
 #endif
