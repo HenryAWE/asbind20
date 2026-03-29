@@ -9,6 +9,26 @@ class class_listener
 {
 public:
     template <typename BindingGenerator>
+    void on_class(BindingGenerator& g, int id)
+    {
+        if(id < 0)
+        {
+            using asbind20::to_string;
+            GTEST_FAIL()
+                << "Bad class type: " << to_string(static_cast<AS_NAMESPACE_QUALIFIER asERetCodes>(id));
+        }
+
+        SCOPED_TRACE("id = " + std::to_string(id));
+
+        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = g.get_engine();
+        ASSERT_NE(engine, nullptr);
+        AS_NAMESPACE_QUALIFIER asITypeInfo* ti = engine->GetTypeInfoById(id);
+        ASSERT_NE(ti, nullptr);
+
+        recorded_class.emplace_back(ti->GetName());
+    }
+
+    template <typename BindingGenerator>
     void on_method(BindingGenerator& g, int id)
     {
         if(id < 0)
@@ -34,6 +54,7 @@ public:
     }
 
     std::vector<std::string> recorded_method;
+    std::vector<std::string> recorded_class;
 };
 
 class my_class
@@ -76,6 +97,7 @@ static void test_record_method(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     using namespace asbind20;
     value_class<my_class, true, class_listener> c(engine, "my_class");
     auto& listener = c.get_listener();
+    EXPECT_THAT(listener.recorded_class, ::testing::Contains("my_class"));
 
     c
         .method("void foo()", fp<&my_class::foo>);
