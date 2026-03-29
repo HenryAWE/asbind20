@@ -571,7 +571,7 @@ namespace detail
                         gen, static_cast<gen_idx_t>(Is)
                     )...
                 );
-                assert(ti->GetEngine() == gen->GetEngine());
+                ASBIND20_ASSERT(ti->GetEngine() == gen->GetEngine());
                 if(has_script_exception()) [[unlikely]]
                 {
                     delete ptr;
@@ -638,7 +638,7 @@ namespace detail
 
                 if(ti->GetFlags() & AS_NAMESPACE_QUALIFIER asOBJ_GC)
                 {
-                    assert(ti->GetEngine() == gen->GetEngine());
+                    ASBIND20_ASSERT(ti->GetEngine() == gen->GetEngine());
                     gen->GetEngine()->NotifyGarbageCollectorOfNewObject(ptr, ti);
                 }
 
@@ -797,7 +797,7 @@ namespace detail
 
                 // Expects the typeinfo is passed by auxiliary pointer (see the helper "auxiliary(this_type)")
                 auto* ti = get_generic_auxiliary<AS_NAMESPACE_QUALIFIER asITypeInfo*>(gen);
-                assert(ti != nullptr);
+                ASBIND20_ASSERT(ti != nullptr);
                 notifier::notify_gc_if_necessary(ptr, ti);
 
                 gen->SetReturnAddress(ptr);
@@ -866,7 +866,7 @@ namespace detail
             if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
             {
                 auto* ti = get_generic_auxiliary<AS_NAMESPACE_QUALIFIER asITypeInfo*>(gen);
-                assert(ti != nullptr);
+                ASBIND20_ASSERT(ti != nullptr);
                 notifier::notify_gc_if_necessary(ptr, ti);
             }
             gen->SetReturnAddress(ptr);
@@ -922,7 +922,7 @@ namespace detail
                 auto* ptr = new Class(script_init_list_repeat(gen));
                 // Works together with the helper "auxiliary(this_type)"
                 auto* ti = get_generic_auxiliary<AS_NAMESPACE_QUALIFIER asITypeInfo*>(gen);
-                assert(ti != nullptr);
+                ASBIND20_ASSERT(ti != nullptr);
                 notifier::notify_gc_if_necessary(ptr, ti);
                 gen->SetReturnAddress(ptr);
             }
@@ -1057,7 +1057,7 @@ namespace detail
             {
                 // Expects the typeinfo is passed by auxiliary pointer (see the helper "auxiliary(this_type)")
                 auto* ti = (AS_NAMESPACE_QUALIFIER asITypeInfo*)gen->GetAuxiliary();
-                assert(ti != nullptr);
+                ASBIND20_ASSERT(ti != nullptr);
                 notifier::notify_gc_if_necessary(ptr, ti);
             }
             gen->SetReturnAddress(ptr);
@@ -1161,10 +1161,11 @@ namespace detail
     };
 } // namespace detail
 
-template <bool ForceGeneric>
-class class_binding_generator_base : public binding_generator_interface<ForceGeneric>
+template <bool ForceGeneric, typename Listener = default_listener>
+class class_binding_generator_base :
+    public binding_generator_interface<ForceGeneric, Listener>
 {
-    using my_base = binding_generator_interface<ForceGeneric>;
+    using my_base = binding_generator_interface<ForceGeneric, Listener>;
 
 public:
     using my_base::get_engine;
@@ -1172,7 +1173,7 @@ public:
     [[nodiscard]]
     int get_type_id() const noexcept
     {
-        assert(m_this_type_id > 0);
+        ASBIND20_ASSERT(m_this_type_id > 0);
         return m_this_type_id;
     }
 
@@ -1209,42 +1210,39 @@ public:
         : my_base(engine), m_name(std::move(name)) {}
 
 protected:
-    void register_object_type(AS_NAMESPACE_QUALIFIER asQWORD flags, int size)
+    int register_object_type(AS_NAMESPACE_QUALIFIER asQWORD flags, int size)
     {
-        [[maybe_unused]]
         int r = 0;
         r = get_engine()->RegisterObjectType(
             m_name.c_str(),
             size,
             flags
         );
-        assert(r >= 0);
-
         if(r > 0)
             m_this_type_id = r;
+        return r;
     }
 
     template <typename Fn>
-    void register_method(
+    [[nodiscard]]
+    int register_method(
         cstring_ref decl,
         Fn&& fn,
         AS_NAMESPACE_QUALIFIER asECallConvTypes conv,
         void* aux = nullptr
     )
     {
-        [[maybe_unused]]
-        int r = get_engine()->RegisterObjectMethod(
+        return get_engine()->RegisterObjectMethod(
             m_name.c_str(),
             decl.c_str(),
             detail::to_asSFuncPtr(fn),
             conv,
             aux
         );
-        assert(r >= 0);
     }
 
     template <typename Fn>
-    void register_comp_method(
+    int register_comp_method(
         cstring_ref decl,
         Fn&& fn,
         AS_NAMESPACE_QUALIFIER asECallConvTypes conv,
@@ -1252,8 +1250,7 @@ protected:
         void* aux = nullptr
     )
     {
-        [[maybe_unused]]
-        int r = get_engine()->RegisterObjectMethod(
+        return get_engine()->RegisterObjectMethod(
             m_name.c_str(),
             decl.c_str(),
             detail::to_asSFuncPtr(fn),
@@ -1262,11 +1259,10 @@ protected:
             static_cast<int>(comp.get_offset()),
             true
         );
-        assert(r >= 0);
     }
 
     template <typename Fn>
-    void register_behaviour(
+    int register_behaviour(
         AS_NAMESPACE_QUALIFIER asEBehaviours beh,
         cstring_ref decl,
         Fn&& fn,
@@ -1274,9 +1270,7 @@ protected:
         void* aux = nullptr
     )
     {
-        [[maybe_unused]]
-        int r = 0;
-        r = get_engine()->RegisterObjectBehaviour(
+        return get_engine()->RegisterObjectBehaviour(
             m_name.c_str(),
             beh,
             decl.c_str(),
@@ -1284,59 +1278,54 @@ protected:
             conv,
             aux
         );
-        assert(r >= 0);
     }
 
-    void register_property(cstring_ref decl, std::size_t off)
+    int register_property(cstring_ref decl, std::size_t off)
     {
-        [[maybe_unused]]
-        int r = get_engine()->RegisterObjectProperty(
+        return get_engine()->RegisterObjectProperty(
             m_name.c_str(),
             decl.c_str(),
             static_cast<int>(off)
         );
-        assert(r >= 0);
     }
 
     template <typename MemberPointer>
-    void register_property(cstring_ref decl, MemberPointer mp)
+    int register_property(cstring_ref decl, MemberPointer mp)
     {
         static_assert(std::is_member_object_pointer_v<MemberPointer>);
-        register_property(decl, member_offset(mp));
+        return register_property(decl, member_offset(mp));
     }
 
-    void register_comp_property(cstring_ref decl, std::size_t off, std::size_t comp_off)
+    int register_comp_property(cstring_ref decl, std::size_t off, std::size_t comp_off)
     {
-        [[maybe_unused]]
-        int r = get_engine()->RegisterObjectProperty(
+        return get_engine()->RegisterObjectProperty(
             m_name.c_str(),
             decl.c_str(),
             static_cast<int>(off),
             static_cast<int>(comp_off),
             true
         );
-        assert(r >= 0);
     }
 
     template <typename CompMemberPointer>
     requires(std::is_member_object_pointer_v<CompMemberPointer>)
-    void register_comp_property(cstring_ref decl, std::size_t off, CompMemberPointer comp_mp)
+    int register_comp_property(cstring_ref decl, std::size_t off, CompMemberPointer comp_mp)
     {
-        register_comp_property(decl, off, member_offset(comp_mp));
+        return register_comp_property(decl, off, member_offset(comp_mp));
     }
 
     template <typename MemberPointer>
     requires(std::is_member_object_pointer_v<MemberPointer>)
-    void register_comp_property(cstring_ref decl, MemberPointer mp, std::size_t comp_off)
+    int register_comp_property(cstring_ref decl, MemberPointer mp, std::size_t comp_off)
     {
-        register_comp_property(decl, member_offset(mp), comp_off);
+        return register_comp_property(decl, member_offset(mp), comp_off);
     }
 
     template <typename CompMemberPointer, typename MemberPointer>
     requires(std::is_member_object_pointer_v<MemberPointer> && std::is_member_object_pointer_v<CompMemberPointer>)
-    void register_comp_property(cstring_ref decl, MemberPointer mp, CompMemberPointer comp_mp)
+    int register_comp_property(cstring_ref decl, MemberPointer mp, CompMemberPointer comp_mp)
     {
-        register_comp_property(decl, member_offset(mp), member_offset(comp_mp));
+        return register_comp_property(decl, member_offset(mp), member_offset(comp_mp));
     }
 
 #define ASBIND20_IMPL_REGISTER_UNARY_PREFIX_OP(as_op_sig, cpp_op, decl_arg_list, return_type, const_) \
@@ -1345,9 +1334,9 @@ protected:
         return string_concat decl_arg_list;                                                           \
     }                                                                                                 \
     template <typename Class>                                                                         \
-    void register_##as_op_sig##_generic()                                                             \
+    int register_##as_op_sig##_generic()                                                              \
     {                                                                                                 \
-        register_method(                                                                              \
+        return register_method(                                                                       \
             decl_##as_op_sig(),                                                                       \
             +[](generic_pointer gen) -> void                                                          \
             {                                                                                         \
@@ -1361,14 +1350,14 @@ protected:
         );                                                                                            \
     }                                                                                                 \
     template <typename Class>                                                                         \
-    void register_##as_op_sig##_native()                                                              \
+    int register_##as_op_sig##_native()                                                               \
     {                                                                                                 \
         static constexpr bool has_member_func = requires() {                                          \
             static_cast<return_type (Class::*)() const_>(&Class::operator cpp_op);                    \
         };                                                                                            \
         if constexpr(has_member_func)                                                                 \
         {                                                                                             \
-            register_method(                                                                          \
+            return register_method(                                                                   \
                 decl_##as_op_sig(),                                                                   \
                 static_cast<return_type (Class::*)() const_>(&Class::operator cpp_op),                \
                 detail::cc<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>                                    \
@@ -1377,7 +1366,7 @@ protected:
         else                                                                                          \
         {                                                                                             \
             using this_arg_t = std::conditional_t<(#const_[0] != '\0'), const Class&, Class&>;        \
-            this->register_method(                                                                    \
+            return this->register_method(                                                             \
                 decl_##as_op_sig(),                                                                   \
                 +[](this_arg_t this_) -> return_type                                                  \
                 {                                                                                     \
@@ -1408,9 +1397,9 @@ protected:
         return string_concat(m_name, " " #as_op_sig "()");                  \
     }                                                                       \
     template <typename Class>                                               \
-    void register_##as_op_sig##_generic()                                   \
+    int register_##as_op_sig##_generic()                                    \
     {                                                                       \
-        register_method(                                                    \
+        return register_method(                                             \
             decl_##as_op_sig(),                                             \
             +[](generic_pointer gen) -> void                                \
             {                                                               \
@@ -1423,10 +1412,10 @@ protected:
         );                                                                  \
     }                                                                       \
     template <typename Class>                                               \
-    void register_##as_op_sig##_native()                                    \
+    int register_##as_op_sig##_native()                                     \
     {                                                                       \
         /* Use a wrapper to deal with the hidden int of postfix operator */ \
-        register_method(                                                    \
+        return register_method(                                             \
             decl_##as_op_sig(),                                             \
             +[](Class& this_) -> Class                                      \
             { return this_ cpp_op; },                                       \
@@ -1442,7 +1431,7 @@ protected:
 #define ASBIND20_IMPL_REGISTER_BINARY_OP_GENERIC(as_decl, cpp_op, return_type, const_, rhs_type) \
     do                                                                                           \
     {                                                                                            \
-        this->register_method(                                                                   \
+        return this->register_method(                                                            \
             as_decl,                                                                             \
             +[](generic_pointer gen) -> void                                                     \
             {                                                                                    \
@@ -1467,7 +1456,7 @@ protected:
         };                                                                                      \
         if constexpr(has_member_func)                                                           \
         {                                                                                       \
-            this->register_method(                                                              \
+            return this->register_method(                                                       \
                 as_decl,                                                                        \
                 static_cast<return_type (Class::*)(rhs_type) const_>(&Class::operator cpp_op),  \
                 detail::cc<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>                              \
@@ -1479,7 +1468,7 @@ protected:
                 (#const_[0] != '\0'), /* Check whether const_ is empty */                       \
                 const Class&,                                                                   \
                 Class&>;                                                                        \
-            this->register_method(                                                              \
+            return this->register_method(                                                       \
                 as_decl,                                                                        \
                 +[](this_arg_t lhs, rhs_type rhs) -> return_type                                \
                 {                                                                               \
@@ -1496,14 +1485,14 @@ protected:
         return string_concat decl_arg_list;                                                               \
     }                                                                                                     \
     template <typename Class>                                                                             \
-    void register_##as_op_sig##_generic()                                                                 \
+    int register_##as_op_sig##_generic()                                                                  \
     {                                                                                                     \
         ASBIND20_IMPL_REGISTER_BINARY_OP_GENERIC(                                                         \
             decl_##as_op_sig(), cpp_op, return_type, const_, rhs_type                                     \
         );                                                                                                \
     }                                                                                                     \
     template <typename Class>                                                                             \
-    void register_##as_op_sig##_native()                                                                  \
+    int register_##as_op_sig##_native()                                                                   \
     {                                                                                                     \
         ASBIND20_IMPL_REGISTER_BINARY_OP_NATIVE(                                                          \
             decl_##as_op_sig(), cpp_op, return_type, const_, rhs_type                                     \
@@ -1548,10 +1537,10 @@ protected:
     }
 
     template <typename Class>
-    void register_opCmp_generic()
+    int register_opCmp_generic()
     {
         using gen_t = detail::opCmp<Class>;
-        register_method(
+        return register_method(
             decl_opCmp(),
             gen_t::generate(detail::generic_cc),
             detail::generic_cc
@@ -1559,10 +1548,10 @@ protected:
     }
 
     template <typename Class>
-    void register_opCmp_native()
+    int register_opCmp_native()
     {
         using gen_t = detail::opCmp<Class>;
-        register_method(
+        return register_method(
             decl_opCmp(),
             gen_t::generate(detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>),
             AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST
@@ -1589,12 +1578,12 @@ protected:
 #undef ASBIND20_IMPL_REGISTER_BINARY_OP_NATIVE
 #undef ASBIND20_IMPL_REGISTER_BINARY_OP
 
-    void register_member_funcdef(std::string_view decl)
+    int register_member_funcdef(std::string_view decl) const
     {
         std::string full_decl = detail::generate_member_funcdef(
             m_name, decl
         );
-        register_full_funcdef(full_decl);
+        return register_full_funcdef(full_decl);
     }
 
     static std::string decl_opConv(std::string_view ret, bool implicit = false)
@@ -1606,10 +1595,10 @@ protected:
     }
 
     template <typename Class, typename To>
-    void opConv_impl_native(std::string_view ret, bool implicit)
+    int opConv_impl_native(std::string_view ret, bool implicit)
     {
         using gen_t = detail::opConv<std::add_const_t<Class>, To>;
-        register_method(
+        return register_method(
             decl_opConv(ret, implicit),
             gen_t::generate(
                 detail::cdecl_last_cc
@@ -1619,10 +1608,10 @@ protected:
     }
 
     template <typename Class, typename To>
-    void opConv_impl_generic(std::string_view ret, bool implicit)
+    int opConv_impl_generic(std::string_view ret, bool implicit)
     {
         using gen_t = detail::opConv<std::add_const_t<Class>, To>;
-        register_method(
+        return register_method(
             decl_opConv(ret, implicit),
             gen_t::generate(detail::generic_cc),
             detail::generic_cc
@@ -1636,28 +1625,31 @@ protected:
         [[maybe_unused]]
         int r = 0;
         r = get_engine()->RegisterStringFactory(get_name().c_str(), factory);
-        assert(r >= 0);
+        ASBIND20_ASSERT(r >= 0);
     }
 
 private:
     // Internal interface because AS doesn't provide a direct interface to register member funcdef
-    void register_full_funcdef(cstring_ref decl)
+    int register_full_funcdef(cstring_ref decl) const
     {
-        [[maybe_unused]]
-        int r = 0;
-        r = get_engine()->RegisterFuncdef(decl.c_str());
-        assert(r >= 0);
+        return get_engine()->RegisterFuncdef(decl.c_str());
     }
 };
 
 /**
  * @brief CRTP interface for binding generators of classes
  */
-template <typename Derived, typename Class, bool Template, bool ForceGeneric>
+template <
+    typename Derived,
+    typename Class,
+    bool Template,
+    bool ForceGeneric,
+    typename Listener = default_listener>
 class class_binding_generator_interface :
-    public class_binding_generator_base<ForceGeneric>
+    public class_binding_generator_base<ForceGeneric, Listener>
 {
-    using my_base = class_binding_generator_base<ForceGeneric>;
+    using my_base = class_binding_generator_base<ForceGeneric, Listener>;
+    using listener_traits_type = listener_traits<Listener>;
 
 protected:
     using my_base::my_base;
@@ -1734,6 +1726,8 @@ private:
     }
 
 public:
+    using my_base::get_listener;
+
     Derived& template_callback(
         generic_function gfn
     ) requires(Template)
@@ -1831,7 +1825,8 @@ public:
     ) requires(!ForceGeneric)
     {
         constexpr auto conv = method_callconv<Fn>();
-        this->register_method(decl, fn, conv);
+        int r = this->register_method(decl, fn, conv);
+        listener_traits_type::on_method(get_listener(), derived(), r);
         return derived();
     }
 
@@ -1843,11 +1838,12 @@ public:
     ) requires(!ForceGeneric)
     {
         constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, false);
-        this->register_method(
+        int r = this->register_method(
             decl,
             fn,
             conv
         );
+        listener_traits_type::on_method(get_listener(), derived(), r);
         return derived();
     }
 
@@ -1856,11 +1852,12 @@ public:
         generic_function gfn
     )
     {
-        this->register_method(
+        int r = this->register_method(
             decl,
             gfn,
             detail::generic_cc
         );
+        listener_traits_type::on_method(get_listener(), derived(), r);
         return derived();
     }
 
@@ -1874,12 +1871,13 @@ public:
     ) requires(!ForceGeneric)
     {
         constexpr auto conv = method_callconv_aux<Fn, Auxiliary>();
-        this->register_method(
+        int r = this->register_method(
             decl,
             std::forward<Fn>(fn),
             conv,
             my_base::get_auxiliary_address(aux)
         );
+        listener_traits_type::on_method(get_listener(), derived(), r);
         return derived();
     }
 
@@ -1890,12 +1888,13 @@ public:
         auxiliary_wrapper<Auxiliary> aux
     )
     {
-        this->register_method(
+        int r = this->register_method(
             decl,
             gfn,
             detail::generic_cc,
             my_base::get_auxiliary_address(aux)
         );
+        listener_traits_type::on_method(get_listener(), derived(), r);
         return derived();
     }
 
@@ -1907,11 +1906,12 @@ public:
     )
     {
         constexpr auto conv = method_callconv<Method>();
-        this->register_method(
+        int r = this->register_method(
             decl,
             detail::to_asGENFUNC_t(fp<Method>, detail::cc<conv>),
             detail::generic_cc
         );
+        listener_traits_type::on_method(get_listener(), derived(), r);
         return derived();
     }
 
@@ -1937,12 +1937,13 @@ public:
     )
     {
         constexpr auto conv = method_callconv_aux<Method, Auxiliary>();
-        this->register_method(
+        int r = this->register_method(
             decl,
             detail::to_asGENFUNC_t(fp<Method>, detail::cc<conv>),
             detail::generic_cc,
             my_base::get_auxiliary_address(aux)
         );
+        listener_traits_type::on_method(get_listener(), derived(), r);
         return derived();
     }
 
@@ -1973,12 +1974,13 @@ public:
         // its calling convention should be THISCALL_OBJFIRST/LAST,
         // so we are getting convention with is_thiscall: true here.
         constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, true);
-        this->register_method(
+        int r = this->register_method(
             decl,
             detail::to_asGENFUNC_t(fp<Method>, detail::cc<conv>),
             detail::generic_cc,
             my_base::get_auxiliary_address(aux)
         );
+        listener_traits_type::on_method(get_listener(), derived(), r);
         return derived();
     }
 
@@ -1998,12 +2000,13 @@ public:
             // its calling convention should be THISCALL_OBJFIRST/LAST,
             // so we are getting convention with is_thiscall: true here.
             constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, true);
-            this->register_method(
+            int r = this->register_method(
                 decl,
                 Method,
                 conv,
                 my_base::get_auxiliary_address(aux)
             );
+            listener_traits_type::on_method(get_listener(), derived(), r);
         }
         return derived();
     }
@@ -2016,11 +2019,12 @@ public:
     )
     {
         constexpr auto conv = method_callconv<Lambda>();
-        this->register_method(
+        int r = this->register_method(
             decl,
             detail::to_asGENFUNC_t(Lambda{}, detail::cc<conv>),
             detail::generic_cc
         );
+        listener_traits_type::on_method(get_listener(), derived(), r);
         return derived();
     }
 
@@ -2033,11 +2037,12 @@ public:
     )
     {
         constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, false);
-        this->register_method(
+        int r = this->register_method(
             decl,
             detail::to_asGENFUNC_t(Lambda{}, detail::cc<conv>),
             detail::generic_cc
         );
+        listener_traits_type::on_method(get_listener(), derived(), r);
         return derived();
     }
 
@@ -2052,11 +2057,12 @@ public:
         else
         {
             constexpr auto conv = method_callconv<Lambda>();
-            this->register_method(
+            int r = this->register_method(
                 decl,
                 +Lambda{},
                 detail::cc<conv>
             );
+            listener_traits_type::on_method(get_listener(), derived(), r);
         }
         return derived();
     }
@@ -2073,11 +2079,12 @@ public:
         else
         {
             constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, false);
-            this->register_method(
+            int r = this->register_method(
                 decl,
                 detail::to_asGENFUNC_t(Lambda{}, detail::cc<conv>),
                 detail::generic_cc
             );
+            listener_traits_type::on_method(get_listener(), derived(), r);
         }
         return derived();
     }
@@ -2093,7 +2100,7 @@ public:
     )
     {
         constexpr auto conv = method_callconv<Function>();
-        this->register_method(
+        int r = this->register_method(
             decl,
             detail::to_asGENFUNC_t(
                 fp<Function>,
@@ -2102,6 +2109,7 @@ public:
             ),
             detail::generic_cc
         );
+        listener_traits_type::on_method(get_listener(), derived(), r);
         return derived();
     }
 
@@ -2134,7 +2142,7 @@ public:
     )
     {
         constexpr auto conv = method_callconv_aux<Function, Auxiliary>();
-        this->register_method(
+        int r = this->register_method(
             decl,
             detail::to_asGENFUNC_t(
                 fp<Function>,
@@ -2144,6 +2152,7 @@ public:
             detail::generic_cc,
             my_base::get_auxiliary_address(aux)
         );
+        listener_traits_type::on_method(get_listener(), derived(), r);
         return derived();
     }
 
@@ -2163,7 +2172,7 @@ public:
         else
         {
             constexpr auto conv = method_callconv_aux<Function, Auxiliary>();
-            this->register_method(
+            int r = this->register_method(
                 decl,
                 detail::to_asGENFUNC_t(
                     fp<Function>,
@@ -2173,6 +2182,7 @@ public:
                 detail::generic_cc,
                 my_base::get_auxiliary_address(aux)
             );
+            listener_traits_type::on_method(get_listener(), derived(), r);
         }
         return derived();
     }
@@ -2188,7 +2198,7 @@ public:
     )
     {
         constexpr auto conv = method_callconv<Lambda>();
-        this->register_method(
+        int r = this->register_method(
             decl,
             detail::to_asGENFUNC_t(
                 Lambda{},
@@ -2197,6 +2207,7 @@ public:
             ),
             detail::generic_cc
         );
+        listener_traits_type::on_method(get_listener(), derived(), r);
         return derived();
     }
 
@@ -2214,11 +2225,12 @@ public:
             this->method(use_generic, decl, Lambda{}, var_type<Is...>);
         else
         {
-            this->register_method(
+            int r = this->register_method(
                 decl,
                 +Lambda{},
                 detail::cc<conv>
             );
+            listener_traits_type::on_method(get_listener(), derived(), r);
         }
         return derived();
     }
@@ -2249,7 +2261,7 @@ public:
         composite_wrapper_nontype<Composite>
     )
     {
-        this->register_method(
+        int r = this->register_method(
             decl,
             // The composite offset will be handled by the generic wrapper
             detail::to_asGENFUNC_t(
@@ -2259,6 +2271,7 @@ public:
             ),
             detail::generic_cc
         );
+        listener_traits_type::on_method(get_listener(), derived(), r);
         return derived();
     }
 
@@ -2300,7 +2313,7 @@ public:
         var_type_t<Is...>
     )
     {
-        this->register_method(
+        int r = this->register_method(
             decl,
             detail::to_asGENFUNC_t(
                 fp<Fn>,
@@ -2310,6 +2323,7 @@ public:
             ),
             detail::generic_cc
         );
+        listener_traits_type::on_method(get_listener(), derived(), r);
         return derived();
     }
 
@@ -2375,7 +2389,10 @@ public:
 
     Derived& funcdef(cstring_ref decl)
     {
-        this->register_member_funcdef(decl);
+        int r = this->register_member_funcdef(decl);
+        listener_traits_type::on_funcdef(
+            this->get_listener(), *this, r
+        );
         return derived();
     }
 
@@ -2397,7 +2414,8 @@ public:
     template <typename To>
     Derived& opConv(use_generic_t, std::string_view to_decl)
     {
-        this->template opConv_impl_generic<Class, To>(to_decl, false);
+        int r = this->template opConv_impl_generic<Class, To>(to_decl, false);
+        listener_traits_type::on_method(get_listener(), derived(), r);
         return derived();
     }
 
@@ -2408,7 +2426,8 @@ public:
             opConv<To>(use_generic, to_decl);
         else
         {
-            this->template opConv_impl_native<Class, To>(to_decl, false);
+            int r = this->template opConv_impl_native<Class, To>(to_decl, false);
+            listener_traits_type::on_method(get_listener(), derived(), r);
         }
         return derived();
     }
@@ -2416,7 +2435,8 @@ public:
     template <typename To>
     Derived& opImplConv(use_generic_t, std::string_view to_decl)
     {
-        this->template opConv_impl_generic<Class, To>(to_decl, true);
+        int r = this->template opConv_impl_generic<Class, To>(to_decl, true);
+        listener_traits_type::on_method(get_listener(), derived(), r);
         return derived();
     }
 
@@ -2426,7 +2446,10 @@ public:
         if constexpr(ForceGeneric)
             opImplConv<To>(use_generic, to_decl);
         else
-            this->template opConv_impl_native<Class, To>(to_decl, true);
+        {
+            int r = this->template opConv_impl_native<Class, To>(to_decl, true);
+            listener_traits_type::on_method(get_listener(), derived(), r);
+        }
         return derived();
     }
 
@@ -2458,19 +2481,27 @@ public:
         return derived();
     }
 
-#define ASBIND20_BG_INTERFACE_DEFINE_OP(bg_type, op_name)        \
-    bg_type& op_name(use_generic_t)                              \
-    {                                                            \
-        this->template register_##op_name##_generic<Class>();    \
-        return static_cast<bg_type&>(*this);                     \
-    }                                                            \
-    bg_type& op_name()                                           \
-    {                                                            \
-        if constexpr(ForceGeneric)                               \
-            this->op_name(use_generic);                          \
-        else                                                     \
-            this->template register_##op_name##_native<Class>(); \
-        return static_cast<bg_type&>(*this);                     \
+#define ASBIND20_BG_INTERFACE_DEFINE_OP(bg_type, op_name)                \
+    bg_type& op_name(use_generic_t)                                      \
+    {                                                                    \
+        int r = this->template register_##op_name##_generic<Class>();    \
+        listener_traits_type::on_method(                                 \
+            this->get_listener(), static_cast<bg_type&>(*this), r        \
+        );                                                               \
+        return static_cast<bg_type&>(*this);                             \
+    }                                                                    \
+    bg_type& op_name()                                                   \
+    {                                                                    \
+        if constexpr(ForceGeneric)                                       \
+            this->op_name(use_generic);                                  \
+        else                                                             \
+        {                                                                \
+            int r = this->template register_##op_name##_native<Class>(); \
+            listener_traits_type::on_method(                             \
+                this->get_listener(), static_cast<bg_type&>(*this), r    \
+            );                                                           \
+        }                                                                \
+        return static_cast<bg_type&>(*this);                             \
     }
 
     // The following operators are returning either primitives
@@ -2627,20 +2658,28 @@ private:
  * @tparam Class Class to be registered
  * @tparam Template True if the class is a templated type
  * @tparam ForceGeneric Force all registered methods and behaviors to use the generic calling convention
+ * @tparam Listener The listener type
  */
-template <typename Class, bool Template = false, bool ForceGeneric = false>
+template <
+    typename Class,
+    bool Template = false,
+    bool ForceGeneric = false,
+    typename Listener = default_listener>
 class basic_value_class final :
     public class_binding_generator_interface<
-        basic_value_class<Class, Template, ForceGeneric>,
+        basic_value_class<Class, Template, ForceGeneric, Listener>,
         Class,
         Template,
-        ForceGeneric>
+        ForceGeneric,
+        Listener>
 {
     using my_base = class_binding_generator_interface<
-        basic_value_class<Class, Template, ForceGeneric>,
+        basic_value_class<Class, Template, ForceGeneric, Listener>,
         Class,
         Template,
-        ForceGeneric>;
+        ForceGeneric,
+        Listener>;
+    using listener_traits_type = listener_traits<Listener>;
 
 public:
     using class_type = Class;
@@ -2655,11 +2694,11 @@ public:
     {
         flags |= AS_NAMESPACE_QUALIFIER asOBJ_VALUE;
 
-        assert(!(flags & (AS_NAMESPACE_QUALIFIER asOBJ_REF)));
+        ASBIND20_ASSERT(!(flags & (AS_NAMESPACE_QUALIFIER asOBJ_REF)));
 
         if constexpr(!Template)
         {
-            assert(!(flags & (AS_NAMESPACE_QUALIFIER asOBJ_TEMPLATE)));
+            ASBIND20_ASSERT(!(flags & (AS_NAMESPACE_QUALIFIER asOBJ_TEMPLATE)));
             flags |= AS_NAMESPACE_QUALIFIER asGetTypeTraits<Class>();
         }
         else
@@ -2667,8 +2706,11 @@ public:
             flags |= AS_NAMESPACE_QUALIFIER asOBJ_TEMPLATE;
         }
 
-        this->register_object_type(
+        int r = this->register_object_type(
             flags, static_cast<int>(sizeof(Class))
+        );
+        listener_traits_type::on_class(
+            this->get_listener(), *this, r
         );
     }
 
@@ -3375,28 +3417,28 @@ public:
             if constexpr(meta::placement_newable_from<Class>)
                 default_constructor(use_generic);
             else
-                assert(false && "missing default constructor");
+                ASBIND20_ASSERT(false && "missing default constructor");
         }
         if(traits & (AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_D))
         {
             if constexpr(std::is_destructible_v<Class>)
                 destructor(use_generic);
             else
-                assert(false && "missing destructor");
+                ASBIND20_ASSERT(false && "missing destructor");
         }
         if(traits & (AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_A))
         {
             if constexpr(std::is_copy_assignable_v<Class>)
                 this->opAssign(use_generic);
             else
-                assert(false && "missing assignment operator");
+                ASBIND20_ASSERT(false && "missing assignment operator");
         }
         if(traits & (AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_K))
         {
             if constexpr(meta::placement_newable_from<Class, const Class&>)
                 copy_constructor(use_generic);
             else
-                assert(false && "missing copy constructor");
+                ASBIND20_ASSERT(false && "missing copy constructor");
         }
 
         return *this;
@@ -3416,28 +3458,28 @@ public:
             if constexpr(meta::placement_newable_from<Class>)
                 default_constructor();
             else
-                assert(false && "missing default constructor");
+                ASBIND20_ASSERT(false && "missing default constructor");
         }
         if(traits & (AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_D))
         {
             if constexpr(std::is_destructible_v<Class>)
                 destructor();
             else
-                assert(false && "missing destructor");
+                ASBIND20_ASSERT(false && "missing destructor");
         }
         if(traits & (AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_A))
         {
             if constexpr(std::is_copy_assignable_v<Class>)
                 this->opAssign();
             else
-                assert(false && "missing assignment operator");
+                ASBIND20_ASSERT(false && "missing assignment operator");
         }
         if(traits & (AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_K))
         {
             if constexpr(meta::placement_newable_from<Class, const Class&>)
                 copy_constructor();
             else
-                assert(false && "missing copy constructor");
+                ASBIND20_ASSERT(false && "missing copy constructor");
         }
 
         return *this;
@@ -3613,7 +3655,7 @@ public:
     requires(!std::same_as<Class, OtherClass>)
     basic_value_class& opConv(use_generic_t, const basic_value_class<OtherClass, false, OtherUseGeneric>& other)
     {
-        assert(this->get_engine() == other.get_engine());
+        ASBIND20_ASSERT(this->get_engine() == other.get_engine());
         this->opConv<OtherClass>(use_generic, other.get_name());
         return *this;
     }
@@ -3622,7 +3664,7 @@ public:
     requires(!std::same_as<Class, OtherClass>)
     basic_value_class& opConv(const basic_value_class<OtherClass, false, OtherUseGeneric>& other)
     {
-        assert(this->get_engine() == other.get_engine());
+        ASBIND20_ASSERT(this->get_engine() == other.get_engine());
         this->opConv<OtherClass>(other.get_name());
         return *this;
     }
@@ -3631,7 +3673,7 @@ public:
     requires(!std::same_as<Class, OtherClass>)
     basic_value_class& opImplConv(use_generic_t, const basic_value_class<OtherClass, false, OtherUseGeneric>& other)
     {
-        assert(this->get_engine() == other.get_engine());
+        ASBIND20_ASSERT(this->get_engine() == other.get_engine());
         this->opImplConv<OtherClass>(use_generic, other.get_name());
         return *this;
     }
@@ -3640,31 +3682,38 @@ public:
     requires(!std::same_as<Class, OtherClass>)
     basic_value_class& opImplConv(const basic_value_class<OtherClass, false, OtherUseGeneric>& other)
     {
-        assert(this->get_engine() == other.get_engine());
+        ASBIND20_ASSERT(this->get_engine() == other.get_engine());
         this->opImplConv<OtherClass>(other.get_name());
         return *this;
     }
 };
 
-template <typename Class, bool ForceGeneric = false>
-using value_class = basic_value_class<Class, false, ForceGeneric>;
+template <typename Class, bool ForceGeneric = false, typename Listener = default_listener>
+using value_class = basic_value_class<Class, false, ForceGeneric, Listener>;
 
-template <typename Class, bool ForceGeneric = false>
-using template_value_class = basic_value_class<Class, true, ForceGeneric>;
+template <typename Class, bool ForceGeneric = false, typename Listener = default_listener>
+using template_value_class = basic_value_class<Class, true, ForceGeneric, Listener>;
 
-template <typename Class, bool Template = false, bool ForceGeneric = false>
+template <
+    typename Class,
+    bool Template = false,
+    bool ForceGeneric = false,
+    typename Listener = default_listener>
 class basic_ref_class :
     public class_binding_generator_interface<
-        basic_ref_class<Class, Template, ForceGeneric>,
+        basic_ref_class<Class, Template, ForceGeneric, Listener>,
         Class,
         Template,
-        ForceGeneric>
+        ForceGeneric,
+        Listener>
 {
     using my_base = class_binding_generator_interface<
-        basic_ref_class<Class, Template, ForceGeneric>,
+        basic_ref_class<Class, Template, ForceGeneric, Listener>,
         Class,
         Template,
-        ForceGeneric>;
+        ForceGeneric,
+        Listener>;
+    using listener_traits_type = listener_traits<Listener>;
 
 public:
     using class_type = Class;
@@ -3678,11 +3727,11 @@ public:
         : my_base(engine, std::move(name))
     {
         flags |= AS_NAMESPACE_QUALIFIER asOBJ_REF;
-        assert(!(flags & (AS_NAMESPACE_QUALIFIER asOBJ_VALUE)));
+        ASBIND20_ASSERT(!(flags & (AS_NAMESPACE_QUALIFIER asOBJ_VALUE)));
 
         if constexpr(!Template)
         {
-            assert(!(flags & (AS_NAMESPACE_QUALIFIER asOBJ_TEMPLATE)));
+            ASBIND20_ASSERT(!(flags & (AS_NAMESPACE_QUALIFIER asOBJ_TEMPLATE)));
         }
         else
         {
@@ -3691,7 +3740,10 @@ public:
 
         // Size is unnecessary for reference type.
         // Use 0 as size to support registering an incomplete type.
-        this->register_object_type(flags, 0);
+        int r = this->register_object_type(flags, 0);
+        listener_traits_type::on_class(
+            this->get_listener(), *this, r
+        );
     }
 
     template <string_like StringLike>
@@ -4623,7 +4675,7 @@ private:
         if constexpr(std::same_as<FactoryPolicy, policies::notify_gc> && !Template)
         {
             aux = get_engine()->GetTypeInfoById(this->get_type_id());
-            assert(aux != nullptr);
+            ASBIND20_ASSERT(aux != nullptr);
         }
         return aux;
     }
@@ -4846,13 +4898,13 @@ public:
         [[maybe_unused]]
         int r = 0;
         r = get_engine()->RegisterDefaultArrayType(get_name().c_str());
-        assert(r >= 0);
+        ASBIND20_ASSERT(r >= 0);
 
         return *this;
     }
 };
 
-// #undef macros defined by binding generator inteface here
+// #undef macros defined by binding generator interface here
 #undef ASBIND20_BG_INTERFACE_DEFINE_OP
 #undef ASBIND20_BG_INTERFACE_DEFINE_BEH
 

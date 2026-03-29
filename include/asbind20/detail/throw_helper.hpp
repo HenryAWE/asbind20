@@ -15,28 +15,37 @@
 
 // IWYU pragma: end_exports
 
-namespace asbind20::detail
+namespace asbind20
 {
+/**
+ * @brief Define the macro ASBIND20_CUSTOM_ON_EXCEPTION and provide your definition of this function
+ *        for custom fallback when exception is disabled
+ *
+ * @tparam Exception The exception type
+ * @tparam Args Arguments
+ */
 template <typename Exception, typename... Args>
-[[noreturn]]
-void throw_([[maybe_unused]] Args&&... args)
+void on_exception(Args&&... args);
+
+namespace detail
 {
+    template <typename Exception, typename... Args>
+    [[noreturn]]
+    void throw_([[maybe_unused]] Args&&... args)
+    {
 #ifndef ASBIND20_NO_EXCEPTIONS
-    throw Exception(std::forward<Args>(args)...);
+        throw Exception(std::forward<Args>(args)...);
+
 #else
-    std::terminate();
+
+#    ifdef ASBIND20_CUSTOM_ON_EXCEPTION
+        ::asbind20::on_exception<Exception>(std::forward<Args>(args)...);
+#    endif
+
+        std::terminate();
 #endif
-}
-} // namespace asbind20::detail
-
-// User can provide a customized ASBIND20_THROW
-#ifndef ASBIND20_THROW
-
-#    define ASBIND20_THROW(ex_type, param_list)              \
-        do {                                                 \
-            (::asbind20::detail::throw_<ex_type>)param_list; \
-        } while(0)
-
-#endif
+    }
+} // namespace detail
+} // namespace asbind20
 
 #endif

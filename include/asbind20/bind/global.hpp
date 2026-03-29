@@ -14,12 +14,12 @@
 
 namespace asbind20
 {
-template <bool ForceGeneric>
-class global final : public binding_generator_interface<ForceGeneric>
+template <bool ForceGeneric, typename Listener = default_listener>
+class global final : public binding_generator_interface<ForceGeneric, Listener>
 {
-    using my_base = binding_generator_interface<ForceGeneric>;
+    using my_base = binding_generator_interface<ForceGeneric, Listener>;
+    using listener_traits_type = listener_traits<Listener>;
 
-private:
     template <typename Fn>
     void register_function(
         cstring_ref decl,
@@ -35,14 +35,14 @@ private:
             conv,
             auxiliary
         );
-        assert(r >= 0);
+        listener_traits_type::on_function(this->get_listener(), *this, r);
     }
 
 public:
     global() = delete;
     global(const global&) = default;
 
-    global(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+    explicit global(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         : my_base(engine) {}
 
     using my_base::get_engine;
@@ -229,12 +229,13 @@ public:
         T& val
     )
     {
-        [[maybe_unused]]
         int r = get_engine()->RegisterGlobalProperty(
             decl.c_str(),
             (void*)std::addressof(val)
         );
-        assert(r >= 0);
+        listener_traits_type::on_global_property(
+            this->get_listener(), *this, r
+        );
 
         return *this;
     }
@@ -248,12 +249,12 @@ public:
         cstring_ref decl
     )
     {
-        [[maybe_unused]]
         int r = get_engine()->RegisterFuncdef(
             decl.c_str()
         );
-        assert(r >= 0);
-
+        listener_traits_type::on_funcdef(
+            this->get_listener(), *this, r
+        );
         return *this;
     }
 
@@ -268,13 +269,13 @@ public:
         cstring_ref new_name
     )
     {
-        [[maybe_unused]]
         int r = get_engine()->RegisterTypedef(
             new_name.c_str(),
             type_decl.c_str()
         );
-        assert(r >= 0);
-
+        listener_traits_type::on_typedef(
+            this->get_listener(), *this, r
+        );
         return *this;
     }
 
@@ -292,6 +293,8 @@ public:
         typedef_(type_decl, new_name);
         return *this;
     }
+
+    // TODO: Split message_callback & exception translator into standalone functions
 
     /**
      * @brief Generic calling convention for message callback is not supported.

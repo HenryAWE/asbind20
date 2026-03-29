@@ -12,6 +12,7 @@ class expected_ex : public std::exception
 public:
     static constexpr char info[] = "expected exception";
 
+    [[nodiscard]]
     const char* what() const noexcept override
     {
         return info;

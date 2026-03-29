@@ -1,6 +1,7 @@
 #pragma once
 
 #include <gtest/gtest.h>
+#include <typeinfo>
 #include <asbind20/asbind.hpp>
 
 // IWYU pragma: begin_exports
@@ -10,6 +11,18 @@
 #include "test_exceptions.hpp"
 
 // IWYU pragma: end_exports
+
+template <typename Exception, typename... Args>
+void asbind20::on_exception([[maybe_unused]] Args&&... args)
+{
+    [&]()
+    {
+        ADD_FAILURE()
+            << "Exception name = " << typeid(Exception).name();
+    }();
+
+    std::terminate();
+}
 
 namespace asbind_test
 {
