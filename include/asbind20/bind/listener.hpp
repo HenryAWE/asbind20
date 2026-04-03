@@ -50,16 +50,21 @@ public:
 #undef ASBIND20_IMPL_LISTENER_GENERAL_FUNC
 
 private:
-    static void default_fallback(int val, const char* what)
+    static void default_fallback(
+        [[maybe_unused]] int val,
+        [[maybe_unused]] const char* what
+    )
     {
         if(val >= 0) [[likely]]
             return;
 
+#ifndef ASBIND20_NO_THROW_ON_BAD_BINDING
         // Report error
         auto code = static_cast<AS_NAMESPACE_QUALIFIER asERetCodes>(val);
         ::asbind20::detail::throw_<std::system_error>(
             make_error_code(code), what
         );
+#endif
     }
 };
 } // namespace asbind20

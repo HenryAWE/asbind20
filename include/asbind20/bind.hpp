@@ -39,6 +39,7 @@ public:
     )
         : m_engine(engine)
     {
+        ASBIND20_ASSERT(engine != nullptr);
         m_prev = m_engine->SetDefaultAccessMask(mask);
     }
 
