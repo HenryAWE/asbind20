@@ -5,6 +5,7 @@
 
 #include <cstddef>
 #include <asbind20/asbind.hpp>
+#include <asbind20/concurrent/mutex.hpp>
 #include <asbind20/container/small_vector.hpp>
 #include <asbind20/operators.hpp>
 #include <asbind20/container/compare.hpp>

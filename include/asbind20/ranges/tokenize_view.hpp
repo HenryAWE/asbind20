@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include <cassert>
 #include "common.hpp"
 #include "../detail/include_as.hpp"
+#include "../detail/err_handler.hpp"
 
 namespace asbind20::ranges
 {

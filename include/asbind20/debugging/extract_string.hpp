@@ -12,7 +12,7 @@
 #include <cassert>
 #include <string>
 #include "../detail/include_as.hpp"
-#include "../detail/throw_helper.hpp"
+#include "../detail/err_handler.hpp"
 
 namespace asbind20::debugging
 {

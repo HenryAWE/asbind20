@@ -4,7 +4,7 @@
 #pragma once
 
 #include <utility>
-#include "../detail/throw_helper.hpp"
+#include "../detail/err_handler.hpp"
 #include "../detail/include_as.hpp"
 #include "../script_error.hpp"
 

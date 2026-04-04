@@ -24,7 +24,7 @@
 #include "detail/fwd.hpp"
 #include "detail/compat.hpp"
 #include "detail/include_as.hpp"
-#include "detail/throw_helper.hpp"
+#include "detail/err_handler.hpp"
 #include "detail/strutil.hpp"
 
 namespace asbind20
@@ -701,55 +701,6 @@ case AS_NAMESPACE_QUALIFIER as_type_id:                                         
 
 #undef ASBIND20_UTILITY_VISIT_SCRIPT_TYPE_ID_CASE
 }
-
-/**
- * @brief Wrapper for global lock of AngelScript library
- */
-class script_lock_t
-{
-public:
-    constexpr script_lock_t() = default;
-    script_lock_t(const script_lock_t&) = delete;
-
-    script_lock_t& operator=(const script_lock_t&) = delete;
-
-    /**
-     * @brief Locks the mutex, blocks if the mutex is not available
-     */
-    static void lock()
-    {
-        AS_NAMESPACE_QUALIFIER asAcquireExclusiveLock();
-    }
-
-    /**
-     * @brief Unlocks the mutex
-     */
-    static void unlock()
-    {
-        AS_NAMESPACE_QUALIFIER asReleaseExclusiveLock();
-    }
-
-    /**
-     * @brief Locks the mutex for shared ownership, blocks if the mutex is not available
-     */
-    static void lock_shared()
-    {
-        AS_NAMESPACE_QUALIFIER asAcquireSharedLock();
-    }
-
-    /**
-     * @brief Unlocks the mutex (shared ownership)
-     */
-    static void unlock_shared()
-    {
-        AS_NAMESPACE_QUALIFIER asReleaseSharedLock();
-    }
-};
-
-/**
- * @brief Global lock of AngelScript library
- */
-inline constexpr script_lock_t script_lock = {};
 
 namespace detail
 {

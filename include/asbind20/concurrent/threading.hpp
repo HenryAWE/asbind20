@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "mutex.hpp" // IWYU pragma: export
 #include "../detail/include_as.hpp"
 
 namespace asbind20::concurrent

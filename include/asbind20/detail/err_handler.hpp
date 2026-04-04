@@ -4,8 +4,8 @@
  * @brief Helper for throwing exception
  */
 
-#ifndef ASBIND20_DETAIL_THROW_HELPER
-#define ASBIND20_DETAIL_THROW_HELPER
+#ifndef ASBIND20_DETAIL_ERR_HANDLER_HPP
+#define ASBIND20_DETAIL_ERR_HANDLER_HPP
 
 // IWYU pragma: begin_exports
 
