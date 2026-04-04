@@ -85,24 +85,32 @@ Example code:
 Locks
 -----
 
-The AngelScript library provides two locks.
-
-.. doxygenvariable:: asbind20::as_shared_lock
-.. doxygenvariable:: asbind20::as_exclusive_lock
-
-The weak reference flag (``asILockableSharedBool*``) is also lockable.
+The weak reference flag (``asILockableSharedBool*``) is lockable.
 
 .. doxygenclass:: asbind20::lockable_shared_bool
-   :members: lock, unlock
-   :no-link:
+    :members: lock, unlock
+    :no-link:
+
+The AngelScript library provides global exclusive and shared locks.
+
+.. doxygenvariable:: asbind20::script_lock
+.. doxygenclass:: asbind20::script_lock_t
+    :members: lock, unlock, lock_shared, unlock_shared
 
 Example code:
 
 .. code-block:: c++
 
     {
-        std::lock_guard guard(asbind20::as_exclusive_lock);
-        // Do something...
+        std::unique_lock lk(asbind20::script_lock);
+        // Writing
+    }
+
+.. code-block:: c++
+
+    {
+        std::shared_lock lk(asbind20::script_lock);
+        // Reading
     }
 
 Atomic Reference Counting
