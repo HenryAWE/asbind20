@@ -13,6 +13,8 @@
 #include <asbind20/asbind.hpp>
 #include "utf8.hpp"
 
+#include <shared_mutex>
+
 namespace asbind_test
 {
 /**
@@ -71,7 +73,7 @@ public:
         const char* data, AS_NAMESPACE_QUALIFIER asUINT length
     ) override
     {
-        std::lock_guard lock(asbind20::as_exclusive_lock);
+        std::unique_lock lk(asbind20::script_lock);
 
         std::string_view view(data, length);
         auto it = m_cache.find(view);
@@ -113,7 +115,7 @@ public:
 
         int r = AS_NAMESPACE_QUALIFIER asSUCCESS;
 
-        std::lock_guard lock(asbind20::as_exclusive_lock);
+        std::unique_lock lk(asbind20::script_lock);
 
         auto it = m_cache.find(*ptr);
 
@@ -139,7 +141,7 @@ public:
         if(ptr == nullptr)
             return AS_NAMESPACE_QUALIFIER asERROR;
 
-        std::lock_guard lock(asbind20::as_shared_lock);
+        std::shared_lock lk(asbind20::script_lock);
 
         if(length)
             *length = static_cast<AS_NAMESPACE_QUALIFIER asUINT>(ptr->size());

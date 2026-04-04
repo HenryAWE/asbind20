@@ -702,47 +702,39 @@ case AS_NAMESPACE_QUALIFIER as_type_id:                                         
 #undef ASBIND20_UTILITY_VISIT_SCRIPT_TYPE_ID_CASE
 }
 
-namespace detail
+class script_lock_t
 {
-    class as_exclusive_lock_t
+public:
+    constexpr script_lock_t() = default;
+    script_lock_t(const script_lock_t&) = delete;
+
+    script_lock_t& operator=(const script_lock_t&) = delete;
+
+    static void lock()
     {
-    public:
-        static void lock()
-        {
-            AS_NAMESPACE_QUALIFIER asAcquireExclusiveLock();
-        }
+        AS_NAMESPACE_QUALIFIER asAcquireExclusiveLock();
+    }
 
-        static void unlock()
-        {
-            AS_NAMESPACE_QUALIFIER asReleaseExclusiveLock();
-        }
-    };
-
-    class as_shared_lock_t
+    static void unlock()
     {
-    public:
-        static void lock()
-        {
-            AS_NAMESPACE_QUALIFIER asAcquireSharedLock();
-        }
+        AS_NAMESPACE_QUALIFIER asReleaseExclusiveLock();
+    }
 
-        static void unlock()
-        {
-            AS_NAMESPACE_QUALIFIER asReleaseSharedLock();
-        }
-    };
-} // namespace detail
+    static void lock_shared()
+    {
+        AS_NAMESPACE_QUALIFIER asAcquireSharedLock();
+    }
+
+    static void unlock_shared()
+    {
+        AS_NAMESPACE_QUALIFIER asReleaseSharedLock();
+    }
+};
 
 /**
- * @brief Wrapper for `asAcquireExclusiveLock()` and `asReleaseExclusiveLock()`
+ * @brief Wrapper for lock of AngelScript library
  */
-inline constexpr detail::as_exclusive_lock_t as_exclusive_lock = {};
-
-
-/**
- * @brief Wrapper for `asAcquireSharedLock()` and `asReleaseSharedLock()`
- */
-inline constexpr detail::as_shared_lock_t as_shared_lock = {};
+inline constexpr script_lock_t script_lock = {};
 
 namespace detail
 {

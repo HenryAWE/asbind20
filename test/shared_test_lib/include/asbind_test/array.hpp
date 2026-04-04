@@ -78,7 +78,7 @@ namespace detail
             if(cache) [[likely]]
                 return;
 
-            std::lock_guard guard(asbind20::as_exclusive_lock);
+            std::unique_lock lk(asbind20::script_lock);
 
             // Double-check to prevent cache from being created by another thread
             cache = static_cast<array_cache*>(ti->GetUserData(UserDataID));
