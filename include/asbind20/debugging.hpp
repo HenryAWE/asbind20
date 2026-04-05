@@ -36,7 +36,8 @@ inline const char* get_function_section_name(
     const AS_NAMESPACE_QUALIFIER asIScriptFunction* func
 )
 {
-    assert(func != nullptr);
+    if(!func) [[unlikely]]
+        return nullptr;
 
 #if ANGELSCRIPT_VERSION >= 23800
 

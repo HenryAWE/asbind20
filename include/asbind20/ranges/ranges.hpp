@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <cassert>
 // IWYU pragma: begin_exports
 
 #include "typeinfo_views.hpp"

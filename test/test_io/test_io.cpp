@@ -63,7 +63,7 @@ TEST(TestIO, MemoryWrapper)
 
         auto* m = engine->GetModule("test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
         {
-            auto result = asbind20::load_byte_code(buf.data(), buf.size(), m);
+            auto result = asbind20::load_byte_code(buf, m);
             auto [r, debug_info_stripped] = result;
             ASSERT_GE(r, 0);
             EXPECT_TRUE(result);

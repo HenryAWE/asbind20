@@ -68,3 +68,19 @@ TEST_F(TestStringFactoryNative, RunScript)
     );
     EXPECT_EQ(result, "test");
 }
+
+TEST_F(TestStringFactoryGeneric, Add)
+{
+    auto result = this->run_string(
+        R"(return "test" + " add";)"
+    );
+    EXPECT_EQ(result, "test add");
+}
+
+TEST_F(TestStringFactoryNative, Add)
+{
+    auto result = this->run_string(
+        R"(return "test" + " add";)"
+    );
+    EXPECT_EQ(result, "test add");
+}

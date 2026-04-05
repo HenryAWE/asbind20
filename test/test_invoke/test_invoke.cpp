@@ -7,8 +7,15 @@ using namespace asbind_test;
 
 TEST(TestInvoke, CommonTypes)
 {
+    using namespace std::literals;
     using namespace asbind20;
     using asbind_test::result_has_value;
+
+    // Static assertions
+    static_assert(!is_script_invoke_result_v<void>);
+    static_assert(!is_script_invoke_result_v<int>);
+    static_assert(!is_script_invoke_result_v<float>);
+    static_assert(!is_script_invoke_result_v<std::string>);
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
@@ -46,7 +53,11 @@ TEST(TestInvoke, CommonTypes)
         asbind20::request_context ctx(engine);
 
         int val = 0;
-        asbind20::script_invoke<void>(ctx, fp, 1, std::ref(val));
+        auto result = asbind20::script_invoke<void>(ctx, fp, 1, std::ref(val));
+        static_assert(is_script_invoke_result_v<decltype(result)>);
+        static_assert(is_script_invoke_result_v<const decltype(result)>);
+        static_assert(std::is_swappable_v<decltype(result)>);
+        EXPECT_TRUE(result.has_value());
         EXPECT_EQ(val, 2);
     }
 
@@ -57,6 +68,9 @@ TEST(TestInvoke, CommonTypes)
         asbind20::request_context ctx(engine);
 
         auto result = asbind20::script_invoke<float>(ctx, fp, 3.14f);
+        static_assert(is_script_invoke_result_v<decltype(result)>);
+        static_assert(is_script_invoke_result_v<const decltype(result)>);
+        static_assert(std::is_swappable_v<decltype(result)>);
         ASSERT_TRUE(result_has_value(result));
         EXPECT_FLOAT_EQ(result.value(), 3.14f);
     }
@@ -70,6 +84,10 @@ TEST(TestInvoke, CommonTypes)
         auto result = asbind20::script_invoke<double>(ctx, fp, 3.14);
         ASSERT_TRUE(result_has_value(result));
         EXPECT_DOUBLE_EQ(result.value(), 3.14);
+        EXPECT_GT(result, 3.0);
+        EXPECT_LT(3.0, result);
+        EXPECT_GT(4.0, result);
+        EXPECT_LT(result, 4.0);
     }
 
     {
@@ -82,6 +100,9 @@ TEST(TestInvoke, CommonTypes)
 
         int val = 0;
         auto result = asbind20::script_invoke<std::string>(ctx, fp, 1, std::ref(val));
+        static_assert(is_script_invoke_result_v<decltype(result)>);
+        static_assert(is_script_invoke_result_v<const decltype(result)>);
+        static_assert(std::is_swappable_v<decltype(result)>);
         ASSERT_TRUE(result_has_value(result));
         EXPECT_EQ(result.value(), "test");
         EXPECT_EQ(result.value_or("hello"s), "test");
@@ -92,6 +113,14 @@ TEST(TestInvoke, CommonTypes)
             EXPECT_EQ(result.value_or(str), "test")
                 << "str=" << str;
         }
+        EXPECT_EQ(result, "test");
+        EXPECT_EQ("test", result);
+        EXPECT_NE(result, "hello");
+        EXPECT_NE("hello", result);
+        EXPECT_EQ(result, "test"s);
+        EXPECT_EQ("test"s, result);
+        EXPECT_EQ(result, "test"sv);
+        EXPECT_EQ("test"sv, result);
         EXPECT_EQ(val, 2);
 
         auto opt = result.to_optional();
@@ -379,6 +408,152 @@ TEST(TestInvoke, Suspension)
 
         EXPECT_EQ(result.value(), 42);
     }
+}
+
+namespace test_invoke
+{
+static void setup_bad_call_helper(
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, std::string_view ret_type_decl
+)
+{
+    using namespace asbind20;
+    global(engine)
+        .function(
+            string_concat(ret_type_decl, " bad_call()"),
+            +[](generic_pointer) -> void
+            { set_script_exception("intentional"); }
+        );
+}
+} // namespace test_invoke
+
+TEST(TestInvoke, CompareValueResult)
+{
+    using namespace asbind20;
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine, true);
+    test_invoke::setup_bad_call_helper(engine, "int");
+
+    auto* m = engine->GetModule(
+        "test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
+    );
+    m->AddScriptSection(
+        "test",
+        "int f0() { return 10; }\n"
+        "int f1() { return 13; }\n"
+        "int f2() { return bad_call(); }\n"
+        "float f3() { return 10.13; }"
+    );
+    ASSERT_GE(m->Build(), 0);
+
+    auto* f0 = m->GetFunctionByName("f0");
+    ASSERT_NE(f0, nullptr);
+    auto* f1 = m->GetFunctionByName("f1");
+    ASSERT_NE(f1, nullptr);
+    auto* f2 = m->GetFunctionByName("f2");
+    ASSERT_NE(f2, nullptr);
+    auto* f3 = m->GetFunctionByName("f3");
+    ASSERT_NE(f3, nullptr);
+
+    request_context ctx_0(engine);
+    auto result_0 = script_invoke<int>(ctx_0, f0); // 10
+    request_context ctx_1(engine);
+    auto result_1 = script_invoke<int>(ctx_1, f0); // 10
+    request_context ctx_2(engine);
+    auto result_2 = script_invoke<int>(ctx_2, f1); // 13
+    request_context ctx_3(engine);
+    auto result_3 = script_invoke<int>(ctx_3, f2); // exception
+    request_context ctx_4(engine);
+    auto result_4 = script_invoke<float>(ctx_4, f3); // 10.13f
+
+    // Self checks
+    ASBIND_TEST_EXPECT_INVOKE_RESULT(result_0);
+    EXPECT_EQ(result_0.value(), 10);
+    ASBIND_TEST_EXPECT_INVOKE_RESULT(result_1);
+    EXPECT_EQ(result_1.value(), 10);
+    ASBIND_TEST_EXPECT_INVOKE_RESULT(result_2);
+    EXPECT_EQ(result_2.value(), 13);
+    ASBIND_TEST_EXPECT_INVOKE_NO_RESULT(result_3);
+    EXPECT_EQ(result_3.error(), AS_NAMESPACE_QUALIFIER asEXECUTION_EXCEPTION);
+    ASBIND_TEST_EXPECT_INVOKE_RESULT(result_4);
+    EXPECT_FLOAT_EQ(result_4.value(), 10.13f);
+
+    EXPECT_EQ(result_0, result_1);
+    EXPECT_LE(result_0, result_1);
+    EXPECT_GE(result_0, result_1);
+    EXPECT_EQ((result_0 == result_4), (10 == 10.13f));
+    EXPECT_EQ((result_0 < result_4), (10 < 10.13f));
+    EXPECT_LT(result_0, result_2);
+    EXPECT_LE(result_0, result_2);
+    EXPECT_GT(result_2, result_0);
+    EXPECT_GE(result_2, result_0);
+
+    EXPECT_FALSE(result_0 < result_3);
+    EXPECT_FALSE(result_0 > result_3);
+    EXPECT_FALSE(result_0 == result_3);
+    EXPECT_FALSE(result_4 < result_3);
+    EXPECT_FALSE(result_4 > result_3);
+    EXPECT_FALSE(result_4 == result_3);
+}
+
+TEST(TestInvoke, CompareValueClassResult)
+{
+    using std::string;
+    using namespace asbind20;
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_script_string(engine);
+    test_invoke::setup_bad_call_helper(engine, "string");
+
+    auto* m = engine->GetModule(
+        "test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
+    );
+    m->AddScriptSection(
+        "test",
+        "string aaa() { return 'aaa'; }\n"
+        "string bbb() { return 'bbb'; }\n"
+        "string bad() { return bad_call(); }"
+    );
+    ASSERT_GE(m->Build(), 0);
+
+    auto* aaa = m->GetFunctionByName("aaa");
+    ASSERT_NE(aaa, nullptr);
+    auto* bbb = m->GetFunctionByName("bbb");
+    ASSERT_NE(bbb, nullptr);
+    auto* bad = m->GetFunctionByName("bad");
+    ASSERT_NE(bad, nullptr);
+
+    request_context ctx_0(engine);
+    auto result_0 = script_invoke<std::string>(ctx_0, aaa);
+    request_context ctx_1(engine);
+    auto result_1 = script_invoke<std::string>(ctx_1, bbb);
+    request_context ctx_2(engine);
+    auto result_2 = script_invoke<std::string>(ctx_2, bad);
+
+    // Self checks
+    ASBIND_TEST_EXPECT_INVOKE_RESULT(result_0);
+    EXPECT_EQ(result_0.value(), "aaa");
+    ASBIND_TEST_EXPECT_INVOKE_RESULT(result_1);
+    EXPECT_EQ(result_1.value(), "bbb");
+    ASBIND_TEST_EXPECT_INVOKE_NO_RESULT(result_2);
+    EXPECT_EQ(result_2.error(), AS_NAMESPACE_QUALIFIER asEXECUTION_EXCEPTION);
+
+    EXPECT_LT(result_0, result_1);
+    EXPECT_GT(result_1, result_0);
+    EXPECT_NE(result_0, result_2);
+    EXPECT_NE(result_1, result_2);
+    EXPECT_EQ(result_2, result_2);
+    EXPECT_FALSE(result_0 <= result_2);
+    EXPECT_FALSE(result_0 >= result_2);
+    EXPECT_FALSE(result_1 <= result_2);
+    EXPECT_FALSE(result_2 >= "aaa");
+    EXPECT_FALSE(result_2 <= "aaa");
+    EXPECT_FALSE("aaa" <= result_2);
+    EXPECT_FALSE("aaa" >= result_2);
+    EXPECT_NE(result_2, "aaa");
+    EXPECT_TRUE(result_2 <= result_2);
+    EXPECT_TRUE(result_2 >= result_2);
 }
 
 static void output_info(std::ostream& os)

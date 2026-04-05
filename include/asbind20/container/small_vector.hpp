@@ -44,7 +44,7 @@ namespace detail
         [[noreturn]]
         static void throw_out_of_range()
         {
-            ASBIND20_THROW(std::out_of_range, ("small vector out of range"));
+            asbind20::detail::throw_<std::out_of_range>("small vector out of range");
         }
     };
 
@@ -648,7 +648,7 @@ private:
 
     template <int TypeId>
     using impl_primitive = impl_storage<primitive_type_of_t<TypeId>, impl_primitive_base<TypeId>>;
-    using impl_enum = impl_storage<int, impl_interface>;
+    using impl_enum = impl_storage<compat::script_enum_value_type, impl_interface>;
 
     // Storage implementation for script objects and handles.
     // It not only handles the memory of elements,

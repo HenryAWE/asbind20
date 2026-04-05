@@ -537,7 +537,7 @@ TEST(TestBind, EnumUInt64)
 static void output_info(std::ostream& os)
 {
 #ifdef _MSVC_LANG
-    os << "_MSVC_LANG" << _MSVC_LANG << std::endl;
+    os << "_MSVC_LANG = " << _MSVC_LANG << 'L' << std::endl;
 #else
     os << "__cplusplus = " << __cplusplus << 'L' << std::endl;
 #endif

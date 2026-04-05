@@ -1,6 +1,6 @@
+#include <asbind_test/framework.hpp>
 #include <asbind_test/test_exceptions.hpp>
-#include <asbind20/detail/throw_helper.hpp>
-#include <gtest/gtest.h>
+#include <asbind20/detail/err_handler.hpp>
 
 namespace asbind_test
 {
@@ -27,7 +27,7 @@ throw_on_copy::throw_on_copy(const throw_on_copy&)
     []()
     {
         GTEST_FAIL()
-            << "throw_on_copy::throw_on_copy() called";
+            << "throw_on_copy::throw_on_copy(const throw_on_copy) called";
     }();
     std::terminate();
 #endif
@@ -41,7 +41,7 @@ throw_on_copy& throw_on_copy::operator=(const throw_on_copy&)
     []()
     {
         GTEST_FAIL()
-            << "throw_on_copy::operator=() called";
+            << "throw_on_copy::operator=(const throw_on_copy&) called";
     }();
     std::terminate();
 #endif

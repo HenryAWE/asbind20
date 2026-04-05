@@ -1,0 +1,5 @@
+aux_source_directory(. test_script_array_src)
+
+add_executable(test_script_array ${test_script_array_src})
+target_link_libraries(test_script_array PRIVATE shared_test_lib)
+gtest_discover_tests(test_script_array DISCOVERY_TIMEOUT 1000)

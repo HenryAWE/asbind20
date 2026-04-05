@@ -14,7 +14,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <string>
-#include <asbind20/detail/throw_helper.hpp>
+#include <asbind20/detail/err_handler.hpp>
 
 namespace asbind_test::utf8
 {

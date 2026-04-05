@@ -9,11 +9,18 @@
 
 #pragma once
 
+#include <cassert>
 #include <version>
 #include "include_as.hpp"
 
 #ifndef __cpp_exceptions
-#    define ASBIND20_NO_EXCEPTIONS
+#    ifndef ASBIND20_NO_EXCEPTIONS
+#        define ASBIND20_NO_EXCEPTIONS 1
+#    endif
+#endif
+
+#ifndef ASBIND20_ASSERT
+#    define ASBIND20_ASSERT(x) assert(x)
 #endif
 
 #if defined(_WIN32) && !defined(_WIN64)

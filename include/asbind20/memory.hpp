@@ -60,7 +60,7 @@ public:
 
             void* mem = AS_NAMESPACE_QUALIFIER asAllocMem(n * sizeof(T));
             if(!mem) [[unlikely]]
-                ASBIND20_THROW(std::bad_alloc, ());
+                asbind20::detail::throw_<std::bad_alloc>();
             return pointer(mem);
         }
     }
@@ -83,7 +83,7 @@ private:
     static void check_length(size_type n)
     {
         if(std::numeric_limits<size_type>::max() / sizeof(T) < n) [[unlikely]]
-            ASBIND20_THROW(std::bad_array_new_length, ());
+            detail::throw_<std::bad_array_new_length>();
     }
 };
 
@@ -210,11 +210,9 @@ public:
                 m_is_nested = true;
                 return;
             }
-            else
-                goto fallback;
         }
 
-fallback:
+        // Fallback
         m_ctx = engine->RequestContext();
     }
 
@@ -276,7 +274,7 @@ private:
     bool m_is_nested = false;
     bool m_propagate_error = true;
 
-    void pop_state_impl() noexcept
+    void pop_state_impl() const
     {
         assert(m_is_nested);
 

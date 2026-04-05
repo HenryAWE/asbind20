@@ -1,23 +1,21 @@
-#ifndef ASBIND20_EXT_CONTAINER_ARRAY_HPP
-#define ASBIND20_EXT_CONTAINER_ARRAY_HPP
+#ifndef ASBIND_TEST_CONTAINER_ARRAY_HPP
+#define ASBIND_TEST_CONTAINER_ARRAY_HPP
 
 #pragma once
 
 #include <cstddef>
 #include <asbind20/asbind.hpp>
+#include <asbind20/concurrent/mutex.hpp>
 #include <asbind20/container/small_vector.hpp>
 #include <asbind20/operators.hpp>
+#include <asbind20/container/compare.hpp>
 
 namespace asbind_test
 {
 consteval auto default_script_array_user_id() noexcept
     -> AS_NAMESPACE_QUALIFIER asPWORD
 {
-#ifdef ASBIND20_EXT_SCRIPT_ARRAY_USER_ID
-    return ASBIND20_EXT_SCRIPT_ARRAY_USER_ID;
-#else
     return 2000;
-#endif
 }
 
 // Implementation Note:
@@ -36,11 +34,8 @@ namespace detail
     protected:
         struct array_cache
         {
-            AS_NAMESPACE_QUALIFIER asIScriptFunction* subtype_opCmp;
-            AS_NAMESPACE_QUALIFIER asIScriptFunction* subtype_opEquals;
-            int opCmp_status;
-            int opEquals_status;
-
+            asbind20::container::script_element_comparator comp;
+            asbind20::container::get_comparator_result::status status;
             AS_NAMESPACE_QUALIFIER asITypeInfo* iterator_ti;
 
             ~array_cache() = default;
@@ -84,7 +79,7 @@ namespace detail
             if(cache) [[likely]]
                 return;
 
-            std::lock_guard guard(asbind20::as_exclusive_lock);
+            std::unique_lock lk(asbind20::script_lock);
 
             // Double-check to prevent cache from being created by another thread
             cache = static_cast<array_cache*>(ti->GetUserData(UserDataID));
@@ -577,7 +572,7 @@ public:
         return m_data.empty();
     }
 
-#define ASBIND20_EXT_ARRAY_CHECK_CALLBACK(func_name, ret)                    \
+#define ASBIND_TEST_ARRAY_CHECK_CALLBACK(func_name, ret)                     \
     do {                                                                     \
         if(this->m_within_callback)                                          \
         {                                                                    \
@@ -593,7 +588,7 @@ public:
         if(this == &other) [[unlikely]]
             return *this;
 
-        ASBIND20_EXT_ARRAY_CHECK_CALLBACK(opAssign, *this);
+        ASBIND_TEST_ARRAY_CHECK_CALLBACK(opAssign, *this);
 
         m_data.clear();
         m_data.reserve(other.size());
@@ -607,49 +602,49 @@ public:
 
     void reserve(size_type new_cap)
     {
-        ASBIND20_EXT_ARRAY_CHECK_CALLBACK(reserve, void());
+        ASBIND_TEST_ARRAY_CHECK_CALLBACK(reserve, void());
 
         m_data.reserve(new_cap);
     }
 
     void shrink_to_fit()
     {
-        ASBIND20_EXT_ARRAY_CHECK_CALLBACK(shrink_to_fit, void());
+        ASBIND_TEST_ARRAY_CHECK_CALLBACK(shrink_to_fit, void());
 
         m_data.shrink_to_fit();
     }
 
     void resize(size_type new_size)
     {
-        ASBIND20_EXT_ARRAY_CHECK_CALLBACK(resize, void());
+        ASBIND_TEST_ARRAY_CHECK_CALLBACK(resize, void());
 
         m_data.resize(new_size);
     }
 
     void clear() noexcept
     {
-        ASBIND20_EXT_ARRAY_CHECK_CALLBACK(clear, void());
+        ASBIND_TEST_ARRAY_CHECK_CALLBACK(clear, void());
 
         m_data.clear();
     }
 
     void push_back(const void* value)
     {
-        ASBIND20_EXT_ARRAY_CHECK_CALLBACK(push_back, void());
+        ASBIND_TEST_ARRAY_CHECK_CALLBACK(push_back, void());
 
         m_data.push_back(value);
     }
 
     void emplace_back()
     {
-        ASBIND20_EXT_ARRAY_CHECK_CALLBACK(emplace_back, void());
+        ASBIND_TEST_ARRAY_CHECK_CALLBACK(emplace_back, void());
 
         m_data.emplace_back();
     }
 
     void pop_back()
     {
-        ASBIND20_EXT_ARRAY_CHECK_CALLBACK(pop_back, void());
+        ASBIND_TEST_ARRAY_CHECK_CALLBACK(pop_back, void());
 
         m_data.pop_back();
     }
@@ -670,7 +665,7 @@ public:
             return 0;
         }
 
-        ASBIND20_EXT_ARRAY_CHECK_CALLBACK(remove, 0);
+        ASBIND_TEST_ARRAY_CHECK_CALLBACK(remove, 0);
 
         size_type removed = 0;
 
@@ -748,7 +743,7 @@ public:
         if(off == size_type(-1)) [[unlikely]]
             return 0;
 
-        ASBIND20_EXT_ARRAY_CHECK_CALLBACK(remove_if, 0);
+        ASBIND_TEST_ARRAY_CHECK_CALLBACK(remove_if, 0);
 
         size_type removed = 0;
 
@@ -1018,7 +1013,7 @@ public:
         index_type start = 0, size_type n = -1, bool asc = true, bool stable = false
     )
     {
-        ASBIND20_EXT_ARRAY_CHECK_CALLBACK(sort, void());
+        ASBIND_TEST_ARRAY_CHECK_CALLBACK(sort, void());
         callback_guard guard(this);
 
         size_type off = index_to_offset(start);
@@ -1063,9 +1058,9 @@ public:
                 asbind20::set_script_exception("array<T>.sort(): internal error");
                 return;
             }
-            if(!cache->subtype_opCmp) [[unlikely]]
+            if(!cache->comp.has_opCmp()) [[unlikely]]
             {
-                if(cache->opCmp_status == AS_NAMESPACE_QUALIFIER asMULTIPLE_FUNCTIONS)
+                if(cache->status.opCmp == AS_NAMESPACE_QUALIFIER asMULTIPLE_FUNCTIONS)
                     asbind20::set_script_exception("array<T>.sort(): multiple opCmp() functions");
                 else
                     asbind20::set_script_exception("array<T>.sort(): opCmp() function not found");
@@ -1073,7 +1068,7 @@ public:
             }
 
             sort_by_script_compare<true>(
-                cache->subtype_opCmp,
+                cache->comp.get_opCmp().target(),
                 asbind20::is_objhandle(subtype_id),
                 asc,
                 off,
@@ -1092,7 +1087,7 @@ public:
     {
         assert(func != nullptr);
 
-        ASBIND20_EXT_ARRAY_CHECK_CALLBACK(sort_by, void());
+        ASBIND_TEST_ARRAY_CHECK_CALLBACK(sort_by, void());
         callback_guard guard(this);
 
         size_type off = index_to_offset(start);
@@ -1269,7 +1264,7 @@ public:
     {
         if(empty())
         {
-            ASBIND20_EXT_ARRAY_CHECK_CALLBACK(set_front, void());
+            ASBIND_TEST_ARRAY_CHECK_CALLBACK(set_front, void());
             m_data.insert(m_data.begin(), value);
         }
         else
@@ -1282,7 +1277,7 @@ public:
     {
         if(empty())
         {
-            ASBIND20_EXT_ARRAY_CHECK_CALLBACK(set_back, void());
+            ASBIND_TEST_ARRAY_CHECK_CALLBACK(set_back, void());
             m_data.push_back(value);
         }
         else
@@ -1293,7 +1288,7 @@ public:
 
     script_array_iterator erase(script_array_iterator it)
     {
-        ASBIND20_EXT_ARRAY_CHECK_CALLBACK(erase, script_array_iterator());
+        ASBIND_TEST_ARRAY_CHECK_CALLBACK(erase, script_array_iterator());
 
         if(this != it.m_arr) [[unlikely]]
         {
@@ -1313,7 +1308,7 @@ public:
 
     script_array_iterator insert(script_array_iterator it, const void* value)
     {
-        ASBIND20_EXT_ARRAY_CHECK_CALLBACK(insert, script_array_iterator());
+        ASBIND_TEST_ARRAY_CHECK_CALLBACK(insert, script_array_iterator());
 
         if(this != it.m_arr) [[unlikely]]
         {
@@ -1499,7 +1494,7 @@ private:
         bool& m_guard;
     };
 
-#undef ASBIND20_EXT_ARRAY_CHECK_CALLBACK
+#undef ASBIND_TEST_ARRAY_CHECK_CALLBACK
 };
 
 inline void register_script_array(

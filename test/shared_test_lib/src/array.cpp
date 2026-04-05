@@ -1,7 +1,7 @@
 #include <asbind_test/array.hpp>
-#include <cassert>
 #include <cstring>
 #include <asbind20/invoke.hpp>
+#include <asbind_test/framework.hpp>
 
 namespace asbind_test
 {
@@ -25,7 +25,7 @@ namespace detail
         const array_cache* cache
     )
     {
-        assert(!asbind20::is_primitive_type(subtype_id));
+        EXPECT_FALSE(asbind20::is_primitive_type(subtype_id));
 
         if(asbind20::is_objhandle(subtype_id))
         {
@@ -36,13 +36,12 @@ namespace detail
         if(!cache) [[unlikely]]
             return false;
 
-        assert(ctx != nullptr);
-        if(cache->subtype_opEquals) [[likely]]
+        EXPECT_NE(ctx, nullptr);
+        if(cache->comp.has_opEquals()) [[likely]]
         {
-            auto result = asbind20::script_invoke<bool>(
+            auto result = cache->comp.get_opEquals()(
                 ctx,
                 lhs,
-                cache->subtype_opEquals,
                 rhs
             );
 
@@ -51,12 +50,11 @@ namespace detail
             return *result;
         }
         // Fallback to OpCmp() == 0
-        else if(cache->subtype_opCmp)
+        else if(cache->comp.has_opCmp())
         {
-            auto result = asbind20::script_invoke<int>(
+            auto result = cache->comp.get_opCmp()(
                 ctx,
                 lhs,
-                cache->subtype_opCmp,
                 rhs
             );
 
@@ -72,93 +70,10 @@ namespace detail
         array_cache& out, int subtype_id, AS_NAMESPACE_QUALIFIER asITypeInfo* ti
     )
     {
-        assert(!asbind20::is_primitive_type(subtype_id));
+        EXPECT_FALSE(asbind20::is_primitive_type(subtype_id));
 
-        bool must_be_const = subtype_id & AS_NAMESPACE_QUALIFIER asTYPEID_HANDLETOCONST;
-
-        AS_NAMESPACE_QUALIFIER asITypeInfo* subtype_ti =
-            ti->GetEngine()->GetTypeInfoById(subtype_id);
-        assert(subtype_ti != nullptr);
-
-        for(AS_NAMESPACE_QUALIFIER asUINT i = 0; i < subtype_ti->GetMethodCount(); ++i)
-        {
-            AS_NAMESPACE_QUALIFIER asIScriptFunction* func = subtype_ti->GetMethodByIndex(i);
-
-            if(func->GetParamCount() == 1 && (!must_be_const || func->IsReadOnly()))
-            {
-                using namespace std::string_view_literals;
-
-                AS_NAMESPACE_QUALIFIER asDWORD flags = 0;
-                int return_type_id = func->GetReturnTypeId(&flags);
-                if(flags != AS_NAMESPACE_QUALIFIER asTM_NONE)
-                    continue;
-
-                bool is_opEquals = false;
-                bool is_opCmp = false;
-
-                if(return_type_id == AS_NAMESPACE_QUALIFIER asTYPEID_INT32 &&
-                   func->GetName() == "opCmp"sv)
-                    is_opCmp = true;
-                else if(return_type_id == AS_NAMESPACE_QUALIFIER asTYPEID_BOOL &&
-                        func->GetName() == "opEquals"sv)
-                    is_opEquals = true;
-
-                if(!is_opEquals && !is_opCmp)
-                    continue;
-
-                int param_type_id;
-                func->GetParam(0, &param_type_id, &flags);
-
-                constexpr AS_NAMESPACE_QUALIFIER asQWORD handle_flags =
-                    AS_NAMESPACE_QUALIFIER asTYPEID_OBJHANDLE |
-                    AS_NAMESPACE_QUALIFIER asTYPEID_HANDLETOCONST;
-
-                if((param_type_id & ~handle_flags) !=
-                   (subtype_id & ~handle_flags))
-                    continue;
-
-                if((flags & AS_NAMESPACE_QUALIFIER asTM_INREF))
-                {
-                    if((param_type_id & AS_NAMESPACE_QUALIFIER asTYPEID_OBJHANDLE) ||
-                       (must_be_const && !(flags & AS_NAMESPACE_QUALIFIER asTM_CONST)))
-                        continue;
-                }
-                else if(param_type_id & AS_NAMESPACE_QUALIFIER asTYPEID_OBJHANDLE)
-                {
-                    if(must_be_const &&
-                       !(param_type_id & AS_NAMESPACE_QUALIFIER asTYPEID_HANDLETOCONST))
-                        continue;
-                }
-                else
-                    continue;
-
-                if(is_opCmp)
-                {
-                    if(out.subtype_opCmp || out.opCmp_status)
-                    {
-                        out.subtype_opCmp = nullptr;
-                        out.opCmp_status = AS_NAMESPACE_QUALIFIER asMULTIPLE_FUNCTIONS;
-                    }
-                    else
-                        out.subtype_opCmp = func;
-                }
-                else if(is_opEquals)
-                {
-                    if(out.subtype_opEquals || out.opEquals_status)
-                    {
-                        out.subtype_opEquals = nullptr;
-                        out.opEquals_status = AS_NAMESPACE_QUALIFIER asMULTIPLE_FUNCTIONS;
-                    }
-                    else
-                        out.subtype_opEquals = func;
-                }
-            }
-        }
-
-        if(!out.subtype_opEquals && out.opEquals_status == 0)
-            out.opEquals_status = AS_NAMESPACE_QUALIFIER asNO_FUNCTION;
-        if(!out.subtype_opCmp && out.opCmp_status == 0)
-            out.opCmp_status = AS_NAMESPACE_QUALIFIER asNO_FUNCTION;
+        auto* subtype_ti = ti->GetSubType(0);
+        out.comp = asbind20::container::get_comparator(subtype_ti).get();
     }
 
     void script_array_base::generate_cache(
@@ -192,7 +107,7 @@ namespace detail
         else if(!asbind20::is_objhandle(subtype_id))
         {
             AS_NAMESPACE_QUALIFIER asITypeInfo* subtype_ti = ti->GetSubType();
-            assert(subtype_ti != nullptr);
+            EXPECT_NE(subtype_ti, nullptr);
             auto flags = subtype_ti->GetFlags();
 
             if(
@@ -232,7 +147,7 @@ namespace detail
         }
         else
         {
-            assert(asbind20::is_objhandle(subtype_id));
+            EXPECT_TRUE(asbind20::is_objhandle(subtype_id));
 
             // According to the official add-on, if a handle cannot refer to an object type
             // that can form a circular reference with the array,
@@ -261,4 +176,4 @@ namespace detail
         return true;
     }
 } // namespace detail
-} // namespace asbind20::ext
+} // namespace asbind_test

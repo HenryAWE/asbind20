@@ -35,6 +35,11 @@ mark_as_advanced(asbind_build_test)
 option(asbind_build_bench "Build benchmarks" OFF)
 mark_as_advanced(asbind_build_bench)
 
+option(asbind_prefer_system_gtest "Prefer system GTest" OFF)
+mark_as_advanced(asbind_prefer_system_gtest)
+option(asbind_prefer_system_bench "Prefer system Benchmark" OFF)
+mark_as_advanced(asbind_prefer_system_bench)
+
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 if(NOT DEFINED asbind_cxxstd)
@@ -43,36 +48,44 @@ endif()
 target_compile_features(asbind20 INTERFACE cxx_std_${asbind_cxxstd})
 
 if(${asbind_build_test})
-    message(STATUS "Fetching GoogleTest v1.17.0 from GitHub")
+    if(NOT ${asbind_prefer_system_gtest})
+        message(STATUS "Fetching GoogleTest v1.17.0 from GitHub")
 
-    include(FetchContent)
+        include(FetchContent)
 
-    FetchContent_Declare(
-        googletest
-        GIT_REPOSITORY https://github.com/google/googletest.git
-        GIT_TAG v1.17.0
-    )
-    set(BUILD_GMOCK ON)
-    set(INSTALL_GTEST OFF)
-    FetchContent_MakeAvailable(googletest)
+        FetchContent_Declare(
+            googletest
+            GIT_REPOSITORY https://github.com/google/googletest.git
+            GIT_TAG v1.17.0
+        )
+        set(BUILD_GMOCK ON)
+        set(INSTALL_GTEST OFF)
+        FetchContent_MakeAvailable(googletest)
+    else()
+        find_package(GTest 1.17 REQUIRED)
+    endif()
 
     enable_testing()
 endif()
 
 if(${asbind_build_bench})
-    message(STATUS "Fetching Google Benchmark v1.9.4 from GitHub")
+    if(NOT ${asbind_prefer_system_bench})
+        message(STATUS "Fetching Google Benchmark v1.9.4 from GitHub")
 
-    include(FetchContent)
+        include(FetchContent)
 
-    FetchContent_Declare(
-        benchmark
-        GIT_REPOSITORY https://github.com/google/benchmark.git
-        GIT_TAG v1.9.4
-    )
-    set(BENCHMARK_ENABLE_INSTALL OFF)
-    set(BENCHMARK_ENABLE_TESTING OFF)
-    set(BENCHMARK_ENABLE_GTEST_TESTS OFF)
-    FetchContent_MakeAvailable(benchmark)
+        FetchContent_Declare(
+            benchmark
+            GIT_REPOSITORY https://github.com/google/benchmark.git
+            GIT_TAG v1.9.4
+        )
+        set(BENCHMARK_ENABLE_INSTALL OFF)
+        set(BENCHMARK_ENABLE_TESTING OFF)
+        set(BENCHMARK_ENABLE_GTEST_TESTS OFF)
+        FetchContent_MakeAvailable(benchmark)
+    else()
+        find_package(benchmark 1.9 REQUIRED)
+    endif()
 endif()
 
 if(${asbind_build_doc})

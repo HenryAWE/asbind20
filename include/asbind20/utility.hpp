@@ -19,13 +19,12 @@
 #include <compare>
 #include <functional>
 #include <type_traits>
-#include <stdexcept>
 #include <concepts>
 #include "detail/config.hpp" // IWYU pragma: export configs
 #include "detail/fwd.hpp"
 #include "detail/compat.hpp"
 #include "detail/include_as.hpp"
-#include "detail/throw_helper.hpp"
+#include "detail/err_handler.hpp"
 #include "detail/strutil.hpp"
 
 namespace asbind20
@@ -481,7 +480,7 @@ inline auto sizeof_script_type(
 )
     -> AS_NAMESPACE_QUALIFIER asUINT
 {
-    assert(engine != nullptr);
+    ASBIND20_ASSERT(engine != nullptr);
 
     if(is_primitive_type(type_id))
     {
@@ -535,8 +534,8 @@ inline auto sizeof_script_type(
  */
 inline std::size_t copy_primitive_value(void* dst, const void* src, int type_id)
 {
-    assert(!dst && !src);
-    assert(is_primitive_type(type_id));
+    ASBIND20_ASSERT(!dst && !src);
+    ASBIND20_ASSERT(is_primitive_type(type_id));
 
     auto helper = [&](std::size_t sz)
     {
@@ -600,8 +599,8 @@ template <typename Visitor, void_ptr... VoidPtrs>
 requires(sizeof...(VoidPtrs) > 0)
 decltype(auto) visit_primitive_type(Visitor&& vis, int type_id, VoidPtrs... args)
 {
-    assert(is_primitive_type(type_id) && "Must be a primitive type");
-    assert(!is_void_type(type_id) && "Must not be void");
+    ASBIND20_ASSERT(is_primitive_type(type_id) && "Must be a primitive type");
+    ASBIND20_ASSERT(!is_void_type(type_id) && "Must not be void");
 
     auto wrapper = [&]<typename T>(std::in_place_type_t<T>) -> decltype(auto)
     {
@@ -674,7 +673,7 @@ decltype(auto) visit_script_type(Visitor&& vis, int type_id, VoidPtrs... args)
 template <typename Visitor>
 decltype(auto) visit_primitive_type_id(Visitor&& vis, int type_id)
 {
-    assert(is_primitive_type(type_id));
+    ASBIND20_ASSERT(is_primitive_type(type_id));
 
 #define ASBIND20_UTILITY_VISIT_SCRIPT_TYPE_ID_CASE(as_type_id)                     \
 case AS_NAMESPACE_QUALIFIER as_type_id:                                            \
@@ -702,48 +701,6 @@ case AS_NAMESPACE_QUALIFIER as_type_id:                                         
 
 #undef ASBIND20_UTILITY_VISIT_SCRIPT_TYPE_ID_CASE
 }
-
-namespace detail
-{
-    class as_exclusive_lock_t
-    {
-    public:
-        static void lock()
-        {
-            AS_NAMESPACE_QUALIFIER asAcquireExclusiveLock();
-        }
-
-        static void unlock()
-        {
-            AS_NAMESPACE_QUALIFIER asReleaseExclusiveLock();
-        }
-    };
-
-    class as_shared_lock_t
-    {
-    public:
-        static void lock()
-        {
-            AS_NAMESPACE_QUALIFIER asAcquireSharedLock();
-        }
-
-        static void unlock()
-        {
-            AS_NAMESPACE_QUALIFIER asReleaseSharedLock();
-        }
-    };
-} // namespace detail
-
-/**
- * @brief Wrapper for `asAcquireExclusiveLock()` and `asReleaseExclusiveLock()`
- */
-inline constexpr detail::as_exclusive_lock_t as_exclusive_lock = {};
-
-
-/**
- * @brief Wrapper for `asAcquireSharedLock()` and `asReleaseSharedLock()`
- */
-inline constexpr detail::as_shared_lock_t as_shared_lock = {};
 
 namespace detail
 {
@@ -1002,7 +959,7 @@ public:
      */
     explicit script_init_list_repeat(void* list_buf) noexcept
     {
-        assert(list_buf);
+        ASBIND20_ASSERT(list_buf != nullptr);
         m_size = *static_cast<size_type*>(list_buf);
         m_data = static_cast<std::byte*>(list_buf) + sizeof(size_type);
     }
@@ -1197,30 +1154,49 @@ inline std::strong_ordering translate_opCmp(int cmp) noexcept
  * This function has no effect when calling outside an active AngelScript context.
  *
  * @param info Exception information
+ * @param allow_catch Allow the exception to be caught by script
  */
-inline void set_script_exception(const char* info)
+inline void set_script_exception(
+    const char* info, bool allow_catch = true
+)
 {
-    auto* ctx = current_context();
-    if(ctx)
-        ctx->SetException(info);
+    if(auto* ctx = current_context()) [[likely]]
+        ctx->SetException(info, allow_catch);
 }
 
-inline void set_script_exception(cstring_ref csv)
+inline void set_script_exception(
+    cstring_ref csv, bool allow_catch = true
+)
 {
-    set_script_exception(csv.c_str());
+    set_script_exception(csv.c_str(), allow_catch);
 }
 
-inline void set_script_exception(const std::string& info)
+inline void set_script_exception(
+    const std::string& info, bool allow_catch = true
+)
 {
-    set_script_exception(info.c_str());
+    set_script_exception(info.c_str(), allow_catch);
 }
 
-inline void set_script_exception(std::string_view info)
+inline void set_script_exception(
+    std::string_view info, bool allow_catch = true
+)
 {
     util::with_cstr(
-        [](const char* info)
-        { set_script_exception(info); },
+        [allow_catch](const char* info)
+        { set_script_exception(info, allow_catch); },
         info
+    );
+}
+
+template <std::convertible_to<std::string_view> StringViewLike>
+void set_script_exception(
+    StringViewLike&& str, bool allow_catch = true
+)
+{
+    set_script_exception(
+        std::string_view(std::forward<StringViewLike>(str)),
+        allow_catch
     );
 }
 } // namespace asbind20

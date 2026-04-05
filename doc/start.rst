@@ -95,12 +95,11 @@ You can add asbind20 through git submodule and then use ``add_subdirectory``.
 B. Build and Install
 ~~~~~~~~~~~~~~~~~~~~
 
-Additionally, you can build and install asbind20 using CMake.
+Additionally, you can install and link against asbind20 using CMake.
 
 .. code-block:: sh
 
-    cmake -GNinja -DCMAKE_BUILD_TYPE=Release -S . -B build
-    cmake --build build
+    cmake -S . -B build
     cmake --install build
 
 Then, link the library in a ``CMakeLists.txt``.
@@ -111,7 +110,7 @@ Then, link the library in a ``CMakeLists.txt``.
 
     target_link_libraries(main PRIVATE asbind20::asbind20)
 
-3. Integration with XMake Projects
+1. Integration with XMake Projects
 ----------------------------------
 
 Since the version 1.6.0, asbind20 has been accepted into the `official package registry (xmake-repo) <https://github.com/xmake-io/xmake-repo>`_.

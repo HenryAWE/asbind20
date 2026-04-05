@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include <cassert>
 #include "common.hpp"
 #include "../detail/include_as.hpp"
+#include "../detail/err_handler.hpp"
 
 namespace asbind20::ranges
 {
@@ -52,7 +52,7 @@ public:
 
         bool operator==(const iterator& rhs) const noexcept
         {
-            assert(this->m_view == rhs.m_view);
+            ASBIND20_ASSERT(this->m_view == rhs.m_view);
             return this->m_offset == rhs.m_offset;
         }
 
@@ -96,7 +96,7 @@ public:
 
         void update_cache()
         {
-            assert(this->m_view);
+            ASBIND20_ASSERT(this->m_view != nullptr);
             const std::string_view sv = m_view->m_sv;
 
             AS_NAMESPACE_QUALIFIER asUINT len;

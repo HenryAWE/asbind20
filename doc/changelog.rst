@@ -18,6 +18,8 @@ Update
   The interfaces depending on exceptions will be redirected to an error handling macro defined by the user.
   Its default behavior is calling ``std::terminate`` immediately.
 
+- (Experimental) Listener for customizing error handling or recording registered entities.
+
 - Wrapper of AngelScript memory APIs (``script_allocator``) now can be used in constant evaluation.
   It will automatically fallback to constexpr allocation under this situation.
 
@@ -33,6 +35,12 @@ Update
 
 - Decouple binding generator interfaces with complex AngelScript calling conventions
 
+- Tools for comparing script objects.
+
+- Enable CMake script to use local external package for developing offline.
+
+- Update compatibility with AngelScript 2.39 WIP.
+
 Breaking Change
 ~~~~~~~~~~~~~~~
 
@@ -47,6 +55,8 @@ Breaking Change
 - Use ``asbind20::objfirst`` / ``objlast`` to specify the position of object pointer/reference,
   if you want to specify them explicitly,
   instead of dealing with underlying calling convention details of AngelScript.
+
+- Redesign lock wrapper to fit common C++ paradigm for shared lock.
 
 1.8.0
 -----

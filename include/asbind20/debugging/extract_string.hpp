@@ -12,7 +12,7 @@
 #include <cassert>
 #include <string>
 #include "../detail/include_as.hpp"
-#include "../detail/throw_helper.hpp"
+#include "../detail/err_handler.hpp"
 
 namespace asbind20::debugging
 {
@@ -25,12 +25,12 @@ namespace asbind20::debugging
 class extract_string_result;
 
 extract_string_result extract_string(
-    AS_NAMESPACE_QUALIFIER asIStringFactory* factory, const void* str
+    const AS_NAMESPACE_QUALIFIER asIStringFactory* factory, const void* str
 );
 
 #ifdef ASBIND20_HAS_GET_STRING_FACTORY
 extract_string_result extract_string(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, const void* str
+    const AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, const void* str
 );
 
 #endif
@@ -70,12 +70,12 @@ private:
 class extract_string_result
 {
     friend extract_string_result extract_string(
-        AS_NAMESPACE_QUALIFIER asIStringFactory* factory, const void* str
+        const AS_NAMESPACE_QUALIFIER asIStringFactory* factory, const void* str
     );
 
 #ifdef ASBIND20_HAS_GET_STRING_FACTORY
     friend extract_string_result extract_string(
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, const void* str
+        const AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, const void* str
     );
 
 #endif
@@ -87,7 +87,7 @@ public:
     extract_string_result() = delete;
 
 private:
-    extract_string_result(error_type e) noexcept
+    explicit extract_string_result(error_type e) noexcept
         : m_error(e)
     {
         assert(!has_value());
@@ -108,7 +108,7 @@ public:
             new(m_data) value_type(std::move(*other));
     }
 
-    extract_string_result(std::string str)
+    explicit extract_string_result(std::string str)
         : m_error(AS_NAMESPACE_QUALIFIER asSUCCESS)
     {
         new(m_data) std::string(std::move(str));
@@ -159,7 +159,7 @@ private:
     [[noreturn]]
     void throw_bad_access() const
     {
-        ASBIND20_THROW(bad_extract_string_result_access, (m_error));
+        asbind20::detail::throw_<bad_extract_string_result_access>(m_error);
     }
 
     value_type* ptr() noexcept
@@ -185,10 +185,12 @@ private:
  */
 [[nodiscard]]
 inline extract_string_result extract_string(
-    AS_NAMESPACE_QUALIFIER asIStringFactory* factory, const void* str
+    const AS_NAMESPACE_QUALIFIER asIStringFactory* factory, const void* str
 )
 {
-    assert(factory != nullptr);
+    if(!factory) [[unlikely]]
+        return extract_string_result(AS_NAMESPACE_QUALIFIER asINVALID_ARG);
+
     std::string result;
     AS_NAMESPACE_QUALIFIER asUINT sz = 0;
 
@@ -214,20 +216,21 @@ bad_result:
 
 [[nodiscard]]
 inline extract_string_result extract_string(
-    AS_NAMESPACE_QUALIFIER asIStringFactory& factory, const void* str
+    const AS_NAMESPACE_QUALIFIER asIStringFactory& factory, const void* str
 )
 {
-    return extract_string(&factory, str);
+    return extract_string(std::addressof(factory), str);
 }
 
 #ifdef ASBIND20_HAS_GET_STRING_FACTORY
 
 [[nodiscard]]
 inline extract_string_result extract_string(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, const void* str
+    const AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, const void* str
 )
 {
-    assert(engine != nullptr);
+    if(!engine) [[unlikely]]
+        return extract_string_result(AS_NAMESPACE_QUALIFIER asINVALID_ARG);
 
     AS_NAMESPACE_QUALIFIER asIStringFactory* factory;
     int r = engine->GetStringFactory(nullptr, &factory);

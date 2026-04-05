@@ -9,7 +9,6 @@
 
 #pragma once
 
-#include <version>
 #include <tuple>
 #include <functional>
 #include <optional>
@@ -35,6 +34,7 @@ template <typename T>
 requires(!std::is_const_v<T>)
 decltype(auto) get_script_return(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx)
 {
+    assert(ctx != nullptr);
     assert(ctx->GetState() == (AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED));
 
     constexpr bool is_customized = requires() {
@@ -102,9 +102,10 @@ class bad_script_invoke_result_access : public std::exception
 public:
     using error_code_type = AS_NAMESPACE_QUALIFIER asEContextState;
 
-    bad_script_invoke_result_access(error_code_type r) noexcept
+    explicit bad_script_invoke_result_access(error_code_type r) noexcept
         : m_r(r) {}
 
+    [[nodiscard]]
     const char* what() const noexcept override
     {
         return "bad script invoke result access";
@@ -215,7 +216,7 @@ public:
     /// @}
 
 protected:
-    script_invoke_result_base(
+    explicit script_invoke_result_base(
         AS_NAMESPACE_QUALIFIER asIScriptContext* ctx
     ) noexcept
         : m_ctx(ctx)
@@ -226,7 +227,12 @@ protected:
     [[noreturn]]
     void throw_bad_access() const
     {
-        ASBIND20_THROW(bad_script_invoke_result_access, (error()));
+        detail::throw_<bad_script_invoke_result_access>(error());
+    }
+
+    void swap(script_invoke_result_base& other) noexcept
+    {
+        std::swap(m_ctx, other.m_ctx);
     }
 
 private:
@@ -280,9 +286,8 @@ public:
     }
 
     /** @note This function is only available if return type is reference or convertible to pointer */
-    pointer_type operator->() const requires(
-        detail::invoke_result_traits<return_type>::to_pointer_support
-    )
+    pointer_type operator->() const
+        requires(detail::invoke_result_traits<return_type>::to_pointer_support)
     {
         assert(has_value());
         if constexpr(!std::is_reference_v<return_type>)
@@ -313,8 +318,7 @@ public:
     {
         if(has_value())
             return **this;
-        else
-            return static_cast<T>(std::forward<U>(default_val));
+        return static_cast<T>(std::forward<U>(default_val));
     }
 
     /// @}
@@ -324,8 +328,7 @@ public:
     {
         if(!has_value())
             return std::nullopt;
-        else
-            return std::optional<T>(**this);
+        return std::optional<T>(**this);
     }
 
     explicit operator std::optional<T>() const
@@ -340,8 +343,7 @@ public:
     {
         if(has_value())
             return std::expected<T, error_type>(**this);
-        else
-            return std::unexpected<error_type>(error());
+        return std::unexpected<error_type>(error());
     }
 
     operator std::expected<T, error_type>() const
@@ -350,6 +352,11 @@ public:
     }
 
 #endif
+
+    void swap(script_invoke_result& other) noexcept
+    {
+        swap(other);
+    }
 };
 
 /**
@@ -405,6 +412,11 @@ public:
         else
             return std::forward<U>(default_val);
     }
+
+    void swap(script_invoke_result& other) noexcept
+    {
+        swap(other);
+    }
 };
 
 /**
@@ -429,11 +441,27 @@ public:
         const script_invoke_result& other
     ) noexcept = default;
 
+    template <typename U>
+    explicit script_invoke_result(
+        const script_invoke_result<U>& other
+    ) noexcept
+        : script_invoke_result(other.get_context())
+    {}
+
     ~script_invoke_result() = default;
 
     script_invoke_result& operator=(
         const script_invoke_result& other
     ) noexcept = default;
+
+    template <typename U>
+    script_invoke_result& operator=(
+        const script_invoke_result<U>& other
+    ) noexcept
+    {
+        script_invoke_result(other).swap(*this);
+        return *this;
+    }
 
     void operator*() const noexcept
     {
@@ -445,7 +473,134 @@ public:
         if(!has_value())
             throw_bad_access();
     }
+
+    void swap(script_invoke_result& other) noexcept
+    {
+        script_invoke_result_base::swap(other);
+    }
 };
+
+template <typename T>
+void swap(script_invoke_result<T>& lhs, script_invoke_result<T>& rhs) noexcept
+{
+    lhs.swap(rhs);
+}
+
+namespace detail
+{
+    template <typename T>
+    struct is_script_invoke_result_impl : std::false_type
+    {};
+
+    template <typename T>
+    struct is_script_invoke_result_impl<script_invoke_result<T>> : std::true_type
+    {};
+} // namespace detail
+
+template <typename T>
+struct is_script_invoke_result :
+    detail::is_script_invoke_result_impl<std::remove_cv_t<T>>
+{};
+
+template <typename T>
+inline constexpr bool is_script_invoke_result_v = is_script_invoke_result<T>::value;
+
+namespace detail
+{
+    template <typename T, typename U>
+    concept check_op_eq = requires(const T& lhs, const U& rhs) {
+        { lhs == rhs } -> std::convertible_to<bool>;
+    };
+} // namespace detail
+
+template <typename T, typename U>
+bool operator==(const script_invoke_result<T>& lhs, const script_invoke_result<U>& rhs)
+    requires(detail::check_op_eq<T, U>)
+{
+    if(lhs.has_value() != rhs.has_value())
+        return false;
+    return lhs.has_value() ?
+               *lhs == *rhs :
+               lhs.error() == rhs.error();
+}
+
+template <typename T, typename U>
+bool operator==(const script_invoke_result<T>& lhs, const U& rhs)
+    requires(!is_script_invoke_result_v<U> && detail::check_op_eq<T, U>)
+{
+    return lhs.has_value() ? *lhs == rhs : false;
+}
+
+template <typename T, typename U>
+bool operator==(const T& lhs, const script_invoke_result<U>& rhs)
+    requires(!is_script_invoke_result_v<T> && detail::check_op_eq<T, U>)
+{
+    return rhs.has_value() ? lhs == *rhs : false;
+}
+
+namespace detail
+{
+    template <typename T, typename U>
+    concept check_op_cmp = requires(const T& lhs, const U& rhs) {
+        { lhs == rhs } -> std::convertible_to<bool>;
+        { lhs < rhs } -> std::convertible_to<bool>;
+        { rhs < lhs } -> std::convertible_to<bool>;
+    } || requires(const T& lhs, const U& rhs) {
+        { lhs <=> rhs } -> std::convertible_to<std::partial_ordering>;
+    };
+
+    template <typename T, typename U>
+    std::partial_ordering cmp_weak_ord_helper(T&& lhs, U&& rhs)
+    {
+        using std::partial_ordering;
+        constexpr bool use_three_way = requires() {
+            { lhs <=> rhs } -> std::convertible_to<std::partial_ordering>;
+        };
+        if constexpr(use_three_way)
+            return std::forward<T>(lhs) <=> std::forward<U>(rhs);
+        else
+        {
+            // Logic of std::compare_partial_order_fallback
+            return std::forward<T>(lhs) == std::forward<U>(rhs) ? partial_ordering::equivalent :
+                   std::forward<T>(lhs) < std::forward<U>(rhs)  ? partial_ordering::less :
+                   std::forward<U>(rhs) < std::forward<T>(lhs)  ? partial_ordering::greater :
+                                                                  partial_ordering::unordered;
+        }
+    }
+} // namespace detail
+
+template <typename T, typename U>
+std::partial_ordering operator<=>(const script_invoke_result<T>& lhs, const script_invoke_result<U>& rhs)
+    requires(detail::check_op_cmp<T, U>)
+{
+    if(lhs.has_value() != rhs.has_value())
+        return std::partial_ordering::unordered;
+    if(!lhs.has_value())
+    {
+        return lhs.error() == rhs.error() ?
+                   std::partial_ordering::equivalent :
+                   std::partial_ordering::unordered;
+    }
+    return detail::cmp_weak_ord_helper(*lhs, *rhs);
+}
+
+template <typename T, typename U>
+std::partial_ordering operator<=>(const script_invoke_result<T>& lhs, const U& rhs)
+    requires(!is_script_invoke_result_v<U> && detail::check_op_cmp<T, U>)
+{
+    if(!lhs.has_value())
+        return std::partial_ordering::unordered;
+    return detail::cmp_weak_ord_helper(*lhs, rhs);
+}
+
+template <typename T, typename U>
+std::partial_ordering operator<=>(const T& lhs, const script_invoke_result<U>& rhs)
+    requires(!is_script_invoke_result_v<T> && detail::check_op_cmp<T, U>)
+{
+    if(!rhs.has_value())
+        return std::partial_ordering::unordered;
+    return detail::cmp_weak_ord_helper(lhs, *rhs);
+}
 
 template <typename T>
 int set_script_arg(
@@ -508,7 +663,7 @@ int set_script_arg(
 }
 
 template <std::floating_point T>
-inline int set_script_arg(
+int set_script_arg(
     AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
     AS_NAMESPACE_QUALIFIER asUINT idx,
     T val
@@ -646,20 +801,20 @@ concept script_object_handle =
         (AS_NAMESPACE_QUALIFIER asIScriptObject const*)obj;
     };
 
-template <script_object_handle Object>
-int set_script_object(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, const void* obj)
+inline int set_script_object(
+    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, const void* obj
+)
 {
-    return ctx->SetObject(
-        const_cast<void*>(obj)
-    );
+    return ctx->SetObject(const_cast<void*>(obj));
 }
 
 template <script_object_handle Object>
-int set_script_object(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, Object&& obj)
+int set_script_object(
+    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, Object&& obj
+)
 {
-    return ctx->SetObject(
-        const_cast<AS_NAMESPACE_QUALIFIER asIScriptObject*>((AS_NAMESPACE_QUALIFIER asIScriptObject const*)obj)
-    );
+    const void* ptr = (AS_NAMESPACE_QUALIFIER asIScriptObject const*)obj;
+    return set_script_object(ctx, ptr);
 }
 
 /**
@@ -694,7 +849,7 @@ namespace detail
     [[noreturn]]
     inline void throw_bad_call()
     {
-        ASBIND20_THROW(std::bad_function_call, ());
+        asbind20::detail::throw_<std::bad_function_call>();
     }
 } // namespace detail
 
@@ -727,6 +882,7 @@ public:
         m_fp = fp;
     }
 
+    [[nodiscard]]
     handle_type target() const noexcept
     {
         return m_fp;
@@ -776,6 +932,7 @@ public:
         m_fp = fp;
     }
 
+    [[nodiscard]]
     handle_type target() const noexcept
     {
         return m_fp;
@@ -843,9 +1000,22 @@ public:
         return *this;
     }
 
+    [[nodiscard]]
     handle_type target() const noexcept
     {
         return m_fp;
+    }
+
+    bool operator==(script_function const& other) const noexcept = default;
+
+    friend bool operator==(script_function const& lhs, handle_type rhs) noexcept
+    {
+        return lhs.target() == rhs;
+    }
+
+    friend bool operator==(handle_type lhs, script_function const& rhs) noexcept
+    {
+        return lhs == rhs.target();
     }
 
     explicit operator bool() const noexcept
