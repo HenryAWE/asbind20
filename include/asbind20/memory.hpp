@@ -15,6 +15,7 @@
 #include <utility>
 #include <type_traits>
 #include <string>
+#include "detail/err_handler.hpp"
 #include "detail/include_as.hpp"
 #include "utility.hpp"
 
@@ -114,6 +115,7 @@ public:
         reset();
     }
 
+    [[nodiscard]]
     handle_type get() const noexcept
     {
         return m_obj;
@@ -199,12 +201,12 @@ public:
     )
         : m_engine(engine), m_propagate_error(propagate_error)
     {
-        assert(m_engine != nullptr);
+        ASBIND20_ASSERT(m_engine != nullptr);
 
         m_ctx = current_context();
         if(m_ctx) [[likely]]
         {
-            assert(m_ctx->GetEngine() == engine);
+            ASBIND20_ASSERT(m_ctx->GetEngine() == engine);
             if(m_ctx->PushState() >= 0)
             {
                 m_is_nested = true;
@@ -276,7 +278,7 @@ private:
 
     void pop_state_impl() const
     {
-        assert(m_is_nested);
+        ASBIND20_ASSERT(m_is_nested);
 
         if(!m_propagate_error)
         {
@@ -327,7 +329,7 @@ public:
     explicit request_context(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         : m_engine(engine)
     {
-        assert(m_engine != nullptr);
+        ASBIND20_ASSERT(m_engine != nullptr);
         m_ctx = m_engine->RequestContext();
     }
 
@@ -560,7 +562,7 @@ public:
      */
     void lock() const
     {
-        assert(*this);
+        ASBIND20_ASSERT(*this);
         m_bool->Lock();
     }
 
@@ -569,14 +571,14 @@ public:
      */
     void unlock() const noexcept
     {
-        assert(*this);
+        ASBIND20_ASSERT(*this);
         m_bool->Unlock();
     }
 
     [[nodiscard]]
     bool get_flag() const
     {
-        assert(*this);
+        ASBIND20_ASSERT(*this);
         return m_bool->Get();
     }
 
@@ -813,7 +815,7 @@ namespace container
              */
             ~data_type()
             {
-                assert(ptr == nullptr && "reference not released");
+                ASBIND20_ASSERT(ptr == nullptr && "reference not released");
             }
 
             data_type& operator=(data_type&& other) noexcept
@@ -837,7 +839,7 @@ namespace container
 
         static void* data_address(data_type& data, int type_id)
         {
-            assert(!is_void_type(type_id));
+            ASBIND20_ASSERT(!is_void_type(type_id));
 
             if(is_primitive_type(type_id))
                 return data.primitive;
@@ -849,7 +851,7 @@ namespace container
 
         static const void* data_address(const data_type& data, int type_id)
         {
-            assert(!is_void_type(type_id));
+            ASBIND20_ASSERT(!is_void_type(type_id));
 
             if(is_primitive_type(type_id))
                 return data.primitive;
@@ -886,7 +888,7 @@ namespace container
          */
         static bool construct(data_type& data, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id)
         {
-            assert(!is_void_type(type_id));
+            ASBIND20_ASSERT(!is_void_type(type_id));
 
             if(is_primitive_type(type_id))
             {
@@ -922,7 +924,7 @@ namespace container
          */
         static bool copy_construct(data_type& data, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id, const void* ref)
         {
-            assert(!is_void_type(type_id));
+            ASBIND20_ASSERT(!is_void_type(type_id));
 
             if(is_primitive_type(type_id))
             {
@@ -967,7 +969,7 @@ namespace container
          */
         static bool copy_assign_from(data_type& data, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id, const void* ref)
         {
-            assert(!is_void_type(type_id));
+            ASBIND20_ASSERT(!is_void_type(type_id));
 
             if(is_primitive_type(type_id))
             {
@@ -1013,8 +1015,8 @@ namespace container
          */
         static bool copy_assign_to(const data_type& data, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id, void* out)
         {
-            assert(!is_void_type(type_id));
-            assert(out != nullptr);
+            ASBIND20_ASSERT(!is_void_type(type_id));
+            ASBIND20_ASSERT(out != nullptr);
 
             if(is_primitive_type(type_id))
             {
@@ -1060,7 +1062,7 @@ namespace container
             if(is_primitive_type(type_id))
             {
                 // Suppressing assertion in destructor
-                assert((data.ptr = nullptr, true));
+                ASBIND20_ASSERT((data.ptr = nullptr, true));
                 return;
             }
 
