@@ -12,7 +12,7 @@
 #include <concepts>
 #include <type_traits>
 #include "../meta.hpp"
-#include "../bind/common.hpp"
+#include "../detail/calling_convention.hpp"
 
 namespace asbind20::meta
 {
@@ -108,31 +108,35 @@ public:
             return do_match<Fn, arg_count>();
     }
 
-    template <typename Fn>
+    template <
+        typename Fn,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
     constexpr bool operator()(
-        std::in_place_type_t<Fn>, AS_NAMESPACE_QUALIFIER asECallConvTypes conv
+        std::in_place_type_t<Fn>,
+        asbind20::detail::call_conv_t<CallConv>
     ) const
     {
         using traits = function_traits<Fn>;
         constexpr std::size_t arg_count = traits::arg_count_v;
 
-        switch(conv)
+        if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
+                     CallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJFIRST)
         {
-        case AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST:
-        case AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJFIRST:
             if constexpr(arg_count - 1 != sizeof...(Args))
                 return false;
             else
                 return do_match<Fn, arg_count - 1, (arg_count == 1 ? 0 : 1)>();
-
-        case AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST:
-        case AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJLAST:
+        }
+        else if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST ||
+                          CallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJLAST)
+        {
             if constexpr(arg_count - 1 != sizeof...(Args))
                 return false;
             else
                 return do_match<Fn, arg_count - 1>();
-
-        default:
+        }
+        else
+        {
             return (*this)(std::in_place_type<Fn>);
         }
     }

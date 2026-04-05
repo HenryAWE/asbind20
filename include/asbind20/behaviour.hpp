@@ -87,12 +87,13 @@ constexpr inline beh_t<Beh> beh{};
 
 template <
     AS_NAMESPACE_QUALIFIER asEBehaviours Beh,
-    typename Fn>
-consteval bool match_behaviour_sig(AS_NAMESPACE_QUALIFIER asECallConvTypes conv)
+    typename Fn,
+    AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+consteval bool match_behaviour_sig(asbind20::detail::call_conv_t<CallConv>)
 {
     using matcher = typename behaviour_traits<Beh>::matcher;
 
-    return matcher{}(std::in_place_type<Fn>, conv);
+    return matcher{}(std::in_place_type<Fn>, asbind20::detail::cc<CallConv>);
 }
 
 template <

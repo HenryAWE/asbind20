@@ -2532,7 +2532,7 @@ public:
             Fn>();                                                   \
         static_assert(                                               \
             match_behaviour_sig<AS_NAMESPACE_QUALIFIER as_beh, Fn>(  \
-                conv                                                 \
+                asbind20::detail::cc<conv>                           \
             ),                                                       \
             "Invalid signature for behaviour"                        \
         );                                                           \
