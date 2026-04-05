@@ -74,12 +74,13 @@ class signature_matcher
     template <typename Fn, std::size_t ScriptArgCount, std::size_t Offset = 0>
     static consteval bool do_match()
     {
-        if constexpr(ScriptArgCount + Offset > sizeof...(Args))
+        using traits = function_traits<Fn>;
+
+        if constexpr(ScriptArgCount + Offset > traits::arg_count_v)
             return false;
         else
         {
             using std::tuple_element_t, std::in_place_type_t, std::in_place_type;
-            using traits = function_traits<Fn>;
             using validator_tuple = std::tuple<Args...>;
 
             return []<std::size_t... Is>(std::index_sequence<Is...>)
