@@ -2530,6 +2530,12 @@ public:
             AS_NAMESPACE_QUALIFIER as_beh,                           \
             Class,                                                   \
             Fn>();                                                   \
+        static_assert(                                               \
+            match_behaviour_sig<AS_NAMESPACE_QUALIFIER as_beh, Fn>(  \
+                asbind20::detail::cc<conv>                           \
+            ),                                                       \
+            "Invalid signature for behaviour"                        \
+        );                                                           \
         this->register_behaviour(                                    \
             AS_NAMESPACE_QUALIFIER as_beh,                           \
             decl::decl_of_beh<AS_NAMESPACE_QUALIFIER as_beh>(),      \

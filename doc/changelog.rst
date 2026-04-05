@@ -41,6 +41,8 @@ Update
 
 - Update compatibility with AngelScript 2.39 WIP.
 
+- Compile-time validation for signatures of behaviours.
+
 Breaking Change
 ~~~~~~~~~~~~~~~
 
