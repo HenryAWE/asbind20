@@ -4,8 +4,8 @@
  * @brief Validators for checking function signature at compile-time
  */
 
-#ifndef ASBIND20_META_VALIDATOR_HPP
-#define ASBIND20_META_VALIDATOR_HPP
+#ifndef ASBIND20_BIND_VALIDATOR_HPP
+#define ASBIND20_BIND_VALIDATOR_HPP
 
 #pragma once
 
@@ -14,7 +14,7 @@
 #include "../meta.hpp"
 #include "../detail/calling_convention.hpp"
 
-namespace asbind20::meta
+namespace asbind20::detail
 {
 template <typename T, typename Base>
 concept ptrref_of =
@@ -114,7 +114,7 @@ public:
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
     constexpr bool operator()(
         std::in_place_type_t<Fn>,
-        asbind20::detail::call_conv_t<CallConv>
+        call_conv_t<CallConv>
     ) const
     {
         using traits = function_traits<Fn>;

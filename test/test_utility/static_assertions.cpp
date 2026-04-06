@@ -1,5 +1,5 @@
 #include <asbind20/asbind.hpp>
-#include <asbind20/meta/validator.hpp>
+#include <asbind20/bind/validator.hpp>
 
 static consteval bool test_utility_concepts()
 {
@@ -64,10 +64,10 @@ static_assert(test_stdcall_helpers());
 
 #endif
 
-consteval bool test_meta_validator()
+consteval bool test_detail_validator()
 {
     {
-        using asbind20::meta::ptrref_of;
+        using asbind20::detail::ptrref_of;
 
         static_assert(!ptrref_of<int, int>);
         static_assert(ptrref_of<int*, int>);
@@ -77,8 +77,8 @@ consteval bool test_meta_validator()
         static_assert(!ptrref_of<bool&, int>);
     }
 
-    using asbind20::meta::signature_matcher;
-    using namespace asbind20::meta::validator;
+    using asbind20::detail::signature_matcher;
+    using namespace asbind20::detail::validator;
 
     {
         using templ_cb_matcher = signature_matcher<
@@ -128,10 +128,10 @@ consteval bool test_meta_validator()
     return true;
 }
 
-consteval bool test_meta_validator_obj()
+consteval bool test_detail_validator_obj()
 {
-    using asbind20::meta::signature_matcher;
-    using namespace asbind20::meta::validator;
+    using asbind20::detail::signature_matcher;
+    using namespace asbind20::detail::validator;
 
     {
         struct my_struct
@@ -208,5 +208,5 @@ consteval bool test_meta_validator_obj()
     return true;
 }
 
-static_assert(test_meta_validator());
-static_assert(test_meta_validator_obj());
+static_assert(test_detail_validator());
+static_assert(test_detail_validator_obj());

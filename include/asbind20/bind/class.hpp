@@ -14,7 +14,7 @@
 #include "common.hpp"
 #include "genfunc.hpp"
 #include "../policies.hpp"
-#include "../decl.hpp"
+#include "behaviour.hpp"
 
 namespace asbind20
 {
@@ -2522,122 +2522,122 @@ public:
     ASBIND20_BG_INTERFACE_DEFINE_OP(Derived, opPreInc)
     ASBIND20_BG_INTERFACE_DEFINE_OP(Derived, opPreDec)
 
-#define ASBIND20_BG_INTERFACE_DEFINE_BEH(bg_type, as_beh, func_name) \
-    template <native_function Fn>                                    \
-    bg_type& func_name(Fn&& fn) requires(!ForceGeneric)              \
-    {                                                                \
-        constexpr auto conv = detail::deduce_beh_callconv<           \
-            AS_NAMESPACE_QUALIFIER as_beh,                           \
-            Class,                                                   \
-            Fn>();                                                   \
-        static_assert(                                               \
-            match_behaviour_sig<AS_NAMESPACE_QUALIFIER as_beh, Fn>(  \
-                asbind20::detail::cc<conv>                           \
-            ),                                                       \
-            "Invalid signature for behaviour"                        \
-        );                                                           \
-        this->register_behaviour(                                    \
-            AS_NAMESPACE_QUALIFIER as_beh,                           \
-            decl::decl_of_beh<AS_NAMESPACE_QUALIFIER as_beh>(),      \
-            fn,                                                      \
-            conv                                                     \
-        );                                                           \
-        return static_cast<bg_type&>(*this);                         \
-    }                                                                \
-    template <native_function Fn, typename Auxiliary>                \
-    bg_type& func_name(                                              \
-        Fn&& fn, auxiliary_wrapper<Auxiliary> aux                    \
-    ) requires(!ForceGeneric)                                        \
-    {                                                                \
-        constexpr auto conv = detail::deduce_beh_callconv_aux<       \
-            AS_NAMESPACE_QUALIFIER as_beh,                           \
-            Class,                                                   \
-            Fn,                                                      \
-            Auxiliary>();                                            \
-        this->register_behaviour(                                    \
-            AS_NAMESPACE_QUALIFIER as_beh,                           \
-            decl::decl_of_beh<AS_NAMESPACE_QUALIFIER as_beh>(),      \
-            fn,                                                      \
-            conv,                                                    \
-            this->get_auxiliary_address(aux)                         \
-        );                                                           \
-        return static_cast<bg_type&>(*this);                         \
-    }                                                                \
-    bg_type& func_name(generic_function gfn)                         \
-    {                                                                \
-        this->register_behaviour(                                    \
-            AS_NAMESPACE_QUALIFIER as_beh,                           \
-            decl::decl_of_beh<AS_NAMESPACE_QUALIFIER as_beh>(),      \
-            gfn,                                                     \
-            detail::generic_cc                                       \
-        );                                                           \
-        return static_cast<bg_type&>(*this);                         \
-    }                                                                \
-    template <typename Auxiliary>                                    \
-    bg_type& func_name(                                              \
-        generic_function gfn, auxiliary_wrapper<Auxiliary> aux       \
-    )                                                                \
-    {                                                                \
-        this->register_behaviour(                                    \
-            AS_NAMESPACE_QUALIFIER as_beh,                           \
-            decl::decl_of_beh<AS_NAMESPACE_QUALIFIER as_beh>(),      \
-            gfn,                                                     \
-            detail::generic_cc,                                      \
-            this->get_auxiliary_address(aux)                         \
-        );                                                           \
-        return static_cast<bg_type&>(*this);                         \
-    }                                                                \
-    template <auto Function>                                         \
-    bg_type& func_name(use_generic_t, fp_wrapper<Function>)          \
-    {                                                                \
-        using func_t = decltype(Function);                           \
-        constexpr auto conv = detail::deduce_beh_callconv<           \
-            AS_NAMESPACE_QUALIFIER as_beh,                           \
-            Class,                                                   \
-            func_t>();                                               \
-        this->func_name(                                             \
-            detail::to_asGENFUNC_t(fp<Function>, detail::cc<conv>)   \
-        );                                                           \
-        return static_cast<bg_type&>(*this);                         \
-    }                                                                \
-    template <auto Function, typename Auxiliary>                     \
-    bg_type& func_name(                                              \
-        use_generic_t,                                               \
-        fp_wrapper<Function>,                                        \
-        auxiliary_wrapper<Auxiliary> aux                             \
-    )                                                                \
-    {                                                                \
-        using func_t = decltype(Function);                           \
-        constexpr auto conv = detail::deduce_beh_callconv_aux<       \
-            AS_NAMESPACE_QUALIFIER as_beh,                           \
-            Class,                                                   \
-            func_t,                                                  \
-            Auxiliary>();                                            \
-        this->func_name(                                             \
-            detail::to_asGENFUNC_t(fp<Function>, detail::cc<conv>),  \
-            aux                                                      \
-        );                                                           \
-        return static_cast<bg_type&>(*this);                         \
-    }                                                                \
-    template <auto Function>                                         \
-    bg_type& func_name(fp_wrapper<Function>)                         \
-    {                                                                \
-        if constexpr(ForceGeneric)                                   \
-            this->func_name(use_generic, fp<Function>);              \
-        else                                                         \
-            this->func_name(Function);                               \
-        return static_cast<bg_type&>(*this);                         \
-    }                                                                \
-    template <auto Function, typename Auxiliary>                     \
-    bg_type& func_name(                                              \
-        fp_wrapper<Function>, auxiliary_wrapper<Auxiliary> aux       \
-    )                                                                \
-    {                                                                \
-        if constexpr(ForceGeneric)                                   \
-            this->func_name(use_generic, fp<Function>, aux);         \
-        else                                                         \
-            this->func_name(Function, aux);                          \
-        return static_cast<bg_type&>(*this);                         \
+#define ASBIND20_BG_INTERFACE_DEFINE_BEH(bg_type, as_beh, func_name)  \
+    template <native_function Fn>                                     \
+    bg_type& func_name(Fn&& fn) requires(!ForceGeneric)               \
+    {                                                                 \
+        constexpr auto conv = detail::deduce_beh_callconv<            \
+            AS_NAMESPACE_QUALIFIER as_beh,                            \
+            Class,                                                    \
+            Fn>();                                                    \
+        static_assert(                                                \
+            detail::match_beh_sig<AS_NAMESPACE_QUALIFIER as_beh, Fn>( \
+                asbind20::detail::cc<conv>                            \
+            ),                                                        \
+            "Invalid signature for behaviour"                         \
+        );                                                            \
+        this->register_behaviour(                                     \
+            AS_NAMESPACE_QUALIFIER as_beh,                            \
+            detail::decl_of_beh<AS_NAMESPACE_QUALIFIER as_beh>(),     \
+            fn,                                                       \
+            conv                                                      \
+        );                                                            \
+        return static_cast<bg_type&>(*this);                          \
+    }                                                                 \
+    template <native_function Fn, typename Auxiliary>                 \
+    bg_type& func_name(                                               \
+        Fn&& fn, auxiliary_wrapper<Auxiliary> aux                     \
+    ) requires(!ForceGeneric)                                         \
+    {                                                                 \
+        constexpr auto conv = detail::deduce_beh_callconv_aux<        \
+            AS_NAMESPACE_QUALIFIER as_beh,                            \
+            Class,                                                    \
+            Fn,                                                       \
+            Auxiliary>();                                             \
+        this->register_behaviour(                                     \
+            AS_NAMESPACE_QUALIFIER as_beh,                            \
+            detail::decl_of_beh<AS_NAMESPACE_QUALIFIER as_beh>(),     \
+            fn,                                                       \
+            conv,                                                     \
+            this->get_auxiliary_address(aux)                          \
+        );                                                            \
+        return static_cast<bg_type&>(*this);                          \
+    }                                                                 \
+    bg_type& func_name(generic_function gfn)                          \
+    {                                                                 \
+        this->register_behaviour(                                     \
+            AS_NAMESPACE_QUALIFIER as_beh,                            \
+            detail::decl_of_beh<AS_NAMESPACE_QUALIFIER as_beh>(),     \
+            gfn,                                                      \
+            detail::generic_cc                                        \
+        );                                                            \
+        return static_cast<bg_type&>(*this);                          \
+    }                                                                 \
+    template <typename Auxiliary>                                     \
+    bg_type& func_name(                                               \
+        generic_function gfn, auxiliary_wrapper<Auxiliary> aux        \
+    )                                                                 \
+    {                                                                 \
+        this->register_behaviour(                                     \
+            AS_NAMESPACE_QUALIFIER as_beh,                            \
+            detail::decl_of_beh<AS_NAMESPACE_QUALIFIER as_beh>(),     \
+            gfn,                                                      \
+            detail::generic_cc,                                       \
+            this->get_auxiliary_address(aux)                          \
+        );                                                            \
+        return static_cast<bg_type&>(*this);                          \
+    }                                                                 \
+    template <auto Function>                                          \
+    bg_type& func_name(use_generic_t, fp_wrapper<Function>)           \
+    {                                                                 \
+        using func_t = decltype(Function);                            \
+        constexpr auto conv = detail::deduce_beh_callconv<            \
+            AS_NAMESPACE_QUALIFIER as_beh,                            \
+            Class,                                                    \
+            func_t>();                                                \
+        this->func_name(                                              \
+            detail::to_asGENFUNC_t(fp<Function>, detail::cc<conv>)    \
+        );                                                            \
+        return static_cast<bg_type&>(*this);                          \
+    }                                                                 \
+    template <auto Function, typename Auxiliary>                      \
+    bg_type& func_name(                                               \
+        use_generic_t,                                                \
+        fp_wrapper<Function>,                                         \
+        auxiliary_wrapper<Auxiliary> aux                              \
+    )                                                                 \
+    {                                                                 \
+        using func_t = decltype(Function);                            \
+        constexpr auto conv = detail::deduce_beh_callconv_aux<        \
+            AS_NAMESPACE_QUALIFIER as_beh,                            \
+            Class,                                                    \
+            func_t,                                                   \
+            Auxiliary>();                                             \
+        this->func_name(                                              \
+            detail::to_asGENFUNC_t(fp<Function>, detail::cc<conv>),   \
+            aux                                                       \
+        );                                                            \
+        return static_cast<bg_type&>(*this);                          \
+    }                                                                 \
+    template <auto Function>                                          \
+    bg_type& func_name(fp_wrapper<Function>)                          \
+    {                                                                 \
+        if constexpr(ForceGeneric)                                    \
+            this->func_name(use_generic, fp<Function>);               \
+        else                                                          \
+            this->func_name(Function);                                \
+        return static_cast<bg_type&>(*this);                          \
+    }                                                                 \
+    template <auto Function, typename Auxiliary>                      \
+    bg_type& func_name(                                               \
+        fp_wrapper<Function>, auxiliary_wrapper<Auxiliary> aux        \
+    )                                                                 \
+    {                                                                 \
+        if constexpr(ForceGeneric)                                    \
+            this->func_name(use_generic, fp<Function>, aux);          \
+        else                                                          \
+            this->func_name(Function, aux);                           \
+        return static_cast<bg_type&>(*this);                          \
     }
 
     // Reference types with GC flag support all GC-related behaviours.
