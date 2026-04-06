@@ -62,6 +62,9 @@ Breaking Change
 
 - Redesign lock wrapper to fit common C++ paradigm for shared lock.
 
+- Now message callback and exception translator are registered by global functions,
+  instead of ``asbind20::global``.
+
 1.8.0
 -----
 

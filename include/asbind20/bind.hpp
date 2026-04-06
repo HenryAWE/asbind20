@@ -222,6 +222,95 @@ private:
 };
 
 using interface = basic_interface<>;
+
+/**
+ * @brief Generic calling convention for message callback is not supported.
+ */
+void set_message_callback(
+    generic_function gfn,
+    void* obj = nullptr
+) = delete;
+
+/**
+ * @brief Set the message callback.
+ */
+template <native_function Callback>
+requires(!std::is_member_function_pointer_v<Callback>)
+int set_message_callback(
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    Callback fn,
+    void* obj = nullptr
+)
+{
+    return engine->SetMessageCallback(
+        detail::to_asSFuncPtr(fn),
+        obj,
+        AS_NAMESPACE_QUALIFIER asCALL_CDECL
+    );
+}
+
+/**
+ * @brief Set a member function as the message callback.
+ */
+template <native_function Callback, typename T>
+requires(std::is_member_function_pointer_v<Callback>)
+int set_message_callback(
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    Callback fn,
+    T& obj
+)
+{
+    return engine->SetMessageCallback(
+        detail::to_asSFuncPtr(fn),
+        (void*)std::addressof(obj),
+        AS_NAMESPACE_QUALIFIER asCALL_THISCALL
+    );
+}
+
+/**
+ * @brief Generic calling convention for exception translator is not supported.
+ */
+int set_exception_translator(
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    generic_function gfn,
+    void* obj = nullptr
+) = delete;
+
+/**
+ * @brief Set the exception translator.
+ */
+template <native_function Callback>
+requires(!std::is_member_function_pointer_v<Callback>)
+int set_exception_translator(
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    Callback fn,
+    void* obj = nullptr
+)
+{
+    return engine->SetTranslateAppExceptionCallback(
+        detail::to_asSFuncPtr(fn),
+        obj,
+        AS_NAMESPACE_QUALIFIER asCALL_CDECL
+    );
+}
+
+/**
+ * @brief Set a member function as the exception translator.
+ */
+template <native_function Callback, typename T>
+requires(std::is_member_function_pointer_v<Callback>)
+int set_exception_translator(
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    Callback fn,
+    auxiliary_wrapper<T> aux
+)
+{
+    return engine->SetTranslateAppExceptionCallback(
+        detail::to_asSFuncPtr(fn),
+        aux.get_address(),
+        AS_NAMESPACE_QUALIFIER asCALL_THISCALL
+    );
+}
 } // namespace asbind20
 
 #endif

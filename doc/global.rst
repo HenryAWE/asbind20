@@ -82,7 +82,7 @@ Registering Global Properties
         .property("const int const_global_var", const_global_var);
 
 
-Special Functions
+Special Callbacks
 -----------------
 
 Please check the official documentation of AngelScript for the requirements of following functions.
@@ -90,24 +90,14 @@ Please check the official documentation of AngelScript for the requirements of f
 Message Callback
 ~~~~~~~~~~~~~~~~
 
-Registered by ``message_callback``.
-
-.. doxygenclass:: asbind20::global
-    :members: message_callback
-    :members-only:
-    :no-link:
+Registered by ``set_message_callback``.
 
 See `AngelScript documentation <https://www.angelcode.com/angelscript/sdk/docs/manual/doc_compile_script.html#doc_compile_script_msg>`_ for details.
 
 Exception Translator
 ~~~~~~~~~~~~~~~~~~~~
 
-Registered by ``exception_translator``.
-
-.. doxygenclass:: asbind20::global
-    :members: exception_translator
-    :members-only:
-    :no-link:
+Registered by ``set_exception_translator``.
 
 .. note::
    If your AngelScript is built without exception support (``asGetLibraryOptions()`` reports ``AS_NO_EXCEPTIONS``),

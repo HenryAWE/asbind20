@@ -64,13 +64,15 @@ void setup_message_callback(
 {
     if(propagate_error_to_gtest)
     {
-        asbind20::global(engine)
-            .message_callback(&message_callback_impl<true>);
+        asbind20::set_message_callback(
+            engine, &message_callback_impl<true>
+        );
     }
     else
     {
-        asbind20::global(engine)
-            .message_callback(&message_callback_impl<false>);
+        asbind20::set_message_callback(
+            engine, &message_callback_impl<false>
+        );
     }
 }
 
@@ -106,8 +108,10 @@ void setup_exception_translator(
 {
     if(!asbind20::has_exceptions())
         return;
-    asbind20::global(engine)
-        .exception_translator(&exception_translator_impl);
+
+    asbind20::set_exception_translator(
+        engine, &exception_translator_impl
+    );
 }
 
 void output_gc_statistics(
