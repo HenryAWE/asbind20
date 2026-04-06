@@ -43,6 +43,8 @@ Update
 
 - Compile-time validation for signatures of behaviours.
 
+- Update RAII helpers.
+
 Breaking Change
 ~~~~~~~~~~~~~~~
 

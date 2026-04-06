@@ -52,26 +52,17 @@ public:
 
     auto prepare_contexts() const
     {
-        std::vector<AS_NAMESPACE_QUALIFIER asIScriptContext*> contexts;
+        std::vector<asbind20::script_context> contexts;
 
         auto* engine = this->get_engine();
         for(std::size_t i = 0; i < 10; ++i)
         {
-            auto* ctx = engine->CreateContext();
-            EXPECT_NE(ctx, nullptr)
-                << "CreateContext() failed. i = " << i;
-            contexts.emplace_back(ctx);
+            auto& created = contexts.emplace_back(engine);
+            EXPECT_NE(created.get(), nullptr)
+                << "Failed to create context. i = " << i;
         }
 
         return contexts;
-    }
-
-    void clear_context(std::span<AS_NAMESPACE_QUALIFIER asIScriptContext*> contexts)
-    {
-        for(auto* ctx : contexts)
-        {
-            ctx->Release();
-        }
     }
 };
 
@@ -105,12 +96,13 @@ TEST_F(MTStrFactoryTestNative, RunScript)
     std::atomic_int counter = 0;
 
     std::vector<std::thread> threads;
-    for(auto* ctx : contexts)
+    threads.reserve(contexts.size());
+    for(auto& ctx : contexts)
     {
         threads.emplace_back(
             &test_script_string::mt_test_thread_main,
             std::ref(counter),
-            ctx,
+            ctx.get(),
             f
         );
     }
@@ -119,8 +111,6 @@ TEST_F(MTStrFactoryTestNative, RunScript)
 
     while(counter.load(std::memory_order_consume) != static_cast<int>(contexts.size()))
         std::this_thread::yield();
-
-    this->clear_context(contexts);
 }
 
 TEST_F(MTStrFactoryTestGeneric, RunScript)
@@ -135,12 +125,13 @@ TEST_F(MTStrFactoryTestGeneric, RunScript)
     std::atomic_int counter = 0;
 
     std::vector<std::thread> threads;
-    for(auto* ctx : contexts)
+    threads.reserve(contexts.size());
+    for(auto& ctx : contexts)
     {
         threads.emplace_back(
             &test_script_string::mt_test_thread_main,
             std::ref(counter),
-            ctx,
+            ctx.get(),
             f
         );
     }
@@ -149,6 +140,4 @@ TEST_F(MTStrFactoryTestGeneric, RunScript)
 
     while(counter.load(std::memory_order_consume) != static_cast<int>(contexts.size()))
         std::this_thread::yield();
-
-    this->clear_context(contexts);
 }

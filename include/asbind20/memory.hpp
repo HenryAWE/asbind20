@@ -18,6 +18,7 @@
 #include "detail/err_handler.hpp"
 #include "detail/include_as.hpp"
 #include "utility.hpp"
+#include "debugging/gc_statistics.hpp"
 
 namespace asbind20
 {
@@ -364,6 +365,113 @@ public:
 
 private:
     AS_NAMESPACE_QUALIFIER asIScriptEngine* m_engine = nullptr;
+    handle_type m_ctx = nullptr;
+};
+
+/**
+ * @brief RAII helper for script context
+ */
+class script_context
+{
+public:
+    using handle_type = AS_NAMESPACE_QUALIFIER asIScriptContext*;
+
+    script_context() noexcept = default;
+
+    script_context(const script_context& other)
+    {
+        reset(other.get());
+    }
+
+    script_context(script_context&& other) noexcept
+        : m_ctx(std::exchange(other.m_ctx, nullptr))
+    {}
+
+    /**
+     * @brief Create context from the script engine.
+     *
+     * @param engine Script engine. If it is null, the context will not be created.
+     */
+    explicit script_context(
+        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
+    )
+    {
+        if(!engine) [[unlikely]]
+            return;
+        reset(std::in_place, engine->CreateContext());
+    }
+
+    ~script_context()
+    {
+        reset(nullptr);
+    }
+
+    script_context& operator=(const script_context& rhs)
+    {
+        if(this == &rhs)
+            return *this;
+        reset(rhs.get());
+        return *this;
+    }
+
+    script_context& operator=(script_context&& rhs) noexcept
+    {
+        if(this == &rhs)
+            return *this;
+        reset(nullptr);
+        m_ctx = std::exchange(rhs.m_ctx, nullptr);
+        return *this;
+    }
+
+    [[nodiscard]]
+    handle_type get() const noexcept
+    {
+        return m_ctx;
+    }
+
+    operator handle_type() const noexcept
+    {
+        return get();
+    }
+
+    explicit operator bool() const noexcept
+    {
+        return m_ctx != nullptr;
+    }
+
+    [[nodiscard]]
+    handle_type release() noexcept
+    {
+        return std::exchange(m_ctx, nullptr);
+    }
+
+    void reset(std::nullptr_t) noexcept
+    {
+        if(m_ctx)
+            m_ctx->Release();
+        m_ctx = nullptr;
+    }
+
+    void reset(std::in_place_t, handle_type ctx)
+    {
+        if(m_ctx)
+            m_ctx->Release();
+        m_ctx = ctx;
+    }
+
+    void reset(handle_type ctx = nullptr)
+    {
+        reset(std::in_place, ctx);
+        if(m_ctx)
+            m_ctx->AddRef();
+    }
+
+    void swap(script_context& other) noexcept
+    {
+        std::swap(m_ctx, other.m_ctx);
+    }
+
+private:
     handle_type m_ctx = nullptr;
 };
 
