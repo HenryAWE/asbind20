@@ -11,7 +11,7 @@
 
 #include <cstddef>
 #include <array>
-#include "common.hpp"
+#include "../detail/calling_convention.hpp"
 #include "../meta.hpp"
 #include "../utility.hpp"
 #include "../generic.hpp"

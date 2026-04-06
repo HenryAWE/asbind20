@@ -293,10 +293,6 @@ public:
         typedef_(type_decl, new_name);
         return *this;
     }
-
-    // TODO: Split message_callback & exception translator into standalone functions
-
-    
 };
 
 global(AS_NAMESPACE_QUALIFIER asIScriptEngine*) -> global<false>;
