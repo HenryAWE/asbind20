@@ -226,7 +226,8 @@ using interface = basic_interface<>;
 /**
  * @brief Generic calling convention for message callback is not supported.
  */
-void set_message_callback(
+int set_message_callback(
+    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
     generic_function gfn,
     void* obj = nullptr
 ) = delete;
@@ -257,12 +258,12 @@ requires(std::is_member_function_pointer_v<Callback>)
 int set_message_callback(
     AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
     Callback fn,
-    T& obj
+    auxiliary_wrapper<T> aux
 )
 {
     return engine->SetMessageCallback(
         detail::to_asSFuncPtr(fn),
-        (void*)std::addressof(obj),
+        aux.get_address(),
         AS_NAMESPACE_QUALIFIER asCALL_THISCALL
     );
 }

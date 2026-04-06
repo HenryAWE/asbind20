@@ -92,6 +92,7 @@ The weak reference flag (``asILockableSharedBool*``) is lockable.
     :no-link:
 
 The AngelScript library provides global exclusive and shared locks.
+The wrappers for them are provided by the header ``<asbind20/concurrent/mutex.hpp>``.
 
 .. doxygenvariable:: asbind20::script_lock
 .. doxygenclass:: asbind20::script_lock_t
