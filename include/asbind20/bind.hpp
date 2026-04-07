@@ -243,10 +243,21 @@ int set_message_callback(
     void* obj = nullptr
 )
 {
+    using matcher = detail::signature_matcher<
+        detail::validator::void_,
+        detail::validator::by_addr<AS_NAMESPACE_QUALIFIER asSMessageInfo>,
+        detail::validator::by_addr<void>>;
+    static_assert(
+        matcher{}(std::in_place_type<Callback>),
+        "Invalid message callback. The signature must be similar to void(asSMessageInfo*, void*)"
+    );
+
+    if(!engine) [[unlikely]]
+       return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
     return engine->SetMessageCallback(
         detail::to_asSFuncPtr(fn),
         obj,
-        AS_NAMESPACE_QUALIFIER asCALL_CDECL
+        detail::deduce_function_callconv<Callback>()
     );
 }
 
@@ -261,6 +272,8 @@ int set_message_callback(
     auxiliary_wrapper<T> aux
 )
 {
+    if(!engine) [[unlikely]]
+       return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
     return engine->SetMessageCallback(
         detail::to_asSFuncPtr(fn),
         aux.get_address(),
@@ -288,10 +301,21 @@ int set_exception_translator(
     void* obj = nullptr
 )
 {
+    using matcher = detail::signature_matcher<
+        detail::validator::void_,
+        detail::validator::by_addr<AS_NAMESPACE_QUALIFIER asIScriptContext>,
+        detail::validator::by_addr<void>>;
+    static_assert(
+        matcher{}(std::in_place_type<Callback>),
+        "Invalid exception translator. The signature must be similar to void(asIScriptContext*, void*)"
+    );
+
+    if(!engine) [[unlikely]]
+        return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
     return engine->SetTranslateAppExceptionCallback(
         detail::to_asSFuncPtr(fn),
         obj,
-        AS_NAMESPACE_QUALIFIER asCALL_CDECL
+        detail::deduce_function_callconv<Callback>()
     );
 }
 
@@ -306,6 +330,8 @@ int set_exception_translator(
     auxiliary_wrapper<T> aux
 )
 {
+    if(!engine) [[unlikely]]
+       return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
     return engine->SetTranslateAppExceptionCallback(
         detail::to_asSFuncPtr(fn),
         aux.get_address(),

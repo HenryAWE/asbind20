@@ -60,6 +60,19 @@ namespace validator
         }
     };
 
+    // For any reference or pointer
+    template <>
+    struct by_addr<void>
+    {
+        using validator_tag = void;
+
+        template <typename U>
+        constexpr bool operator()(std::in_place_type_t<U>) const
+        {
+            return std::is_pointer_v<std::decay_t<U>> || std::is_reference_v<U>;
+        }
+    };
+
     template <typename T>
     concept descriptor = requires() {
         typename T::validator_tag;
