@@ -107,7 +107,7 @@ static void setup_to_lower_env(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 
     set_message_callback(
         engine,
-        +[](const AS_NAMESPACE_QUALIFIER asSMessageInfo* msg)
+        +[](const AS_NAMESPACE_QUALIFIER asSMessageInfo* msg, void*)
         { std::cerr << msg->message << std::endl; }
     );
 }
