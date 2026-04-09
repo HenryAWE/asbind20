@@ -274,6 +274,14 @@ int set_message_callback(
 {
     if(!engine) [[unlikely]]
        return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
+
+    using matcher = detail::signature_matcher<
+        detail::validator::void_,
+        detail::validator::by_addr<AS_NAMESPACE_QUALIFIER asIScriptContext>>;
+    static_assert(
+        matcher{}(std::in_place_type<Callback>),
+        "Invalid message callback. The signature must be similar to void (T::*)(asIScriptContext*)"
+    );
     return engine->SetMessageCallback(
         detail::to_asSFuncPtr(fn),
         aux.get_address(),
@@ -332,6 +340,14 @@ int set_exception_translator(
 {
     if(!engine) [[unlikely]]
        return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
+
+    using matcher = detail::signature_matcher<
+        detail::validator::void_,
+        detail::validator::by_addr<AS_NAMESPACE_QUALIFIER asIScriptContext>>;
+    static_assert(
+        matcher{}(std::in_place_type<Callback>),
+        "Invalid exception translator. The signature must be similar to void (T::*)(asIScriptContext*)"
+    );
     return engine->SetTranslateAppExceptionCallback(
         detail::to_asSFuncPtr(fn),
         aux.get_address(),
