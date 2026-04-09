@@ -277,7 +277,7 @@ int set_message_callback(
 
     using matcher = detail::signature_matcher<
         detail::validator::void_,
-        detail::validator::by_addr<AS_NAMESPACE_QUALIFIER asIScriptContext>>;
+        detail::validator::by_addr<AS_NAMESPACE_QUALIFIER asSMessageInfo>>;
     static_assert(
         matcher{}(std::in_place_type<Callback>),
         "Invalid message callback. The signature must be similar to void (T::*)(asIScriptContext*)"
