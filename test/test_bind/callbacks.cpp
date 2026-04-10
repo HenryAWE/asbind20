@@ -128,7 +128,7 @@ static void setup_funcs(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     using namespace asbind20;
 
-    global(engine)
+    global<true>(engine)
         .function(
             "void throw_my_ex()",
             []() -> void
