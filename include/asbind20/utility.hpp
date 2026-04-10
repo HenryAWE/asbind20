@@ -480,8 +480,6 @@ inline auto sizeof_script_type(
 )
     -> AS_NAMESPACE_QUALIFIER asUINT
 {
-    ASBIND20_ASSERT(engine != nullptr);
-
     if(is_primitive_type(type_id))
     {
         switch(type_id)
@@ -516,6 +514,8 @@ inline auto sizeof_script_type(
         }
     }
 
+    if(!engine) [[unlikely]]
+        return 0;
     const auto* ti = engine->GetTypeInfoById(type_id);
     if(!ti) [[unlikely]]
         return 0;
