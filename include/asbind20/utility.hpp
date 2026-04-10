@@ -417,6 +417,9 @@ inline int get_script_string_type(
     const AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
 )
 {
+    if(!engine) [[unlikely]]
+        return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
+
 #if ANGELSCRIPT_VERSION >= 23800
     int string_t_id = engine->GetStringFactory();
 #else
@@ -434,6 +437,8 @@ inline bool is_script_string(
     const AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id
 )
 {
+    if(!engine) [[unlikely]]
+        return false;
     return get_script_string_type(engine) == type_id;
 }
 
@@ -619,7 +624,6 @@ case AS_NAMESPACE_QUALIFIER as_type_id:                        \
         ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(asTYPEID_BOOL);
         ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(asTYPEID_INT8);
         ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(asTYPEID_INT16);
-    default: /* enums */
         ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(asTYPEID_INT32);
         ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(asTYPEID_INT64);
         ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(asTYPEID_UINT8);
@@ -628,6 +632,8 @@ case AS_NAMESPACE_QUALIFIER as_type_id:                        \
         ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(asTYPEID_UINT64);
         ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(asTYPEID_FLOAT);
         ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(asTYPEID_DOUBLE);
+    default: /* enums */
+        return wrapper(std::in_place_type<compat::script_enum_value_type>);
     }
 
 #undef ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE
