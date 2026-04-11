@@ -84,6 +84,7 @@ template <
     validator::descriptor... Args>
 class signature_matcher
 {
+#ifndef ASBIND20_NO_COMPILE_TIME_CHECKS
     template <typename Fn, std::size_t ScriptArgCount, std::size_t Offset = 0>
     static consteval bool do_match()
     {
@@ -109,10 +110,13 @@ class signature_matcher
         }
     }
 
+#endif
+
 public:
     template <typename Fn>
     constexpr bool operator()(std::in_place_type_t<Fn>) const
     {
+#ifndef ASBIND20_NO_COMPILE_TIME_CHECKS
         using traits = function_traits<Fn>;
         constexpr std::size_t arg_count = traits::arg_count_v;
 
@@ -120,6 +124,10 @@ public:
             return false;
         else
             return do_match<Fn, arg_count>();
+
+#else
+        return true;
+#endif
     }
 
     template <
@@ -130,6 +138,7 @@ public:
         call_conv_t<CallConv>
     ) const
     {
+#ifndef ASBIND20_NO_COMPILE_TIME_CHECKS
         using traits = function_traits<Fn>;
         constexpr std::size_t arg_count = traits::arg_count_v;
 
@@ -153,8 +162,12 @@ public:
         {
             return (*this)(std::in_place_type<Fn>);
         }
+
+#else
+        return true;
+#endif
     }
 };
-} // namespace asbind20::meta
+} // namespace asbind20::detail
 
 #endif
