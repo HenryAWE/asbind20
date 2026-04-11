@@ -546,6 +546,12 @@ static void output_info(std::ostream& os)
     os << "asGetLibraryOptions(): " << AS_NAMESPACE_QUALIFIER asGetLibraryOptions() << std::endl;
     os << "asbind20::library_version(): " << asbind20::library_version() << std::endl;
 
+    os << "ASBIND20_NO_COMPILE_TIME_CHECKS";
+#ifndef ASBIND20_NO_COMPILE_TIME_CHECKS
+    os << " not";
+#endif
+    os << " defined" << std::endl;
+
     os << "ASBIND20_HAS_ENUM_UNDERLYING_TYPE";
 #ifndef ASBIND20_HAS_ENUM_UNDERLYING_TYPE
     os << " not";
