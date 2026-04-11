@@ -97,18 +97,23 @@ public:
     auxiliary_wrapper() = delete;
     constexpr auxiliary_wrapper(const auxiliary_wrapper&) noexcept = default;
 
-    explicit constexpr auxiliary_wrapper(T* aux) noexcept
-        : m_aux(aux) {}
+    auxiliary_wrapper& operator=(const auxiliary_wrapper&) = delete;
+
+    explicit constexpr auxiliary_wrapper(const T* aux) noexcept
+        : m_aux(const_cast<T*>(aux)) {}
 
     [[nodiscard]]
     void* get_address() const noexcept
     {
-        return (void*)m_aux;
+        return m_aux;
     }
 
 private:
     T* m_aux;
 };
+
+// Default to void
+auxiliary_wrapper(std::nullptr_t) -> auxiliary_wrapper<void>;
 
 template <>
 class auxiliary_wrapper<this_type_t>
@@ -117,37 +122,43 @@ public:
     auxiliary_wrapper() = delete;
     constexpr auxiliary_wrapper(const auxiliary_wrapper&) noexcept = default;
 
+    auxiliary_wrapper& operator=(const auxiliary_wrapper&) = delete;
+
     explicit constexpr auxiliary_wrapper(this_type_t) noexcept {};
 };
 
 template <typename T>
 [[nodiscard]]
-constexpr auxiliary_wrapper<T> auxiliary(T& aux) noexcept
+constexpr auto auxiliary(T& aux) noexcept
 {
-    return auxiliary_wrapper<T>(std::addressof(aux));
+    using type = std::remove_cv_t<T>;
+    return auxiliary_wrapper<type>(std::addressof(aux));
 }
 
 template <typename T>
 [[nodiscard]]
-constexpr auxiliary_wrapper<T> auxiliary(T* aux) noexcept
+constexpr auto auxiliary(T* aux) noexcept
 {
-    return auxiliary_wrapper<T>(aux);
+    using type = std::remove_cv_t<T>;
+    return auxiliary_wrapper<type>(aux);
 }
 
 [[nodiscard]]
-constexpr inline auxiliary_wrapper<void> auxiliary(std::nullptr_t) noexcept
+constexpr auxiliary_wrapper<void> auxiliary(std::nullptr_t) noexcept
 {
     return auxiliary_wrapper<void>(nullptr);
 }
 
 [[nodiscard]]
-constexpr inline auxiliary_wrapper<this_type_t> auxiliary(this_type_t) noexcept
+constexpr auxiliary_wrapper<this_type_t> auxiliary(this_type_t) noexcept
 {
     return auxiliary_wrapper<this_type_t>(this_type);
 }
 
+// R-value reference will create dangling reference
 template <typename T>
-constexpr auxiliary_wrapper<T> auxiliary(T&& aux) = delete;
+constexpr auto auxiliary(T&& aux)
+    -> auxiliary_wrapper<std::remove_cv_t<T>> = delete;
 
 /**
  * @brief Store a pointer-sized integer value as auxiliary object
