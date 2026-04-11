@@ -97,18 +97,23 @@ public:
     auxiliary_wrapper() = delete;
     constexpr auxiliary_wrapper(const auxiliary_wrapper&) noexcept = default;
 
-    explicit constexpr auxiliary_wrapper(T* aux) noexcept
-        : m_aux(aux) {}
+    auxiliary_wrapper& operator=(const auxiliary_wrapper&) = delete;
+
+    explicit constexpr auxiliary_wrapper(const T* aux) noexcept
+        : m_aux(const_cast<T*>(aux)) {}
 
     [[nodiscard]]
     void* get_address() const noexcept
     {
-        return (void*)m_aux;
+        return m_aux;
     }
 
 private:
     T* m_aux;
 };
+
+// Default to void
+auxiliary_wrapper(std::nullptr_t) -> auxiliary_wrapper<void>;
 
 template <>
 class auxiliary_wrapper<this_type_t>
@@ -117,37 +122,43 @@ public:
     auxiliary_wrapper() = delete;
     constexpr auxiliary_wrapper(const auxiliary_wrapper&) noexcept = default;
 
+    auxiliary_wrapper& operator=(const auxiliary_wrapper&) = delete;
+
     explicit constexpr auxiliary_wrapper(this_type_t) noexcept {};
 };
 
 template <typename T>
 [[nodiscard]]
-constexpr auxiliary_wrapper<T> auxiliary(T& aux) noexcept
+constexpr auto auxiliary(T& aux) noexcept
 {
-    return auxiliary_wrapper<T>(std::addressof(aux));
+    using type = std::remove_cv_t<T>;
+    return auxiliary_wrapper<type>(std::addressof(aux));
 }
 
 template <typename T>
 [[nodiscard]]
-constexpr auxiliary_wrapper<T> auxiliary(T* aux) noexcept
+constexpr auto auxiliary(T* aux) noexcept
 {
-    return auxiliary_wrapper<T>(aux);
+    using type = std::remove_cv_t<T>;
+    return auxiliary_wrapper<type>(aux);
 }
 
 [[nodiscard]]
-constexpr inline auxiliary_wrapper<void> auxiliary(std::nullptr_t) noexcept
+constexpr auxiliary_wrapper<void> auxiliary(std::nullptr_t) noexcept
 {
     return auxiliary_wrapper<void>(nullptr);
 }
 
 [[nodiscard]]
-constexpr inline auxiliary_wrapper<this_type_t> auxiliary(this_type_t) noexcept
+constexpr auxiliary_wrapper<this_type_t> auxiliary(this_type_t) noexcept
 {
     return auxiliary_wrapper<this_type_t>(this_type);
 }
 
+// R-value reference will create dangling reference
 template <typename T>
-constexpr auxiliary_wrapper<T> auxiliary(T&& aux) = delete;
+constexpr auto auxiliary(T&& aux)
+    -> auxiliary_wrapper<std::remove_cv_t<T>> = delete;
 
 /**
  * @brief Store a pointer-sized integer value as auxiliary object
@@ -417,6 +428,9 @@ inline int get_script_string_type(
     const AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
 )
 {
+    if(!engine) [[unlikely]]
+        return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
+
 #if ANGELSCRIPT_VERSION >= 23800
     int string_t_id = engine->GetStringFactory();
 #else
@@ -434,6 +448,8 @@ inline bool is_script_string(
     const AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id
 )
 {
+    if(!engine) [[unlikely]]
+        return false;
     return get_script_string_type(engine) == type_id;
 }
 
@@ -480,8 +496,6 @@ inline auto sizeof_script_type(
 )
     -> AS_NAMESPACE_QUALIFIER asUINT
 {
-    ASBIND20_ASSERT(engine != nullptr);
-
     if(is_primitive_type(type_id))
     {
         switch(type_id)
@@ -516,6 +530,8 @@ inline auto sizeof_script_type(
         }
     }
 
+    if(!engine) [[unlikely]]
+        return 0;
     const auto* ti = engine->GetTypeInfoById(type_id);
     if(!ti) [[unlikely]]
         return 0;
@@ -619,7 +635,6 @@ case AS_NAMESPACE_QUALIFIER as_type_id:                        \
         ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(asTYPEID_BOOL);
         ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(asTYPEID_INT8);
         ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(asTYPEID_INT16);
-    default: /* enums */
         ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(asTYPEID_INT32);
         ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(asTYPEID_INT64);
         ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(asTYPEID_UINT8);
@@ -628,6 +643,8 @@ case AS_NAMESPACE_QUALIFIER as_type_id:                        \
         ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(asTYPEID_UINT64);
         ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(asTYPEID_FLOAT);
         ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE(asTYPEID_DOUBLE);
+    default: /* enums */
+        return wrapper(std::in_place_type<compat::script_enum_value_type>);
     }
 
 #undef ASBIND20_UTILITY_VISIT_PRIMITIVE_TYPE_CASE
