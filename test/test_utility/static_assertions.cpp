@@ -64,6 +64,8 @@ static_assert(test_stdcall_helpers());
 
 #endif
 
+#ifndef ASBIND20_NO_COMPILE_TIME_CHECKS
+
 consteval bool test_detail_validator()
 {
     {
@@ -211,6 +213,7 @@ consteval bool test_detail_validator_obj()
             void f0(AS_NAMESPACE_QUALIFIER asIScriptEngine*);
             int f1(AS_NAMESPACE_QUALIFIER asIScriptEngine*);
         };
+
         using my_matcher = signature_matcher<
             void_,
             by_addr<AS_NAMESPACE_QUALIFIER asIScriptEngine>>;
@@ -227,3 +230,5 @@ consteval bool test_detail_validator_obj()
 
 static_assert(test_detail_validator());
 static_assert(test_detail_validator_obj());
+
+#endif
