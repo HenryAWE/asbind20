@@ -94,7 +94,7 @@ jobs:
     ClangNoCompileTimeChecks:
       runs-on: ubuntu-24.04
 
-      name: Clang 18 (ASBIND20_NO_COMPILE_TIME_CHECKS)
+      name: Clang 18 (ASBIND20_CONFIG_NO_COMPILE_TIME_CHECKS)
 
       steps:
       - uses: actions/checkout@v4

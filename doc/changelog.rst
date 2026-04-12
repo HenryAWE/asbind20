@@ -42,7 +42,7 @@ Update
 - Update compatibility with AngelScript 2.39 WIP.
 
 - Compile-time validation for signatures of behaviours, callbacks, etc.
-  You can disable it by defining macro ``ASBIND20_NO_COMPILE_TIME_CHECKS``.
+  You can disable it by defining macro ``ASBIND20_CONFIG_NO_COMPILE_TIME_CHECKS``.
 
 - Update RAII helpers.
 

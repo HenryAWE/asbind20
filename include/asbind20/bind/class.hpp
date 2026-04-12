@@ -2528,7 +2528,7 @@ private:
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
     static consteval bool check_opCmp_sig()
     {
-#ifndef ASBIND20_NO_COMPILE_TIME_CHECKS
+#ifndef ASBIND20_CONFIG_NO_COMPILE_TIME_CHECKS
         // TODO: Complete this
         return true;
 

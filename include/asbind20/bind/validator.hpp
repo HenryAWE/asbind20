@@ -84,7 +84,7 @@ template <
     validator::descriptor... Args>
 class signature_matcher
 {
-#ifndef ASBIND20_NO_COMPILE_TIME_CHECKS
+#ifndef ASBIND20_CONFIG_NO_COMPILE_TIME_CHECKS
     template <typename Fn, std::size_t ScriptArgCount, std::size_t Offset = 0>
     static consteval bool do_match()
     {
@@ -116,7 +116,7 @@ public:
     template <typename Fn>
     constexpr bool operator()(std::in_place_type_t<Fn>) const
     {
-#ifndef ASBIND20_NO_COMPILE_TIME_CHECKS
+#ifndef ASBIND20_CONFIG_NO_COMPILE_TIME_CHECKS
         using traits = function_traits<Fn>;
         constexpr std::size_t arg_count = traits::arg_count_v;
 
@@ -138,7 +138,7 @@ public:
         call_conv_t<CallConv>
     ) const
     {
-#ifndef ASBIND20_NO_COMPILE_TIME_CHECKS
+#ifndef ASBIND20_CONFIG_NO_COMPILE_TIME_CHECKS
         using traits = function_traits<Fn>;
         constexpr std::size_t arg_count = traits::arg_count_v;
 

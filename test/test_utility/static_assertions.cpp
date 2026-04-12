@@ -64,7 +64,7 @@ static_assert(test_stdcall_helpers());
 
 #endif
 
-#ifndef ASBIND20_NO_COMPILE_TIME_CHECKS
+#ifndef ASBIND20_CONFIG_NO_COMPILE_TIME_CHECKS
 
 consteval bool test_detail_validator()
 {
