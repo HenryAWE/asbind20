@@ -51,9 +51,9 @@ static void assert_impl(bool cond)
         return;
 
     auto* ctx = asbind20::current_context();
-    call_assertion_callback(
-        gen_full_assert_msg(ctx, "assertion failed")
-    );
+    std::string msg = gen_full_assert_msg(ctx, "assertion failed");
+    ctx->SetException(msg.c_str(), false);
+    call_assertion_callback(msg);
 }
 
 void setup_script_assertion(
