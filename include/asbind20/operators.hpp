@@ -221,17 +221,20 @@ namespace operators
         }
     };
 
+#define ASBIND20_OPERATOR_RETURN_PROXY_FUNC_SIMPLE(op_name) \
+    const op_name* operator->() const noexcept              \
+    {                                                       \
+        return this;                                        \
+    }                                                       \
+    template <typename Return>                              \
+    [[nodiscard]]                                           \
+    return_proxy<Return> return_() const                    \
+    {                                                       \
+        return {*this};                                     \
+    }
+
 #define ASBIND20_OPERATOR_RETURN_PROXY_FUNC(op_name)                        \
-    const op_name* operator->() const noexcept                              \
-    {                                                                       \
-        return this;                                                        \
-    }                                                                       \
-    template <typename Return>                                              \
-    [[nodiscard]]                                                           \
-    return_proxy<Return> return_() const                                    \
-    {                                                                       \
-        return {*this};                                                     \
-    }                                                                       \
+    ASBIND20_OPERATOR_RETURN_PROXY_FUNC_SIMPLE(op_name)                     \
     template <typename Return>                                              \
     [[nodiscard]]                                                           \
     return_proxy_with_decl<Return> return_(std::string_view ret_decl) const \
@@ -1274,7 +1277,149 @@ namespace operators
     ASBIND20_BINARY_OPERATOR_HELPER(opShl, <<)
     ASBIND20_BINARY_OPERATOR_HELPER(opShr, >>)
 
+    template <typename Lhs, typename Rhs>
+    class opCmp;
+
+    template <bool LhsConst, bool RhsConst>
+    class opCmp<this_placeholder<LhsConst>, this_placeholder<RhsConst>> : public binary_operator
+    {
+    public:
+        template <typename Return>
+        class return_proxy
+        {
+            static_assert(std::same_as<Return, int>, "opCmp(_r) only returns int");
+
+        public:
+            return_proxy(const opCmp& proxy) : m_proxy(&proxy) {}
+
+            template <typename RegisterHelper>
+            void operator()(RegisterHelper& ar) const
+            {
+                using class_type = typename RegisterHelper::class_type;
+                using this_arg_type = std::conditional_t<LhsConst, std::add_const_t<class_type>, class_type>;
+                using rhs_arg_type = std::conditional_t<RhsConst, std::add_const_t<class_type>, class_type>;
+                ar.method(
+                    gen_name<true, true, RhsConst>(
+                        detail::get_return_decl<Return>(ar),
+                        "opCmp",
+                        ar.get_name(),
+                        LhsConst
+                    ),
+                    [](this_arg_type& lhs, rhs_arg_type& rhs) -> int
+                    { return translate_three_way(std::compare_weak_order_fallback(lhs, rhs)); },
+                    objfirst
+                );
+            }
+
+        private:
+            const opCmp* m_proxy;
+        };
+
+
+        ASBIND20_OPERATOR_RETURN_PROXY_FUNC_SIMPLE(opCmp)
+
+        template <typename RegisterHelper>
+        void operator()(RegisterHelper& ar) const
+        {
+            ar.use(this->return_<int>());
+        }
+    };
+
+    template <bool LhsConst, typename Rhs, bool AutoDecl>
+    class opCmp<this_placeholder<LhsConst>, param_placeholder<Rhs, AutoDecl>> :
+        private param_placeholder<Rhs, AutoDecl>,
+        public binary_operator
+    {
+        using param_type = param_placeholder<Rhs, AutoDecl>;
+
+    public:
+        opCmp(const param_type& param) : param_type(param) {}
+
+        template <typename Return>
+        class return_proxy
+        {
+        public:
+            static_assert(std::same_as<Return, int>, "opCmp(_r) only returns int");
+
+            return_proxy(const opCmp& proxy) : m_proxy(&proxy)
+            {}
+
+            template <typename RegisterHelper>
+            void operator()(RegisterHelper& ar) const
+            {
+                using class_type = typename RegisterHelper::class_type;
+                using this_arg_type = std::conditional_t<LhsConst, std::add_const_t<class_type>, class_type>;
+                ar.method(
+                    gen_name_for<AutoDecl, Rhs>(
+                        "int", "opCmp_r", m_proxy->param_type::get_decl(), LhsConst
+                    ),
+                    [](this_arg_type& lhs, Rhs rhs) -> int
+                    { return translate_three_way(std::compare_weak_order_fallback(lhs, rhs)); },
+                    objlast
+                );
+            }
+
+        private:
+            const opCmp* m_proxy;
+        };
+
+        ASBIND20_OPERATOR_RETURN_PROXY_FUNC_SIMPLE(opCmp)
+
+        template <typename RegisterHelper>
+        void operator()(RegisterHelper& ar) const
+        {
+            ar.use(this->return_<int>());
+        }
+    };
+
+    template <typename Lhs, bool AutoDecl, bool RhsConst>
+    class opCmp<param_placeholder<Lhs, AutoDecl>, this_placeholder<RhsConst>> :
+        private param_placeholder<Lhs, AutoDecl>,
+        public binary_operator
+    {
+        using param_type = param_placeholder<Lhs, AutoDecl>;
+
+    public:
+        opCmp(const param_type& param) : param_type(param) {}
+
+        template <typename Return>
+        class return_proxy
+        {
+        public:
+            static_assert(std::same_as<Return, int>, "opCmp(_r) only returns int");
+
+            return_proxy(const opCmp& proxy) : m_proxy(&proxy) {}
+
+            template <typename RegisterHelper>
+            void operator()(RegisterHelper& ar) const
+            {
+                using class_type = typename RegisterHelper::class_type;
+                using this_arg_type = std::conditional_t<RhsConst, std::add_const_t<class_type>, class_type>;
+                ar.method(
+                    gen_name_for<AutoDecl, Lhs>(
+                        "int", "opCmp_r", m_proxy->param_type::get_decl(), RhsConst
+                    ),
+                    [](Lhs rhs, this_arg_type& lhs) -> int // Inverse on intention
+                    { return translate_three_way(std::compare_weak_order_fallback(lhs, rhs)); },
+                    objlast
+                );
+            }
+
+        private:
+            const opCmp* m_proxy;
+        };
+
+        ASBIND20_OPERATOR_RETURN_PROXY_FUNC_SIMPLE(opCmp)
+
+        template <typename RegisterHelper>
+        void operator()(RegisterHelper& ar) const
+        {
+            ar.use(this->return_<int>());
+        }
+    };
+
 #undef ASBIND20_OPERATOR_RETURN_PROXY_FUNC
+#undef ASBIND20_OPERATOR_RETURN_PROXY_FUNC_SIMPLE
 #undef ASBIND20_BINARY_OPERATOR_HELPER
 } // namespace operators
 
