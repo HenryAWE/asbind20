@@ -498,7 +498,7 @@ TEST(TestBind, EnumUInt64)
     e
         .value("flag_a", enum_uint64::flag_a)
         .value("flag_b", enum_uint64::flag_b);
-    EXPECT_EQ(std::string_view(e.get_underlying()), "uint64");
+    EXPECT_EQ(std::string_view(e.get_underlying_name()), "uint64");
 
     auto* m = engine->GetModule(
         "test_enum", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
