@@ -20,7 +20,7 @@ std::string gen_full_assert_msg(
     if(ctx)
     {
         int column;
-        const char* section;
+        const char* section = nullptr;
         int line = ctx->GetLineNumber(0, &column, &section);
 
         ss << line << ':' << column;
@@ -30,7 +30,7 @@ std::string gen_full_assert_msg(
             ss << " (fn:" << f->GetName() << ')';
     }
     else
-        ss << "(null)";
+        ss << "(no ctx)";
 
     ss << ": " << msg;
 

@@ -80,6 +80,8 @@ static void exception_translator_impl(
     AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, void*
 )
 {
+    ASSERT_NE(ctx, nullptr);
+
 #ifndef ASBIND20_NO_EXCEPTIONS
     try
     {
