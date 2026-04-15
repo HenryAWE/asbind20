@@ -104,9 +104,6 @@ namespace operators
 {
     class binary_operator
     {
-    public:
-        static constexpr std::size_t operand_count = 2;
-
     protected:
         // The parameter needs to generate full declaration from a plain type name
         template <bool ParamRef, bool ParamConst>
@@ -546,7 +543,7 @@ namespace operators
         }
     };
 
-    template <bool ThisConst, typename Index>
+    template <bool ThisConst, typename Indexer>
     class opIndex;
 
     template <bool ThisConst, bool IndexConst>
@@ -797,9 +794,6 @@ namespace operators
 {
     class unary_operator
     {
-    public:
-        static constexpr std::size_t operand_count = 1;
-
     protected:
         constexpr static std::string gen_name(
             std::string_view ret_decl,
