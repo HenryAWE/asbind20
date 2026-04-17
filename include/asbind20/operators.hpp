@@ -12,6 +12,7 @@
 
 #pragma once
 
+#include <compare>
 #include "bind/common.hpp"
 #include "meta.hpp"
 #include "utility.hpp"
@@ -1300,7 +1301,7 @@ namespace operators
                         LhsConst
                     ),
                     [](this_arg_type& lhs, rhs_arg_type& rhs) -> int
-                    { return translate_three_way(std::compare_weak_order_fallback(lhs, rhs)); },
+                    { return translate_three_way(lhs <=> rhs); },
                     objfirst
                 );
             }
@@ -1345,11 +1346,11 @@ namespace operators
                 using this_arg_type = std::conditional_t<LhsConst, std::add_const_t<class_type>, class_type>;
                 ar.method(
                     gen_name_for<AutoDecl, Rhs>(
-                        "int", "opCmp_r", m_proxy->param_type::get_decl(), LhsConst
+                        "int", "opCmp", m_proxy->param_type::get_decl(), LhsConst
                     ),
                     [](this_arg_type& lhs, Rhs rhs) -> int
-                    { return translate_three_way(std::compare_weak_order_fallback(lhs, rhs)); },
-                    objlast
+                    { return translate_three_way(lhs <=> rhs); },
+                    objfirst
                 );
             }
 
@@ -1394,7 +1395,7 @@ namespace operators
                         "int", "opCmp_r", m_proxy->param_type::get_decl(), RhsConst
                     ),
                     [](Lhs rhs, this_arg_type& lhs) -> int // Inverse on intention
-                    { return translate_three_way(std::compare_weak_order_fallback(lhs, rhs)); },
+                    { return translate_three_way(lhs <=> rhs); },
                     objlast
                 );
             }
@@ -1405,10 +1406,10 @@ namespace operators
 
         ASBIND20_OPERATOR_RETURN_PROXY_FUNC_SIMPLE(opCmp)
 
-        template <typename RegisterHelper>
-        void operator()(RegisterHelper& ar) const
+        template <typename BindingGenerator>
+        void operator()(BindingGenerator& bg) const
         {
-            ar.use(this->return_<int>());
+            bg.use(this->return_<int>());
         }
     };
 
@@ -1463,6 +1464,7 @@ ASBIND20_SUFFIX_UNARY_OPERATOR_OVERLOAD(opPostDec, --);
         return {lhs};                                                                                       \
     }
 
+ASBIND20_BINARY_OPERATOR_OVERLOAD(opCmp, <=>)
 ASBIND20_BINARY_OPERATOR_OVERLOAD(opAdd, +)
 ASBIND20_BINARY_OPERATOR_OVERLOAD(opSub, -)
 ASBIND20_BINARY_OPERATOR_OVERLOAD(opMul, *)
