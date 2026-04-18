@@ -1394,7 +1394,7 @@ namespace operators
                     gen_name_for<AutoDecl, Lhs>(
                         "int", "opCmp_r", m_proxy->param_type::get_decl(), RhsConst
                     ),
-                    [](Lhs rhs, this_arg_type& lhs) -> int // Inverse on intention
+                    [](Lhs lhs, this_arg_type& rhs) -> int
                     { return translate_three_way(lhs <=> rhs); },
                     objlast
                 );
