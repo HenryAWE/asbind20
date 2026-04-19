@@ -146,11 +146,12 @@ static void register_template_val_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* 
         .property("int subtype_id", &template_val::subtype_id)
         .property("int value", &template_val::value);
 
-    template_value_class<template_val_complex>(
+    template_value_class<template_val_complex> tc(
         engine,
         "template_val_complex<T>",
         flags | AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_COPY_CONSTRUCTOR
-    )
+    );
+    tc
         .template_callback(template_callback)
         .default_constructor()
         .copy_constructor()
@@ -160,6 +161,7 @@ static void register_template_val_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* 
         .destructor()
         .property("int subtype_id", &template_val_complex::subtype_id)
         .property("string str", &template_val_complex::str);
+    EXPECT_TRUE(tc.is_template_class());
 
     value_class<template_val_complex_spec>(
         engine,

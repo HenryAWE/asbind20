@@ -1728,6 +1728,12 @@ private:
 public:
     using my_base::get_listener;
 
+    [[nodiscard]]
+    static constexpr bool is_template_class() noexcept
+    {
+        return Template;
+    }
+
     Derived& template_callback(
         generic_function gfn
     ) requires(Template)
