@@ -21,37 +21,34 @@ namespace asbind20
 {
 namespace detail
 {
-    template <typename T, typename RegisterHelper>
-    std::string get_return_decl(const RegisterHelper& c)
+    template <typename T>
+    constexpr std::string format_full_typename(std::string_view type_decl)
     {
-        constexpr bool is_this_type =
-            std::same_as<std::remove_cvref_t<T>, typename RegisterHelper::class_type>;
-
         constexpr bool is_const = std::is_const_v<std::remove_reference_t<T>>;
         constexpr bool is_ref = std::is_reference_v<T>;
 
-        auto modifier_helper = [](auto type_decl) -> std::string
-        {
-            if constexpr(is_const && is_ref)
-                return string_concat("const ", type_decl, '&');
-            else if constexpr(is_ref)
-                return string_concat(type_decl, '&');
-            else
-                return std::string(type_decl);
-        };
+        if constexpr(is_const && is_ref)
+            return string_concat("const ", type_decl, '&');
+        else if constexpr(is_ref)
+            return string_concat(type_decl, '&');
+        else
+            return std::string(type_decl);
+    }
 
-        if constexpr(is_this_type)
+    template <typename T, typename BindingGenerator>
+    constexpr std::string get_return_decl(const BindingGenerator& gen)
+    {
+        constexpr bool is_this_type = std::same_as<
+            std::remove_cvref_t<T>,
+            typename BindingGenerator::class_type>;
+
+        if constexpr(!is_this_type)
         {
-            return modifier_helper(c.get_name());
-        }
-        else if constexpr(has_static_name<std::remove_cvref_t<T>>)
-        {
-            return modifier_helper(name_of<std::remove_cvref_t<T>>().view());
+            auto name = name_of<std::remove_cvref_t<T>>();
+            return format_full_typename<T>(name.view());
         }
         else
-        {
-            static_assert(!sizeof(T), "Cannot deduce declaration of return type");
-        }
+            return format_full_typename<T>(gen.get_name());
     }
 } // namespace detail
 
@@ -64,6 +61,7 @@ struct param_placeholder;
 template <typename T>
 struct param_placeholder<T, false>
 {
+    param_placeholder() = delete;
     constexpr param_placeholder(const param_placeholder&) = default;
 
     constexpr param_placeholder(std::string_view decl) noexcept
@@ -555,8 +553,7 @@ namespace operators
         class return_proxy
         {
         public:
-            return_proxy(const opIndex& proxy)
-                : m_proxy(&proxy) {}
+            return_proxy(const opIndex&) {}
 
             template <typename RegisterHelper>
             void operator()(RegisterHelper& ar) const
@@ -583,17 +580,14 @@ namespace operators
                     objfirst
                 );
             }
-
-        private:
-            const opIndex* m_proxy;
         };
 
         template <typename Return>
         class return_proxy_with_decl
         {
         public:
-            return_proxy_with_decl(const opIndex& proxy, std::string_view ret_decl)
-                : m_proxy(&proxy), m_ret_decl(ret_decl) {}
+            return_proxy_with_decl(const opIndex&, std::string_view ret_decl)
+                : m_ret_decl(ret_decl) {}
 
             template <typename RegisterHelper>
             void operator()(RegisterHelper& ar) const
@@ -622,7 +616,6 @@ namespace operators
             }
 
         private:
-            const opIndex* m_proxy;
             std::string_view m_ret_decl;
         };
 
@@ -653,7 +646,6 @@ namespace operators
     public:
         using param_type = param_placeholder<Index, AutoDecl>;
 
-    public:
         opIndex(const param_type& param)
             : param_type(param) {}
 
@@ -893,86 +885,85 @@ namespace operators
         }                                                                           \
     };
 
-#define ASBIND20_SUFFIX_UNARY_OPERATOR(op_name, cpp_op)                             \
-    template <bool ThisConst>                                                       \
-    class op_name : public unary_operator                                           \
-    {                                                                               \
-    public:                                                                         \
-        template <typename Return>                                                  \
-        class return_proxy                                                          \
-        {                                                                           \
-        public:                                                                     \
-            return_proxy(const op_name& proxy)                                      \
-                : m_proxy(&proxy) {}                                                \
-            template <typename RegisterHelper>                                      \
-            void operator()(RegisterHelper& ar) const                               \
-            {                                                                       \
-                using class_type = typename RegisterHelper::class_type;             \
-                using this_arg_type = std::conditional_t<                           \
-                    ThisConst,                                                      \
-                    std::add_const_t<class_type>,                                   \
-                    class_type>;                                                    \
-                ar.method(                                                          \
-                    gen_name(                                                       \
-                        detail::get_return_decl<Return>(ar),                        \
-                        #op_name,                                                   \
-                        ThisConst                                                   \
-                    ),                                                              \
-                    [](this_arg_type& this_) -> Return                              \
-                    {                                                               \
-                        return std::move(this_) cpp_op;                             \
-                    },                                                              \
-                    objlast                                                         \
-                );                                                                  \
-            }                                                                       \
-                                                                                    \
-        private:                                                                    \
-            const op_name* m_proxy;                                                 \
-        };                                                                          \
-        template <typename Return>                                                  \
-        class return_proxy_with_decl                                                \
-        {                                                                           \
-        public:                                                                     \
-            return_proxy_with_decl(const op_name& proxy, std::string_view ret_decl) \
-                : m_proxy(&proxy), m_ret_decl(ret_decl) {}                          \
-            template <typename RegisterHelper>                                      \
-            void operator()(RegisterHelper& ar) const                               \
-            {                                                                       \
-                using class_type = typename RegisterHelper::class_type;             \
-                using this_arg_type = std::conditional_t<                           \
-                    ThisConst,                                                      \
-                    std::add_const_t<class_type>,                                   \
-                    class_type>;                                                    \
-                ar.method(                                                          \
-                    gen_name(                                                       \
-                        m_ret_decl,                                                 \
-                        #op_name,                                                   \
-                        ThisConst                                                   \
-                    ),                                                              \
-                    [](this_arg_type& this_) -> Return                              \
-                    {                                                               \
-                        return std::move(this_) cpp_op;                             \
-                    },                                                              \
-                    objlast                                                         \
-                );                                                                  \
-            }                                                                       \
-                                                                                    \
-        private:                                                                    \
-            const op_name* m_proxy;                                                 \
-            std::string_view m_ret_decl;                                            \
-        };                                                                          \
-        ASBIND20_OPERATOR_RETURN_PROXY_FUNC(op_name)                                \
-        template <typename RegisterHelper>                                          \
-        void operator()(RegisterHelper& ar) const                                   \
-        {                                                                           \
-            using class_type = typename RegisterHelper::class_type;                 \
-            using this_arg_type = std::conditional_t<                               \
-                ThisConst,                                                          \
-                std::add_const_t<class_type>,                                       \
-                class_type>;                                                        \
-            using return_type = decltype(std::declval<this_arg_type&>() cpp_op);    \
-            ar.use(this->return_<return_type>());                                   \
-        }                                                                           \
+#define ASBIND20_SUFFIX_UNARY_OPERATOR(op_name, cpp_op)                          \
+    template <bool ThisConst>                                                    \
+    class op_name : public unary_operator                                        \
+    {                                                                            \
+    public:                                                                      \
+        template <typename Return>                                               \
+        class return_proxy                                                       \
+        {                                                                        \
+        public:                                                                  \
+            return_proxy(const op_name& proxy)                                   \
+                : m_proxy(&proxy) {}                                             \
+            template <typename RegisterHelper>                                   \
+            void operator()(RegisterHelper& ar) const                            \
+            {                                                                    \
+                using class_type = typename RegisterHelper::class_type;          \
+                using this_arg_type = std::conditional_t<                        \
+                    ThisConst,                                                   \
+                    std::add_const_t<class_type>,                                \
+                    class_type>;                                                 \
+                ar.method(                                                       \
+                    gen_name(                                                    \
+                        detail::get_return_decl<Return>(ar),                     \
+                        #op_name,                                                \
+                        ThisConst                                                \
+                    ),                                                           \
+                    [](this_arg_type& this_) -> Return                           \
+                    {                                                            \
+                        return std::move(this_) cpp_op;                          \
+                    },                                                           \
+                    objlast                                                      \
+                );                                                               \
+            }                                                                    \
+                                                                                 \
+        private:                                                                 \
+            const op_name* m_proxy;                                              \
+        };                                                                       \
+        template <typename Return>                                               \
+        class return_proxy_with_decl                                             \
+        {                                                                        \
+        public:                                                                  \
+            return_proxy_with_decl(const op_name&, std::string_view ret_decl)    \
+                : m_ret_decl(ret_decl) {}                                        \
+            template <typename RegisterHelper>                                   \
+            void operator()(RegisterHelper& ar) const                            \
+            {                                                                    \
+                using class_type = typename RegisterHelper::class_type;          \
+                using this_arg_type = std::conditional_t<                        \
+                    ThisConst,                                                   \
+                    std::add_const_t<class_type>,                                \
+                    class_type>;                                                 \
+                ar.method(                                                       \
+                    gen_name(                                                    \
+                        m_ret_decl,                                              \
+                        #op_name,                                                \
+                        ThisConst                                                \
+                    ),                                                           \
+                    [](this_arg_type& this_) -> Return                           \
+                    {                                                            \
+                        return std::move(this_) cpp_op;                          \
+                    },                                                           \
+                    objlast                                                      \
+                );                                                               \
+            }                                                                    \
+                                                                                 \
+        private:                                                                 \
+            std::string_view m_ret_decl;                                         \
+        };                                                                       \
+        ASBIND20_OPERATOR_RETURN_PROXY_FUNC(op_name)                             \
+        template <typename RegisterHelper>                                       \
+        void operator()(RegisterHelper& ar) const                                \
+        {                                                                        \
+            using class_type = typename RegisterHelper::class_type;              \
+            using this_arg_type = std::conditional_t<                            \
+                ThisConst,                                                       \
+                std::add_const_t<class_type>,                                    \
+                class_type>;                                                     \
+            using return_type = decltype(std::declval<this_arg_type&>() cpp_op); \
+            ar.use(this->return_<return_type>());                                \
+        }                                                                        \
     };
 
     ASBIND20_PREFIX_UNARY_OPERATOR(opNeg, -);
