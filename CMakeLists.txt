@@ -62,7 +62,7 @@ if(${asbind_build_test})
         set(INSTALL_GTEST OFF)
         FetchContent_MakeAvailable(googletest)
     else()
-        find_package(GTest 1.17 REQUIRED)
+        find_package(GTest 1.14 REQUIRED) # At least 1.14
     endif()
 
     enable_testing()

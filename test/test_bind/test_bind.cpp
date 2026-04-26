@@ -498,7 +498,7 @@ TEST(TestBind, EnumUInt64)
     e
         .value("flag_a", enum_uint64::flag_a)
         .value("flag_b", enum_uint64::flag_b);
-    EXPECT_EQ(std::string_view(e.get_underlying()), "uint64");
+    EXPECT_EQ(std::string_view(e.get_underlying_name()), "uint64");
 
     auto* m = engine->GetModule(
         "test_enum", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
@@ -545,6 +545,12 @@ static void output_info(std::ostream& os)
     os << "asGetLibraryVersion(): " << AS_NAMESPACE_QUALIFIER asGetLibraryVersion() << std::endl;
     os << "asGetLibraryOptions(): " << AS_NAMESPACE_QUALIFIER asGetLibraryOptions() << std::endl;
     os << "asbind20::library_version(): " << asbind20::library_version() << std::endl;
+
+    os << "ASBIND20_CONFIG_NO_COMPILE_TIME_CHECKS";
+#ifndef ASBIND20_CONFIG_NO_COMPILE_TIME_CHECKS
+    os << " not";
+#endif
+    os << " defined" << std::endl;
 
     os << "ASBIND20_HAS_ENUM_UNDERLYING_TYPE";
 #ifndef ASBIND20_HAS_ENUM_UNDERLYING_TYPE

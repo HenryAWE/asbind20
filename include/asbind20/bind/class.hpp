@@ -1728,6 +1728,12 @@ private:
 public:
     using my_base::get_listener;
 
+    [[nodiscard]]
+    static constexpr bool is_template_class() noexcept
+    {
+        return Template;
+    }
+
     Derived& template_callback(
         generic_function gfn
     ) requires(Template)
@@ -2521,6 +2527,85 @@ public:
 
     ASBIND20_BG_INTERFACE_DEFINE_OP(Derived, opPreInc)
     ASBIND20_BG_INTERFACE_DEFINE_OP(Derived, opPreDec)
+
+private:
+    template <
+        typename Fn,
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    static consteval bool check_opCmp_sig()
+    {
+#ifndef ASBIND20_CONFIG_NO_COMPILE_TIME_CHECKS
+        // TODO: Complete this
+        return true;
+
+#else
+        return true;
+#endif
+    }
+
+public:
+    template <auto Comparator>
+    Derived& opCmp(use_generic_t, fp_wrapper<Comparator>)
+    {
+        constexpr auto conv = detail::deduce_method_callconv<Class, Comparator>();
+        static_assert(
+            check_opCmp_sig<decltype(Comparator), conv>(),
+            "Invalid signature for opCmp"
+        );
+        int r = this->register_method(
+            this->decl_opCmp(),
+            detail::to_asGENFUNC_t(fp<Comparator>, detail::cc<conv>),
+            detail::generic_cc
+        );
+        listener_traits_type::on_method(
+            this->get_listener(), derived(), r
+        );
+        return derived();
+    }
+
+    template <auto Comparator>
+    Derived& opCmp(fp_wrapper<Comparator>)
+    {
+        if constexpr(ForceGeneric)
+            this->opCmp(use_generic, fp<Comparator>);
+        else
+        {
+            constexpr auto conv = detail::deduce_method_callconv<Class, Comparator>();
+            static_assert(
+                check_opCmp_sig<decltype(Comparator), conv>(),
+                "Invalid signature for opCmp"
+            );
+            int r = this->register_method(
+                this->decl_opCmp(),
+                Comparator,
+                conv
+            );
+            listener_traits_type::on_method(
+                this->get_listener(), derived(), r
+            );
+        }
+        return derived();
+    }
+
+    template <noncapturing_native_lambda Comparator>
+    Derived& opCmp(const Comparator&)
+    {
+        constexpr auto conv = detail::deduce_lambda_callconv<Class, Comparator>();
+        static_assert(
+            check_opCmp_sig<decltype(+Comparator{}), conv>(),
+            "Invalid signature for opCmp"
+        );
+        int r = this->register_method(
+            this->decl_opCmp(),
+            detail::to_asGENFUNC_t(Comparator{}, detail::cc<conv>),
+            detail::generic_cc
+        );
+        listener_traits_type::on_method(
+            this->get_listener(), derived(), r
+        );
+
+        return derived();
+    }
 
 #define ASBIND20_BG_INTERFACE_DEFINE_BEH(bg_type, as_beh, func_name)  \
     template <native_function Fn>                                     \

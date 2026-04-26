@@ -14,6 +14,18 @@ public:
 
     my_pair2i& operator=(const my_pair2i&) = default;
 
+    std::strong_ordering operator<=>(const my_pair2i& rhs) const = default;
+
+    friend std::strong_ordering operator<=>(const my_pair2i& lhs, int rhs)
+    {
+        return lhs <=> my_pair2i(rhs, rhs);
+    }
+
+    friend std::strong_ordering operator<=>(int lhs, const my_pair2i& rhs)
+    {
+        return my_pair2i(lhs, lhs) <=> rhs;
+    }
+
     int operator-()
     {
         return -1;
@@ -137,12 +149,13 @@ static void run_pair2i_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engin
         "int test10() { pair2i p = {1, 2}; return p -= -42; }\n"
         "int test11() { const pair2i p = {1, 2}; return p[1013]; }\n"
         "pair2i test12() { pair2i p1 = {1, 2}; pair2i p2 = {3, 4}; return p1[p2]; }"
+        "bool test13() { pair2i p1 = {1, 3}; return p1 < 2; }"
     );
     ASSERT_GE(m->Build(), 0);
 
     {
         auto* f = m->GetFunctionByName("test0");
-        ASSERT_TRUE(f);
+        ASSERT_NE(f, nullptr);
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);
         ASSERT_TRUE(asbind_test::result_has_value(result));
@@ -152,7 +165,7 @@ static void run_pair2i_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engin
 
     {
         auto* f = m->GetFunctionByName("test1");
-        ASSERT_TRUE(f);
+        ASSERT_NE(f, nullptr);
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);
         ASSERT_TRUE(asbind_test::result_has_value(result));
@@ -162,7 +175,7 @@ static void run_pair2i_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engin
 
     {
         auto* f = m->GetFunctionByName("test2");
-        ASSERT_TRUE(f);
+        ASSERT_NE(f, nullptr);
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);
         ASSERT_TRUE(asbind_test::result_has_value(result));
@@ -172,7 +185,7 @@ static void run_pair2i_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engin
 
     {
         auto* f = m->GetFunctionByName("test3");
-        ASSERT_TRUE(f);
+        ASSERT_NE(f, nullptr);
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<std::string>(ctx, f);
         ASSERT_TRUE(asbind_test::result_has_value(result));
@@ -182,7 +195,7 @@ static void run_pair2i_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engin
 
     {
         auto* f = m->GetFunctionByName("test4");
-        ASSERT_TRUE(f);
+        ASSERT_NE(f, nullptr);
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<std::string>(ctx, f);
         ASSERT_TRUE(asbind_test::result_has_value(result));
@@ -192,7 +205,7 @@ static void run_pair2i_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engin
 
     {
         auto* f = m->GetFunctionByName("test5");
-        ASSERT_TRUE(f);
+        ASSERT_NE(f, nullptr);
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);
         ASSERT_TRUE(asbind_test::result_has_value(result));
@@ -202,7 +215,7 @@ static void run_pair2i_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engin
 
     {
         auto* f = m->GetFunctionByName("test6");
-        ASSERT_TRUE(f);
+        ASSERT_NE(f, nullptr);
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);
         ASSERT_TRUE(asbind_test::result_has_value(result));
@@ -212,7 +225,7 @@ static void run_pair2i_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engin
 
     {
         auto* f = m->GetFunctionByName("test7");
-        ASSERT_TRUE(f);
+        ASSERT_NE(f, nullptr);
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);
         ASSERT_TRUE(asbind_test::result_has_value(result));
@@ -222,7 +235,7 @@ static void run_pair2i_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engin
 
     {
         auto* f = m->GetFunctionByName("test8");
-        ASSERT_TRUE(f);
+        ASSERT_NE(f, nullptr);
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);
         ASSERT_TRUE(asbind_test::result_has_value(result));
@@ -232,7 +245,7 @@ static void run_pair2i_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engin
 
     {
         auto* f = m->GetFunctionByName("test9");
-        ASSERT_TRUE(f);
+        ASSERT_NE(f, nullptr);
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<my_pair2i>(ctx, f);
         ASSERT_TRUE(asbind_test::result_has_value(result));
@@ -243,7 +256,7 @@ static void run_pair2i_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engin
 
     {
         auto* f = m->GetFunctionByName("test10");
-        ASSERT_TRUE(f);
+        ASSERT_NE(f, nullptr);
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);
         ASSERT_TRUE(asbind_test::result_has_value(result));
@@ -253,7 +266,7 @@ static void run_pair2i_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engin
 
     {
         auto* f = m->GetFunctionByName("test11");
-        ASSERT_TRUE(f);
+        ASSERT_NE(f, nullptr);
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);
         ASSERT_TRUE(asbind_test::result_has_value(result));
@@ -263,13 +276,23 @@ static void run_pair2i_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engin
 
     {
         auto* f = m->GetFunctionByName("test12");
-        ASSERT_TRUE(f);
+        ASSERT_NE(f, nullptr);
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<my_pair2i>(ctx, f);
         ASSERT_TRUE(asbind_test::result_has_value(result));
 
         EXPECT_EQ(result.value().first, 4);
         EXPECT_EQ(result.value().second, 6);
+    }
+
+    {
+        auto* f = m->GetFunctionByName("test13");
+        ASSERT_NE(f, nullptr);
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<bool>(ctx, f);
+        ASSERT_TRUE(asbind_test::result_has_value(result));
+
+        EXPECT_TRUE(result.value());
     }
 }
 } // namespace test_operators
@@ -301,6 +324,7 @@ TEST(TestOperators, MyPair2iNative)
         .use(-_this)
         .use(~const_this)
         .use(const_this++)
+        .use(const_this <=> param<int>)
         .use(_this += param<int>)
         .use(_this -= param<int>)
         .use(const_this[param<int>])
@@ -329,6 +353,7 @@ TEST(TestOperators, MyPair2iGeneric)
         .use(-_this)
         .use(~const_this)
         .use(const_this++)
+        .use(const_this <=> param<int>)
         .use(_this += param<int>)
         .use(_this -= param<int>)
         .use(const_this[param<int>])
@@ -359,6 +384,7 @@ TEST(TestOperators, MyPair2iNativeWithDecl)
         .use((-_this)->return_<int>("int"))
         .use((~const_this)->return_<int>("int"))
         .use((const_this++)->return_<int>("int"))
+        .use((const_this <=> param<int>)->return_<int>())
         .use((_this += param<int>)->return_<test_operators::my_pair2i&>("pair2i&"))
         .use((_this -= param<int>)->return_<int>("int"))
         .use(const_this[param<int>("int")]->return_<int>("int"))
@@ -387,6 +413,7 @@ TEST(TestOperators, MyPair2iGenericWithDecl)
         .use((-_this)->return_<int>("int"))
         .use((~const_this)->return_<int>("int"))
         .use((const_this++)->return_<int>("int"))
+        .use((const_this <=> param<int>)->return_<int>())
         .use((_this += param<int>)->return_<test_operators::my_pair2i&>("pair2i&"))
         .use((_this -= param<int>)->return_<int>("int"))
         .use(const_this[param<int>("int")]->return_<int>("int"))

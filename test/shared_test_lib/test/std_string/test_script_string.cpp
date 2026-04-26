@@ -84,3 +84,38 @@ TEST_F(TestStringFactoryNative, Add)
     );
     EXPECT_EQ(result, "test add");
 }
+
+TEST_F(TestStringFactoryGeneric, Compare)
+{
+    {
+        auto result = this->run_string(
+            R"(return "aaa" < "bbb" ? "true" : "false";)"
+        );
+        EXPECT_EQ(result, "true");
+    }
+
+    {
+        auto result = this->run_string(
+            R"(return "bbb" < "aaa" ? "true" : "false";)"
+        );
+        EXPECT_EQ(result, "false");
+    }
+}
+
+TEST_F(TestStringFactoryNative, Compare)
+{
+    {
+        auto result = this->run_string(
+            R"(return "aaa" < "bbb" ? "true" : "false";)"
+        );
+        EXPECT_EQ(result, "true");
+    }
+
+    {
+        auto result = this->run_string(
+            R"(return "bbb" < "aaa" ? "true" : "false";)"
+        );
+        EXPECT_EQ(result, "false");
+    }
+}
+

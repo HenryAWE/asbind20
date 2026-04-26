@@ -36,6 +36,7 @@ public:
 #endif
 
     using enum_type = Enum;
+    using underlying_type = UnderlyingType;
     using engine_pointer = AS_NAMESPACE_QUALIFIER asIScriptEngine*;
 
     enum_() = delete;
@@ -46,7 +47,7 @@ public:
     enum_(engine_pointer engine, std::string name)
         : my_base(engine), m_name(std::move(name))
     {
-        register_enum_type(m_name, get_underlying());
+        register_enum_type(m_name, get_underlying_name());
     }
 
     template <string_like StringLike>
@@ -104,7 +105,7 @@ public:
      * @brief Get the name of underlying type in fixed string
      */
     [[nodiscard]]
-    static constexpr auto get_underlying() noexcept
+    static constexpr auto get_underlying_name() noexcept
     {
         return name_of<UnderlyingType>();
     }

@@ -64,6 +64,8 @@ static_assert(test_stdcall_helpers());
 
 #endif
 
+#ifndef ASBIND20_CONFIG_NO_COMPILE_TIME_CHECKS
+
 consteval bool test_detail_validator()
 {
     {
@@ -205,8 +207,28 @@ consteval bool test_detail_validator_obj()
         ));
     }
 
+    {
+        struct my_struct
+        {
+            void f0(AS_NAMESPACE_QUALIFIER asIScriptEngine*);
+            int f1(AS_NAMESPACE_QUALIFIER asIScriptEngine*);
+        };
+
+        using my_matcher = signature_matcher<
+            void_,
+            by_addr<AS_NAMESPACE_QUALIFIER asIScriptEngine>>;
+        static_assert(my_matcher{}(
+            std::in_place_type<decltype(&my_struct::f0)>
+        ));
+        static_assert(!my_matcher{}(
+            std::in_place_type<decltype(&my_struct::f1)>
+        ));
+    }
+
     return true;
 }
 
 static_assert(test_detail_validator());
 static_assert(test_detail_validator_obj());
+
+#endif

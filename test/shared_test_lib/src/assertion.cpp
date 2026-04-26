@@ -20,7 +20,7 @@ std::string gen_full_assert_msg(
     if(ctx)
     {
         int column;
-        const char* section;
+        const char* section = nullptr;
         int line = ctx->GetLineNumber(0, &column, &section);
 
         ss << line << ':' << column;
@@ -30,7 +30,7 @@ std::string gen_full_assert_msg(
             ss << " (fn:" << f->GetName() << ')';
     }
     else
-        ss << "(null)";
+        ss << "(no ctx)";
 
     ss << ": " << msg;
 
@@ -51,9 +51,10 @@ static void assert_impl(bool cond)
         return;
 
     auto* ctx = asbind20::current_context();
-    call_assertion_callback(
-        gen_full_assert_msg(ctx, "assertion failed")
-    );
+    std::string msg = gen_full_assert_msg(ctx, "assertion failed");
+    if(ctx)
+        ctx->SetException(msg.c_str(), false);
+    call_assertion_callback(msg);
 }
 
 void setup_script_assertion(

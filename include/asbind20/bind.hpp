@@ -243,6 +243,7 @@ int set_message_callback(
     void* obj = nullptr
 )
 {
+#ifndef ASBIND20_CONFIG_NO_COMPILE_TIME_CHECKS
     using matcher = detail::signature_matcher<
         detail::validator::void_,
         detail::validator::by_addr<AS_NAMESPACE_QUALIFIER asSMessageInfo>,
@@ -252,8 +253,10 @@ int set_message_callback(
         "Invalid message callback. The signature must be similar to void(asSMessageInfo*, void*)"
     );
 
+#endif
+
     if(!engine) [[unlikely]]
-       return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
+        return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
     return engine->SetMessageCallback(
         detail::to_asSFuncPtr(fn),
         obj,
@@ -272,8 +275,19 @@ int set_message_callback(
     auxiliary_wrapper<T> aux
 )
 {
+#ifndef ASBIND20_CONFIG_NO_COMPILE_TIME_CHECKS
+    using matcher = detail::signature_matcher<
+        detail::validator::void_,
+        detail::validator::by_addr<AS_NAMESPACE_QUALIFIER asSMessageInfo>>;
+    static_assert(
+        matcher{}(std::in_place_type<Callback>),
+        "Invalid message callback. The signature must be similar to void (T::*)(asSMessageInfo*)"
+    );
+
+#endif
+
     if(!engine) [[unlikely]]
-       return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
+        return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
     return engine->SetMessageCallback(
         detail::to_asSFuncPtr(fn),
         aux.get_address(),
@@ -301,6 +315,7 @@ int set_exception_translator(
     void* obj = nullptr
 )
 {
+#ifndef ASBIND20_CONFIG_NO_COMPILE_TIME_CHECKS
     using matcher = detail::signature_matcher<
         detail::validator::void_,
         detail::validator::by_addr<AS_NAMESPACE_QUALIFIER asIScriptContext>,
@@ -309,6 +324,8 @@ int set_exception_translator(
         matcher{}(std::in_place_type<Callback>),
         "Invalid exception translator. The signature must be similar to void(asIScriptContext*, void*)"
     );
+
+#endif
 
     if(!engine) [[unlikely]]
         return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
@@ -330,8 +347,19 @@ int set_exception_translator(
     auxiliary_wrapper<T> aux
 )
 {
+#ifndef ASBIND20_CONFIG_NO_COMPILE_TIME_CHECKS
+    using matcher = detail::signature_matcher<
+        detail::validator::void_,
+        detail::validator::by_addr<AS_NAMESPACE_QUALIFIER asIScriptContext>>;
+    static_assert(
+        matcher{}(std::in_place_type<Callback>),
+        "Invalid exception translator. The signature must be similar to void (T::*)(asIScriptContext*)"
+    );
+
+#endif
+
     if(!engine) [[unlikely]]
-       return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
+        return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
     return engine->SetTranslateAppExceptionCallback(
         detail::to_asSFuncPtr(fn),
         aux.get_address(),

@@ -289,8 +289,7 @@ static void setup_script_string_impl(
     c
         .behaviours_by_traits()
         .opEquals()
-        .method(
-            "int opCmp(const string&in) const",
+        .opCmp(
             [](const std::string& lhs, const std::string& rhs) -> int
             {
                 return lhs.compare(rhs);
