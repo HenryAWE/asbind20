@@ -23,7 +23,7 @@ public:
 
     friend std::strong_ordering operator<=>(int lhs, const my_pair2i& rhs)
     {
-        return rhs <=> my_pair2i(lhs, lhs);
+        return my_pair2i(lhs, lhs) <=> rhs;
     }
 
     int operator-()

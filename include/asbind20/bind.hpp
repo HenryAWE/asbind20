@@ -281,7 +281,7 @@ int set_message_callback(
         detail::validator::by_addr<AS_NAMESPACE_QUALIFIER asSMessageInfo>>;
     static_assert(
         matcher{}(std::in_place_type<Callback>),
-        "Invalid message callback. The signature must be similar to void (T::*)(asIScriptContext*)"
+        "Invalid message callback. The signature must be similar to void (T::*)(asSMessageInfo*)"
     );
 
 #endif

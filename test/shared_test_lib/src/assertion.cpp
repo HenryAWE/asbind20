@@ -52,7 +52,8 @@ static void assert_impl(bool cond)
 
     auto* ctx = asbind20::current_context();
     std::string msg = gen_full_assert_msg(ctx, "assertion failed");
-    ctx->SetException(msg.c_str(), false);
+    if(ctx)
+        ctx->SetException(msg.c_str(), false);
     call_assertion_callback(msg);
 }
 
