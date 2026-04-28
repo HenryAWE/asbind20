@@ -15,7 +15,7 @@ templates_path = ['_templates']
 exclude_patterns = []
 
 # Internationalization
-language = 'en'
+language = os.environ.get('DOCS_LANGUAGE', 'en')
 locale_dirs = ['locale']
 gettext_compact = False
 
@@ -32,8 +32,6 @@ breathe_default_project = 'asbind20'
 read_the_docs_build = os.environ.get('READTHEDOCS', None) == 'True'
 
 if read_the_docs_build:
-    os.mkdir('doxygen-output')
-    subprocess.call('doxygen', shell=True)
     breathe_projects['asbind20'] = 'doxygen-output/xml'
 else:
     breathe_projects['asbind20'] = '../build/doxygen-output/xml'
