@@ -1,5 +1,5 @@
 /**
- * @file throw_helper.hpp
+ * @file err_handler.hpp
  * @author HenryAWE
  * @brief Helper for throwing exception
  */
