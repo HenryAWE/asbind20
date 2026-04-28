@@ -1,0 +1,117 @@
+"Language: zh_CN\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../doc/container.rst:2
+msgid "Storing Script Objects"
+msgstr "存储脚本对象"
+
+#: ../../doc/container.rst:4
+msgid ""
+"Sometimes you may want to store script objects and use them later, or to "
+"implement your own container for script objects. There are some tools "
+"provided by asbind20 for storing script objects."
+msgstr ""
+"有时你可能希望存储脚本对象以便稍后使用，"
+"或实现自己的脚本对象容器。"
+"asbind20 提供了一些工具用于存储脚本对象。"
+
+#: ../../doc/container.rst:9
+msgid "Storing a Single Script Object"
+msgstr "存储单个脚本对象"
+
+#: ../../doc/container.rst
+msgid "Get the address of the data"
+msgstr "获取数据的地址"
+
+#: ../../doc/container.rst
+msgid "Public Static Functions"
+msgstr "公共静态函数"
+
+#: ../../doc/container.rst
+msgid "Parameters"
+msgstr "参数"
+
+#: ../../doc/container.rst
+msgid "Returns"
+msgstr "返回值"
+
+#: ../../doc/container.rst
+msgid "Public Functions"
+msgstr "公共函数"
+
+#: ../../doc/container.rst
+msgid "Public Members"
+msgstr "公共成员"
+
+#: ../../doc/container.rst:15
+msgid "|script_optional|_."
+msgstr "|script_optional|_."
+
+#: ../../doc/container.rst:21
+msgid "Containers"
+msgstr "容器"
+
+#: ../../doc/container.rst:24
+msgid "Policies of Type Information"
+msgstr "类型信息策略"
+
+#: ../../doc/container.rst:26
+msgid "Policies for how containers deal with the type information."
+msgstr "容器如何处理类型信息的策略。"
+
+#: ../../doc/container.rst
+msgid "Template Parameters"
+msgstr "模板参数"
+
+#: ../../doc/container.rst:34
+msgid "Sequential Containers"
+msgstr "顺序容器"
+
+#: ../../doc/container.rst
+msgid "Type information"
+msgstr "类型信息"
+
+#: ../../doc/container.rst
+msgid "Capacity"
+msgstr "容量"
+
+#: ../../doc/container.rst
+msgid "Element access"
+msgstr "元素访问"
+
+#: ../../doc/container.rst
+msgid "Iterators of small vector"
+msgstr "小型向量的迭代器"
+
+#: ../../doc/container.rst
+msgid "Modifiers"
+msgstr "修改器"
+
+#: ../../doc/container.rst
+msgid "Visiting members"
+msgstr "访问成员"
+
+#: ../../doc/container.rst
+msgid "Public Types"
+msgstr "公共类型"
+
+#: ../../doc/container.rst
+msgid "Friends"
+msgstr "友元"
+
+#: ../../doc/container.rst:40
+msgid "|script_array|_."
+msgstr "|script_array|_."
+
+#: ../../doc/container.rst:47
+msgid "Associative Containers"
+msgstr "关联容器"
+
+#: ../../doc/container.rst:49
+msgid "*Not implemented yet*"
+msgstr "*尚未实现*"
+

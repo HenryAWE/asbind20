@@ -14,6 +14,11 @@ extensions = [ 'breathe' ]
 templates_path = ['_templates']
 exclude_patterns = []
 
+# Internationalization
+language = 'en'
+locale_dirs = ['locale']
+gettext_compact = False
+
 # Options for HTML output
 
 html_theme = 'sphinx_rtd_theme'

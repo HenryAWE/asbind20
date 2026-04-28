@@ -1,0 +1,109 @@
+"Language: zh_CN\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../doc/utility.rst:2
+msgid "RAII Helpers"
+msgstr "RAII 辅助工具"
+
+#: ../../doc/utility.rst:4
+msgid ""
+"`RAII <https://en.cppreference.com/w/cpp/language/raii>`_ helpers for "
+"managing lifetime of AngelScript objects."
+msgstr ""
+"用于管理 AngelScript 对象生命周期的"
+"`RAII <https://en.cppreference.com/w/cpp/language/raii>`_ 辅助工具。"
+
+#: ../../doc/utility.rst:7
+msgid "Script Engine"
+msgstr "脚本引擎"
+
+#: ../../doc/utility.rst
+msgid "Public Types"
+msgstr "公共类型"
+
+#: ../../doc/utility.rst
+msgid "Public Functions"
+msgstr "公共函数"
+
+#: ../../doc/utility.rst:16
+msgid "Script Context"
+msgstr "脚本上下文"
+
+#: ../../doc/utility.rst
+msgid "Returns"
+msgstr "返回值"
+
+#: ../../doc/utility.rst:29
+msgid "Script Object"
+msgstr "脚本对象"
+
+#: ../../doc/utility.rst
+msgid "Parameters"
+msgstr "参数"
+
+#: ../../doc/utility.rst:36
+msgid "Script Type Information"
+msgstr "脚本类型信息"
+
+#: ../../doc/utility.rst:44
+msgid "Lockable Shared Bool"
+msgstr "可锁定的共享布尔值"
+
+#: ../../doc/utility.rst:53
+msgid "IO Helpers"
+msgstr "IO 辅助工具"
+
+#: ../../doc/utility.rst
+msgid "Functions"
+msgstr "函数"
+
+#: ../../doc/utility.rst
+msgid "Template Parameters"
+msgstr "模板参数"
+
+#: ../../doc/utility.rst
+msgid "Public Members"
+msgstr "公共成员"
+
+#: ../../doc/utility.rst:62
+msgid "Loading Script Sections"
+msgstr "加载脚本段"
+
+#: ../../doc/utility.rst:69
+msgid "Miscellaneous Utilities"
+msgstr "杂项工具"
+
+#: ../../doc/utility.rst
+msgid "Public Static Functions"
+msgstr "公共静态函数"
+
+#: ../../doc/utility.rst
+msgid "Friends"
+msgstr "友元"
+
+#: ../../doc/utility.rst:86
+msgid "Debugging"
+msgstr "调试"
+
+#: ../../doc/utility.rst:91
+msgid "GC Statistics"
+msgstr "GC 统计"
+
+#: ../../doc/utility.rst:99
+msgid "String Extraction"
+msgstr "字符串提取"
+
+#: ../../doc/utility.rst:101
+msgid ""
+"Tools for extracting string from script without knowing its underlying "
+"type."
+msgstr "用于从脚本中提取字符串而无需知道其底层类型的工具。"
+
+#: ../../doc/utility.rst
+msgid "Throws"
+msgstr "抛出"
+

@@ -1,0 +1,133 @@
+"Language: zh_CN\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../doc/aux_interface.rst:2
+msgid "Auxiliary Interfaces"
+msgstr "辅助接口"
+
+#: ../../doc/aux_interface.rst:5
+msgid "Registering an Interface"
+msgstr "注册接口"
+
+#: ../../doc/aux_interface.rst:7
+msgid ""
+"Class interfaces can be registered if you want to guarantee that script "
+"classes implement a specific set of class methods. Interfaces can be "
+"easier to use when working with script classes from the application, but "
+"they are not necessary as the application can easily enumerate available "
+"methods and properties even without the interfaces."
+msgstr ""
+"如果您希望确保脚本类实现一组特定的类方法，可以注册类接口。"
+"在应用程序中处理脚本类时，接口可能更易于使用，但它们并非必需，"
+"因为即使没有接口，应用程序也可以轻松枚举可用的方法和属性。"
+
+#: ../../doc/aux_interface.rst:20
+msgid ""
+"Unlike the raw AngelScript interface, you don't need to add the class "
+"name into the declaration of member ``funcdef`` for asbind20."
+msgstr ""
+"与原始 AngelScript 接口不同，对于 asbind20，"
+"您不需要将类名添加到成员 ``funcdef`` 的声明中。"
+
+#: ../../doc/aux_interface.rst:24
+msgid "Type Aliases"
+msgstr "类型别名"
+
+#: ../../doc/aux_interface.rst:26
+msgid ""
+"Function definitions can be registered when you wish to allow the script "
+"to pass function pointers to the application, e.g. to implement callback "
+"routines."
+msgstr ""
+"当您希望允许脚本将函数指针传递给应用程序时，可以注册函数定义，"
+"例如实现回调例程。"
+
+#: ../../doc/aux_interface.rst:29
+msgid ""
+"Enumeration types and ``typedef``\\ s can also be registered to improve "
+"readability of the scripts."
+msgstr ""
+"枚举类型和 ``typedef``\\ s 也可以注册以提高脚本的可读性。"
+
+#: ../../doc/aux_interface.rst
+msgid "Parameters"
+msgstr "参数"
+
+#: ../../doc/aux_interface.rst:36
+msgid "Example code:"
+msgstr "示例代码："
+
+#: ../../doc/aux_interface.rst:49
+msgid "Enumerations"
+msgstr "枚举"
+
+#: ../../doc/aux_interface.rst:66
+msgid ""
+"Up until version 2.39, AngelScript used a 32-bit integer to store the "
+"underlying value of enums, before it supported customizable underlying "
+"types. Please make sure those values don't overflow or underflow."
+msgstr ""
+"在 2.39 版本之前，AngelScript 在支持可自定义底层类型之前，"
+"使用 32 位整数来存储枚举的底层值。请确保这些值不会溢出或下溢。"
+
+#: ../../doc/aux_interface.rst:70
+msgid ""
+"Besides, the library provides a convenient interface for generating "
+"string representation of enum value at compile-time."
+msgstr ""
+"此外，该库提供了一个便捷的接口，"
+"用于在编译时生成枚举值的字符串表示。"
+
+#: ../../doc/aux_interface.rst:72
+msgid "The following code is equivalent to the above one:"
+msgstr "以下代码与上述代码等效："
+
+#: ../../doc/aux_interface.rst:81
+msgid ""
+"However, as static reflection is still waiting for C++26, this feature "
+"relies on compiler extension and is platform dependent. **It has some "
+"limitations**. For example, it cannot generate string representation for "
+"enums with same value."
+msgstr ""
+"然而，由于静态反射仍在等待 C++26，此特性依赖于编译器扩展且与平台相关。"
+"**它有一些限制**。例如，它无法为具有相同值的枚举生成字符串表示。"
+
+#: ../../doc/aux_interface.rst:92
+msgid ""
+"If you are interested in how this is achieved, you can read `this article"
+" written by YKIKO (Chinese) <https://zhuanlan.zhihu.com/p/680412313>`_, "
+"or author's `English translation "
+"<https://ykiko.me/en/articles/680412313/>`_."
+msgstr ""
+"如果您对此如何实现感兴趣，可以阅读 `YKIKO 撰写的这篇中文文章 "
+"<https://zhuanlan.zhihu.com/p/680412313>`_，"
+"或作者的 `英文翻译 <https://ykiko.me/en/articles/680412313/>`_。"
+
+#: ../../doc/aux_interface.rst:95
+msgid ""
+"Since the version 2.39, AngelScript supports enumerations with custom "
+"underlying types."
+msgstr ""
+"自 2.39 版本起，AngelScript 支持具有自定义底层类型的枚举。"
+
+#: ../../doc/aux_interface.rst:97
+msgid ""
+"You can register them by ``enum_underlying``, which is an alias of "
+"``enum_<Enum, std::underlying_type_t<Enum>>``."
+msgstr ""
+"您可以通过 ``enum_underlying`` 来注册它们，"
+"它是 ``enum_<Enum, std::underlying_type_t<Enum>>`` 的别名。"
+
+#: ../../doc/aux_interface.rst:116
+msgid ""
+"If you need to interact these enums from C++ side, the enums with custom "
+"underlying type :ref:`need to specify the conversion rules <custom-rule-"
+"for-enum-underlying>`."
+msgstr ""
+"如果您需要从 C++ 端与这些枚举进行交互，具有自定义底层类型的枚举 "
+":ref:`需要指定转换规则 <custom-rule-for-enum-underlying>`。"
+

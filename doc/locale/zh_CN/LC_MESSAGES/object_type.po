@@ -1,0 +1,911 @@
+"Language: zh_CN\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../doc/object_type.rst:2
+msgid "Registering an Object Type"
+msgstr "注册对象类型"
+
+#: ../../doc/object_type.rst:5
+msgid "Registering a Reference Type"
+msgstr "注册引用类型"
+
+#: ../../doc/object_type.rst:7
+msgid ""
+"The basic reference type will be instantiated by factory function and "
+"managed by reference counting."
+msgstr ""
+"基本引用类型将通过工厂函数实例化，并由引用计数管理。"
+
+#: ../../doc/object_type.rst:9
+msgid ""
+"Unlike the value type, the underlying C++ type for reference type can be "
+"incomplete type. This is designed to support the common C API pattern, "
+"which typically consists of an opaque structure pointer and a set of C "
+"functions."
+msgstr ""
+"与值类型不同，引用类型的底层 C++ 类型可以是不完整类型。"
+"这是为了支持常见的 C API 模式而设计的，"
+"该模式通常由一个不透明结构指针和一组 C 函数组成。"
+
+#: ../../doc/object_type.rst:14
+msgid "Factory"
+msgstr "工厂"
+
+#: ../../doc/object_type.rst:17
+msgid "Factory Functions"
+msgstr "工厂函数"
+
+#: ../../doc/object_type.rst:19
+msgid ""
+"Factory functions can be automatically generated from constructors of C++"
+" type. The memory for new object will be allocated using ``new``, so if "
+"an allocation function provided by user is required, you can create a "
+"custom overload of ``operator new``."
+msgstr ""
+"工厂函数可以从 C++ 类型的构造函数自动生成。"
+"新对象的内存将使用 ``new`` 分配，因此如果需要用户提供的分配函数，"
+"可以创建 ``operator new`` 的自定义重载。"
+
+#: ../../doc/object_type.rst:23
+msgid ""
+"If you already have a function for instantiating the class, you can "
+"register it by ``.factory_function``."
+msgstr ""
+"如果你已经有一个用于实例化类的函数，可以通过 ``.factory_function`` 注册它。"
+
+#: ../../doc/object_type.rst:39
+msgid ""
+"You need to provide a parameter list for factories other than the default"
+" factory."
+msgstr ""
+"除默认工厂外，你需要为其他工厂提供参数列表。"
+
+#: ../../doc/object_type.rst:49 ../../doc/object_type.rst:271
+msgid ""
+"If you want certain factories to be marked with ``explicit``, you can use"
+" the tag ``use_explicit``. Just put the tag right after the parameter "
+"list."
+msgstr ""
+"如果你希望某些工厂标记为 ``explicit``，可以使用标签 ``use_explicit``。"
+"只需将标签放在参数列表后面即可。"
+
+#: ../../doc/object_type.rst:59
+msgid "Factory with Auxiliary Object"
+msgstr "带辅助对象的工厂"
+
+#: ../../doc/object_type.rst:61
+msgid "It might be useful to call the factory with a helper object."
+msgstr "使用辅助对象调用工厂可能会很有用。"
+
+#: ../../doc/object_type.rst:85
+msgid ""
+"If the factory function with an auxiliary object is not a member "
+"function, the parameter for receiving pointer to auxiliary object will be"
+" located by the following logic:"
+msgstr ""
+"如果带辅助对象的工厂函数不是成员函数，"
+"接收辅助对象指针的参数将按以下逻辑定位："
+
+#: ../../doc/object_type.rst:88
+msgid ""
+"Check if the first/last parameter is a reference/pointer to the helper "
+"object"
+msgstr ""
+"检查第一个/最后一个参数是否为辅助对象的引用/指针"
+
+#: ../../doc/object_type.rst:89 ../../doc/object_type.rst:285
+#: ../../doc/object_type.rst:412
+msgid ""
+"If both first and last parameters satisfy the condition, asbind20 will "
+"prefer the first one."
+msgstr ""
+"如果第一个和最后一个参数都满足条件，asbind20 将优先选择第一个。"
+
+#: ../../doc/object_type.rst:91 ../../doc/object_type.rst:287
+#: ../../doc/object_type.rst:417
+msgid ""
+"If this is not the desired behaviour, you can manually specify the "
+"position of that special parameter."
+msgstr ""
+"如果这不是期望的行为，你可以手动指定该特殊参数的位置。"
+
+#: ../../doc/object_type.rst:100
+msgid ""
+"Specially, the auxiliary object can be the ``asITypeInfo*`` of type being"
+" registered. This can be done by the tag ``this_type``."
+msgstr ""
+"特别地，辅助对象可以是正在注册的类型的 ``asITypeInfo*``。"
+"这可以通过标签 ``this_type`` 实现。"
+
+#: ../../doc/object_type.rst:103
+msgid "This might be helpful when dealing with garbage collected types."
+msgstr "这在处理垃圾回收类型时可能会很有帮助。"
+
+#: ../../doc/object_type.rst:117
+msgid "List Factory"
+msgstr "列表工厂"
+
+#: ../../doc/object_type.rst:119
+msgid ""
+"List factory allows the reference type to be created from an "
+"initialization list."
+msgstr ""
+"列表工厂允许从初始化列表创建引用类型。"
+
+#: ../../doc/object_type.rst:121 ../../doc/object_type.rst:300
+msgid ":doc:`It will be discussed in a separate page. <advanced/init_list>`"
+msgstr ":doc:`它将在单独的页面中讨论。 <advanced/init_list>`"
+
+#: ../../doc/object_type.rst:124
+msgid "Behaviours for Reference Counting"
+msgstr "引用计数的行为"
+
+#: ../../doc/object_type.rst:126
+msgid "The basic reference type uses reference counting to manage its lifetime."
+msgstr "基本引用类型使用引用计数来管理其生命周期。"
+
+#: ../../doc/object_type.rst:155
+msgid "Tips for Reference Types"
+msgstr "引用类型提示"
+
+#: ../../doc/object_type.rst:157
+msgid ""
+"For reference counted type, the reference counter should be set to ``1`` "
+"during initialization."
+msgstr ""
+"对于引用计数类型，引用计数器应在初始化时设置为 ``1``。"
+
+#: ../../doc/object_type.rst:159
+msgid ""
+"If your type involves GC, you need to notify the GC of a newly "
+"instantiated object by ``NotifyGarbageCollectorOfNewObject``, `as "
+"explained in AngelScript's official document "
+"<https://www.angelcode.com/angelscript/sdk/docs/manual/doc_gc_object.html#doc_reg_gcref_2>`_."
+msgstr ""
+"如果你的类型涉及 GC，你需要通过 ``NotifyGarbageCollectorOfNewObject`` 通知 GC 新实例化的对象，"
+"`如 AngelScript 官方文档所述 "
+"<https://www.angelcode.com/angelscript/sdk/docs/manual/doc_gc_object.html#doc_reg_gcref_2>`_。"
+
+#: ../../doc/object_type.rst:162
+msgid ""
+"asbind20 also provides a policy called ``policies::notify_gc`` for (list)"
+" factory functions to automatically notify the GC after a new object is "
+"created."
+msgstr ""
+"asbind20 还提供了一个名为 ``policies::notify_gc`` 的策略，用于（列表）工厂函数在创建新对象后自动通知 GC。"
+
+#: ../../doc/object_type.rst:165
+msgid "Registering a Value Type"
+msgstr "注册值类型"
+
+#: ../../doc/object_type.rst:167
+msgid ""
+"The underlying C++ type for value type must be a complete type, i.e., "
+"``sizeof(T)`` is a valid expression."
+msgstr ""
+"值类型的底层 C++ 类型必须是完整类型，即 ``sizeof(T)`` 是一个有效的表达式。"
+
+#: ../../doc/object_type.rst:171
+msgid "Flags of Value Type"
+msgstr "值类型的标志"
+
+#: ../../doc/object_type.rst:173
+msgid ""
+"If the type doesn't require any special treatment, i.e. doesn't contain "
+"any pointers or other resource references that must be maintained, then "
+"the type can be registered with the flag ``asOBJ_POD``. In this case "
+"AngelScript doesn't require the default constructor, assignment "
+"behaviour, or destructor, as it will be able to automatically handle "
+"these cases the same way it handles built-in primitives."
+msgstr ""
+"如果类型不需要任何特殊处理，即不包含任何必须维护的指针或其他资源引用，"
+"那么该类型可以使用标志 ``asOBJ_POD`` 注册。在这种情况下，"
+"AngelScript 不需要默认构造函数、赋值行为或析构函数，"
+"因为它能够像处理内置基本类型一样自动处理这些情况。"
+
+#: ../../doc/object_type.rst:179
+msgid ""
+"If you plan on passing or returning the type by value to registered "
+"functions that uses native calling convention, you also need to inform "
+"how the type is implemented in the application. But if you only plan on "
+":doc:`using generic calling conventions <advanced/generic>`, or don't "
+"pass these types by value then you don't need to worry about that."
+msgstr ""
+"如果你计划将类型按值传递给使用原生调用约定的注册函数，"
+"你还需要告知类型在应用程序中的实现方式。"
+"但如果你只计划 :doc:`使用通用调用约定 <advanced/generic>`，或不按值传递这些类型，则无需担心这一点。"
+
+#: ../../doc/object_type.rst:184
+msgid ""
+"The asbind20 will handle common flags for you. However, due to limitation"
+" of C++, the following flags still need user to provide them manually."
+msgstr ""
+"asbind20 将为你处理常见标志。然而，由于 C++ 的限制，"
+"以下标志仍需要用户手动提供。"
+
+#: ../../doc/object_type.rst:191
+msgid "Flag"
+msgstr "标志"
+
+#: ../../doc/object_type.rst:192
+msgid "Description"
+msgstr "描述"
+
+#: ../../doc/object_type.rst:194
+msgid "``asOBJ_APP_CLASS_MORE_CONSTRUCTORS``"
+msgstr ""
+
+#: ../../doc/object_type.rst:195
+msgid ""
+"The C++ class has additional constructors beyond the default/copy "
+"constructor"
+msgstr ""
+"C++ 类具有除默认/拷贝构造函数之外的其他构造函数"
+
+#: ../../doc/object_type.rst:197
+msgid "``asOBJ_APP_CLASS_ALLINTS``"
+msgstr ""
+
+#: ../../doc/object_type.rst:198
+msgid "The C++ class members can be treated as if all integers"
+msgstr "C++ 类成员可以视为都是整数类型"
+
+#: ../../doc/object_type.rst:200
+msgid "``asOBJ_APP_CLASS_ALLFLOATS``"
+msgstr ""
+
+#: ../../doc/object_type.rst:201
+msgid ""
+"The C++ class members can be treated as if all ``float``\\ s or "
+"``double``\\ s"
+msgstr ""
+"C++ 类成员可以视为都是 ``float`` 或 ``double`` 类型"
+
+#: ../../doc/object_type.rst:203
+msgid "``asOBJ_APP_CLASS_ALIGN8``"
+msgstr ""
+
+#: ../../doc/object_type.rst:204
+msgid "The C++ class contains members that may require 8-byte alignment."
+msgstr "C++ 类包含可能需要 8 字节对齐的成员。"
+
+#: ../../doc/object_type.rst:206
+msgid "For example, a ``double``"
+msgstr "例如，一个 ``double``"
+
+#: ../../doc/object_type.rst:208
+msgid "``asOBJ_APP_CLASS_UNION``"
+msgstr ""
+
+#: ../../doc/object_type.rst:209
+msgid "The C++ class contains unions as members"
+msgstr "C++ 类包含联合体作为成员"
+
+#: ../../doc/object_type.rst:212
+msgid ""
+"C++ compiler may provide some functions automatically if one of the "
+"members is of a type that requires it. So even if the type you want to "
+"register doesn't have a declared default constructor, it may still be "
+"necessary to register the type with the flag "
+"``asOBJ_APP_CLASS_MORE_CONSTRUCTORS``."
+msgstr ""
+"如果某个成员是需要构造函数的类型，C++ 编译器可能会自动提供一些函数。"
+"因此，即使你想要注册的类型没有声明的默认构造函数，"
+"仍然可能需要使用标志 ``asOBJ_APP_CLASS_MORE_CONSTRUCTORS`` 注册该类型。"
+
+#: ../../doc/object_type.rst:217
+msgid ""
+"Be careful to inform the correct flags, because if the wrong flags are "
+"used you may get unexpected behaviour when calling registered functions "
+"that receives or returns these types by value. Common problems are stack "
+"corruptions or invalid memory accesses. In some cases you may face more "
+"silent errors that may be difficult to detect, e.g., the function is not "
+"returning the expected values."
+msgstr ""
+"请小心提供正确的标志，因为如果使用了错误的标志，"
+"在调用按值接收或返回这些类型的注册函数时可能会出现意外行为。"
+"常见问题包括栈损坏或无效内存访问。在某些情况下，"
+"你可能会遇到更难以检测的静默错误，例如函数未返回预期的值。"
+
+#: ../../doc/object_type.rst:223
+msgid ""
+"You can also read the official documentation about `value types and "
+"native calling conventions "
+"<https://www.angelcode.com/angelscript/sdk/docs/manual/doc_register_val_type.html#doc_reg_val_2>`_"
+" ."
+msgstr ""
+"你也可以阅读关于 `值类型和原生调用约定 "
+"<https://www.angelcode.com/angelscript/sdk/docs/manual/doc_register_val_type.html#doc_reg_val_2>`_ 的官方文档。"
+
+#: ../../doc/object_type.rst:227
+msgid "Constructors and Destructor"
+msgstr "构造函数和析构函数"
+
+#: ../../doc/object_type.rst:230
+msgid "Constructor Functions"
+msgstr "构造函数"
+
+#: ../../doc/object_type.rst:232
+msgid ""
+"The memory of value types are allocated by AngelScript, then the memory "
+"needs to be initialized using the placement ``new``."
+msgstr ""
+"值类型的内存由 AngelScript 分配，然后需要使用 placement ``new`` 进行初始化。"
+
+#: ../../doc/object_type.rst:235
+msgid ""
+"If you already have a function for initializing the class, you can "
+"register it by ``.constructor_function``. You can also use a lambda to "
+"create a constructor function in-place."
+msgstr ""
+"如果你已经有一个用于初始化类的函数，可以通过 ``.constructor_function`` 注册它。"
+"你也可以使用 lambda 原地创建构造函数。"
+
+#: ../../doc/object_type.rst:253
+msgid ""
+"You need to provide a parameter list for constructors other than the "
+"default/copy constructor."
+msgstr ""
+"除默认/拷贝构造函数外，你需要为其他构造函数提供参数列表。"
+
+#: ../../doc/object_type.rst:281
+msgid ""
+"The parameter for receiving pointer to allocated memory will be located "
+"by the following logic:"
+msgstr ""
+"接收分配内存指针的参数将按以下逻辑定位："
+
+#: ../../doc/object_type.rst:283
+msgid ""
+"Check if the first/last parameter is a reference/pointer to the type "
+"being registered"
+msgstr ""
+"检查第一个/最后一个参数是否为正在注册的类型的引用/指针"
+
+#: ../../doc/object_type.rst:284
+msgid "Check if the type of first/last parameter is ``void*``"
+msgstr "检查第一个/最后一个参数的类型是否为 ``void*``"
+
+#: ../../doc/object_type.rst:296
+msgid "List Constructor"
+msgstr "列表构造函数"
+
+#: ../../doc/object_type.rst:298
+msgid ""
+"The list constructor allows the value type to be initialized from an "
+"initialization list."
+msgstr ""
+"列表构造函数允许从初始化列表初始化值类型。"
+
+#: ../../doc/object_type.rst:303
+msgid "Destructor"
+msgstr "析构函数"
+
+#: ../../doc/object_type.rst:311
+msgid "Automatically Registering Required Behaviours"
+msgstr "自动注册所需的行为"
+
+#: ../../doc/object_type.rst:313
+msgid ""
+"You can call the ``.behaviours_by_traits()`` to automatically register "
+"type behaviours required by the type flags. It will register default "
+"constructor, copy constructor, destructor, and assignment operator "
+"(``operator=``/``opAssign``) according to the type flags."
+msgstr ""
+"你可以调用 ``.behaviours_by_traits()`` 来自动注册类型标志所需的行为。"
+"它将根据类型标志注册默认构造函数、拷贝构造函数、析构函数和赋值运算符"
+"（``operator=``/``opAssign``）。"
+
+#: ../../doc/object_type.rst:318
+msgid ""
+"Be careful not to register those behaviours again by standalone helpers, "
+"otherwise you will get an error message about duplicated things."
+msgstr ""
+"注意不要通过独立的辅助函数再次注册这些行为，否则你会收到关于重复内容的错误信息。"
+
+#: ../../doc/object_type.rst:321
+msgid ""
+"This helper function uses flags provided by ``asGetTypeTraits<T>()`` by "
+"default."
+msgstr ""
+"该辅助函数默认使用 ``asGetTypeTraits<T>()`` 提供的标志。"
+
+#: ../../doc/object_type.rst:328
+msgid "You can also provide the flags manually:"
+msgstr "你也可以手动提供标志："
+
+#: ../../doc/object_type.rst:336
+msgid "Object Methods"
+msgstr "对象方法"
+
+#: ../../doc/object_type.rst:338
+msgid ""
+"Object methods are registered by ``.method()``. Both non-virtual and "
+"virtual methods are registered the same way."
+msgstr ""
+"对象方法通过 ``.method()`` 注册。非虚拟和虚拟方法都以相同的方式注册。"
+
+#: ../../doc/object_type.rst:341
+msgid ""
+"Static member functions of a class are actually global functions, so "
+"those should be registered as :doc:`global functions and not as object "
+"methods <global>`."
+msgstr ""
+"类的静态成员函数实际上是全局函数，"
+"因此应注册为 :doc:`全局函数而非对象方法 <global>`。"
+
+#: ../../doc/object_type.rst:345
+msgid "Member Function"
+msgstr "成员函数"
+
+#: ../../doc/object_type.rst:365
+msgid "Extend Class Interface Without Changing Its Implementation"
+msgstr "在不更改实现的情况下扩展类接口"
+
+#: ../../doc/object_type.rst:368
+msgid "Global Functions Taking an Object Parameter"
+msgstr "接受对象参数的全局函数"
+
+#: ../../doc/object_type.rst:370
+msgid ""
+"It is possible to register a global function that takes a pointer or a "
+"reference to the object as a class method. This can be used to extend the"
+" functionality of a class when accessed via AngelScript, without actually"
+" changing the C++ implementation of the class."
+msgstr ""
+"可以将接受对象指针或引用的全局函数注册为类方法。"
+"这可以在通过 AngelScript 访问时扩展类的功能，而无需实际更改类的 C++ 实现。"
+
+#: ../../doc/object_type.rst:386
+msgid "Member Functions from a Helper Object"
+msgstr "来自辅助对象的成员函数"
+
+#: ../../doc/object_type.rst:388
+msgid ""
+"Similar to global functions taking an object parameter, member functions "
+"taking an object parameter from a helper object can also be registered as"
+" class methods."
+msgstr ""
+"类似于接受对象参数的全局函数，来自辅助对象的接受对象参数的成员函数也可以注册为类方法。"
+
+#: ../../doc/object_type.rst:409
+msgid "The parameter for receiving object will be located by the following logic:"
+msgstr "接收对象的参数将按以下逻辑定位："
+
+#: ../../doc/object_type.rst:411
+msgid ""
+"Check if the first/last parameter is a reference/pointer to the type "
+"being registered."
+msgstr ""
+"检查第一个/最后一个参数是否为正在注册的类型的引用/指针。"
+
+#: ../../doc/object_type.rst:414
+msgid ""
+"This is designed to keep consistency with existing C++ paradigm, such as "
+"how ``std::invoke`` deals with a member function pointer."
+msgstr ""
+"这旨在与现有的 C++ 范式保持一致，例如 ``std::invoke`` 如何处理成员函数指针。"
+
+#: ../../doc/object_type.rst:433
+msgid "Function Receiving ``asIScriptGeneric*``"
+msgstr "接收 ``asIScriptGeneric*`` 的函数"
+
+#: ../../doc/object_type.rst:447
+msgid ""
+"Make sure the method declaration matches what the registered function "
+"does with the ``asIScriptGeneric``!"
+msgstr ""
+"确保方法声明与注册函数对 ``asIScriptGeneric`` 的处理匹配！"
+
+#: ../../doc/object_type.rst:450
+msgid "Methods Using Composite Members"
+msgstr "使用复合成员的方法"
+
+#: ../../doc/object_type.rst:452
+msgid ""
+"If the application class that is being registered uses composition, then "
+"it is possible to register the methods of the composite members without "
+"wrapper functions."
+msgstr ""
+"如果正在注册的应用程序类使用了组合模式，则可以在没有包装函数的情况下注册复合成员的方法。"
+
+#: ../../doc/object_type.rst:479
+msgid ""
+"The usage of the ``composite`` helper is :ref:`different <generic-"
+"composite>` when you want to create generic wrapper for composite methods"
+msgstr ""
+"当你想要为复合方法创建通用包装器时，``composite`` 辅助函数的用法是 :ref:`不同的 <generic-composite>`"
+
+#: ../../doc/object_type.rst:482
+msgid "Tips for Registering Methods"
+msgstr "注册方法的提示"
+
+#: ../../doc/object_type.rst:484
+msgid "Registering Argument-Dependent Interfaces"
+msgstr "注册参数相关接口"
+
+#: ../../doc/object_type.rst:486
+msgid ""
+"The member functions you want to register may have default arguments. "
+"Besides, some C++ libraries use the `argument-dependent lookup (ADL) "
+"<https://en.cppreference.com/w/cpp/language/adl>`_ to extend their "
+"interfaces."
+msgstr ""
+"你想要注册的成员函数可能有默认参数。"
+"此外，一些 C++ 库使用 `argument-dependent lookup (ADL) "
+"<https://en.cppreference.com/w/cpp/language/adl>`_ 来扩展其接口。"
+
+#: ../../doc/object_type.rst:489
+msgid ""
+"You need a wrapper function for this kind of interface. For convenience, "
+"you can also register them by lambda expressions."
+msgstr ""
+"你需要为这种接口提供一个包装函数。为方便起见，你也可以通过 lambda 表达式注册它们。"
+
+#: ../../doc/object_type.rst:505
+msgid "Overloaded Member Functions in C++"
+msgstr "C++ 中的重载成员函数"
+
+#: ../../doc/object_type.rst:507
+msgid ""
+"It will be ambiguous to take address of overloaded functions, you need to"
+" use ``overload_cast`` with arguments to choose the function you want."
+msgstr ""
+"获取重载函数的地址会产生歧义，你需要使用带有参数的 ``overload_cast`` 来选择你想要的函数。"
+
+#: ../../doc/object_type.rst:528
+msgid "Object Properties"
+msgstr "对象属性"
+
+#: ../../doc/object_type.rst:530
+msgid ""
+"Class member variables can be registered, so that they can be directly "
+"accessed by the script without the need for any method calls."
+msgstr ""
+"类的成员变量可以注册，以便脚本可以直接访问它们，而无需任何方法调用。"
+
+#: ../../doc/object_type.rst:534
+msgid "Ordinary Member Variables"
+msgstr "普通成员变量"
+
+#: ../../doc/object_type.rst:553
+msgid "Composite Members"
+msgstr "复合成员"
+
+#: ../../doc/object_type.rst:555
+msgid ""
+"If the application class that is being registered uses composition, then "
+"it is possible to register the properties of the composite members "
+"without wrapper functions."
+msgstr ""
+"如果正在注册的应用程序类使用了组合模式，则可以在没有包装函数的情况下注册复合成员的属性。"
+
+#: ../../doc/object_type.rst:584
+msgid "Registering Types with Similar Interfaces"
+msgstr "注册具有相似接口的类型"
+
+#: ../../doc/object_type.rst:586
+msgid ""
+"Sometimes you may want to reuse code for binding similar types. The "
+"binding generators of classes provide ``.use`` for reusing a certain set "
+"of registering code."
+msgstr ""
+"有时你可能希望重用绑定相似类型的代码。类的绑定生成器提供了 ``.use`` 来重用特定的注册代码集。"
+
+#: ../../doc/object_type.rst:589
+msgid ""
+"For example, if your reference classes all use ``addref`` and ``release``"
+" for reference counting, you can create a helper to register those "
+"behaviours."
+msgstr ""
+"例如，如果你的引用类都使用 ``addref`` 和 ``release`` 进行引用计数，你可以创建一个辅助函数来注册这些行为。"
+
+#: ../../doc/object_type.rst:618
+msgid "Operator Overloads"
+msgstr "运算符重载"
+
+#: ../../doc/object_type.rst:620
+msgid ""
+"Operator overloads are registered by `special method names "
+"<https://www.angelcode.com/angelscript/sdk/docs/manual/doc_script_class_ops.html>`_"
+" in AngelScript. You can just register them like ordinary methods."
+msgstr ""
+"运算符重载通过 AngelScript 中的 `特殊方法名称 "
+"<https://www.angelcode.com/angelscript/sdk/docs/manual/doc_script_class_ops.html>`_ 注册。"
+"你可以像注册普通方法一样注册它们。"
+
+#: ../../doc/object_type.rst:623
+msgid ""
+"However, the tools introduced in this section may help you register "
+"operators more easily."
+msgstr ""
+"然而，本节介绍的工具可以帮助你更轻松地注册运算符。"
+
+#: ../../doc/object_type.rst:626
+msgid "Predefined Operator Helpers"
+msgstr "预定义的运算符辅助函数"
+
+#: ../../doc/object_type.rst:628
+msgid ""
+"There are predefined helpers that have the same name as AngelScript "
+"declaration."
+msgstr ""
+"有一些与 AngelScript 声明同名的预定义辅助函数。"
+
+#: ../../doc/object_type.rst:630
+msgid ""
+"Given constant C++ references ``a`` and ``b``, as well as a variable "
+"``val`` of the type being registered ``T``,"
+msgstr ""
+"给定常量 C++ 引用 ``a`` 和 ``b``，以及正在注册的类型 ``T`` 的变量 ``val``，"
+
+#: ../../doc/object_type.rst:633 ../../doc/object_type.rst:663
+msgid "AngelScript Declaration"
+msgstr "AngelScript 声明"
+
+#: ../../doc/object_type.rst:633 ../../doc/object_type.rst:663
+msgid "Equivalent C++ Code"
+msgstr "等价的 C++ 代码"
+
+#: ../../doc/object_type.rst:635
+msgid "``T& opAssign(const T&in)``"
+msgstr ""
+
+#: ../../doc/object_type.rst:635
+msgid "``val = a``"
+msgstr ""
+
+#: ../../doc/object_type.rst:637
+msgid "``bool opEquals(const T&in) const``"
+msgstr ""
+
+#: ../../doc/object_type.rst:637
+msgid "``a == b``"
+msgstr ""
+
+#: ../../doc/object_type.rst:639
+msgid "``int opCmp(const T&in) const``"
+msgstr ""
+
+#: ../../doc/object_type.rst:639
+msgid "``translate_three_way(a <=> b)`` *(see note)*"
+msgstr ""
+
+#: ../../doc/object_type.rst:642
+msgid "``T& opAddAssign(const T&in)``"
+msgstr ""
+
+#: ../../doc/object_type.rst:642
+msgid "``val += a``"
+msgstr ""
+
+#: ../../doc/object_type.rst:644
+msgid "``T& opSub/Div/MulAssign(const T&in)``"
+msgstr ""
+
+#: ../../doc/object_type.rst:644 ../../doc/object_type.rst:667
+msgid "Similar to the above one"
+msgstr "与上述类似"
+
+#: ../../doc/object_type.rst:646
+msgid "``T& opPreInc/Dec()``"
+msgstr ""
+
+#: ../../doc/object_type.rst:646
+msgid "``++val`` / ``--val``"
+msgstr ""
+
+#: ../../doc/object_type.rst:649
+msgid ""
+"The operators with ``T&`` as return type will return reference to the "
+"object being used, so multiple assignment can be chained."
+msgstr ""
+"返回类型为 ``T&`` 的运算符将返回正在使用的对象的引用，因此可以链式进行多次赋值。"
+
+#: ../../doc/object_type.rst:655
+msgid ""
+"This wrapper requires ``operator<=>`` returns ``std::weak_ordering`` at "
+"least, i.e., **no** ``std::partial_ordering`` support. The result of "
+"three-way comparison will be translated to an integral value recognized "
+"by AngelScript."
+msgstr ""
+"此包装器要求 ``operator<=>`` 至少返回 ``std::weak_ordering``，"
+"即**不支持** ``std::partial_ordering``。"
+"三路比较的结果将被转换为 AngelScript 可识别的整数值。"
+
+#: ../../doc/object_type.rst:659
+msgid ""
+"If the type is registered as value type, there will be some additional "
+"predefined helpers. These helpers will return result by value, so they "
+"cannot be used by a reference class."
+msgstr ""
+"如果类型注册为值类型，还会有一些额外的预定义辅助函数。"
+"这些辅助函数将按值返回结果，因此不能用于引用类。"
+
+#: ../../doc/object_type.rst:665
+msgid "``T opAdd(const T&in) const``"
+msgstr ""
+
+#: ../../doc/object_type.rst:665
+msgid "``a + b``"
+msgstr ""
+
+#: ../../doc/object_type.rst:667
+msgid "``T opSub/Div/Mul(const T&in) const``"
+msgstr ""
+
+#: ../../doc/object_type.rst:669
+msgid "``T opPostInc/Dec()``"
+msgstr ""
+
+#: ../../doc/object_type.rst:669
+msgid "``val++`` / ``val--``"
+msgstr ""
+
+#: ../../doc/object_type.rst:671
+msgid "``T opNeg() const``"
+msgstr ""
+
+#: ../../doc/object_type.rst:671
+msgid "``-a``"
+msgstr ""
+
+#: ../../doc/object_type.rst:674
+msgid "Example code:"
+msgstr "示例代码："
+
+#: ../../doc/object_type.rst:710
+msgid "Type Conversion Operators"
+msgstr "类型转换运算符"
+
+#: ../../doc/object_type.rst:712
+msgid ""
+"The type conversion operators can be used to convert types without a "
+"conversion constructor. `This official document "
+"<https://www.angelcode.com/angelscript/sdk/docs/manual/doc_script_class_ops.html#doc_script_class_conv>`_"
+" has explained the logic of type conversion in AngelScript"
+msgstr ""
+"类型转换运算符可用于在没有转换构造函数的情况下转换类型。"
+"`官方文档 "
+"<https://www.angelcode.com/angelscript/sdk/docs/manual/doc_script_class_ops.html#doc_script_class_conv>`_"
+" 解释了 AngelScript 中类型转换的逻辑。"
+
+#: ../../doc/object_type.rst:724
+msgid ""
+"The generated conversion operators will use the expression "
+"``static_cast<T>(val)`` internally."
+msgstr ""
+"生成的转换运算符将在内部使用表达式 ``static_cast<T>(val)``。"
+
+#: ../../doc/object_type.rst:735
+msgid "More Complex Operators"
+msgstr "更复杂的运算符"
+
+#: ../../doc/object_type.rst:737
+msgid ""
+"If you want to register an operator overload whose signature is not "
+"listed above, you can try the tools in the external header "
+"``asbind20/operators.hpp``."
+msgstr ""
+"如果你想注册一个签名未在上述列表中列出的运算符重载，可以尝试外部头文件 ``asbind20/operators.hpp`` 中的工具。"
+
+#: ../../doc/object_type.rst:740
+msgid ""
+"The operator tools use ``_this`` or ``const_this`` as a placeholder, and "
+"use ``param<T>`` for parameters."
+msgstr ""
+"运算符工具使用 ``_this`` 或 ``const_this`` 作为占位符，并使用 ``param<T>`` 表示参数。"
+
+#: ../../doc/object_type.rst:743
+msgid ""
+"If you want to specify the return type, you can use ``->return_<T>()``, "
+"which is designed to simulate the trailing return type ``auto f() -> "
+"Return`` since C++11."
+msgstr ""
+"如果你想指定返回类型，可以使用 ``->return_<T>()``，"
+"它旨在模拟 C++11 以来的尾置返回类型 ``auto f() -> Return``。"
+
+#: ../../doc/object_type.rst:777
+msgid ""
+"In some libraries like the STL, the ``operator[]`` doesn't have a "
+"boundary check. You still need a wrapper function with checks for "
+"registering it. Otherwise bad script can directly crash your application,"
+" instead of giving a clear error message."
+msgstr ""
+"在像 STL 这样的一些库中，``operator[]`` 没有边界检查。"
+"你仍然需要一个带检查的包装函数来注册它。"
+"否则，有问题的脚本会直接导致应用程序崩溃，而不是给出清晰的错误信息。"
+
+#: ../../doc/object_type.rst:781
+msgid ""
+"If the ``operator*`` doesn't return the type being registered, e.g., dot "
+"product of a math vector which returns a scalar type, the predefined "
+"helpers will fail to deal with this kind of operator overloads, but this "
+"tool can be your best friend."
+msgstr ""
+"如果 ``operator*`` 不返回正在注册的类型，例如返回标量类型的数学向量的点积，"
+"预定义的辅助函数将无法处理这种运算符重载，但这个工具可以成为你的得力助手。"
+
+#: ../../doc/object_type.rst:793
+msgid ""
+"If the type involves in the operator is neither the class type being "
+"registered nor primitive types, you may need to manually pass the script "
+"parameter declaration."
+msgstr ""
+"如果参与运算符的类型既不是正在注册的类类型也不是基本类型，你可能需要手动传递脚本参数声明。"
+
+#: ../../doc/object_type.rst:802
+msgid ""
+"With the power of this tool, you can even register the ``<iostream>`` to "
+"AngelScript. Here is an example from the unit test of asbind20."
+msgstr ""
+"借助这个工具的强大功能，你甚至可以将 ``<iostream>`` 注册到 AngelScript。"
+"这是来自 asbind20 单元测试的一个示例。"
+
+#: ../../doc/object_type.rst:826
+msgid "Operators for ``foreach`` (Experimental)"
+msgstr "``foreach`` 的运算符（实验性）"
+
+#: ../../doc/object_type.rst:828
+msgid ""
+"AngelScript has introduced the ``foreach`` loop in version 2.38. Here is "
+"a simple way to add support for a container-like type:"
+msgstr ""
+"AngelScript 在 2.38 版本中引入了 ``foreach`` 循环。"
+"以下是为类似容器的类型添加支持的简单方法："
+
+#: ../../doc/object_type.rst:843
+msgid ""
+"If the name of your value type cannot be auto-generated, e.g. non-"
+"primitive types, you can specify them manually."
+msgstr ""
+"如果你的值类型的名称无法自动生成，例如非基本类型，你可以手动指定它们。"
+
+#: ../../doc/object_type.rst:851
+msgid "Member Aliases"
+msgstr "成员别名"
+
+#: ../../doc/object_type.rst:852
+msgid "You can register a member ``funcdef``."
+msgstr "你可以注册一个成员 ``funcdef``。"
+
+#: ../../doc/object_type.rst:854
+msgid ""
+"Here use the ``script_array`` from unit tests as an example. The same "
+"logic also applies to other classes."
+msgstr ""
+"这里以单元测试中的 ``script_array`` 为例。相同的逻辑也适用于其他类。"
+
+#: ../../doc/object_type.rst:864
+msgid ""
+"Unlike the raw AngelScript interface, you don't need to add the class "
+"name into the declaration of member ``funcdef`` for asbind20."
+msgstr ""
+"与原始的 AngelScript 接口不同，对于 asbind20，你不需要将类名添加到成员 ``funcdef`` 的声明中。"
+
+#: ../../doc/object_type.rst:868
+msgid "Template Types"
+msgstr "模板类型"
+
+#: ../../doc/object_type.rst:870
+msgid ""
+"A template type in AngelScript works similarly to how templates work in "
+"C++. The scripts will be able to instantiate different forms of the "
+"template type by specifying which subtype that should be used. The "
+"methods for the instance will then be adapted to this subtype, so that "
+"the correct handling of parameters and return types will be applied."
+msgstr ""
+"AngelScript 中的模板类型的工作方式类似于 C++ 中模板的工作方式。"
+"脚本将能够通过指定要使用的子类型来实例化模板类型的不同形式。"
+"实例的方法将随后适应此子类型，以便应用正确的参数和返回类型处理。"
+
+#: ../../doc/object_type.rst:875
+msgid ""
+"It is quite complex to implement a template class for AngelScript, so "
+"they are described in a separate page."
+msgstr ""
+"为 AngelScript 实现模板类相当复杂，因此它们将在单独的页面中描述。"

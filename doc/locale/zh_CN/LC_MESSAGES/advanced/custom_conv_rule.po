@@ -1,0 +1,73 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: asbind20 \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-04-29 01:05+0800\n"
+"Language: zh_CN\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../doc/advanced/custom_conv_rule.rst:2
+msgid "Customize Type Conversion Rules"
+msgstr "自定义类型转换规则"
+
+#: ../../doc/advanced/custom_conv_rule.rst:4
+msgid ""
+"Sometimes the default auto-conversion tools provided by asbind20 are not "
+"enough for handling special user-defined types, it requires user to "
+"provide rules for translating them between C++ and AngelScript."
+msgstr ""
+"有时 asbind20 提供的默认自动转换工具不足以处理特殊的用户定义类型，"
+"这需要用户提供在 C++ 和 AngelScript 之间转换它们的规则。"
+
+#: ../../doc/advanced/custom_conv_rule.rst:8
+msgid "Example for ``std::byte``"
+msgstr "``std::byte`` 的示例"
+
+#: ../../doc/advanced/custom_conv_rule.rst:10
+#, python-brace-format
+msgid ""
+"The ``std::byte`` is defined using ``enum class byte : unsigned char "
+"{};``. However, the default logic of type translator will convert "
+"enumerations to ``int`` because all underlying type of ``enum`` in "
+"AngelScript is ``int`` by default."
+msgstr ""
+"``std::byte`` 使用 ``enum class byte : unsigned char {};`` 定义。"
+"但是，类型转换器的默认逻辑会将枚举转换为 ``int``，"
+"因为在 AngelScript 中所有 ``enum`` 的底层类型默认都是 ``int``。"
+
+#: ../../doc/advanced/custom_conv_rule.rst:15
+msgid ""
+"For enumerations with custom underlying types, asbind20 provides a "
+"utility for quickly implementing the traits."
+msgstr ""
+"对于具有自定义底层类型的枚举，"
+"asbind20 提供了一个用于快速实现类型特征的实用程序。"
+
+#: ../../doc/advanced/custom_conv_rule.rst:20
+msgid "Example usage:"
+msgstr "使用示例："
+
+#: ../../doc/advanced/custom_conv_rule.rst:30
+msgid ""
+"Here is detailed example for how to make ``std::byte`` be treated as "
+"``uint8`` by asbind20. You can apply this logic to the type that you want"
+" to have customized rules."
+msgstr ""
+"以下是一个详细示例，展示了如何让 asbind20 将 ``std::byte`` 视为 ``uint8``。"
+"您可以将此逻辑应用于您希望自定义规则的类型。"
+
+#: ../../doc/advanced/custom_conv_rule.rst:63
+msgid ""
+"The above conversion rule is already defined in "
+"``asbind20/type_traits.hpp``."
+msgstr ""
+"上述转换规则已在 ``asbind20/type_traits.hpp`` 中定义。"
+
+#: ../../doc/advanced/custom_conv_rule.rst:66
+msgid "Reference of Conversion Rules Provided by asbind20"
+msgstr "asbind20 提供的转换规则参考"
+

@@ -1,0 +1,636 @@
+"Language: zh_CN\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../doc/changelog.rst:2
+msgid "Changelog"
+msgstr "更新日志"
+
+#: ../../doc/changelog.rst:4
+msgid "Changelog since the version 1.5.0."
+msgstr "自 1.5.0 版本以来的更新日志。"
+
+#: ../../doc/changelog.rst:7
+msgid "2.0.0"
+msgstr ""
+
+#: ../../doc/changelog.rst:9
+msgid "First major update after the initial stable version."
+msgstr "初始稳定版本后的首次重大更新。"
+
+#: ../../doc/changelog.rst:12 ../../doc/changelog.rst:75
+#: ../../doc/changelog.rst:133 ../../doc/changelog.rst:159
+#: ../../doc/changelog.rst:193 ../../doc/changelog.rst:236
+#: ../../doc/changelog.rst:246
+msgid "Update"
+msgstr "更新"
+
+#: ../../doc/changelog.rst:14
+msgid "Official MacOS (Apple Clang) support."
+msgstr "官方 MacOS（Apple Clang）支持。"
+
+#: ../../doc/changelog.rst:16
+msgid ""
+"The library can be compiled with exceptions disabled (``-fno-exceptions``"
+" or ``/EHs-c-``)."
+msgstr ""
+"该库可以在禁用异常的情况下编译（``-fno-exceptions`` 或 ``/EHs-c-``）。"
+
+#: ../../doc/changelog.rst:18
+msgid ""
+"The interfaces depending on exceptions will be redirected to an error "
+"handling macro defined by the user. Its default behaviour is calling "
+"``std::terminate`` immediately."
+msgstr ""
+"依赖于异常的接口将被重定向到用户定义的错误处理宏。其默认行为是立即调用 ``std::terminate``。"
+
+#: ../../doc/changelog.rst:21
+msgid ""
+"(Experimental) Listener for customizing error handling or recording "
+"registered entities."
+msgstr ""
+"（实验性）用于自定义错误处理或记录已注册实体的监听器。"
+
+#: ../../doc/changelog.rst:23
+msgid ""
+"Wrapper of AngelScript memory APIs (``script_allocator``) now can be used"
+" in constant evaluation. It will automatically fallback to constexpr "
+"allocation under this situation."
+msgstr ""
+"AngelScript 内存 API 的包装器（``script_allocator``）现在可以在常量求值中使用。"
+"在这种情况下，它将自动回退到 constexpr 分配。"
+
+#: ../../doc/changelog.rst:26
+msgid ""
+"Merge the extension library and core library, dropping parts that is not "
+"customizable (see the Breaking Change part below)."
+msgstr ""
+"合并扩展库和核心库，移除了不可自定义的部分（请参见下面的重大变更部分）。"
+
+#: ../../doc/changelog.rst:28
+msgid "Now, the library is **completely header-only**."
+msgstr "现在，该库是**完全头文件-only**的。"
+
+#: ../../doc/changelog.rst:30
+msgid "Add more tools for implementing script debugging functionality."
+msgstr "添加更多用于实现脚本调试功能的工具。"
+
+#: ../../doc/changelog.rst:31
+#, python-brace-format
+msgid ""
+"Update I/O module to support formatting script types when ``<format>`` "
+"header is available. It also provides tools for quick integration with "
+"other formatting library like {fmt}."
+msgstr ""
+"更新 I/O 模块以支持在 ``<format>`` 头文件可用时格式化脚本类型。"
+"它还提供了与其他格式化库（如 {fmt}）快速集成的工具。"
+
+#: ../../doc/changelog.rst:34
+msgid ""
+"Unify implementation of binding generators to make the codebase easier to"
+" maintain."
+msgstr ""
+"统一绑定生成器的实现，使代码库更易于维护。"
+
+#: ../../doc/changelog.rst:36
+msgid ""
+"Decouple binding generator interfaces with complex AngelScript calling "
+"conventions"
+msgstr ""
+"将绑定生成器接口与复杂的 AngelScript 调用约定解耦"
+
+#: ../../doc/changelog.rst:38
+msgid "Tools for comparing script objects."
+msgstr "用于比较脚本对象的工具。"
+
+#: ../../doc/changelog.rst:40
+msgid "Enable CMake script to use local external package for developing offline."
+msgstr "启用 CMake 脚本使用本地外部包进行离线开发。"
+
+#: ../../doc/changelog.rst:42
+msgid "Update compatibility with AngelScript 2.39 WIP."
+msgstr "更新与 AngelScript 2.39 WIP 的兼容性。"
+
+#: ../../doc/changelog.rst:44
+msgid ""
+"Compile-time validation for signatures of behaviours, callbacks, etc. You"
+" can disable it by defining macro "
+"``ASBIND20_CONFIG_NO_COMPILE_TIME_CHECKS``."
+msgstr ""
+"对行为、回调等签名进行编译时验证。"
+"你可以通过定义宏 ``ASBIND20_CONFIG_NO_COMPILE_TIME_CHECKS`` 来禁用它。"
+
+#: ../../doc/changelog.rst:47
+msgid "Update RAII helpers."
+msgstr "更新 RAII 辅助函数。"
+
+#: ../../doc/changelog.rst:50 ../../doc/changelog.rst:113
+#: ../../doc/changelog.rst:166 ../../doc/changelog.rst:205
+msgid "Breaking Change"
+msgstr "重大变更"
+
+#: ../../doc/changelog.rst:52
+msgid ""
+"String tools and compressed pair are moved into the namespace "
+"``asbind20::util``."
+msgstr ""
+"字符串工具和压缩对已移至命名空间 ``asbind20::util`` 中。"
+
+#: ../../doc/changelog.rst:53
+msgid "``as_allocator`` is renamed to ``script_allocator``."
+msgstr "``as_allocator`` 已重命名为 ``script_allocator``。"
+
+#: ../../doc/changelog.rst:54
+msgid "**Extension library is removed**."
+msgstr "**扩展库已移除**。"
+
+#: ../../doc/changelog.rst:56
+msgid ""
+"Since asbind20 originated from a submodule of a personal project, many of"
+" the extensions were built for a private repository. I decided to migrate"
+" them to a separate open-source library in the future. Some of the "
+"extensions, like string extraction helper and section loader, are merged "
+"into the core library."
+msgstr ""
+"由于 asbind20 源自个人项目的子模块，许多扩展是为私有仓库构建的。"
+"我决定将来将它们迁移到一个单独的开源库中。"
+"一些扩展，如字符串提取辅助函数和分段加载器，已合并到核心库中。"
+
+#: ../../doc/changelog.rst:60
+msgid ""
+"Use ``asbind20::objfirst`` / ``objlast`` to specify the position of "
+"object pointer/reference, if you want to specify them explicitly, instead"
+" of dealing with underlying calling convention details of AngelScript."
+msgstr ""
+"使用 ``asbind20::objfirst`` / ``objlast`` 来指定对象指针/引用的位置，"
+"如果你想要显式指定它们，而不是处理 AngelScript 的底层调用约定细节。"
+
+#: ../../doc/changelog.rst:64
+msgid "Redesign lock wrapper to fit common C++ paradigm for shared lock."
+msgstr "重新设计锁包装器以适配常见的 C++ 共享锁范式。"
+
+#: ../../doc/changelog.rst:66
+msgid ""
+"Now message callback and exception translator are registered by global "
+"functions, instead of ``asbind20::global``."
+msgstr ""
+"现在消息回调和异常转换器通过全局函数注册，而不是 ``asbind20::global``。"
+
+#: ../../doc/changelog.rst:70
+msgid "1.8.0"
+msgstr ""
+
+#: ../../doc/changelog.rst:72
+msgid "2025-10-29"
+msgstr ""
+
+#: ../../doc/changelog.rst:77
+msgid ""
+"``script_invoke_result`` no longer stores the result inside it, now it "
+"will get the result when user needs it (lazy evaluation)."
+msgstr ""
+"``script_invoke_result`` 不再将结果存储在其中，现在将在用户需要时获取结果（延迟求值）。"
+
+#: ../../doc/changelog.rst:80
+msgid ""
+"According to benchmarks, this has the same performance as the handwritten"
+" code retrieving values from AS interfaces directly. It is even slightly "
+"faster than the plain handwritten code in some situation. Compared to "
+"handwritten implementation, the implementation from previous version is "
+"slower about 1% ~ 3%, and even worse when returning a value type with "
+"expensive copy construction, such as a string with extremely huge "
+"content."
+msgstr ""
+"根据基准测试，这与直接从 AS 接口检索值的手写代码具有相同的性能。"
+"在某些情况下，它甚至比普通手写代码略快。"
+"与手写实现相比，以前版本的实现慢了约 1% ~ 3%，"
+"在返回具有昂贵拷贝构造的值类型时（例如包含极大内容的字符串），情况更糟。"
+
+#: ../../doc/changelog.rst:85
+msgid ""
+"Experimental support for enum with custom underlying type in AngelScript "
+"2.39 WIP."
+msgstr ""
+"AngelScript 2.39 WIP 中支持具有自定义底层类型的枚举的实验性功能。"
+
+#: ../../doc/changelog.rst:86
+msgid ""
+"Utility for quickly implementing conversion rules for enums with "
+"underlying type other than ``int`` such as ``std::byte``."
+msgstr ""
+"用于快速实现底层类型不是 ``int``（例如 ``std::byte``）的枚举的转换规则的工具。"
+
+#: ../../doc/changelog.rst:88
+msgid "Experimental support for script ``foreach``."
+msgstr "对脚本 ``foreach`` 的实验性支持。"
+
+#: ../../doc/changelog.rst:90
+msgid ""
+"``script_invoke_result`` now supports ``operator->`` for pointer type, "
+"which is useful for accessing members of returned reference types."
+msgstr ""
+"``script_invoke_result`` 现在支持指针类型的 ``operator->``，"
+"这对于访问返回的引用类型的成员很有用。"
+
+#: ../../doc/changelog.rst:93
+msgid "Expose ``get_context_result`` for easily retrieving result from context."
+msgstr "公开 ``get_context_result`` 以便轻松从上下文中检索结果。"
+
+#: ../../doc/changelog.rst:95
+msgid "Add member function ``value_or`` for ``script_invoke_result``."
+msgstr "为 ``script_invoke_result`` 添加成员函数 ``value_or``。"
+
+#: ../../doc/changelog.rst:97
+msgid "``script_invoke_result`` can be converted to ``std::optional``."
+msgstr "``script_invoke_result`` 可以转换为 ``std::optional``。"
+
+#: ../../doc/changelog.rst:98
+msgid ""
+"``script_invoke_result`` can be converted to ``std::expected`` if C++23 "
+"is available."
+msgstr ""
+"如果 C++23 可用，``script_invoke_result`` 可以转换为 ``std::expected``。"
+
+#: ../../doc/changelog.rst:100
+msgid "Backport to support Clang 15 toolchain."
+msgstr "向后移植以支持 Clang 15 工具链。"
+
+#: ../../doc/changelog.rst:102
+msgid "More utilities."
+msgstr "更多实用工具。"
+
+#: ../../doc/changelog.rst:104
+msgid ""
+"Intermediate interfaces for creating generic wrappers have all moved into"
+" the internal namespace, in order to not confuse the users."
+msgstr ""
+"用于创建通用包装器的中间接口已全部移至内部命名空间，以免混淆用户。"
+
+#: ../../doc/changelog.rst:108 ../../doc/changelog.rst:143
+#: ../../doc/changelog.rst:172 ../../doc/changelog.rst:212
+#: ../../doc/changelog.rst:251
+msgid "Bug fix"
+msgstr "错误修复"
+
+#: ../../doc/changelog.rst:110
+msgid ""
+"Fix error caused by generated default/copy constructor when registering a"
+" C array (``type[size]``) as value type."
+msgstr ""
+"修复在将 C 数组（``type[size]``）注册为值类型时，由生成的默认/拷贝构造函数引起的错误。"
+
+#: ../../doc/changelog.rst:115
+msgid ""
+"Due to the new lazy evaluation implementation of "
+"``script_invoke_result``, it now can only be returned by script "
+"invocation tool. User cannot calls its constructor by value directly, "
+"e.g., returning a placeholder value when script failed."
+msgstr ""
+"由于 ``script_invoke_result`` 新的延迟求值实现，它现在只能由脚本调用工具返回。"
+"用户不能直接按值调用其构造函数，例如在脚本失败时返回占位符值。"
+
+#: ../../doc/changelog.rst:120
+msgid ""
+"Please consider converting the code style described above to use "
+"``std::optional`` (or ``std::expected`` if C++23 is available)."
+msgstr ""
+"请考虑将上述代码风格转换为使用 ``std::optional``（如果 C++23 可用，则使用 ``std::expected``）。"
+
+#: ../../doc/changelog.rst:123 ../../doc/changelog.rst:148
+#: ../../doc/changelog.rst:178 ../../doc/changelog.rst:219
+#: ../../doc/changelog.rst:282
+msgid "Documentation"
+msgstr "文档"
+
+#: ../../doc/changelog.rst:125
+msgid "Add Chinese README"
+msgstr "添加中文 README"
+
+#: ../../doc/changelog.rst:128
+msgid "1.7.1"
+msgstr ""
+
+#: ../../doc/changelog.rst:130
+msgid "2025-8-7"
+msgstr ""
+
+#: ../../doc/changelog.rst:135
+msgid "Update compatibility with AngelScript 2.38.0."
+msgstr "更新与 AngelScript 2.38.0 的兼容性。"
+
+#: ../../doc/changelog.rst:136
+msgid "Mark more pointers in parameter list by ``const``."
+msgstr "在参数列表中标记更多指针为 ``const``。"
+
+#: ../../doc/changelog.rst:137
+msgid ""
+"Add CMake flag for controlling the warning-as-error compiler flag during "
+"development and test."
+msgstr ""
+"添加 CMake 标志，用于在开发和测试期间控制将警告视为错误的编译器标志。"
+
+#: ../../doc/changelog.rst:138
+msgid "Add test for clang-cl (Clang with MSVC-like interfaces) support."
+msgstr "添加对 clang-cl（具有类 MSVC 接口的 Clang）支持的测试。"
+
+#: ../../doc/changelog.rst:139
+msgid ""
+"Add nightly test for checking compatibility of asbind20 with the latest "
+"WIP version of AngelScript."
+msgstr ""
+"添加每日构建测试，用于检查 asbind20 与最新 WIP 版本 AngelScript 的兼容性。"
+
+#: ../../doc/changelog.rst:140
+msgid "Add benchmarks for finding performance issues during development."
+msgstr "添加在开发过程中发现性能问题的基准测试。"
+
+#: ../../doc/changelog.rst:145
+msgid "Add some missing utility interfaces for RAII helpers."
+msgstr "为 RAII 辅助函数添加一些缺失的实用接口。"
+
+#: ../../doc/changelog.rst:150
+msgid "Update and clarify."
+msgstr "更新并澄清。"
+
+#: ../../doc/changelog.rst:151
+msgid "Fix typo."
+msgstr "修复拼写错误。"
+
+#: ../../doc/changelog.rst:154
+msgid "1.7.0"
+msgstr ""
+
+#: ../../doc/changelog.rst:156
+msgid "2025-7-19"
+msgstr ""
+
+#: ../../doc/changelog.rst:161
+msgid ""
+"Fully support of x86 (32bit) Windows platform, including special "
+"treatment for ``__stdcall``."
+msgstr ""
+"全面支持 x86（32位）Windows 平台，包括对 ``__stdcall`` 的特殊处理。"
+
+#: ../../doc/changelog.rst:162
+msgid ""
+"Binding generator for reference type no longer requires the registered "
+"type to be complete type."
+msgstr ""
+"引用类型的绑定生成器不再要求注册的类型是完整类型。"
+
+#: ../../doc/changelog.rst:163
+msgid ""
+"Policy for converting script initialization list for constructors "
+"accepting ``std::from_range(_t)`` when C++23 is enabled."
+msgstr ""
+"当启用 C++23 时，用于将脚本初始化列表转换为接受 ``std::from_range(_t)`` 的构造函数的策略。"
+
+#: ../../doc/changelog.rst:168
+msgid ""
+"Redesign interfaces of ``container::single`` to reduce some surprising "
+"behaviours. For example, the destructor won't clean the data, you need to"
+" call another function for releasing the data."
+msgstr ""
+"重新设计 ``container::single`` 的接口以减少一些意外行为。"
+"例如，析构函数不会清理数据，你需要调用另一个函数来释放数据。"
+
+#: ../../doc/changelog.rst:174
+msgid ""
+"Fix mismatched declaration in array extension that may cause crash on x86"
+" platform."
+msgstr ""
+"修复数组扩展中可能导致 x86 平台崩溃的声明不匹配问题。"
+
+#: ../../doc/changelog.rst:175
+msgid "Fix CMake error when configuring with Clang 19 toolchain."
+msgstr "修复使用 Clang 19 工具链配置时的 CMake 错误。"
+
+#: ../../doc/changelog.rst:180
+msgid "Add information about using asbind20 in XMake projects."
+msgstr "添加关于在 XMake 项目中使用 asbind20 的信息。"
+
+#: ../../doc/changelog.rst:183
+msgid "Removed"
+msgstr "移除"
+
+#: ../../doc/changelog.rst:185
+msgid ""
+"GCC 12 support is dropped due to too many workarounds. Please use GCC 13 "
+"or newer."
+msgstr ""
+"由于需要太多的变通方案，已放弃对 GCC 12 的支持。请使用 GCC 13 或更高版本。"
+
+#: ../../doc/changelog.rst:188
+msgid "1.6.0"
+msgstr ""
+
+#: ../../doc/changelog.rst:190
+msgid "2025-6-14"
+msgstr ""
+
+#: ../../doc/changelog.rst:195
+msgid "Helper for registering modulo operator."
+msgstr "用于注册取模运算符的辅助函数。"
+
+#: ../../doc/changelog.rst:196
+msgid "Composite property support."
+msgstr "复合属性支持。"
+
+#: ../../doc/changelog.rst:197
+msgid ""
+"Composite methods support including generic wrapper with or without "
+"variable types."
+msgstr ""
+"复合方法支持，包括带或不带可变类型的通用包装器。"
+
+#: ../../doc/changelog.rst:198
+msgid ""
+"Official arm64 support. Previously, it works theoretically but not "
+"actually tested."
+msgstr ""
+"官方 arm64 支持。以前，理论上可行但并未实际测试。"
+
+#: ../../doc/changelog.rst:199
+msgid ""
+"New tools for managing script function without increasing its reference "
+"count. It's useful when the programmer has deep understanding about the "
+"lifetime and want to write zero overhead code."
+msgstr ""
+"用于管理脚本函数而不增加其引用计数的新工具。"
+"当程序员对生命周期有深入了解并希望编写零开销代码时，这非常有用。"
+
+#: ../../doc/changelog.rst:201
+msgid "Adjust file structure for maintenance."
+msgstr "调整文件结构以便于维护。"
+
+#: ../../doc/changelog.rst:202
+msgid "Slightly optimize memory usage of ``small_vector``."
+msgstr "略微优化 ``small_vector`` 的内存使用。"
+
+#: ../../doc/changelog.rst:207
+msgid "Removed ``script_function_base``. Use ``script_function<void>`` instead."
+msgstr "已移除 ``script_function_base``。请改用 ``script_function<void>``。"
+
+#: ../../doc/changelog.rst:208
+msgid ""
+"``asbind20::meta::compressed_pair`` changed to "
+"``asbind20::compressed_pair``"
+msgstr ""
+"``asbind20::meta::compressed_pair`` 已更改为 ``asbind20::compressed_pair``"
+
+#: ../../doc/changelog.rst:209
+msgid "``asbind20::meta::overloaded`` changed to ``asbind20::overloaded``"
+msgstr "``asbind20::meta::overloaded`` 已更改为 ``asbind20::overloaded``"
+
+#: ../../doc/changelog.rst:214
+msgid "Update compatibility with ``string_view`` of binding generators."
+msgstr "更新与绑定生成器的 ``string_view`` 的兼容性。"
+
+#: ../../doc/changelog.rst:215
+msgid ""
+"Fix compilation error when using an integer bigger than 8 bytes, such as "
+"``__int128`` extension provided by Clang and GCC."
+msgstr ""
+"修复使用大于 8 字节的整数时的编译错误，例如 Clang 和 GCC 提供的 ``__int128`` 扩展。"
+
+#: ../../doc/changelog.rst:221
+msgid "Fix typo and wrong link."
+msgstr "修复拼写错误和错误的链接。"
+
+#: ../../doc/changelog.rst:222
+msgid "Fix highlight script for AngelScript."
+msgstr "修复 AngelScript 的语法高亮脚本。"
+
+#: ../../doc/changelog.rst:223
+msgid ""
+"Add entrance for extension library for future update. (Currently, the "
+"documents of extensions are still incomplete)"
+msgstr ""
+"为扩展库添加入口以便将来更新。（目前，扩展的文档仍不完整）"
+
+#: ../../doc/changelog.rst:226
+msgid "Deprecated"
+msgstr "弃用"
+
+#: ../../doc/changelog.rst:228
+msgid ""
+"Support of GCC 12 will be dropped in the next release, because it "
+"requires too many workarounds. Please use GCC 13 or newer."
+msgstr ""
+"对 GCC 12 的支持将在下一个版本中移除，因为它需要太多的变通方案。请使用 GCC 13 或更高版本。"
+
+#: ../../doc/changelog.rst:231
+msgid "1.5.2"
+msgstr ""
+
+#: ../../doc/changelog.rst:233
+msgid "2025-5-13"
+msgstr ""
+
+#: ../../doc/changelog.rst:238
+msgid ""
+"Complete support of using AngelScript interfaces within ``AngelScript::``"
+" namespace. (Thanks `GitHub @sashi0034 <https://github.com/sashi0034>`_)"
+msgstr ""
+"完全支持在 ``AngelScript::`` 命名空间中使用 AngelScript 接口。"
+"（感谢 `GitHub @sashi0034 <https://github.com/sashi0034>`_）"
+
+#: ../../doc/changelog.rst:241
+msgid "1.5.1"
+msgstr ""
+
+#: ../../doc/changelog.rst:243
+msgid "2025-4-21"
+msgstr ""
+
+#: ../../doc/changelog.rst:248
+msgid ""
+"Some interfaces  of ``container::single`` will return a ``bool`` value "
+"for checking result"
+msgstr ""
+"``container::single`` 的一些接口将返回一个 ``bool`` 值用于检查结果"
+
+#: ../../doc/changelog.rst:253
+msgid "Exception guarantee for ``notify_gc`` policy"
+msgstr "``notify_gc`` 策略的异常保证"
+
+#: ../../doc/changelog.rst:254
+msgid "Exception guarantee for ``small_vector``"
+msgstr "``small_vector`` 的异常保证"
+
+#: ../../doc/changelog.rst:255
+msgid ""
+"Fix memory leaks if any exception occurs in generated constructors / "
+"factories"
+msgstr ""
+"修复在生成的构造函数/工厂中发生异常时的内存泄漏"
+
+#: ../../doc/changelog.rst:258
+msgid "1.5.0"
+msgstr ""
+
+#: ../../doc/changelog.rst:260
+msgid "2025-3-31"
+msgstr ""
+
+#: ../../doc/changelog.rst:263
+msgid "What's New"
+msgstr "新增内容"
+
+#: ../../doc/changelog.rst:266
+msgid "Core Library"
+msgstr "核心库"
+
+#: ../../doc/changelog.rst:268
+msgid "New tools for binding complex operator overloads"
+msgstr "用于绑定复杂运算符重载的新工具"
+
+#: ../../doc/changelog.rst:269
+msgid ""
+"Interfaces of binding generator now all take ``std::string`` / "
+"``std::string_view`` instead of ``const char*`` for convenience and "
+"consistency"
+msgstr ""
+"绑定生成器的接口现在全部使用 ``std::string`` / ``std::string_view`` 而不是 ``const char*``，以方便和保持一致"
+
+#: ../../doc/changelog.rst:270
+msgid "Tools for multithreading with AngelScript"
+msgstr "与 AngelScript 进行多线程处理的工具"
+
+#: ../../doc/changelog.rst:271
+msgid "New tool named ``overload_cast`` for choosing desired overloaded functions"
+msgstr "名为 ``overload_cast`` 的新工具，用于选择所需的重载函数"
+
+#: ../../doc/changelog.rst:274
+msgid "Extension Library"
+msgstr "扩展库"
+
+#: ../../doc/changelog.rst:276
+msgid "First stable version of extension library released!"
+msgstr "扩展库的第一个稳定版本已发布！"
+
+#: ../../doc/changelog.rst:278
+msgid ""
+"Please check the comment in source code of extension for their "
+"documentation. Full documentation for extension library is coming soon."
+msgstr ""
+"请查看扩展源代码中的注释以获取其文档。扩展库的完整文档即将推出。"
+
+#: ../../doc/changelog.rst:284
+msgid "Rewrite and migrate to Read the Docs."
+msgstr "重写并迁移到 Read the Docs。"
+
+#: ../../doc/changelog.rst:287
+msgid "Bug Fix"
+msgstr "错误修复"
+
+#: ../../doc/changelog.rst:289
+msgid "Generic wrapper may crash when returning some kinds of value type by value"
+msgstr "通用包装器在按值返回某些值类型时可能会崩溃"
+
+#: ../../doc/changelog.rst:290
+msgid "Fix several bugs in ``small_vector``"
+msgstr "修复 ``small_vector`` 中的多个错误"

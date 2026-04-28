@@ -1,0 +1,266 @@
+"Language: zh_CN\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../doc/start.rst:2
+msgid "Prerequisites"
+msgstr "前置要求"
+
+#: ../../doc/start.rst:4
+msgid "AngelScript 2.37.0 or newer."
+msgstr "AngelScript 2.37.0 或更新版本。"
+
+#: ../../doc/start.rst:5
+msgid ""
+"Any C++ compiler that supports C++20 features required by this library. "
+"This library mainly depends on ``requires`` and ``<concepts>`` from "
+"C++20."
+msgstr ""
+"任意支持本库所需的 C++20 特性的 C++ 编译器。"
+"本库主要依赖 C++20 的 ``requires`` 和 ``<concepts>``。"
+
+#: ../../doc/start.rst:8
+msgid ""
+"If the compiler and standard library support newer features like C++23, "
+"asbind20 will enable support for them."
+msgstr ""
+"如果编译器和标准库支持 C++23 等更新的特性，"
+"asbind20 将启用对这些特性的支持。"
+
+#: ../../doc/start.rst:11
+msgid ""
+"There is a nightly build script in CI of asbind20, testing its "
+"compatibility with `the latest WIP version of AngelScript "
+"<https://www.angelcode.com/angelscript/wip.php>`_. If you are using a WIP"
+" version of AS for newest features or fixes, you need to consider using "
+"the latest release of asbind20, or even the development branch."
+msgstr ""
+"asbind20 的 CI 中有一个每日构建脚本，用于测试其与"
+"`最新的 AngelScript WIP 版本 <https://www.angelcode.com/angelscript/wip.php>`_ 的兼容性。"
+"如果你使用 AS 的 WIP 版本以获得最新功能或修复，"
+"需要考虑使用 asbind20 的最新发布版本，甚至是开发分支。"
+
+#: ../../doc/start.rst:18
+msgid "Supported Platforms"
+msgstr "支持的平台"
+
+#: ../../doc/start.rst:20
+msgid ""
+"Currently, the following platforms and compilers are officially supported"
+" and `tested by CI "
+"<https://github.com/HenryAWE/asbind20/blob/master/.github/workflows/build.yml>`_."
+" However, asbind20 on other platforms, architectures or compiler "
+"toolchains supported by AngelScript should work as expected too."
+msgstr ""
+"目前，以下平台和编译器受到官方支持并"
+"`通过 CI 进行测试 <https://github.com/HenryAWE/asbind20/blob/master/.github/workflows/build.yml>`_。"
+"不过，asbind20 在 AngelScript 支持的其他平台、架构或编译器工具链上也应该能够正常工作。"
+
+#: ../../doc/start.rst:27
+msgid "Platform"
+msgstr "平台"
+
+#: ../../doc/start.rst:28
+msgid "Architecture"
+msgstr "架构"
+
+#: ../../doc/start.rst:29
+msgid "Compiler"
+msgstr "编译器"
+
+#: ../../doc/start.rst:30 ../../doc/start.rst:33
+msgid "Windows"
+msgstr "Windows"
+
+#: ../../doc/start.rst:31
+msgid "x86, x64"
+msgstr "x86, x64"
+
+#: ../../doc/start.rst:32
+msgid "MSVC latest"
+msgstr "MSVC 最新版"
+
+#: ../../doc/start.rst:34 ../../doc/start.rst:37
+msgid "x64"
+msgstr "x64"
+
+#: ../../doc/start.rst:35
+msgid "Clang-Cl latest"
+msgstr "Clang-Cl 最新版"
+
+#: ../../doc/start.rst:36 ../../doc/start.rst:40
+msgid "Linux (Ubuntu)"
+msgstr "Linux (Ubuntu)"
+
+#: ../../doc/start.rst:38
+msgid "GCC 13, 14"
+msgstr "GCC 13, 14"
+
+#: ../../doc/start.rst:39
+msgid "Clang 15, 18, 19"
+msgstr "Clang 15, 18, 19"
+
+#: ../../doc/start.rst:41 ../../doc/start.rst:44
+msgid "arm64"
+msgstr "arm64"
+
+#: ../../doc/start.rst:42
+msgid "Clang 18"
+msgstr "Clang 18"
+
+#: ../../doc/start.rst:43
+msgid "MacOS"
+msgstr "MacOS"
+
+#: ../../doc/start.rst:45
+msgid "Xcode latest-stable"
+msgstr "Xcode 最新稳定版"
+
+#: ../../doc/start.rst:46
+msgid "Emscripten"
+msgstr "Emscripten"
+
+#: ../../doc/start.rst:47
+msgid "wasm"
+msgstr "wasm"
+
+#: ../../doc/start.rst:48
+msgid "emsdk 4.0.18"
+msgstr "emsdk 4.0.18"
+
+#: ../../doc/start.rst:50
+msgid ""
+"The \"latest\" or \"latest-stable\" in the above table mean the (stable) "
+"latest version of compiler toolchain available in CI when asbind20 "
+"releases a new stable version. You can check the release date of "
+"historical versions in the :doc:`changelog`."
+msgstr ""
+"上表中 \"latest\" 或 \"latest-stable\" 指的是 asbind20 发布新稳定版本时 CI 中可用的"
+"（稳定）最新版本的编译器工具链。"
+"你可以查看 :doc:`changelog` 中历史版本的发布日期。"
+
+#: ../../doc/start.rst:53
+msgid ""
+"Newer Clang toolchains (like Clang 18+) support both libstdc++ and "
+"libc++, while the older toolchains (like Clang 15) on libstdc++ are not "
+"guaranteed to work as expected."
+msgstr ""
+"较新的 Clang 工具链（如 Clang 18+）同时支持 libstdc++ 和 libc++，"
+"而较旧的工具链（如 Clang 15）在 libstdc++ 上的运行则不能保证完全正常。"
+
+#: ../../doc/start.rst:56
+msgid ""
+"Additionally, the Clang 18 toolchain on x64 Linux is tested for compiling"
+" with address sanitizer and ``AS_USE_NAMESPACE`` enabled."
+msgstr ""
+"此外，x64 Linux 上的 Clang 18 工具链还通过了启用地址消毒器和 ``AS_USE_NAMESPACE`` 的编译测试。"
+
+#: ../../doc/start.rst:59
+msgid ""
+"This library on older compiler toolchains, like GCC 12, still works as "
+"expected under most situations, but it might need some workarounds to "
+"deal with defects of the compiler, e.g., additional ``typename`` in "
+"template-related code. Please use newer compiler toolchains if possible."
+msgstr ""
+"本库在较旧的编译器工具链（如 GCC 12）上在大多数情况下仍能正常工作，"
+"但可能需要一些变通方法来处理编译器的缺陷，"
+"例如在模板相关代码中额外添加 ``typename``。"
+"请尽可能使用较新的编译器工具链。"
+
+#: ../../doc/start.rst:64
+msgid "Integrate into Your Project"
+msgstr "集成到你的项目中"
+
+#: ../../doc/start.rst:66
+msgid ""
+"Please follow the `tutorial of AngelScript to build and install it "
+"<https://www.angelcode.com/angelscript/sdk/docs/manual/doc_compile_lib.html>`_"
+" at first, or use a package manager like `vcpkg "
+"<https://github.com/microsoft/vcpkg>`_."
+msgstr ""
+"请先参考 `AngelScript 的教程来构建和安装它 "
+"<https://www.angelcode.com/angelscript/sdk/docs/manual/doc_compile_lib.html>`_，"
+"或使用 `vcpkg <https://github.com/microsoft/vcpkg>`_ 等包管理器。"
+
+#: ../../doc/start.rst:69
+msgid ""
+"Besides, if your project has a custom location of ``<angelscript.h>``, "
+"you can include it before any asbind20 headers. This library will not "
+"include the AngelScript library for the second time by detecting the "
+"macro ``ANGELSCRIPT_H``."
+msgstr ""
+"此外，如果你的项目有自定义的 ``<angelscript.h>`` 路径，"
+"可以在包含任何 asbind20 头文件之前先包含它。"
+"本库会通过检测宏 ``ANGELSCRIPT_H`` 来避免重复包含 AngelScript 库。"
+
+#: ../../doc/start.rst:73
+msgid "1. Copy into Your Project"
+msgstr "1. 复制到你的项目中"
+
+#: ../../doc/start.rst:75
+msgid ""
+"This is a header-only library. You can directly copy all the files under "
+"``include/`` into your project, then set a correct include directory for "
+"your project."
+msgstr ""
+"这是一个仅头文件库。"
+"你可以直接将 ``include/`` 下的所有文件复制到你的项目中，"
+"然后为你的项目设置正确的包含目录。"
+
+#: ../../doc/start.rst:80
+msgid "2. Integration Using CMake"
+msgstr "2. 使用 CMake 集成"
+
+#: ../../doc/start.rst:82
+msgid "CMake 3.20 or newer is required."
+msgstr "需要 CMake 3.20 或更新版本。"
+
+#: ../../doc/start.rst:85
+msgid "A. Submodule"
+msgstr "A. 子模块"
+
+#: ../../doc/start.rst:87
+msgid ""
+"You can add asbind20 through git submodule and then use "
+"``add_subdirectory``."
+msgstr ""
+"你可以通过 git 子模块添加 asbind20，然后使用 ``add_subdirectory``。"
+
+#: ../../doc/start.rst:96
+msgid "B. Build and Install"
+msgstr "B. 构建并安装"
+
+#: ../../doc/start.rst:98
+msgid "Additionally, you can install and link against asbind20 using CMake."
+msgstr "此外，你可以使用 CMake 安装和链接 asbind20。"
+
+#: ../../doc/start.rst:105
+msgid "Then, link the library in a ``CMakeLists.txt``."
+msgstr "然后在 ``CMakeLists.txt`` 中链接该库。"
+
+#: ../../doc/start.rst:114
+msgid "1. Integration with XMake Projects"
+msgstr "1. 与 XMake 项目集成"
+
+#: ../../doc/start.rst:116
+msgid ""
+"Since the version 1.6.0, asbind20 has been accepted into the `official "
+"package registry (xmake-repo) <https://github.com/xmake-io/xmake-repo>`_."
+" You can easily add asbind20 as a dependency of your project."
+msgstr ""
+"自 1.6.0 版本起，asbind20 已被收录到"
+"`官方包注册表 (xmake-repo) <https://github.com/xmake-io/xmake-repo>`_ 中。"
+"你可以轻松地将 asbind20 添加为项目的依赖项。"
+
+#: ../../doc/start.rst:127
+msgid ""
+"Please check the `official documentation of XMake about adding packages "
+"<https://xmake.io/guide/project-configuration/add-packages.html>`_ for "
+"more details."
+msgstr ""
+"更多详情请查阅 `XMake 关于添加包的官方文档 "
+"<https://xmake.io/guide/project-configuration/add-packages.html>`_。"
+

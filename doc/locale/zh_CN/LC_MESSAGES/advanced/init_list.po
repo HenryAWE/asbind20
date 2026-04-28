@@ -1,0 +1,185 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: asbind20 \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-04-29 01:05+0800\n"
+"Language: zh_CN\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../doc/advanced/init_list.rst:2
+msgid "Script Initialization List"
+msgstr "脚本初始化列表"
+
+#: ../../doc/advanced/init_list.rst:4
+msgid ""
+"Types can be registered to allow them to be created from initialization "
+"lists."
+msgstr "可以注册类型以允许从初始化列表创建它们。"
+
+#: ../../doc/advanced/init_list.rst:7
+msgid "List Factories and Constructors"
+msgstr "列表工厂和构造函数"
+
+#: ../../doc/advanced/init_list.rst:9
+msgid ""
+"Similar to normal factories and constructors, the list factories for "
+"reference types and list constructors for value types can be registered "
+"by ``.list_factory`` and ``.list_constructor``, respectively."
+msgstr ""
+"与普通工厂和构造函数类似，引用类型的列表工厂和值类型的列表构造函数"
+"可以分别通过 ``.list_factory`` 和 ``.list_constructor`` 注册。"
+
+#: ../../doc/advanced/init_list.rst:12
+msgid ""
+"If you already have wrapper functions, you can register them by "
+"``.list_factory_function`` or ``.list_constructor_function``"
+msgstr ""
+"如果你已经有包装函数，"
+"可以通过 ``.list_factory_function`` 或 ``.list_constructor_function`` 注册它们"
+
+#: ../../doc/advanced/init_list.rst:14
+msgid ""
+"This kind of helper needs you to provide the pattern of the "
+"initialization list, such as ``float, float`` or ``repeat int``. For "
+"helpers using the constructors of C++ class directly, you can also "
+"specify the optional template parameter ``ElementType`` for the element "
+"type of initialization list. If the list pattern contains ``repeat`` or "
+"``?`` that need to parse manually, you can just use the default template "
+"parameter, which is ``void``."
+msgstr ""
+"这类辅助工具需要你提供初始化列表的模式，"
+"例如 ``float, float`` 或 ``repeat int``。"
+"对于直接使用 C++ 类构造函数的辅助工具，"
+"你还可以为初始化列表的元素类型指定可选的模板参数 ``ElementType``。"
+"如果列表模式包含需要手动解析的 ``repeat`` 或 ``?``，"
+"你可以直接使用默认模板参数，即 ``void``。"
+
+#: ../../doc/advanced/init_list.rst:19
+msgid ""
+"The helpers expect the constructors or wrapper functions use a pointer "
+"(``ElementType*``) to receive the buffer of initialization list. The "
+"requirements about return value and other parameters are the same as "
+"normal factories and constructors, which is described in :doc:`how to "
+"register an object type <../object_type>`."
+msgstr ""
+"这些辅助工具期望构造函数或包装函数使用指针（``ElementType*``）"
+"来接收初始化列表的缓冲区。"
+"关于返回值和其它参数的要求与普通工厂和构造函数相同，"
+"详见 :doc:`如何注册对象类型 <../object_type>`。"
+
+#: ../../doc/advanced/init_list.rst:52
+msgid ""
+"Unlike C++, each type in AngelScript can only have **one** list factory "
+"or constructor."
+msgstr ""
+"与 C++ 不同，AngelScript 中的每种类型只能有**一个**列表工厂或构造函数。"
+
+#: ../../doc/advanced/init_list.rst:54
+msgid ""
+"For repeated pattern, asbind20 provides a helper class to parse it from a"
+" raw ``void*``."
+msgstr ""
+"对于重复模式，asbind20 提供了一个辅助类来从原始 ``void*`` 解析它。"
+
+#: ../../doc/advanced/init_list.rst
+msgid "Public Types"
+msgstr "公共类型"
+
+#: ../../doc/advanced/init_list.rst
+msgid "Public Functions"
+msgstr "公共函数"
+
+#: ../../doc/advanced/init_list.rst
+msgid "Parameters"
+msgstr "参数"
+
+#: ../../doc/advanced/init_list.rst:61
+msgid "Initialization List Policies"
+msgstr "初始化列表策略"
+
+#: ../../doc/advanced/init_list.rst:63
+msgid ""
+"The asbind20 provides some policies for adapting existing C++ paradigm "
+"for constructing from a range of value."
+msgstr ""
+"asbind20 提供了一些策略用于适配现有的 C++ 构造模式，"
+"以便从值的范围进行构造。"
+
+#: ../../doc/advanced/init_list.rst:66
+msgid "List Pattern with Limited Elements"
+msgstr "有限元素的列表模式"
+
+#: ../../doc/advanced/init_list.rst:68
+msgid ""
+"Policies for the pattern with limited elements, i.e., no ``repeat`` in "
+"the pattern."
+msgstr "针对有限元素模式的策略，即模式中没有 ``repeat``。"
+
+#: ../../doc/advanced/init_list.rst:70
+msgid "Applying"
+msgstr "应用"
+
+#: ../../doc/advanced/init_list.rst:74 ../../doc/advanced/init_list.rst:98
+#: ../../doc/advanced/init_list.rst:119 ../../doc/advanced/init_list.rst:142
+#: ../../doc/advanced/init_list.rst:162 ../../doc/advanced/init_list.rst:187
+#: ../../doc/advanced/init_list.rst:207
+msgid "Example"
+msgstr "示例"
+
+#: ../../doc/advanced/init_list.rst:90
+msgid "List Pattern with Repeated Elements"
+msgstr "重复元素的列表模式"
+
+#: ../../doc/advanced/init_list.rst:92
+msgid ""
+"Policies for the pattern with repeated elements, i.e., containing "
+"``repeat`` in the pattern."
+msgstr "针对重复元素模式的策略，即模式中包含 ``repeat``。"
+
+#: ../../doc/advanced/init_list.rst:94
+msgid "Automatically convert to ``script_init_list_repeat``"
+msgstr "自动转换为 ``script_init_list_repeat``"
+
+#: ../../doc/advanced/init_list.rst:115
+msgid "As an iterator pair of ``[begin, end)``"
+msgstr "作为迭代器对 ``[begin, end)``"
+
+#: ../../doc/advanced/init_list.rst:138
+msgid "As a pair of pointer and size"
+msgstr "作为指针和大小对"
+
+#: ../../doc/advanced/init_list.rst:158
+msgid "As the ``std::initializer_list``"
+msgstr "作为 ``std::initializer_list``"
+
+#: ../../doc/advanced/init_list.rst:179
+msgid ""
+"This policy is implemented by non-standard code, please check the macro "
+"``ASBIND20_HAS_AS_INITIALIZER_LIST`` at first."
+msgstr ""
+"此策略由非标准代码实现，请首先检查宏 ``ASBIND20_HAS_AS_INITIALIZER_LIST``。"
+
+#: ../../doc/advanced/init_list.rst:181
+msgid "Currently, this policy are supported on MSVC STL, libstdc++, and libc++."
+msgstr "目前，此策略在 MSVC STL、libstdc++ 和 libc++ 上受支持。"
+
+#: ../../doc/advanced/init_list.rst:183
+msgid "As the ``std::span``"
+msgstr "作为 ``std::span``"
+
+#: ../../doc/advanced/init_list.rst:203
+msgid "``std::from_range`` and a range"
+msgstr "``std::from_range`` 和范围"
+
+#: ../../doc/advanced/init_list.rst:225
+msgid ""
+"This policy is only available when compiler supports C++23. You can check"
+" whether the macro ``ASBIND20_HAS_CONTAINERS_RANGES`` is defined."
+msgstr ""
+"此策略仅在编译器支持 C++23 时可用。"
+"你可以检查宏 ``ASBIND20_HAS_CONTAINERS_RANGES`` 是否已定义。"
+
