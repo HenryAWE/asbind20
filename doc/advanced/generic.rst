@@ -81,24 +81,24 @@ The first one contains address of argument, while the second one contains the ty
 The helper ``var_type<Is...>`` needs the indices of ``?`` in **script** parameter list.
 
 .. list-table:: Examples
-   :widths: 25 25 50
-   :header-rows: 1
+  :widths: 25 25 50
+  :header-rows: 1
 
-   * - Script Parameter List
-     - Helper Usage
-     - Parameter List in C++
+  * - Script Parameter List
+    - Helper Usage
+    - Parameter List in C++
 
-   * - ``const ?&in``
-     - ``var_type<0>``
-     - ``void*, int``
+  * - ``const ?&in``
+    - ``var_type<0>``
+    - ``void*, int``
 
-   * - ``float, const ?&in``
-     - ``var_type<1>``
-     - ``float, void*, int``
+  * - ``float, const ?&in``
+    - ``var_type<1>``
+    - ``float, void*, int``
 
-   * - ``const ?&in, float, const ?&in``
-     - ``var_type<0, 2>``
-     - ``void*, int, float, void*, int``
+  * - ``const ?&in, float, const ?&in``
+    - ``var_type<0, 2>``
+    - ``void*, int, float, void*, int``
 
 Example code:
 

@@ -21,31 +21,31 @@ Currently, the following platforms and compilers are officially supported and `t
 However, asbind20 on other platforms, architectures or compiler toolchains supported by AngelScript should work as expected too.
 
 .. list-table::
-   :widths: auto
-   :header-rows: 1
+  :widths: auto
+  :header-rows: 1
 
-   * - Platform
-     - Architecture
-     - Compiler
-   * - Windows
-     - x86, x64
-     - MSVC latest
-   * - Windows
-     - x64
-     - Clang-Cl latest
-   * - Linux (Ubuntu)
-     - x64
-     - | GCC 13, 14
-       | Clang 15, 18, 19
-   * - Linux (Ubuntu)
-     - arm64
-     - Clang 18
-   * - MacOS
-     - arm64
-     - Xcode latest-stable
-   * - Emscripten
-     - wasm
-     - emsdk 4.0.18
+  * - Platform
+    - Architecture
+    - Compiler
+  * - Windows
+    - x86, x64
+    - MSVC latest
+  * - Windows
+    - x64
+    - Clang-Cl latest
+  * - Linux (Ubuntu)
+    - x64
+    - | GCC 13, 14
+      | Clang 15, 18, 19
+  * - Linux (Ubuntu)
+    - arm64
+    - Clang 18
+  * - MacOS
+    - arm64
+    - Xcode latest-stable
+  * - Emscripten
+    - wasm
+    - emsdk 4.0.18
 
 - The "latest" or "latest-stable" in the above table mean the (stable) latest version of compiler toolchain available in CI when asbind20 releases a new stable version.
   You can check the release date of historical versions in the :doc:`changelog`.

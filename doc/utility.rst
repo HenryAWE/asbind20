@@ -9,8 +9,8 @@ Script Engine
 .. doxygenfunction:: asbind20::make_script_engine
 
 .. doxygenclass:: asbind20::script_engine
-   :members:
-   :undoc-members:
+  :members:
+  :undoc-members:
 
 Script Context
 --------------
@@ -18,34 +18,34 @@ Script Context
 .. doxygenfunction:: asbind20::current_context
 
 .. doxygenclass:: asbind20::request_context
-   :members:
-   :undoc-members:
+  :members:
+  :undoc-members:
 
 .. doxygenclass:: asbind20::reuse_active_context
-   :members:
-   :undoc-members:
+  :members:
+  :undoc-members:
 
 Script Object
 -------------
 
 .. doxygenclass:: asbind20::script_object
-   :members:
-   :undoc-members:
+  :members:
+  :undoc-members:
 
 Script Type Information
 -----------------------
 
 .. doxygenclass:: asbind20::script_typeinfo
-   :members:
-   :undoc-members:
+  :members:
+  :undoc-members:
 
 
 Lockable Shared Bool
 --------------------
 
 .. doxygenclass:: asbind20::lockable_shared_bool
-   :members:
-   :undoc-members:
+  :members:
+  :undoc-members:
 
 .. doxygenfunction:: asbind20::make_lockable_shared_bool
 
@@ -55,8 +55,8 @@ IO Helpers
 .. doxygengroup:: ByteCode
 
 .. doxygenstruct:: asbind20::io::load_byte_code_result
-   :members:
-   :undoc-members:
+  :members:
+  :undoc-members:
 
 Loading Script Sections
 -----------------------
@@ -75,12 +75,12 @@ Miscellaneous Utilities
 .. doxygenfunction:: asbind20::util::with_cstr
 
 .. doxygenclass:: asbind20::util::fixed_string
-   :members:
-   :undoc-members:
+  :members:
+  :undoc-members:
 
 .. doxygenclass:: asbind20::util::compressed_pair
-   :members:
-   :undoc-members:
+  :members:
+  :undoc-members:
 
 Debugging
 =========
@@ -91,8 +91,8 @@ GC Statistics
 -------------
 
 .. doxygenstruct:: asbind20::debugging::gc_statistics
-   :members:
-   :undoc-members:
+  :members:
+  :undoc-members:
 .. doxygenfunction:: asbind20::debugging::get_gc_statistics
 
 String Extraction

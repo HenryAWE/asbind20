@@ -17,8 +17,8 @@ but they are not necessary as the application can easily enumerate available met
         .method("int invoke(callback@ cb) const");
 
 .. note::
-   Unlike the raw AngelScript interface,
-   you don't need to add the class name into the declaration of member ``funcdef`` for asbind20.
+  Unlike the raw AngelScript interface,
+  you don't need to add the class name into the declaration of member ``funcdef`` for asbind20.
 
 Type Aliases
 ------------
@@ -63,9 +63,9 @@ Enumerations
         .value(my_enum::B, "B");
 
 .. note::
-   Up until version 2.39, AngelScript used a 32-bit integer to store the underlying value of enums,
-   before it supported customizable underlying types.
-   Please make sure those values don't overflow or underflow.
+  Up until version 2.39, AngelScript used a 32-bit integer to store the underlying value of enums,
+  before it supported customizable underlying types.
+  Please make sure those values don't overflow or underflow.
 
 Besides, the library provides a convenient interface for generating string representation of enum value at compile-time.
 
@@ -78,10 +78,10 @@ The following code is equivalent to the above one:
         .value<my_enum::B>();
 
 .. note::
-   However, as static reflection is still waiting for C++26, this feature relies on compiler extension and is platform dependent.
-   **It has some limitations**. For example, it cannot generate string representation for enums with same value.
+  However, as static reflection is still waiting for C++26, this feature relies on compiler extension and is platform dependent.
+  **It has some limitations**. For example, it cannot generate string representation for enums with same value.
 
-   .. code-block:: c++
+  .. code-block:: c++
 
     enum overlapped
     {
@@ -89,8 +89,8 @@ The following code is equivalent to the above one:
         B = 1 // Not supported for this kind of enum value
     };
 
-   If you are interested in how this is achieved, you can read `this article written by YKIKO (Chinese) <https://zhuanlan.zhihu.com/p/680412313>`_,
-   or author's `English translation <https://ykiko.me/en/articles/680412313/>`_.
+  If you are interested in how this is achieved, you can read `this article written by YKIKO (Chinese) <https://zhuanlan.zhihu.com/p/680412313>`_,
+  or author's `English translation <https://ykiko.me/en/articles/680412313/>`_.
 
 Since the version 2.39, AngelScript supports enumerations with custom underlying types.
 

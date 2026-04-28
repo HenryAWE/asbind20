@@ -86,10 +86,10 @@ Registering the GC behaviours:
         .release_refs(fp<&gc_type::release_refs>);
 
 .. note::
-   You should remember to clear the GC flag in functions for increasing and decreasing reference count.
-   Otherwise it is possible that the GC incorrectly determines that the object should be destroyed.
+  You should remember to clear the GC flag in functions for increasing and decreasing reference count.
+  Otherwise it is possible that the GC incorrectly determines that the object should be destroyed.
 
-   .. code-block:: c++
+  .. code-block:: c++
 
     void gc_type::addref()
     {

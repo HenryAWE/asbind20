@@ -10,26 +10,26 @@ CMake Options for Development
 -----------------------------
 
 .. list-table::
-   :widths: auto
-   :header-rows: 1
+  :widths: auto
+  :header-rows: 1
 
-   * - Name
-     - Description
+  * - Name
+    - Description
 
-   * - ``asbind_cxxstd``
-     - | C++ standard version for building asbind20. Must be 20 at least.
-       | This can be set to a higher version like 23 for testing some advanced features that are only available in newer standard.
-   * - ``asbind_build_test``
-     - Build tests and enable ``ctest``.
-   * - ``asbind_dev_warning_as_error``
-     - | Enable warning-as-error during the development.
-       | This option defaults to ``ON`` and only has effect when ``asbind_build_test`` is ``ON``.
-   * - ``asbind_build_bench``
-     - Build benchmarks.
-   * - ``asbind_build_ext``
-     - Build extension library.
-   * - ``asbind_build_doc``
-     - Enable utility target for building documentation preview (see below).
+  * - ``asbind_cxxstd``
+    - | C++ standard version for building asbind20. Must be 20 at least.
+      | This can be set to a higher version like 23 for testing some advanced features that are only available in newer standard.
+  * - ``asbind_build_test``
+    - Build tests and enable ``ctest``.
+  * - ``asbind_dev_warning_as_error``
+    - | Enable warning-as-error during the development.
+      | This option defaults to ``ON`` and only has effect when ``asbind_build_test`` is ``ON``.
+  * - ``asbind_build_bench``
+    - Build benchmarks.
+  * - ``asbind_build_ext``
+    - Build extension library.
+  * - ``asbind_build_doc``
+    - Enable utility target for building documentation preview (see below).
 
 Generating Documentation Locally
 --------------------------------

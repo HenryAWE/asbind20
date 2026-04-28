@@ -10,11 +10,11 @@ It will be automatically handled by the library with the special binding generat
 which are named ``template_value_class`` and ``template_ref_class``.
 
 .. note::
-   ``asGetTypeTraits<T>()`` cannot determine the type flags for a template value type,
-   because its constructors contain parameters of the hidden ``asITypeInfo*``.
+  ``asGetTypeTraits<T>()`` cannot determine the type flags for a template value type,
+  because its constructors contain parameters of the hidden ``asITypeInfo*``.
 
-   As a result, you need to manually pass the flags to the binding generator.
-   This also applies to the ``.behaviours_by_traits()`` helper.
+  As a result, you need to manually pass the flags to the binding generator.
+  This also applies to the ``.behaviours_by_traits()`` helper.
 
 Here are examples from the unit tests.
 
@@ -60,12 +60,12 @@ You can directly use the subtype in the declaration of method.
         .method("const T& opIndex(uint) const", &script_array::opIndex);
 
 .. note::
-   If the subtype might be an object handle,
-   you probably need to consider the keyword ``if_handle_then_const``.
+  If the subtype might be an object handle,
+  you probably need to consider the keyword ``if_handle_then_const``.
 
-   You can also read `official document explaining this <https://www.angelcode.com/angelscript/sdk/docs/manual/doc_adv_template.html#doc_adv_template_1_1>`_
+  You can also read `official document explaining this <https://www.angelcode.com/angelscript/sdk/docs/manual/doc_adv_template.html#doc_adv_template_1_1>`_
 
-   .. code-block:: c++
+  .. code-block:: c++
 
     using namespace asbind20;
     template_ref_class<script_array>(/* ... */)

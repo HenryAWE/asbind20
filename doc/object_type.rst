@@ -185,40 +185,40 @@ The asbind20 will handle common flags for you.
 However, due to limitation of C++, the following flags still need user to provide them manually.
 
 .. list-table::
-   :widths: 25 75
-   :header-rows: 1
+  :widths: 25 75
+  :header-rows: 1
 
-   * - Flag
-     - Description
+  * - Flag
+    - Description
 
-   * - ``asOBJ_APP_CLASS_MORE_CONSTRUCTORS``
-     - The C++ class has additional constructors beyond the default/copy constructor
+  * - ``asOBJ_APP_CLASS_MORE_CONSTRUCTORS``
+    - The C++ class has additional constructors beyond the default/copy constructor
 
-   * - ``asOBJ_APP_CLASS_ALLINTS``
-     - The C++ class members can be treated as if all integers
+  * - ``asOBJ_APP_CLASS_ALLINTS``
+    - The C++ class members can be treated as if all integers
 
-   * - ``asOBJ_APP_CLASS_ALLFLOATS``
-     - The C++ class members can be treated as if all ``float``\ s or ``double``\ s
+  * - ``asOBJ_APP_CLASS_ALLFLOATS``
+    - The C++ class members can be treated as if all ``float``\ s or ``double``\ s
 
-   * - ``asOBJ_APP_CLASS_ALIGN8``
-     - The C++ class contains members that may require 8-byte alignment.
+  * - ``asOBJ_APP_CLASS_ALIGN8``
+    - The C++ class contains members that may require 8-byte alignment.
 
-       For example, a ``double``
+      For example, a ``double``
 
-   * - ``asOBJ_APP_CLASS_UNION``
-     - The C++ class contains unions as members
+  * - ``asOBJ_APP_CLASS_UNION``
+    - The C++ class contains unions as members
 
 .. note::
-   C++ compiler may provide some functions automatically if one of the members is of a type that requires it.
-   So even if the type you want to register doesn't have a declared default constructor,
-   it may still be necessary to register the type with the flag ``asOBJ_APP_CLASS_MORE_CONSTRUCTORS``.
+  C++ compiler may provide some functions automatically if one of the members is of a type that requires it.
+  So even if the type you want to register doesn't have a declared default constructor,
+  it may still be necessary to register the type with the flag ``asOBJ_APP_CLASS_MORE_CONSTRUCTORS``.
 
 .. warning::
-   Be careful to inform the correct flags,
-   because if the wrong flags are used you may get unexpected behaviour when calling registered functions that receives or returns these types by value.
-   Common problems are stack corruptions or invalid memory accesses.
-   In some cases you may face more silent errors that may be difficult to detect,
-   e.g., the function is not returning the expected values.
+  Be careful to inform the correct flags,
+  because if the wrong flags are used you may get unexpected behaviour when calling registered functions that receives or returns these types by value.
+  Common problems are stack corruptions or invalid memory accesses.
+  In some cases you may face more silent errors that may be difficult to detect,
+  e.g., the function is not returning the expected values.
 
 You can also read the official documentation about
 `value types and native calling conventions <https://www.angelcode.com/angelscript/sdk/docs/manual/doc_register_val_type.html#doc_reg_val_2>`_ .
@@ -315,8 +315,8 @@ It will register default constructor, copy constructor, destructor,
 and assignment operator (``operator=``/``opAssign``) according to the type flags.
 
 .. warning::
-   Be careful not to register those behaviours again by standalone helpers,
-   otherwise you will get an error message about duplicated things.
+  Be careful not to register those behaviours again by standalone helpers,
+  otherwise you will get an error message about duplicated things.
 
 This helper function uses flags provided by ``asGetTypeTraits<T>()`` by default.
 
@@ -411,8 +411,8 @@ member functions taking an object parameter from a helper object can also be reg
   1. Check if the first/last parameter is a reference/pointer to the type being registered.
   2. If both first and last parameters satisfy the condition, asbind20 will prefer the first one.
 
-     This is designed to keep consistency with existing C++ paradigm,
-     such as how ``std::invoke`` deals with a member function pointer.
+    This is designed to keep consistency with existing C++ paradigm,
+    such as how ``std::invoke`` deals with a member function pointer.
 
   If this is not the desired behaviour, you can manually specify the position of that special parameter.
 
@@ -444,7 +444,7 @@ Function Receiving ``asIScriptGeneric*``
         .method("int gfn_using_aux()", &gfn_using_aux, asbind20::auxiliary(/* some auxiliary data */));
 
 .. note::
-   Make sure the method declaration matches what the registered function does with the ``asIScriptGeneric``!
+  Make sure the method declaration matches what the registered function does with the ``asIScriptGeneric``!
 
 Methods Using Composite Members
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -476,20 +476,20 @@ then it is possible to register the methods of the composite members without wra
         .method("void set(int arg)", &comp_helper::set, composite(offsetof(my_class, indirect)));
 
 .. note::
-   The usage of the ``composite`` helper is :ref:`different <generic-composite>` when you want to create generic wrapper for composite methods
+  The usage of the ``composite`` helper is :ref:`different <generic-composite>` when you want to create generic wrapper for composite methods
 
 Tips for Registering Methods
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 1. Registering Argument-Dependent Interfaces
 
-   The member functions you want to register may have default arguments.
-   Besides, some C++ libraries use the `argument-dependent lookup (ADL) <https://en.cppreference.com/w/cpp/language/adl>`_ to extend their interfaces.
+  The member functions you want to register may have default arguments.
+  Besides, some C++ libraries use the `argument-dependent lookup (ADL) <https://en.cppreference.com/w/cpp/language/adl>`_ to extend their interfaces.
 
-   You need a wrapper function for this kind of interface.
-   For convenience, you can also register them by lambda expressions.
+  You need a wrapper function for this kind of interface.
+  For convenience, you can also register them by lambda expressions.
 
-   .. code-block:: c++
+  .. code-block:: c++
 
     value_class<math_lib_3rd::int128_t>(engine, "int128", /* ... */)
         .method(
@@ -504,10 +504,10 @@ Tips for Registering Methods
 
 2. Overloaded Member Functions in C++
 
-   It will be ambiguous to take address of overloaded functions,
-   you need to use ``overload_cast`` with arguments to choose the function you want.
+  It will be ambiguous to take address of overloaded functions,
+  you need to use ``overload_cast`` with arguments to choose the function you want.
 
-   .. code-block:: c++
+  .. code-block:: c++
 
     class my_class
     {
@@ -516,7 +516,7 @@ Tips for Registering Methods
         void foo(float f) const;
     };
 
-   .. code-block:: c++
+  .. code-block:: c++
 
     using namespace asbind20;
     // ...
@@ -774,9 +774,9 @@ which is designed to simulate the trailing return type ``auto f() -> Return`` si
         .use(const_this[param<int>]);
 
 .. note::
-   In some libraries like the STL, the ``operator[]`` doesn't have a boundary check.
-   You still need a wrapper function with checks for registering it.
-   Otherwise bad script can directly crash your application, instead of giving a clear error message.
+  In some libraries like the STL, the ``operator[]`` doesn't have a boundary check.
+  You still need a wrapper function with checks for registering it.
+  Otherwise bad script can directly crash your application, instead of giving a clear error message.
 
 If the ``operator*`` doesn't return the type being registered,
 e.g., dot product of a math vector which returns a scalar type,
@@ -861,8 +861,8 @@ The same logic also applies to other classes.
         .method("void erase_if(const erase_if_callback&in fn, uint idx=0, uint n=-1)", /* ... */);
 
 .. note::
-   Unlike the raw AngelScript interface,
-   you don't need to add the class name into the declaration of member ``funcdef`` for asbind20.
+  Unlike the raw AngelScript interface,
+  you don't need to add the class name into the declaration of member ``funcdef`` for asbind20.
 
 Template Types
 --------------
@@ -876,6 +876,6 @@ It is quite complex to implement a template class for AngelScript,
 so they are described in a separate page.
 
 .. toctree::
-   :maxdepth: 2
+  :maxdepth: 2
 
-   template_type
+  template_type

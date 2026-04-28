@@ -4,9 +4,9 @@ Multithreading
 There are some utilities for using AngelScript in the multithreading environment.
 
 .. note::
-   AngelScript does not support multithreading on all platforms.
+  AngelScript does not support multithreading on all platforms.
 
-   .. doxygenfunction:: asbind20::has_threads
+  .. doxygenfunction:: asbind20::has_threads
 
 Initializing and Cleaning the Multithreading Environment
 --------------------------------------------------------
@@ -116,8 +116,8 @@ Atomic Reference Counting
 -------------------------
 
 .. doxygenclass:: asbind20::atomic_counter
-   :members:
-   :undoc-members:
+  :members:
+  :undoc-members:
 
 For garbage collected types,
 `please read the official document about thread safety and GC <https://www.angelcode.com/angelscript/sdk/docs/manual/doc_gc_object.html#doc_reg_gcref_4>`_.

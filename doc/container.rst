@@ -9,8 +9,8 @@ Storing a Single Script Object
 ------------------------------
 
 .. doxygenclass:: asbind20::container::single
-   :members:
-   :undoc-members:
+  :members:
+  :undoc-members:
 
 |script_optional|_.
 
@@ -28,14 +28,14 @@ Policies for how containers deal with the type information.
 .. doxygenconcept:: asbind20::container::typeinfo_policy
 
 .. doxygengroup:: TypeInfoPolicies
-   :content-only:
+  :content-only:
 
 Sequential Containers
 ~~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenclass:: asbind20::container::small_vector
-   :members:
-   :undoc-members:
+  :members:
+  :undoc-members:
 
 |script_array|_.
 

@@ -109,7 +109,7 @@ The result types of script invocation consist of the primary template,
 specialization for references, and specialization for ``void``.
 
 .. doxygenclass:: asbind20::script_invoke_result
-   :members:
-   :undoc-members:
+  :members:
+  :undoc-members:
 
 The library also provides specializations for reference types (``script_invoke_result<T&>``) and ``void`` (``script_invoke_result<void>``).

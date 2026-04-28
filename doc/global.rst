@@ -28,7 +28,7 @@ Registering:
         .function("void gfn(int arg)", &gfn_using_aux, asbind20::auxiliary(/* some auxiliary data */));
 
 .. note::
-   Make sure the script function declaration matches what the registered function does with the ``asIScriptGeneric``!
+  Make sure the script function declaration matches what the registered function does with the ``asIScriptGeneric``!
 
 For overloaded functions,
 you need to use ``overload_cast`` with arguments to choose the function you want.
@@ -106,7 +106,7 @@ Registered by ``set_exception_translator``.
 .. doxygenfunction:: asbind20::set_exception_translator(asIScriptEngine*,Callback,auxiliary_wrapper<T>)
 
 .. note::
-   If your AngelScript is built without exception support (``asGetLibraryOptions()`` reports ``AS_NO_EXCEPTIONS``),
-   this helper will fail to register the translator.
+  If your AngelScript is built without exception support (``asGetLibraryOptions()`` reports ``AS_NO_EXCEPTIONS``),
+  this helper will fail to register the translator.
 
 See `AngelScript documentation about C++ exceptions <https://www.angelcode.com/angelscript/sdk/docs/manual/doc_cpp_exceptions.html>`_ for details.

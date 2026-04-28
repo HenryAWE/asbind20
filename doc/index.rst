@@ -38,52 +38,52 @@ This library is licensed under `the MIT License <https://github.com/HenryAWE/asb
 Contents:
 
 .. toctree::
-   :maxdepth: 1
+  :maxdepth: 1
 
-   changelog
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Getting Started
-
-   start
+  changelog
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Registering Application Interfaces
+  :maxdepth: 2
+  :caption: Getting Started
 
-   object_type
-   global
-   aux_interface
+  start
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Using AngelScript Interfaces
+  :maxdepth: 2
+  :caption: Registering Application Interfaces
 
-   invoke
-   container
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Utilities
-
-   utility
+  object_type
+  global
+  aux_interface
 
 .. toctree::
-   :maxdepth: 1
-   :caption: Advanced Topics
+  :maxdepth: 2
+  :caption: Using AngelScript Interfaces
 
-   advanced/custom_conv_rule
-   advanced/init_list
-   advanced/script_type
-   advanced/gc
-   advanced/generic
-   advanced/threading
+  invoke
+  container
 
 .. toctree::
-   :maxdepth: 1
-   :caption: Extra Resources
+  :maxdepth: 1
+  :caption: Utilities
 
-   extra/troubleshooting
-   extra/known_issue
-   contribute/full_build
+  utility
+
+.. toctree::
+  :maxdepth: 1
+  :caption: Advanced Topics
+
+  advanced/custom_conv_rule
+  advanced/init_list
+  advanced/script_type
+  advanced/gc
+  advanced/generic
+  advanced/threading
+
+.. toctree::
+  :maxdepth: 1
+  :caption: Extra Resources
+
+  extra/troubleshooting
+  extra/known_issue
+  contribute/full_build
