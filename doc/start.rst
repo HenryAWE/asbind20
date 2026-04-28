@@ -48,7 +48,7 @@ However, asbind20 on other platforms, architectures or compiler toolchains suppo
      - emsdk 4.0.18
 
 - The "latest" or "latest-stable" in the above table mean the (stable) latest version of compiler toolchain available in CI when asbind20 releases a new stable version.
-  You can check the release date of historical versions in the `changelog <changelog>`.
+  You can check the release date of historical versions in the :doc:`changelog`.
 
 - Newer Clang toolchains (like Clang 18+) support both libstdc++ and libc++,
   while the older toolchains (like Clang 15) on libstdc++ are not guaranteed to work as expected.
