@@ -50,10 +50,10 @@ The library provides tools for instantiating a script class.
 .. doxygenfunction:: asbind20::instantiate_class
 
 The ``script_invoke`` also supports invoking a method, a.k.a., member function.
-You need to put the script object in front of the script function pointer in arguments,
-this is designed to simulate a method call ``obj.method()``.
+You need to put the script object in front of the script function pointer in arguments.
+This is designed to simulate a method call ``obj.method()``.
 
-The type of script object can be either ``(const) void*`` or type that can be cast into ``(const) asIScriptObject*``.
+The type of script object can be either ``(const) void*`` or a type that can be cast into ``(const) asIScriptObject*``.
 
 .. doxygenfunction:: asbind20::script_invoke(asIScriptContext*, Object&&, asIScriptFunction*, Args&&...)
 
@@ -112,10 +112,4 @@ specialization for references, and specialization for ``void``.
    :members:
    :undoc-members:
 
-.. doxygenclass:: asbind20::script_invoke_result< T & >
-   :members:
-   :undoc-members:
-
-.. doxygenclass:: asbind20::script_invoke_result< void >
-   :members:
-   :undoc-members:
+The library also provides specializations for reference types (``script_invoke_result<T&>``) and ``void`` (``script_invoke_result<void>``).

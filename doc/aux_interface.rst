@@ -63,8 +63,8 @@ Enumerations
         .value(my_enum::B, "B");
 
 .. note::
-   Until the version 2.39, AngelScript uses 32-bit integer to store underlying value of enums.
-   before it supports customizable underlying type.
+   Up until version 2.39, AngelScript used a 32-bit integer to store the underlying value of enums,
+   before it supported customizable underlying types.
    Please make sure those values don't overflow or underflow.
 
 Besides, the library provides a convenient interface for generating string representation of enum value at compile-time.
@@ -78,7 +78,7 @@ The following code is equivalent to the above one:
         .value<my_enum::B>();
 
 .. note::
-   However, as static reflection is still waiting for the C++26, this feature relies on compiler extension and is platform dependent.
+   However, as static reflection is still waiting for C++26, this feature relies on compiler extension and is platform dependent.
    **It has some limitations**. For example, it cannot generate string representation for enums with same value.
 
    .. code-block:: c++

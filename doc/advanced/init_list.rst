@@ -11,7 +11,7 @@ the list factories for reference types and list constructors for value types can
 
 If you already have wrapper functions, you can register them by ``.list_factory_function`` or ``.list_constructor_function``
 
-This kind of helpers needs you to provide pattern of the initialization list, such as ``float, float`` or ``repeat int``.
+This kind of helper needs you to provide the pattern of the initialization list, such as ``float, float`` or ``repeat int``.
 For helpers using the constructors of C++ class directly, you can also specify the optional template parameter ``ElementType`` for the element type of initialization list.
 If the list pattern contains ``repeat`` or ``?`` that need to parse manually, you can just use the default template parameter,
 which is ``void``.
@@ -46,7 +46,7 @@ which is described in :doc:`how to register an object type <../object_type>`.
         .list_factory("repeat int"); // Equivalent to .list_factory<void>("repeat int")
 
     asbind20::value_class<my_class>(/* ... */)
-        .list_factory_function("repeat int", &init_from_list);
+        .list_constructor_function("repeat int", &init_from_list);
 
 .. note::
    Unlike C++, each type in AngelScript can only have **one** list factory or constructor.

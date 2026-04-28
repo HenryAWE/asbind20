@@ -5,7 +5,7 @@ Constructors and Factories
 --------------------------
 
 For template types, AngelScript will pass a hidden ``asITypeInfo*`` in the front of arguments,
-indicating an instantiation fo template.
+indicating an instantiation of the template.
 It will be automatically handled by the library with the special binding generators of templated types,
 which are named ``template_value_class`` and ``template_ref_class``.
 
@@ -47,7 +47,7 @@ Here are examples from the unit tests.
 Methods of a Template Class
 ---------------------------
 
-Methods are registered the same way of ordinary types.
+Methods are registered the same way as ordinary types.
 You can directly use the subtype in the declaration of method.
 
 .. code-block:: c++
@@ -76,7 +76,7 @@ Callback for Validating Template Instantiations
 
 In order to avoid unnecessary runtime validations of invalid template instantiations,
 the application should preferably register a validator by ``.template_callback``.
-Its underlying type behavior is ``asBEHAVE_TEMPLATE_CALLBACK``.
+Its underlying type behaviour is ``asBEHAVE_TEMPLATE_CALLBACK``.
 
 The callback function must be a global function that receives a pointer to ``asITypeInfo*`` as its first parameter,
 and should return a boolean.
@@ -119,7 +119,7 @@ Template Specializations
 ========================
 
 When registering a template specialization,
-you override the template instance that AngelScript would normally do when compiling a declaration with the template type.
+you override the template instance that AngelScript would normally create when compiling a declaration with the template type.
 This allow the application to register a completely different object with its own implementation for template specializations.
 
 Template specializations are registered like :doc:`ordinary types <object_type>`,

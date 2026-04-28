@@ -1,12 +1,12 @@
 Generic Wrappers
 ================
 
-Wrap a Specific Method, Function, Behavior
-------------------------------------------
+Wrap a Specific Method, Function, Behaviour
+-------------------------------------------
 
 With the power of non-type template parameter (NTTP),
 asbind20 can generate generic wrapper of any function by macro-free utilities.
-Additionally, it supports for wrapping a function with variable type (declared by ``?`` in the AngelScript).
+Additionally, it supports wrapping a function with variable type (declared by ``?`` in the AngelScript).
 
 This can be useful for binding interface on platform without native calling convention support, e.g., Emscripten.
 
@@ -34,7 +34,7 @@ But lambda expression still can be directly registered.
         // Lambda can be directly registered
         .function(
             use_generic,
-            "int gen_int() ",
+            "int gen_int()",
             []() -> int
             { return 42; }
         )
@@ -46,10 +46,10 @@ But lambda expression still can be directly registered.
             auxiliary(instance)
         )
 
-Ordinary Methods and Behaviors
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Ordinary Methods and Behaviours
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Generic wrappers for methods and behaviors are generated in the similar way.
+Generic wrappers for methods and behaviours are generated in the similar way.
 
 .. code-block:: c++
 
@@ -169,8 +169,8 @@ The major difference from the native one is how to use the ``composite`` helper.
 
 .. _group-force-generic:
 
-Wrap a Group of Methods, Functions, or Behaviors
-------------------------------------------------
+Wrap a Group of Methods, Functions, or Behaviours
+-------------------------------------------------
 
 If you want to force a group of registered functions to be generic,
 you can set the ``ForceGeneric`` flag of binding generator to ``true``.

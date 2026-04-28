@@ -47,8 +47,8 @@ However, asbind20 on other platforms, architectures or compiler toolchains suppo
      - wasm
      - emsdk 4.0.18
 
-- The "latest" or "latest-stable" in the above table means the (stable) latest version of compiler toolchain available in CI when asbind20 releases a new stable version.
-  You can check the release date of history version in the `changelog <changelog>`.
+- The "latest" or "latest-stable" in the above table mean the (stable) latest version of compiler toolchain available in CI when asbind20 releases a new stable version.
+  You can check the release date of historical versions in the `changelog <changelog>`.
 
 - Newer Clang toolchains (like Clang 18+) support both libstdc++ and libc++,
   while the older toolchains (like Clang 15) on libstdc++ are not guaranteed to work as expected.
@@ -72,7 +72,7 @@ This library will not include the AngelScript library for the second time by det
 1. Copy into Your Project
 -------------------------
 
-This a header-only library.
+This is a header-only library.
 You can directly copy all the files under ``include/`` into your project,
 then set a correct include directory for your project.
 

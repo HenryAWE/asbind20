@@ -1,7 +1,7 @@
 Customize Type Conversion Rules
 ===============================
 
-Sometimes the default auto-conversion tools provided by asbind20 is not enough for handling special user-defined types,
+Sometimes the default auto-conversion tools provided by asbind20 are not enough for handling special user-defined types,
 it requires user to provide rules for translating them between C++ and AngelScript.
 
 Example for ``std::byte``
@@ -13,7 +13,7 @@ However, the default logic of type translator will convert enumerations to ``int
 .. _custom-rule-for-enum-underlying:
 
 For enumerations with custom underlying types,
-asbind20 provides an utility for quickly implementing the traits.
+asbind20 provides a utility for quickly implementing the traits.
 
 .. doxygenstruct:: asbind20::underlying_enum_traits
 

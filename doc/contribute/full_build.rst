@@ -3,7 +3,7 @@ Build Guide for Contributors
 
 This page is the guide for contributors.
 
-This library use GoogleTest for unit tests and Google Benchmark for finding performance issues.
+This library uses GoogleTest for unit tests and Google Benchmark for finding performance issues.
 Both dependencies will be automatically fetched by CMake scripts if they are required.
 
 CMake Options for Development
@@ -38,7 +38,7 @@ Documentation is based on reStructuredText (.rst) files and Doxygen, then genera
 This is used by ReadtheDocs, but you can also generate a local version for previewing modification to documents.
 
 Firstly, follow installation guide of your platform to install Doxygen, Python and Sphinx.
-Then, use ``pip`` to install rest dependencies of documentation.
+Then, use ``pip`` to install the remaining dependencies of documentation.
 
 .. code-block:: sh
 

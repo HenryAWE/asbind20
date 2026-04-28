@@ -89,11 +89,11 @@ asbind20::value_class<my_value_class>(
     .opCmp()
     // 普通成员函数
     .method("int get_val() const", &my_value_class::get_val)
-    .method("void set_val(int new_val) const", &my_value_class::set_val)
+    .method("void set_val(int new_val)", &my_value_class::set_val)
     // 自动推导包装函数的调用约定
     .method("void mul(int val)", &mul_obj_first) // asCALL_CDECL_OBJFIRST
     .method("void add(int val)", &add_obj_last)  // asCALL_CDECL_OBJLAST
-    .method("void my_op(int)", &set_val_gen)     // asCALL_GENERIC
+    .method("void my_op(int)", &my_op_gen)     // asCALL_GENERIC
     // 使用 lambda 绑定需要 ADL 查找的接口
     .method(
         "void process()",
@@ -170,7 +170,7 @@ assert(val == 2);
 
 #### 使用脚本类
 
-该库提供实例化脚本类的工具。 `script_invoke` 也支持调用方法（即成员函数）。
+该库提供实例化脚本类的工具。`script_invoke` 也支持调用方法（即成员函数）。
 
 在 AngelScript 中定义的脚本类：
 
@@ -185,7 +185,7 @@ class my_class
 };
 ```
 
-C++ 代码:
+C++ 代码：
 
 ```c++
 asIScriptEngine* engine = /* 获取脚本引擎 */;

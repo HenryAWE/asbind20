@@ -75,7 +75,7 @@ Example code:
         thr.detach();
         {
             std::unique_lock lock(mx);
-            std::cv_status st = cv.wait(lock);
+            cv.wait(lock);
         }
         assert(result == 20);
 
@@ -87,9 +87,7 @@ Locks
 
 The weak reference flag (``asILockableSharedBool*``) is lockable.
 
-.. doxygenclass:: asbind20::lockable_shared_bool
-    :members: lock, unlock
-    :no-link:
+The ``lockable_shared_bool`` class (documented in :doc:`../utility`) wraps the weak reference flag for use with standard lock guards like ``std::unique_lock`` and ``std::shared_lock``.
 
 The AngelScript library provides global exclusive and shared locks.
 The wrappers for them are provided by the header ``<asbind20/concurrent/mutex.hpp>``.

@@ -16,7 +16,7 @@ Update
 - The library can be compiled with exceptions disabled (``-fno-exceptions`` or ``/EHs-c-``).
 
   The interfaces depending on exceptions will be redirected to an error handling macro defined by the user.
-  Its default behavior is calling ``std::terminate`` immediately.
+  Its default behaviour is calling ``std::terminate`` immediately.
 
 - (Experimental) Listener for customizing error handling or recording registered entities.
 
@@ -53,8 +53,8 @@ Breaking Change
 - ``as_allocator`` is renamed to ``script_allocator``.
 - **Extension library is removed**.
 
-  Since asbind20 originated from a submodule of personal project, many of extensions were built for private repository.
-  I decide to migrate them to a separated open-source library in the future.
+  Since asbind20 originated from a submodule of a personal project, many of the extensions were built for a private repository.
+  I decided to migrate them to a separate open-source library in the future.
   Some of the extensions, like string extraction helper and section loader, are merged into the core library.
 
 - Use ``asbind20::objfirst`` / ``objlast`` to specify the position of object pointer/reference,
@@ -165,7 +165,7 @@ Update
 Breaking Change
 ~~~~~~~~~~~~~~~
 
-- Redesign interfaces of ``container::single`` to reduce some surprising behaviors.
+- Redesign interfaces of ``container::single`` to reduce some surprising behaviours.
   For example, the destructor won't clean the data, you need to call another function for releasing the data.
 
 Bug fix

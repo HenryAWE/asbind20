@@ -104,4 +104,4 @@ Tools for extracting string from script without knowing its underlying type.
     :members:
     :undoc-members:
 
-.. doxygenfunction:: asbind20::debugging::extract_string(asIStringFactory*, const void*)
+.. doxygenfunction:: asbind20::debugging::extract_string(const asIStringFactory*, const void*)

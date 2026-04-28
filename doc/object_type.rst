@@ -88,7 +88,7 @@ It might be useful to call the factory with a helper object.
   1. Check if the first/last parameter is a reference/pointer to the helper object
   2. If both first and last parameters satisfy the condition, asbind20 will prefer the first one.
 
-  If this is not the desired behavior, you can manually specify the position of that special parameter.
+  If this is not the desired behaviour, you can manually specify the position of that special parameter.
 
   .. code-block:: c++
 
@@ -118,10 +118,10 @@ List Factory
 
 List factory allows the reference type to be created from an initialization list.
 
-:doc:`It will be discussed in a separated page. <advanced/init_list>`
+:doc:`It will be discussed in a separate page. <advanced/init_list>`
 
-Behaviors for Reference Counting
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Behaviours for Reference Counting
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The basic reference type uses reference counting to manage its lifetime.
 
@@ -159,7 +159,7 @@ Tips for Reference Types
 - If your type involves GC, you need to notify the GC of a newly instantiated object by ``NotifyGarbageCollectorOfNewObject``,
   `as explained in AngelScript's official document <https://www.angelcode.com/angelscript/sdk/docs/manual/doc_gc_object.html#doc_reg_gcref_2>`_.
 
-  The asbind20 also provides a policy called ``policies::notify_gc`` for (list) factory functions to automatically notify the GC after a new object created.
+  asbind20 also provides a policy called ``policies::notify_gc`` for (list) factory functions to automatically notify the GC after a new object is created.
 
 Registering a Value Type
 ------------------------
@@ -173,7 +173,7 @@ Flags of Value Type
 If the type doesn't require any special treatment,
 i.e. doesn't contain any pointers or other resource references that must be maintained,
 then the type can be registered with the flag ``asOBJ_POD``.
-In this case AngelScript doesn't require the default constructor, assignment behavior, or destructor,
+In this case AngelScript doesn't require the default constructor, assignment behaviour, or destructor,
 as it will be able to automatically handle these cases the same way it handles built-in primitives.
 
 If you plan on passing or returning the type by value to registered functions that uses native calling convention,
@@ -215,13 +215,13 @@ However, due to limitation of C++, the following flags still need user to provid
 
 .. warning::
    Be careful to inform the correct flags,
-   because if the wrong flags are used you may get unexpected behavior when calling registered functions that receives or returns these types by value.
+   because if the wrong flags are used you may get unexpected behaviour when calling registered functions that receives or returns these types by value.
    Common problems are stack corruptions or invalid memory accesses.
    In some cases you may face more silent errors that may be difficult to detect,
    e.g., the function is not returning the expected values.
 
 You can also read the official documentation about
-`value types and native calling convention <https://www.angelcode.com/angelscript/sdk/docs/manual/doc_register_val_type.html#doc_reg_val_2>`_ .
+`value types and native calling conventions <https://www.angelcode.com/angelscript/sdk/docs/manual/doc_register_val_type.html#doc_reg_val_2>`_ .
 
 Constructors and Destructor
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -274,7 +274,7 @@ Just put the tag right after the parameter list.
 .. code-block:: c++
 
     // ...
-        .constructor<float>("bool", asbind20::use_explicit)
+        .constructor<bool>("bool", asbind20::use_explicit)
         .constructor_function("int", asbind20::use_explicit, &init_by_int);
 
 .. note::
@@ -284,7 +284,7 @@ Just put the tag right after the parameter list.
   2. Check if the type of first/last parameter is ``void*``
   3. If both first and last parameters satisfy the condition, asbind20 will prefer the first one.
 
-  If this is not the desired behavior, you can manually specify the position of that special parameter.
+  If this is not the desired behaviour, you can manually specify the position of that special parameter.
 
   .. code-block:: c++
 
@@ -297,7 +297,7 @@ List Constructor
 
 The list constructor allows the value type to be initialized from an initialization list.
 
-:doc:`It will be discussed in a separated page. <advanced/init_list>`
+:doc:`It will be discussed in a separate page. <advanced/init_list>`
 
 Destructor
 ^^^^^^^^^^
@@ -307,15 +307,15 @@ Destructor
     // ...
         .destructor();
 
-Automatically Registering Required Behaviors
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Automatically Registering Required Behaviours
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-You can call the ``.behaviours_by_traits()`` to automatically register type behaviors required by the type flags.
+You can call the ``.behaviours_by_traits()`` to automatically register type behaviours required by the type flags.
 It will register default constructor, copy constructor, destructor,
 and assignment operator (``operator=``/``opAssign``) according to the type flags.
 
 .. warning::
-   Be careful not to register those behaviors again by standalone helpers,
+   Be careful not to register those behaviours again by standalone helpers,
    otherwise you will get an error message about duplicated things.
 
 This helper function uses flags provided by ``asGetTypeTraits<T>()`` by default.
@@ -414,7 +414,7 @@ member functions taking an object parameter from a helper object can also be reg
      This is designed to keep consistency with existing C++ paradigm,
      such as how ``std::invoke`` deals with a member function pointer.
 
-  If this is not the desired behavior, you can manually specify the position of that special parameter.
+  If this is not the desired behaviour, you can manually specify the position of that special parameter.
 
   .. code-block:: c++
 
@@ -588,7 +588,7 @@ The binding generators of classes provide ``.use`` for reusing a certain set of 
 
 For example,
 if your reference classes all use ``addref`` and ``release`` for reference counting,
-you can create a helper to register those behaviors.
+you can create a helper to register those behaviours.
 
 .. code-block:: c++
 
@@ -654,7 +654,7 @@ so multiple assignment can be chained.
 
     This wrapper requires ``operator<=>`` returns ``std::weak_ordering`` at least,
     i.e., **no** ``std::partial_ordering`` support.
-    The result of three way comparison will be translated to integral value recognized by AngelScript.
+    The result of three-way comparison will be translated to an integral value recognized by AngelScript.
 
 If the type is registered as value type, there will be some additional predefined helpers.
 These helpers will return result by value, so they cannot be used by a reference class.
@@ -776,7 +776,7 @@ which is designed to simulate the trailing return type ``auto f() -> Return`` si
 .. note::
    In some libraries like the STL, the ``operator[]`` doesn't have a boundary check.
    You still need a wrapper function with checks for registering it.
-   Otherwise bad script can directly crash your application, instead of giving an clear error message.
+   Otherwise bad script can directly crash your application, instead of giving a clear error message.
 
 If the ``operator*`` doesn't return the type being registered,
 e.g., dot product of a math vector which returns a scalar type,
@@ -825,7 +825,7 @@ Here is an example from the unit test of asbind20.
 Operators for ``foreach`` (Experimental)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-AngelScript has introduced ``foreach`` loop in version 2.38.
+AngelScript has introduced the ``foreach`` loop in version 2.38.
 Here is a simple way to add support for a container-like type:
 
 .. code-block:: c++
@@ -873,7 +873,7 @@ The methods for the instance will then be adapted to this subtype,
 so that the correct handling of parameters and return types will be applied.
 
 It is quite complex to implement a template class for AngelScript,
-so they are described in a separated page.
+so they are described in a separate page.
 
 .. toctree::
    :maxdepth: 2

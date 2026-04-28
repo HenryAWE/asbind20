@@ -49,7 +49,7 @@ you need to use ``overload_cast`` with arguments to choose the function you want
 Member Function as Global Function
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can synthesize global function by member function and an instance:
+You can synthesize a global function from a member function and an instance:
 
 .. code-block:: c++
 
@@ -85,7 +85,7 @@ Registering Global Properties
 Special Callbacks
 -----------------
 
-Please check the official documentation of AngelScript for the requirements of following functions.
+Please check the official documentation of AngelScript for the requirements of the following functions.
 
 Message Callback
 ~~~~~~~~~~~~~~~~
