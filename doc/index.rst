@@ -62,6 +62,7 @@ Contents:
 
   invoke
   container
+  compare
 
 .. toctree::
   :maxdepth: 1

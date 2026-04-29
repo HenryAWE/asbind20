@@ -54,3 +54,26 @@ If you are certain that types you are dealing with are all primitive types,
 you can use the primitive-specific function.
 
 .. doxygenfunction:: copy_primitive_value
+
+Example code:
+
+.. code-block:: c++
+
+    // Copy primitive values between void* buffers
+    int src_int = 42;
+    int dst_int = 0;
+
+    copy_primitive_value(&dst_int, &src_int, asTYPEID_INT32);
+    assert(dst_int == 42);
+
+    // Works for any primitive type
+    float src_f = 3.14f;
+    float dst_f = 0.0f;
+
+    std::size_t bytes = copy_primitive_value(&dst_f, &src_f, asTYPEID_FLOAT);
+    assert(bytes == sizeof(float));
+    assert(dst_f == 3.14f);
+
+    // void type copies nothing
+    std::size_t n = copy_primitive_value(&dst_int, &src_int, asTYPEID_VOID);
+    assert(n == 0);
