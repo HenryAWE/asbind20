@@ -14,7 +14,7 @@ msgid ""
 "`RAII <https://en.cppreference.com/w/cpp/language/raii>`_ helpers for "
 "managing lifetime of AngelScript objects."
 msgstr ""
-"用于管理 AngelScript 对象生命周期的"
+"用于管理 AngelScript 对象生命周期的 "
 "`RAII <https://en.cppreference.com/w/cpp/language/raii>`_ 辅助工具。"
 
 #: ../../doc/utility.rst:7
