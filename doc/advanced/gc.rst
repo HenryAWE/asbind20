@@ -165,3 +165,12 @@ you can use the (list) factory function with auxiliary object.
     If you create objects of garbage collected type from the application side,
     you must also notify the garbage collector of its existence,
     so it's a good idea to make sure all code uses the same way of creating objects of this type.
+
+Reference
+~~~~~~~~~
+
+.. doxygenstruct:: asbind20::policies::notify_gc
+  :members:
+  :undoc-members:
+
+.. doxygenconcept:: asbind20::policies::factory_policy
