@@ -10,3 +10,4 @@ CMakeSettings.json
 
 .DS_store
 .idea/
+/.claude/
