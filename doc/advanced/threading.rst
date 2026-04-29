@@ -115,6 +115,8 @@ Example code:
 Atomic Reference Counting
 -------------------------
 
+.. _atomic-refcounting:
+
 .. doxygenclass:: asbind20::atomic_counter
   :members:
   :undoc-members:

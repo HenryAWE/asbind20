@@ -82,6 +82,151 @@ Miscellaneous Utilities
   :members:
   :undoc-members:
 
+Atomic Reference Counting
+-------------------------
+
+``atomic_counter`` wraps AngelScript's ``asAtomicInc`` / ``asAtomicDec`` for thread-safe reference counting.
+It is designed for implementing the ``addref`` / ``release`` / ``get_refcount`` behaviours of a garbage-collected
+``ref_class``.
+
+Constructing an ``atomic_counter`` initializes the counter to 1. Prefix ``++`` and ``--`` call ``asAtomicInc``
+and ``asAtomicDec`` respectively, returning the new value. The ``dec_and_try_destroy`` method decrements and,
+if the counter reaches 0, invokes a destroyer callback — typically ``delete`` on the enclosing object.
+
+Example: implementing reference counting for a garbage-collected script object:
+
+.. code-block:: c++
+
+    #include <asbind20/asbind.hpp>
+
+    class my_gc_object
+    {
+    public:
+        void addref()
+        {
+            set_gc_flag(false);
+            ++m_counter;
+        }
+
+        void release()
+        {
+            m_counter.dec_and_try_destroy(
+                [](my_gc_object* self) { delete self; },
+                this
+            );
+        }
+
+        int get_refcount() const
+        {
+            return m_counter;
+        }
+
+        void set_gc_flag()  { m_flag = true; }
+        bool get_gc_flag() const { return m_flag; }
+
+        void enum_refs(asIScriptEngine*)  { /* enumerate references */ }
+        void release_refs(asIScriptEngine*)  { /* release references */ }
+
+    private:
+        asbind20::atomic_counter m_counter;
+        bool m_flag = false;
+    };
+
+    // Register as a GC reference type
+    auto* engine = /* ... */;
+    asbind20::ref_class<my_gc_object>(engine, "my_gc_object", asOBJ_GC)
+        .addref(fp<&my_gc_object::addref>)
+        .release(fp<&my_gc_object::release>)
+        .get_refcount(fp<&my_gc_object::get_refcount>)
+        .set_gc_flag(fp<&my_gc_object::set_gc_flag>)
+        .get_gc_flag(fp<&my_gc_object::get_gc_flag>)
+        .release_refs(fp<&my_gc_object::release_refs>)
+        .enum_refs(fp<&my_gc_object::enum_refs>)
+        .default_factory(use_policy<policies::notify_gc>);
+
+See :ref:`the threading documentation <atomic-refcounting>` for the full API reference.
+
+Range Views
+-----------
+
+asbind20 provides range views for iterating over AngelScript entities — type members, behaviours, enum values,
+and even tokenized script source. When ``<ranges>`` is available (``__cpp_lib_ranges``), these views integrate with
+standard range adaptors and algorithms.
+
+All views expose ``begin()``/``end()``, ``size()``, and ``empty()``. Most iterators are random-access.
+
+Type information views
+~~~~~~~~~~~~~~~~~~~~~~
+
+These views wrap an ``asITypeInfo*`` and enumerate its contents:
+
+.. code-block:: c++
+
+    #include <asbind20/ranges.hpp>
+
+    const asITypeInfo* ti = /* ... */;
+
+    // Iterate all methods (optionally exclude virtual methods)
+    for(auto* func : asbind20::views::all_methods(ti)) {
+        std::cout << func->GetName() << '\n';
+    }
+
+    // Iterate all behaviours (constructors, destructors, opAssign, etc.)
+    for(auto [beh, func] : asbind20::views::all_behaviours(ti)) {
+        std::cout << "behaviour " << beh << ": " << func->GetName() << '\n';
+    }
+
+    // Iterate all factories
+    for(auto* func : asbind20::views::all_factories(ti)) {
+        std::cout << func->GetName() << '\n';
+    }
+
+    // Iterate all enum values
+    for(auto [name, value] : asbind20::views::all_enum_values(ti)) {
+        std::cout << name << " = " << value << '\n';
+    }
+
+The ``all_enum_values`` factory defaults to ``int`` as the underlying type.
+Use ``views::all_enum_values_of<std::uint64_t>(ti)`` for enums with a custom underlying type.
+
+.. doxygenclass:: asbind20::ranges::all_methods_view
+  :members:
+  :undoc-members:
+
+.. doxygenclass:: asbind20::ranges::all_behaviours_view
+  :members:
+  :undoc-members:
+
+.. doxygenclass:: asbind20::ranges::all_factories_view
+  :members:
+  :undoc-members:
+
+.. doxygenclass:: asbind20::ranges::all_enum_values_view
+  :members:
+  :undoc-members:
+
+Tokenize view
+~~~~~~~~~~~~~
+
+``tokenize_view`` tokenizes a string of AngelScript source code lazily, yielding
+``(asETokenClass, std::string_view)`` pairs:
+
+.. code-block:: c++
+
+    #include <asbind20/ranges.hpp>
+
+    std::string_view code = "int foo = 42;";
+    for(auto [tc, sv] : asbind20::ranges::tokenize_view(engine, code)) {
+        if(tc == asTC_IDENTIFIER)
+            std::cout << "identifier: " << sv << '\n';
+    }
+
+The view is an input range — it does not support random access or multi-pass iteration.
+
+.. doxygenclass:: asbind20::ranges::tokenize_view
+  :members:
+  :undoc-members:
+
 Debugging
 =========
 
