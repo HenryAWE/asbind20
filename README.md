@@ -1,6 +1,7 @@
 **English** | [中文](README.zh-CN.md)
 
 # asbind20
+
 [![Build](https://github.com/HenryAWE/asbind20/actions/workflows/build.yml/badge.svg)](https://github.com/HenryAWE/asbind20/actions/workflows/build.yml)
 
 **asbind20** is a C++20 [AngelScript](https://www.angelcode.com/angelscript/) binding library powered by templates.
@@ -21,11 +22,13 @@ The name and API design are inspired by the famous [pybind11 library](https://gi
 Full documentation is available on [Read the Docs](https://asbind20.readthedocs.io/en/).
 
 ## Brief Examples
+
 ### 1. Registering the Application Interface
 
 #### Registering a Value Class
 
 Declaration of the C++ class:
+
 ```c++
 class my_value_class
 {
@@ -69,6 +72,7 @@ void my_op_gen(asIScriptGeneric* gen);
 ```
 
 Register the C++ class to the AngelScript engine:
+
 ```c++
 asIScriptEngine* engine = /* Get a script engine */;
 asbind20::value_class<my_value_class>(
@@ -112,6 +116,7 @@ asbind20::value_class<my_value_class>(
 #### Registering Global Functions
 
 Given some global functions:
+
 ```c++
 float sin(float x);
 float cos(float x);
@@ -120,6 +125,7 @@ void gfn(asIScriptGeneric* gen);
 ```
 
 Register them to the AngelScript engine:
+
 ```c++
 asIScriptEngine* engine = /* Get a script engine */;
 asbind20::global(engine)
@@ -133,10 +139,13 @@ The binding generators also support registering a reference type, an interface, 
 Please read the documentation for more information.
 
 ### 2. Using AngelScript Objects from C++ Side
+
 #### Invoking a Script Function
+
 This library can automatically convert arguments in C++ for invoking an AngelScript function. Besides, the library provides RAII helpers for easily managing lifetime of AngelScript objects like `asIScriptContext*`.
 
 AngelScript function:
+
 ```angelscript
 string test(int a, int&out b)
 {
@@ -146,6 +155,7 @@ string test(int a, int&out b)
 ```
 
 C++ code:
+
 ```c++
 asIScriptEngine* engine = /* Get a script engine */;
 asIScriptModule* m = /* Build the above script */;
@@ -166,9 +176,11 @@ assert(val == 2);
 ```
 
 #### Using a Script Class
+
 The library provides tools for instantiating a script class. The `script_invoke` also supports invoking a method, a.k.a., member function.
 
 The script class defined in AngelScript:
+
 ```angelscript
 class my_class
 {
@@ -181,6 +193,7 @@ class my_class
 ```
 
 C++ code:
+
 ```c++
 asIScriptEngine* engine = /* Get a script engine */;
 asIScriptModule* m = /* Build the above script */;
@@ -210,4 +223,5 @@ assert(val.value() == 182376);
 ```
 
 ## License
+
 [MIT License](./LICENSE)
