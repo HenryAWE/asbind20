@@ -72,7 +72,42 @@ Miscellaneous Utilities
 .. doxygenfunction:: asbind20::to_string(asERetCodes)
 
 .. doxygenfunction:: asbind20::string_concat
+
+Example:
+
+.. code-block:: c++
+
+    using asbind20::string_concat;
+
+    // Concatenate any mix of string types
+    const char* method = "my_method";
+    std::string decl = string_concat("void f(", method, ')');
+    assert(decl == "void f(my_method)");
+
+    // Accepts std::string_view, cstring_ref, and characters
+    std::string s = string_concat("hello", ' ', std::string_view("world"));
+    assert(s == "hello world");
+
 .. doxygenfunction:: asbind20::util::with_cstr
+
+``with_cstr`` calls a callback with each argument converted to a null-terminated C string,
+handling any string-like type including ``std::string``, ``std::string_view``,
+``cstring_ref``, and ``util::fixed_string``:
+
+.. code-block:: c++
+
+    using asbind20::util::with_cstr;
+    using namespace std::string_view_literals;
+
+    std::string result = with_cstr(
+        [](const char* a, const char* b, const char* c) {
+            return std::string(a) + ' ' + b + ' ' + c;
+        },
+        "hello",
+        "world"sv.substr(0, 3),  // "wor"
+        asbind20::cstring_ref("!")
+    );
+    assert(result == "hello wor !");
 
 .. doxygenclass:: asbind20::util::fixed_string
   :members:
@@ -81,6 +116,29 @@ Miscellaneous Utilities
 .. doxygenclass:: asbind20::util::compressed_pair
   :members:
   :undoc-members:
+
+Example:
+
+.. code-block:: c++
+
+    using asbind20::util::compressed_pair;
+
+    compressed_pair<int, int> p{0, 1};
+    assert(p.first() == 0);
+    assert(p.second() == 1);
+
+    p.first() = 2;
+    p.second() = 3;
+
+    // Structured binding support
+    auto& [a, b] = p;
+    assert(a == 2);
+    assert(b == 3);
+
+    // Swap
+    compressed_pair<int, int> q{4, 5};
+    p.swap(q);
+    assert(p.first() == 4 && p.second() == 5);
 
 Atomic Reference Counting
 -------------------------

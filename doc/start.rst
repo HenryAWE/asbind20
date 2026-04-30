@@ -92,10 +92,37 @@ You can add asbind20 through git submodule and then use ``add_subdirectory``.
 
     target_link_libraries(main PRIVATE asbind20::asbind20)
 
-B. Build and Install
+B. FetchContent
+~~~~~~~~~~~~~~~
+
+Use CMake's ``FetchContent`` to download asbind20 at configure time:
+
+.. code-block:: cmake
+
+    include(FetchContent)
+
+    FetchContent_Declare(
+        asbind20
+        GIT_REPOSITORY https://github.com/HenryAWE/asbind20.git
+        GIT_TAG v2.0.0       # replace with the version you need
+    )
+
+    # AngelScript must be available before asbind20
+    find_package(Angelscript 2.37.0 CONFIG REQUIRED)
+
+    FetchContent_MakeAvailable(asbind20)
+
+    target_link_libraries(main PRIVATE asbind20::asbind20)
+
+.. note::
+    asbind20 requires AngelScript to be findable via ``find_package(Angelscript)``.
+    If AngelScript is also fetched via ``FetchContent``, make sure it is made available
+    before asbind20.
+
+C. Build and Install
 ~~~~~~~~~~~~~~~~~~~~
 
-Additionally, you can install and link against asbind20 using CMake.
+Alternatively, you can install and link against asbind20 using CMake.
 
 .. code-block:: sh
 
