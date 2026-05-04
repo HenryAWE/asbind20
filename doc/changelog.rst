@@ -11,7 +11,7 @@ First major update after the initial stable version.
 Update
 ~~~~~~
 
-- Official MacOS (Apple Clang) support.
+- Official macOS (Apple Clang) support.
 
 - The library can be compiled with exceptions disabled (``-fno-exceptions`` or ``/EHs-c-``).
 

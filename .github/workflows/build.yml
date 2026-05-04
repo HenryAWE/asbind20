@@ -334,7 +334,7 @@ jobs:
           matrix:
             cxxstd: [20, 23]
 
-      name: MacOS arm64 AppleClang C++${{matrix.cxxstd}}
+      name: macOS arm64 AppleClang C++${{matrix.cxxstd}}
 
       steps:
       - uses: actions/checkout@v4

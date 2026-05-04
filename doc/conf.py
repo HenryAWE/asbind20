@@ -11,6 +11,9 @@ author = 'HenryAWE'
 # General configuration
 extensions = [ 'breathe' ]
 
+with open('prolog.inc', 'r') as f:
+    rst_prolog = f.read()
+
 templates_path = ['_templates']
 exclude_patterns = []
 

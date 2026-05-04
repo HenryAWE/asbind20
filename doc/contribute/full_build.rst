@@ -17,17 +17,21 @@ CMake Options for Development
     - Description
 
   * - ``asbind_cxxstd``
-    - | C++ standard version for building asbind20. Must be 20 at least.
-      | This can be set to a higher version like 23 for testing some advanced features that are only available in newer standard.
+    - C++ standard version for building asbind20. Must be 20 at least. |br|
+      This can be set to a higher version like 23, |br| testing some advanced features that are only available in newer standard.
   * - ``asbind_build_test``
     - Build tests and enable ``ctest``.
   * - ``asbind_dev_warning_as_error``
-    - | Enable warning-as-error during the development.
-      | This option defaults to ``ON`` and only has effect when ``asbind_build_test`` is ``ON``.
+    - Enable warning-as-error during the development. |br|
+      This option defaults to ``ON`` and only has effect when ``asbind_build_test`` is ``ON``.
   * - ``asbind_build_bench``
     - Build benchmarks.
-  * - ``asbind_build_ext``
-    - Build extension library.
+  * - ``asbind_prefer_system_gtest``
+    - Prefer system-installed GTest over fetching from GitHub. |br|
+      This option only has effect when ``asbind_build_test`` is ``ON``.
+  * - ``asbind_prefer_system_bench``
+    - Prefer system-installed Google Benchmark over fetching from GitHub. |br|
+      This option only has effect when ``asbind_build_bench`` is ``ON``.
 
 Generating Documentation Locally
 --------------------------------
