@@ -28,8 +28,6 @@ CMake Options for Development
     - Build benchmarks.
   * - ``asbind_build_ext``
     - Build extension library.
-  * - ``asbind_build_doc``
-    - Enable utility target for building documentation preview (see below).
 
 Generating Documentation Locally
 --------------------------------
@@ -44,20 +42,20 @@ Then, use ``pip`` to install the remaining dependencies of documentation.
 
     pip install -r doc/requirements.txt
 
-After CMake configuring with ``asbind_build_doc`` set to ``ON``,
-you can build the documentation with following command under the build directory.
+Run the provided script to build the documentation:
 
 .. code-block:: sh
 
-    cmake --build . --target asbind20_sphinx
+    cd doc
+    ./make-doc.sh
 
-The generated files are located in the ``sphinx-output`` directory,
+The generated files are located in the ``build/sphinx-output`` directory,
 you can activate a simple HTTP server in this directory.
 You can preview the generated documentation in browser.
 
 .. code-block:: sh
 
-    # Make sure you are in the "sphinx-output" directory
+    # Make sure you are in the "build/sphinx-output" directory
     python -m http.server 8080
 
 Now you can access ``localhost:8080`` in your browser to read the documents.
