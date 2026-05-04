@@ -137,7 +137,7 @@ Then, link the library in a ``CMakeLists.txt``.
 
     target_link_libraries(main PRIVATE asbind20::asbind20)
 
-1. Integration with XMake Projects
+3. Integration with XMake Projects
 ----------------------------------
 
 Since the version 1.6.0, asbind20 has been accepted into the `official package registry (xmake-repo) <https://github.com/xmake-io/xmake-repo>`_.
