@@ -58,7 +58,7 @@ private:
         if(val >= 0) [[likely]]
             return;
 
-#ifndef ASBIND20_NO_THROW_ON_BAD_BINDING
+#ifndef ASBIND20_CONFIG_NO_THROW_ON_BAD_BINDING
         // Report error
         auto code = static_cast<AS_NAMESPACE_QUALIFIER asERetCodes>(val);
         ::asbind20::detail::throw_<std::system_error>(

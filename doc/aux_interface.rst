@@ -163,7 +163,7 @@ The ``int`` parameter is the AngelScript ID returned by the registration call:
 
 - Non-negative values indicate success.
 - By default, negative values will throw a ``std::system_error``.
-  Define ``ASBIND20_NO_THROW_ON_BAD_BINDING`` to suppress this.
+  Define ``ASBIND20_CONFIG_NO_THROW_ON_BAD_BINDING`` to suppress this.
 
 Using a listener
 ~~~~~~~~~~~~~~~~

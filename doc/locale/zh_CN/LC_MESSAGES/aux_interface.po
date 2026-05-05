@@ -194,10 +194,10 @@ msgstr "非负值表示成功。"
 #: ../../doc/aux_interface.rst:165
 msgid ""
 "By default, negative values will throw a ``std::system_error``. Define "
-"``ASBIND20_NO_THROW_ON_BAD_BINDING`` to suppress this."
+"``ASBIND20_CONFIG_NO_THROW_ON_BAD_BINDING`` to suppress this."
 msgstr ""
 "默认情况下，负值会抛出 ``std::system_error``。定义 "
-"``ASBIND20_NO_THROW_ON_BAD_BINDING`` 可以抑制此行为。"
+"``ASBIND20_CONFIG_NO_THROW_ON_BAD_BINDING`` 可以抑制此行为。"
 
 #: ../../doc/aux_interface.rst:169
 msgid "Using a listener"
