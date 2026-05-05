@@ -60,7 +60,7 @@ update_lang() {
             return
         fi
 
-        if msgmerge --update --backup=off "$po_path" "$pot_path" 2>/dev/null; then
+        if msgmerge --update --backup=off "$po_path" "$pot_path"; then
             echo "  Updated: $name.po"
         else
             echo "  ERROR: msgmerge failed for $name.po"
