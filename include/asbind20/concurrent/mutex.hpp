@@ -3,8 +3,10 @@
 
 #pragma once
 
+// IWYU pragma: begin_exports
 #include <mutex>
-#include <shared_mutex> // IWYU pragma: export
+#include <shared_mutex>
+// IWYU pragma: end_exports
 #include "../detail/include_as.hpp"
 
 namespace asbind20

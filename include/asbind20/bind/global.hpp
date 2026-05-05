@@ -28,7 +28,6 @@ class global final : public binding_generator_interface<ForceGeneric, Listener>
         void* auxiliary = nullptr
     )
     {
-        [[maybe_unused]]
         int r = get_engine()->RegisterGlobalFunction(
             decl.c_str(),
             detail::to_asSFuncPtr(fn),
