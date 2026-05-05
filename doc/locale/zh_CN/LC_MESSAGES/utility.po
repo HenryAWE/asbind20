@@ -83,7 +83,7 @@ msgstr "杂项工具"
 
 #: ../../doc/utility.rst:76 ../../doc/utility.rst:120
 msgid "Example:"
-msgstr ""
+msgstr "示例："
 
 #: ../../doc/utility.rst:93
 msgid ""
@@ -92,6 +92,9 @@ msgid ""
 "``std::string``, ``std::string_view``, ``cstring_ref``, and "
 "``util::fixed_string``:"
 msgstr ""
+"``with_cstr`` 使用转换为以 null 结尾的 C 字符串的每个参数调用回调，处理任何类似"
+"字符串的类型，包括 ``std::string``、``std::string_view``、``cstring_ref`` 和 "
+"``util::fixed_string``："
 
 #: ../../doc/utility.rst:0
 msgid "Public Static Functions"
@@ -103,7 +106,7 @@ msgstr "友元"
 
 #: ../../doc/utility.rst:144
 msgid "Atomic Reference Counting"
-msgstr ""
+msgstr "原子引用计数"
 
 #: ../../doc/utility.rst:146
 msgid ""
@@ -112,6 +115,9 @@ msgid ""
 "``addref`` / ``release`` / ``get_refcount`` behaviours of a garbage-"
 "collected ``ref_class``."
 msgstr ""
+"``atomic_counter`` 包装 AngelScript 的 ``asAtomicInc`` / ``asAtomicDec``，用于"
+"线程安全的引用计数。它专为实现垃圾回收的 ``ref_class`` 的 ``addref`` / "
+"``release`` / ``get_refcount`` 行为而设计。"
 
 #: ../../doc/utility.rst:150
 msgid ""
@@ -121,22 +127,26 @@ msgid ""
 "if the counter reaches 0, invokes a destroyer callback — typically "
 "``delete`` on the enclosing object."
 msgstr ""
+"构造 ``atomic_counter`` 会将计数器初始化为 1。前缀 ``++`` 和 ``--`` 分别调用 "
+"``asAtomicInc`` 和 ``asAtomicDec``，返回新值。``dec_and_try_destroy`` 方法递减"
+"计数器，如果计数器达到 0，则调用销毁回调——通常是对封闭对象执行 ``delete``。"
 
 #: ../../doc/utility.rst:154
 msgid ""
 "Example: implementing reference counting for a garbage-collected script "
 "object:"
-msgstr ""
+msgstr "示例：为垃圾回收的脚本对象实现引用计数："
 
 #: ../../doc/utility.rst:205
 msgid ""
 "See :ref:`the threading documentation <atomic-refcounting>` for the full API "
 "reference."
 msgstr ""
+"完整 API 参考请参见 :ref:`线程文档 <atomic-refcounting>`。"
 
 #: ../../doc/utility.rst:208
 msgid "Range Views"
-msgstr ""
+msgstr "范围视图"
 
 #: ../../doc/utility.rst:210
 msgid ""
@@ -145,12 +155,17 @@ msgid ""
 "``<ranges>`` is available (``__cpp_lib_ranges``), these views integrate with "
 "standard range adaptors and algorithms."
 msgstr ""
+"asbind20 提供了用于遍历 AngelScript 实体的范围视图——类型成员、行为、枚举值，甚"
+"至是分词后的脚本源代码。当 ``<ranges>`` 可用时（``__cpp_lib_ranges``），这些视图"
+"可以与标准范围适配器和算法集成。"
 
 #: ../../doc/utility.rst:214
 msgid ""
 "All views expose ``begin()``/``end()``, ``size()``, and ``empty()``. Most "
 "iterators are random-access."
 msgstr ""
+"所有视图都公开 ``begin()``/``end()``、``size()`` 和 ``empty()``。大多数迭代器是"
+"随机访问的。"
 
 #: ../../doc/utility.rst:217
 msgid "Type information views"
@@ -158,7 +173,7 @@ msgstr "类型信息视图"
 
 #: ../../doc/utility.rst:219
 msgid "These views wrap an ``asITypeInfo*`` and enumerate its contents:"
-msgstr ""
+msgstr "这些视图包装 ``asITypeInfo*`` 并枚举其内容："
 
 #: ../../doc/utility.rst:247
 msgid ""
@@ -166,22 +181,26 @@ msgid ""
 "Use ``views::all_enum_values_of<std::uint64_t>(ti)`` for enums with a custom "
 "underlying type."
 msgstr ""
+"``all_enum_values`` 工厂默认使用 ``int`` 作为底层类型。对于具有自定义底层类型的"
+"枚举，使用 ``views::all_enum_values_of<std::uint64_t>(ti)``。"
 
 #: ../../doc/utility.rst:267
 msgid "Tokenize view"
-msgstr ""
+msgstr "分词视图"
 
 #: ../../doc/utility.rst:269
 msgid ""
 "``tokenize_view`` tokenizes a string of AngelScript source code lazily, "
 "yielding ``(asETokenClass, std::string_view)`` pairs:"
 msgstr ""
+"``tokenize_view`` 延迟地对 AngelScript 源代码字符串进行分词，生成 "
+"``(asETokenClass, std::string_view)`` 对："
 
 #: ../../doc/utility.rst:282
 msgid ""
 "The view is an input range — it does not support random access or multi-pass "
 "iteration."
-msgstr ""
+msgstr "该视图是输入范围——它不支持随机访问或多遍迭代。"
 
 #: ../../doc/utility.rst:289
 msgid "Debugging"

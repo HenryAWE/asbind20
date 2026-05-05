@@ -5,19 +5,22 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 OUTPUT_DIR="$PROJECT_ROOT/build"
-DOXYGEN_OUTPUT="$OUTPUT_DIR/doxygen-output-zh"
+DOXYGEN_XML="$OUTPUT_DIR/doxygen-output/xml"
 SPHINX_OUTPUT="$OUTPUT_DIR/sphinx-output-zh"
 
-mkdir -p "$OUTPUT_DIR" "$DOXYGEN_OUTPUT"
+mkdir -p "$OUTPUT_DIR"
 
-echo "Running Doxygen..."
-cd "$OUTPUT_DIR"
-(cat "$SCRIPT_DIR/Doxyfile"; echo "XML_OUTPUT = doxygen-output-zh/xml") | doxygen -
+# Doxygen XML (from C++ headers) is language-independent — run once, shared with English build.
+if [ ! -d "$DOXYGEN_XML" ]; then
+    echo "Running Doxygen..."
+    cd "$OUTPUT_DIR"
+    doxygen "$SCRIPT_DIR/Doxyfile"
+fi
 
-echo "Running Sphinx..."
+echo "Running Sphinx (zh_CN)..."
 sphinx-build -b html \
     -D "language=zh_CN" \
-    -D "breathe_projects.asbind20=$DOXYGEN_OUTPUT/xml" \
+    -D "breathe_projects.asbind20=$DOXYGEN_XML" \
     "$SCRIPT_DIR" \
     "$SPHINX_OUTPUT"
 

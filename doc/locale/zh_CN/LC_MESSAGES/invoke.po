@@ -88,12 +88,16 @@ msgid ""
 "function valid even after the module is discarded. ``script_function_ref`` "
 "and ``script_method_ref`` are non-owning counterparts."
 msgstr ""
+"``script_function`` 和 ``script_method`` 包装 ``asIScriptFunction*`` 并具有所有"
+"权语义，它们跟踪模块的引用计数，以在模块被丢弃后保持函数有效。"
+"``script_function_ref`` 和 ``script_method_ref`` 是对应的非拥有版本。"
 
 #: ../../doc/invoke.rst:141
 msgid ""
 "``script_method`` works the same way for member functions. Define a script "
 "class and wrap its methods:"
 msgstr ""
+"``script_method`` 对成员函数的工作方式相同。定义一个脚本类并包装其方法："
 
 #: ../../doc/invoke.rst:167
 msgid "Reference of Invocation Tools"
