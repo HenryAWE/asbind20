@@ -1203,6 +1203,8 @@ private:
     int m_this_type_id = 0;
 
 public:
+    using flag_type = AS_NAMESPACE_QUALIFIER asQWORD;
+
     class_binding_generator_base() = delete;
     class_binding_generator_base(const class_binding_generator_base&) = default;
 
@@ -1210,7 +1212,7 @@ public:
         : my_base(engine), m_name(std::move(name)) {}
 
 protected:
-    int register_object_type(AS_NAMESPACE_QUALIFIER asQWORD flags, int size)
+    int register_object_type(flag_type flags, int size)
     {
         int r = 0;
         r = get_engine()->RegisterObjectType(
@@ -1218,7 +1220,18 @@ protected:
             size,
             flags
         );
-        if(r > 0)
+        if(r > 0) [[likely]]
+            m_this_type_id = r;
+        return r;
+    }
+
+    int append_type()
+    {
+        AS_NAMESPACE_QUALIFIER asITypeInfo* ti = get_engine()->GetTypeInfoByName(m_name.c_str());
+        if(!ti)
+            return AS_NAMESPACE_QUALIFIER asINVALID_TYPE;
+        int r = ti->GetTypeId();
+        if(r > 0) [[likely]]
             m_this_type_id = r;
         return r;
     }
@@ -2773,13 +2786,14 @@ class basic_value_class final :
     using listener_traits_type = listener_traits<Listener>;
 
 public:
+    using flag_type = AS_NAMESPACE_QUALIFIER asQWORD;
     using class_type = Class;
     using class_binding_generator_tag = void;
 
     basic_value_class(
         AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
         std::string name,
-        AS_NAMESPACE_QUALIFIER asQWORD flags = 0
+        flag_type flags = 0
     )
         : my_base(engine, std::move(name))
     {
@@ -2817,6 +2831,16 @@ public:
               flags
           )
     {}
+
+    basic_value_class(
+        appending_t,
+        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+        std::string name
+    )
+        : my_base(engine, std::move(name))
+    {
+        this->append_type();
+    }
 
     basic_value_class(const basic_value_class&) = default;
 
@@ -3849,6 +3873,16 @@ public:
               flags
           )
     {}
+
+    basic_ref_class(
+        appending_t,
+        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+        std::string name
+    )
+        : my_base(engine, std::move(name))
+    {
+        this->append_type();
+    }
 
     basic_ref_class(const basic_ref_class&) = default;
 

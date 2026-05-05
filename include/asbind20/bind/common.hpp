@@ -20,6 +20,11 @@
 
 namespace asbind20
 {
+struct appending_t
+{};
+
+constexpr inline appending_t appending{};
+
 struct use_generic_t
 {};
 
