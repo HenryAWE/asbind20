@@ -19,7 +19,7 @@ msgid ""
 "If you are registering functions with variable type argument or template "
 "classes, you will definitely need tools to deal with AngelScript types."
 msgstr ""
-"如果您正在注册带有可变类型参数或模板类的函数，您肯定需要处理 AngelScript 类型"
+"如果你正在注册带有可变类型参数或模板类的函数，你会需要用来处理 AngelScript 类型"
 "的工具。"
 
 #: ../../doc/advanced/script_type.rst:8
@@ -32,7 +32,7 @@ msgstr "参数"
 
 #: ../../doc/advanced/script_type.rst:18
 msgid "Dispatching Function Calls Based on Type IDs"
-msgstr "基于类型 ID 分派函数调用"
+msgstr "基于类型 ID 派发函数调用"
 
 #: ../../doc/advanced/script_type.rst:20
 msgid ""
@@ -55,8 +55,8 @@ msgid ""
 "``visit_script_type`` extends this to non-primitive types — it dispatches "
 "primitive types to ``visit_primitive_type`` and object handles as ``void*``:"
 msgstr ""
-"``visit_script_type`` 将此扩展到非原始类型——它将原始类型分派给 "
-"``visit_primitive_type``，将对象句柄作为 ``void*`` 分派："
+"``visit_script_type`` 将此扩展到非原始类型——它将原始类型派发给 "
+"``visit_primitive_type``，将对象句柄作为 ``void*`` 派发："
 
 #: ../../doc/advanced/script_type.rst:77
 msgid ""

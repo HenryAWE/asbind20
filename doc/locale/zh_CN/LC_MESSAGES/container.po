@@ -168,7 +168,7 @@ msgid ""
 "The ``visit`` method applies a visitor to a range of elements, handling type-"
 "aware dispatch:"
 msgstr ""
-"``visit`` 方法对一系列元素应用访问器，处理类型感知的分派："
+"``visit`` 方法对一系列元素应用访问器，同时处理基于类型的派发："
 
 #: ../../doc/container.rst:107
 msgid "GC integration"
