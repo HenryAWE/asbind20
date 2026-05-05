@@ -9,6 +9,7 @@
 #include <asbind20/container/small_vector.hpp>
 #include <asbind20/operators.hpp>
 #include <asbind20/container/compare.hpp>
+#include "framework.hpp"
 
 namespace asbind_test
 {
@@ -162,6 +163,23 @@ public:
         : m_data(other.m_data)
     {
         setup_cache();
+    }
+
+    script_array(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, const script_array& other)
+        : m_data(ti)
+    {
+        if(ti != other.get_type_info())
+        {
+            ADD_FAILURE()
+                << "Inconsistent type info (other type = " << other.get_type_info()->GetName() << ")";
+            return;
+        }
+        setup_cache();
+        m_data.reserve(other.m_data.size());
+        for(size_type i = 0; i < other.size(); ++i)
+        {
+            m_data.push_back(other[i]);
+        }
     }
 
     script_array(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, size_type n)
@@ -1467,7 +1485,7 @@ public:
 private:
     asbind20::atomic_counter m_refcount;
     bool m_gc_flag = false;
-    // Prevents array from begin modified within a callback of functions like find_if
+    // Prevents array from being modified within a callback of functions like find_if
     mutable bool m_within_callback = false;
 
     // TODO: Atomic flags for multithreading
@@ -1543,6 +1561,7 @@ inline void register_script_array(
             .enum_refs(fp<&array_t::enum_refs>)
             .release_refs(fp<&array_t::release_refs>)
             .default_factory(use_policy<policies::notify_gc>)
+            .copy_factory(use_policy<policies::notify_gc>)
             .template factory<size_type>("uint n", use_explicit, use_policy<policies::notify_gc>)
             .template factory<size_type, const void*>("uint n, const T&in value", use_policy<policies::notify_gc>)
             .list_factory("repeat T", use_policy<policies::repeat_list_proxy, policies::notify_gc>)

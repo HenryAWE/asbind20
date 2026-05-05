@@ -104,6 +104,16 @@ static void test_construct_arr(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         "assert(arr[0] == \"\");\n"
         "assert(arr[1] == \"\");"
     );
+
+    run_string(
+        engine,
+        "copy_factory_string",
+        "string[] arr(n: 2);\n"
+        "string[] arr2 = arr;\n"
+        "assert(arr2.size == 2);\n"
+        "assert(arr2[0] == \"\");\n"
+        "assert(arr2[1] == \"\");"
+    );
 }
 } // namespace test_script_array
 

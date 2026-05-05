@@ -4391,6 +4391,31 @@ public:
     }
 
 private:
+    std::string decl_copy_factory() const
+    {
+        return string_concat("const ", this->get_name(), "&in");
+    }
+
+public:
+    template <policies::factory_policy Policy = void>
+    basic_ref_class& copy_factory(use_generic_t, use_policy_t<Policy> = {})
+    {
+        this->factory<const Class&>(use_generic, decl_copy_factory(), use_policy<Policy>);
+
+        return *this;
+    }
+
+    template <policies::factory_policy Policy = void>
+    basic_ref_class& copy_factory(use_policy_t<Policy> = {})
+    {
+        if constexpr(ForceGeneric)
+            copy_factory(use_generic, use_policy<Policy>);
+        else
+            this->factory<const Class&>(decl_copy_factory(), use_policy<Policy>);
+        return *this;
+    }
+
+private:
     template <typename... Args, typename Policy>
     void register_factory_generic(
         std::string_view params, use_policy_t<Policy>, bool explicit_
