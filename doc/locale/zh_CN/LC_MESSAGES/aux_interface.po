@@ -1,0 +1,227 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: asbind20\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-05 11:57+0800\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: ../../doc/aux_interface.rst:2
+msgid "Auxiliary Interfaces"
+msgstr "辅助接口"
+
+#: ../../doc/aux_interface.rst:5
+msgid "Registering an Interface"
+msgstr "注册接口"
+
+#: ../../doc/aux_interface.rst:7
+msgid ""
+"Class interfaces can be registered if you want to guarantee that script "
+"classes implement a specific set of class methods. Interfaces can be easier "
+"to use when working with script classes from the application, but they are "
+"not necessary as the application can easily enumerate available methods and "
+"properties even without the interfaces."
+msgstr ""
+"如果您希望确保脚本类实现一组特定的类方法，可以注册类接口。在应用程序中处理脚"
+"本类时，接口可能更易于使用，但它们并非必需，因为即使没有接口，应用程序也可以"
+"轻松枚举可用的方法和属性。"
+
+#: ../../doc/aux_interface.rst:20
+msgid ""
+"Unlike the raw AngelScript interface, you don't need to add the class name "
+"into the declaration of member ``funcdef`` for asbind20."
+msgstr ""
+"与原始 AngelScript 接口不同，asbind20的接口不需要将类名添加到成员 "
+"``funcdef`` 的声明中。"
+
+#: ../../doc/aux_interface.rst:24
+msgid "Type Aliases"
+msgstr "类型别名"
+
+#: ../../doc/aux_interface.rst:26
+msgid ""
+"Function definitions can be registered when you wish to allow the script to "
+"pass function pointers to the application, e.g. to implement callback "
+"routines."
+msgstr ""
+"当您希望允许脚本将函数指针传递给应用程序时，可以注册函数定义，例如实现回调例"
+"程。"
+
+#: ../../doc/aux_interface.rst:29
+msgid ""
+"Enumeration types and ``typedef``\\ s can also be registered to improve "
+"readability of the scripts."
+msgstr "枚举类型和 ``typedef``\\ s 也可以注册以提高脚本的可读性。"
+
+#: ../../doc/aux_interface.rst:0
+msgid "Parameters"
+msgstr "参数"
+
+#: ../../doc/aux_interface.rst:36
+msgid "Example code:"
+msgstr "示例代码："
+
+#: ../../doc/aux_interface.rst:49
+msgid "Enumerations"
+msgstr "枚举"
+
+#: ../../doc/aux_interface.rst:66
+msgid ""
+"Up until version 2.39, AngelScript used a 32-bit integer to store the "
+"underlying value of enums, before it supported customizable underlying "
+"types. Please make sure those values don't overflow or underflow."
+msgstr ""
+"在 2.39 版本之前，AngelScript 在支持可自定义底层类型之前，使用 32 位整数来存"
+"储枚举的底层值。请确保这些值不会溢出或下溢。"
+
+#: ../../doc/aux_interface.rst:70
+msgid ""
+"Besides, the library provides a convenient interface for generating string "
+"representation of enum value at compile-time."
+msgstr "此外，该库提供了一个便捷的接口，用于在编译时生成枚举值的字符串表示。"
+
+#: ../../doc/aux_interface.rst:72
+msgid "The following code is equivalent to the above one:"
+msgstr "以下代码与上述代码等效："
+
+#: ../../doc/aux_interface.rst:81
+msgid ""
+"However, as static reflection is still waiting for C++26, this feature "
+"relies on compiler extension. It's guaranteed to work on mainstream "
+"compilers (MSVC, GCC, and Clang). **It has some limitations**. For example, "
+"it cannot generate string representation for enums with same value."
+msgstr ""
+"然而，由于静态反射仍在等待 C++26，此特性依赖于编译器扩展。它保证能在主流编译"
+"器（MSVC、GCC 和 Clang）上正常工作。**它有一些限制**。例如，它无法为具有相同"
+"值的枚举生成字符串表示。"
+
+#: ../../doc/aux_interface.rst:93
+msgid ""
+"Since the version 2.39, AngelScript supports enumerations with custom "
+"underlying types."
+msgstr "自 2.39 版本起，AngelScript 支持具有自定义底层类型的枚举。"
+
+#: ../../doc/aux_interface.rst:95
+msgid ""
+"You can register them by ``enum_underlying``, which is an alias of "
+"``enum_<Enum, std::underlying_type_t<Enum>>``."
+msgstr ""
+"您可以通过 ``enum_underlying`` 来注册它们，它是 ``enum_<Enum, "
+"std::underlying_type_t<Enum>>`` 的别名。"
+
+#: ../../doc/aux_interface.rst:114
+msgid ""
+"If you need to interact these enums from C++ side, the enums with custom "
+"underlying type :ref:`need to specify the conversion rules <custom-rule-for-"
+"enum-underlying>`."
+msgstr ""
+"如果您需要从 C++ 端与这些枚举进行交互，具有自定义底层类型的枚举 :ref:`需要指"
+"定转换规则 <custom-rule-for-enum-underlying>`。"
+
+#: ../../doc/aux_interface.rst:118
+msgid "Listener API"
+msgstr "Listener API"
+
+#: ../../doc/aux_interface.rst:121
+msgid ""
+"The listener API described in this section is **experimental**. Its "
+"interface may change in future releases."
+msgstr ""
+"本节描述的 Listener API 是**实验性的**。其接口在未来版本中可能会发生变化。"
+
+#: ../../doc/aux_interface.rst:123
+msgid ""
+"Every binding generator (``value_class``, ``ref_class``, ``global``, "
+"``enum_``, ``interface``) accepts an optional ``Listener`` template "
+"parameter. When an entity is registered, the generator invokes the "
+"corresponding callback on the listener, passing itself and the returned "
+"value from AngelScript API."
+msgstr ""
+"每个绑定生成器（``value_class``、``ref_class``、``global``、``enum_``、"
+"``interface``）都接受一个可选的 ``Listener`` 模板参数。当实体被注册时，生成器"
+"会在监听器上调用相应的回调，传递自身以及 AngelScript API 返回的值。"
+
+#: ../../doc/aux_interface.rst:127
+msgid "This allows you to:"
+msgstr "这使您可以："
+
+#: ../../doc/aux_interface.rst:129
+msgid "Record what was registered for logging or debugging"
+msgstr "记录已注册的内容以供日志记录或调试"
+
+#: ../../doc/aux_interface.rst:130
+msgid "Validate registered entities"
+msgstr "验证已注册的实体"
+
+#: ../../doc/aux_interface.rst:131
+msgid "Collect metadata about the bound interface"
+msgstr "收集有关绑定接口的元数据"
+
+#: ../../doc/aux_interface.rst:134
+msgid "Defining a listener"
+msgstr "定义监听器"
+
+#: ../../doc/aux_interface.rst:136
+msgid ""
+"A listener is a class that implements any subset of the following callback "
+"methods. Each is optional — if omitted, the call is silently skipped (no-op)."
+msgstr ""
+"监听器是一个实现了以下任意回调方法子集的类。每个方法都是可选的——如果省略，"
+"调用将被静默跳过（无操作）。"
+
+#: ../../doc/aux_interface.rst:159
+msgid ""
+"The ``gen`` parameter is a reference to the binding generator instance (e.g. "
+"``global``, ``value_class<T>``). Use it to query the engine, type info, or "
+"the generator's type ID."
+msgstr ""
+"``gen`` 参数是对绑定生成器实例（例如 ``global``、``value_class<T>``）的引用。"
+"使用它可以查询引擎、类型信息或生成器的类型 ID。"
+
+#: ../../doc/aux_interface.rst:162
+msgid ""
+"The ``int`` parameter is the AngelScript ID returned by the registration "
+"call:"
+msgstr "``int`` 参数是注册调用返回的 AngelScript ID："
+
+#: ../../doc/aux_interface.rst:164
+msgid "Non-negative values indicate success."
+msgstr "非负值表示成功。"
+
+#: ../../doc/aux_interface.rst:165
+msgid ""
+"By default, negative values will throw a ``std::system_error``. Define "
+"``ASBIND20_NO_THROW_ON_BAD_BINDING`` to suppress this."
+msgstr ""
+"默认情况下，负值会抛出 ``std::system_error``。定义 "
+"``ASBIND20_NO_THROW_ON_BAD_BINDING`` 可以抑制此行为。"
+
+#: ../../doc/aux_interface.rst:169
+msgid "Using a listener"
+msgstr "使用监听器"
+
+#: ../../doc/aux_interface.rst:171
+msgid ""
+"Pass the listener as a template parameter and retrieve it with "
+"``get_listener()``:"
+msgstr ""
+"将监听器作为模板参数传递，并使用 ``get_listener()`` 获取它："
+
+#: ../../doc/aux_interface.rst:184
+msgid ""
+"Listeners are default-constructed unless you pass an instance to the "
+"generator's constructor:"
+msgstr ""
+"监听器是默认构造的，除非您将实例传递给生成器的构造函数："
+
+#~ msgid ""
+#~ "If you are interested in how this is achieved, you can read `this article "
+#~ "written by YKIKO (Chinese) <https://zhuanlan.zhihu.com/p/680412313>`_, or "
+#~ "author's `English translation <https://ykiko.me/en/articles/680412313/>`_."
+#~ msgstr ""
+#~ "如果您对此如何实现感兴趣，可以阅读 `YKIKO 撰写的这篇中文文章 <https://"
+#~ "zhuanlan.zhihu.com/p/680412313>`_，或作者的 `英文翻译 <https://ykiko.me/"
+#~ "en/articles/680412313/>`_。"

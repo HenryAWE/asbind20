@@ -2,7 +2,7 @@ Troubleshooting
 ===============
 
 This page provides some common troubles and their solutions.
-Besides, If you encounter some runtime error that hard to understand, you can check the following list for help.
+Besides, If you encounter some runtime error that is hard to understand, you can check the following list for help.
 
 1. Duplicate Methods/Functions
 ------------------------------
@@ -13,13 +13,13 @@ A common cause is registering something manually after calling a helper for gene
 2. Mismatched Function Signature
 --------------------------------
 
-Please check carefully the function signature in AngelScript and C++ are perfectly matched. Especially when dealing with platform-dependent types, for example, ``size_t``. Besides, a common mistake may be registering a function accepting ``const char*`` / ``std::string_view`` as accepting ``string`` as its argument. You can create a wrapper function, or registered them by lambda.
+Please check carefully the function signature in AngelScript and C++ are perfectly matched. Especially when dealing with platform-dependent types, for example, ``size_t``. Besides, a common mistake may be registering a function accepting ``const char*`` / ``std::string_view`` as accepting ``string`` as its argument. You can create a wrapper function, or register them by lambda.
 
 3. Invalid Type Flags for Value Type
 ------------------------------------
 
 AngelScript needs a precise type information to use a value type in native calling convention. Please check the official document for details. A common mistake is forgetting to set ``asOBJ_APP_CLASS_MORE_CONSTRUCTORS`` before registering constructors other than default/copy constructor.
-If you think the problem is caused by the native calling convention and is hard to fix, you can try to force ``asbind20`` to register all things in generic mode, as described at :ref:`here <group-force-generic>`. If switching to generic mode fix your problem, you can be 90% sure the problem is caused by invalid type flags.
+If you think the problem is caused by the native calling convention and is hard to fix, you can try to force ``asbind20`` to register all things in generic mode, as described at :ref:`here <group-force-generic>`. If switching to generic mode fixes your problem, you can be 90% sure the problem is caused by invalid type flags.
 
 Note for Windows + MSVC User
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

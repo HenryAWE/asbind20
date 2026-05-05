@@ -1,0 +1,154 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: asbind20\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-05 11:57+0800\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: ../../doc/global.rst:2
+msgid "Global Functions and Properties"
+msgstr "全局函数和属性"
+
+#: ../../doc/global.rst:5
+msgid "Registering Global Functions"
+msgstr "注册全局函数"
+
+#: ../../doc/global.rst:8
+msgid "Ordinary Functions"
+msgstr "普通函数"
+
+#: ../../doc/global.rst:10
+msgid "C++ Declarations:"
+msgstr "C++ 声明："
+
+#: ../../doc/global.rst:19
+msgid "Registering:"
+msgstr "注册："
+
+#: ../../doc/global.rst:31
+msgid ""
+"Make sure the script function declaration matches what the registered "
+"function does with the ``asIScriptGeneric``!"
+msgstr "确保脚本函数声明与注册函数对 ``asIScriptGeneric`` 的操作相匹配！"
+
+#: ../../doc/global.rst:33
+msgid ""
+"For overloaded functions, you need to use ``overload_cast`` with arguments "
+"to choose the function you want."
+msgstr ""
+"对于重载函数，你需要使用带参数的 ``overload_cast`` 来选择你想要的函数。"
+
+#: ../../doc/global.rst:50
+msgid "Member Function as Global Function"
+msgstr "将成员函数作为全局函数"
+
+#: ../../doc/global.rst:52
+msgid ""
+"You can synthesize a global function from a member function and an instance:"
+msgstr "你可以从成员函数和实例合成一个全局函数："
+
+#: ../../doc/global.rst:68
+msgid ""
+"When the ``f()`` is called by script, it's equivalent to ``instance.f()`` in "
+"C++."
+msgstr "当脚本调用 ``f()`` 时，它等价于 C++ 中的 ``instance.f()``。"
+
+#: ../../doc/global.rst:71
+msgid "Lambdas"
+msgstr "Lambda 表达式"
+
+#: ../../doc/global.rst:73
+msgid "A lambda can be registered as a global function:"
+msgstr "Lambda 表达式可以注册为全局函数："
+
+#: ../../doc/global.rst:84
+msgid "Auxiliary Data"
+msgstr "辅助数据"
+
+#: ../../doc/global.rst:86
+msgid ""
+"Use ``aux_value`` to pass a small pointer-sized integer as auxiliary data. "
+"It can be retrieved via ``asIScriptGeneric::GetAuxiliary()``."
+msgstr ""
+"使用 ``aux_value`` 传递一个小型的指针大小的整数作为辅助数据。它可以通过 "
+"``asIScriptGeneric::GetAuxiliary()`` 来获取。"
+
+#: ../../doc/global.rst:101
+msgid "DO NOT use this helper unless you know what you are exactly doing!"
+msgstr "除非你确切知道自己在做什么，否则不要使用此辅助工具！"
+
+#: ../../doc/global.rst:104
+msgid "Force-Generic Mode"
+msgstr "强制通用模式"
+
+#: ../../doc/global.rst:106
+msgid ""
+"When targeting platforms without native calling convention support (e.g. "
+"Emscripten), force all registered functions to use the generic convention:"
+msgstr ""
+"当目标平台不支持原生调用约定时（例如 Emscripten），强制所有已注册的函数使用通用"
+"调用约定："
+
+#: ../../doc/global.rst:115
+msgid "Registering Global Properties"
+msgstr "注册全局属性"
+
+#: ../../doc/global.rst:130
+msgid "Special Callbacks"
+msgstr "特殊回调"
+
+#: ../../doc/global.rst:132
+msgid ""
+"Please check the official documentation of AngelScript for the requirements "
+"of the following functions."
+msgstr "请查看 AngelScript 的官方文档以了解以下函数的要求。"
+
+#: ../../doc/global.rst:135
+msgid "Message Callback"
+msgstr "消息回调"
+
+#: ../../doc/global.rst:137
+msgid "Registered by ``set_message_callback``."
+msgstr "通过 ``set_message_callback`` 注册。"
+
+#: ../../doc/global.rst:164
+msgid "A member function can also be used as message callback."
+msgstr "成员函数也可以用作消息回调。"
+
+#: ../../doc/global.rst:186
+msgid ""
+"See `AngelScript documentation <https://www.angelcode.com/angelscript/sdk/"
+"docs/manual/doc_compile_script.html#doc_compile_script_msg>`_ for details."
+msgstr ""
+"详情请参见 `AngelScript 文档 <https://www.angelcode.com/angelscript/sdk/docs/"
+"manual/doc_compile_script.html#doc_compile_script_msg>`_。"
+
+#: ../../doc/global.rst:189
+msgid "Exception Translator"
+msgstr "异常转换器"
+
+#: ../../doc/global.rst:191
+msgid "Registered by ``set_exception_translator``."
+msgstr "通过 ``set_exception_translator`` 注册。"
+
+#: ../../doc/global.rst:197
+msgid ""
+"If your AngelScript is built without exception support "
+"(``asGetLibraryOptions()`` reports ``AS_NO_EXCEPTIONS``), this helper will "
+"fail to register the translator."
+msgstr ""
+"如果你的 AngelScript 构建时没有异常支持（``asGetLibraryOptions()`` 报告 "
+"``AS_NO_EXCEPTIONS``），此辅助工具将无法注册转换器。"
+
+#: ../../doc/global.rst:200
+msgid ""
+"See `AngelScript documentation about C++ exceptions <https://"
+"www.angelcode.com/angelscript/sdk/docs/manual/doc_cpp_exceptions.html>`_ for "
+"details."
+msgstr ""
+"详情请参见 `关于 C++ 异常的 AngelScript 文档 <https://www.angelcode.com/"
+"angelscript/sdk/docs/manual/doc_cpp_exceptions.html>`_。"

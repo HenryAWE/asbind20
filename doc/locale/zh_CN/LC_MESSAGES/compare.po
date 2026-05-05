@@ -1,0 +1,114 @@
+# Chinese translations for asbind20 package.
+# Copyright (C) 2024, HenryAWE
+# This file is distributed under the same license as the asbind20 package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: asbind20 \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-05 11:57+0800\n"
+"PO-Revision-Date: 2026-05-05 11:57+0800\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: zh_CN\n"
+
+#: ../../doc/compare.rst:2
+msgid "Comparing Script Objects"
+msgstr "比较脚本对象"
+
+#: ../../doc/compare.rst:4
+msgid ""
+"When implementing a container for script objects, you need a way to compare "
+"elements — for ``operator==``, ``operator<=>``, ``std::sort``, or "
+"deduplication. AngelScript classes can define ``opEquals`` and ``opCmp`` "
+"methods, but calling them from C++ requires discovering them at runtime."
+msgstr ""
+"当实现脚本对象的容器时，您需要一种比较元素的方法——用于 ``operator==``、"
+"``operator<=>``、``std::sort`` 或去重。AngelScript 类可以定义 ``opEquals`` 和 "
+"``opCmp`` 方法，但从 C++ 调用它们需要在运行时发现这些方法。"
+
+#: ../../doc/compare.rst:9
+msgid ""
+"``container/compare.hpp`` provides tools to inspect a script type for these "
+"methods and invoke them through a uniform interface."
+msgstr ""
+"``container/compare.hpp`` 提供了检查脚本类型是否有这些方法并通过统一接口调用它"
+"们的工具。"
+
+#: ../../doc/compare.rst:13
+msgid ""
+"The content of this file is designed for library developers implementing "
+"containers. If you are not building a custom container for script objects, "
+"you likely do not need these APIs."
+msgstr ""
+"本文档内容面向实现容器的库开发者。如果您不是在构建自定义的脚本对象容器，您大概"
+"不需要这些 API。"
+
+#: ../../doc/compare.rst:18
+msgid "Discovering Comparators"
+msgstr "发现比较器"
+
+#: ../../doc/compare.rst:20
+msgid ""
+"Call ``get_comparator`` with an ``asITypeInfo*`` to scan the type's methods. "
+"It looks for methods matching these signatures:"
+msgstr ""
+"使用 ``asITypeInfo*`` 调用 ``get_comparator`` 来扫描类型的方法。它会寻找匹配以"
+"下签名的方法："
+
+#: ../../doc/compare.rst:23
+msgid "``bool opEquals(const T&in) const``"
+msgstr "``bool opEquals(const T&in) const``"
+
+#: ../../doc/compare.rst:24
+msgid "``int opCmp(const T&in) const``"
+msgstr "``int opCmp(const T&in) const``"
+
+#: ../../doc/compare.rst:48
+msgid "Using the Comparator"
+msgstr "使用比较器"
+
+#: ../../doc/compare.rst:50
+msgid ""
+"Once obtained, ``script_element_comparator`` provides ``eq()`` and "
+"``compare()`` that invoke the discovered script methods. Both take a script "
+"context and two ``const void*`` pointers to the elements."
+msgstr ""
+"一旦获取到，``script_element_comparator`` 提供 ``eq()`` 和 ``compare()`` 来调用"
+"发现的脚本方法。两者都需要一个脚本上下文和两个指向元素的 ``const void*`` 指针。"
+
+#: ../../doc/compare.rst:82
+msgid "Checking Availability"
+msgstr "检查可用性"
+
+#: ../../doc/compare.rst:91
+msgid "Integration with Containers"
+msgstr "与容器集成"
+
+#: ../../doc/compare.rst:93
+msgid "A typical pattern for a container implementing ``operator==``:"
+msgstr "一个实现 ``operator==`` 的容器的典型模式："
+
+#: ../../doc/compare.rst:0
+msgid "Public Types"
+msgstr "公共类型"
+
+#: ../../doc/compare.rst:0
+msgid "Public Functions"
+msgstr "公共函数"
+
+#: ../../doc/compare.rst:0
+msgid "Parameters"
+msgstr "参数"
+
+#: ../../doc/compare.rst:0
+msgid "Returns"
+msgstr "返回值"
+
+#: ../../doc/compare.rst:0
+msgid "Public Members"
+msgstr "公共成员"

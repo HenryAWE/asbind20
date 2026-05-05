@@ -3,33 +3,35 @@ Build Guide for Contributors
 
 This page is the guide for contributors.
 
-This library use GoogleTest for unit tests and Google Benchmark for finding performance issues.
+This library uses GoogleTest for unit tests and Google Benchmark for finding performance issues.
 Both dependencies will be automatically fetched by CMake scripts if they are required.
 
 CMake Options for Development
 -----------------------------
 
 .. list-table::
-   :widths: auto
-   :header-rows: 1
+  :widths: auto
+  :header-rows: 1
 
-   * - Name
-     - Description
+  * - Name
+    - Description
 
-   * - ``asbind_cxxstd``
-     - | C++ standard version for building asbind20. Must be 20 at least.
-       | This can be set to a higher version like 23 for testing some advanced features that are only available in newer standard.
-   * - ``asbind_build_test``
-     - Build tests and enable ``ctest``.
-   * - ``asbind_dev_warning_as_error``
-     - | Enable warning-as-error during the development.
-       | This option defaults to ``ON`` and only has effect when ``asbind_build_test`` is ``ON``.
-   * - ``asbind_build_bench``
-     - Build benchmarks.
-   * - ``asbind_build_ext``
-     - Build extension library.
-   * - ``asbind_build_doc``
-     - Enable utility target for building documentation preview (see below).
+  * - ``asbind_cxxstd``
+    - C++ standard version for building asbind20. Must be 20 at least. |br|
+      This can be set to a higher version like 23, |br| testing some advanced features that are only available in newer standard.
+  * - ``asbind_build_test``
+    - Build tests and enable ``ctest``.
+  * - ``asbind_dev_warning_as_error``
+    - Enable warning-as-error during the development. |br|
+      This option defaults to ``ON`` and only has effect when ``asbind_build_test`` is ``ON``.
+  * - ``asbind_build_bench``
+    - Build benchmarks.
+  * - ``asbind_prefer_system_gtest``
+    - Prefer system-installed GTest over fetching from GitHub. |br|
+      This option only has effect when ``asbind_build_test`` is ``ON``.
+  * - ``asbind_prefer_system_bench``
+    - Prefer system-installed Google Benchmark over fetching from GitHub. |br|
+      This option only has effect when ``asbind_build_bench`` is ``ON``.
 
 Generating Documentation Locally
 --------------------------------
@@ -38,26 +40,26 @@ Documentation is based on reStructuredText (.rst) files and Doxygen, then genera
 This is used by ReadtheDocs, but you can also generate a local version for previewing modification to documents.
 
 Firstly, follow installation guide of your platform to install Doxygen, Python and Sphinx.
-Then, use ``pip`` to install rest dependencies of documentation.
+Then, use ``pip`` to install the remaining dependencies of documentation.
 
 .. code-block:: sh
 
     pip install -r doc/requirements.txt
 
-After CMake configuring with ``asbind_build_doc`` set to ``ON``,
-you can build the documentation with following command under the build directory.
+Run the provided script to build the documentation:
 
 .. code-block:: sh
 
-    cmake --build . --target asbind20_sphinx
+    cd doc
+    ./make-doc.sh
 
-The generated files are located in the ``sphinx-output`` directory,
+The generated files are located in the ``build/sphinx-output`` directory,
 you can activate a simple HTTP server in this directory.
 You can preview the generated documentation in browser.
 
 .. code-block:: sh
 
-    # Make sure you are in the "sphinx-output" directory
+    # Make sure you are in the "build/sphinx-output" directory
     python -m http.server 8080
 
 Now you can access ``localhost:8080`` in your browser to read the documents.

@@ -21,34 +21,34 @@ Currently, the following platforms and compilers are officially supported and `t
 However, asbind20 on other platforms, architectures or compiler toolchains supported by AngelScript should work as expected too.
 
 .. list-table::
-   :widths: auto
-   :header-rows: 1
+  :widths: auto
+  :header-rows: 1
 
-   * - Platform
-     - Architecture
-     - Compiler
-   * - Windows
-     - x86, x64
-     - MSVC latest
-   * - Windows
-     - x64
-     - Clang-Cl latest
-   * - Linux (Ubuntu)
-     - x64
-     - | GCC 13, 14
-       | Clang 15, 18, 19
-   * - Linux (Ubuntu)
-     - arm64
-     - Clang 18
-   * - MacOS
-     - arm64
-     - Xcode latest-stable
-   * - Emscripten
-     - wasm
-     - emsdk 4.0.18
+  * - Platform
+    - Architecture
+    - Compiler
+  * - Windows
+    - x86, x64
+    - MSVC latest
+  * - Windows
+    - x64
+    - Clang-Cl latest
+  * - Linux (Ubuntu)
+    - x64
+    - GCC 13, 14 |br|
+      Clang 15, 18, 19
+  * - Linux (Ubuntu)
+    - arm64
+    - Clang 18
+  * - macOS
+    - arm64
+    - Xcode latest-stable
+  * - Emscripten
+    - wasm
+    - emsdk 4.0.18
 
-- The "latest" or "latest-stable" in the above table means the (stable) latest version of compiler toolchain available in CI when asbind20 releases a new stable version.
-  You can check the release date of history version in the `changelog <changelog>`.
+- The "latest" or "latest-stable" in the above table mean the (stable) latest version of compiler toolchain available in CI when asbind20 releases a new stable version.
+  You can check the release date of historical versions in the :doc:`changelog`.
 
 - Newer Clang toolchains (like Clang 18+) support both libstdc++ and libc++,
   while the older toolchains (like Clang 15) on libstdc++ are not guaranteed to work as expected.
@@ -72,7 +72,7 @@ This library will not include the AngelScript library for the second time by det
 1. Copy into Your Project
 -------------------------
 
-This a header-only library.
+This is a header-only library.
 You can directly copy all the files under ``include/`` into your project,
 then set a correct include directory for your project.
 
@@ -92,10 +92,37 @@ You can add asbind20 through git submodule and then use ``add_subdirectory``.
 
     target_link_libraries(main PRIVATE asbind20::asbind20)
 
-B. Build and Install
+B. FetchContent
+~~~~~~~~~~~~~~~
+
+Use CMake's ``FetchContent`` to download asbind20 at configure time:
+
+.. code-block:: cmake
+
+    include(FetchContent)
+
+    FetchContent_Declare(
+        asbind20
+        GIT_REPOSITORY https://github.com/HenryAWE/asbind20.git
+        GIT_TAG v2.0.0       # replace with the version you need
+    )
+
+    # AngelScript must be available before asbind20
+    find_package(Angelscript REQUIRED)
+
+    FetchContent_MakeAvailable(asbind20)
+
+    target_link_libraries(main PRIVATE asbind20::asbind20)
+
+.. note::
+    asbind20 requires AngelScript to be findable via ``find_package(Angelscript)``.
+    If AngelScript is also fetched via ``FetchContent``, make sure it is made available
+    before asbind20.
+
+C. Build and Install
 ~~~~~~~~~~~~~~~~~~~~
 
-Additionally, you can install and link against asbind20 using CMake.
+Alternatively, you can install and link against asbind20 using CMake.
 
 .. code-block:: sh
 
@@ -110,7 +137,7 @@ Then, link the library in a ``CMakeLists.txt``.
 
     target_link_libraries(main PRIVATE asbind20::asbind20)
 
-1. Integration with XMake Projects
+3. Integration with XMake Projects
 ----------------------------------
 
 Since the version 1.6.0, asbind20 has been accepted into the `official package registry (xmake-repo) <https://github.com/xmake-io/xmake-repo>`_.

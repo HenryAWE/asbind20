@@ -1,0 +1,153 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: asbind20\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-05 11:57+0800\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+#: ../../doc/template_type.rst:2
+msgid "Registering Template Types"
+msgstr "注册模板类型"
+
+#: ../../doc/template_type.rst:5
+msgid "Constructors and Factories"
+msgstr "构造函数与工厂函数"
+
+#: ../../doc/template_type.rst:7
+msgid ""
+"For template types, AngelScript will pass a hidden ``asITypeInfo*`` in "
+"the front of arguments, indicating an instantiation of the template. It "
+"will be automatically handled by the library with the special binding "
+"generators of templated types, which are named ``template_value_class`` "
+"and ``template_ref_class``."
+msgstr ""
+"对于模板类型，AngelScript 会在参数前面传递一个隐藏的 ``asITypeInfo*`` 参数，"
+"表示模板的一个实例化。库将使用模板类型的特殊绑定生成器"
+"（即 ``template_value_class`` 和 ``template_ref_class``）自动处理此参数。"
+
+#: ../../doc/template_type.rst:13
+msgid ""
+"``asGetTypeTraits<T>()`` cannot determine the type flags for a template "
+"value type, because its constructors contain parameters of the hidden "
+"``asITypeInfo*``."
+msgstr ""
+"``asGetTypeTraits<T>()`` 无法确定模板值类型的类型标志，"
+"因为其构造函数包含隐藏的 ``asITypeInfo*`` 参数。"
+
+#: ../../doc/template_type.rst:16
+msgid ""
+"As a result, you need to manually pass the flags to the binding "
+"generator. This also applies to the ``.behaviours_by_traits()`` helper."
+msgstr ""
+"因此，您需要手动将标志传递给绑定生成器。"
+"这也适用于 ``.behaviours_by_traits()`` 辅助函数。"
+
+#: ../../doc/template_type.rst:19
+msgid "Here are examples from the unit tests."
+msgstr "以下是来自单元测试的示例。"
+
+#: ../../doc/template_type.rst:48
+msgid "Methods of a Template Class"
+msgstr "模板类的方法"
+
+#: ../../doc/template_type.rst:50
+msgid ""
+"Methods are registered the same way as ordinary types. You can directly "
+"use the subtype in the declaration of method."
+msgstr ""
+"方法的注册方式与普通类型相同。"
+"您可以直接在方法声明中使用子类型。"
+
+#: ../../doc/template_type.rst:63
+msgid ""
+"If the subtype might be an object handle, you probably need to consider "
+"the keyword ``if_handle_then_const``."
+msgstr ""
+"如果子类型可能是对象句柄，"
+"您可能需要考虑使用 ``if_handle_then_const`` 关键字。"
+
+#: ../../doc/template_type.rst:66
+msgid ""
+"You can also read `official document explaining this "
+"<https://www.angelcode.com/angelscript/sdk/docs/manual/doc_adv_template.html#doc_adv_template_1_1>`_"
+msgstr ""
+"您也可以阅读 `解释此问题的官方文档 "
+"<https://www.angelcode.com/angelscript/sdk/docs/manual/doc_adv_template.html#doc_adv_template_1_1>`_"
+
+#: ../../doc/template_type.rst:75
+msgid "Callback for Validating Template Instantiations"
+msgstr "验证模板实例化的回调"
+
+#: ../../doc/template_type.rst:77
+msgid ""
+"In order to avoid unnecessary runtime validations of invalid template "
+"instantiations, the application should preferably register a validator by"
+" ``.template_callback``. Its underlying type behaviour is "
+"``asBEHAVE_TEMPLATE_CALLBACK``."
+msgstr ""
+"为了避免对无效模板实例化进行不必要的运行时验证，"
+"应用程序最好通过 ``.template_callback`` 注册验证器。"
+"其底层类型行为是 ``asBEHAVE_TEMPLATE_CALLBACK``。"
+
+#: ../../doc/template_type.rst:81
+msgid ""
+"The callback function must be a global function that receives a pointer "
+"to ``asITypeInfo*`` as its first parameter, and should return a boolean. "
+"If the template instance is valid the return value should be ``true``."
+msgstr ""
+"回调函数必须是一个全局函数，接收一个指向 ``asITypeInfo*`` 的指针作为第一个参数，"
+"并应返回一个布尔值。如果模板实例有效，返回值应为 ``true``。"
+
+#: ../../doc/template_type.rst:85
+msgid ""
+"The function should also take a second parameter with an output reference"
+" to a boolean. This parameter should be set to ``true`` by the function "
+"if the template instance should not be garbage collected, which will make"
+" AngelScript clear the ``asOBJ_GC`` flag for the object type. If the "
+"template instance cannot form any circular references, then it doesn't "
+"need to be garbage collected, which reduces the work that has to be done "
+"by the garbage collector."
+msgstr ""
+"函数还应接受一个布尔值的输出引用作为第二个参数。"
+"如果模板实例不应被垃圾回收，则该参数应由函数设置为 ``true``，"
+"这将使 AngelScript 清除该对象类型的 ``asOBJ_GC`` 标志。"
+"如果模板实例无法形成任何循环引用，则无需进行垃圾回收，"
+"从而减少垃圾回收器的工作量。"
+
+#: ../../doc/template_type.rst:91
+msgid ""
+":doc:`The tools for handling AngelScript types can help you to deal with "
+"validation. <advanced/script_type>`"
+msgstr ""
+":doc:`处理 AngelScript 类型的工具可以帮助您进行验证。<advanced/script_type>`"
+
+#: ../../doc/template_type.rst:93
+msgid "Example code from the validator of ``script_optional``:"
+msgstr "来自 ``script_optional`` 验证器的示例代码："
+
+#: ../../doc/template_type.rst:119
+msgid "Template Specializations"
+msgstr "模板特化"
+
+#: ../../doc/template_type.rst:121
+msgid ""
+"When registering a template specialization, you override the template "
+"instance that AngelScript would normally create when compiling a "
+"declaration with the template type. This allow the application to "
+"register a completely different object with its own implementation for "
+"template specializations."
+msgstr ""
+"注册模板特化时，您覆盖了 AngelScript 在编译带有模板类型的声明时通常会创建的模板实例。"
+"这允许应用程序为模板特化注册一个具有自己实现的完全不同的对象。"
+
+#: ../../doc/template_type.rst:125
+msgid ""
+"Template specializations are registered like :doc:`ordinary types "
+"<object_type>`, except the type name should be the instantiated name."
+msgstr ""
+"模板特化的注册方式与 :doc:`普通类型 <object_type>` 类似，"
+"只是类型名称应为实例化后的名称。"
+

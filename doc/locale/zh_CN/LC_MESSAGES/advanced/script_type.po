@@ -1,0 +1,69 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: asbind20 \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-05 11:57+0800\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../doc/advanced/script_type.rst:2
+msgid "Handling AngelScript Types"
+msgstr "处理 AngelScript 类型"
+
+#: ../../doc/advanced/script_type.rst:4
+msgid ""
+"If you are registering functions with variable type argument or template "
+"classes, you will definitely need tools to deal with AngelScript types."
+msgstr ""
+"如果你正在注册带有可变类型参数或模板类的函数，你会需要用来处理 AngelScript 类型"
+"的工具。"
+
+#: ../../doc/advanced/script_type.rst:8
+msgid "Type Traits for Script Type IDs"
+msgstr "脚本类型 ID 的类型特征"
+
+#: ../../doc/advanced/script_type.rst:0
+msgid "Parameters"
+msgstr "参数"
+
+#: ../../doc/advanced/script_type.rst:18
+msgid "Dispatching Function Calls Based on Type IDs"
+msgstr "基于类型 ID 派发函数调用"
+
+#: ../../doc/advanced/script_type.rst:20
+msgid ""
+"This feature is similar to how `std::visit` and `std::variant` works. It can "
+"be used for developing templated container for AngelScript."
+msgstr ""
+"此功能类似于 `std::visit` 和 `std::variant` 的工作方式。它可用于为 "
+"AngelScript 开发模板化容器。"
+
+#: ../../doc/advanced/script_type.rst:0
+msgid "Template Parameters"
+msgstr "模板参数"
+
+#: ../../doc/advanced/script_type.rst:27 ../../doc/advanced/script_type.rst:82
+msgid "Example code:"
+msgstr "示例代码："
+
+#: ../../doc/advanced/script_type.rst:53
+msgid ""
+"``visit_script_type`` extends this to non-primitive types — it dispatches "
+"primitive types to ``visit_primitive_type`` and object handles as ``void*``:"
+msgstr ""
+"``visit_script_type`` 将此扩展到非原始类型——它将原始类型派发给 "
+"``visit_primitive_type``，将对象句柄作为 ``void*`` 派发："
+
+#: ../../doc/advanced/script_type.rst:77
+msgid ""
+"If you are certain that types you are dealing with are all primitive types, "
+"you can use the primitive-specific function."
+msgstr "如果您确定所处理的类型都是原始类型，可以使用原始类型专用函数。"
+
+#: ../../doc/advanced/script_type.rst:0
+msgid "Returns"
+msgstr "返回值"

@@ -2748,7 +2748,7 @@ private:
  *
  * @tparam Class Class to be registered
  * @tparam Template True if the class is a templated type
- * @tparam ForceGeneric Force all registered methods and behaviors to use the generic calling convention
+ * @tparam ForceGeneric Force all registered methods and behaviours to use the generic calling convention
  * @tparam Listener The listener type
  */
 template <

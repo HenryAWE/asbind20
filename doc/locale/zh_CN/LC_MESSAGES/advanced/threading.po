@@ -1,0 +1,105 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: asbind20 \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-05 11:57+0800\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../doc/advanced/threading.rst:2
+msgid "Multithreading"
+msgstr "多线程"
+
+#: ../../doc/advanced/threading.rst:4
+msgid ""
+"There are some utilities for using AngelScript in the multithreading "
+"environment."
+msgstr "有一些在多线程环境中使用 AngelScript 的实用工具。"
+
+#: ../../doc/advanced/threading.rst:7
+msgid "AngelScript does not support multithreading on all platforms."
+msgstr "AngelScript 并非在所有平台上都支持多线程。"
+
+#: ../../doc/advanced/threading.rst:12
+msgid "Initializing and Cleaning the Multithreading Environment"
+msgstr "初始化和清理多线程环境"
+
+#: ../../doc/advanced/threading.rst:14
+msgid ""
+"`According to the official document <https://www.angelcode.com/angelscript/"
+"sdk/docs/manual/doc_adv_multithread.html#doc_adv_multithread_1>`_, "
+"AngelScript needs some additional efforts to work in the multithreading "
+"environment."
+msgstr ""
+"`根据官方文档 <https://www.angelcode.com/angelscript/sdk/docs/manual/"
+"doc_adv_multithread.html#doc_adv_multithread_1>`_，AngelScript 需要一些额外的"
+"工作才能在多线程环境中运行。"
+
+#: ../../doc/advanced/threading.rst:17
+msgid ""
+"The following functions are provided by the external header ``concurrent/"
+"threading.hpp``."
+msgstr "以下函数由外部头文件 ``concurrent/threading.hpp`` 提供。"
+
+#: ../../doc/advanced/threading.rst:22 ../../doc/advanced/threading.rst:99
+msgid "Example code:"
+msgstr "示例代码："
+
+#: ../../doc/advanced/threading.rst:86
+msgid "Locks"
+msgstr "锁"
+
+#: ../../doc/advanced/threading.rst:88
+msgid "The weak reference flag (``asILockableSharedBool*``) is lockable."
+msgstr "弱引用标志（``asILockableSharedBool*``）是可锁定的。"
+
+#: ../../doc/advanced/threading.rst:90
+msgid ""
+"The ``lockable_shared_bool`` class (documented in :doc:`../utility`) wraps "
+"the weak reference flag for use with ``std::lock_guard``."
+msgstr ""
+"``lockable_shared_bool`` 类（详见 :doc:`../utility`）包装了弱引用标志，可与 "
+"``std::lock_guard`` 一起使用。"
+
+#: ../../doc/advanced/threading.rst:92
+msgid ""
+"The AngelScript library provides global exclusive and shared locks. The "
+"wrappers for them are provided by the header ``<asbind20/concurrent/"
+"mutex.hpp>``."
+msgstr ""
+"AngelScript 库提供了全局独占锁和共享锁。这些锁的包装器由头文件 ``<asbind20/"
+"concurrent/mutex.hpp>`` 提供。"
+
+#: ../../doc/advanced/threading.rst:0
+msgid "Public Static Functions"
+msgstr "公有静态函数"
+
+#: ../../doc/advanced/threading.rst:116
+msgid "Atomic Reference Counting"
+msgstr "原子引用计数"
+
+#: ../../doc/advanced/threading.rst:0
+msgid "Increment and decrement operators"
+msgstr "递增和递减运算符"
+
+#: ../../doc/advanced/threading.rst:0
+msgid "Public Types"
+msgstr "公有类型"
+
+#: ../../doc/advanced/threading.rst:0
+msgid "Public Functions"
+msgstr "公有函数"
+
+#: ../../doc/advanced/threading.rst:124
+msgid ""
+"For garbage collected types, `please read the official document about thread "
+"safety and GC <https://www.angelcode.com/angelscript/sdk/docs/manual/"
+"doc_gc_object.html#doc_reg_gcref_4>`_."
+msgstr ""
+"对于垃圾回收类型，`请阅读关于线程安全和 GC 的官方文档 <https://"
+"www.angelcode.com/angelscript/sdk/docs/manual/"
+"doc_gc_object.html#doc_reg_gcref_4>`_。"

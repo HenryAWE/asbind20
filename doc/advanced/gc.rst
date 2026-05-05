@@ -18,8 +18,8 @@ Add the flag ``asOBJ_GC`` to the binding generator to mark the type as garbage c
         engine, "my_value_class", asOBJ_GC
     );
 
-GC Behaviors of Reference Types
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+GC Behaviours of Reference Types
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The process of determining the dead objects uses the first four of the behaviours below,
 while the destruction of the objects is done by forcing the release of the object's references.
@@ -69,7 +69,7 @@ Example implementation of a garbage collected type:
         asIScriptObject* m_ref = nullptr;
     };
 
-Registering the GC behaviors:
+Registering the GC behaviours:
 
 .. code-block:: c++
 
@@ -86,10 +86,10 @@ Registering the GC behaviors:
         .release_refs(fp<&gc_type::release_refs>);
 
 .. note::
-   You should remember to clear the GC flag in functions for increasing and decreasing reference count.
-   Otherwise it is possible that the GC incorrectly determine that the object should be destroyed.
+  You should remember to clear the GC flag in functions for increasing and decreasing reference count.
+  Otherwise it is possible that the GC incorrectly determines that the object should be destroyed.
 
-   .. code-block:: c++
+  .. code-block:: c++
 
     void gc_type::addref()
     {
@@ -104,7 +104,7 @@ Registering the GC behaviors:
             delete this;
     }
 
-`You can also read the official document about the GC behaviors <https://www.angelcode.com/angelscript/sdk/docs/manual/doc_gc_object.html#doc_reg_gcref_1>`_.
+`You can also read the official document about the GC behaviours <https://www.angelcode.com/angelscript/sdk/docs/manual/doc_gc_object.html#doc_reg_gcref_1>`_.
 
 Garbage Collected Value Types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -113,15 +113,15 @@ Value types are normally not thought of as being part of circular references as 
 However, if a value type can hold a reference to a type, and then that type can have the value type as a member,
 a circular reference can be established preventing the reference type from being released.
 
-You only need behaviors of ``asBEHAVE_ENUMREFS`` and ``asBEHAVE_RELEASEREFS`` for a value type.
+Typically, this is caused by holding a script object as member of value class;
 
-Here is an example from the ``script_optional`` of asbind20 extension library.
+You only need behaviours of ``asBEHAVE_ENUMREFS`` and ``asBEHAVE_RELEASEREFS`` for a value type.
 
 .. code-block:: c++
 
     // ...
-        .enum_refs(&script_optional::enum_refs)
-        .release_refs(&script_optional::release_refs)
+        .enum_refs(&val_gc_type::enum_refs)
+        .release_refs(&val_gc_type::release_refs)
 
 Notifying GC of New Object
 --------------------------
@@ -164,4 +164,5 @@ you can use the (list) factory function with auxiliary object.
 .. note::
     If you create objects of garbage collected type from the application side,
     you must also notify the garbage collector of its existence,
-    so it's a good idea to make sure all code use the same way of creating objects of this type.
+    so it's a good idea to make sure all code uses the same way of creating objects of this type,
+    for example, a wrapper function.

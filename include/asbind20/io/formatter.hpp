@@ -2,7 +2,7 @@
  * @file formatter.hpp
  * @author HenryAWE
  * @brief Formatter for printing AngelScript types.
- *        This header provides utility for implementing formatter even if <format> is not available,
+ *        This header provides utility for implementing formatter even if `\<format\>` is not available,
  *        e.g., integration with 3rd party library like {fmt}.
  */
 

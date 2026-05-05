@@ -4,9 +4,9 @@ Multithreading
 There are some utilities for using AngelScript in the multithreading environment.
 
 .. note::
-   AngelScript does not support multithreading on all platforms.
+  AngelScript does not support multithreading on all platforms.
 
-   .. doxygenfunction:: asbind20::has_threads
+  .. doxygenfunction:: asbind20::has_threads
 
 Initializing and Cleaning the Multithreading Environment
 --------------------------------------------------------
@@ -75,7 +75,7 @@ Example code:
         thr.detach();
         {
             std::unique_lock lock(mx);
-            std::cv_status st = cv.wait(lock);
+            cv.wait(lock);
         }
         assert(result == 20);
 
@@ -87,9 +87,7 @@ Locks
 
 The weak reference flag (``asILockableSharedBool*``) is lockable.
 
-.. doxygenclass:: asbind20::lockable_shared_bool
-    :members: lock, unlock
-    :no-link:
+The ``lockable_shared_bool`` class (documented in :doc:`../utility`) wraps the weak reference flag for use with ``std::lock_guard``.
 
 The AngelScript library provides global exclusive and shared locks.
 The wrappers for them are provided by the header ``<asbind20/concurrent/mutex.hpp>``.
@@ -117,9 +115,11 @@ Example code:
 Atomic Reference Counting
 -------------------------
 
+.. _atomic-refcounting:
+
 .. doxygenclass:: asbind20::atomic_counter
-   :members:
-   :undoc-members:
+  :members:
+  :undoc-members:
 
 For garbage collected types,
 `please read the official document about thread safety and GC <https://www.angelcode.com/angelscript/sdk/docs/manual/doc_gc_object.html#doc_reg_gcref_4>`_.

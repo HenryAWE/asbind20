@@ -5,16 +5,16 @@ Constructors and Factories
 --------------------------
 
 For template types, AngelScript will pass a hidden ``asITypeInfo*`` in the front of arguments,
-indicating an instantiation fo template.
+indicating an instantiation of the template.
 It will be automatically handled by the library with the special binding generators of templated types,
 which are named ``template_value_class`` and ``template_ref_class``.
 
 .. note::
-   ``asGetTypeTraits<T>()`` cannot determine the type flags for a template value type,
-   because its constructors contain parameters of the hidden ``asITypeInfo*``.
+  ``asGetTypeTraits<T>()`` cannot determine the type flags for a template value type,
+  because its constructors contain parameters of the hidden ``asITypeInfo*``.
 
-   As a result, you need to manually pass the flags to the binding generator.
-   This also applies to the ``.behaviours_by_traits()`` helper.
+  As a result, you need to manually pass the flags to the binding generator.
+  This also applies to the ``.behaviours_by_traits()`` helper.
 
 Here are examples from the unit tests.
 
@@ -47,7 +47,7 @@ Here are examples from the unit tests.
 Methods of a Template Class
 ---------------------------
 
-Methods are registered the same way of ordinary types.
+Methods are registered the same way as ordinary types.
 You can directly use the subtype in the declaration of method.
 
 .. code-block:: c++
@@ -60,12 +60,12 @@ You can directly use the subtype in the declaration of method.
         .method("const T& opIndex(uint) const", &script_array::opIndex);
 
 .. note::
-   If the subtype might be an object handle,
-   you probably need to consider the keyword ``if_handle_then_const``.
+  If the subtype might be an object handle,
+  you probably need to consider the keyword ``if_handle_then_const``.
 
-   You can also read `official document explaining this <https://www.angelcode.com/angelscript/sdk/docs/manual/doc_adv_template.html#doc_adv_template_1_1>`_
+  You can also read `official document explaining this <https://www.angelcode.com/angelscript/sdk/docs/manual/doc_adv_template.html#doc_adv_template_1_1>`_
 
-   .. code-block:: c++
+  .. code-block:: c++
 
     using namespace asbind20;
     template_ref_class<script_array>(/* ... */)
@@ -76,7 +76,7 @@ Callback for Validating Template Instantiations
 
 In order to avoid unnecessary runtime validations of invalid template instantiations,
 the application should preferably register a validator by ``.template_callback``.
-Its underlying type behavior is ``asBEHAVE_TEMPLATE_CALLBACK``.
+Its underlying type behaviour is ``asBEHAVE_TEMPLATE_CALLBACK``.
 
 The callback function must be a global function that receives a pointer to ``asITypeInfo*`` as its first parameter,
 and should return a boolean.
@@ -119,7 +119,7 @@ Template Specializations
 ========================
 
 When registering a template specialization,
-you override the template instance that AngelScript would normally do when compiling a declaration with the template type.
+you override the template instance that AngelScript would normally create when compiling a declaration with the template type.
 This allow the application to register a completely different object with its own implementation for template specializations.
 
 Template specializations are registered like :doc:`ordinary types <object_type>`,

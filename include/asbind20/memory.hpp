@@ -989,6 +989,7 @@ namespace container
         /**
          * @brief Construct the stored value using its default constructor
          *
+         * @param data Stored value
          * @param engine Script engine
          * @param type_id Type ID. Must @b NOT be void (`asTYPEID_VOID`)
          *
@@ -1022,6 +1023,7 @@ namespace container
         /**
          * @brief Copy construct the stored value from another value
          *
+         * @param data Stored value
          * @param engine Script engine
          * @param type_id Type ID. Must @b NOT be void (`asTYPEID_VOID`)
          * @param ref Address of the value. Must @b NOT be `nullptr`
@@ -1067,6 +1069,7 @@ namespace container
         /**
          * @brief Copy assign the stored value from another value
          *
+         * @param data Stored value
          * @param engine Script engine
          * @param type_id Type ID. Must @b NOT be void (`asTYPEID_VOID`)
          * @param ref Address of the value. Must @b NOT be `nullptr`
@@ -1113,6 +1116,7 @@ namespace container
         /**
          * @brief Copy assign the stored value to destination
          *
+         * @param data Stored value
          * @param engine Script engine
          * @param type_id Type ID. Must @b NOT be void (`asTYPEID_VOID`)
          * @param out Address of the destination. Must @b NOT be `nullptr`
@@ -1162,6 +1166,7 @@ namespace container
         /**
          * @brief Destroy the stored object
          *
+         * @param data Stored value
          * @param engine Script engine
          * @param type_id Type ID. Must @b NOT be void (`asTYPEID_VOID`)
          */
@@ -1188,6 +1193,7 @@ namespace container
          *
          * @details This function has no effect for non-garbage collected types
          *
+         * @param data Stored value
          * @param ti Type information
          */
         static void enum_refs(data_type& data, AS_NAMESPACE_QUALIFIER asITypeInfo* ti)

@@ -83,7 +83,7 @@ static void register_global_funcs(
     asbind20::global<true>(engine)
         .function("void set_int(int&out)", fp<&test_bind::set_int>)
         .function(
-            "int gen_int() ",
+            "int gen_int()",
             []() -> int
             { return 42; }
         )

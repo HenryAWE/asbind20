@@ -11,7 +11,7 @@ the list factories for reference types and list constructors for value types can
 
 If you already have wrapper functions, you can register them by ``.list_factory_function`` or ``.list_constructor_function``
 
-This kind of helpers needs you to provide pattern of the initialization list, such as ``float, float`` or ``repeat int``.
+This kind of helper needs you to provide the pattern of the initialization list, such as ``float, float`` or ``repeat int``.
 For helpers using the constructors of C++ class directly, you can also specify the optional template parameter ``ElementType`` for the element type of initialization list.
 If the list pattern contains ``repeat`` or ``?`` that need to parse manually, you can just use the default template parameter,
 which is ``void``.
@@ -46,21 +46,64 @@ which is described in :doc:`how to register an object type <../object_type>`.
         .list_factory("repeat int"); // Equivalent to .list_factory<void>("repeat int")
 
     asbind20::value_class<my_class>(/* ... */)
-        .list_factory_function("repeat int", &init_from_list);
+        .list_constructor_function("repeat int", &init_from_list);
 
 .. note::
-   Unlike C++, each type in AngelScript can only have **one** list factory or constructor.
+  Unlike C++, each type in AngelScript can only have **one** list factory or constructor.
 
 For repeated pattern, asbind20 provides a helper class to parse it from a raw ``void*``.
 
 .. doxygenclass:: asbind20::script_init_list_repeat
-   :members:
-   :undoc-members:
+  :members:
+  :undoc-members:
 
 Initialization List Policies
 ----------------------------
 
 The asbind20 provides some policies for adapting existing C++ paradigm for constructing from a range of value.
+
+Policies are passed via ``use_policy``, which accepts one or more policy types:
+
+.. code-block:: c++
+
+    // Single policy
+    .list_factory<int>("repeat int", use_policy<policies::as_span>)
+
+    // Multiple policies combined (e.g. init list policy + factory policy)
+    .list_factory<int>("repeat int", use_policy<policies::as_span, policies::notify_gc>)
+
+Quick summary of available initialization list policies:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Policy
+     - Signature of C++ function to receive
+     - Notes
+   * - *(default, no policy)*
+     - ``void*``
+     - Raw AS initialization list. It's useful when you want to deal with the raw data.
+   * - ``repeat_list_proxy``
+     - ``script_init_list_repeat``
+     - Convert the memory to proxy.
+   * - ``apply_to<Size>``
+     - Individual arguments |br| (e.g. ``int, int, int`` for ``Size=3``)
+     - **Only works with fixed-size patterns** like ``{int, int, int}``, not ``repeat int``
+   * - ``pointer_and_size``
+     - ``T* data, asUINT size``
+     - Traditional C pointer + length pair
+   * - ``as_iterators``
+     - ``T* begin, T* end``
+     - Iterator pair compatible with STL algorithms
+   * - ``as_span``
+     - ``std::span<T>``
+     - Modern C++20 span
+   * - ``as_initializer_list``
+     - ``std::initializer_list<T>``
+     - Platform-dependent. **Prefer other policies when possible**
+   * - ``as_from_range``
+     - C++23 ``std::from_range_t`` tag
+     - Requires ``__cpp_lib_containers_ranges``
 
 List Pattern with Limited Elements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -93,11 +136,11 @@ Policies for the pattern with repeated elements, i.e., containing ``repeat`` in 
 
 1. Automatically convert to ``script_init_list_repeat``
 
-   .. doxygenstruct:: asbind20::policies::repeat_list_proxy
+  .. doxygenstruct:: asbind20::policies::repeat_list_proxy
 
-   Example
+  Example
 
-   .. code-block:: c++
+  .. code-block:: c++
 
     class int_list
     {
@@ -105,7 +148,7 @@ Policies for the pattern with repeated elements, i.e., containing ``repeat`` in 
         int_list(asbind20::script_init_list_repeat il);
     };
 
-   .. code-block:: c++
+  .. code-block:: c++
 
     using namespace asbind20;
     ref_class<int_list>(/* ... */)
@@ -114,11 +157,11 @@ Policies for the pattern with repeated elements, i.e., containing ``repeat`` in 
 
 1. As an iterator pair of ``[begin, end)``
 
-   .. doxygenstruct:: asbind20::policies::as_iterators
+  .. doxygenstruct:: asbind20::policies::as_iterators
 
-   Example
+  Example
 
-   .. code-block:: c++
+  .. code-block:: c++
 
     class int_list
     {
@@ -128,7 +171,7 @@ Policies for the pattern with repeated elements, i.e., containing ``repeat`` in 
         int_list(Iterator start, Iterator stop);
     };
 
-   .. code-block:: c++
+  .. code-block:: c++
 
     using namespace asbind20;
     ref_class<int_list>(/* ... */)
@@ -137,11 +180,11 @@ Policies for the pattern with repeated elements, i.e., containing ``repeat`` in 
 
 2. As a pair of pointer and size
 
-   .. doxygenstruct:: asbind20::policies::pointer_and_size
+  .. doxygenstruct:: asbind20::policies::pointer_and_size
 
-   Example
+  Example
 
-   .. code-block:: c++
+  .. code-block:: c++
 
     class int_list
     {
@@ -149,7 +192,7 @@ Policies for the pattern with repeated elements, i.e., containing ``repeat`` in 
         int_list<int>(int* ptr, std::size_t count);
     };
 
-   .. code-block:: c++
+  .. code-block:: c++
 
     using namespace asbind20;
     ref_class<int_list>(/* ... */)
@@ -157,11 +200,11 @@ Policies for the pattern with repeated elements, i.e., containing ``repeat`` in 
 
 3. As the ``std::initializer_list``
 
-   .. doxygenstruct:: asbind20::policies::as_initializer_list
+  .. doxygenstruct:: asbind20::policies::as_initializer_list
 
-   Example
+  Example
 
-   .. code-block:: c++
+  .. code-block:: c++
 
     class int_list
     {
@@ -169,24 +212,24 @@ Policies for the pattern with repeated elements, i.e., containing ``repeat`` in 
         int_list(std::initializer_list<int> il);
     };
 
-   .. code-block:: c++
+  .. code-block:: c++
 
     using namespace asbind20;
     ref_class<int_list>(/* ... */)
         .list_factory<int>("repeat int", use_policy<policies::as_initializer_list>);
 
-   .. note::
+  .. note::
       This policy is implemented by non-standard code, please check the macro ``ASBIND20_HAS_AS_INITIALIZER_LIST`` at first.
 
       Currently, this policy are supported on MSVC STL, libstdc++, and libc++.
 
 4. As the ``std::span``
 
-   .. doxygenstruct:: asbind20::policies::as_span
+  .. doxygenstruct:: asbind20::policies::as_span
 
-   Example
+  Example
 
-   .. code-block:: c++
+  .. code-block:: c++
 
     class int_list
     {
@@ -194,7 +237,7 @@ Policies for the pattern with repeated elements, i.e., containing ``repeat`` in 
         int_list(std::span<int> sp);
     };
 
-   .. code-block:: c++
+  .. code-block:: c++
 
     using namespace asbind20;
     ref_class<int_list>(/* ... */)
@@ -202,11 +245,11 @@ Policies for the pattern with repeated elements, i.e., containing ``repeat`` in 
 
 5. ``std::from_range`` and a range
 
-   .. doxygenstruct:: asbind20::policies::as_from_range
+  .. doxygenstruct:: asbind20::policies::as_from_range
 
-   Example
+  Example
 
-   .. code-block:: c++
+  .. code-block:: c++
 
     class int_list
     {
@@ -215,12 +258,12 @@ Policies for the pattern with repeated elements, i.e., containing ``repeat`` in 
         int_list(std::from_range_t, Range&& rng);
     };
 
-   .. code-block:: c++
+  .. code-block:: c++
 
     using namespace asbind20;
     ref_class<int_list>(/* ... */)
         .list_factory<int>("repeat int", use_policy<policies::as_from_range>);
 
-   .. note::
-    This policy is only available when compiler supports C++23.
+  .. note::
+    This policy is only available when compiler supports C++23 ``__cpp_lib_containers_ranges``.
     You can check whether the macro ``ASBIND20_HAS_CONTAINERS_RANGES`` is defined.
