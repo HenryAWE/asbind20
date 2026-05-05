@@ -1,9 +1,13 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: asbind20\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-05 11:57+0800\n"
 "Language: zh_CN\n"
-"Plural-Forms: nplurals=1; plural=0;\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=utf-8\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.18.0\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
 
 #: ../../doc/utility.rst:2
 msgid "RAII Helpers"
@@ -14,18 +18,18 @@ msgid ""
 "`RAII <https://en.cppreference.com/w/cpp/language/raii>`_ helpers for "
 "managing lifetime of AngelScript objects."
 msgstr ""
-"用于管理 AngelScript 对象生命周期的 "
-"`RAII <https://en.cppreference.com/w/cpp/language/raii>`_ 辅助工具。"
+"用于管理 AngelScript 对象生命周期的 `RAII <https://en.cppreference.com/w/cpp/"
+"language/raii>`_ 辅助工具。"
 
 #: ../../doc/utility.rst:7
 msgid "Script Engine"
 msgstr "脚本引擎"
 
-#: ../../doc/utility.rst
+#: ../../doc/utility.rst:0
 msgid "Public Types"
 msgstr "公共类型"
 
-#: ../../doc/utility.rst
+#: ../../doc/utility.rst:0
 msgid "Public Functions"
 msgstr "公共函数"
 
@@ -33,7 +37,7 @@ msgstr "公共函数"
 msgid "Script Context"
 msgstr "脚本上下文"
 
-#: ../../doc/utility.rst
+#: ../../doc/utility.rst:0
 msgid "Returns"
 msgstr "返回值"
 
@@ -41,7 +45,7 @@ msgstr "返回值"
 msgid "Script Object"
 msgstr "脚本对象"
 
-#: ../../doc/utility.rst
+#: ../../doc/utility.rst:0
 msgid "Parameters"
 msgstr "参数"
 
@@ -57,15 +61,15 @@ msgstr "可锁定的共享布尔值"
 msgid "IO Helpers"
 msgstr "IO 辅助工具"
 
-#: ../../doc/utility.rst
+#: ../../doc/utility.rst:0
 msgid "Functions"
 msgstr "函数"
 
-#: ../../doc/utility.rst
+#: ../../doc/utility.rst:0
 msgid "Template Parameters"
 msgstr "模板参数"
 
-#: ../../doc/utility.rst
+#: ../../doc/utility.rst:0
 msgid "Public Members"
 msgstr "公共成员"
 
@@ -77,33 +81,125 @@ msgstr "加载脚本段"
 msgid "Miscellaneous Utilities"
 msgstr "杂项工具"
 
-#: ../../doc/utility.rst
+#: ../../doc/utility.rst:76 ../../doc/utility.rst:120
+msgid "Example:"
+msgstr ""
+
+#: ../../doc/utility.rst:93
+msgid ""
+"``with_cstr`` calls a callback with each argument converted to a null-"
+"terminated C string, handling any string-like type including "
+"``std::string``, ``std::string_view``, ``cstring_ref``, and "
+"``util::fixed_string``:"
+msgstr ""
+
+#: ../../doc/utility.rst:0
 msgid "Public Static Functions"
 msgstr "公共静态函数"
 
-#: ../../doc/utility.rst
+#: ../../doc/utility.rst:0
 msgid "Friends"
 msgstr "友元"
 
-#: ../../doc/utility.rst:86
+#: ../../doc/utility.rst:144
+msgid "Atomic Reference Counting"
+msgstr ""
+
+#: ../../doc/utility.rst:146
+msgid ""
+"``atomic_counter`` wraps AngelScript's ``asAtomicInc`` / ``asAtomicDec`` for "
+"thread-safe reference counting. It is designed for implementing the "
+"``addref`` / ``release`` / ``get_refcount`` behaviours of a garbage-"
+"collected ``ref_class``."
+msgstr ""
+
+#: ../../doc/utility.rst:150
+msgid ""
+"Constructing an ``atomic_counter`` initializes the counter to 1. Prefix ``+"
+"+`` and ``--`` call ``asAtomicInc`` and ``asAtomicDec`` respectively, "
+"returning the new value. The ``dec_and_try_destroy`` method decrements and, "
+"if the counter reaches 0, invokes a destroyer callback — typically "
+"``delete`` on the enclosing object."
+msgstr ""
+
+#: ../../doc/utility.rst:154
+msgid ""
+"Example: implementing reference counting for a garbage-collected script "
+"object:"
+msgstr ""
+
+#: ../../doc/utility.rst:205
+msgid ""
+"See :ref:`the threading documentation <atomic-refcounting>` for the full API "
+"reference."
+msgstr ""
+
+#: ../../doc/utility.rst:208
+msgid "Range Views"
+msgstr ""
+
+#: ../../doc/utility.rst:210
+msgid ""
+"asbind20 provides range views for iterating over AngelScript entities — type "
+"members, behaviours, enum values, and even tokenized script source. When "
+"``<ranges>`` is available (``__cpp_lib_ranges``), these views integrate with "
+"standard range adaptors and algorithms."
+msgstr ""
+
+#: ../../doc/utility.rst:214
+msgid ""
+"All views expose ``begin()``/``end()``, ``size()``, and ``empty()``. Most "
+"iterators are random-access."
+msgstr ""
+
+#: ../../doc/utility.rst:217
+msgid "Type information views"
+msgstr "类型信息视图"
+
+#: ../../doc/utility.rst:219
+msgid "These views wrap an ``asITypeInfo*`` and enumerate its contents:"
+msgstr ""
+
+#: ../../doc/utility.rst:247
+msgid ""
+"The ``all_enum_values`` factory defaults to ``int`` as the underlying type. "
+"Use ``views::all_enum_values_of<std::uint64_t>(ti)`` for enums with a custom "
+"underlying type."
+msgstr ""
+
+#: ../../doc/utility.rst:267
+msgid "Tokenize view"
+msgstr ""
+
+#: ../../doc/utility.rst:269
+msgid ""
+"``tokenize_view`` tokenizes a string of AngelScript source code lazily, "
+"yielding ``(asETokenClass, std::string_view)`` pairs:"
+msgstr ""
+
+#: ../../doc/utility.rst:282
+msgid ""
+"The view is an input range — it does not support random access or multi-pass "
+"iteration."
+msgstr ""
+
+#: ../../doc/utility.rst:289
 msgid "Debugging"
 msgstr "调试"
 
-#: ../../doc/utility.rst:91
+#: ../../doc/utility.rst:294
 msgid "GC Statistics"
 msgstr "GC 统计"
 
-#: ../../doc/utility.rst:99
+#: ../../doc/utility.rst:302
 msgid "String Extraction"
 msgstr "字符串提取"
 
-#: ../../doc/utility.rst:101
+#: ../../doc/utility.rst:304
 msgid ""
-"Tools for extracting string from script without knowing its underlying "
-"type."
+"Tools for extracting string from script without knowing its underlying type."
 msgstr "用于从脚本中提取字符串而无需知道其底层类型的工具。"
 
-#: ../../doc/utility.rst
+#: ../../doc/utility.rst:0
 msgid "Throws"
 msgstr "抛出"
-

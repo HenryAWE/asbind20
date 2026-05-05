@@ -1,9 +1,13 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: asbind20\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-05 11:57+0800\n"
 "Language: zh_CN\n"
-"Plural-Forms: nplurals=1; plural=0;\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=utf-8\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.18.0\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
 
 #: ../../doc/container.rst:2
 msgid "Storing Script Objects"
@@ -15,103 +19,212 @@ msgid ""
 "implement your own container for script objects. There are some tools "
 "provided by asbind20 for storing script objects."
 msgstr ""
-"有时你可能希望存储脚本对象以便稍后使用，"
-"或实现自己的脚本对象容器。"
-"asbind20 提供了一些工具用于存储脚本对象。"
+"有时你可能希望存储脚本对象以便稍后使用，或实现自己的脚本对象容器。asbind20 提"
+"供了一些工具用于存储脚本对象。"
 
 #: ../../doc/container.rst:9
 msgid "Storing a Single Script Object"
 msgstr "存储单个脚本对象"
 
-#: ../../doc/container.rst
+#: ../../doc/container.rst:0
 msgid "Get the address of the data"
 msgstr "获取数据的地址"
 
-#: ../../doc/container.rst
+#: ../../doc/container.rst:0
 msgid "Public Static Functions"
 msgstr "公共静态函数"
 
-#: ../../doc/container.rst
+#: ../../doc/container.rst:0
 msgid "Parameters"
 msgstr "参数"
 
-#: ../../doc/container.rst
+#: ../../doc/container.rst:0
 msgid "Returns"
 msgstr "返回值"
 
-#: ../../doc/container.rst
+#: ../../doc/container.rst:0
 msgid "Public Functions"
 msgstr "公共函数"
 
-#: ../../doc/container.rst
+#: ../../doc/container.rst:0
 msgid "Public Members"
 msgstr "公共成员"
 
-#: ../../doc/container.rst:15
-msgid "|script_optional|_."
-msgstr "|script_optional|_."
-
-#: ../../doc/container.rst:21
+#: ../../doc/container.rst:16
 msgid "Containers"
 msgstr "容器"
 
-#: ../../doc/container.rst:24
+#: ../../doc/container.rst:19
 msgid "Policies of Type Information"
 msgstr "类型信息策略"
 
-#: ../../doc/container.rst:26
+#: ../../doc/container.rst:21
 msgid "Policies for how containers deal with the type information."
 msgstr "容器如何处理类型信息的策略。"
 
-#: ../../doc/container.rst
+#: ../../doc/container.rst:0
 msgid "Template Parameters"
 msgstr "模板参数"
 
-#: ../../doc/container.rst:34
+#: ../../doc/container.rst:29
 msgid "Sequential Containers"
 msgstr "顺序容器"
 
-#: ../../doc/container.rst
+#: ../../doc/container.rst:31
+msgid ""
+"``small_vector`` is a sequential container for AngelScript objects with "
+"small-size optimization (SSO). It stores a fixed number of elements inline "
+"(on the stack) before falling back to heap allocation, similar to how "
+"``std::string`` uses SSO for short strings."
+msgstr ""
+"``small_vector`` 是一个用于 AngelScript 对象的顺序容器，具有小尺寸优化（SSO）"
+"功能。它在回退到堆分配之前，会将固定数量的元素内联存储（在栈上），类似于 "
+"``std::string`` 对短字符串使用 SSO。"
+
+#: ../../doc/container.rst:36
+msgid "Template parameters"
+msgstr "模板参数"
+
+#: ../../doc/container.rst:38
+msgid ""
+"**TypeInfoPolicy** — determines how the element type is derived from the "
+"type information. Use ``typeinfo_identity`` when the type info *is* the "
+"element type (e.g. ``int``, a registered value class), or "
+"``typeinfo_subtype<N>`` when the element is the *N*-th subtype of a template "
+"type (e.g. ``array<int>`` → ``typeinfo_subtype<0>``)."
+msgstr ""
+"**TypeInfoPolicy** — 决定如何从类型信息中派生元素类型。当类型信息*即是*元素类型"
+"时（例如 ``int``、已注册的值类），使用 ``typeinfo_identity``；当元素是模板类型的"
+"第 *N* 个子类型时（例如 ``array<int>`` → ``typeinfo_subtype<0>``），使用 "
+"``typeinfo_subtype<N>``。"
+
+#: ../../doc/container.rst:42
+msgid ""
+"**StaticCapacityBytes** — inline storage size in bytes. Must be a multiple "
+"of ``sizeof(void*)``. Defaults to ``4 * sizeof(void*)``."
+msgstr ""
+"**StaticCapacityBytes** — 内联存储大小（字节）。必须是 ``sizeof(void*)`` 的倍数。"
+"默认为 ``4 * sizeof(void*)``。"
+
+#: ../../doc/container.rst:44
+msgid ""
+"**Allocator** — allocator for heap-backed storage. Defaults to "
+"``script_allocator<void>``, which uses AngelScript's memory API."
+msgstr ""
+"**Allocator** — 用于堆存储的分配器。默认为 ``script_allocator<void>``，它使用 "
+"AngelScript 的内存 API。"
+
+#: ../../doc/container.rst:48
+msgid "Constructing"
+msgstr "构造"
+
+#: ../../doc/container.rst:50
+msgid ""
+"A ``small_vector`` must be constructed with type information. There are "
+"three ways:"
+msgstr ""
+"``small_vector`` 必须使用类型信息来构造。有三种方式："
+
+#: ../../doc/container.rst:63
+msgid ""
+"Element access returns ``void*`` / ``const void*``. You cast to the concrete "
+"type:"
+msgstr ""
+"元素访问返回 ``void*`` / ``const void*``。您需要将其转换为具体类型："
+
+#: ../../doc/container.rst:73
+msgid ""
+"The container provides standard ``std::vector``-like modifiers: "
+"``push_back``, ``emplace_back``, ``push_back_n``, ``emplace_back_n``, "
+"``pop_back``, ``insert``, ``erase``, ``resize``, ``clear``, ``reserve``, "
+"``shrink_to_fit``, ``reverse``, and ``assign``."
+msgstr ""
+"该容器提供了与 ``std::vector`` 类似的标准修改操作：``push_back``、"
+"``emplace_back``、``push_back_n``、``emplace_back_n``、``pop_back``、"
+"``insert``、``erase``、``resize``、``clear``、``reserve``、``shrink_to_fit``、"
+"``reverse`` 和 ``assign``。"
+
+#: ../../doc/container.rst:78
+msgid "Iterators"
+msgstr "迭代器"
+
+#: ../../doc/container.rst:80
+msgid ""
+"``const_iterator`` is a random-access iterator that stores an offset into "
+"the vector rather than a raw pointer. This makes it safe against "
+"reallocation — an invalid iterator from script can be detected by the host "
+"without crashing. Dereferencing yields ``const void*`` to the element."
+msgstr ""
+"``const_iterator`` 是一个随机访问迭代器，它存储的是向量中的偏移量而非原始指针。"
+"这使得它在重新分配时是安全的——宿主可以检测到来自脚本的无效迭代器而不会崩溃。"
+"解引用产生指向元素的 ``const void*``。"
+
+#: ../../doc/container.rst:91
+msgid "Visiting elements"
+msgstr "访问元素"
+
+#: ../../doc/container.rst:93
+msgid ""
+"The ``visit`` method applies a visitor to a range of elements, handling type-"
+"aware dispatch:"
+msgstr ""
+"``visit`` 方法对一系列元素应用访问器，处理类型感知的分派："
+
+#: ../../doc/container.rst:107
+msgid "GC integration"
+msgstr "GC 集成"
+
+#: ../../doc/container.rst:109
+msgid ""
+"Call ``enum_refs()`` to enumerate references within the vector to the "
+"AngelScript GC. This should be called from the object type's "
+"``EnumReferences`` callback."
+msgstr ""
+"调用 ``enum_refs()`` 来枚举向量中对 AngelScript GC 的引用。这应该在对象类型的 "
+"``EnumReferences`` 回调中调用。"
+
+#: ../../doc/container.rst:0
 msgid "Type information"
 msgstr "类型信息"
 
-#: ../../doc/container.rst
+#: ../../doc/container.rst:0
 msgid "Capacity"
 msgstr "容量"
 
-#: ../../doc/container.rst
+#: ../../doc/container.rst:0
 msgid "Element access"
 msgstr "元素访问"
 
-#: ../../doc/container.rst
+#: ../../doc/container.rst:0
 msgid "Iterators of small vector"
 msgstr "小型向量的迭代器"
 
-#: ../../doc/container.rst
+#: ../../doc/container.rst:0
 msgid "Modifiers"
 msgstr "修改器"
 
-#: ../../doc/container.rst
+#: ../../doc/container.rst:0
 msgid "Visiting members"
 msgstr "访问成员"
 
-#: ../../doc/container.rst
+#: ../../doc/container.rst:0
 msgid "Public Types"
 msgstr "公共类型"
 
-#: ../../doc/container.rst
+#: ../../doc/container.rst:0
 msgid "Friends"
 msgstr "友元"
 
-#: ../../doc/container.rst:40
-msgid "|script_array|_."
-msgstr "|script_array|_."
-
-#: ../../doc/container.rst:47
+#: ../../doc/container.rst:118
 msgid "Associative Containers"
 msgstr "关联容器"
 
-#: ../../doc/container.rst:49
+#: ../../doc/container.rst:120
 msgid "*Not implemented yet*"
 msgstr "*尚未实现*"
 
+#~ msgid "|script_optional|_."
+#~ msgstr "|script_optional|_."
+
+#~ msgid "|script_array|_."
+#~ msgstr "|script_array|_."

@@ -1,10 +1,13 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: asbind20\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-05 11:57+0800\n"
 "Language: zh_CN\n"
-"Plural-Forms: nplurals=1; plural=0;\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=utf-8\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.18.0\n"
-
+"Plural-Forms: nplurals=1; plural=0;\n"
 #: ../../doc/object_type.rst:2
 msgid "Registering an Object Type"
 msgstr "注册对象类型"

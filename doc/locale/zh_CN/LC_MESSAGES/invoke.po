@@ -1,9 +1,13 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: asbind20\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-05 11:57+0800\n"
 "Language: zh_CN\n"
-"Plural-Forms: nplurals=1; plural=0;\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=utf-8\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.18.0\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
 
 #: ../../doc/invoke.rst:2
 msgid "Invoking Script Interfaces"
@@ -24,8 +28,8 @@ msgid ""
 "This example assumes the ``std::string`` is registered as script string "
 "type. You can change the ``std::string`` to your underlying string type."
 msgstr ""
-"此示例假设 ``std::string`` 已注册为脚本字符串类型。"
-"你可以将 ``std::string`` 替换为你自己的底层字符串类型。"
+"此示例假设 ``std::string`` 已注册为脚本字符串类型。你可以将 ``std::string`` "
+"替换为你自己的底层字符串类型。"
 
 #: ../../doc/invoke.rst:14
 msgid "AngelScript function:"
@@ -43,74 +47,88 @@ msgstr "使用脚本类"
 msgid "The library provides tools for instantiating a script class."
 msgstr "本库提供了实例化脚本类的工具。"
 
-#: ../../doc/invoke.rst
+#: ../../doc/invoke.rst:0
 msgid "Parameters"
 msgstr "参数"
 
-#: ../../doc/invoke.rst
+#: ../../doc/invoke.rst:0
 msgid "Returns"
 msgstr "返回值"
 
 #: ../../doc/invoke.rst:52
 msgid ""
 "The ``script_invoke`` also supports invoking a method, a.k.a., member "
-"function. You need to put the script object in front of the script "
-"function pointer in arguments. This is designed to simulate a method call"
-" ``obj.method()``."
+"function. You need to put the script object in front of the script function "
+"pointer in arguments. This is designed to simulate a method call "
+"``obj.method()``."
 msgstr ""
-"``script_invoke`` 还支持调用方法（即成员函数）。"
-"你需要在参数中将脚本对象放在脚本函数指针之前。"
-"这样设计是为了模拟方法调用 ``obj.method()``。"
+"``script_invoke`` 还支持调用方法（即成员函数）。你需要在参数中将脚本对象放在"
+"脚本函数指针之前。这样设计是为了模拟方法调用 ``obj.method()``。"
 
 #: ../../doc/invoke.rst:56
 msgid ""
-"The type of script object can be either ``(const) void*`` or a type that "
-"can be cast into ``(const) asIScriptObject*``."
+"The type of script object can be either ``(const) void*`` or a type that can "
+"be cast into ``(const) asIScriptObject*``."
 msgstr ""
-"脚本对象的类型可以是 ``(const) void*``，"
-"也可以是能转换为 ``(const) asIScriptObject*`` 的类型。"
+"脚本对象的类型可以是 ``(const) void*``，也可以是能转换为 ``(const) "
+"asIScriptObject*`` 的类型。"
 
 #: ../../doc/invoke.rst:60
 msgid "The script class defined in AngelScript:"
 msgstr "在 AngelScript 中定义的脚本类："
 
 #: ../../doc/invoke.rst:104
+msgid "Script Function Objects"
+msgstr "脚本函数对象"
+
+#: ../../doc/invoke.rst:106
+msgid ""
+"``script_function`` and ``script_method`` wrap an ``asIScriptFunction*`` "
+"with ownership semantics, tracking the module reference count to keep the "
+"function valid even after the module is discarded. ``script_function_ref`` "
+"and ``script_method_ref`` are non-owning counterparts."
+msgstr ""
+
+#: ../../doc/invoke.rst:141
+msgid ""
+"``script_method`` works the same way for member functions. Define a script "
+"class and wrap its methods:"
+msgstr ""
+
+#: ../../doc/invoke.rst:167
 msgid "Reference of Invocation Tools"
 msgstr "调用工具参考"
 
-#: ../../doc/invoke.rst
+#: ../../doc/invoke.rst:0
 msgid "Template Parameters"
 msgstr "模板参数"
 
-#: ../../doc/invoke.rst:108
+#: ../../doc/invoke.rst:171
 msgid ""
 "The result types of script invocation consist of the primary template, "
 "specialization for references, and specialization for ``void``."
-msgstr ""
-"脚本调用的结果类型包括主模板、引用的特化和 ``void`` 的特化。"
+msgstr "脚本调用的结果类型包括主模板、引用的特化和 ``void`` 的特化。"
 
-#: ../../doc/invoke.rst
+#: ../../doc/invoke.rst:0
 msgid "Unchecked Accessors"
 msgstr "未检查的访问器"
 
-#: ../../doc/invoke.rst
+#: ../../doc/invoke.rst:0
 msgid "Checked Accessors"
 msgstr "已检查的访问器"
 
-#: ../../doc/invoke.rst
+#: ../../doc/invoke.rst:0
 msgid "Public Types"
 msgstr "公共类型"
 
-#: ../../doc/invoke.rst
+#: ../../doc/invoke.rst:0
 msgid "Public Functions"
 msgstr "公共函数"
 
-#: ../../doc/invoke.rst:115
+#: ../../doc/invoke.rst:178
 msgid ""
 "The library also provides specializations for reference types "
-"(``script_invoke_result<T&>``) and ``void`` "
-"(``script_invoke_result<void>``)."
+"(``script_invoke_result<T&>``) and ``void`` (``script_invoke_result<void>``)."
 msgstr ""
-"本库还提供了引用类型（``script_invoke_result<T&>``）"
-"和 ``void``（``script_invoke_result<void>``）的特化。"
-
+"本库还提供了引用类型（``script_invoke_result<T&>``）和 ``void``"
+"（``script_invoke_result<void>``）的特化。"
