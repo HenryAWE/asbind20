@@ -108,7 +108,7 @@ Use CMake's ``FetchContent`` to download asbind20 at configure time:
     )
 
     # AngelScript must be available before asbind20
-    find_package(Angelscript 2.37.0 CONFIG REQUIRED)
+    find_package(Angelscript REQUIRED)
 
     FetchContent_MakeAvailable(asbind20)
 

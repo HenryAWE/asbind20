@@ -87,7 +87,7 @@ Locks
 
 The weak reference flag (``asILockableSharedBool*``) is lockable.
 
-The ``lockable_shared_bool`` class (documented in :doc:`../utility`) wraps the weak reference flag for use with standard lock guards like ``std::unique_lock`` and ``std::shared_lock``.
+The ``lockable_shared_bool`` class (documented in :doc:`../utility`) wraps the weak reference flag for use with ``std::lock_guard``.
 
 The AngelScript library provides global exclusive and shared locks.
 The wrappers for them are provided by the header ``<asbind20/concurrent/mutex.hpp>``.

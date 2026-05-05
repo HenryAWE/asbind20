@@ -78,7 +78,8 @@ The following code is equivalent to the above one:
         .value<my_enum::B>();
 
 .. note::
-  However, as static reflection is still waiting for C++26, this feature relies on compiler extension and is platform dependent.
+  However, as static reflection is still waiting for C++26, this feature relies on compiler extension.
+  It's guaranteed to work on mainstream compilers (MSVC, GCC, and Clang).
   **It has some limitations**. For example, it cannot generate string representation for enums with same value.
 
   .. code-block:: c++
@@ -88,9 +89,6 @@ The following code is equivalent to the above one:
         A = 1,
         B = 1 // Not supported for this kind of enum value
     };
-
-  If you are interested in how this is achieved, you can read `this article written by YKIKO (Chinese) <https://zhuanlan.zhihu.com/p/680412313>`_,
-  or author's `English translation <https://ykiko.me/en/articles/680412313/>`_.
 
 Since the version 2.39, AngelScript supports enumerations with custom underlying types.
 
@@ -116,21 +114,21 @@ which is an alias of ``enum_<Enum, std::underlying_type_t<Enum>>``.
     If you need to interact these enums from C++ side,
     the enums with custom underlying type :ref:`need to specify the conversion rules <custom-rule-for-enum-underlying>`.
 
-.. warning::
-    The listener API described below is **experimental**. Its interface may change in future releases.
-
 Listener API
 ------------
 
+.. warning::
+    The listener API described in this section is **experimental**. Its interface may change in future releases.
+
 Every binding generator (``value_class``, ``ref_class``, ``global``, ``enum_``, ``interface``) accepts an optional
-``Listener`` template parameter. When a binding is registered, the generator invokes the corresponding callback
-on the listener, passing itself and the resulting AngelScript type or function ID.
+``Listener`` template parameter. When an entity is registered, the generator invokes the corresponding callback
+on the listener, passing itself and the returned value from AngelScript API.
 
 This allows you to:
 
 - Record what was registered for logging or debugging
 - Validate registered entities
-- Collect metadata about the binding surface
+- Collect metadata about the bound interface
 
 Defining a listener
 ~~~~~~~~~~~~~~~~~~~
@@ -164,8 +162,7 @@ Use it to query the engine, type info, or the generator's type ID.
 The ``int`` parameter is the AngelScript ID returned by the registration call:
 
 - Non-negative values indicate success.
-- Negative values are ``asERetCodes`` error codes (e.g. ``asINVALID_ARG``, ``asNAME_TAKEN``).
-  By default, negative values cause ``listener_traits`` to throw a ``std::system_error``.
+- By default, negative values will throw a ``std::system_error``.
   Define ``ASBIND20_NO_THROW_ON_BAD_BINDING`` to suppress this.
 
 Using a listener
@@ -191,7 +188,3 @@ Listeners are default-constructed unless you pass an instance to the generator's
     my_listener pre_conf;
     // ... configure pre_conf ...
     global<false, my_listener> g(engine, std::move(pre_conf));
-
-.. doxygenclass:: asbind20::listener_traits
-  :members:
-  :no-link:

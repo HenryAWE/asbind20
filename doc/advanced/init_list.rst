@@ -72,24 +72,23 @@ Policies are passed via ``use_policy``, which accepts one or more policy types:
     // Multiple policies combined (e.g. init list policy + factory policy)
     .list_factory<int>("repeat int", use_policy<policies::as_span, policies::notify_gc>)
 
-Summary of available initialization list policies:
+Quick summary of available initialization list policies:
 
 .. list-table::
    :header-rows: 1
-   :widths: 20 40 40
 
    * - Policy
      - Signature of C++ function to receive
      - Notes
    * - *(default, no policy)*
-     - ``script_init_list_repeat``
-     - Raw AS init list; useful when element types vary or size is unknown
+     - ``void*``
+     - Raw AS initialization list. It's useful when you want to deal with the raw data.
    * - ``repeat_list_proxy``
      - ``script_init_list_repeat``
-     - Same as default; use explicitly for clarity
+     - Convert the memory to proxy.
    * - ``apply_to<Size>``
-     - Individual arguments (e.g. ``int, int, int`` for ``Size=3``)
-     - Only works with fixed-size patterns like ``{int, int, int}``, not ``repeat int``
+     - Individual arguments |br| (e.g. ``int, int, int`` for ``Size=3``)
+     - **Only works with fixed-size patterns** like ``{int, int, int}``, not ``repeat int``
    * - ``pointer_and_size``
      - ``T* data, asUINT size``
      - Traditional C pointer + length pair
@@ -101,7 +100,7 @@ Summary of available initialization list policies:
      - Modern C++20 span
    * - ``as_initializer_list``
      - ``std::initializer_list<T>``
-     - Platform-dependent; prefer other policies when possible
+     - Platform-dependent. **Prefer other policies when possible**
    * - ``as_from_range``
      - C++23 ``std::from_range_t`` tag
      - Requires ``__cpp_lib_containers_ranges``
@@ -266,7 +265,5 @@ Policies for the pattern with repeated elements, i.e., containing ``repeat`` in 
         .list_factory<int>("repeat int", use_policy<policies::as_from_range>);
 
   .. note::
-    This policy is only available when compiler supports C++23.
+    This policy is only available when compiler supports C++23 ``__cpp_lib_containers_ranges``.
     You can check whether the macro ``ASBIND20_HAS_CONTAINERS_RANGES`` is defined.
-
-.. doxygenconcept:: asbind20::policies::initialization_list_policy

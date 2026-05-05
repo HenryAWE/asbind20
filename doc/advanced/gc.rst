@@ -113,15 +113,15 @@ Value types are normally not thought of as being part of circular references as 
 However, if a value type can hold a reference to a type, and then that type can have the value type as a member,
 a circular reference can be established preventing the reference type from being released.
 
-You only need behaviours of ``asBEHAVE_ENUMREFS`` and ``asBEHAVE_RELEASEREFS`` for a value type.
+Typically, this is caused by holding a script object as member of value class;
 
-Here is an example from the ``script_optional`` of asbind20 extension library.
+You only need behaviours of ``asBEHAVE_ENUMREFS`` and ``asBEHAVE_RELEASEREFS`` for a value type.
 
 .. code-block:: c++
 
     // ...
-        .enum_refs(fp<&script_optional::enum_refs>)
-        .release_refs(fp<&script_optional::release_refs>)
+        .enum_refs(&val_gc_type::enum_refs)
+        .release_refs(&val_gc_type::release_refs)
 
 Notifying GC of New Object
 --------------------------
@@ -164,13 +164,5 @@ you can use the (list) factory function with auxiliary object.
 .. note::
     If you create objects of garbage collected type from the application side,
     you must also notify the garbage collector of its existence,
-    so it's a good idea to make sure all code uses the same way of creating objects of this type.
-
-Reference
-~~~~~~~~~
-
-.. doxygenstruct:: asbind20::policies::notify_gc
-  :members:
-  :undoc-members:
-
-.. doxygenconcept:: asbind20::policies::factory_policy
+    so it's a good idea to make sure all code uses the same way of creating objects of this type,
+    for example, a wrapper function.

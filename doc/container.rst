@@ -12,11 +12,6 @@ Storing a Single Script Object
   :members:
   :undoc-members:
 
-|script_optional|_.
-
-.. |script_optional| replace:: You can check the ``script_optional`` from extension library as an example
-.. _script_optional: https://github.com/HenryAWE/asbind20/blob/master/ext/utility/src/vocabulary.cpp
-
 Containers
 ----------
 
@@ -99,13 +94,14 @@ The ``visit`` method applies a visitor to a range of elements, handling type-awa
 
 .. code-block:: c++
 
-   vec.visit(
-       [](auto* begin, auto* end) {
-           for(auto* p = begin; p != end; ++p)
-               std::print("{} ", *p);
-       },
-       0, vec.size()
-   );
+    vec.visit(
+        [](auto* begin, auto* end)
+        {
+            for(auto* p = begin; p != end; ++p)
+                // Do something
+        },
+        0, vec.size()
+    );
 
 GC integration
 ^^^^^^^^^^^^^^
@@ -116,11 +112,6 @@ This should be called from the object type's ``EnumReferences`` callback.
 .. doxygenclass:: asbind20::container::small_vector
   :members:
   :undoc-members:
-
-|script_array|_.
-
-.. |script_array| replace:: You can check the ``script_array`` from extension library as an example
-.. _script_array: https://github.com/HenryAWE/asbind20/blob/master/ext/container/include/asbind20/ext/array.hpp
 
 
 Associative Containers

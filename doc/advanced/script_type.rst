@@ -14,61 +14,7 @@ Type Traits for Script Type IDs
 .. doxygenfunction:: asbind20::type_requires_gc
 .. doxygenfunction:: asbind20::sizeof_script_type
 
-Example: a container element accessor that handles different type categories:
-
-.. code-block:: c++
-
-    void* get_element_ref(int type_id, void* data, int index)
-    {
-        if(is_void_type(type_id))
-            return nullptr;
-
-        if(is_objhandle(type_id))
-        {
-            // Handle references — the element is a pointer to the actual object
-            auto* handle_ptr = static_cast<void**>(data) + index;
-            if(!*handle_ptr)
-                return nullptr;
-            return *handle_ptr;
-        }
-
-        // Primitive and value types — the element is stored inline
-        std::size_t elem_size = sizeof_script_type(type_id);
-        return static_cast<char*>(data) + (index * elem_size);
-    }
-
-    void copy_element(void* dst, const void* src, int type_id)
-    {
-        if(is_void_type(type_id))
-            return;
-
-        if(is_objhandle(type_id))
-        {
-            auto* handle = static_cast<void* const*>(src);
-            if(*handle) (*handle)->AddRef();
-            *static_cast<void**>(dst) = *handle;
-            return;
-        }
-
-        // Primitive type — fast path via memcpy
-        if(is_primitive_type(type_id))
-        {
-            copy_primitive_value(dst, src, type_id);
-            return;
-        }
-
-        // Enum or script object — use AngelScript's copy assignment
-        auto* engine = asGetActiveContext()->GetEngine();
-        auto* ti = engine->GetTypeInfoById(type_id);
-        auto* script_ctx = engine->RequestContext();
-        script_ctx->Prepare(ti->GetFactoryByIndex(0)); // copy op
-        script_ctx->SetArgAddress(0, dst);
-        script_ctx->SetArgAddress(1, src);
-        script_ctx->Execute();
-        engine->ReturnContext(script_ctx);
-    }
-
-Dispatching Function Calls Based on Type Ids
+Dispatching Function Calls Based on Type IDs
 --------------------------------------------
 
 This feature is similar to how `std::visit` and `std::variant` works.
@@ -120,7 +66,7 @@ types to ``visit_primitive_type`` and object handles as ``void*``:
                 std::sort((float*)begin, (float*)end);
             else
             {
-                // Object handle — elements are void* pointers
+                // ...
             }
         },
         type_id,   // any AngelScript type ID
