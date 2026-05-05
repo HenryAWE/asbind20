@@ -34,7 +34,7 @@ msgid ""
 "Unlike the raw AngelScript interface, you don't need to add the class name "
 "into the declaration of member ``funcdef`` for asbind20."
 msgstr ""
-"与原始 AngelScript 接口不同，对于 asbind20，您不需要将类名添加到成员 "
+"与原始 AngelScript 接口不同，asbind20的接口不需要将类名添加到成员 "
 "``funcdef`` 的声明中。"
 
 #: ../../doc/aux_interface.rst:24
@@ -123,14 +123,14 @@ msgstr ""
 
 #: ../../doc/aux_interface.rst:118
 msgid "Listener API"
-msgstr "监听器 API"
+msgstr "Listener API"
 
 #: ../../doc/aux_interface.rst:121
 msgid ""
 "The listener API described in this section is **experimental**. Its "
 "interface may change in future releases."
 msgstr ""
-"本节描述的监听器 API 是**实验性的**。其接口在未来版本中可能会发生变化。"
+"本节描述的 Listener API 是**实验性的**。其接口在未来版本中可能会发生变化。"
 
 #: ../../doc/aux_interface.rst:123
 msgid ""
