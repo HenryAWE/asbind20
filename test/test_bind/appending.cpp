@@ -11,6 +11,12 @@ struct val_class_for_appending
         return data;
     }
 };
+
+enum class enum_for_appending
+{
+    a = 1,
+    b = 2
+};
 } // namespace test_bind
 
 TEST(Appending, ValueClass)
@@ -50,4 +56,40 @@ TEST(Appending, ValueClass)
     auto result = script_invoke<int>(ctx, f);
     ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
     EXPECT_EQ(result.value(), 1013);
+}
+
+TEST(Appending, Enum)
+{
+    using test_bind::enum_for_appending;
+    using namespace asbind20;
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine, true);
+
+    enum_<enum_for_appending>(engine, "e")
+        .value(enum_for_appending::a, "a");
+
+    enum_<enum_for_appending>(appending, engine, "e")
+        .value(enum_for_appending::b, "b");
+
+    auto* m = engine->GetModule(
+        "appending", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
+    );
+    ASSERT_NE(m, nullptr);
+    m->AddScriptSection(
+        "appending",
+        "int f()\n"
+        "{\n"
+        "    return int(e::b) + int(e::a);\n"
+        "}"
+    );
+    ASSERT_GE(m->Build(), 0);
+
+    auto* f = m->GetFunctionByDecl("int f()");
+    ASSERT_NE(f, nullptr);
+
+    request_context ctx(engine);
+    auto result = script_invoke<int>(ctx, f);
+    ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
+    EXPECT_EQ(result.value(), 1 + 2);
 }
