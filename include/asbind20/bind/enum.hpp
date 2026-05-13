@@ -64,6 +64,15 @@ public:
           )
     {}
 
+    template <string_like StringLike>
+    enum_(appending_t, engine_pointer engine, StringLike&& name)
+        : enum_(
+              appending,
+              engine,
+              util::string_like_to_string(std::forward<StringLike>(name))
+          )
+    {}
+
     enum_& value(cstring_ref decl, Enum val)
     {
         register_enum_val(

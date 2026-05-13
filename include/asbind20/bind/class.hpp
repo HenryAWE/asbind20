@@ -2842,6 +2842,19 @@ public:
         this->append_type();
     }
 
+    template <string_like StringLike>
+    basic_value_class(
+        appending_t,
+        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+        StringLike&& name
+    )
+        : basic_value_class(
+              appending,
+              engine,
+              util::string_like_to_string(std::forward<StringLike>(name))
+          )
+    {}
+
     basic_value_class(const basic_value_class&) = default;
 
     basic_value_class& operator=(const basic_value_class&) = delete;
@@ -3883,6 +3896,19 @@ public:
     {
         this->append_type();
     }
+
+    template <string_like StringLike>
+    basic_ref_class(
+        appending_t,
+        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+        StringLike&& name
+    )
+        : basic_ref_class(
+              appending,
+              engine,
+              util::string_like_to_string(std::forward<StringLike>(name))
+          )
+    {}
 
     basic_ref_class(const basic_ref_class&) = default;
 

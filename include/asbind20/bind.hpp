@@ -174,12 +174,31 @@ public:
         );
     }
 
+    basic_interface(appending_t, engine_pointer engine, std::string name)
+        : my_base(engine), m_name(std::move(name))
+    {
+        // TODO: Checks
+    }
+
     template <string_like StringLike>
     basic_interface(
         AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
         StringLike&& name
     )
         : basic_interface(
+              engine,
+              util::string_like_to_string(std::forward<StringLike>(name))
+          )
+    {}
+
+    template <string_like StringLike>
+    basic_interface(
+        appending_t,
+        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+        StringLike&& name
+    )
+        : basic_interface(
+              appending,
               engine,
               util::string_like_to_string(std::forward<StringLike>(name))
           )
