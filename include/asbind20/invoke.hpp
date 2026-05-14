@@ -972,8 +972,8 @@ public:
     script_function(script_function&& other) noexcept
         : m_fp(std::exchange(other.m_fp, nullptr)) {}
 
-    script_function(handle_type fp)
-        : m_fp(fp)
+    script_function(handle_type handletype)
+        : m_fp(handletype)
     {
         if(m_fp)
             m_fp->AddRef();
@@ -1042,11 +1042,11 @@ public:
         }
     }
 
-    void reset(handle_type fp)
+    void reset(handle_type handletype)
     {
         if(m_fp)
             m_fp->Release();
-        m_fp = fp;
+        m_fp = handletype;
         if(m_fp)
             m_fp->AddRef();
     }
