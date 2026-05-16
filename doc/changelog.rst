@@ -66,6 +66,11 @@ Breaking Change
 - Now message callback and exception translator are registered by global functions,
   instead of ``asbind20::global``.
 
+Bug fix
+~~~~~~~
+
+- Fix issue when building with Unreal Engine 5 (PR #50 by ThaiNhatMinh)
+
 1.8.0
 -----
 
