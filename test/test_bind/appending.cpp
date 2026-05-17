@@ -17,6 +17,37 @@ enum class enum_for_appending
     a = 1,
     b = 2
 };
+
+struct ref_class_for_appending
+{
+    void addref()
+    {
+        ++m_counter;
+    }
+
+    void release()
+    {
+        ASSERT_GE(m_counter, 0);
+        --m_counter;
+        if(m_counter == 0)
+            delete this;
+    }
+
+    int data = 0;
+
+    int get_data() const
+    {
+        return data;
+    }
+
+private:
+    ~ref_class_for_appending()
+    {
+        EXPECT_EQ(m_counter, 0);
+    }
+
+    int m_counter = 1;
+};
 } // namespace test_bind
 
 TEST(Appending, ValueClass)
@@ -92,4 +123,45 @@ TEST(Appending, Enum)
     auto result = script_invoke<int>(ctx, f);
     ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
     EXPECT_EQ(result.value(), 1 + 2);
+}
+
+TEST(Appending, RefClass)
+{
+    using test_bind::ref_class_for_appending;
+    using namespace asbind20;
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine, true);
+
+    ref_class<ref_class_for_appending, true>(engine, "rc")
+        .addref(fp<&ref_class_for_appending::addref>)
+        .release(fp<&ref_class_for_appending::release>)
+        .default_factory()
+        .method("int get_data() const", fp<&ref_class_for_appending::get_data>);
+
+    ref_class<ref_class_for_appending>(appending, engine, "rc")
+        .property("int data", &ref_class_for_appending::data);
+
+    auto* m = engine->GetModule(
+        "appending", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
+    );
+    ASSERT_NE(m, nullptr);
+    m->AddScriptSection(
+        "appending",
+        "int f()\n"
+        "{\n"
+        "    rc r;\n"
+        "    r.data = 1013;\n"
+        "    return r.get_data();\n"
+        "}"
+    );
+    ASSERT_GE(m->Build(), 0);
+
+    auto* f = m->GetFunctionByDecl("int f()");
+    ASSERT_NE(f, nullptr);
+
+    request_context ctx(engine);
+    auto result = script_invoke<int>(ctx, f);
+    ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
+    EXPECT_EQ(result.value(), 1013);
 }
