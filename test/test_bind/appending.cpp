@@ -165,3 +165,48 @@ TEST(Appending, RefClass)
     ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
     EXPECT_EQ(result.value(), 1013);
 }
+
+TEST(Appending, Interface)
+{
+    using namespace asbind20;
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine, true);
+
+    interface i(engine, "intf");
+    i.method("int a()");
+
+    interface(appending, engine, "intf")
+        .method("int b(int)");
+
+    auto* ti = engine->GetTypeInfoByName("intf");
+    ASSERT_NE(ti, nullptr);
+    EXPECT_EQ(ti->GetMethodCount(), 2);
+
+    auto* m = engine->GetModule(
+        "appending", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
+    );
+    ASSERT_NE(m, nullptr);
+    m->AddScriptSection(
+        "appending",
+        "class impl : intf\n"
+        "{\n"
+        "    int a() { return 7; }\n"
+        "    int b(int x) { return x + 7; }\n"
+        "}\n"
+        "int f()\n"
+        "{\n"
+        "    intf@ h = impl();\n"
+        "    return h.b(h.a());\n"
+        "}"
+    );
+    ASSERT_GE(m->Build(), 0);
+
+    auto* f = m->GetFunctionByDecl("int f()");
+    ASSERT_NE(f, nullptr);
+
+    request_context ctx(engine);
+    auto result = script_invoke<int>(ctx, f);
+    ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
+    EXPECT_EQ(result.value(), 7 + 7);
+}
