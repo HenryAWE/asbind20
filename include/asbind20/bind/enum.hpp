@@ -150,6 +150,7 @@ private:
     void append_to_enum(cstring_ref name)
     {
         AS_NAMESPACE_QUALIFIER asITypeInfo* ti = this->get_engine()->GetTypeInfoByName(name.c_str());
+        [[maybe_unused]]
         int r = ti->GetTypeId();
         ASBIND20_ASSERT(is_enum_type(r));
     }
