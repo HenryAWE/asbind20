@@ -89,20 +89,10 @@ TEST(Appending, ValueClass)
     EXPECT_EQ(result.value(), 1013);
 }
 
-TEST(Appending, Enum)
+namespace test_bind
 {
-    using test_bind::enum_for_appending;
-    using namespace asbind20;
-
-    auto engine = make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
-
-    enum_<enum_for_appending>(engine, "e")
-        .value(enum_for_appending::a, "a");
-
-    enum_<enum_for_appending>(appending, engine, "e")
-        .value(enum_for_appending::b, "b");
-
+static void check_enum_appending(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
     auto* m = engine->GetModule(
         "appending", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
     );
@@ -119,29 +109,52 @@ TEST(Appending, Enum)
     auto* f = m->GetFunctionByDecl("int f()");
     ASSERT_NE(f, nullptr);
 
-    request_context ctx(engine);
+    asbind20::request_context ctx(engine);
     auto result = script_invoke<int>(ctx, f);
     ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
     EXPECT_EQ(result.value(), 1 + 2);
 }
+} // namespace test_bind
 
-TEST(Appending, RefClass)
+TEST(Appending, Enum)
 {
-    using test_bind::ref_class_for_appending;
+    using test_bind::enum_for_appending;
     using namespace asbind20;
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine, true);
 
-    ref_class<ref_class_for_appending, true>(engine, "rc")
-        .addref(fp<&ref_class_for_appending::addref>)
-        .release(fp<&ref_class_for_appending::release>)
-        .default_factory()
-        .method("int get_data() const", fp<&ref_class_for_appending::get_data>);
+    enum_<enum_for_appending>(engine, "e")
+        .value(enum_for_appending::a, "a");
 
-    ref_class<ref_class_for_appending>(appending, engine, "rc")
-        .property("int data", &ref_class_for_appending::data);
+    enum_<enum_for_appending>(appending, engine, "e")
+        .value(enum_for_appending::b, "b");
 
+    test_bind::check_enum_appending(engine);
+}
+
+TEST(TryAppending, Enum)
+{
+    using namespace std::literals;
+    using test_bind::enum_for_appending;
+    using namespace asbind20;
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine, true);
+
+    enum_<enum_for_appending>(try_appending, engine, "e"sv)
+        .value(enum_for_appending::a, "a");
+
+    enum_<enum_for_appending>(appending, engine, "e"sv)
+        .value(enum_for_appending::b, "b");
+
+    test_bind::check_enum_appending(engine);
+}
+
+namespace test_bind
+{
+void check_ref_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
     auto* m = engine->GetModule(
         "appending", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
     );
@@ -160,25 +173,58 @@ TEST(Appending, RefClass)
     auto* f = m->GetFunctionByDecl("int f()");
     ASSERT_NE(f, nullptr);
 
-    request_context ctx(engine);
+    asbind20::request_context ctx(engine);
     auto result = script_invoke<int>(ctx, f);
     ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
     EXPECT_EQ(result.value(), 1013);
 }
+} // namespace test_bind
 
-TEST(Appending, Interface)
+TEST(Appending, RefClass)
 {
+    using test_bind::ref_class_for_appending;
     using namespace asbind20;
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine, true);
 
-    interface i(engine, "intf");
-    i.method("int a()");
+    ref_class<ref_class_for_appending, true>(engine, "rc")
+        .addref(fp<&ref_class_for_appending::addref>)
+        .release(fp<&ref_class_for_appending::release>)
+        .default_factory()
+        .method("int get_data() const", fp<&ref_class_for_appending::get_data>);
 
-    interface(appending, engine, "intf")
-        .method("int b(int)");
+    ref_class<ref_class_for_appending>(appending, engine, "rc")
+        .property("int data", &ref_class_for_appending::data);
 
+    test_bind::check_ref_class(engine);
+}
+
+TEST(TryAppending, RefClass)
+{
+    using test_bind::ref_class_for_appending;
+    using namespace asbind20;
+    using namespace std::literals;
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine, true);
+
+    ref_class<ref_class_for_appending, true>(try_appending, engine, "rc"sv)
+        .addref(fp<&ref_class_for_appending::addref>)
+        .release(fp<&ref_class_for_appending::release>)
+        .default_factory()
+        .method("int get_data() const", fp<&ref_class_for_appending::get_data>);
+
+    ref_class<ref_class_for_appending>(appending, engine, "rc"sv)
+        .property("int data", &ref_class_for_appending::data);
+
+    test_bind::check_ref_class(engine);
+}
+
+namespace test_bind
+{
+static void check_interface_appending(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
     auto* ti = engine->GetTypeInfoByName("intf");
     ASSERT_NE(ti, nullptr);
     EXPECT_EQ(ti->GetMethodCount(), 2);
@@ -205,8 +251,44 @@ TEST(Appending, Interface)
     auto* f = m->GetFunctionByDecl("int f()");
     ASSERT_NE(f, nullptr);
 
-    request_context ctx(engine);
+    asbind20::request_context ctx(engine);
     auto result = script_invoke<int>(ctx, f);
     ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
     EXPECT_EQ(result.value(), 7 + 7);
+}
+} // namespace test_bind
+
+TEST(Appending, Interface)
+{
+    using namespace asbind20;
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine, true);
+
+    interface i(engine, "intf");
+    i.method("int a()");
+
+    interface(appending, engine, "intf")
+        .method("int b(int)");
+
+    test_bind::check_interface_appending(engine);
+}
+
+TEST(TryAppending, Interface)
+{
+    using namespace asbind20;
+    using namespace std::literals;
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine, true);
+
+    interface i(try_appending, engine, "intf"sv);
+    i.method("int a()");
+    EXPECT_EQ(i.get_name(), "intf");
+    EXPECT_EQ(i.get_engine(), engine);
+
+    interface(appending, engine, "intf"sv)
+        .method("int b(int)");
+
+    test_bind::check_interface_appending(engine);
 }
