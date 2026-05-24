@@ -50,10 +50,11 @@ public:
         register_enum_type(m_name, get_underlying_name());
     }
 
-    enum_(appending_t, engine_pointer engine, std::string name)
+    template <bool AppendOnly>
+    enum_(appending_t<AppendOnly>, engine_pointer engine, std::string name)
         : my_base(engine), m_name(std::move(name))
     {
-        append_to_enum(m_name);
+        append_to_enum(AppendOnly, m_name);
     }
 
     template <string_like StringLike>
@@ -64,8 +65,8 @@ public:
           )
     {}
 
-    template <string_like StringLike>
-    enum_(appending_t, engine_pointer engine, StringLike&& name)
+    template <bool AppendOnly,string_like StringLike>
+    enum_(appending_t<AppendOnly>, engine_pointer engine, StringLike&& name)
         : enum_(
               appending,
               engine,
@@ -147,12 +148,19 @@ private:
         );
     }
 
-    void append_to_enum(cstring_ref name)
+    void append_to_enum(bool append_only, cstring_ref name)
     {
         AS_NAMESPACE_QUALIFIER asITypeInfo* ti = this->get_engine()->GetTypeInfoByName(name.c_str());
-        [[maybe_unused]]
-        int r = ti->GetTypeId();
-        ASBIND20_ASSERT(is_enum_type(r));
+        if(ti)
+        {
+            [[maybe_unused]]
+            int r = ti->GetTypeId();
+            ASBIND20_ASSERT(is_enum_type(r));
+        }
+        else if(!append_only)
+        {
+            register_enum_type(name, get_underlying_name());
+        }
     }
 
     void register_enum_val(

@@ -1225,11 +1225,15 @@ protected:
         return r;
     }
 
-    int append_type()
+    int append_type(bool append_only, flag_type flags, int size)
     {
         AS_NAMESPACE_QUALIFIER asITypeInfo* ti = get_engine()->GetTypeInfoByName(m_name.c_str());
         if(!ti)
-            return AS_NAMESPACE_QUALIFIER asINVALID_TYPE;
+        {
+            if(append_only)
+                return AS_NAMESPACE_QUALIFIER asINVALID_TYPE;
+            return register_object_type(flags, size);
+        }
         int r = ti->GetTypeId();
         if(r > 0) [[likely]]
             m_this_type_id = r;
@@ -2833,23 +2837,23 @@ public:
     {}
 
     basic_value_class(
-        appending_t,
+        appending_t<true>,
         AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
         std::string name
     )
         : my_base(engine, std::move(name))
     {
-        this->append_type();
+        this->append_type(true, 0, 0);
     }
 
     template <string_like StringLike>
     basic_value_class(
-        appending_t,
+        appending_t<true>,
         AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
         StringLike&& name
     )
         : basic_value_class(
-              appending,
+              appending_t<true>{},
               engine,
               util::string_like_to_string(std::forward<StringLike>(name))
           )
@@ -3844,6 +3848,7 @@ class basic_ref_class :
     using listener_traits_type = listener_traits<Listener>;
 
 public:
+    using flag_type = typename my_base::flag_type;
     using class_type = Class;
     using class_binding_generator_tag = void;
 
@@ -3887,24 +3892,28 @@ public:
           )
     {}
 
+    template <bool AppendOnly>
     basic_ref_class(
-        appending_t,
+        appending_t<AppendOnly>,
         AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
         std::string name
     )
         : my_base(engine, std::move(name))
     {
-        this->append_type();
+        flag_type flags = AS_NAMESPACE_QUALIFIER asOBJ_REF;
+        if constexpr(Template)
+            flags |= AS_NAMESPACE_QUALIFIER asOBJ_TEMPLATE;
+        this->append_type(AppendOnly, flags, 0);
     }
 
-    template <string_like StringLike>
+    template <bool AppendOnly, string_like StringLike>
     basic_ref_class(
-        appending_t,
+        appending_t<AppendOnly>,
         AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
         StringLike&& name
     )
         : basic_ref_class(
-              appending,
+              appending_t<AppendOnly>{},
               engine,
               util::string_like_to_string(std::forward<StringLike>(name))
           )

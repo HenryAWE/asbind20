@@ -20,10 +20,12 @@
 
 namespace asbind20
 {
+template <bool AppendOnly>
 struct appending_t
 {};
 
-constexpr inline appending_t appending{};
+constexpr inline appending_t<true> appending{};
+constexpr inline appending_t<false> try_appending{};
 
 struct use_generic_t
 {};

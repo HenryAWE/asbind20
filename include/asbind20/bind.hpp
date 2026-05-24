@@ -174,10 +174,17 @@ public:
         );
     }
 
-    basic_interface(appending_t, engine_pointer engine, std::string name)
+    template <bool AppendOnly>
+    basic_interface(appending_t<AppendOnly>, engine_pointer engine, std::string name)
         : my_base(engine), m_name(std::move(name))
     {
-        // TODO: Checks
+        if constexpr(AppendOnly)
+        {
+            // TODO: Checks
+        }
+        else
+        {
+        }
     }
 
     template <string_like StringLike>
@@ -191,14 +198,14 @@ public:
           )
     {}
 
-    template <string_like StringLike>
+    template <bool AppendOnly, string_like StringLike>
     basic_interface(
-        appending_t,
+        appending_t<AppendOnly>,
         AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
         StringLike&& name
     )
         : basic_interface(
-              appending,
+              appending_t<AppendOnly>{},
               engine,
               util::string_like_to_string(std::forward<StringLike>(name))
           )
