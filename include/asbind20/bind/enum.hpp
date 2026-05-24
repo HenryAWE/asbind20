@@ -68,7 +68,7 @@ public:
     template <bool AppendOnly,string_like StringLike>
     enum_(appending_t<AppendOnly>, engine_pointer engine, StringLike&& name)
         : enum_(
-              appending,
+              appending_t<AppendOnly>{},
               engine,
               util::string_like_to_string(std::forward<StringLike>(name))
           )

@@ -168,10 +168,7 @@ public:
     basic_interface(engine_pointer engine, std::string name)
         : my_base(engine), m_name(std::move(name))
     {
-        int r = this->get_engine()->RegisterInterface(m_name.c_str());
-        listener_type_traits::on_interface(
-            this->get_listener(), *this, r
-        );
+        do_register();
     }
 
     template <bool AppendOnly>
@@ -184,6 +181,7 @@ public:
         }
         else
         {
+            do_register();
         }
     }
 
@@ -245,6 +243,14 @@ public:
 
 private:
     std::string m_name;
+
+    void do_register()
+    {
+        int r = this->get_engine()->RegisterInterface(m_name.c_str());
+        listener_type_traits::on_interface(
+            this->get_listener(), *this, r
+        );
+    }
 };
 
 using interface = basic_interface<>;
