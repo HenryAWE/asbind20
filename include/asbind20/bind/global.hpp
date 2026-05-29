@@ -44,6 +44,15 @@ public:
     explicit global(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         : my_base(engine) {}
 
+    // For keeping consistency with other binding generators
+    template <bool AppendOnly>
+    global(
+        appending_t<AppendOnly>,
+        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
+    )
+        : global(engine)
+    {}
+
     using my_base::get_engine;
 
     template <typename Auxiliary>
@@ -297,6 +306,9 @@ public:
 global(AS_NAMESPACE_QUALIFIER asIScriptEngine*) -> global<false>;
 
 global(const script_engine&) -> global<false>;
+
+template <bool AppendOnly>
+global(appending_t<AppendOnly>, AS_NAMESPACE_QUALIFIER asIScriptEngine*) -> global<false>;
 } // namespace asbind20
 
 #endif
