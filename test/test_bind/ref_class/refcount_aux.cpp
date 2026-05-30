@@ -64,12 +64,11 @@ public:
 
     void check_and_clear()
     {
-        // TODO: Uncomment following lines when AS fixes the support of behaviours with THISCALL_OBJFIRST/LAST
-        // for(auto [addr, c] : m_counts)
-        // {
-        //     EXPECT_EQ(c, 0)
-        //         << "unmatched addref/release, address: " << addr;
-        // }
+        for(auto [addr, c] : m_counts)
+        {
+            EXPECT_EQ(c, 0)
+                << "unmatched addref/release, address: " << addr;
+        }
         m_counts.clear();
     }
 
@@ -205,32 +204,33 @@ TEST_F(RefcountAuxGeneric, RunTest0)
     EXPECT_EQ(result.value(), nullptr);
 }
 
-// TODO: Enable the following tests when AS fixes the support of behaviours with THISCALL_OBJFIRST/LAST
+#ifdef ASBIND20_HAS_THISCALL_OBJ_FOR_REF_BEHAVIOURS
 
-// TEST_F(RefcountAuxNative, RunTest1)
-// {
-//     using test_bind::refcount_aux;
-//     auto result = run_test<int>(1);
-//
-//     EXPECT_EQ(result.value(), 1);
-// }
-//
-// TEST_F(RefcountAuxGeneric, RunTest1)
-// {
-//     using test_bind::refcount_aux;
-//     auto result = run_test<int>(1);
-//
-//     EXPECT_EQ(result.value(), 1);
-// }
+TEST_F(RefcountAuxNative, RunTest1)
+{
+    using test_bind::refcount_aux;
+    auto result = run_test<int>(1);
 
-// FIXME: Why this test fails on Windows platform or Clang with ASan enabled?
-// TEST_F(RefcountAuxNative, RunTest2)
-// {
-//     using test_bind::refcount_aux;
-//     auto result = run_test<int>(2);
+    EXPECT_EQ(result.value(), 1);
+}
 
-//     EXPECT_EQ(result.value(), 2);
-// }
+TEST_F(RefcountAuxGeneric, RunTest1)
+{
+    using test_bind::refcount_aux;
+    auto result = run_test<int>(1);
+
+    EXPECT_EQ(result.value(), 1);
+}
+
+TEST_F(RefcountAuxNative, RunTest2)
+{
+    using test_bind::refcount_aux;
+    auto result = run_test<int>(2);
+
+    EXPECT_EQ(result.value(), 2);
+}
+
+#endif
 
 TEST_F(RefcountAuxGeneric, RunTest2)
 {
