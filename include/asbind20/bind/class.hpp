@@ -1235,6 +1235,14 @@ protected:
             return register_object_type(flags, size);
         }
         int r = ti->GetTypeId();
+#ifndef ASBIND20_CONFIG_NO_APPEND_CHECK
+        if (flags != 0)
+        {
+            [[maybe_unused]]
+            AS_NAMESPACE_QUALIFIER asDWORD existing_flags = ti->GetFlags();
+            ASBIND20_ASSERT(existing_flags == flags);
+        }
+#endif
         if(r > 0) [[likely]]
             m_this_type_id = r;
         return r;

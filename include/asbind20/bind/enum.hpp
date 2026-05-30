@@ -153,9 +153,11 @@ private:
         AS_NAMESPACE_QUALIFIER asITypeInfo* ti = this->get_engine()->GetTypeInfoByName(name.c_str());
         if(ti)
         {
+#ifndef ASBIND20_CONFIG_NO_APPEND_CHECK
             [[maybe_unused]]
             int r = ti->GetTypeId();
             ASBIND20_ASSERT(is_enum_type(r));
+#endif
         }
         else if(!append_only)
         {

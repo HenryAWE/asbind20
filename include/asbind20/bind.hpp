@@ -175,11 +175,16 @@ public:
     basic_interface(appending_t<AppendOnly>, engine_pointer engine, std::string name)
         : my_base(engine), m_name(std::move(name))
     {
-        if constexpr(AppendOnly)
+        AS_NAMESPACE_QUALIFIER asITypeInfo* ti = this->get_engine()->GetTypeInfoByName(m_name.c_str());
+        if(ti)
         {
-            // TODO: Checks
+#ifndef ASBIND20_CONFIG_NO_APPEND_CHECK
+            [[maybe_unused]]
+            AS_NAMESPACE_QUALIFIER asDWORD flags = ti->GetFlags();
+            ASBIND20_ASSERT(!(flags & AS_NAMESPACE_QUALIFIER asOBJ_VALUE));
+#endif
         }
-        else
+        else if constexpr(!AppendOnly)
         {
             do_register();
         }
