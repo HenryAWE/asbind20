@@ -188,3 +188,92 @@ Listeners are default-constructed unless you pass an instance to the generator's
     my_listener pre_conf;
     // ... configure pre_conf ...
     global<false, my_listener> g(engine, std::move(pre_conf));
+
+Appending to existing interface
+-------------------------------
+
+Sometimes you need to register parts of an interface, class, or enum
+across multiple translation units or at different points in your program.
+The appending mechanism lets you add members to an already-registered type
+without re-registering it from scratch.
+
+Two modes are available via tag types passed as the first constructor argument:
+
+- ``asbind20::appending`` — pure append. The type must already exist;
+  the constructor will **not** register a new type.
+- ``asbind20::try_appending`` — register if missing, append if present.
+  If the type is not found, it is registered as if you used the normal constructor.
+
+Appending is supported by ``value_class``, ``ref_class``, ``enum_``, and ``interface``.
+Note that ``value_class`` only supports ``appending``, not ``try_appending``.
+
+**Interface appending**
+
+.. code-block:: c++
+
+    asbind20::interface(engine, "intf")
+        .method("int a()");
+
+    // Append another method to the existing interface
+    asbind20::interface(appending, engine, "intf")
+        .method("int b(int)");
+
+**Enum appending**
+
+.. code-block:: c++
+
+    asbind20::enum_<my_enum>(engine, "e")
+        .value(my_enum::A, "A");
+
+    // Append extra values to the existing enum
+    asbind20::enum_<my_enum>(appending, engine, "e")
+        .value(my_enum::B, "B");
+
+**Ref class appending**
+
+.. code-block:: c++
+
+    asbind20::ref_class<my_ref, true>(engine, "rc")
+        .addref(fp<&my_ref::addref>)
+        .release(fp<&my_ref::release>)
+        .default_factory()
+        .method("int get_data() const", fp<&my_ref::get_data>);
+
+    // Append property to the existing ref class
+    asbind20::ref_class<my_ref>(appending, engine, "rc")
+        .property("int data", &my_ref::data);
+
+**Value class appending**
+
+.. code-block:: c++
+
+    asbind20::value_class<my_val, true>(engine, "val")
+        .behaviours_by_traits()
+        .method("int get_data() const", fp<&my_val::get_data>);
+
+    // Append property to the existing value class
+    asbind20::value_class<my_val, true>(appending, engine, "val")
+        .property("int data", &my_val::data);
+
+**try_appending**
+
+Use ``try_appending`` when the type may or may not exist yet:
+
+.. code-block:: c++
+
+    // Register the type if it doesn't exist; append if it does
+    asbind20::ref_class<my_ref, true>(try_appending, engine, "rc")
+        .addref(fp<&my_ref::addref>)
+        .release(fp<&my_ref::release>)
+        .default_factory()
+        .method("int get_data() const", fp<&my_ref::get_data>);
+
+    // Now use pure appending for the rest
+    asbind20::ref_class<my_ref>(appending, engine, "rc")
+        .property("int data", &my_ref::data);
+
+**Type consistency check**
+
+When appending, the library verifies that the existing type is compatible with the
+binding generator being used (e.g., appending to a value type with ``ref_class``
+is rejected). Define ``ASBIND20_CONFIG_NO_APPEND_CHECK`` to disable these checks.

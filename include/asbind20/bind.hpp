@@ -158,6 +158,7 @@ class basic_interface : public binding_generator_base<Listener>
     using listener_type_traits = listener_traits<Listener>;
 
 public:
+    using flag_type = AS_NAMESPACE_QUALIFIER asQWORD;
     using engine_pointer = AS_NAMESPACE_QUALIFIER asIScriptEngine*;
 
     basic_interface() = delete;
@@ -168,10 +169,26 @@ public:
     basic_interface(engine_pointer engine, std::string name)
         : my_base(engine), m_name(std::move(name))
     {
-        int r = this->get_engine()->RegisterInterface(m_name.c_str());
-        listener_type_traits::on_interface(
-            this->get_listener(), *this, r
-        );
+        do_register();
+    }
+
+    template <bool AppendOnly>
+    basic_interface(appending_t<AppendOnly>, engine_pointer engine, std::string name)
+        : my_base(engine), m_name(std::move(name))
+    {
+        AS_NAMESPACE_QUALIFIER asITypeInfo* ti = this->get_engine()->GetTypeInfoByName(m_name.c_str());
+        if(ti)
+        {
+#ifndef ASBIND20_CONFIG_NO_APPEND_CHECK
+            [[maybe_unused]]
+            flag_type flags = ti->GetFlags();
+            ASBIND20_ASSERT(!(flags & AS_NAMESPACE_QUALIFIER asOBJ_VALUE));
+#endif
+        }
+        else if constexpr(!AppendOnly)
+        {
+            do_register();
+        }
     }
 
     template <string_like StringLike>
@@ -180,6 +197,19 @@ public:
         StringLike&& name
     )
         : basic_interface(
+              engine,
+              util::string_like_to_string(std::forward<StringLike>(name))
+          )
+    {}
+
+    template <bool AppendOnly, string_like StringLike>
+    basic_interface(
+        appending_t<AppendOnly>,
+        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+        StringLike&& name
+    )
+        : basic_interface(
+              appending_t<AppendOnly>{},
               engine,
               util::string_like_to_string(std::forward<StringLike>(name))
           )
@@ -219,6 +249,14 @@ public:
 
 private:
     std::string m_name;
+
+    void do_register()
+    {
+        int r = this->get_engine()->RegisterInterface(m_name.c_str());
+        listener_type_traits::on_interface(
+            this->get_listener(), *this, r
+        );
+    }
 };
 
 using interface = basic_interface<>;
