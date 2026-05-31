@@ -6,7 +6,12 @@ Changelog since the version 1.5.0.
 2.0.0
 -----
 
+2026-5-31
+
 First major update after the initial stable version.
+
+This version is introducing many breaking changes and new features.
+If you want stability, please consider using 1.8 or waiting for 2.1.
 
 Update
 ~~~~~~
@@ -45,6 +50,8 @@ Update
   You can disable it by defining macro ``ASBIND20_CONFIG_NO_COMPILE_TIME_CHECKS``.
 
 - Update RAII helpers.
+
+- Now binding generators allow appending to existing types.
 
 Breaking Change
 ~~~~~~~~~~~~~~~
