@@ -1239,7 +1239,7 @@ protected:
         if (flags != 0)
         {
             [[maybe_unused]]
-            AS_NAMESPACE_QUALIFIER asDWORD existing_flags = ti->GetFlags();
+            const flag_type existing_flags = ti->GetFlags();
             ASBIND20_ASSERT(existing_flags == flags);
         }
 #endif

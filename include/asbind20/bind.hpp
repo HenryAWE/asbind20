@@ -158,6 +158,7 @@ class basic_interface : public binding_generator_base<Listener>
     using listener_type_traits = listener_traits<Listener>;
 
 public:
+    using flag_type = AS_NAMESPACE_QUALIFIER asQWORD;
     using engine_pointer = AS_NAMESPACE_QUALIFIER asIScriptEngine*;
 
     basic_interface() = delete;
@@ -180,7 +181,7 @@ public:
         {
 #ifndef ASBIND20_CONFIG_NO_APPEND_CHECK
             [[maybe_unused]]
-            AS_NAMESPACE_QUALIFIER asDWORD flags = ti->GetFlags();
+            flag_type flags = ti->GetFlags();
             ASBIND20_ASSERT(!(flags & AS_NAMESPACE_QUALIFIER asOBJ_VALUE));
 #endif
         }
