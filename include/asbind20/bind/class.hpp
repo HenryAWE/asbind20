@@ -3003,6 +3003,42 @@ public:
         return *this;
     }
 
+    template <native_function ConstructorFunc, bool ObjFirst>
+    basic_value_class& constructor_function(
+        std::string_view params,
+        ConstructorFunc ctor,
+        obj_loc_t<ObjFirst>
+    ) requires(!ForceGeneric)
+    {
+        constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, false);
+        this->register_constructor_function(
+            false,
+            params,
+            ctor,
+            conv
+        );
+
+        return *this;
+    }
+
+    template <native_function ConstructorFunc, bool ObjFirst>
+    basic_value_class& constructor_function(
+        std::string_view params,
+        use_explicit_t,
+        ConstructorFunc ctor,
+        obj_loc_t<ObjFirst>
+    ) requires(!ForceGeneric)
+    {
+        constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, false);
+        this->register_constructor_function(
+            true,
+            params,
+            ctor,
+            conv
+        );
+        return *this;
+    }
+
     template <auto ConstructorFunc>
     basic_value_class& constructor_function(
         use_generic_t,
@@ -3024,6 +3060,151 @@ public:
             detail::generic_cc
         );
 
+        return *this;
+    }
+
+    template <auto ConstructorFunc, bool ObjFirst>
+    basic_value_class& constructor_function(
+        use_generic_t,
+        std::string_view params,
+        fp_wrapper<ConstructorFunc>,
+        obj_loc_t<ObjFirst>
+    )
+    {
+        constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, false);
+        this->register_constructor_function(
+            false,
+            params,
+            detail::constructor_to_asGENFUNC_t<Class, Template>(
+                fp<ConstructorFunc>, detail::cc<conv>
+            ),
+            detail::generic_cc
+        );
+
+        return *this;
+    }
+
+    template <auto ConstructorFunc, bool ObjFirst>
+    basic_value_class& constructor_function(
+        use_generic_t,
+        std::string_view params,
+        use_explicit_t,
+        fp_wrapper<ConstructorFunc>,
+        obj_loc_t<ObjFirst>
+    )
+    {
+        constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, false);
+        this->register_constructor_function(
+            true,
+            params,
+            detail::constructor_to_asGENFUNC_t<Class, Template>(
+                fp<ConstructorFunc>, detail::cc<conv>
+            ),
+            detail::generic_cc
+        );
+
+        return *this;
+    }
+
+    template <noncapturing_native_lambda ConstructorFunc, bool ObjFirst>
+    basic_value_class& constructor_function(
+        use_generic_t,
+        std::string_view params,
+        const ConstructorFunc&,
+        obj_loc_t<ObjFirst>
+    )
+    {
+        constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, false);
+        this->register_constructor_function(
+            false,
+            params,
+            detail::constructor_to_asGENFUNC_t<Class, Template>(
+                ConstructorFunc{},
+                detail::cc<conv>
+            ),
+            detail::generic_cc
+        );
+
+        return *this;
+    }
+
+    template <noncapturing_native_lambda ConstructorFunc, bool ObjFirst>
+    basic_value_class& constructor_function(
+        use_generic_t,
+        std::string_view params,
+        use_explicit_t,
+        const ConstructorFunc&,
+        obj_loc_t<ObjFirst>
+    )
+    {
+        constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, false);
+        this->register_constructor_function(
+            true,
+            params,
+            detail::constructor_to_asGENFUNC_t<Class, Template>(
+                ConstructorFunc{}, detail::cc<conv>
+            ),
+            detail::generic_cc
+        );
+
+        return *this;
+    }
+
+    template <auto Constructor, bool ObjFirst>
+    basic_value_class& constructor_function(
+        std::string_view params,
+        fp_wrapper<Constructor>,
+        obj_loc_t<ObjFirst>
+    )
+    {
+        if constexpr(ForceGeneric)
+            this->constructor_function(use_generic, params, fp<Constructor>, obj_loc<ObjFirst>);
+        else
+            this->constructor_function(params, Constructor, obj_loc<ObjFirst>);
+        return *this;
+    }
+
+    template <auto Constructor, bool ObjFirst>
+    basic_value_class& constructor_function(
+        std::string_view params,
+        use_explicit_t,
+        fp_wrapper<Constructor>,
+        obj_loc_t<ObjFirst>
+    )
+    {
+        if constexpr(ForceGeneric)
+            this->constructor_function(use_generic, params, use_explicit, fp<Constructor>, obj_loc<ObjFirst>);
+        else
+            this->constructor_function(params, use_explicit, fp<Constructor>, obj_loc<ObjFirst>);
+        return *this;
+    }
+
+    template <noncapturing_native_lambda Constructor, bool ObjFirst>
+    basic_value_class& constructor_function(
+        std::string_view params,
+        const Constructor&,
+        obj_loc_t<ObjFirst>
+    )
+    {
+        if constexpr(ForceGeneric)
+            this->constructor_function(use_generic, params, Constructor{}, obj_loc<ObjFirst>);
+        else
+            this->constructor_function(params, +Constructor{}, obj_loc<ObjFirst>);
+        return *this;
+    }
+
+    template <noncapturing_native_lambda Constructor, bool ObjFirst>
+    basic_value_class& constructor_function(
+        std::string_view params,
+        use_explicit_t,
+        const Constructor&,
+        obj_loc_t<ObjFirst>
+    )
+    {
+        if constexpr(ForceGeneric)
+            this->constructor_function(use_generic, params, use_explicit, Constructor{}, obj_loc<ObjFirst>);
+        else
+            this->constructor_function(params, use_explicit, +Constructor{}, obj_loc<ObjFirst>);
         return *this;
     }
 

@@ -344,7 +344,8 @@ static void setup_script_string_impl(
         c
             .constructor_function(
                 "uint count, char ch",
-                fp<&string_ch_ctor_wrapper>
+                fp<&string_ch_ctor_wrapper>,
+                objfirst
             )
             .method("string append(char ch) const", fp<&string_append_ch>)
             .method("string opAdd(char ch) const", fp<&string_append_ch>)

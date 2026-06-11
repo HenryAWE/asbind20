@@ -17,7 +17,8 @@ void register_int_array(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
             [](arr_type* a, int val)
             {
                 new(a) arr_type{val, val};
-            }
+            },
+            objfirst
         )
         .copy_constructor()
         .method(
