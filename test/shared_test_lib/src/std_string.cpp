@@ -264,6 +264,15 @@ namespace script_string
     }
 } // namespace script_string
 
+static void string_ch_ctor_wrapper(
+    void* mem, script_string::size_type count, char32_t ch
+)
+{
+    new(mem) std::string(
+        script_string::string_construct(count, ch)
+    );
+}
+
 template <bool UseGeneric>
 static void setup_script_string_impl(
     AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
@@ -335,10 +344,8 @@ static void setup_script_string_impl(
         c
             .constructor_function(
                 "uint count, char ch",
-                [](void* mem, size_type count, char32_t ch) -> void
-                {
-                    new(mem) string(string_construct(count, ch));
-                }
+                fp<&string_ch_ctor_wrapper>,
+                objfirst
             )
             .method("string append(char ch) const", fp<&string_append_ch>)
             .method("string opAdd(char ch) const", fp<&string_append_ch>)
