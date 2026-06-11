@@ -370,7 +370,7 @@ void setup_script_string(
     if(generic)
         setup_script_string_impl<true>(engine, as_default);
     else
-        setup_script_string_impl<true>(engine, as_default);
+        setup_script_string_impl<false>(engine, as_default);
 }
 
 void setup_string_utils(

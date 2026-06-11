@@ -3175,7 +3175,7 @@ public:
         if constexpr(ForceGeneric)
             this->constructor_function(use_generic, params, use_explicit, fp<Constructor>, obj_loc<ObjFirst>);
         else
-            this->constructor_function(params, use_explicit, fp<Constructor>, obj_loc<ObjFirst>);
+            this->constructor_function(params, use_explicit, Constructor, obj_loc<ObjFirst>);
         return *this;
     }
 
