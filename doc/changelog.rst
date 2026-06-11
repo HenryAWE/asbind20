@@ -3,6 +3,16 @@ Changelog
 
 Changelog since the version 1.5.0.
 
+2.0.1
+-----
+
+Bug fix
+~~~~~~~
+
+- Add missing interfaces for binding generator.
+
+- Fix compilation error.
+
 2.0.0
 -----
 
