@@ -3019,7 +3019,7 @@ public:
             params,
             detail::constructor_to_asGENFUNC_t<Class, Template>(
                 fp<ConstructorFunc>,
-                conv
+                detail::cc<conv>
             ),
             detail::generic_cc
         );
