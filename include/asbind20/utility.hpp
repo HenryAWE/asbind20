@@ -1222,16 +1222,34 @@ void set_script_exception(
 
 #ifdef ASBIND20_HAS_LIB_FORMAT
 
-namespace util
+namespace io
 {
-    template <typename... Args>
 #    if __cpp_lib_format >= 202207L
+    template <typename... Args>
     using format_string = std::format_string<Args...>;
+
+    namespace detail
+    {
+        constexpr std::string_view fmt_string_to_view(const auto& fmtstr)
+        {
+            return fmtstr.get();
+        }
+    } // namespace detail
+
 #    else
+    template <typename... Args>
     using format_string = std::string_view;
+
+    namespace detail
+    {
+        constexpr std::string_view fmt_string_to_view(const auto& fmtstr)
+        {
+            return fmtstr;
+        }
+    } // namespace detail
 #    endif
 
-} // namespace util
+} // namespace io
 
 inline void vformat_script_exception(
     std::string_view fmt,
@@ -1247,11 +1265,11 @@ inline void vformat_script_exception(
 
 template <typename... Args>
 void format_script_exception(
-    util::format_string<Args...> fmt, Args&&... args
+    io::format_string<Args...> fmt, Args&&... args
 )
 {
     vformat_script_exception(
-        fmt,
+        io::detail::fmt_string_to_view(fmt),
         std::make_format_args(args...),
         true
     );
@@ -1263,7 +1281,7 @@ void format_script_exception_no_catch(
 )
 {
     vformat_script_exception(
-        fmt,
+        io::detail::fmt_string_to_view(fmt),
         std::make_format_args(args...),
         false
     );
