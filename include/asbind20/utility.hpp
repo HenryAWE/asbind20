@@ -26,6 +26,9 @@
 #include "detail/include_as.hpp"
 #include "detail/err_handler.hpp"
 #include "detail/strutil.hpp"
+#ifdef ASBIND20_HAS_LIB_FORMAT
+#    include <format>
+#endif
 
 namespace asbind20
 {
@@ -1216,6 +1219,57 @@ void set_script_exception(
         allow_catch
     );
 }
+
+#ifdef ASBIND20_HAS_LIB_FORMAT
+
+namespace util
+{
+    template <typename... Args>
+#    if __cpp_lib_format >= 202207L
+    using format_string = std::format_string<Args...>;
+#    else
+    using format_string = std::string_view;
+#    endif
+
+} // namespace util
+
+inline void vformat_script_exception(
+    std::string_view fmt,
+    std::format_args args,
+    bool allow_catch = true
+)
+{
+    set_script_exception(
+        std::vformat(fmt, args),
+        allow_catch
+    );
+}
+
+template <typename... Args>
+void format_script_exception(
+    util::format_string<Args...> fmt, Args&&... args
+)
+{
+    vformat_script_exception(
+        fmt,
+        std::make_format_args(args...),
+        true
+    );
+}
+
+template <typename... Args>
+void format_script_exception_no_catch(
+    std::format_string<Args...> fmt, Args&&... args
+)
+{
+    vformat_script_exception(
+        fmt,
+        std::make_format_args(args...),
+        false
+    );
+}
+
+#endif
 } // namespace asbind20
 
 #endif

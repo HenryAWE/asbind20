@@ -1,5 +1,5 @@
-#include <gtest/gtest.h>
-#include <asbind20/utility.hpp>
+#include <asbind_test/framework.hpp>
+#include <asbind20/asbind.hpp>
 
 TEST(Utility, StringConcat)
 {
@@ -74,3 +74,45 @@ TEST(StringLike, Adaptor)
             << "sv = " << sv;
     }
 }
+
+#ifdef ASBIND20_HAS_LIB_FORMAT
+
+TEST(SetException, FormatException)
+{
+    using namespace asbind20;
+
+    SCOPED_TRACE(std::format("__cpp_lib_format={}L", __cpp_lib_format));
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine, true);
+
+    global<true>(engine)
+        .function(
+            "void throw(int v)",
+            [](int v)
+            {
+                format_script_exception("Value:{}", v);
+            }
+        );
+
+    auto* m = engine->GetModule(
+        "test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
+    );
+    m->AddScriptSection(
+        "test",
+        "void f() { throw(1013); }"
+    );
+    ASSERT_GE(m->Build(), 0);
+
+    auto* f = m->GetFunctionByName("f");
+    ASSERT_NE(f, nullptr);
+
+    request_context ctx(engine);
+    auto result = script_invoke<void>(ctx, f);
+    EXPECT_FALSE(result.has_value());
+    EXPECT_EQ(result.error(), AS_NAMESPACE_QUALIFIER asEXECUTION_EXCEPTION);
+
+    EXPECT_STREQ(ctx->GetExceptionString(), "Value:1013");
+}
+
+#endif
