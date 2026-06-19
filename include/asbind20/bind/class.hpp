@@ -15,6 +15,7 @@
 #include "genfunc.hpp"
 #include "../policies.hpp"
 #include "behaviour.hpp"
+#include "function_tools.hpp"
 #include "wrapper.hpp"
 
 namespace asbind20
@@ -3338,9 +3339,12 @@ public:
 
 private:
     template <auto Fn>
+    using fn_ctor_wrapper_t = fn_tools::detail::ctor_fn_wrapper<Fn>;
+
+    template <auto Fn>
     void ctor_fn_wrapper_helper_generic(bool explicit_, std::string_view params)
     {
-        using wrapper_t = detail::ctor_fn_wrapper<Fn>;
+        using wrapper_t = fn_ctor_wrapper_t<Fn>;
         register_constructor_function(
             explicit_,
             params,
@@ -3358,7 +3362,7 @@ private:
             ctor_fn_wrapper_helper_generic<Fn>(explicit_, params);
         else
         {
-            using wrapper_t = detail::ctor_fn_wrapper<Fn>;
+            using wrapper_t = fn_ctor_wrapper_t<Fn>;
             register_constructor_function(
                 explicit_,
                 params,
@@ -3375,7 +3379,7 @@ public:
     basic_value_class& constructor_function(
         use_generic_t,
         std::string_view params,
-        detail::ctor_fn_wrapper<Fn>
+        fn_ctor_wrapper_t<Fn>
     )
     {
         ctor_fn_wrapper_helper_generic<Fn>(false, params);
@@ -3387,7 +3391,7 @@ public:
         use_generic_t,
         std::string_view params,
         use_explicit_t,
-        detail::ctor_fn_wrapper<Fn>
+        fn_ctor_wrapper_t<Fn>
     )
     {
         ctor_fn_wrapper_helper_generic<Fn>(true, params);
@@ -3397,7 +3401,7 @@ public:
     template <auto Fn>
     basic_value_class& constructor_function(
         std::string_view params,
-        detail::ctor_fn_wrapper<Fn>
+        fn_ctor_wrapper_t<Fn>
     )
     {
         ctor_fn_wrapper_helper_common<Fn>(false, params);
@@ -3408,7 +3412,7 @@ public:
     basic_value_class& constructor_function(
         std::string_view params,
         use_explicit_t,
-        detail::ctor_fn_wrapper<Fn>
+        fn_ctor_wrapper_t<Fn>
     )
     {
         ctor_fn_wrapper_helper_common<Fn>(true, params);

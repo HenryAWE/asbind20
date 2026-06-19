@@ -1,4 +1,7 @@
 #include <asbind_test/std_string.hpp>
+
+#include "asbind20/bind/function_tools.hpp"
+
 #include <asbind_test/framework.hpp>
 
 namespace asbind_test
@@ -335,7 +338,7 @@ static void setup_script_string_impl(
         c
             .constructor_function(
                 "uint count, char ch",
-                as_ctor_fn<&string_construct>()
+                fn_tools::as_ctor_fn<&string_construct>()
             )
             .method("string append(char ch) const", fp<&string_append_ch>)
             .method("string opAdd(char ch) const", fp<&string_append_ch>)

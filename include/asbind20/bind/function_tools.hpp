@@ -1,15 +1,17 @@
-#ifndef ASBIND20_WRAPPER_HPP
-#define ASBIND20_WRAPPER_HPP
+#ifndef ASBIND20_FUNCTION_TOOLS_HPP
+#define ASBIND20_FUNCTION_TOOLS_HPP
 
 #include <functional>
 #include "../detail/calling_convention.hpp"
 #include "genfunc.hpp"
 #include "../meta.hpp"
 
-namespace asbind20
+namespace asbind20::fn_tools
 {
 namespace detail
 {
+    using namespace asbind20::detail;
+
     template <auto Fn>
     class ctor_fn_wrapper
     {
@@ -27,7 +29,7 @@ namespace detail
             do_construct<Class>(mem, args...);
         }
 
-        template <typename Class,typename... Args>
+        template <typename Class, typename... Args>
         static void impl_generic(generic_pointer gen)
         {
             using args_tuple = std::tuple<Args...>;
@@ -67,6 +69,6 @@ constexpr auto as_ctor_fn() noexcept
 {
     return detail::ctor_fn_wrapper<Fn>{};
 }
-} // namespace asbind20
+} // namespace asbind20::fn_tools
 
 #endif
