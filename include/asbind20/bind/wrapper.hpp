@@ -49,7 +49,7 @@ namespace detail
             AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
         static constexpr auto generate()
         {
-            using args_tuple = traits::args_tuple;
+            using args_tuple = typename traits::args_tuple;
 
             return []<std::size_t... Is>(std::index_sequence<Is...>)
             {
