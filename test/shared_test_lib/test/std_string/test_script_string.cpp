@@ -119,3 +119,49 @@ TEST_F(TestStringFactoryNative, Compare)
     }
 }
 
+using ScriptStringGeneric = test_script_string::script_string_suite_base<true>;
+using ScriptStringNative = test_script_string::script_string_suite_base<false>;
+
+namespace test_script_string
+{
+static void test_ctor_fn(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+{
+    auto* m = engine->GetModule(
+        "test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
+    );
+    m->AddScriptSection(
+        "test",
+        "string f(uint count) { return string(count, 'A'); }"
+    );
+    ASSERT_GE(m->Build(), 0);
+    auto* f = m->GetFunctionByName("f");
+    ASSERT_NE(f, nullptr);
+
+    {
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<std::string>(ctx, f, 3U);
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
+        EXPECT_EQ(result.value(), "AAA");
+    }
+
+    {
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<std::string>(ctx, f, 5U);
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
+        EXPECT_EQ(result.value(), "AAAAA");
+    }
+}
+} // namespace test_script_string
+
+TEST_F(ScriptStringGeneric, CtorFn)
+{
+    auto engine = get_engine();
+    test_script_string::test_ctor_fn(engine);
+}
+
+TEST_F(ScriptStringNative, CtorFn)
+{
+    auto engine = get_engine();
+    test_script_string::test_ctor_fn(engine);
+}
+

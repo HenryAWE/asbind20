@@ -47,7 +47,7 @@ namespace detail
         template <
             typename Class,
             AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
-        static constexpr auto generate()
+        static constexpr auto generate() noexcept
         {
             using args_tuple = typename traits::args_tuple;
 
