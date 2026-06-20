@@ -15,7 +15,6 @@
 #include <string>
 #include <utility>
 #include <bit>
-#include <mutex> // IWYU pragma: export `std::lock_guard`
 #include <compare>
 #include <functional>
 #include <type_traits>
@@ -23,7 +22,6 @@
 #include "detail/config.hpp" // IWYU pragma: export configs
 #include "detail/fwd.hpp"
 #include "detail/compat.hpp"
-#include "detail/include_as.hpp"
 #include "detail/err_handler.hpp"
 #include "detail/strutil.hpp"
 #ifdef ASBIND20_HAS_LIB_FORMAT
@@ -198,6 +196,7 @@ inline constexpr var_type_t<Is...> var_type{};
 template <typename T, typename Class>
 std::size_t member_offset(T Class::* mp) noexcept
 {
+    // TODO: Make this helper constexpr. Reference: https://godbolt.org/z/v87PvT44a
     Class* p = nullptr;
     return std::size_t(std::addressof(p->*mp)) - std::size_t(p);
 }
@@ -708,6 +707,7 @@ case AS_NAMESPACE_QUALIFIER as_type_id:                                         
         ASBIND20_UTILITY_VISIT_SCRIPT_TYPE_ID_CASE(asTYPEID_BOOL);
         ASBIND20_UTILITY_VISIT_SCRIPT_TYPE_ID_CASE(asTYPEID_INT8);
         ASBIND20_UTILITY_VISIT_SCRIPT_TYPE_ID_CASE(asTYPEID_INT16);
+        // TODO: 2.39 compatibility
     default: // enums
         ASBIND20_UTILITY_VISIT_SCRIPT_TYPE_ID_CASE(asTYPEID_INT32);
         ASBIND20_UTILITY_VISIT_SCRIPT_TYPE_ID_CASE(asTYPEID_INT64);
