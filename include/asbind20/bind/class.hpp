@@ -16,7 +16,6 @@
 #include "../policies.hpp"
 #include "behaviour.hpp"
 #include "function_tools.hpp"
-#include "wrapper.hpp"
 
 namespace asbind20
 {
