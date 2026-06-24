@@ -111,7 +111,7 @@ namespace detail
         static void impl_generic(generic_pointer gen)
         {
             set_generic_return<Return>(
-                gen, apply_generic<ArgsTuple>(Fn, gen)
+                gen, static_cast<Return>(apply_generic<ArgsTuple>(Fn, gen))
             );
         }
 
