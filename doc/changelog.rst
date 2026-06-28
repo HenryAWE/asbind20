@@ -3,6 +3,14 @@ Changelog
 
 Changelog since the version 1.5.0.
 
+2.1.0
+-----
+
+Update
+~~~~~~
+
+- More utilities
+
 2.0.1
 -----
 

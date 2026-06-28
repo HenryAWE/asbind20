@@ -199,7 +199,8 @@ struct pod_class
 
 // Self checks
 static_assert(std::is_standard_layout_v<pod_class>);
-static_assert(std::is_trivial_v<pod_class>);
+static_assert(std::is_trivially_default_constructible_v<pod_class>);
+static_assert(std::is_trivially_copyable_v<pod_class>);
 
 class copyable_class
 {
