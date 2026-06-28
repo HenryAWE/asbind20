@@ -2389,6 +2389,42 @@ public:
         return derived();
     }
 
+    template <fn_tools::wrapped_function Function>
+    Derived& method(
+        use_generic_t,
+        cstring_ref decl,
+        const Function&
+        )
+    {
+        int r = this->register_method(
+            decl,
+            Function::template generate<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>(),
+            AS_NAMESPACE_QUALIFIER asCALL_GENERIC
+        );
+        listener_traits_type::on_method(get_listener(), derived(), r);
+        return derived();
+    }
+
+    template <fn_tools::wrapped_function Function>
+    Derived& method(
+        cstring_ref decl,
+        const Function&
+        )
+    {
+        if constexpr(ForceGeneric)
+            this->method(use_generic, decl, Function{});
+        else
+        {
+            int r = this->register_method(
+                decl,
+                Function::template generate<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>(),
+                AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST
+            );
+            listener_traits_type::on_method(get_listener(), derived(), r);
+        }
+        return derived();
+    }
+
     Derived& property(cstring_ref decl, std::size_t off)
     {
         this->register_property(decl, off);

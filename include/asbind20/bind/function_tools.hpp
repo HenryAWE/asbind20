@@ -22,6 +22,21 @@ decltype(auto) apply_generic(Fn&& fn, generic_pointer gen)
     }(std::make_index_sequence<std::tuple_size_v<ArgsTuple>>{});
 }
 
+template <typename ArgsTuple, typename Class, typename Fn>
+decltype(auto) apply_generic(Fn&& fn, Class&& obj, generic_pointer gen)
+{
+    return [&]<std::size_t... Is>(std::index_sequence<Is...>) -> decltype(auto)
+    {
+        return std::invoke(
+            std::forward<Fn>(fn),
+            std::forward<Class>(obj),
+            get_generic_arg<std::tuple_element_t<Is, ArgsTuple>>(
+                gen, static_cast<detail::gen_idx_t>(Is)
+            )...
+        );
+    }(std::make_index_sequence<std::tuple_size_v<ArgsTuple>>{});
+}
+
 namespace detail
 {
     using namespace asbind20::detail;
@@ -149,36 +164,20 @@ namespace detail
             return Return(std::invoke(Fn, obj, std::forward<Args>(args)...));
         }
 
-        // Native: asCALL_CDECL_OBJFIRST — object pointer is the first argument
         template <typename... Args>
         static Return impl_objfirst(void* obj, Args... args)
         {
             return do_invoke(static_cast<class_type*>(obj), args...);
         }
 
-        // Native: asCALL_CDECL_OBJLAST — object pointer is the last argument
-        template <typename... Args>
-        static Return impl_objlast(Args... args, void* obj)
-        {
-            return do_invoke(static_cast<class_type*>(obj), args...);
-        }
-
-        // Generic: asCALL_GENERIC — extract everything from generic_pointer
-        template <typename... Args>
+        template <typename ArgsTuple>
         static void impl_generic(generic_pointer gen)
         {
-            using args_tuple = std::tuple<Args...>;
-            [gen]<std::size_t... Is>(std::index_sequence<Is...>)
-            {
-                set_generic_return_by<Return>(
-                    gen,
-                    Fn,
-                    get_generic_object<class_type*>(gen),
-                    get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
-                        gen, static_cast<gen_idx_t>(Is)
-                    )...
-                );
-            }(std::make_index_sequence<sizeof...(Args)>{});
+            auto* this_ = get_generic_object<class_type*>(gen);
+            set_generic_return<Return>(
+                gen,
+                static_cast<Return>(apply_generic<ArgsTuple>(Fn, this_, gen))
+            );
         }
 
     public:
@@ -191,20 +190,11 @@ namespace detail
 
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
             {
-                return []<std::size_t... Is>(std::index_sequence<Is...>)
-                {
-                    return &impl_generic<std::tuple_element_t<Is, args_tuple>...>;
-                }(std::make_index_sequence<traits::arg_count_v>{});
+                return &impl_generic<args_tuple>;
             }
-            else if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST)
+            else // asCALL_CDECL_OBJFIRST
             {
-                return []<std::size_t... Is>(std::index_sequence<Is...>)
-                {
-                    return &impl_objlast<std::tuple_element_t<Is, args_tuple>...>;
-                }(std::make_index_sequence<traits::arg_count_v>{});
-            }
-            else // asCALL_CDECL_OBJFIRST (default native convention)
-            {
+                static_assert(CallConv == asCALL_CDECL_OBJFIRST, "Invalid calling convention");
                 return []<std::size_t... Is>(std::index_sequence<Is...>)
                 {
                     return &impl_objfirst<std::tuple_element_t<Is, args_tuple>...>;
