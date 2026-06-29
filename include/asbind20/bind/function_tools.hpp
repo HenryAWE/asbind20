@@ -194,7 +194,10 @@ namespace detail
             }
             else // asCALL_CDECL_OBJFIRST
             {
-                static_assert(CallConv == asCALL_CDECL_OBJFIRST, "Invalid calling convention");
+                static_assert(
+                    CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST,
+                    "Invalid calling convention"
+                );
                 return []<std::size_t... Is>(std::index_sequence<Is...>)
                 {
                     return &impl_objfirst<std::tuple_element_t<Is, args_tuple>...>;

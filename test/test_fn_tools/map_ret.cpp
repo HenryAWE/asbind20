@@ -43,6 +43,14 @@ struct map_ret_test_helper
 {
     std::size_t b = 0;
 
+    map_ret_test_helper() = default;
+    map_ret_test_helper(const map_ret_test_helper&) = default;
+
+    map_ret_test_helper& operator=(const map_ret_test_helper&) = default;
+
+    explicit map_ret_test_helper(int val)
+        : b(val){}
+
     std::size_t exchange_b(int new_b)
     {
         return std::exchange(b, new_b);
