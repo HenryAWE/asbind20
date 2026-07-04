@@ -1224,4 +1224,38 @@ public:
 };
 } // namespace asbind20::detail
 
+namespace asbind20
+{
+// Tools for applying generic arguments by tuple
+
+template <typename ArgsTuple, typename Fn>
+decltype(auto) apply_generic(Fn&& fn, generic_pointer gen)
+{
+    return [&]<std::size_t... Is>(std::index_sequence<Is...>) -> decltype(auto)
+    {
+        return std::invoke(
+            std::forward<Fn>(fn),
+            get_generic_arg<std::tuple_element_t<Is, ArgsTuple>>(
+                gen, static_cast<detail::gen_idx_t>(Is)
+            )...
+        );
+    }(std::make_index_sequence<std::tuple_size_v<ArgsTuple>>{});
+}
+
+template <typename ArgsTuple, typename Class, typename Fn>
+decltype(auto) apply_generic(Fn&& fn, Class&& obj, generic_pointer gen)
+{
+    return [&]<std::size_t... Is>(std::index_sequence<Is...>) -> decltype(auto)
+    {
+        return std::invoke(
+            std::forward<Fn>(fn),
+            std::forward<Class>(obj),
+            get_generic_arg<std::tuple_element_t<Is, ArgsTuple>>(
+                gen, static_cast<detail::gen_idx_t>(Is)
+            )...
+        );
+    }(std::make_index_sequence<std::tuple_size_v<ArgsTuple>>{});
+}
+} // namespace asbind20
+
 #endif
