@@ -15,6 +15,7 @@
 #include "genfunc.hpp"
 #include "../policies.hpp"
 #include "behaviour.hpp"
+#include "function_tools.hpp"
 
 namespace asbind20
 {
@@ -2388,6 +2389,42 @@ public:
         return derived();
     }
 
+    template <fn_tools::wrapped_function Function>
+    Derived& method(
+        use_generic_t,
+        cstring_ref decl,
+        const Function&
+        )
+    {
+        int r = this->register_method(
+            decl,
+            Function::template generate<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>(),
+            AS_NAMESPACE_QUALIFIER asCALL_GENERIC
+        );
+        listener_traits_type::on_method(get_listener(), derived(), r);
+        return derived();
+    }
+
+    template <fn_tools::wrapped_function Function>
+    Derived& method(
+        cstring_ref decl,
+        const Function&
+        )
+    {
+        if constexpr(ForceGeneric)
+            this->method(use_generic, decl, Function{});
+        else
+        {
+            int r = this->register_method(
+                decl,
+                Function::template generate<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>(),
+                AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST
+            );
+            listener_traits_type::on_method(get_listener(), derived(), r);
+        }
+        return derived();
+    }
+
     Derived& property(cstring_ref decl, std::size_t off)
     {
         this->register_property(decl, off);
@@ -3332,6 +3369,88 @@ public:
         else
             this->constructor_function(params, use_explicit, +ConstructorFunc{});
 
+        return *this;
+    }
+
+private:
+    template <auto Fn>
+    using fn_ctor_wrapper_t = fn_tools::detail::ctor_fn_wrapper<Fn>;
+
+    template <auto Fn>
+    void ctor_fn_wrapper_helper_generic(bool explicit_, std::string_view params)
+    {
+        using wrapper_t = fn_ctor_wrapper_t<Fn>;
+        register_constructor_function(
+            explicit_,
+            params,
+            wrapper_t::template generate<
+                Class,
+                AS_NAMESPACE_QUALIFIER asCALL_GENERIC>(),
+            AS_NAMESPACE_QUALIFIER asCALL_GENERIC
+        );
+    }
+
+    template <auto Fn>
+    void ctor_fn_wrapper_helper_common(bool explicit_, std::string_view params)
+    {
+        if constexpr(ForceGeneric)
+            ctor_fn_wrapper_helper_generic<Fn>(explicit_, params);
+        else
+        {
+            using wrapper_t = fn_ctor_wrapper_t<Fn>;
+            register_constructor_function(
+                explicit_,
+                params,
+                wrapper_t::template generate<
+                    Class,
+                    AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>(),
+                AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST
+            );
+        }
+    }
+
+public:
+    template <auto Fn>
+    basic_value_class& constructor_function(
+        use_generic_t,
+        std::string_view params,
+        fn_ctor_wrapper_t<Fn>
+    )
+    {
+        ctor_fn_wrapper_helper_generic<Fn>(false, params);
+        return *this;
+    }
+
+    template <auto Fn>
+    basic_value_class& constructor_function(
+        use_generic_t,
+        std::string_view params,
+        use_explicit_t,
+        fn_ctor_wrapper_t<Fn>
+    )
+    {
+        ctor_fn_wrapper_helper_generic<Fn>(true, params);
+        return *this;
+    }
+
+    template <auto Fn>
+    basic_value_class& constructor_function(
+        std::string_view params,
+        fn_ctor_wrapper_t<Fn>
+    )
+    {
+        ctor_fn_wrapper_helper_common<Fn>(false, params);
+        return *this;
+    }
+
+    template <auto Fn>
+    basic_value_class& constructor_function(
+        std::string_view params,
+        use_explicit_t,
+        fn_ctor_wrapper_t<Fn>
+    )
+    {
+        ctor_fn_wrapper_helper_common<Fn>(true, params);
         return *this;
     }
 

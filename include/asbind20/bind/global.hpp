@@ -10,6 +10,7 @@
 #pragma once
 
 #include "common.hpp"
+#include "function_tools.hpp"
 #include "genfunc.hpp"
 
 namespace asbind20
@@ -225,6 +226,40 @@ public:
             function(use_generic, decl, fp<Function>, aux);
         else
             function(decl, Function, aux);
+        return *this;
+    }
+
+    template <fn_tools::wrapped_function Function>
+    global& function(
+        use_generic_t,
+        cstring_ref decl,
+        const Function&
+        )
+    {
+        this->register_function(
+            decl,
+            Function::template generate<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>(),
+            AS_NAMESPACE_QUALIFIER asCALL_GENERIC
+        );
+        return *this;
+    }
+
+    template <fn_tools::wrapped_function Function>
+    global& function(
+        cstring_ref decl,
+        const Function&
+        )
+    {
+        if constexpr(ForceGeneric)
+            this->function(use_generic, decl, Function{});
+        else
+        {
+            this->register_function(
+                decl,
+                Function::template generate<AS_NAMESPACE_QUALIFIER asCALL_CDECL>(),
+                AS_NAMESPACE_QUALIFIER asCALL_CDECL
+            );
+        }
         return *this;
     }
 

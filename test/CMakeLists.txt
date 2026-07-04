@@ -22,4 +22,6 @@ add_subdirectory(test_operators)
 
 add_subdirectory(test_concurrent)
 
+add_subdirectory(test_fn_tools)
+
 add_subdirectory(test_section)
