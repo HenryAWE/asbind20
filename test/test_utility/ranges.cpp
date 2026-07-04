@@ -326,4 +326,113 @@ TEST(Ranges, Tokenize)
     );
 }
 
+namespace test_utility
+{
+static std::string proc_args(asbind20::generic_pointer gen)
+{
+    namespace abv = asbind20::views;
+
+    bool first = true;
+    std::string result;
+    for(auto&& [type_id, addr] : abv::all_generic_args(gen))
+    {
+        if(!first)
+            result += ", ";
+        else
+            first = false;
+
+
+        if(asbind20::is_void_type(type_id))
+        {
+            result += "(void)";
+            continue;
+        }
+
+        if(!asbind20::is_primitive_type(type_id))
+        {
+            result += '(';
+            auto* ti = gen->GetEngine()->GetTypeInfoById(type_id);
+            if(ti)
+                result += ti->GetName();
+            else
+                result += "unknown";
+            result += ')';
+            continue;
+        }
+
+        if(asbind20::is_objhandle(type_id))
+        {
+            result += "(handle)";
+            continue;
+        }
+
+        asbind20::visit_primitive_type(
+            [&]<typename T>(const T* p)
+            {
+                if(!p)
+                {
+                    result += "null";
+                    return;
+                }
+
+                std::stringstream ss;
+                ss << *p;
+
+                result += std::move(ss).str();
+            },
+            type_id,
+            // asIScriptGeneric::GetAddressOfArg returns a pointer to the address of the argument,
+            // so we need to dereference it to get the actual address of the argument.
+            *static_cast<void**>(addr)
+        );
+    }
+
+    return result;
+}
+} // namespace test_utility
+
+TEST(Ranges, GenericArguments)
+{
+    using namespace asbind20;
+
+#    if ANGELSCRIPT_VERSION < 23800
+    GTEST_SKIP()
+        << "AngelScript version is too old for variadic functions: "
+        << ANGELSCRIPT_VERSION;
+#    endif
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_script_string(engine);
+
+    global<true>(engine)
+        .function(
+            "string proc_args(const?&in...)",
+            [](asbind20::generic_pointer gen) -> void
+            {
+                set_generic_return<std::string>(
+                    gen, test_utility::proc_args(gen)
+                );
+            }
+        );
+
+    auto* m = engine->GetModule(
+        "test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
+    );
+    // FIXME: Fix random crash when passing 'null' as a variadic argument.
+    m->AddScriptSection(
+        "test",
+        "string f0() { return proc_args(1, 3.14, 'test', null); }"
+    );
+    ASSERT_GE(m->Build(), 0);
+
+    auto* f0 = m->GetFunctionByDecl("string f0()");
+    ASSERT_NE(f0, nullptr);
+
+    request_context ctx(engine);
+    auto result = asbind20::script_invoke<std::string>(ctx, f0);
+    ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
+    EXPECT_EQ(result.value(), "1, 3.14, (string), (void)");
+}
+
 #endif

@@ -7,6 +7,7 @@
 
 #include "typeinfo_views.hpp"
 #include "tokenize_view.hpp"
+#include "generic_view.hpp"
 
 // IWYU pragma: end_exports
 
