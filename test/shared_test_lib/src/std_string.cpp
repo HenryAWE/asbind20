@@ -1,7 +1,4 @@
 #include <asbind_test/std_string.hpp>
-
-#include "asbind20/bind/function_tools.hpp"
-
 #include <asbind_test/framework.hpp>
 
 namespace asbind_test
