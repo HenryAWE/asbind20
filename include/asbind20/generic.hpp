@@ -64,10 +64,9 @@ auto get_generic_auxiliary(generic_pointer gen)
 /**
  * @brief Get the hidden type information argument for template classes
  */
-inline auto get_generic_typeinfo(
+inline typeinfo_pointer get_generic_typeinfo(
     generic_pointer gen, AS_NAMESPACE_QUALIFIER asUINT idx = 0
 )
-    -> typeinfo_pointer
 {
     return *static_cast<typeinfo_pointer*>(
         gen->GetAddressOfArg(idx)

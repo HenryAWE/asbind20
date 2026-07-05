@@ -135,15 +135,13 @@ private:
 
         ~impl_interface() = default;
 
-        auto get_engine() const
-            -> engine_pointer
+        engine_pointer get_engine() const
         {
             assert(m_type_data.ti != nullptr);
             return m_type_data.ti->GetEngine();
         }
 
-        auto get_type_info() const noexcept
-            -> typeinfo_pointer
+        typeinfo_pointer get_type_info() const noexcept
         {
             return m_type_data.ti;
         }
@@ -153,8 +151,7 @@ private:
             return m_type_data.get_id();
         }
 
-        auto elem_type_info() const
-            -> typeinfo_pointer
+        typeinfo_pointer elem_type_info() const
         {
             return TypeInfoPolicy::get_type_info(m_type_data.ti);
         }
@@ -1353,15 +1350,13 @@ public:
     /// @{
 
     [[nodiscard]]
-    auto get_type_info() const noexcept
-        -> typeinfo_pointer
+    typeinfo_pointer get_type_info() const noexcept
     {
         return impl().get_type_info();
     }
 
     [[nodiscard]]
-    auto element_type_info() const
-        -> typeinfo_pointer
+    typeinfo_pointer element_type_info() const
     {
         return TypeInfoPolicy::get_type_info(get_type_info());
     }

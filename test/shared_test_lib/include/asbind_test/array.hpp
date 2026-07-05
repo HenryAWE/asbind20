@@ -448,8 +448,7 @@ public:
         }
     };
 
-    auto get_engine() const
-        -> asbind20::engine_pointer
+    asbind20::engine_pointer get_engine() const
     {
         return get_type_info()->GetEngine();
     }
@@ -1213,8 +1212,7 @@ public:
     }
 
     [[nodiscard]]
-    auto get_type_info() const noexcept
-        -> asbind20::typeinfo_pointer
+    asbind20::typeinfo_pointer get_type_info() const noexcept
     {
         return m_data.get_type_info();
     }

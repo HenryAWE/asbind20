@@ -49,8 +49,7 @@ public:
     }
 
     [[nodiscard]]
-    auto get_engine() const noexcept
-        -> engine_pointer
+    engine_pointer get_engine() const noexcept
     {
         return m_engine;
     }
@@ -125,8 +124,7 @@ public:
     }
 
     [[nodiscard]]
-    auto get_engine() const noexcept
-        -> engine_pointer
+    engine_pointer get_engine() const noexcept
     {
         return m_engine;
     }

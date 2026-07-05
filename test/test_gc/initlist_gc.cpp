@@ -909,8 +909,7 @@ public:
 
     std::vector<int> ints;
 
-    auto get_engine() const
-        -> asbind20::engine_pointer
+    asbind20::engine_pointer get_engine() const
     {
         return m_ti->GetEngine();
     }

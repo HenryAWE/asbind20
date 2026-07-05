@@ -240,8 +240,7 @@ public:
     }
 
     [[nodiscard]]
-    auto get_engine() const noexcept
-        -> engine_pointer
+    engine_pointer get_engine() const noexcept
     {
         return m_engine;
     }
@@ -347,8 +346,7 @@ public:
     }
 
     [[nodiscard]]
-    auto get_engine() const noexcept
-        -> engine_pointer
+    engine_pointer get_engine() const noexcept
     {
         return m_engine;
     }
@@ -870,8 +868,7 @@ public:
     }
 
     [[nodiscard]]
-    auto subtype(AS_NAMESPACE_QUALIFIER asUINT idx = 0) const
-        -> typeinfo_pointer
+    typeinfo_pointer subtype(AS_NAMESPACE_QUALIFIER asUINT idx = 0) const
     {
         if(!m_ti) [[unlikely]]
             return nullptr;

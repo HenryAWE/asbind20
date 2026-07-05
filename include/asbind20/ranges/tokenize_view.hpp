@@ -133,8 +133,7 @@ public:
     }
 
     [[nodiscard]]
-    auto get_engine() const noexcept
-        -> const_engine_pointer
+    const_engine_pointer get_engine() const noexcept
     {
         return m_engine;
     }

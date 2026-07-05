@@ -39,8 +39,7 @@ struct typeinfo_identity
     using typeinfo_policy_tag = void;
 
     [[nodiscard]]
-    static auto get_type_info(typeinfo_pointer ti)
-        -> typeinfo_pointer
+    static typeinfo_pointer get_type_info(typeinfo_pointer ti)
     {
         return ti;
     }
@@ -66,8 +65,7 @@ struct typeinfo_subtype :
     using typeinfo_policy_tag = void;
 
     [[nodiscard]]
-    static auto get_type_info(typeinfo_pointer ti)
-        -> typeinfo_pointer
+    static typeinfo_pointer get_type_info(typeinfo_pointer ti)
     {
         if(!ti) [[unlikely]]
             return nullptr;

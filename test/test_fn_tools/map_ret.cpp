@@ -24,8 +24,7 @@ public:
         m_engine.reset();
     }
 
-    auto get_engine() const
-        -> asbind20::engine_pointer
+    asbind20::engine_pointer get_engine() const
     {
         return m_engine.get();
     }

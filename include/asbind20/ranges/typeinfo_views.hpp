@@ -168,8 +168,7 @@ namespace detail
         return {this, this->size()};                                        \
     }                                                                       \
     [[nodiscard]]                                                           \
-    auto get_type_info() const noexcept                                     \
-        -> const_typeinfo_pointer                                           \
+    const_typeinfo_pointer get_type_info() const noexcept                   \
     {                                                                       \
         return this->m_ti;                                                  \
     }
