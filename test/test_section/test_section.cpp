@@ -23,7 +23,7 @@ public:
     }
 
     auto get_func(AS_NAMESPACE_QUALIFIER asIScriptModule* m) const
-        -> AS_NAMESPACE_QUALIFIER asIScriptFunction*
+        -> asbind20::function_pointer
     {
         if(m == nullptr)
         {
@@ -38,7 +38,7 @@ public:
         return f;
     }
 
-    void check_result(AS_NAMESPACE_QUALIFIER asIScriptFunction* f, int expected) const
+    void check_result(asbind20::function_pointer f, int expected) const
     {
         ASSERT_TRUE(f);
 

@@ -39,8 +39,8 @@ public:
     script_element_comparator& operator=(const script_element_comparator&) = default;
 
     script_element_comparator(
-        AS_NAMESPACE_QUALIFIER asIScriptFunction* opCmp,
-        AS_NAMESPACE_QUALIFIER asIScriptFunction* opEquals
+        function_pointer opCmp,
+        function_pointer opEquals
     )
         : m_opCmp(opCmp), m_opEquals(opEquals)
     {}
@@ -187,13 +187,13 @@ public:
 
 private:
     status m_status;
-    AS_NAMESPACE_QUALIFIER asIScriptFunction* m_opCmp = nullptr;
-    AS_NAMESPACE_QUALIFIER asIScriptFunction* m_opEquals = nullptr;
+    function_pointer m_opCmp = nullptr;
+    function_pointer m_opEquals = nullptr;
 
     get_comparator_result(
         status st,
-        AS_NAMESPACE_QUALIFIER asIScriptFunction* opCmp,
-        AS_NAMESPACE_QUALIFIER asIScriptFunction* opEquals
+        function_pointer opCmp,
+        function_pointer opEquals
     )
         : m_status(st), m_opCmp(opCmp), m_opEquals(opEquals)
     {}
@@ -207,8 +207,8 @@ inline get_comparator_result get_comparator(
     using namespace std::string_view_literals;
 
     get_comparator_result::status st{};
-    AS_NAMESPACE_QUALIFIER asIScriptFunction* opCmp = nullptr;
-    AS_NAMESPACE_QUALIFIER asIScriptFunction* opEquals = nullptr;
+    function_pointer opCmp = nullptr;
+    function_pointer opEquals = nullptr;
 
     for(auto* f : views::all_methods(ti))
     {

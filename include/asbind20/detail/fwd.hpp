@@ -24,7 +24,10 @@ inline namespace script_type
 
     using typeinfo_pointer = AS_NAMESPACE_QUALIFIER asITypeInfo*;
     using const_typeinfo_pointer = AS_NAMESPACE_QUALIFIER asITypeInfo const*;
-} // namespace script_types
+
+    using function_pointer = AS_NAMESPACE_QUALIFIER asIScriptFunction*;
+    using const_function_pointer = AS_NAMESPACE_QUALIFIER asIScriptFunction const*;
+} // namespace script_type
 } // namespace asbind20
 
 #endif

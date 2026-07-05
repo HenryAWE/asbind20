@@ -120,7 +120,7 @@ public:
     }
 
     auto get_script_func() const
-        -> AS_NAMESPACE_QUALIFIER asIScriptFunction*
+        -> asbind20::function_pointer
     {
         auto m = m_engine->GetModule(
             "foreach_string", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE

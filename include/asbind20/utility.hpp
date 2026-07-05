@@ -1093,14 +1093,14 @@ constexpr std::string_view static_enum_name() noexcept
 
 [[nodiscard]]
 inline auto get_default_factory(const_typeinfo_pointer ti)
-    -> AS_NAMESPACE_QUALIFIER asIScriptFunction*
+    -> function_pointer
 {
     if(!ti) [[unlikely]]
         return nullptr;
 
     for(AS_NAMESPACE_QUALIFIER asUINT i = 0; i < ti->GetFactoryCount(); ++i)
     {
-        AS_NAMESPACE_QUALIFIER asIScriptFunction* func =
+        function_pointer func =
             ti->GetFactoryByIndex(i);
         if(func->GetParamCount() == 0)
             return func;
@@ -1111,7 +1111,7 @@ inline auto get_default_factory(const_typeinfo_pointer ti)
 
 [[nodiscard]]
 inline auto get_default_constructor(const_typeinfo_pointer ti)
-    -> AS_NAMESPACE_QUALIFIER asIScriptFunction*
+    -> function_pointer
 {
     if(!ti) [[unlikely]]
         return nullptr;
@@ -1119,7 +1119,7 @@ inline auto get_default_constructor(const_typeinfo_pointer ti)
     for(AS_NAMESPACE_QUALIFIER asUINT i = 0; i < ti->GetBehaviourCount(); ++i)
     {
         AS_NAMESPACE_QUALIFIER asEBehaviours beh;
-        AS_NAMESPACE_QUALIFIER asIScriptFunction* func =
+        function_pointer func =
             ti->GetBehaviourByIndex(i, &beh);
         if(beh == AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT)
         {
@@ -1133,7 +1133,7 @@ inline auto get_default_constructor(const_typeinfo_pointer ti)
 
 [[nodiscard]]
 inline auto get_weakref_flag(const_typeinfo_pointer ti)
-    -> AS_NAMESPACE_QUALIFIER asIScriptFunction*
+    -> function_pointer
 {
     if(!ti) [[unlikely]]
         return nullptr;
@@ -1141,7 +1141,7 @@ inline auto get_weakref_flag(const_typeinfo_pointer ti)
     for(AS_NAMESPACE_QUALIFIER asUINT i = 0; i < ti->GetBehaviourCount(); ++i)
     {
         AS_NAMESPACE_QUALIFIER asEBehaviours beh;
-        AS_NAMESPACE_QUALIFIER asIScriptFunction* func =
+        function_pointer func =
             ti->GetBehaviourByIndex(i, &beh);
         if(beh == AS_NAMESPACE_QUALIFIER asBEHAVE_GET_WEAKREF_FLAG)
         {

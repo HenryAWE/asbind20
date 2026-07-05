@@ -44,7 +44,7 @@ TEST(Ranges, AllMethodsWithStdViews)
     auto v =
         abv::all_methods(ti) |
         std::views::transform(
-            [](AS_NAMESPACE_QUALIFIER asIScriptFunction* f) -> std::string
+            [](asbind20::function_pointer f) -> std::string
             { return f->GetDeclaration(false); }
         );
     EXPECT_EQ(std::ranges::size(v), ti->GetMethodCount());
@@ -107,7 +107,7 @@ TEST(Ranges, AllBehavioursWithStdView)
         v |
         std::views::values |
         std::views::transform(
-            [](AS_NAMESPACE_QUALIFIER asIScriptFunction* f) -> std::string
+            [](asbind20::function_pointer f) -> std::string
             { return f->GetDeclaration(false); }
         );
     EXPECT_THAT(
@@ -154,7 +154,7 @@ TEST(Ranges, AllFactoriesWithStdView)
     EXPECT_TRUE(
         std::ranges::all_of(
             v,
-            [](AS_NAMESPACE_QUALIFIER asIScriptFunction* f)
+            [](asbind20::function_pointer f)
             { return f != nullptr; }
         )
     );

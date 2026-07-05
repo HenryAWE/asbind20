@@ -775,7 +775,7 @@ auto get_context_result(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx)
 template <typename R, typename... Args>
 script_invoke_result<R> script_invoke(
     AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
-    AS_NAMESPACE_QUALIFIER asIScriptFunction* func,
+    function_pointer func,
     Args&&... args
 )
 {
@@ -824,7 +824,7 @@ template <typename R, script_object_handle Object, typename... Args>
 script_invoke_result<R> script_invoke(
     AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
     Object&& obj,
-    AS_NAMESPACE_QUALIFIER asIScriptFunction* func,
+    function_pointer func,
     Args&&... args
 )
 {
@@ -863,7 +863,7 @@ template <typename R, typename... Args>
 class script_function_ref<R(Args...)>
 {
 public:
-    using handle_type = AS_NAMESPACE_QUALIFIER asIScriptFunction*;
+    using handle_type = function_pointer;
     using result_type = script_invoke_result<R>;
 
     script_function_ref() noexcept
@@ -913,7 +913,7 @@ template <typename R, typename... Args>
 class script_method_ref<R(Args...)>
 {
 public:
-    using handle_type = AS_NAMESPACE_QUALIFIER asIScriptFunction*;
+    using handle_type = function_pointer;
     using result_type = script_invoke_result<R>;
 
     script_method_ref() noexcept
@@ -961,7 +961,7 @@ template <>
 class script_function<void>
 {
 public:
-    using handle_type = AS_NAMESPACE_QUALIFIER asIScriptFunction*;
+    using handle_type = function_pointer;
 
     script_function() noexcept
         : m_func(nullptr) {}
@@ -1186,7 +1186,7 @@ inline script_object instantiate_class(
     if(!class_info) [[unlikely]]
         return script_object();
 
-    AS_NAMESPACE_QUALIFIER asIScriptFunction* factory = nullptr;
+    function_pointer factory = nullptr;
     if(AS_NAMESPACE_QUALIFIER asQWORD flags = class_info->GetFlags();
        flags & (AS_NAMESPACE_QUALIFIER asOBJ_SCRIPT_OBJECT))
     {

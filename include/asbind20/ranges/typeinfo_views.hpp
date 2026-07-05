@@ -183,7 +183,7 @@ public:
         friend my_base;
 
     public:
-        using value_type = AS_NAMESPACE_QUALIFIER asIScriptFunction*;
+        using value_type = function_pointer;
         using size_type = typename my_base::size_type;
 
     private:
@@ -241,7 +241,7 @@ public:
     public:
         using value_type = std::pair<
             AS_NAMESPACE_QUALIFIER asEBehaviours,
-            AS_NAMESPACE_QUALIFIER asIScriptFunction*>;
+            function_pointer>;
         using size_type = typename my_base::size_type;
 
     private:
@@ -297,7 +297,7 @@ public:
         friend my_base;
 
     public:
-        using value_type = AS_NAMESPACE_QUALIFIER asIScriptFunction*;
+        using value_type = function_pointer;
         using size_type = typename my_base::size_type;
 
     private:

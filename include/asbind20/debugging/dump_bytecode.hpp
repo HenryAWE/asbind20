@@ -16,7 +16,7 @@ using bytecode_span = std::span<const AS_NAMESPACE_QUALIFIER asDWORD>;
 
 [[nodiscard]]
 inline bytecode_span get_bytecode(
-    AS_NAMESPACE_QUALIFIER asIScriptFunction* f
+    function_pointer f
 )
 {
     if(!f) [[unlikely]]

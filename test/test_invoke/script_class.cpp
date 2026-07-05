@@ -40,16 +40,16 @@ TEST(TestInvoke, ScriptClass)
 
         auto my_class = asbind20::instantiate_class(ctx, my_class_t);
 
-        AS_NAMESPACE_QUALIFIER asIScriptFunction* set_val = my_class_t->GetMethodByDecl("void set_val(int)");
+        asbind20::function_pointer set_val = my_class_t->GetMethodByDecl("void set_val(int)");
         asbind20::script_invoke<void>(ctx, my_class, set_val, 182375);
 
-        AS_NAMESPACE_QUALIFIER asIScriptFunction* get_val = my_class_t->GetMethodByDecl("int get_val() const");
+        asbind20::function_pointer get_val = my_class_t->GetMethodByDecl("int get_val() const");
         auto val = asbind20::script_invoke<int>(ctx, my_class, get_val);
 
         ASSERT_TRUE(result_has_value(val));
         EXPECT_EQ(val.value(), 182375);
 
-        AS_NAMESPACE_QUALIFIER asIScriptFunction* get_val_ref = my_class_t->GetMethodByDecl("int& get_val_ref()");
+        asbind20::function_pointer get_val_ref = my_class_t->GetMethodByDecl("int& get_val_ref()");
         auto val_ref = asbind20::script_invoke<int&>(ctx, my_class, get_val_ref);
 
         ASSERT_TRUE(result_has_value(val_ref));

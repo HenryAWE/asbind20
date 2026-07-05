@@ -69,7 +69,7 @@ public:
 static void mt_test_thread_main(
     std::atomic_int& counter,
     AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
-    AS_NAMESPACE_QUALIFIER asIScriptFunction* f
+    asbind20::function_pointer f
 )
 {
     asbind20::concurrent::auto_thread_cleanup();

@@ -101,7 +101,7 @@ Return run_string(
     auto* m = engine->GetModule(
         helper_module_name, AS_NAMESPACE_QUALIFIER asGM_ONLY_IF_EXISTS
     );
-    AS_NAMESPACE_QUALIFIER asIScriptFunction* f = nullptr;
+    asbind20::function_pointer f = nullptr;
     r = m->CompileFunction(
         section,
         func_code.c_str(),

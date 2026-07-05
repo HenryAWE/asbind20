@@ -110,7 +110,7 @@ void register_int_generator(asbind20::engine_pointer engine)
 }
 
 auto prepare_int_seq_test(asbind20::engine_pointer engine)
-    -> AS_NAMESPACE_QUALIFIER asIScriptFunction*
+    -> asbind20::function_pointer
 {
     auto* m = engine->GetModule(
         "", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE

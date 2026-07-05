@@ -755,7 +755,7 @@ public:
      * @param n Max checked elements
      * @return size_type Removed element count
      */
-    size_type remove_if(AS_NAMESPACE_QUALIFIER asIScriptFunction* pred, index_type start = 0, size_type n = -1)
+    size_type remove_if(asbind20::function_pointer pred, index_type start = 0, size_type n = -1)
     {
         size_type off = index_to_offset(start);
         if(off == size_type(-1)) [[unlikely]]
@@ -830,7 +830,7 @@ public:
         }
     }
 
-    size_type count_if(AS_NAMESPACE_QUALIFIER asIScriptFunction* pred, index_type start = 0, size_type n = -1) const
+    size_type count_if(asbind20::function_pointer pred, index_type start = 0, size_type n = -1) const
     {
         size_type off = index_to_offset(start);
         if(off == size_type(-1)) [[unlikely]]
@@ -893,7 +893,7 @@ private:
     struct script_compare
     {
         AS_NAMESPACE_QUALIFIER asIScriptContext* ctx;
-        AS_NAMESPACE_QUALIFIER asIScriptFunction* func;
+        asbind20::function_pointer func;
 
         bool operator()(void* lhs, void* rhs) const
         {
@@ -940,7 +940,7 @@ private:
     struct script_compare_primitive
     {
         AS_NAMESPACE_QUALIFIER asIScriptContext* ctx;
-        AS_NAMESPACE_QUALIFIER asIScriptFunction* func;
+        asbind20::function_pointer func;
 
         bool operator()(const T& lhs, const T& rhs) const
         {
@@ -954,7 +954,7 @@ private:
 
     template <bool IsMethod, bool Stable>
     void sort_by_script_compare_impl(
-        AS_NAMESPACE_QUALIFIER asIScriptFunction* func,
+        asbind20::function_pointer func,
         bool is_handle,
         bool asc,
         size_type off,
@@ -1004,7 +1004,7 @@ private:
 
     template <bool IsMethod>
     void sort_by_script_compare(
-        AS_NAMESPACE_QUALIFIER asIScriptFunction* func,
+        asbind20::function_pointer func,
         bool is_handle,
         bool asc,
         bool stable,
@@ -1097,7 +1097,7 @@ public:
     }
 
     void sort_by(
-        AS_NAMESPACE_QUALIFIER asIScriptFunction* func,
+        asbind20::function_pointer func,
         index_type start = 0,
         size_type n = -1,
         bool stable = false
