@@ -398,44 +398,56 @@ TEST(Ranges, GenericArguments)
 {
     using namespace asbind20;
 
-#    if ANGELSCRIPT_VERSION < 23800
-    GTEST_SKIP()
-        << "AngelScript version is too old for variadic functions: "
-        << ANGELSCRIPT_VERSION;
-#    endif
-
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine, true);
     asbind_test::setup_script_string(engine);
 
+    generic_function wrapper = [](asbind20::generic_pointer gen) -> void
+    {
+        set_generic_return<std::string>(
+            gen, test_utility::proc_args(gen)
+        );
+    };
+
     global<true>(engine)
         .function(
-            "string proc_args(const?&in...)",
-            [](asbind20::generic_pointer gen) -> void
-            {
-                set_generic_return<std::string>(
-                    gen, test_utility::proc_args(gen)
-                );
-            }
+            "string proc_args(const?&in,const?&in)",
+            wrapper
+        )
+        .function(
+            "string proc_args(const?&in,const?&in,const?&in)",
+            wrapper
         );
 
     auto* m = engine->GetModule(
         "test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
     );
-    // FIXME: Fix random crash when passing 'null' as a variadic argument.
     m->AddScriptSection(
         "test",
-        "string f0() { return proc_args(1, 3.14, 'test'); }"
+        "string f2() { return proc_args(10, 13); }\n"
+        "string f3() { return proc_args(1, 3.14, 'test'); }"
     );
     ASSERT_GE(m->Build(), 0);
 
-    auto* f0 = m->GetFunctionByDecl("string f0()");
-    ASSERT_NE(f0, nullptr);
+    {
+        auto* f2 = m->GetFunctionByDecl("string f2()");
+        ASSERT_NE(f2, nullptr);
 
-    request_context ctx(engine);
-    auto result = asbind20::script_invoke<std::string>(ctx, f0);
-    ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
-    EXPECT_EQ(result.value(), "1, 3.14, (string)");
+        request_context ctx(engine);
+        auto result = asbind20::script_invoke<std::string>(ctx, f2);
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
+        EXPECT_EQ(result.value(), "10, 13");
+    }
+
+    {
+        auto* f3 = m->GetFunctionByDecl("string f3()");
+        ASSERT_NE(f3, nullptr);
+
+        request_context ctx(engine);
+        auto result = asbind20::script_invoke<std::string>(ctx, f3);
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
+        EXPECT_EQ(result.value(), "1, 3.14, (string)");
+    }
 }
 
 #endif
