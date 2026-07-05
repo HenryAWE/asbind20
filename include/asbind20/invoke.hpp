@@ -12,6 +12,7 @@
 #include <tuple>
 #include <functional>
 #include <optional>
+#include "detail/fwd.hpp"
 #include "detail/include_as.hpp"
 #include "utility.hpp"
 #include "type_traits.hpp"
@@ -852,9 +853,6 @@ namespace detail
     }
 } // namespace detail
 
-template <typename T>
-class script_function_ref;
-
 /**
  * @brief Script function wrapper without ownership, i.e., no reference counting support
  */
@@ -901,9 +899,6 @@ public:
 private:
     handle_type m_func;
 };
-
-template <typename T>
-class script_method_ref;
 
 /**
  * @brief Script method wrapper without ownership, i.e., no reference counting support
@@ -952,9 +947,6 @@ public:
 private:
     handle_type m_func;
 };
-
-template <typename T>
-class script_function;
 
 template <>
 class script_function<void>
@@ -1104,9 +1096,6 @@ public:
         return target();
     }
 };
-
-template <typename T>
-class script_method;
 
 /**
  * @brief Wrapper of script method, a.k.a member function

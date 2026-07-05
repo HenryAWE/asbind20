@@ -31,6 +31,15 @@ inline namespace script_type
     using context_pointer = AS_NAMESPACE_QUALIFIER asIScriptContext*;
     using const_context_pointer = AS_NAMESPACE_QUALIFIER asIScriptContext const*;
 } // namespace script_type
+
+template <typename T>
+class script_function_ref;
+template <typename T>
+class script_method_ref;
+template <typename T>
+class script_function;
+template <typename T>
+class script_method;
 } // namespace asbind20
 
 #endif
