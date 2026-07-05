@@ -81,7 +81,7 @@ class refcount_aux_suite : public ::testing::Test
 {
 public:
     asbind20::script_engine engine;
-    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx = nullptr;
+    asbind20::context_pointer ctx = nullptr;
     refcount_aux_helper helper;
 
     void SetUp() override

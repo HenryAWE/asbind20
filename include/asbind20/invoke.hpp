@@ -32,7 +32,7 @@ namespace detail
 
 template <typename T>
 requires(!std::is_const_v<T>)
-decltype(auto) get_script_return(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx)
+decltype(auto) get_script_return(context_pointer ctx)
 {
     assert(ctx != nullptr);
     assert(ctx->GetState() == (AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED));
@@ -160,7 +160,7 @@ namespace detail
 } // namespace detail
 
 template <typename R>
-auto get_context_result(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx);
+auto get_context_result(context_pointer ctx);
 
 /**
  * @brief Base class of script results
@@ -180,8 +180,7 @@ public:
     ~script_invoke_result_base() = default;
 
     [[nodiscard]]
-    auto get_context() const noexcept
-        -> AS_NAMESPACE_QUALIFIER asIScriptContext*
+    context_pointer get_context() const noexcept
     {
         return m_ctx;
     }
@@ -217,7 +216,7 @@ public:
 
 protected:
     explicit script_invoke_result_base(
-        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx
+        context_pointer ctx
     ) noexcept
         : m_ctx(ctx)
     {
@@ -236,7 +235,7 @@ protected:
     }
 
 private:
-    AS_NAMESPACE_QUALIFIER asIScriptContext* m_ctx;
+    context_pointer m_ctx;
 };
 
 /**
@@ -248,17 +247,17 @@ template <typename T>
 class script_invoke_result : public script_invoke_result_base
 {
     template <typename R>
-    friend auto get_context_result(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx);
+    friend auto get_context_result(context_pointer ctx);
 
     script_invoke_result(
-        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx
+        context_pointer ctx
     ) noexcept
         : script_invoke_result_base(ctx) {}
 
 public:
     using value_type = T;
     using return_type =
-        decltype(get_script_return<T>(std::declval<AS_NAMESPACE_QUALIFIER asIScriptContext*>()));
+        decltype(get_script_return<T>(std::declval<context_pointer>()));
     using pointer_type =
         typename detail::invoke_result_traits<return_type>::pointer_type;
 
@@ -366,10 +365,10 @@ template <typename T>
 class script_invoke_result<T&> : public script_invoke_result_base
 {
     template <typename R>
-    friend auto get_context_result(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx);
+    friend auto get_context_result(context_pointer ctx);
 
     script_invoke_result(
-        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx
+        context_pointer ctx
     ) noexcept
         : script_invoke_result_base(ctx) {}
 
@@ -426,10 +425,10 @@ template <>
 class script_invoke_result<void> : public script_invoke_result_base
 {
     template <typename R>
-    friend auto get_context_result(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx);
+    friend auto get_context_result(context_pointer ctx);
 
     script_invoke_result(
-        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx
+        context_pointer ctx
     ) noexcept
         : script_invoke_result_base(ctx) {}
 
@@ -604,7 +603,7 @@ std::partial_ordering operator<=>(const T& lhs, const script_invoke_result<U>& r
 
 template <typename T>
 int set_script_arg(
-    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
+    context_pointer ctx,
     AS_NAMESPACE_QUALIFIER asUINT idx,
     std::reference_wrapper<T> ref
 )
@@ -614,7 +613,7 @@ int set_script_arg(
 
 template <std::integral T>
 int set_script_arg(
-    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
+    context_pointer ctx,
     AS_NAMESPACE_QUALIFIER asUINT idx,
     T val
 )
@@ -641,7 +640,7 @@ int set_script_arg(
 template <typename Enum>
 requires std::is_enum_v<Enum>
 int set_script_arg(
-    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
+    context_pointer ctx,
     AS_NAMESPACE_QUALIFIER asUINT idx,
     Enum val
 )
@@ -664,7 +663,7 @@ int set_script_arg(
 
 template <std::floating_point T>
 int set_script_arg(
-    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
+    context_pointer ctx,
     AS_NAMESPACE_QUALIFIER asUINT idx,
     T val
 )
@@ -680,7 +679,7 @@ int set_script_arg(
 }
 
 inline int set_script_arg(
-    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
+    context_pointer ctx,
     AS_NAMESPACE_QUALIFIER asUINT idx,
     void* obj
 )
@@ -689,7 +688,7 @@ inline int set_script_arg(
 }
 
 inline int set_script_arg(
-    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
+    context_pointer ctx,
     AS_NAMESPACE_QUALIFIER asUINT idx,
     const void* obj
 )
@@ -698,7 +697,7 @@ inline int set_script_arg(
 }
 
 inline int set_script_arg(
-    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
+    context_pointer ctx,
     AS_NAMESPACE_QUALIFIER asUINT idx,
     AS_NAMESPACE_QUALIFIER asIScriptObject* obj
 )
@@ -707,7 +706,7 @@ inline int set_script_arg(
 }
 
 inline int set_script_arg(
-    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
+    context_pointer ctx,
     AS_NAMESPACE_QUALIFIER asUINT idx,
     AS_NAMESPACE_QUALIFIER asIScriptObject const* obj
 )
@@ -718,7 +717,7 @@ inline int set_script_arg(
 template <typename Class>
 requires std::is_class_v<std::remove_cvref_t<Class>>
 int set_script_arg(
-    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
+    context_pointer ctx,
     AS_NAMESPACE_QUALIFIER asUINT idx,
     Class&& obj
 )
@@ -746,7 +745,7 @@ int set_script_arg(
  * @param tp Tuple of arguments
  */
 template <typename Tuple>
-void apply_script_args(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, Tuple&& tp)
+void apply_script_args(context_pointer ctx, Tuple&& tp)
 {
     [&]<AS_NAMESPACE_QUALIFIER asUINT... Idx>(std::integer_sequence<AS_NAMESPACE_QUALIFIER asUINT, Idx...>)
     {
@@ -764,7 +763,7 @@ void apply_script_args(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, Tuple&& tp)
  * @return Result of the execution
  */
 template <typename R>
-auto get_context_result(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx)
+auto get_context_result(context_pointer ctx)
 {
     return script_invoke_result<R>(ctx);
 }
@@ -774,7 +773,7 @@ auto get_context_result(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx)
  */
 template <typename R, typename... Args>
 script_invoke_result<R> script_invoke(
-    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
+    context_pointer ctx,
     function_pointer func,
     Args&&... args
 )
@@ -802,7 +801,7 @@ concept script_object_handle =
     };
 
 inline int set_script_object(
-    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, const void* obj
+    context_pointer ctx, const void* obj
 )
 {
     return ctx->SetObject(const_cast<void*>(obj));
@@ -810,7 +809,7 @@ inline int set_script_object(
 
 template <script_object_handle Object>
 int set_script_object(
-    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, Object&& obj
+    context_pointer ctx, Object&& obj
 )
 {
     const void* ptr = (AS_NAMESPACE_QUALIFIER asIScriptObject const*)obj;
@@ -822,7 +821,7 @@ int set_script_object(
  */
 template <typename R, script_object_handle Object, typename... Args>
 script_invoke_result<R> script_invoke(
-    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
+    context_pointer ctx,
     Object&& obj,
     function_pointer func,
     Args&&... args
@@ -889,7 +888,7 @@ public:
     }
 
     result_type operator()(
-        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, Args&&... args
+        context_pointer ctx, Args&&... args
     ) const
     {
         handle_type func = target();
@@ -940,7 +939,7 @@ public:
 
     template <script_object_handle Object>
     result_type operator()(
-        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, Object&& obj, Args&&... args
+        context_pointer ctx, Object&& obj, Args&&... args
     ) const
     {
         handle_type func = target();
@@ -1085,7 +1084,7 @@ public:
         : my_base(rf.target()) {}
 
     result_type operator()(
-        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, Args... args
+        context_pointer ctx, Args... args
     ) const
     {
         handle_type func = target();
@@ -1135,7 +1134,7 @@ public:
 
     template <script_object_handle Object>
     result_type operator()(
-        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, Object&& obj, Args... args
+        context_pointer ctx, Object&& obj, Args... args
     ) const
     {
         handle_type func = target();
@@ -1146,7 +1145,7 @@ public:
     }
 
     result_type operator()(
-        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, const void* obj, Args... args
+        context_pointer ctx, const void* obj, Args... args
     ) const
     {
         handle_type func = target();
@@ -1179,7 +1178,7 @@ public:
  */
 [[nodiscard]]
 inline script_object instantiate_class(
-    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
+    context_pointer ctx,
     const_typeinfo_pointer class_info
 )
 {

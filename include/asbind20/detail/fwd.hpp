@@ -27,6 +27,9 @@ inline namespace script_type
 
     using function_pointer = AS_NAMESPACE_QUALIFIER asIScriptFunction*;
     using const_function_pointer = AS_NAMESPACE_QUALIFIER asIScriptFunction const*;
+
+    using context_pointer = AS_NAMESPACE_QUALIFIER asIScriptContext*;
+    using const_context_pointer = AS_NAMESPACE_QUALIFIER asIScriptContext const*;
 } // namespace script_type
 } // namespace asbind20
 

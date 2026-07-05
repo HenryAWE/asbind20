@@ -21,7 +21,7 @@ namespace detail
         int subtype_id,
         const void* lhs,
         const void* rhs,
-        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
+        asbind20::context_pointer ctx,
         const array_cache* cache
     )
     {

@@ -46,7 +46,7 @@ namespace detail
             int subtype_id,
             const void* lhs,
             const void* rhs,
-            AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
+            asbind20::context_pointer ctx,
             const array_cache* cache
         );
 
@@ -892,7 +892,7 @@ private:
     template <bool IsHandle, bool Ascending, bool IsMethod>
     struct script_compare
     {
-        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx;
+        asbind20::context_pointer ctx;
         asbind20::function_pointer func;
 
         bool operator()(void* lhs, void* rhs) const
@@ -939,7 +939,7 @@ private:
     template <typename T>
     struct script_compare_primitive
     {
-        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx;
+        asbind20::context_pointer ctx;
         asbind20::function_pointer func;
 
         bool operator()(const T& lhs, const T& rhs) const

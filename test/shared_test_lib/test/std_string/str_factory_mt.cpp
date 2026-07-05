@@ -68,7 +68,7 @@ public:
 
 static void mt_test_thread_main(
     std::atomic_int& counter,
-    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
+    asbind20::context_pointer ctx,
     asbind20::function_pointer f
 )
 {

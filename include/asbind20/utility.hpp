@@ -835,8 +835,7 @@ constexpr std::string string_concat(Args&&... args)
  * @return A pointer to the currently executing context, or null if no context is executing
  */
 [[nodiscard]]
-inline auto current_context()
-    -> AS_NAMESPACE_QUALIFIER asIScriptContext*
+inline context_pointer current_context()
 {
     return AS_NAMESPACE_QUALIFIER asGetActiveContext();
 }
@@ -846,7 +845,7 @@ inline auto current_context()
  */
 [[nodiscard]]
 inline bool has_script_exception(
-    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx = current_context()
+    context_pointer ctx = current_context()
 )
 {
     if(!ctx) [[unlikely]]

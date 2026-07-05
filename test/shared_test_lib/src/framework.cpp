@@ -77,7 +77,7 @@ void setup_message_callback(
 }
 
 static void exception_translator_impl(
-    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, void*
+    asbind20::context_pointer ctx, void*
 )
 {
     ASSERT_NE(ctx, nullptr);

@@ -188,7 +188,7 @@ private:
 class [[nodiscard]] reuse_active_context
 {
 public:
-    using handle_type = AS_NAMESPACE_QUALIFIER asIScriptContext*;
+    using handle_type = context_pointer;
 
     reuse_active_context() = delete;
     reuse_active_context(const reuse_active_context&) = delete;
@@ -317,7 +317,7 @@ private:
 class [[nodiscard]] request_context
 {
 public:
-    using handle_type = AS_NAMESPACE_QUALIFIER asIScriptContext*;
+    using handle_type = context_pointer;
 
     request_context() = delete;
     request_context(const request_context&) = delete;
@@ -372,7 +372,7 @@ private:
 class script_context
 {
 public:
-    using handle_type = AS_NAMESPACE_QUALIFIER asIScriptContext*;
+    using handle_type = context_pointer;
 
     script_context() noexcept = default;
 

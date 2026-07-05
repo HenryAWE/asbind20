@@ -70,7 +70,7 @@ public:
     }
 
     auto invoke_eq(
-        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, const void* lhs, const void* rhs
+        context_pointer ctx, const void* lhs, const void* rhs
     ) const
         -> script_invoke_result<bool>
     {
@@ -78,7 +78,7 @@ public:
     }
 
     auto invoke_compare(
-        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, const void* lhs, const void* rhs
+        context_pointer ctx, const void* lhs, const void* rhs
     ) const
         -> script_invoke_result<int>
     {
@@ -95,7 +95,7 @@ public:
      */
     [[nodiscard]]
     std::partial_ordering compare(
-        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, const void* lhs, const void* rhs
+        context_pointer ctx, const void* lhs, const void* rhs
     ) const
     {
         if(!has_opCmp()) [[unlikely]]
@@ -108,7 +108,7 @@ public:
 
     [[nodiscard]]
     bool eq(
-        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, const void* lhs, const void* rhs
+        context_pointer ctx, const void* lhs, const void* rhs
     ) const
     {
         if(!m_opEquals) // Fallback to the logic of "opCmp() == 0"

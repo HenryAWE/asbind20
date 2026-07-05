@@ -101,7 +101,7 @@ public:
         return m_counter;
     }
 
-    void translate(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx)
+    void translate(asbind20::context_pointer ctx)
     {
         try
         {

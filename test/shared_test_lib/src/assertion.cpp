@@ -12,7 +12,7 @@ void default_assertion_callback(std::string_view msg)
 }
 
 std::string gen_full_assert_msg(
-    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, std::string_view msg
+    asbind20::context_pointer ctx, std::string_view msg
 )
 {
     std::stringstream ss;
