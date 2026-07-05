@@ -428,7 +428,7 @@ constexpr bool is_objhandle(int type_id) noexcept
  */
 [[nodiscard]]
 inline int get_script_string_type(
-    const AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
+    const_engine_pointer engine
 )
 {
     if(!engine) [[unlikely]]
@@ -448,7 +448,7 @@ inline int get_script_string_type(
  */
 [[nodiscard]]
 inline bool is_script_string(
-    const AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id
+    const_engine_pointer engine, int type_id
 )
 {
     if(!engine) [[unlikely]]
@@ -495,7 +495,7 @@ inline bool type_requires_gc(const_typeinfo_pointer ti)
  * @param type_id AngelScript type id
  */
 inline auto sizeof_script_type(
-    const AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id
+    const_engine_pointer engine, int type_id
 )
     -> AS_NAMESPACE_QUALIFIER asUINT
 {

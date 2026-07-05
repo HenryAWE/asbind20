@@ -37,7 +37,6 @@ public:
 
     using enum_type = Enum;
     using underlying_type = UnderlyingType;
-    using engine_pointer = AS_NAMESPACE_QUALIFIER asIScriptEngine*;
 
     enum_() = delete;
     enum_(const enum_&) = default;

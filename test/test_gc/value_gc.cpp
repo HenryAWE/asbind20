@@ -96,7 +96,7 @@ public:
         m_has_value = false;
     }
 
-    void enum_refs_impl(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+    void enum_refs_impl(asbind20::engine_pointer engine)
     {
         EXPECT_TRUE((m_ti->GetFlags() & AS_NAMESPACE_QUALIFIER asOBJ_GC))
             << "m_ti->GetFlags(): " << m_ti->GetFlags();
@@ -108,11 +108,11 @@ public:
     }
 
     friend void val_gc_enum_refs(
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, val_gc& this_
+        asbind20::engine_pointer engine, val_gc& this_
     );
 
 private:
-    void release_refs_impl(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+    void release_refs_impl(asbind20::engine_pointer engine)
     {
         EXPECT_EQ(engine, m_ti->GetEngine());
         reset();
@@ -120,11 +120,11 @@ private:
 
 public:
     friend void val_gc_release_refs(
-        val_gc& this_, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
+        val_gc& this_, asbind20::engine_pointer engine
     );
 
     template <bool UseGeneric>
-    friend void register_val_gc(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine);
+    friend void register_val_gc(asbind20::engine_pointer engine);
 
 private:
     asbind20::script_typeinfo m_ti;
@@ -135,20 +135,20 @@ private:
 
 // Object last
 void val_gc_enum_refs(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, val_gc& this_
+    asbind20::engine_pointer engine, val_gc& this_
 )
 {
     this_.enum_refs_impl(engine);
 }
 
 // Object first
-void val_gc_release_refs(val_gc& this_, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+void val_gc_release_refs(val_gc& this_, asbind20::engine_pointer engine)
 {
     this_.release_refs_impl(engine);
 }
 
 template <bool UseGeneric>
-void register_val_gc(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+void register_val_gc(asbind20::engine_pointer engine)
 {
     using namespace asbind20;
 
@@ -234,7 +234,7 @@ public:
     }
 
     auto get_engine() const noexcept
-        -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
+        -> asbind20::engine_pointer
     {
         return m_engine.get();
     }

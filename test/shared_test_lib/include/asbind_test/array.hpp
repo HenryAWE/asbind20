@@ -126,7 +126,7 @@ namespace detail
 
 class script_array : private detail::script_array_base
 {
-    friend void register_script_array(AS_NAMESPACE_QUALIFIER asIScriptEngine*, bool, bool);
+    friend void register_script_array(asbind20::engine_pointer, bool, bool);
 
     using my_base = detail::script_array_base;
 
@@ -209,7 +209,7 @@ public:
     class script_array_iterator
     {
         friend script_array;
-        friend void register_script_array(AS_NAMESPACE_QUALIFIER asIScriptEngine*, bool, bool);
+        friend void register_script_array(asbind20::engine_pointer, bool, bool);
 
     private:
         script_array_iterator() = default;
@@ -414,14 +414,14 @@ public:
             return m_arr != nullptr;
         }
 
-        void enum_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+        void enum_refs(asbind20::engine_pointer engine)
         {
             if(!m_arr)
                 return;
             engine->GCEnumCallback(m_arr);
         }
 
-        void release_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+        void release_refs(asbind20::engine_pointer engine)
         {
             (void)engine;
 
@@ -449,7 +449,7 @@ public:
     };
 
     auto get_engine() const
-        -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
+        -> asbind20::engine_pointer
     {
         return get_type_info()->GetEngine();
     }
@@ -1243,14 +1243,14 @@ public:
         return m_refcount;
     }
 
-    void enum_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+    void enum_refs(asbind20::engine_pointer engine)
     {
         (void)engine;
         assert(m_data.get_type_info()->GetEngine() == engine);
         m_data.enum_refs();
     }
 
-    void release_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+    void release_refs(asbind20::engine_pointer engine)
     {
         (void)engine;
         assert(m_data.get_type_info()->GetEngine() == engine);
@@ -1517,7 +1517,7 @@ private:
 };
 
 inline void register_script_array(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    asbind20::engine_pointer engine,
     bool as_default = true,
     bool generic = asbind20::has_max_portability()
 )
@@ -1669,7 +1669,7 @@ inline void register_script_array(
 
 template <std::size_t Size>
 script_array* new_script_array(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    asbind20::engine_pointer engine,
     asbind20::util::fixed_string<Size> subtype_decl
 )
 {

@@ -171,12 +171,12 @@ public:
         );
     }
 
-    void release_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine*)
+    void release_refs(asbind20::engine_pointer)
     {
         clear_var();
     }
 
-    void enum_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine*)
+    void enum_refs(asbind20::engine_pointer)
     {
         if(asbind20::is_void_type(m_var_type_id))
             return;
@@ -200,13 +200,13 @@ private:
     asbind20::atomic_counter m_counter;
     bool m_gc_flag = false;
 
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* m_engine;
+    asbind20::engine_pointer m_engine;
     asbind20::container::single::data_type m_var_data;
     int m_var_type_id = AS_NAMESPACE_QUALIFIER asTYPEID_VOID;
 };
 
 template <bool UseGeneric>
-auto register_gc_init_list_basic_methods(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+auto register_gc_init_list_basic_methods(asbind20::engine_pointer engine)
 {
     using namespace asbind20;
 
@@ -226,7 +226,7 @@ auto register_gc_init_list_basic_methods(AS_NAMESPACE_QUALIFIER asIScriptEngine*
 }
 
 template <asbind20::policies::initialization_list_policy IListPolicy, bool UseGeneric>
-void register_gc_init_list(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+void register_gc_init_list(asbind20::engine_pointer engine)
 {
     using namespace asbind20;
 
@@ -253,7 +253,7 @@ void register_gc_init_list(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 
 // For testing omitted list policy, i.e., only factory policy is provided
 template <bool UseGeneric>
-void register_gc_init_list_simple(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+void register_gc_init_list_simple(asbind20::engine_pointer engine)
 {
     using namespace asbind20;
 
@@ -885,12 +885,12 @@ public:
         );
     }
 
-    void release_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine*)
+    void release_refs(asbind20::engine_pointer)
     {
         clear_var();
     }
 
-    void enum_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine*)
+    void enum_refs(asbind20::engine_pointer)
     {
         asbind20::container::single::enum_refs(
             m_var_data, m_ti.subtype()
@@ -910,7 +910,7 @@ public:
     std::vector<int> ints;
 
     auto get_engine() const
-        -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
+        -> asbind20::engine_pointer
     {
         return m_ti->GetEngine();
     }
@@ -925,7 +925,7 @@ private:
 };
 
 template <typename ListElemType, bool UseGeneric>
-auto register_gc_init_list_temp_methods(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+auto register_gc_init_list_temp_methods(asbind20::engine_pointer engine)
 {
     using namespace asbind20;
 

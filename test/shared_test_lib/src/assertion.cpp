@@ -58,7 +58,7 @@ static void assert_impl(bool cond)
 }
 
 void setup_script_assertion(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
+    asbind20::engine_pointer engine
 )
 {
     using namespace asbind20;

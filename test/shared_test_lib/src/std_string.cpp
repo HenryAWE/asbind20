@@ -4,7 +4,7 @@
 namespace asbind_test
 {
 void configure_engine_for_ext_string(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
+    asbind20::engine_pointer engine
 )
 {
     engine->SetEngineProperty(
@@ -19,7 +19,7 @@ void configure_engine_for_ext_string(
 }
 
 void setup_script_char(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, bool generic
+    asbind20::engine_pointer engine, bool generic
 )
 {
     using namespace asbind20;
@@ -266,7 +266,7 @@ namespace script_string
 
 template <bool UseGeneric>
 static void setup_script_string_impl(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    asbind20::engine_pointer engine,
     bool as_default = true
 )
 {
@@ -352,7 +352,7 @@ static void setup_script_string_impl(
 }
 
 void setup_script_string(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    asbind20::engine_pointer engine,
     bool generic,
     bool as_default
 )
@@ -364,7 +364,7 @@ void setup_script_string(
 }
 
 void setup_string_utils(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    asbind20::engine_pointer engine,
     bool generic
 )
 {

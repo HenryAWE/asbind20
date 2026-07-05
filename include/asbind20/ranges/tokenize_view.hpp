@@ -16,7 +16,7 @@ public:
     tokenize_view(const tokenize_view&) = default;
 
     tokenize_view(
-        const AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+        const_engine_pointer engine,
         std::string_view code
     ) noexcept
         : m_engine(engine), m_sv(code) {}
@@ -134,13 +134,13 @@ public:
 
     [[nodiscard]]
     auto get_engine() const noexcept
-        -> const AS_NAMESPACE_QUALIFIER asIScriptEngine*
+        -> const_engine_pointer
     {
         return m_engine;
     }
 
 private:
-    const AS_NAMESPACE_QUALIFIER asIScriptEngine* m_engine;
+    const_engine_pointer m_engine;
     std::string_view m_sv;
 };
 
@@ -151,7 +151,7 @@ namespace views
         struct tokenize_t
         {
             tokenize_view operator()(
-                const AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+                const_engine_pointer engine,
                 std::string_view code
             ) const
             {
@@ -164,7 +164,7 @@ namespace views
                 proxy() = delete;
                 proxy(const proxy&) = default;
 
-                explicit proxy(const AS_NAMESPACE_QUALIFIER asIScriptEngine* engine) noexcept
+                explicit proxy(const_engine_pointer engine) noexcept
                     : m_engine(engine)
                 {}
 
@@ -181,11 +181,11 @@ namespace views
                 }
 
             private:
-                const AS_NAMESPACE_QUALIFIER asIScriptEngine* m_engine;
+                const_engine_pointer m_engine;
             };
 
             proxy operator()(
-                const AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
+                const_engine_pointer engine
             ) const noexcept
             {
                 return proxy(engine);

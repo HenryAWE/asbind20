@@ -83,7 +83,7 @@ namespace detail
         if(!asbind20::is_primitive_type(subtype_id))
             find_required_elem_methods(out, subtype_id, ti);
 
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = ti->GetEngine();
+        asbind20::engine_pointer engine = ti->GetEngine();
         {
             const char* subtype_decl = engine->GetTypeDeclaration(subtype_id, true);
             out.iterator_ti = engine->GetTypeInfoByDecl(

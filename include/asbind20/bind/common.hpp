@@ -349,8 +349,6 @@ concept usable_by_generator = requires(T&& t, BindingGenerator& gen) {
 class engine_ref_holder
 {
 public:
-    using engine_pointer = AS_NAMESPACE_QUALIFIER asIScriptEngine*;
-
     engine_ref_holder() = delete;
     engine_ref_holder(const engine_ref_holder&) noexcept = default;
 
@@ -377,8 +375,6 @@ template <typename Listener = default_listener>
 class binding_generator_base : public engine_ref_holder
 {
 public:
-    using engine_pointer = AS_NAMESPACE_QUALIFIER asIScriptEngine*;
-
     binding_generator_base(const binding_generator_base&) noexcept(std::is_nothrow_copy_constructible_v<Listener>) = default;
 
 protected:

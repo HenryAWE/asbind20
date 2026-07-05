@@ -71,7 +71,7 @@ public:
 static inline int_generator g_int_gen{};
 
 template <bool Const, bool Explicit, bool UseGeneric>
-void register_int_generator(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+void register_int_generator(asbind20::engine_pointer engine)
 {
     using namespace asbind20;
 
@@ -109,7 +109,7 @@ void register_int_generator(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         .property("int_generator int_gen", g_int_gen);
 }
 
-auto prepare_int_seq_test(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+auto prepare_int_seq_test(asbind20::engine_pointer engine)
     -> AS_NAMESPACE_QUALIFIER asIScriptFunction*
 {
     auto* m = engine->GetModule(

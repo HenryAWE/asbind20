@@ -60,7 +60,7 @@ public:
     }
 
     auto get_engine() const
-        -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
+        -> asbind20::engine_pointer
     {
         return m_engine.get();
     }
@@ -84,7 +84,7 @@ private:
 
 template <typename Return>
 Return run_string(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    asbind20::engine_pointer engine,
     const char* section,
     std::string_view code,
     std::string_view return_decl
@@ -132,7 +132,7 @@ Return run_string(
 }
 
 void run_string(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    asbind20::engine_pointer engine,
     const char* section,
     std::string_view code
 );

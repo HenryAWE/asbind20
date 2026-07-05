@@ -28,7 +28,7 @@ public:
     {
         SCOPED_TRACE(std::string("Type name: ") + g.get_name());
 
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = g.get_engine();
+        asbind20::engine_pointer engine = g.get_engine();
         ASSERT_NE(engine, nullptr);
 
         if(r < 0)
@@ -50,7 +50,7 @@ public:
     {
         SCOPED_TRACE(std::string("Type name: ") + g.get_name());
 
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = g.get_engine();
+        asbind20::engine_pointer engine = g.get_engine();
         ASSERT_NE(engine, nullptr);
 
         if(r < 0)

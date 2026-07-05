@@ -17,6 +17,6 @@ std::string gen_full_assert_msg(
 );
 
 void setup_script_assertion(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
+    asbind20::engine_pointer engine
 );
 } // namespace asbind_test

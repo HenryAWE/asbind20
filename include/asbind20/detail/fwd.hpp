@@ -13,8 +13,13 @@
 
 namespace asbind20
 {
+using engine_pointer = AS_NAMESPACE_QUALIFIER asIScriptEngine*;
+using const_engine_pointer = AS_NAMESPACE_QUALIFIER asIScriptEngine const*;
+
 using generic_function = AS_NAMESPACE_QUALIFIER asGENFUNC_t;
 using generic_pointer = AS_NAMESPACE_QUALIFIER asIScriptGeneric*;
+using const_generic_pointer = AS_NAMESPACE_QUALIFIER asIScriptGeneric const*;
+
 using typeinfo_pointer = AS_NAMESPACE_QUALIFIER asITypeInfo*;
 using const_typeinfo_pointer = AS_NAMESPACE_QUALIFIER asITypeInfo const*;
 } // namespace asbind20

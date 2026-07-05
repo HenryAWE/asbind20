@@ -413,7 +413,7 @@ TEST(TestInvoke, Suspension)
 namespace test_invoke
 {
 static void setup_bad_call_helper(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, std::string_view ret_type_decl
+    asbind20::engine_pointer engine, std::string_view ret_type_decl
 )
 {
     using namespace asbind20;

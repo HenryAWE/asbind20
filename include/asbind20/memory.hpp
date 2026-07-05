@@ -198,7 +198,7 @@ public:
     explicit reuse_active_context(std::nullptr_t) = delete;
 
     explicit reuse_active_context(
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, bool propagate_error = true
+        engine_pointer engine, bool propagate_error = true
     )
         : m_engine(engine), m_propagate_error(propagate_error)
     {
@@ -241,7 +241,7 @@ public:
 
     [[nodiscard]]
     auto get_engine() const noexcept
-        -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
+        -> engine_pointer
     {
         return m_engine;
     }
@@ -272,7 +272,7 @@ public:
     }
 
 private:
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* m_engine = nullptr;
+    engine_pointer m_engine = nullptr;
     handle_type m_ctx = nullptr;
     bool m_is_nested = false;
     bool m_propagate_error = true;
@@ -327,7 +327,7 @@ public:
 
     explicit request_context(std::nullptr_t) = delete;
 
-    explicit request_context(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+    explicit request_context(engine_pointer engine)
         : m_engine(engine)
     {
         ASBIND20_ASSERT(m_engine != nullptr);
@@ -348,7 +348,7 @@ public:
 
     [[nodiscard]]
     auto get_engine() const noexcept
-        -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
+        -> engine_pointer
     {
         return m_engine;
     }
@@ -364,7 +364,7 @@ public:
     }
 
 private:
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* m_engine = nullptr;
+    engine_pointer m_engine = nullptr;
     handle_type m_ctx = nullptr;
 };
 
@@ -393,7 +393,7 @@ public:
      * @param engine Script engine. If it is null, the context will not be created.
      */
     explicit script_context(
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
+        engine_pointer engine
     )
     {
         if(!engine) [[unlikely]]
@@ -481,7 +481,7 @@ private:
 class script_engine
 {
 public:
-    using handle_type = AS_NAMESPACE_QUALIFIER asIScriptEngine*;
+    using handle_type = engine_pointer;
 
     script_engine() noexcept
         : m_engine(nullptr) {}
@@ -995,7 +995,7 @@ namespace container
          *
          * @return True if successful
          */
-        static bool construct(data_type& data, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id)
+        static bool construct(data_type& data, engine_pointer engine, int type_id)
         {
             ASBIND20_ASSERT(!is_void_type(type_id));
 
@@ -1032,7 +1032,7 @@ namespace container
          *
          * @note Make sure this helper doesn't contain a constructed object previously!
          */
-        static bool copy_construct(data_type& data, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id, const void* ref)
+        static bool copy_construct(data_type& data, engine_pointer engine, int type_id, const void* ref)
         {
             ASBIND20_ASSERT(!is_void_type(type_id));
 
@@ -1078,7 +1078,7 @@ namespace container
          *
          * @note Make sure the stored value is valid!
          */
-        static bool copy_assign_from(data_type& data, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id, const void* ref)
+        static bool copy_assign_from(data_type& data, engine_pointer engine, int type_id, const void* ref)
         {
             ASBIND20_ASSERT(!is_void_type(type_id));
 
@@ -1125,7 +1125,7 @@ namespace container
          *
          * @note Make sure the stored value is valid!
          */
-        static bool copy_assign_to(const data_type& data, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id, void* out)
+        static bool copy_assign_to(const data_type& data, engine_pointer engine, int type_id, void* out)
         {
             ASBIND20_ASSERT(!is_void_type(type_id));
             ASBIND20_ASSERT(out != nullptr);
@@ -1170,7 +1170,7 @@ namespace container
          * @param engine Script engine
          * @param type_id Type ID. Must @b NOT be void (`asTYPEID_VOID`)
          */
-        static void destroy(data_type& data, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id)
+        static void destroy(data_type& data, engine_pointer engine, int type_id)
         {
             if(is_primitive_type(type_id))
             {

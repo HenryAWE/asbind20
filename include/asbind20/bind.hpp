@@ -34,7 +34,7 @@ public:
     access_mask& operator=(const access_mask&) = delete;
 
     access_mask(
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+        engine_pointer engine,
         mask_type mask
     )
         : m_engine(engine)
@@ -50,7 +50,7 @@ public:
 
     [[nodiscard]]
     auto get_engine() const noexcept
-        -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
+        -> engine_pointer
     {
         return m_engine;
     }
@@ -62,7 +62,7 @@ public:
     }
 
 private:
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* m_engine;
+    engine_pointer m_engine;
     mask_type m_prev;
 };
 
@@ -74,7 +74,7 @@ public:
 
     namespace_& operator=(const namespace_&) = delete;
 
-    namespace_(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+    namespace_(engine_pointer engine)
         : m_engine(engine), m_prev(engine->GetDefaultNamespace())
     {
         ASBIND20_ASSERT(engine != nullptr);
@@ -82,7 +82,7 @@ public:
     }
 
     namespace_(
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+        engine_pointer engine,
         std::string_view ns,
         bool nested = true
     )
@@ -126,7 +126,7 @@ public:
 
     [[nodiscard]]
     auto get_engine() const noexcept
-        -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
+        -> engine_pointer
     {
         return m_engine;
     }
@@ -138,7 +138,7 @@ public:
     }
 
 private:
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* m_engine;
+    engine_pointer m_engine;
     std::string m_prev;
 
     void set_ns_impl(const char* ns) const
@@ -159,7 +159,6 @@ class basic_interface : public binding_generator_base<Listener>
 
 public:
     using flag_type = AS_NAMESPACE_QUALIFIER asQWORD;
-    using engine_pointer = AS_NAMESPACE_QUALIFIER asIScriptEngine*;
 
     basic_interface() = delete;
     basic_interface(const basic_interface&) = default;
@@ -193,7 +192,7 @@ public:
 
     template <string_like StringLike>
     basic_interface(
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+        engine_pointer engine,
         StringLike&& name
     )
         : basic_interface(
@@ -205,7 +204,7 @@ public:
     template <bool AppendOnly, string_like StringLike>
     basic_interface(
         appending_t<AppendOnly>,
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+        engine_pointer engine,
         StringLike&& name
     )
         : basic_interface(
@@ -265,7 +264,7 @@ using interface = basic_interface<>;
  * @brief Generic calling convention for message callback is not supported.
  */
 int set_message_callback(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    engine_pointer engine,
     generic_function gfn,
     void* obj = nullptr
 ) = delete;
@@ -276,7 +275,7 @@ int set_message_callback(
 template <native_function Callback>
 requires(!std::is_member_function_pointer_v<Callback>)
 int set_message_callback(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    engine_pointer engine,
     Callback fn,
     void* obj = nullptr
 )
@@ -308,7 +307,7 @@ int set_message_callback(
 template <native_function Callback, typename T>
 requires(std::is_member_function_pointer_v<Callback>)
 int set_message_callback(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    engine_pointer engine,
     Callback fn,
     auxiliary_wrapper<T> aux
 )
@@ -337,7 +336,7 @@ int set_message_callback(
  * @brief Generic calling convention for exception translator is not supported.
  */
 int set_exception_translator(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    engine_pointer engine,
     generic_function gfn,
     void* obj = nullptr
 ) = delete;
@@ -348,7 +347,7 @@ int set_exception_translator(
 template <native_function Callback>
 requires(!std::is_member_function_pointer_v<Callback>)
 int set_exception_translator(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    engine_pointer engine,
     Callback fn,
     void* obj = nullptr
 )
@@ -380,7 +379,7 @@ int set_exception_translator(
 template <native_function Callback, typename T>
 requires(std::is_member_function_pointer_v<Callback>)
 int set_exception_translator(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    engine_pointer engine,
     Callback fn,
     auxiliary_wrapper<T> aux
 )

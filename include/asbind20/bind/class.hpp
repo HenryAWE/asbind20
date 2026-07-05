@@ -1209,7 +1209,7 @@ public:
     class_binding_generator_base() = delete;
     class_binding_generator_base(const class_binding_generator_base&) = default;
 
-    class_binding_generator_base(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, std::string name)
+    class_binding_generator_base(engine_pointer engine, std::string name)
         : my_base(engine), m_name(std::move(name)) {}
 
 protected:
@@ -2840,7 +2840,7 @@ public:
     using class_binding_generator_tag = void;
 
     basic_value_class(
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+        engine_pointer engine,
         std::string name,
         flag_type flags = 0
     )
@@ -2870,7 +2870,7 @@ public:
 
     template <string_like StringLike>
     basic_value_class(
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+        engine_pointer engine,
         StringLike&& name,
         AS_NAMESPACE_QUALIFIER asQWORD flags = 0
     )
@@ -2883,7 +2883,7 @@ public:
 
     basic_value_class(
         appending_t<true>,
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+        engine_pointer engine,
         std::string name
     )
         : my_base(engine, std::move(name))
@@ -2894,7 +2894,7 @@ public:
     template <string_like StringLike>
     basic_value_class(
         appending_t<true>,
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+        engine_pointer engine,
         StringLike&& name
     )
         : basic_value_class(
@@ -4161,7 +4161,7 @@ public:
     using class_binding_generator_tag = void;
 
     basic_ref_class(
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+        engine_pointer engine,
         std::string name,
         AS_NAMESPACE_QUALIFIER asQWORD flags = 0
     )
@@ -4189,7 +4189,7 @@ public:
 
     template <string_like StringLike>
     basic_ref_class(
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+        engine_pointer engine,
         StringLike&& name,
         AS_NAMESPACE_QUALIFIER asQWORD flags = 0
     )
@@ -4203,7 +4203,7 @@ public:
     template <bool AppendOnly>
     basic_ref_class(
         appending_t<AppendOnly>,
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+        engine_pointer engine,
         std::string name
     )
         : my_base(engine, std::move(name))
@@ -4217,7 +4217,7 @@ public:
     template <bool AppendOnly, string_like StringLike>
     basic_ref_class(
         appending_t<AppendOnly>,
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+        engine_pointer engine,
         StringLike&& name
     )
         : basic_ref_class(

@@ -25,7 +25,7 @@ public:
     }
 
     auto get_engine() const
-        -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
+        -> asbind20::engine_pointer
     {
         return m_engine.get();
     }
@@ -63,7 +63,7 @@ struct map_ret_test_helper
 };
 
 static auto build_module(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, const char* code
+    asbind20::engine_pointer engine, const char* code
 )
 {
     auto* m = engine->GetModule(
@@ -77,7 +77,7 @@ static auto build_module(
     return m;
 }
 
-static void check_map_ret(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void check_map_ret(asbind20::engine_pointer engine)
 {
     auto* m = build_module(
         engine,
@@ -93,7 +93,7 @@ static void check_map_ret(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     EXPECT_EQ(result.value(), 1013);
 }
 
-static void check_mfn_map_ret(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void check_mfn_map_ret(asbind20::engine_pointer engine)
 {
     auto* m = build_module(
         engine,

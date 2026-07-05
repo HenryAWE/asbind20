@@ -58,7 +58,7 @@ static void message_callback_impl(const AS_NAMESPACE_QUALIFIER asSMessageInfo* m
 }
 
 void setup_message_callback(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    asbind20::engine_pointer engine,
     bool propagate_error_to_gtest
 )
 {
@@ -105,7 +105,7 @@ static void exception_translator_impl(
 }
 
 void setup_exception_translator(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
+    asbind20::engine_pointer engine
 )
 {
     if(!asbind20::has_exceptions())
@@ -132,7 +132,7 @@ void output_gc_statistics(
 
 void output_gc_statistics(
     std::ostream& os,
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    asbind20::engine_pointer engine,
     char sep
 )
 {

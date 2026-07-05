@@ -35,7 +35,7 @@ using uint128_t = std::_Unsigned128;
 namespace test_bind
 {
 template <bool UseGeneric>
-static void register_int128(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void register_int128(asbind20::engine_pointer engine)
 {
     using namespace asbind20;
 
@@ -92,7 +92,7 @@ static void register_int128(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     u128.opImplConv(i128);
 }
 
-static void check_int128(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void check_int128(asbind20::engine_pointer engine)
 {
     auto* m = engine->GetModule(
         "check_int128", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE

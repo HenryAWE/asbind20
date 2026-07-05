@@ -41,7 +41,7 @@ static void from_aux(asbind20::generic_pointer gen)
 } // namespace test_bind
 
 static void register_global_funcs(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, test_bind::class_wrapper& wrapper, std::string& global_val
+    asbind20::engine_pointer engine, test_bind::class_wrapper& wrapper, std::string& global_val
 )
 {
     using asbind20::fp, asbind20::auxiliary, asbind20::aux_value;
@@ -75,7 +75,7 @@ static void register_global_funcs(
 }
 
 static void register_global_funcs(
-    asbind20::use_generic_t, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, test_bind::class_wrapper& wrapper, std::string& global_val
+    asbind20::use_generic_t, asbind20::engine_pointer engine, test_bind::class_wrapper& wrapper, std::string& global_val
 )
 {
     using asbind20::fp, asbind20::auxiliary, asbind20::aux_value;

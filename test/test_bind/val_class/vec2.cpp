@@ -135,7 +135,7 @@ static constexpr AS_NAMESPACE_QUALIFIER asQWORD vec2_type_flags =
     AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_ALLFLOATS |
     AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_MORE_CONSTRUCTORS;
 
-void register_vec2(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+void register_vec2(asbind20::engine_pointer engine)
 {
     using namespace asbind20;
 
@@ -166,7 +166,7 @@ void register_vec2(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         .property("float y", sizeof(float));
 }
 
-void register_vec2(asbind20::use_generic_t, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+void register_vec2(asbind20::use_generic_t, asbind20::engine_pointer engine)
 {
     using namespace asbind20;
 
@@ -196,7 +196,7 @@ void register_vec2(asbind20::use_generic_t, AS_NAMESPACE_QUALIFIER asIScriptEngi
 }
 
 void setup_bind_vec2_env(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, bool generic
+    asbind20::engine_pointer engine, bool generic
 )
 {
     asbind_test::setup_message_callback(engine);
@@ -209,7 +209,7 @@ void setup_bind_vec2_env(
         register_vec2(engine);
 }
 
-static void run_vec2_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void run_vec2_test_script(asbind20::engine_pointer engine)
 {
     using asbind_test::result_has_value;
 

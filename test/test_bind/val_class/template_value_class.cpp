@@ -118,7 +118,7 @@ static void create_template_val(void* mem, asbind20::typeinfo_pointer ti, int va
     new(mem) template_val(ti, val);
 }
 
-static void register_template_val_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void register_template_val_class(asbind20::engine_pointer engine)
 {
     using namespace asbind20;
 
@@ -184,7 +184,7 @@ static void register_template_val_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* 
         .property("string str", &template_val_complex_spec::str);
 }
 
-static void register_template_val_class(asbind20::use_generic_t, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void register_template_val_class(asbind20::use_generic_t, asbind20::engine_pointer engine)
 {
     using namespace asbind20;
 
@@ -287,7 +287,7 @@ int test_6()
     return val.subtype_id;
 })";
 
-static void check_template_val_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void check_template_val_class(asbind20::engine_pointer engine)
 {
     auto* m = engine->GetModule("test_template_value_class", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
     ASSERT_TRUE(m);

@@ -74,7 +74,7 @@ struct gc_statistics
  */
 [[nodiscard]]
 inline gc_statistics get_gc_statistics(
-    const AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
+    const_engine_pointer engine
 )
 {
     if(!engine) [[unlikely]]

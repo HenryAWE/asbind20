@@ -31,7 +31,7 @@ public:
     auto get_module()
         -> AS_NAMESPACE_QUALIFIER asIScriptModule*
     {
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = this->get_engine();
+        asbind20::engine_pointer engine = this->get_engine();
         auto* m = engine->GetModule(
             "mt_string_test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
         );

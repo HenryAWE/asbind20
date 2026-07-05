@@ -91,7 +91,7 @@ TEST(Appending, ValueClass)
 
 namespace test_bind
 {
-static void check_enum_appending(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void check_enum_appending(asbind20::engine_pointer engine)
 {
     auto* m = engine->GetModule(
         "appending", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
@@ -153,7 +153,7 @@ TEST(TryAppending, Enum)
 
 namespace test_bind
 {
-void check_ref_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+void check_ref_class(asbind20::engine_pointer engine)
 {
     auto* m = engine->GetModule(
         "appending", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
@@ -223,7 +223,7 @@ TEST(TryAppending, RefClass)
 
 namespace test_bind
 {
-static void check_interface_appending(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void check_interface_appending(asbind20::engine_pointer engine)
 {
     auto* ti = engine->GetTypeInfoByName("intf");
     ASSERT_NE(ti, nullptr);

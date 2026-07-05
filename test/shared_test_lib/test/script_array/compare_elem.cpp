@@ -2,7 +2,7 @@
 
 namespace test_script_array
 {
-static void check_count(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void check_count(asbind20::engine_pointer engine)
 {
     SCOPED_TRACE(__func__);
 
@@ -26,7 +26,7 @@ static void check_count(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     );
 }
 
-static void check_count_if(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void check_count_if(asbind20::engine_pointer engine)
 {
     SCOPED_TRACE(__func__);
 
@@ -57,7 +57,7 @@ static void check_count_if(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     );
 }
 
-static void check_sort(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void check_sort(asbind20::engine_pointer engine)
 {
     SCOPED_TRACE(__func__);
 

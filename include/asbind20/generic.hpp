@@ -103,7 +103,7 @@ T get_generic_arg(
         }
         else if constexpr(std::same_as<value_t, AS_NAMESPACE_QUALIFIER asIScriptEngine>)
         {
-            return *(AS_NAMESPACE_QUALIFIER asIScriptEngine**)gen->GetAddressOfArg(idx);
+            return *(engine_pointer*)gen->GetAddressOfArg(idx);
         }
         else
         {

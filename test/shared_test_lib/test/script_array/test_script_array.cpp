@@ -3,7 +3,7 @@
 namespace test_script_array
 {
 void run_string(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    asbind20::engine_pointer engine,
     const char* section,
     std::string_view code
 )
@@ -27,7 +27,7 @@ enum my_enum : script_enum_value_type
     huge_val = std::numeric_limits<script_enum_value_type>::max()
 };
 
-void setup_my_enum(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+void setup_my_enum(asbind20::engine_pointer engine)
 {
     asbind20::enum_<my_enum, std::underlying_type_t<my_enum>>(engine, "my_enum")
         .value("neg_one", my_enum::neg_one)
@@ -36,7 +36,7 @@ void setup_my_enum(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         .value("huge_val", my_enum::huge_val);
 }
 
-static void test_empty_arr(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void test_empty_arr(asbind20::engine_pointer engine)
 {
     SCOPED_TRACE(__func__);
 
@@ -73,7 +73,7 @@ static void test_empty_arr(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     );
 }
 
-static void test_construct_arr(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void test_construct_arr(asbind20::engine_pointer engine)
 {
     SCOPED_TRACE(__func__);
 

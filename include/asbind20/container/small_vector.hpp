@@ -136,7 +136,7 @@ private:
         ~impl_interface() = default;
 
         auto get_engine() const
-            -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
+            -> engine_pointer
         {
             assert(m_type_data.ti != nullptr);
             return m_type_data.ti->GetEngine();
@@ -686,7 +686,7 @@ private:
                 {
                     this->reserve(ilist.size());
 
-                    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = subtype_ti->GetEngine();
+                    engine_pointer engine = subtype_ti->GetEngine();
                     size_type elem_size = subtype_ti->GetSize();
                     std::byte* p_elem = static_cast<std::byte*>(ilist.data());
                     for(size_type i = 0; i < static_cast<size_type>(ilist.size()); ++i)
@@ -775,7 +775,7 @@ private:
             else
             {
                 typeinfo_pointer ti = this->elem_type_info();
-                AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = ti->GetEngine();
+                engine_pointer engine = ti->GetEngine();
                 assert(ti != nullptr);
 
                 for(size_type i = 0; i < new_elems; ++i)
@@ -834,7 +834,7 @@ private:
         {
             this->reserve(this->size() + n);
             typeinfo_pointer ti = this->elem_type_info();
-            AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = ti->GetEngine();
+            engine_pointer engine = ti->GetEngine();
 
             for(size_type i = 0; i < n; ++i)
             {
@@ -860,7 +860,7 @@ private:
             {
                 this->reserve(this->size() + n);
                 typeinfo_pointer ti = this->elem_type_info();
-                AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = ti->GetEngine();
+                engine_pointer engine = ti->GetEngine();
                 assert(ti != nullptr);
 
                 for(size_type i = 0; i < n; ++i)
@@ -1027,7 +1027,7 @@ private:
 
         // NOTE: Call ref_to_obj to convert the pointer at first!
         static void* copy_obj_impl(
-            AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+            engine_pointer engine,
             typeinfo_pointer ti,
             void* obj
         )
@@ -1050,7 +1050,7 @@ private:
         void* copy_obj(void* obj) const
         {
             typeinfo_pointer ti = this->elem_type_info();
-            AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = ti->GetEngine();
+            engine_pointer engine = ti->GetEngine();
             assert(ti != nullptr);
 
             return copy_obj_impl(engine, ti, obj);
@@ -1060,7 +1060,7 @@ private:
         void assign_obj(void*& dst, void* obj)
         {
             typeinfo_pointer ti = this->elem_type_info();
-            AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = ti->GetEngine();
+            engine_pointer engine = ti->GetEngine();
 
             if(dst)
             {
@@ -1093,7 +1093,7 @@ private:
         void release_obj_n(void** objs, size_type n) const noexcept
         {
             typeinfo_pointer ti = this->elem_type_info();
-            AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = ti->GetEngine();
+            engine_pointer engine = ti->GetEngine();
             for(size_type i = 0; i < n; ++i)
             {
                 void* obj = objs[i];
@@ -1333,7 +1333,7 @@ public:
         );
     }
 
-    small_vector(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id)
+    small_vector(engine_pointer engine, int type_id)
     {
         if(is_primitive_type(type_id) && !is_enum_type(type_id))
             init_impl(type_id, nullptr);

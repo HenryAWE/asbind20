@@ -82,7 +82,7 @@ public:
     }
 
     auto get_engine() const
-        -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
+        -> asbind20::engine_pointer
     {
         return m_engine.get();
     }

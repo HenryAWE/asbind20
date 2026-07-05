@@ -32,7 +32,7 @@ public:
                 << "bad typedef: " << to_string(static_cast<AS_NAMESPACE_QUALIFIER asERetCodes>(id));
         }
 
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = g.get_engine();
+        asbind20::engine_pointer engine = g.get_engine();
         ASSERT_NE(engine, nullptr);
         // The return value of RegisterTypedef is the ID of original decl
         if(!asbind20::is_primitive_type(id))
@@ -61,7 +61,7 @@ public:
                 << "bad funcdef: " << to_string(static_cast<AS_NAMESPACE_QUALIFIER asERetCodes>(id));
         }
 
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = g.get_engine();
+        asbind20::engine_pointer engine = g.get_engine();
         ASSERT_NE(engine, nullptr);
         auto* ti = engine->GetTypeInfoById(id);
         ASSERT_NE(ti, nullptr) << "id = " << id;
