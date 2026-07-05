@@ -433,13 +433,13 @@ struct test_aux_factory_template
 {
     test_aux_factory_template() = default;
 
-    test_aux_factory_template(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, int val)
+    test_aux_factory_template(asbind20::typeinfo_pointer ti, int val)
         : value(val)
     {
         EXPECT_EQ(ti->GetSubTypeId(), AS_NAMESPACE_QUALIFIER asTYPEID_INT32);
     }
 
-    test_aux_factory_template(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, int initial_val, asbind20::script_init_list_repeat list)
+    test_aux_factory_template(asbind20::typeinfo_pointer ti, int initial_val, asbind20::script_init_list_repeat list)
         : value(initial_val)
     {
         EXPECT_EQ(ti->GetSubTypeId(), AS_NAMESPACE_QUALIFIER asTYPEID_INT32);
@@ -472,7 +472,7 @@ private:
     int m_counter = 1;
 };
 
-static bool aux_factory_helper_template_callback(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, bool& no_gc)
+static bool aux_factory_helper_template_callback(asbind20::typeinfo_pointer ti, bool& no_gc)
 {
     int subtype_id = ti->GetSubTypeId();
     if(asbind20::is_void_type(subtype_id))
@@ -487,13 +487,13 @@ struct aux_factory_helper_template
     int predefined_value = 0;
     std::size_t created = 0;
 
-    test_aux_factory_template* create_aux_template_as_global(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, int additional)
+    test_aux_factory_template* create_aux_template_as_global(asbind20::typeinfo_pointer ti, int additional)
     {
         ++created;
         return new test_aux_factory_template(ti, predefined_value + additional);
     }
 
-    test_aux_factory_template* create_aux_template_as_global_list(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, void* list_buf)
+    test_aux_factory_template* create_aux_template_as_global_list(asbind20::typeinfo_pointer ti, void* list_buf)
     {
         ++created;
         return new test_aux_factory_template(
@@ -502,13 +502,13 @@ struct aux_factory_helper_template
     }
 };
 
-static test_aux_factory_template* create_aux_template_auxfirst(aux_factory_helper_template& helper, AS_NAMESPACE_QUALIFIER asITypeInfo* ti, int additional)
+static test_aux_factory_template* create_aux_template_auxfirst(aux_factory_helper_template& helper, asbind20::typeinfo_pointer ti, int additional)
 {
     ++helper.created;
     return new test_aux_factory_template(ti, helper.predefined_value + additional);
 }
 
-static test_aux_factory_template* create_aux_template_auxfirst_list(aux_factory_helper_template& helper, AS_NAMESPACE_QUALIFIER asITypeInfo* ti, void* list_buf)
+static test_aux_factory_template* create_aux_template_auxfirst_list(aux_factory_helper_template& helper, asbind20::typeinfo_pointer ti, void* list_buf)
 {
     ++helper.created;
     return new test_aux_factory_template(
@@ -516,13 +516,13 @@ static test_aux_factory_template* create_aux_template_auxfirst_list(aux_factory_
     );
 }
 
-static test_aux_factory_template* create_aux_template_auxlast(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, int additional, aux_factory_helper_template& helper)
+static test_aux_factory_template* create_aux_template_auxlast(asbind20::typeinfo_pointer ti, int additional, aux_factory_helper_template& helper)
 {
     ++helper.created;
     return new test_aux_factory_template(ti, helper.predefined_value + additional);
 }
 
-static test_aux_factory_template* create_aux_template_auxlast_list(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, void* list_buf, aux_factory_helper_template& helper)
+static test_aux_factory_template* create_aux_template_auxlast_list(asbind20::typeinfo_pointer ti, void* list_buf, aux_factory_helper_template& helper)
 {
     ++helper.created;
     return new test_aux_factory_template(

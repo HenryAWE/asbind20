@@ -37,7 +37,7 @@ namespace detail
         {
             asbind20::container::script_element_comparator comp;
             asbind20::container::get_comparator_result::status status;
-            AS_NAMESPACE_QUALIFIER asITypeInfo* iterator_ti;
+            asbind20::typeinfo_pointer iterator_ti;
 
             ~array_cache() = default;
         };
@@ -52,17 +52,17 @@ namespace detail
 
     public:
         static bool template_callback(
-            AS_NAMESPACE_QUALIFIER asITypeInfo* ti, bool&
+            asbind20::typeinfo_pointer ti, bool&
         );
 
     private:
         static void find_required_elem_methods(
-            array_cache& out, int subtype_id, AS_NAMESPACE_QUALIFIER asITypeInfo* ti
+            array_cache& out, int subtype_id, asbind20::typeinfo_pointer ti
         );
 
     protected:
         static void generate_cache(
-            array_cache& out, int subtype_id, AS_NAMESPACE_QUALIFIER asITypeInfo* ti
+            array_cache& out, int subtype_id, asbind20::typeinfo_pointer ti
         );
 
         // Setups cached methods for script array.
@@ -71,7 +71,7 @@ namespace detail
         // See: https://www.gamedev.net/forums/topic/717709-about-caching-required-methods-in-template-callback/
         template <AS_NAMESPACE_QUALIFIER asPWORD UserDataID>
         static void setup_cache(
-            int subtype_id, AS_NAMESPACE_QUALIFIER asITypeInfo* ti
+            int subtype_id, asbind20::typeinfo_pointer ti
         )
         {
             array_cache* cache = static_cast<array_cache*>(
@@ -103,7 +103,7 @@ namespace detail
         }
 
         template <AS_NAMESPACE_QUALIFIER asPWORD UserDataID>
-        static void cache_cleanup_callback(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+        static void cache_cleanup_callback(asbind20::typeinfo_pointer ti)
         {
             array_cache* mem = get_cache<UserDataID>(ti);
             if(mem)
@@ -114,7 +114,7 @@ namespace detail
         }
 
         template <AS_NAMESPACE_QUALIFIER asPWORD UserDataID>
-        static array_cache* get_cache(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+        static array_cache* get_cache(asbind20::typeinfo_pointer ti)
         {
             assert(ti != nullptr);
             return static_cast<array_cache*>(
@@ -134,7 +134,7 @@ class script_array : private detail::script_array_base
 
     void setup_cache()
     {
-        AS_NAMESPACE_QUALIFIER asITypeInfo* ti = get_type_info();
+        asbind20::typeinfo_pointer ti = get_type_info();
         my_base::setup_cache<user_id>(ti->GetSubTypeId(), ti);
     }
 
@@ -153,7 +153,7 @@ public:
 
     script_array() = delete;
 
-    script_array(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+    script_array(asbind20::typeinfo_pointer ti)
         : m_data(ti)
     {
         setup_cache();
@@ -165,7 +165,7 @@ public:
         setup_cache();
     }
 
-    script_array(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, const script_array& other)
+    script_array(asbind20::typeinfo_pointer ti, const script_array& other)
         : m_data(ti)
     {
         if(ti != other.get_type_info())
@@ -182,21 +182,21 @@ public:
         }
     }
 
-    script_array(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, size_type n)
+    script_array(asbind20::typeinfo_pointer ti, size_type n)
         : m_data(ti)
     {
         setup_cache();
         m_data.emplace_back_n(n);
     }
 
-    script_array(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, size_type n, const void* value)
+    script_array(asbind20::typeinfo_pointer ti, size_type n, const void* value)
         : m_data(ti)
     {
         setup_cache();
         m_data.push_back_n(n, value);
     }
 
-    script_array(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, asbind20::script_init_list_repeat ilist)
+    script_array(asbind20::typeinfo_pointer ti, asbind20::script_init_list_repeat ilist)
         : m_data(ti, ilist)
     {
         setup_cache();
@@ -217,12 +217,12 @@ public:
     public:
         using difference_type = std::make_signed_t<size_type>;
 
-        script_array_iterator(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+        script_array_iterator(asbind20::typeinfo_pointer ti)
         {
             (void)ti;
         }
 
-        script_array_iterator(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, script_array* arr)
+        script_array_iterator(asbind20::typeinfo_pointer ti, script_array* arr)
             : m_arr(arr)
         {
             (void)ti;
@@ -242,14 +242,14 @@ public:
                 m_arr->addref();
         }
 
-        script_array_iterator(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, const script_array_iterator& other)
+        script_array_iterator(asbind20::typeinfo_pointer ti, const script_array_iterator& other)
             : script_array_iterator(other)
         {
             (void)ti;
             assert(ti->GetSubTypeId() == m_arr->get_type_info()->GetSubTypeId());
         }
 
-        script_array_iterator(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, script_array* arr, size_type offset)
+        script_array_iterator(asbind20::typeinfo_pointer ti, script_array* arr, size_type offset)
             : m_arr(arr), m_offset(offset)
         {
             (void)ti;
@@ -718,7 +718,7 @@ public:
         }
         else
         {
-            AS_NAMESPACE_QUALIFIER asITypeInfo* ti = get_type_info();
+            asbind20::typeinfo_pointer ti = get_type_info();
 
             asbind20::reuse_active_context ctx(ti->GetEngine());
             array_cache* cache = get_cache();
@@ -768,7 +768,7 @@ public:
 
         n = std::min(size() - off, n);
 
-        AS_NAMESPACE_QUALIFIER asITypeInfo* ti = get_type_info();
+        asbind20::typeinfo_pointer ti = get_type_info();
 
         callback_guard guard(this);
         asbind20::reuse_active_context ctx(ti->GetEngine());
@@ -1214,7 +1214,7 @@ public:
 
     [[nodiscard]]
     auto get_type_info() const noexcept
-        -> AS_NAMESPACE_QUALIFIER asITypeInfo*
+        -> asbind20::typeinfo_pointer
     {
         return m_data.get_type_info();
     }
@@ -1676,7 +1676,7 @@ script_array* new_script_array(
     using asbind20::util::fixed_string;
 
     auto full_decl = fixed_string("array<") + subtype_decl + fixed_string(">");
-    AS_NAMESPACE_QUALIFIER asITypeInfo* ti = engine->GetTypeInfoByDecl(
+    asbind20::typeinfo_pointer ti = engine->GetTypeInfoByDecl(
         full_decl.c_str()
     );
     if(!ti) [[unlikely]]

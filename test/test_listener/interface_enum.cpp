@@ -38,7 +38,7 @@ public:
                 << "bad enum: " << to_string(static_cast<AS_NAMESPACE_QUALIFIER asERetCodes>(r));
         }
 
-        AS_NAMESPACE_QUALIFIER asITypeInfo* ti = engine->GetTypeInfoById(r);
+        asbind20::typeinfo_pointer ti = engine->GetTypeInfoById(r);
         ASSERT_NE(ti, nullptr)
             << "id = " << r;
 
@@ -60,7 +60,7 @@ public:
                 << "bad interface: " << to_string(static_cast<AS_NAMESPACE_QUALIFIER asERetCodes>(r));
         }
 
-        AS_NAMESPACE_QUALIFIER asITypeInfo* ti = engine->GetTypeInfoById(r);
+        asbind20::typeinfo_pointer ti = engine->GetTypeInfoById(r);
         ASSERT_NE(ti, nullptr)
             << "id = " << r;
 

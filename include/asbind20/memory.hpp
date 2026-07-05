@@ -617,7 +617,7 @@ public:
       *
       * @note If it failed to connect, this helper will be reset to nullptr.
       */
-    void connect_object(void* obj, AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+    void connect_object(void* obj, typeinfo_pointer ti)
     {
         if(!ti) [[unlikely]]
         {
@@ -744,7 +744,7 @@ inline lockable_shared_bool make_lockable_shared_bool()
 class script_typeinfo
 {
 public:
-    using handle_type = AS_NAMESPACE_QUALIFIER asITypeInfo*;
+    using handle_type = typeinfo_pointer;
 
     script_typeinfo() noexcept = default;
 
@@ -871,7 +871,7 @@ public:
 
     [[nodiscard]]
     auto subtype(AS_NAMESPACE_QUALIFIER asUINT idx = 0) const
-        -> AS_NAMESPACE_QUALIFIER asITypeInfo*
+        -> typeinfo_pointer
     {
         if(!m_ti) [[unlikely]]
             return nullptr;
@@ -1196,7 +1196,7 @@ namespace container
          * @param data Stored value
          * @param ti Type information
          */
-        static void enum_refs(data_type& data, AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+        static void enum_refs(data_type& data, typeinfo_pointer ti)
         {
             if(!ti) [[unlikely]]
                 return;

@@ -32,7 +32,7 @@ struct class_wrapper
 };
 
 // AngelScript declaration: int from_aux()
-static void from_aux(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+static void from_aux(asbind20::generic_pointer gen)
 {
     auto val = std::bit_cast<std::intptr_t>(gen->GetAuxiliary());
 

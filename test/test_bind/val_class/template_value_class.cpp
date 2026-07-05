@@ -9,16 +9,16 @@ class template_val
 public:
     template_val() = delete;
 
-    template_val(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+    template_val(asbind20::typeinfo_pointer ti)
         : subtype_id(ti->GetSubTypeId()) {}
 
-    template_val(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, const template_val& val)
+    template_val(asbind20::typeinfo_pointer ti, const template_val& val)
         : subtype_id(ti->GetSubTypeId()), value(val.value) {}
 
-    template_val(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, int val)
+    template_val(asbind20::typeinfo_pointer ti, int val)
         : subtype_id(ti->GetSubTypeId()), value(val) {}
 
-    template_val(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, asbind20::script_init_list_repeat list)
+    template_val(asbind20::typeinfo_pointer ti, asbind20::script_init_list_repeat list)
         : subtype_id(ti->GetSubTypeId()), value(0)
     {
         int* start = static_cast<int*>(list.data());
@@ -39,17 +39,17 @@ class template_val_complex
 public:
     template_val_complex() = delete;
 
-    template_val_complex(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+    template_val_complex(asbind20::typeinfo_pointer ti)
         : subtype_id(ti->GetSubTypeId()) {}
 
-    template_val_complex(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, const template_val_complex& val)
+    template_val_complex(asbind20::typeinfo_pointer ti, const template_val_complex& val)
         : subtype_id(ti->GetSubTypeId()), str(val.str) {}
 
-    template_val_complex(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, int val)
+    template_val_complex(asbind20::typeinfo_pointer ti, int val)
         : subtype_id(ti->GetSubTypeId()), str(std::to_string(val)) {}
 
     // Pattern: {repeat int}
-    template_val_complex(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, void* list_buf)
+    template_val_complex(asbind20::typeinfo_pointer ti, void* list_buf)
         : subtype_id(ti->GetSubTypeId())
     {
         asbind20::script_init_list_repeat list(list_buf);
@@ -104,7 +104,7 @@ public:
     std::string str;
 };
 
-static bool template_callback(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, bool& no_gc)
+static bool template_callback(asbind20::typeinfo_pointer ti, bool& no_gc)
 {
     no_gc = true;
 
@@ -113,7 +113,7 @@ static bool template_callback(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, bool& no_g
            subtype_id == AS_NAMESPACE_QUALIFIER asTYPEID_FLOAT;
 }
 
-static void create_template_val(void* mem, AS_NAMESPACE_QUALIFIER asITypeInfo* ti, int val)
+static void create_template_val(void* mem, asbind20::typeinfo_pointer ti, int val)
 {
     new(mem) template_val(ti, val);
 }
@@ -122,7 +122,7 @@ static void register_template_val_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* 
 {
     using namespace asbind20;
 
-    auto wrapper = [](AS_NAMESPACE_QUALIFIER asITypeInfo* ti, int val1, int val2, void* mem) -> void
+    auto wrapper = [](asbind20::typeinfo_pointer ti, int val1, int val2, void* mem) -> void
     {
         new(mem) template_val(ti, val1 * 100 + val2);
     };
@@ -188,7 +188,7 @@ static void register_template_val_class(asbind20::use_generic_t, AS_NAMESPACE_QU
 {
     using namespace asbind20;
 
-    auto wrapper = [](AS_NAMESPACE_QUALIFIER asITypeInfo* ti, int val1, int val2, void* mem) -> void
+    auto wrapper = [](asbind20::typeinfo_pointer ti, int val1, int val2, void* mem) -> void
     {
         new(mem) template_val(ti, val1 * 100 + val2);
     };

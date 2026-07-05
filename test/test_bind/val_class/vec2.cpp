@@ -111,7 +111,7 @@ static float& vec2_opIndex(vec2& v, AS_NAMESPACE_QUALIFIER asUINT i)
 
 struct vec2_holder
 {
-    vec2_holder(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+    vec2_holder(asbind20::typeinfo_pointer ti)
     {
         (void)ti;
         []()
@@ -123,7 +123,7 @@ struct vec2_holder
 
     ~vec2_holder() = default;
 
-    static bool template_callback(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, bool&)
+    static bool template_callback(asbind20::typeinfo_pointer ti, bool&)
     {
         int subtype_id = ti->GetSubTypeId();
         return subtype_id == AS_NAMESPACE_QUALIFIER asTYPEID_FLOAT;

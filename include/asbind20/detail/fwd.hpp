@@ -15,6 +15,8 @@ namespace asbind20
 {
 using generic_function = AS_NAMESPACE_QUALIFIER asGENFUNC_t;
 using generic_pointer = AS_NAMESPACE_QUALIFIER asIScriptGeneric*;
+using typeinfo_pointer = AS_NAMESPACE_QUALIFIER asITypeInfo*;
+using const_typeinfo_pointer = AS_NAMESPACE_QUALIFIER asITypeInfo const*;
 } // namespace asbind20
 
 #endif

@@ -420,7 +420,7 @@ static void setup_bad_call_helper(
     global(engine)
         .function(
             string_concat(ret_type_decl, " bad_call()"),
-            +[](generic_pointer) -> void
+            +[](asbind20::generic_pointer) -> void
             { set_script_exception("intentional"); }
         );
 }

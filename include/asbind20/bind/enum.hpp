@@ -150,7 +150,7 @@ private:
 
     void append_to_enum(bool append_only, cstring_ref name)
     {
-        AS_NAMESPACE_QUALIFIER asITypeInfo* ti = this->get_engine()->GetTypeInfoByName(name.c_str());
+        typeinfo_pointer ti = this->get_engine()->GetTypeInfoByName(name.c_str());
         if(ti)
         {
 #ifndef ASBIND20_CONFIG_NO_APPEND_CHECK

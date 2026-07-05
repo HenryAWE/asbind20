@@ -88,7 +88,7 @@ static int exchange_data(my_ref_class& this_, int new_data)
     return std::exchange(this_.data, new_data);
 }
 
-static void get_ref_class_data(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+static void get_ref_class_data(asbind20::generic_pointer gen)
 {
     using namespace asbind20;
 

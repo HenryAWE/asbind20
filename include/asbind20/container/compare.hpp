@@ -24,7 +24,7 @@ class get_comparator_result;
 
 [[nodiscard]]
 get_comparator_result get_comparator(
-    AS_NAMESPACE_QUALIFIER asITypeInfo* ti
+    typeinfo_pointer ti
 );
 
 class script_element_comparator
@@ -131,7 +131,7 @@ private:
 class get_comparator_result
 {
     friend get_comparator_result get_comparator(
-        AS_NAMESPACE_QUALIFIER asITypeInfo* ti
+        typeinfo_pointer ti
     );
 
 public:
@@ -201,7 +201,7 @@ private:
 
 [[nodiscard]]
 inline get_comparator_result get_comparator(
-    AS_NAMESPACE_QUALIFIER asITypeInfo* ti
+    typeinfo_pointer ti
 )
 {
     using namespace std::string_view_literals;

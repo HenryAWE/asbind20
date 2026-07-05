@@ -93,7 +93,7 @@ TEST(SmallVector, ScriptObjectAsElement)
     global(engine)
         .function(
             "int counter()",
-            [](generic_pointer gen) -> void
+            [](asbind20::generic_pointer gen) -> void
             {
                 set_generic_return<int>(
                     gen,
@@ -115,7 +115,7 @@ TEST(SmallVector, ScriptObjectAsElement)
     );
     ASSERT_GE(m->Build(), 0);
 
-    AS_NAMESPACE_QUALIFIER asITypeInfo* foo_ti = m->GetTypeInfoByDecl("foo");
+    asbind20::typeinfo_pointer foo_ti = m->GetTypeInfoByDecl("foo");
     ASSERT_NE(foo_ti, nullptr);
 
     // Use std::allocator for debugging
@@ -294,7 +294,7 @@ TEST(SmallVector, ScriptStringAsElement)
     asbind_test::setup_script_string(engine, true);
     asbind_test::setup_message_callback(engine, true);
 
-    AS_NAMESPACE_QUALIFIER asITypeInfo* string_ti = engine->GetTypeInfoByName("string");
+    asbind20::typeinfo_pointer string_ti = engine->GetTypeInfoByName("string");
     ASSERT_NE(string_ti, nullptr);
 
     // Use std::allocator for debugging

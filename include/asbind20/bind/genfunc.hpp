@@ -238,7 +238,7 @@ private:
 
 public:
     static constexpr auto generate() noexcept
-        -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
+        -> generic_function
     {
         if constexpr(
             OriginalConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL ||
@@ -261,7 +261,7 @@ public:
 
     template <std::size_t... Is>
     static constexpr auto generate(var_type_t<Is...>)
-        -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
+        -> generic_function
     {
         using my_var_type = var_type_t<Is...>;
         if constexpr(
@@ -383,7 +383,7 @@ class generic_wrapper_nontype
 
 public:
     static constexpr auto generate() noexcept
-        -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
+        -> generic_function
     {
         if constexpr(
             OriginalConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL ||
@@ -404,7 +404,7 @@ public:
 
     template <std::size_t... Is>
     static constexpr auto generate(var_type_t<Is...>)
-        -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
+        -> generic_function
     {
         using my_var_type = var_type_t<Is...>;
         if constexpr(
@@ -433,7 +433,7 @@ template <
     AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv,
     std::size_t... Is>
 consteval auto lambda_to_asGENFUNC_t_impl()
-    -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
+    -> generic_function
 {
 #ifndef _MSC_VER
     if constexpr(sizeof...(Is))
@@ -459,7 +459,7 @@ template <
     AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv,
     std::size_t... Is>
 constexpr auto fp_to_asGENFUNC_t_impl()
-    -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
+    -> generic_function
 {
     if constexpr(sizeof...(Is))
         return generic_wrapper_nontype<Function, OriginalCallConv>::generate(var_type<Is...>);
@@ -552,14 +552,14 @@ class generic_wrapper_composite<Function, composite_wrapper_nontype<Composite>>
 
 public:
     static constexpr auto generate() noexcept
-        -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
+        -> generic_function
     {
         return &wrapper_comp;
     }
 
     template <std::size_t... Is>
     static constexpr auto generate(var_type_t<Is...>) noexcept
-        -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
+        -> generic_function
     {
         using my_var_type = var_type_t<Is...>;
         return &var_type_wrapper_comp<my_var_type>;
@@ -571,7 +571,7 @@ template <
     auto Composite,
     std::size_t... Is>
 constexpr auto fp_to_asGENFUNC_t_impl_comp()
-    -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
+    -> generic_function
 {
     if constexpr(sizeof...(Is))
         return generic_wrapper_composite<Function, composite_wrapper_nontype<Composite>>::generate(var_type<Is...>);
@@ -584,7 +584,7 @@ template <
     AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv>
 requires(OriginalCallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
 consteval auto to_asGENFUNC_t(const Lambda&, call_conv_t<OriginalCallConv>)
-    -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
+    -> generic_function
 {
     return lambda_to_asGENFUNC_t_impl<Lambda, OriginalCallConv>();
 }
@@ -594,7 +594,7 @@ template <
     AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv>
 requires(OriginalCallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
 consteval auto to_asGENFUNC_t(fp_wrapper<Function>, call_conv_t<OriginalCallConv>)
-    -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
+    -> generic_function
 {
     return fp_to_asGENFUNC_t_impl<Function, OriginalCallConv>();
 }
@@ -604,7 +604,7 @@ template <
     AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv,
     std::size_t... Is>
 consteval auto to_asGENFUNC_t(const Lambda&, call_conv_t<OriginalCallConv>, var_type_t<Is...>)
-    -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
+    -> generic_function
 {
     return lambda_to_asGENFUNC_t_impl<Lambda, OriginalCallConv, Is...>();
 }
@@ -614,7 +614,7 @@ template <
     AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv,
     std::size_t... Is>
 consteval auto to_asGENFUNC_t(fp_wrapper<Function>, call_conv_t<OriginalCallConv>, var_type_t<Is...>)
-    -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
+    -> generic_function
 {
     return fp_to_asGENFUNC_t_impl<Function, OriginalCallConv, Is...>();
 }
@@ -627,7 +627,7 @@ consteval auto to_asGENFUNC_t(
     call_conv_t<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>, // Calling convention parameter reserved for the future
     composite_wrapper_nontype<Composite>
 )
-    -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
+    -> generic_function
 {
     return fp_to_asGENFUNC_t_impl_comp<Function, Composite>();
 }
@@ -642,7 +642,7 @@ consteval auto to_asGENFUNC_t(
     composite_wrapper_nontype<Composite>,
     var_type_t<Is...>
 )
-    -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
+    -> generic_function
 {
     return fp_to_asGENFUNC_t_impl_comp<Function, Composite, Is...>();
 }
@@ -727,7 +727,7 @@ class generic_wrapper_ctor_func
 
 public:
     static constexpr auto generate() noexcept
-        -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
+        -> generic_function
     {
         if constexpr(OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
             return &wrapper_objfirst;
@@ -816,7 +816,7 @@ class generic_wrapper_ctor_lambda
 
 public:
     static constexpr auto generate() noexcept
-        -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
+        -> generic_function
     {
         if constexpr(OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
             return &wrapper_objfirst;
@@ -909,7 +909,7 @@ class generic_wrapper_list_ctor
 
 public:
     static constexpr auto generate() noexcept
-        -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
+        -> generic_function
     {
         if constexpr(OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
             return &wrapper_objfirst;
@@ -1060,7 +1060,7 @@ class generic_wrapper_factory_aux
 
 public:
     static constexpr auto generate() noexcept
-        -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
+        -> generic_function
     {
         return &wrapper_impl;
     }
@@ -1149,7 +1149,7 @@ class list_factory_func<Class, Auxiliary, ListFactoryFunc, false, OriginalCallCo
 
 public:
     static constexpr auto generate() noexcept
-        -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
+        -> generic_function
     {
         if constexpr(OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL)
             return &wrapper_thiscall_asglobal;
@@ -1212,7 +1212,7 @@ class list_factory_func<Class, Auxiliary, ListFactoryFunc, true, OriginalCallCon
 
 public:
     static constexpr auto generate() noexcept
-        -> AS_NAMESPACE_QUALIFIER asGENFUNC_t
+        -> generic_function
     {
         if constexpr(OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL)
             return &wrapper_thiscall_asglobal;

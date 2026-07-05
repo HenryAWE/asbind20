@@ -1180,7 +1180,7 @@ public:
 [[nodiscard]]
 inline script_object instantiate_class(
     AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
-    const AS_NAMESPACE_QUALIFIER asITypeInfo* class_info
+    const_typeinfo_pointer class_info
 )
 {
     if(!class_info) [[unlikely]]

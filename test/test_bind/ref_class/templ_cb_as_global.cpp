@@ -5,10 +5,10 @@ namespace test_bind
 class templ_cb_tester
 {
 public:
-    explicit templ_cb_tester(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+    explicit templ_cb_tester(asbind20::typeinfo_pointer ti)
         : m_ti(ti) {}
 
-    explicit templ_cb_tester(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, int val)
+    explicit templ_cb_tester(asbind20::typeinfo_pointer ti, int val)
         : value(val), m_ti(ti) {}
 
     ~templ_cb_tester() = default;
@@ -36,7 +36,7 @@ private:
 class templ_cb_helper
 {
 public:
-    bool validate(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, bool&) const
+    bool validate(asbind20::typeinfo_pointer ti, bool&) const
     {
         if(ti->GetSubTypeId() != expected_tid)
         {

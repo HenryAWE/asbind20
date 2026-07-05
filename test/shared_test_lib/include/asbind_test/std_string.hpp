@@ -241,7 +241,7 @@ template <>
 struct asbind20::type_traits<char32_t>
 {
     static char32_t get_arg(
-        generic_pointer gen,
+        asbind20::generic_pointer gen,
         AS_NAMESPACE_QUALIFIER asUINT arg
     )
     {
@@ -249,7 +249,7 @@ struct asbind20::type_traits<char32_t>
     }
 
     static int set_return(
-        generic_pointer gen, char32_t val
+        asbind20::generic_pointer gen, char32_t val
     )
     {
         new(gen->GetAddressOfReturnLocation()) char32_t(val);

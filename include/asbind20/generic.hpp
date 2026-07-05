@@ -67,9 +67,9 @@ auto get_generic_auxiliary(generic_pointer gen)
 inline auto get_generic_typeinfo(
     generic_pointer gen, AS_NAMESPACE_QUALIFIER asUINT idx = 0
 )
-    -> AS_NAMESPACE_QUALIFIER asITypeInfo*
+    -> typeinfo_pointer
 {
-    return *static_cast<AS_NAMESPACE_QUALIFIER asITypeInfo**>(
+    return *static_cast<typeinfo_pointer*>(
         gen->GetAddressOfArg(idx)
     );
 }
@@ -99,7 +99,7 @@ T get_generic_arg(
         }
         else if constexpr(std::same_as<value_t, AS_NAMESPACE_QUALIFIER asITypeInfo>)
         {
-            return *(AS_NAMESPACE_QUALIFIER asITypeInfo**)gen->GetAddressOfArg(idx);
+            return *(typeinfo_pointer*)gen->GetAddressOfArg(idx);
         }
         else if constexpr(std::same_as<value_t, AS_NAMESPACE_QUALIFIER asIScriptEngine>)
         {

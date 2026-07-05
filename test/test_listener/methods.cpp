@@ -22,7 +22,7 @@ public:
 
         AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = g.get_engine();
         ASSERT_NE(engine, nullptr);
-        AS_NAMESPACE_QUALIFIER asITypeInfo* ti = engine->GetTypeInfoById(id);
+        asbind20::typeinfo_pointer ti = engine->GetTypeInfoById(id);
         ASSERT_NE(ti, nullptr);
 
         recorded_class.emplace_back(ti->GetName());

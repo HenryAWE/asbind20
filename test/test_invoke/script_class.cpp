@@ -32,7 +32,7 @@ TEST(TestInvoke, ScriptClass)
     );
     ASSERT_GE(m->Build(), 0);
 
-    AS_NAMESPACE_QUALIFIER asITypeInfo* my_class_t = m->GetTypeInfoByName("my_class");
+    typeinfo_pointer my_class_t = m->GetTypeInfoByName("my_class");
     ASSERT_NE(my_class_t, nullptr);
 
     {

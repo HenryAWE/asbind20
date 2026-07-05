@@ -54,7 +54,7 @@ namespace detail
  */
 template <typename T>
 concept native_function =
-    !std::is_convertible_v<T, AS_NAMESPACE_QUALIFIER asGENFUNC_t> &&
+    !std::is_convertible_v<T, generic_function> &&
     detail::is_native_function_helper<std::decay_t<T>>;
 
 /**
@@ -465,7 +465,7 @@ inline bool is_script_string(
  *           so it's safe to call this function by `type_requires_gc(ti->GetSubType())`.
  */
 [[nodiscard]]
-inline bool type_requires_gc(const AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+inline bool type_requires_gc(const_typeinfo_pointer ti)
 {
     if(!ti) [[unlikely]]
         return false;
@@ -1092,7 +1092,7 @@ constexpr std::string_view static_enum_name() noexcept
 }
 
 [[nodiscard]]
-inline auto get_default_factory(const AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+inline auto get_default_factory(const_typeinfo_pointer ti)
     -> AS_NAMESPACE_QUALIFIER asIScriptFunction*
 {
     if(!ti) [[unlikely]]
@@ -1110,7 +1110,7 @@ inline auto get_default_factory(const AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
 }
 
 [[nodiscard]]
-inline auto get_default_constructor(const AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+inline auto get_default_constructor(const_typeinfo_pointer ti)
     -> AS_NAMESPACE_QUALIFIER asIScriptFunction*
 {
     if(!ti) [[unlikely]]
@@ -1132,7 +1132,7 @@ inline auto get_default_constructor(const AS_NAMESPACE_QUALIFIER asITypeInfo* ti
 }
 
 [[nodiscard]]
-inline auto get_weakref_flag(const AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+inline auto get_weakref_flag(const_typeinfo_pointer ti)
     -> AS_NAMESPACE_QUALIFIER asIScriptFunction*
 {
     if(!ti) [[unlikely]]

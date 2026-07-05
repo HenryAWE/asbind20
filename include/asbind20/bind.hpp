@@ -176,7 +176,7 @@ public:
     basic_interface(appending_t<AppendOnly>, engine_pointer engine, std::string name)
         : my_base(engine), m_name(std::move(name))
     {
-        AS_NAMESPACE_QUALIFIER asITypeInfo* ti = this->get_engine()->GetTypeInfoByName(m_name.c_str());
+        typeinfo_pointer ti = this->get_engine()->GetTypeInfoByName(m_name.c_str());
         if(ti)
         {
 #ifndef ASBIND20_CONFIG_NO_APPEND_CHECK

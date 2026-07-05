@@ -5,7 +5,7 @@
 namespace test_gc
 {
 static bool val_gc_template_callback(
-    AS_NAMESPACE_QUALIFIER asITypeInfo* ti, bool& no_gc
+    asbind20::typeinfo_pointer ti, bool& no_gc
 )
 {
     int subtype_id = ti->GetSubTypeId();
@@ -23,7 +23,7 @@ static bool val_gc_template_callback(
 class val_gc
 {
 public:
-    val_gc(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+    val_gc(asbind20::typeinfo_pointer ti)
         : m_ti(ti) {}
 
     val_gc(const val_gc& other)

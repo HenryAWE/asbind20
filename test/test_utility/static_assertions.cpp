@@ -91,13 +91,13 @@ consteval bool test_detail_validator()
         using fn_0 = bool();
         static_assert(!templ_cb_matcher{}(std::in_place_type<fn_0>));
 
-        using fn_1 = bool(AS_NAMESPACE_QUALIFIER asITypeInfo*, bool&);
+        using fn_1 = bool(asbind20::typeinfo_pointer, bool&);
         static_assert(templ_cb_matcher{}(std::in_place_type<fn_1>));
 
-        using fn_2 = int(AS_NAMESPACE_QUALIFIER asITypeInfo*, bool&);
+        using fn_2 = int(asbind20::typeinfo_pointer, bool&);
         static_assert(!templ_cb_matcher{}(std::in_place_type<fn_2>));
 
-        using fn_3 = bool(AS_NAMESPACE_QUALIFIER asITypeInfo*, int&);
+        using fn_3 = bool(asbind20::typeinfo_pointer, int&);
         static_assert(!templ_cb_matcher{}(std::in_place_type<fn_3>));
     }
 

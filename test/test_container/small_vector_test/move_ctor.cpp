@@ -97,7 +97,7 @@ TEST(SmallVector, EmptyStringSVMoveCtor)
     asbind_test::setup_script_string(engine, true);
     asbind_test::setup_message_callback(engine, true);
 
-    AS_NAMESPACE_QUALIFIER asITypeInfo* string_ti = engine->GetTypeInfoByName("string");
+    asbind20::typeinfo_pointer string_ti = engine->GetTypeInfoByName("string");
     ASSERT_NE(string_ti, nullptr);
 
     sv_type v(string_ti);
@@ -115,7 +115,7 @@ TEST(SmallVector, SmallStringSVMoveCtor)
     asbind_test::setup_script_string(engine, true);
     asbind_test::setup_message_callback(engine, true);
 
-    AS_NAMESPACE_QUALIFIER asITypeInfo* string_ti = engine->GetTypeInfoByName("string");
+    asbind20::typeinfo_pointer string_ti = engine->GetTypeInfoByName("string");
     ASSERT_NE(string_ti, nullptr);
 
     using sv_type = container::small_vector<
@@ -150,7 +150,7 @@ TEST(SmallVector, DynStringSVMoveCtor)
     asbind_test::setup_script_string(engine, true);
     asbind_test::setup_message_callback(engine, true);
 
-    AS_NAMESPACE_QUALIFIER asITypeInfo* string_ti = engine->GetTypeInfoByName("string");
+    asbind20::typeinfo_pointer string_ti = engine->GetTypeInfoByName("string");
     ASSERT_NE(string_ti, nullptr);
 
     using sv_type = container::small_vector<
