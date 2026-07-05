@@ -148,7 +148,7 @@ namespace detail
         }
 
         static void impl_objlast(
-            AS_NAMESPACE_QUALIFIER asITypeInfo* ti, Args... args, void* mem
+            typeinfo_pointer ti, Args... args, void* mem
         )
         {
             new(mem) Class(ti, std::forward<Args>(args)...);
@@ -278,7 +278,7 @@ namespace detail
         }
 
         static void impl_objlast_template(
-            AS_NAMESPACE_QUALIFIER asITypeInfo* ti, ListElementType* list_buf, void* mem
+            typeinfo_pointer ti, ListElementType* list_buf, void* mem
         )
         {
             new(mem) Class(ti, list_buf);
@@ -332,7 +332,7 @@ namespace detail
         }
 
         static void impl_objlast_template(
-            AS_NAMESPACE_QUALIFIER asITypeInfo* ti, void* list_buf, void* mem
+            typeinfo_pointer ti, void* list_buf, void* mem
         )
         {
             new(mem) Class(ti, script_init_list_repeat(list_buf));
@@ -526,7 +526,7 @@ namespace detail
         }
 
         static Class* impl_cdecl_template(
-            AS_NAMESPACE_QUALIFIER asITypeInfo* ti, Args... args
+            typeinfo_pointer ti, Args... args
         )
         {
             return new Class(ti, std::forward<Args>(args)...);
@@ -566,7 +566,7 @@ namespace detail
 
             [gen]<std::size_t... Is>(std::index_sequence<Is...>)
             {
-                auto* ti = (AS_NAMESPACE_QUALIFIER asITypeInfo*)gen->GetAuxiliary();
+                auto* ti = (typeinfo_pointer)gen->GetAuxiliary();
                 auto* ptr = new Class(
                     get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
                         gen, static_cast<gen_idx_t>(Is)
@@ -585,7 +585,7 @@ namespace detail
             }(std::index_sequence_for<Args...>());
         }
 
-        static Class* impl_objlast(Args... args, AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+        static Class* impl_objlast(Args... args, typeinfo_pointer ti)
         {
             auto* ptr = new Class(std::forward<Args>(args)...);
             if(has_script_exception()) [[unlikely]]
@@ -647,7 +647,7 @@ namespace detail
             }(std::index_sequence_for<Args...>());
         }
 
-        static Class* impl_cdecl(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, Args... args)
+        static Class* impl_cdecl(typeinfo_pointer ti, Args... args)
         {
             auto* ptr = new Class(ti, std::forward<Args>(args)...);
 
@@ -680,7 +680,7 @@ namespace detail
     struct notify_gc_helper
     {
         // Placeholder
-        static void notify_gc_if_necessary(void* obj, AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+        static void notify_gc_if_necessary(void* obj, typeinfo_pointer ti)
         {
             (void)obj;
             (void)ti;
@@ -690,7 +690,7 @@ namespace detail
     template <bool Template>
     struct notify_gc_helper<policies::notify_gc, Template>
     {
-        static void notify_gc_if_necessary(void* obj, AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+        static void notify_gc_if_necessary(void* obj, typeinfo_pointer ti)
         {
             if(!ti) [[unlikely]]
                 return;
@@ -742,7 +742,7 @@ namespace detail
         }
 
         static Class* impl_cdecl_template(
-            AS_NAMESPACE_QUALIFIER asITypeInfo* ti, ListElementType* list_buf
+            typeinfo_pointer ti, ListElementType* list_buf
         )
         {
             return new Class(ti, list_buf);
@@ -797,7 +797,7 @@ namespace detail
                 );
 
                 // Expects the typeinfo is passed by auxiliary pointer (see the helper "auxiliary(this_type)")
-                auto* ti = get_generic_auxiliary<AS_NAMESPACE_QUALIFIER asITypeInfo*>(gen);
+                auto* ti = get_generic_auxiliary<typeinfo_pointer>(gen);
                 ASBIND20_ASSERT(ti != nullptr);
                 notifier::notify_gc_if_necessary(ptr, ti);
 
@@ -806,7 +806,7 @@ namespace detail
         }
 
         static Class* impl_cdecl_template(
-            AS_NAMESPACE_QUALIFIER asITypeInfo* ti, ListElementType* list_buf
+            typeinfo_pointer ti, ListElementType* list_buf
         )
         {
             auto* ptr = new Class(ti, list_buf);
@@ -816,7 +816,7 @@ namespace detail
 
         // Works together with the helper "auxiliary(this_type)"
         static Class* impl_cdecl_objlast(
-            ListElementType* list_buf, AS_NAMESPACE_QUALIFIER asITypeInfo* ti
+            ListElementType* list_buf, typeinfo_pointer ti
         )
         {
             auto* ptr = new Class(list_buf);
@@ -866,14 +866,14 @@ namespace detail
             auto* ptr = apply_helper(*(ListElementType**)gen->GetAddressOfArg(0));
             if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
             {
-                auto* ti = get_generic_auxiliary<AS_NAMESPACE_QUALIFIER asITypeInfo*>(gen);
+                auto* ti = get_generic_auxiliary<typeinfo_pointer>(gen);
                 ASBIND20_ASSERT(ti != nullptr);
                 notifier::notify_gc_if_necessary(ptr, ti);
             }
             gen->SetReturnAddress(ptr);
         }
 
-        static Class* impl_objlast(ListElementType* list_buf, AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+        static Class* impl_objlast(ListElementType* list_buf, typeinfo_pointer ti)
         {
             Class* ptr = apply_helper(list_buf);
             notifier::notify_gc_if_necessary(ptr, ti);
@@ -922,7 +922,7 @@ namespace detail
             {
                 auto* ptr = new Class(script_init_list_repeat(gen));
                 // Works together with the helper "auxiliary(this_type)"
-                auto* ti = get_generic_auxiliary<AS_NAMESPACE_QUALIFIER asITypeInfo*>(gen);
+                auto* ti = get_generic_auxiliary<typeinfo_pointer>(gen);
                 ASBIND20_ASSERT(ti != nullptr);
                 notifier::notify_gc_if_necessary(ptr, ti);
                 gen->SetReturnAddress(ptr);
@@ -937,7 +937,7 @@ namespace detail
 
         //Works together with the helper "auxiliary(this_type)"
         static Class* impl_cdecl_objlast(
-            void* list_buf, AS_NAMESPACE_QUALIFIER asITypeInfo* ti
+            void* list_buf, typeinfo_pointer ti
         )
         {
             auto* ptr = new Class(script_init_list_repeat(list_buf));
@@ -990,7 +990,7 @@ namespace detail
         }
 
         static Class* impl_cdecl(
-            AS_NAMESPACE_QUALIFIER asITypeInfo* ti, void* list_buf
+            typeinfo_pointer ti, void* list_buf
         )
         {
             auto* ptr = new Class(ti, script_init_list_repeat(list_buf));
@@ -1057,7 +1057,7 @@ namespace detail
             if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
             {
                 // Expects the typeinfo is passed by auxiliary pointer (see the helper "auxiliary(this_type)")
-                auto* ti = (AS_NAMESPACE_QUALIFIER asITypeInfo*)gen->GetAuxiliary();
+                auto* ti = (typeinfo_pointer)gen->GetAuxiliary();
                 ASBIND20_ASSERT(ti != nullptr);
                 notifier::notify_gc_if_necessary(ptr, ti);
             }
@@ -1065,7 +1065,7 @@ namespace detail
         }
 
         // Works together with the helper "auxiliary(this_type)"
-        static Class* impl_objlast(void* list_buf, AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+        static Class* impl_objlast(void* list_buf, typeinfo_pointer ti)
         {
             Class* ptr = from_list_helper(script_init_list_repeat(list_buf));
             notifier::notify_gc_if_necessary(ptr, ti);
@@ -1209,7 +1209,7 @@ public:
     class_binding_generator_base() = delete;
     class_binding_generator_base(const class_binding_generator_base&) = default;
 
-    class_binding_generator_base(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, std::string name)
+    class_binding_generator_base(engine_pointer engine, std::string name)
         : my_base(engine), m_name(std::move(name)) {}
 
 protected:
@@ -1228,7 +1228,7 @@ protected:
 
     int append_type(bool append_only, flag_type flags, int size)
     {
-        AS_NAMESPACE_QUALIFIER asITypeInfo* ti = get_engine()->GetTypeInfoByName(m_name.c_str());
+        typeinfo_pointer ti = get_engine()->GetTypeInfoByName(m_name.c_str());
         if(!ti)
         {
             if(append_only)
@@ -2840,7 +2840,7 @@ public:
     using class_binding_generator_tag = void;
 
     basic_value_class(
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+        engine_pointer engine,
         std::string name,
         flag_type flags = 0
     )
@@ -2870,7 +2870,7 @@ public:
 
     template <string_like StringLike>
     basic_value_class(
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+        engine_pointer engine,
         StringLike&& name,
         AS_NAMESPACE_QUALIFIER asQWORD flags = 0
     )
@@ -2883,7 +2883,7 @@ public:
 
     basic_value_class(
         appending_t<true>,
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+        engine_pointer engine,
         std::string name
     )
         : my_base(engine, std::move(name))
@@ -2894,7 +2894,7 @@ public:
     template <string_like StringLike>
     basic_value_class(
         appending_t<true>,
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+        engine_pointer engine,
         StringLike&& name
     )
         : basic_value_class(
@@ -3485,7 +3485,7 @@ private:
     static consteval bool check_constructible(bool has_hidden_arg = Template)
     {
         return has_hidden_arg ?
-                   meta::placement_newable_from<Class, AS_NAMESPACE_QUALIFIER asITypeInfo*, Args...> :
+                   meta::placement_newable_from<Class, typeinfo_pointer, Args...> :
                    meta::placement_newable_from<Class, Args...>;
     }
 
@@ -4161,7 +4161,7 @@ public:
     using class_binding_generator_tag = void;
 
     basic_ref_class(
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+        engine_pointer engine,
         std::string name,
         AS_NAMESPACE_QUALIFIER asQWORD flags = 0
     )
@@ -4189,7 +4189,7 @@ public:
 
     template <string_like StringLike>
     basic_ref_class(
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+        engine_pointer engine,
         StringLike&& name,
         AS_NAMESPACE_QUALIFIER asQWORD flags = 0
     )
@@ -4203,7 +4203,7 @@ public:
     template <bool AppendOnly>
     basic_ref_class(
         appending_t<AppendOnly>,
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+        engine_pointer engine,
         std::string name
     )
         : my_base(engine, std::move(name))
@@ -4217,7 +4217,7 @@ public:
     template <bool AppendOnly, string_like StringLike>
     basic_ref_class(
         appending_t<AppendOnly>,
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+        engine_pointer engine,
         StringLike&& name
     )
         : basic_ref_class(

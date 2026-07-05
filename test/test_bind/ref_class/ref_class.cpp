@@ -88,7 +88,7 @@ static int exchange_data(my_ref_class& this_, int new_data)
     return std::exchange(this_.data, new_data);
 }
 
-static void get_ref_class_data(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+static void get_ref_class_data(asbind20::generic_pointer gen)
 {
     using namespace asbind20;
 
@@ -96,7 +96,7 @@ static void get_ref_class_data(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
     set_generic_return<int>(gen, (int)this_->data);
 }
 
-void register_ref_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+void register_ref_class(asbind20::engine_pointer engine)
 {
     using namespace asbind20;
 
@@ -126,7 +126,7 @@ void register_ref_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     EXPECT_FALSE(c.force_generic());
 }
 
-void register_ref_class(asbind20::use_generic_t, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+void register_ref_class(asbind20::use_generic_t, asbind20::engine_pointer engine)
 {
     using namespace asbind20;
 
@@ -223,7 +223,7 @@ int test_8()
 }
 )";
 
-static void check_ref_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void check_ref_class(asbind20::engine_pointer engine)
 {
     using test_bind::my_ref_class;
 
@@ -340,7 +340,7 @@ struct ref_helper
 };
 
 template <bool UseGeneric>
-static void register_ref_class_for_helper(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, ref_helper& helper)
+static void register_ref_class_for_helper(asbind20::engine_pointer engine, ref_helper& helper)
 {
     using namespace asbind20;
 
@@ -360,7 +360,7 @@ static void register_ref_class_for_helper(AS_NAMESPACE_QUALIFIER asIScriptEngine
         .property("int value", &ref_class_for_helper::value);
 }
 
-static void check_ref_class_for_helper(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, ref_helper& helper)
+static void check_ref_class_for_helper(asbind20::engine_pointer engine, ref_helper& helper)
 {
     using test_bind::ref_class_for_helper;
 
@@ -466,7 +466,7 @@ public:
 };
 
 template <bool UseGeneric, bool UseMP, bool CompUseMP>
-static void register_base_ref_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void register_base_ref_class(asbind20::engine_pointer engine)
 {
     using asbind20::composite;
     using asbind20::fp;
@@ -505,7 +505,7 @@ static void register_base_ref_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engi
     }
 }
 
-static void check_ref_class_comp_property(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void check_ref_class_comp_property(asbind20::engine_pointer engine)
 {
     auto* m = engine->GetModule(
         "ref_class_comp_prop", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
@@ -549,7 +549,7 @@ static void check_ref_class_comp_property(AS_NAMESPACE_QUALIFIER asIScriptEngine
 }
 
 template <bool UseGeneric, bool UseMP, bool CompUseMP>
-static void setup_ref_class_comp_prop_test(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void setup_ref_class_comp_prop_test(asbind20::engine_pointer engine)
 {
     asbind_test::setup_message_callback(engine);
     asbind_test::setup_script_assertion(engine);

@@ -91,13 +91,13 @@ consteval bool test_detail_validator()
         using fn_0 = bool();
         static_assert(!templ_cb_matcher{}(std::in_place_type<fn_0>));
 
-        using fn_1 = bool(AS_NAMESPACE_QUALIFIER asITypeInfo*, bool&);
+        using fn_1 = bool(asbind20::typeinfo_pointer, bool&);
         static_assert(templ_cb_matcher{}(std::in_place_type<fn_1>));
 
-        using fn_2 = int(AS_NAMESPACE_QUALIFIER asITypeInfo*, bool&);
+        using fn_2 = int(asbind20::typeinfo_pointer, bool&);
         static_assert(!templ_cb_matcher{}(std::in_place_type<fn_2>));
 
-        using fn_3 = bool(AS_NAMESPACE_QUALIFIER asITypeInfo*, int&);
+        using fn_3 = bool(asbind20::typeinfo_pointer, int&);
         static_assert(!templ_cb_matcher{}(std::in_place_type<fn_3>));
     }
 
@@ -117,7 +117,7 @@ consteval bool test_detail_validator()
     {
         using my_matcher = signature_matcher<void_, by_addr<AS_NAMESPACE_QUALIFIER asIScriptEngine>>;
 
-        using fn_0 = void(AS_NAMESPACE_QUALIFIER asIScriptEngine*);
+        using fn_0 = void(asbind20::engine_pointer);
         static_assert(my_matcher{}(std::in_place_type<fn_0>));
 
         using fn_1 = void();
@@ -151,7 +151,7 @@ consteval bool test_detail_validator_obj()
             asbind20::detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>
         ));
 
-        using fn_1 = void(my_struct*, AS_NAMESPACE_QUALIFIER asIScriptEngine*);
+        using fn_1 = void(my_struct*, asbind20::engine_pointer);
         static_assert(!my_matcher{}(
             std::in_place_type<fn_1>,
             asbind20::detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>
@@ -161,7 +161,7 @@ consteval bool test_detail_validator_obj()
             asbind20::detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
         ));
 
-        using fn_2 = void(my_struct&, AS_NAMESPACE_QUALIFIER asIScriptEngine*);
+        using fn_2 = void(my_struct&, asbind20::engine_pointer);
         static_assert(!my_matcher{}(
             std::in_place_type<fn_2>,
             asbind20::detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
@@ -186,7 +186,7 @@ consteval bool test_detail_validator_obj()
             asbind20::detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>
         ));
 
-        using fn_1 = void(my_struct*, AS_NAMESPACE_QUALIFIER asIScriptEngine*);
+        using fn_1 = void(my_struct*, asbind20::engine_pointer);
         static_assert(!my_matcher{}(
             std::in_place_type<fn_1>,
             asbind20::detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
@@ -196,7 +196,7 @@ consteval bool test_detail_validator_obj()
             asbind20::detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>
         ));
 
-        using fn_2 = void(AS_NAMESPACE_QUALIFIER asIScriptEngine*, my_struct*);
+        using fn_2 = void(asbind20::engine_pointer, my_struct*);
         static_assert(my_matcher{}(
             std::in_place_type<fn_2>,
             asbind20::detail::cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST>
@@ -210,8 +210,8 @@ consteval bool test_detail_validator_obj()
     {
         struct my_struct
         {
-            void f0(AS_NAMESPACE_QUALIFIER asIScriptEngine*);
-            int f1(AS_NAMESPACE_QUALIFIER asIScriptEngine*);
+            void f0(asbind20::engine_pointer);
+            int f1(asbind20::engine_pointer);
         };
 
         using my_matcher = signature_matcher<

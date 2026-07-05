@@ -2,7 +2,7 @@
 
 namespace test_bind
 {
-void register_int_array(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+void register_int_array(asbind20::engine_pointer engine)
 {
     using namespace asbind20;
 
@@ -29,7 +29,7 @@ void register_int_array(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 }
 
 void register_int_array(
-    asbind20::use_generic_t, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
+    asbind20::use_generic_t, asbind20::engine_pointer engine
 )
 {
     using namespace asbind20;
@@ -55,7 +55,7 @@ void register_int_array(
         );
 }
 
-static void check_int_array(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void check_int_array(asbind20::engine_pointer engine)
 {
     auto* m = engine->GetModule(
         "test_int_array", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE

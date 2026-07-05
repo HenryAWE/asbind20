@@ -108,7 +108,7 @@ public:
     }
 };
 
-void register_ref_string(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+void register_ref_string(asbind20::engine_pointer engine)
 {
     using namespace asbind20;
     using test_bind::ref_string;
@@ -126,7 +126,7 @@ void register_ref_string(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         .as_string(&ref_string_factory::get());
 }
 
-static void register_ref_string(asbind20::use_generic_t, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void register_ref_string(asbind20::use_generic_t, asbind20::engine_pointer engine)
 {
     using namespace asbind20;
     using test_bind::ref_string;
@@ -145,7 +145,7 @@ static void register_ref_string(asbind20::use_generic_t, AS_NAMESPACE_QUALIFIER 
 }
 
 static void setup_bind_ref_string_env(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    asbind20::engine_pointer engine,
     bool generic
 )
 {
@@ -159,7 +159,7 @@ static void setup_bind_ref_string_env(
     asbind_test::setup_script_assertion(engine);
 }
 
-static auto build_module(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static auto build_module(asbind20::engine_pointer engine)
     -> AS_NAMESPACE_QUALIFIER asIScriptModule*
 {
     auto m = engine->GetModule("vec2_test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
@@ -175,7 +175,7 @@ static auto build_module(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     return m;
 }
 
-static void run_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void run_script(asbind20::engine_pointer engine)
 {
     auto* m = build_module(engine);
     if(!m)

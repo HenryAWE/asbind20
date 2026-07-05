@@ -81,8 +81,7 @@ public:
         m_engine.reset();
     }
 
-    auto get_engine() const
-        -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
+    asbind20::engine_pointer get_engine() const
     {
         return m_engine.get();
     }
@@ -121,7 +120,7 @@ public:
     }
 
     auto get_script_func() const
-        -> AS_NAMESPACE_QUALIFIER asIScriptFunction*
+        -> asbind20::function_pointer
     {
         auto m = m_engine->GetModule(
             "foreach_string", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE

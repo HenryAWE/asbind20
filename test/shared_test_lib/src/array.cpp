@@ -21,7 +21,7 @@ namespace detail
         int subtype_id,
         const void* lhs,
         const void* rhs,
-        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
+        asbind20::context_pointer ctx,
         const array_cache* cache
     )
     {
@@ -67,7 +67,7 @@ namespace detail
     }
 
     void script_array_base::find_required_elem_methods(
-        array_cache& out, int subtype_id, AS_NAMESPACE_QUALIFIER asITypeInfo* ti
+        array_cache& out, int subtype_id, asbind20::typeinfo_pointer ti
     )
     {
         EXPECT_FALSE(asbind20::is_primitive_type(subtype_id));
@@ -77,13 +77,13 @@ namespace detail
     }
 
     void script_array_base::generate_cache(
-        array_cache& out, int subtype_id, AS_NAMESPACE_QUALIFIER asITypeInfo* ti
+        array_cache& out, int subtype_id, asbind20::typeinfo_pointer ti
     )
     {
         if(!asbind20::is_primitive_type(subtype_id))
             find_required_elem_methods(out, subtype_id, ti);
 
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = ti->GetEngine();
+        asbind20::engine_pointer engine = ti->GetEngine();
         {
             const char* subtype_decl = engine->GetTypeDeclaration(subtype_id, true);
             out.iterator_ti = engine->GetTypeInfoByDecl(
@@ -93,7 +93,7 @@ namespace detail
     }
 
     bool script_array_base::template_callback(
-        AS_NAMESPACE_QUALIFIER asITypeInfo* ti, bool& no_gc
+        asbind20::typeinfo_pointer ti, bool& no_gc
     )
     {
         int subtype_id = ti->GetSubTypeId();
@@ -106,7 +106,7 @@ namespace detail
         }
         else if(!asbind20::is_objhandle(subtype_id))
         {
-            AS_NAMESPACE_QUALIFIER asITypeInfo* subtype_ti = ti->GetSubType();
+            asbind20::typeinfo_pointer subtype_ti = ti->GetSubType();
             EXPECT_NE(subtype_ti, nullptr);
             auto flags = subtype_ti->GetFlags();
 
@@ -152,7 +152,7 @@ namespace detail
             // According to the official add-on, if a handle cannot refer to an object type
             // that can form a circular reference with the array,
             // it's not necessary to make the array garbage collected.
-            AS_NAMESPACE_QUALIFIER asITypeInfo* subtype_ti = ti->GetSubType();
+            asbind20::typeinfo_pointer subtype_ti = ti->GetSubType();
             auto flags = subtype_ti->GetFlags();
             if(!(flags & AS_NAMESPACE_QUALIFIER asOBJ_GC))
             {

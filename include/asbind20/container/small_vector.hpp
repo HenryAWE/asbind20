@@ -51,7 +51,7 @@ namespace detail
     template <typename TypeInfoPolicy>
     struct elem_type_data
     {
-        elem_type_data(int tid, AS_NAMESPACE_QUALIFIER asITypeInfo* t) noexcept
+        elem_type_data(int tid, typeinfo_pointer t) noexcept
             : ti(t)
         {
             (void)tid; // unused
@@ -59,7 +59,7 @@ namespace detail
 
         // Although having a type info pointer is useless for a primitive element type,
         // it can keep the interface consistent with other types.
-        AS_NAMESPACE_QUALIFIER asITypeInfo* ti;
+        typeinfo_pointer ti;
 
         int get_id() const
         {
@@ -74,9 +74,9 @@ namespace detail
     struct elem_type_data<typeinfo_identity>
     {
         int type_id;
-        AS_NAMESPACE_QUALIFIER asITypeInfo* ti;
+        typeinfo_pointer ti;
 
-        elem_type_data(int tid, AS_NAMESPACE_QUALIFIER asITypeInfo* t) noexcept
+        elem_type_data(int tid, typeinfo_pointer t) noexcept
             : type_id(tid), ti(t) {}
 
         int get_id() const
@@ -130,20 +130,18 @@ private:
     class impl_interface
     {
     public:
-        impl_interface(int type_id, AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+        impl_interface(int type_id, typeinfo_pointer ti)
             : m_type_data(type_id, ti) {}
 
         ~impl_interface() = default;
 
-        auto get_engine() const
-            -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
+        engine_pointer get_engine() const
         {
             assert(m_type_data.ti != nullptr);
             return m_type_data.ti->GetEngine();
         }
 
-        auto get_type_info() const noexcept
-            -> AS_NAMESPACE_QUALIFIER asITypeInfo*
+        typeinfo_pointer get_type_info() const noexcept
         {
             return m_type_data.ti;
         }
@@ -153,8 +151,7 @@ private:
             return m_type_data.get_id();
         }
 
-        auto elem_type_info() const
-            -> AS_NAMESPACE_QUALIFIER asITypeInfo*
+        typeinfo_pointer elem_type_info() const
         {
             return TypeInfoPolicy::get_type_info(m_type_data.ti);
         }
@@ -678,7 +675,7 @@ private:
         {
             assert(this->size() == 0);
 
-            AS_NAMESPACE_QUALIFIER asITypeInfo* subtype_ti = this->elem_type_info();
+            typeinfo_pointer subtype_ti = this->elem_type_info();
             auto flags = subtype_ti->GetFlags();
             if constexpr(!IsHandle)
             {
@@ -686,7 +683,7 @@ private:
                 {
                     this->reserve(ilist.size());
 
-                    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = subtype_ti->GetEngine();
+                    engine_pointer engine = subtype_ti->GetEngine();
                     size_type elem_size = subtype_ti->GetSize();
                     std::byte* p_elem = static_cast<std::byte*>(ilist.data());
                     for(size_type i = 0; i < static_cast<size_type>(ilist.size()); ++i)
@@ -774,8 +771,8 @@ private:
             }
             else
             {
-                AS_NAMESPACE_QUALIFIER asITypeInfo* ti = this->elem_type_info();
-                AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = ti->GetEngine();
+                typeinfo_pointer ti = this->elem_type_info();
+                engine_pointer engine = ti->GetEngine();
                 assert(ti != nullptr);
 
                 for(size_type i = 0; i < new_elems; ++i)
@@ -819,7 +816,7 @@ private:
             else
             {
                 this->reserve(this->size() + 1);
-                AS_NAMESPACE_QUALIFIER asITypeInfo* ti = this->elem_type_info();
+                typeinfo_pointer ti = this->elem_type_info();
                 assert(ti != nullptr);
 
                 void* obj = ti->GetEngine()->CreateScriptObject(ti);
@@ -833,8 +830,8 @@ private:
         void push_back_n(size_type n, const void* ref)
         {
             this->reserve(this->size() + n);
-            AS_NAMESPACE_QUALIFIER asITypeInfo* ti = this->elem_type_info();
-            AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = ti->GetEngine();
+            typeinfo_pointer ti = this->elem_type_info();
+            engine_pointer engine = ti->GetEngine();
 
             for(size_type i = 0; i < n; ++i)
             {
@@ -859,8 +856,8 @@ private:
             else
             {
                 this->reserve(this->size() + n);
-                AS_NAMESPACE_QUALIFIER asITypeInfo* ti = this->elem_type_info();
-                AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = ti->GetEngine();
+                typeinfo_pointer ti = this->elem_type_info();
+                engine_pointer engine = ti->GetEngine();
                 assert(ti != nullptr);
 
                 for(size_type i = 0; i < n; ++i)
@@ -879,7 +876,7 @@ private:
             if(this->size() == 0)
                 return;
 
-            AS_NAMESPACE_QUALIFIER asITypeInfo* ti = this->elem_type_info();
+            typeinfo_pointer ti = this->elem_type_info();
             assert(ti != nullptr);
 
             void* obj = *(this->m_p_end - 1);
@@ -984,7 +981,7 @@ private:
 
         void enum_refs()
         {
-            AS_NAMESPACE_QUALIFIER asITypeInfo* ti = this->elem_type_info();
+            typeinfo_pointer ti = this->elem_type_info();
             auto* engine = ti->GetEngine();
 
             auto flags = ti->GetFlags();
@@ -1027,8 +1024,8 @@ private:
 
         // NOTE: Call ref_to_obj to convert the pointer at first!
         static void* copy_obj_impl(
-            AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
-            AS_NAMESPACE_QUALIFIER asITypeInfo* ti,
+            engine_pointer engine,
+            typeinfo_pointer ti,
             void* obj
         )
         {
@@ -1049,8 +1046,8 @@ private:
         // NOTE: Call ref_to_obj to convert the pointer at first!
         void* copy_obj(void* obj) const
         {
-            AS_NAMESPACE_QUALIFIER asITypeInfo* ti = this->elem_type_info();
-            AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = ti->GetEngine();
+            typeinfo_pointer ti = this->elem_type_info();
+            engine_pointer engine = ti->GetEngine();
             assert(ti != nullptr);
 
             return copy_obj_impl(engine, ti, obj);
@@ -1059,8 +1056,8 @@ private:
         // NOTE: Call ref_to_obj to convert the pointer at first!
         void assign_obj(void*& dst, void* obj)
         {
-            AS_NAMESPACE_QUALIFIER asITypeInfo* ti = this->elem_type_info();
-            AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = ti->GetEngine();
+            typeinfo_pointer ti = this->elem_type_info();
+            engine_pointer engine = ti->GetEngine();
 
             if(dst)
             {
@@ -1092,8 +1089,8 @@ private:
 
         void release_obj_n(void** objs, size_type n) const noexcept
         {
-            AS_NAMESPACE_QUALIFIER asITypeInfo* ti = this->elem_type_info();
-            AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = ti->GetEngine();
+            typeinfo_pointer ti = this->elem_type_info();
+            engine_pointer engine = ti->GetEngine();
             for(size_type i = 0; i < n; ++i)
             {
                 void* obj = objs[i];
@@ -1237,7 +1234,7 @@ case AS_NAMESPACE_QUALIFIER as_type_id:                                         
 
     template <typename... Args>
     void init_impl(
-        int type_id, AS_NAMESPACE_QUALIFIER asITypeInfo* ti, script_init_list_repeat* ilist = nullptr
+        int type_id, typeinfo_pointer ti, script_init_list_repeat* ilist = nullptr
     )
     {
         assert(!is_void_type(type_id));
@@ -1317,7 +1314,7 @@ public:
         );
     }
 
-    explicit small_vector(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+    explicit small_vector(typeinfo_pointer ti)
     {
         init_impl(
             TypeInfoPolicy::get_type_id(ti), ti
@@ -1325,7 +1322,7 @@ public:
     }
 
     small_vector(
-        AS_NAMESPACE_QUALIFIER asITypeInfo* ti, script_init_list_repeat ilist
+        typeinfo_pointer ti, script_init_list_repeat ilist
     )
     {
         init_impl(
@@ -1333,14 +1330,14 @@ public:
         );
     }
 
-    small_vector(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id)
+    small_vector(engine_pointer engine, int type_id)
     {
         if(is_primitive_type(type_id) && !is_enum_type(type_id))
             init_impl(type_id, nullptr);
         else
         {
             assert(engine != nullptr);
-            AS_NAMESPACE_QUALIFIER asITypeInfo* ti = engine->GetTypeInfoById(type_id);
+            typeinfo_pointer ti = engine->GetTypeInfoById(type_id);
             assert(ti != nullptr);
             init_impl(type_id, ti);
         }
@@ -1353,15 +1350,13 @@ public:
     /// @{
 
     [[nodiscard]]
-    auto get_type_info() const noexcept
-        -> AS_NAMESPACE_QUALIFIER asITypeInfo*
+    typeinfo_pointer get_type_info() const noexcept
     {
         return impl().get_type_info();
     }
 
     [[nodiscard]]
-    auto element_type_info() const
-        -> AS_NAMESPACE_QUALIFIER asITypeInfo*
+    typeinfo_pointer element_type_info() const
     {
         return TypeInfoPolicy::get_type_info(get_type_info());
     }

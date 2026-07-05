@@ -19,10 +19,10 @@ namespace asbind20::container
  */
 template <typename T>
 concept typeinfo_policy = requires(
-    AS_NAMESPACE_QUALIFIER asITypeInfo* ti, const AS_NAMESPACE_QUALIFIER asITypeInfo* cti
+    typeinfo_pointer ti, const_typeinfo_pointer cti
 ) {
     typename T::typeinfo_policy_tag;
-    { T::get_type_info(ti) } -> std::same_as<AS_NAMESPACE_QUALIFIER asITypeInfo*>;
+    { T::get_type_info(ti) } -> std::same_as<typeinfo_pointer>;
     { T::get_type_id(cti) } -> std::same_as<int>;
 };
 
@@ -39,14 +39,13 @@ struct typeinfo_identity
     using typeinfo_policy_tag = void;
 
     [[nodiscard]]
-    static auto get_type_info(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
-        -> AS_NAMESPACE_QUALIFIER asITypeInfo*
+    static typeinfo_pointer get_type_info(typeinfo_pointer ti)
     {
         return ti;
     }
 
     [[nodiscard]]
-    static int get_type_id(const AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+    static int get_type_id(const_typeinfo_pointer ti)
     {
         if(!ti) [[unlikely]]
             return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
@@ -66,8 +65,7 @@ struct typeinfo_subtype :
     using typeinfo_policy_tag = void;
 
     [[nodiscard]]
-    static auto get_type_info(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
-        -> AS_NAMESPACE_QUALIFIER asITypeInfo*
+    static typeinfo_pointer get_type_info(typeinfo_pointer ti)
     {
         if(!ti) [[unlikely]]
             return nullptr;
@@ -75,7 +73,7 @@ struct typeinfo_subtype :
     }
 
     [[nodiscard]]
-    static int get_type_id(const AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+    static int get_type_id(const_typeinfo_pointer ti)
     {
         if(!ti) [[unlikely]]
             return AS_NAMESPACE_QUALIFIER asINVALID_ARG;

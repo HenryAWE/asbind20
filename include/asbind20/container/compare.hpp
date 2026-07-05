@@ -24,7 +24,7 @@ class get_comparator_result;
 
 [[nodiscard]]
 get_comparator_result get_comparator(
-    AS_NAMESPACE_QUALIFIER asITypeInfo* ti
+    typeinfo_pointer ti
 );
 
 class script_element_comparator
@@ -39,8 +39,8 @@ public:
     script_element_comparator& operator=(const script_element_comparator&) = default;
 
     script_element_comparator(
-        AS_NAMESPACE_QUALIFIER asIScriptFunction* opCmp,
-        AS_NAMESPACE_QUALIFIER asIScriptFunction* opEquals
+        function_pointer opCmp,
+        function_pointer opEquals
     )
         : m_opCmp(opCmp), m_opEquals(opEquals)
     {}
@@ -70,7 +70,7 @@ public:
     }
 
     auto invoke_eq(
-        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, const void* lhs, const void* rhs
+        context_pointer ctx, const void* lhs, const void* rhs
     ) const
         -> script_invoke_result<bool>
     {
@@ -78,7 +78,7 @@ public:
     }
 
     auto invoke_compare(
-        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, const void* lhs, const void* rhs
+        context_pointer ctx, const void* lhs, const void* rhs
     ) const
         -> script_invoke_result<int>
     {
@@ -95,7 +95,7 @@ public:
      */
     [[nodiscard]]
     std::partial_ordering compare(
-        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, const void* lhs, const void* rhs
+        context_pointer ctx, const void* lhs, const void* rhs
     ) const
     {
         if(!has_opCmp()) [[unlikely]]
@@ -108,7 +108,7 @@ public:
 
     [[nodiscard]]
     bool eq(
-        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, const void* lhs, const void* rhs
+        context_pointer ctx, const void* lhs, const void* rhs
     ) const
     {
         if(!m_opEquals) // Fallback to the logic of "opCmp() == 0"
@@ -131,7 +131,7 @@ private:
 class get_comparator_result
 {
     friend get_comparator_result get_comparator(
-        AS_NAMESPACE_QUALIFIER asITypeInfo* ti
+        typeinfo_pointer ti
     );
 
 public:
@@ -187,13 +187,13 @@ public:
 
 private:
     status m_status;
-    AS_NAMESPACE_QUALIFIER asIScriptFunction* m_opCmp = nullptr;
-    AS_NAMESPACE_QUALIFIER asIScriptFunction* m_opEquals = nullptr;
+    function_pointer m_opCmp = nullptr;
+    function_pointer m_opEquals = nullptr;
 
     get_comparator_result(
         status st,
-        AS_NAMESPACE_QUALIFIER asIScriptFunction* opCmp,
-        AS_NAMESPACE_QUALIFIER asIScriptFunction* opEquals
+        function_pointer opCmp,
+        function_pointer opEquals
     )
         : m_status(st), m_opCmp(opCmp), m_opEquals(opEquals)
     {}
@@ -201,14 +201,14 @@ private:
 
 [[nodiscard]]
 inline get_comparator_result get_comparator(
-    AS_NAMESPACE_QUALIFIER asITypeInfo* ti
+    typeinfo_pointer ti
 )
 {
     using namespace std::string_view_literals;
 
     get_comparator_result::status st{};
-    AS_NAMESPACE_QUALIFIER asIScriptFunction* opCmp = nullptr;
-    AS_NAMESPACE_QUALIFIER asIScriptFunction* opEquals = nullptr;
+    function_pointer opCmp = nullptr;
+    function_pointer opEquals = nullptr;
 
     for(auto* f : views::all_methods(ti))
     {

@@ -20,9 +20,9 @@ public:
 
         SCOPED_TRACE("id = " + std::to_string(id));
 
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = g.get_engine();
+        asbind20::engine_pointer engine = g.get_engine();
         ASSERT_NE(engine, nullptr);
-        AS_NAMESPACE_QUALIFIER asITypeInfo* ti = engine->GetTypeInfoById(id);
+        asbind20::typeinfo_pointer ti = engine->GetTypeInfoById(id);
         ASSERT_NE(ti, nullptr);
 
         recorded_class.emplace_back(ti->GetName());
@@ -40,7 +40,7 @@ public:
 
         SCOPED_TRACE("id = " + std::to_string(id));
 
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = g.get_engine();
+        asbind20::engine_pointer engine = g.get_engine();
         ASSERT_NE(engine, nullptr);
         auto* ti = engine->GetTypeInfoById(g.get_type_id());
         ASSERT_NE(ti, nullptr);
@@ -92,7 +92,7 @@ using ListenerTest = test_listener::general_listener_suite;
 namespace test_listener
 {
 template <bool UseGeneric>
-static void test_record_method(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void test_record_method(asbind20::engine_pointer engine)
 {
     using namespace asbind20;
     value_class<my_class, true, class_listener> c(engine, "my_class");

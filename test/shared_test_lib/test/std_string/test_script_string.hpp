@@ -30,8 +30,7 @@ public:
         return asbind_test::string_factory::get();
     }
 
-    auto get_engine() const
-        -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
+    asbind20::engine_pointer get_engine() const
     {
         return m_engine.get();
     }

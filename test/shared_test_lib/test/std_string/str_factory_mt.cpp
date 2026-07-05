@@ -31,7 +31,7 @@ public:
     auto get_module()
         -> AS_NAMESPACE_QUALIFIER asIScriptModule*
     {
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = this->get_engine();
+        asbind20::engine_pointer engine = this->get_engine();
         auto* m = engine->GetModule(
             "mt_string_test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
         );
@@ -68,8 +68,8 @@ public:
 
 static void mt_test_thread_main(
     std::atomic_int& counter,
-    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
-    AS_NAMESPACE_QUALIFIER asIScriptFunction* f
+    asbind20::context_pointer ctx,
+    asbind20::function_pointer f
 )
 {
     asbind20::concurrent::auto_thread_cleanup();

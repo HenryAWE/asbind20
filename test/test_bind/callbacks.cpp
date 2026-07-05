@@ -36,7 +36,7 @@ static void ASBIND20_STDCALL stdcall_msg_cb(AS_NAMESPACE_QUALIFIER asSMessageInf
     counter->count();
 }
 
-static void write_msg_helper(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, const char* msg)
+static void write_msg_helper(asbind20::engine_pointer engine, const char* msg)
 {
     ASSERT_NE(engine, nullptr);
     engine->WriteMessage(
@@ -101,7 +101,7 @@ public:
         return m_counter;
     }
 
-    void translate(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx)
+    void translate(asbind20::context_pointer ctx)
     {
         try
         {
@@ -124,7 +124,7 @@ private:
     std::size_t m_counter = 0;
 };
 
-static void setup_funcs(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void setup_funcs(asbind20::engine_pointer engine)
 {
     using namespace asbind20;
 
@@ -138,7 +138,7 @@ static void setup_funcs(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         );
 }
 
-static void trigger_ex_in_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void trigger_ex_in_script(asbind20::engine_pointer engine)
 {
     auto* m = engine->GetModule(
         "test_ex", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE

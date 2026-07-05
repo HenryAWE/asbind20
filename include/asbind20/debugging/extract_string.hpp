@@ -30,7 +30,7 @@ extract_string_result extract_string(
 
 #ifdef ASBIND20_HAS_GET_STRING_FACTORY
 extract_string_result extract_string(
-    const AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, const void* str
+    const_engine_pointer engine, const void* str
 );
 
 #endif
@@ -75,7 +75,7 @@ class extract_string_result
 
 #ifdef ASBIND20_HAS_GET_STRING_FACTORY
     friend extract_string_result extract_string(
-        const AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, const void* str
+        const_engine_pointer engine, const void* str
     );
 
 #endif
@@ -226,7 +226,7 @@ inline extract_string_result extract_string(
 
 [[nodiscard]]
 inline extract_string_result extract_string(
-    const AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, const void* str
+    const_engine_pointer engine, const void* str
 )
 {
     if(!engine) [[unlikely]]

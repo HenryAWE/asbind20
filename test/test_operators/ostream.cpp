@@ -6,7 +6,7 @@
 namespace test_operators
 {
 template <bool UseGeneric>
-static void register_ostream(std::ostream& os, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void register_ostream(std::ostream& os, asbind20::engine_pointer engine)
 {
     using namespace asbind20;
     using std::ostream;
@@ -35,7 +35,7 @@ static void register_ostream(std::ostream& os, AS_NAMESPACE_QUALIFIER asIScriptE
         .property("endl_t endl", std::endl<char, std::char_traits<char>>);
 }
 
-static void run_ostream_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void run_ostream_test_script(asbind20::engine_pointer engine)
 {
     auto* m = engine->GetModule(
         "test_ostream", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE

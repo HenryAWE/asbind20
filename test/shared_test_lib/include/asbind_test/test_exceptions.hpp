@@ -51,7 +51,7 @@ private:
 };
 
 template <bool UseGeneric>
-void register_instantly_throw(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+void register_instantly_throw(asbind20::engine_pointer engine)
 {
     using namespace asbind20;
 
@@ -67,7 +67,7 @@ void register_instantly_throw(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 }
 
 template <bool UseGeneric>
-void register_throw_on_copy(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+void register_throw_on_copy(asbind20::engine_pointer engine)
 {
     using namespace asbind20;
 

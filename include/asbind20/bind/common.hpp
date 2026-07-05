@@ -97,7 +97,7 @@ namespace detail
     requires(!std::is_member_function_pointer_v<FuncSig>)
     constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes deduce_function_callconv()
     {
-        static_assert(!std::convertible_to<FuncSig, AS_NAMESPACE_QUALIFIER asGENFUNC_t>);
+        static_assert(!std::convertible_to<FuncSig, generic_function>);
 
         /*
         On x64 and many platforms (like arm64), CDECL and STDCALL have the same effect.
@@ -156,7 +156,7 @@ namespace detail
     {
         if constexpr(std::is_member_function_pointer_v<FuncSig>)
             return AS_NAMESPACE_QUALIFIER asCALL_THISCALL;
-        else if constexpr(std::convertible_to<FuncSig, AS_NAMESPACE_QUALIFIER asGENFUNC_t>)
+        else if constexpr(std::convertible_to<FuncSig, generic_function>)
             return AS_NAMESPACE_QUALIFIER asCALL_GENERIC;
         else
         {
@@ -349,8 +349,6 @@ concept usable_by_generator = requires(T&& t, BindingGenerator& gen) {
 class engine_ref_holder
 {
 public:
-    using engine_pointer = AS_NAMESPACE_QUALIFIER asIScriptEngine*;
-
     engine_ref_holder() = delete;
     engine_ref_holder(const engine_ref_holder&) noexcept = default;
 
@@ -377,8 +375,6 @@ template <typename Listener = default_listener>
 class binding_generator_base : public engine_ref_holder
 {
 public:
-    using engine_pointer = AS_NAMESPACE_QUALIFIER asIScriptEngine*;
-
     binding_generator_base(const binding_generator_base&) noexcept(std::is_nothrow_copy_constructible_v<Listener>) = default;
 
 protected:

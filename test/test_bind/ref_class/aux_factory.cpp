@@ -89,7 +89,7 @@ static test_aux_factory* create_aux_auxlast_list(void* list_buf, aux_factory_hel
     );
 }
 
-static void setup_env(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void setup_env(asbind20::engine_pointer engine)
 {
     asbind_test::setup_message_callback(engine);
     asbind_test::setup_script_assertion(engine);
@@ -109,7 +109,7 @@ struct register_refcount_helper
 };
 
 template <bool UseGeneric>
-static auto register_test_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static auto register_test_class(asbind20::engine_pointer engine)
 {
     using namespace asbind20;
     return asbind20::ref_class<test_aux_factory, UseGeneric>(engine, "test_aux_factory")
@@ -117,7 +117,7 @@ static auto register_test_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         .property("int val", &test_aux_factory::value);
 }
 
-static void check_aux_factory(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int expected_val, int arg)
+static void check_aux_factory(asbind20::engine_pointer engine, int expected_val, int arg)
 {
     auto* m = engine->GetModule("test_aux_factory", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
     m->AddScriptSection(
@@ -136,7 +136,7 @@ static void check_aux_factory(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, in
     EXPECT_EQ(result.value(), expected_val);
 }
 
-static void check_aux_factory_list(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int expected_val)
+static void check_aux_factory_list(asbind20::engine_pointer engine, int expected_val)
 {
     auto* m = engine->GetModule("test_aux_factory", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
     m->AddScriptSection(
@@ -433,13 +433,13 @@ struct test_aux_factory_template
 {
     test_aux_factory_template() = default;
 
-    test_aux_factory_template(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, int val)
+    test_aux_factory_template(asbind20::typeinfo_pointer ti, int val)
         : value(val)
     {
         EXPECT_EQ(ti->GetSubTypeId(), AS_NAMESPACE_QUALIFIER asTYPEID_INT32);
     }
 
-    test_aux_factory_template(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, int initial_val, asbind20::script_init_list_repeat list)
+    test_aux_factory_template(asbind20::typeinfo_pointer ti, int initial_val, asbind20::script_init_list_repeat list)
         : value(initial_val)
     {
         EXPECT_EQ(ti->GetSubTypeId(), AS_NAMESPACE_QUALIFIER asTYPEID_INT32);
@@ -472,7 +472,7 @@ private:
     int m_counter = 1;
 };
 
-static bool aux_factory_helper_template_callback(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, bool& no_gc)
+static bool aux_factory_helper_template_callback(asbind20::typeinfo_pointer ti, bool& no_gc)
 {
     int subtype_id = ti->GetSubTypeId();
     if(asbind20::is_void_type(subtype_id))
@@ -487,13 +487,13 @@ struct aux_factory_helper_template
     int predefined_value = 0;
     std::size_t created = 0;
 
-    test_aux_factory_template* create_aux_template_as_global(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, int additional)
+    test_aux_factory_template* create_aux_template_as_global(asbind20::typeinfo_pointer ti, int additional)
     {
         ++created;
         return new test_aux_factory_template(ti, predefined_value + additional);
     }
 
-    test_aux_factory_template* create_aux_template_as_global_list(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, void* list_buf)
+    test_aux_factory_template* create_aux_template_as_global_list(asbind20::typeinfo_pointer ti, void* list_buf)
     {
         ++created;
         return new test_aux_factory_template(
@@ -502,13 +502,13 @@ struct aux_factory_helper_template
     }
 };
 
-static test_aux_factory_template* create_aux_template_auxfirst(aux_factory_helper_template& helper, AS_NAMESPACE_QUALIFIER asITypeInfo* ti, int additional)
+static test_aux_factory_template* create_aux_template_auxfirst(aux_factory_helper_template& helper, asbind20::typeinfo_pointer ti, int additional)
 {
     ++helper.created;
     return new test_aux_factory_template(ti, helper.predefined_value + additional);
 }
 
-static test_aux_factory_template* create_aux_template_auxfirst_list(aux_factory_helper_template& helper, AS_NAMESPACE_QUALIFIER asITypeInfo* ti, void* list_buf)
+static test_aux_factory_template* create_aux_template_auxfirst_list(aux_factory_helper_template& helper, asbind20::typeinfo_pointer ti, void* list_buf)
 {
     ++helper.created;
     return new test_aux_factory_template(
@@ -516,13 +516,13 @@ static test_aux_factory_template* create_aux_template_auxfirst_list(aux_factory_
     );
 }
 
-static test_aux_factory_template* create_aux_template_auxlast(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, int additional, aux_factory_helper_template& helper)
+static test_aux_factory_template* create_aux_template_auxlast(asbind20::typeinfo_pointer ti, int additional, aux_factory_helper_template& helper)
 {
     ++helper.created;
     return new test_aux_factory_template(ti, helper.predefined_value + additional);
 }
 
-static test_aux_factory_template* create_aux_template_auxlast_list(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, void* list_buf, aux_factory_helper_template& helper)
+static test_aux_factory_template* create_aux_template_auxlast_list(asbind20::typeinfo_pointer ti, void* list_buf, aux_factory_helper_template& helper)
 {
     ++helper.created;
     return new test_aux_factory_template(
@@ -531,7 +531,7 @@ static test_aux_factory_template* create_aux_template_auxlast_list(AS_NAMESPACE_
 }
 
 template <bool UseGeneric>
-auto register_test_class_template(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+auto register_test_class_template(asbind20::engine_pointer engine)
 {
     using namespace asbind20;
     return asbind20::template_ref_class<test_aux_factory_template, UseGeneric>(engine, "test_aux_factory_template<T>")
@@ -540,7 +540,7 @@ auto register_test_class_template(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
         .property("int val", &test_aux_factory_template::value);
 }
 
-static void check_aux_factory_template(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int expected_val, int arg)
+static void check_aux_factory_template(asbind20::engine_pointer engine, int expected_val, int arg)
 {
     auto* m = engine->GetModule("test_aux_factory_template", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
     m->AddScriptSection(
@@ -559,7 +559,7 @@ static void check_aux_factory_template(AS_NAMESPACE_QUALIFIER asIScriptEngine* e
     EXPECT_EQ(result.value(), expected_val);
 }
 
-static void check_aux_factory_template_list(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int expected_val)
+static void check_aux_factory_template_list(asbind20::engine_pointer engine, int expected_val)
 {
     auto* m = engine->GetModule("test_aux_factory_template", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
     m->AddScriptSection(

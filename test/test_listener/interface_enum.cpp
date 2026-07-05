@@ -28,7 +28,7 @@ public:
     {
         SCOPED_TRACE(std::string("Type name: ") + g.get_name());
 
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = g.get_engine();
+        asbind20::engine_pointer engine = g.get_engine();
         ASSERT_NE(engine, nullptr);
 
         if(r < 0)
@@ -38,7 +38,7 @@ public:
                 << "bad enum: " << to_string(static_cast<AS_NAMESPACE_QUALIFIER asERetCodes>(r));
         }
 
-        AS_NAMESPACE_QUALIFIER asITypeInfo* ti = engine->GetTypeInfoById(r);
+        asbind20::typeinfo_pointer ti = engine->GetTypeInfoById(r);
         ASSERT_NE(ti, nullptr)
             << "id = " << r;
 
@@ -50,7 +50,7 @@ public:
     {
         SCOPED_TRACE(std::string("Type name: ") + g.get_name());
 
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = g.get_engine();
+        asbind20::engine_pointer engine = g.get_engine();
         ASSERT_NE(engine, nullptr);
 
         if(r < 0)
@@ -60,7 +60,7 @@ public:
                 << "bad interface: " << to_string(static_cast<AS_NAMESPACE_QUALIFIER asERetCodes>(r));
         }
 
-        AS_NAMESPACE_QUALIFIER asITypeInfo* ti = engine->GetTypeInfoById(r);
+        asbind20::typeinfo_pointer ti = engine->GetTypeInfoById(r);
         ASSERT_NE(ti, nullptr)
             << "id = " << r;
 

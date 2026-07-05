@@ -37,12 +37,12 @@ template <typename T>
 }
 
 void setup_message_callback(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    asbind20::engine_pointer engine,
     bool propagate_error_to_gtest = false
 );
 
 void setup_exception_translator(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
+    asbind20::engine_pointer engine
 );
 
 void output_gc_statistics(
@@ -52,7 +52,7 @@ void output_gc_statistics(
 );
 void output_gc_statistics(
     std::ostream& os,
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    asbind20::engine_pointer engine,
     char sep = '\n'
 );
 } // namespace asbind_test

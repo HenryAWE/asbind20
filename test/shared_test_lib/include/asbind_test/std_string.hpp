@@ -23,7 +23,7 @@ namespace asbind_test
  * and enable char literal, which means 'a' is an integral value instead of a string.
  */
 void configure_engine_for_ext_string(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
+    asbind20::engine_pointer engine
 );
 
 /**
@@ -31,7 +31,7 @@ void configure_engine_for_ext_string(
  * @note Request asEP_USE_CHARACTER_LITERALS set to true
  */
 void setup_script_char(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    asbind20::engine_pointer engine,
     bool generic = asbind20::has_max_portability()
 );
 
@@ -215,7 +215,7 @@ namespace script_string
 } // namespace script_string
 
 void setup_script_string(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    asbind20::engine_pointer engine,
     bool generic = asbind20::has_max_portability(),
     bool as_default = true
 );
@@ -232,7 +232,7 @@ inline std::string script_chr(char32_t ch)
 }
 
 void setup_string_utils(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    asbind20::engine_pointer engine,
     bool generic = asbind20::has_max_portability()
 );
 } // namespace asbind_test
@@ -241,7 +241,7 @@ template <>
 struct asbind20::type_traits<char32_t>
 {
     static char32_t get_arg(
-        generic_pointer gen,
+        asbind20::generic_pointer gen,
         AS_NAMESPACE_QUALIFIER asUINT arg
     )
     {
@@ -249,7 +249,7 @@ struct asbind20::type_traits<char32_t>
     }
 
     static int set_return(
-        generic_pointer gen, char32_t val
+        asbind20::generic_pointer gen, char32_t val
     )
     {
         new(gen->GetAddressOfReturnLocation()) char32_t(val);

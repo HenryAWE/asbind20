@@ -168,8 +168,7 @@ namespace detail
         return {this, this->size()};                                        \
     }                                                                       \
     [[nodiscard]]                                                           \
-    auto get_type_info() const noexcept                                     \
-        -> const AS_NAMESPACE_QUALIFIER asITypeInfo*                        \
+    const_typeinfo_pointer get_type_info() const noexcept                   \
     {                                                                       \
         return this->m_ti;                                                  \
     }
@@ -184,7 +183,7 @@ public:
         friend my_base;
 
     public:
-        using value_type = AS_NAMESPACE_QUALIFIER asIScriptFunction*;
+        using value_type = function_pointer;
         using size_type = typename my_base::size_type;
 
     private:
@@ -217,7 +216,7 @@ public:
     all_methods_view(const all_methods_view&) noexcept = default;
 
     explicit all_methods_view(
-        const AS_NAMESPACE_QUALIFIER asITypeInfo* ti,
+        const_typeinfo_pointer ti,
         bool get_virtual = true
     ) noexcept
         : m_ti(ti), m_get_virtual(get_virtual)
@@ -226,7 +225,7 @@ public:
     ASBIND20_VIEWS_TYPEINFO_BASED_VIEW_COMMON_MEMBERS_IMPL(GetMethodCount)
 
 private:
-    const AS_NAMESPACE_QUALIFIER asITypeInfo* m_ti;
+    const_typeinfo_pointer m_ti;
     bool m_get_virtual;
 };
 
@@ -242,7 +241,7 @@ public:
     public:
         using value_type = std::pair<
             AS_NAMESPACE_QUALIFIER asEBehaviours,
-            AS_NAMESPACE_QUALIFIER asIScriptFunction*>;
+            function_pointer>;
         using size_type = typename my_base::size_type;
 
     private:
@@ -277,7 +276,7 @@ public:
     all_behaviours_view(const all_behaviours_view&) noexcept = default;
 
     explicit all_behaviours_view(
-        const AS_NAMESPACE_QUALIFIER asITypeInfo* ti
+        const_typeinfo_pointer ti
     ) noexcept
         : m_ti(ti)
     {}
@@ -285,7 +284,7 @@ public:
     ASBIND20_VIEWS_TYPEINFO_BASED_VIEW_COMMON_MEMBERS_IMPL(GetBehaviourCount)
 
 private:
-    const AS_NAMESPACE_QUALIFIER asITypeInfo* m_ti;
+    const_typeinfo_pointer m_ti;
 };
 
 class all_factories_view : public detail::view_interface<all_factories_view>
@@ -298,7 +297,7 @@ public:
         friend my_base;
 
     public:
-        using value_type = AS_NAMESPACE_QUALIFIER asIScriptFunction*;
+        using value_type = function_pointer;
         using size_type = typename my_base::size_type;
 
     private:
@@ -331,7 +330,7 @@ public:
     all_factories_view(const all_factories_view&) noexcept = default;
 
     explicit all_factories_view(
-        const AS_NAMESPACE_QUALIFIER asITypeInfo* ti
+        const_typeinfo_pointer ti
     ) noexcept
         : m_ti(ti)
     {}
@@ -339,7 +338,7 @@ public:
     ASBIND20_VIEWS_TYPEINFO_BASED_VIEW_COMMON_MEMBERS_IMPL(GetFactoryCount)
 
 private:
-    const AS_NAMESPACE_QUALIFIER asITypeInfo* m_ti;
+    const_typeinfo_pointer m_ti;
 };
 
 template <std::integral UnderlyingType = int>
@@ -395,7 +394,7 @@ public:
     all_enum_values_view(const all_enum_values_view&) noexcept = default;
 
     explicit all_enum_values_view(
-        const AS_NAMESPACE_QUALIFIER asITypeInfo* ti
+        const_typeinfo_pointer ti
     ) noexcept
         : m_ti(ti)
     {}
@@ -403,7 +402,7 @@ public:
     ASBIND20_VIEWS_TYPEINFO_BASED_VIEW_COMMON_MEMBERS_IMPL(GetEnumValueCount)
 
 private:
-    const AS_NAMESPACE_QUALIFIER asITypeInfo* m_ti;
+    const_typeinfo_pointer m_ti;
 };
 
 #undef ASBIND20_VIEWS_COMMON_ITER_MEMBERS_IMPL
@@ -416,7 +415,7 @@ namespace views
         struct all_methods_t
         {
             all_methods_view operator()(
-                AS_NAMESPACE_QUALIFIER asITypeInfo* ti,
+                typeinfo_pointer ti,
                 bool get_virtual = true
             ) const
             {
@@ -432,7 +431,7 @@ namespace views
         struct all_behaviours_t
         {
             all_behaviours_view operator()(
-                const AS_NAMESPACE_QUALIFIER asITypeInfo* ti
+                const_typeinfo_pointer ti
             ) const
             {
                 return all_behaviours_view(ti);
@@ -447,7 +446,7 @@ namespace views
         struct all_factories_t
         {
             all_factories_view operator()(
-                const AS_NAMESPACE_QUALIFIER asITypeInfo* ti
+                const_typeinfo_pointer ti
             ) const
             {
                 return all_factories_view(ti);
@@ -463,7 +462,7 @@ namespace views
         struct all_enum_values_of_t
         {
             all_enum_values_view<UnderlyingType> operator()(
-                const AS_NAMESPACE_QUALIFIER asITypeInfo* ti
+                const_typeinfo_pointer ti
             ) const
             {
                 return all_enum_values_view<UnderlyingType>(ti);

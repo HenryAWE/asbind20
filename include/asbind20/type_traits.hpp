@@ -35,11 +35,11 @@ void set_generic_return(
 
 template <typename T>
 requires(!std::is_const_v<T>)
-decltype(auto) get_script_return(AS_NAMESPACE_QUALIFIER asIScriptContext* ctx);
+decltype(auto) get_script_return(context_pointer ctx);
 
 template <std::integral T>
 int set_script_arg(
-    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
+    context_pointer ctx,
     AS_NAMESPACE_QUALIFIER asUINT idx,
     T val
 );
@@ -54,7 +54,7 @@ struct underlying_enum_traits
     using underlying_type = std::underlying_type_t<Enum>;
 
     static int set_arg(
-        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
+        context_pointer ctx,
         AS_NAMESPACE_QUALIFIER asUINT arg,
         Enum val
     )
@@ -78,7 +78,7 @@ struct underlying_enum_traits
     }
 
     static Enum get_return(
-        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx
+        context_pointer ctx
     )
     {
         return static_cast<Enum>(get_script_return<underlying_type>(ctx));
@@ -93,7 +93,7 @@ template <>
 struct type_traits<script_object>
 {
     static int set_arg(
-        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
+        context_pointer ctx,
         AS_NAMESPACE_QUALIFIER asUINT arg,
         const script_object& val
     )
@@ -119,7 +119,7 @@ struct type_traits<script_object>
     }
 
     static script_object get_return(
-        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx
+        context_pointer ctx
     )
     {
         return script_object(

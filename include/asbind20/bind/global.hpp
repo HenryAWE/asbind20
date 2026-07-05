@@ -42,14 +42,14 @@ public:
     global() = delete;
     global(const global&) = default;
 
-    explicit global(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+    explicit global(engine_pointer engine)
         : my_base(engine) {}
 
     // For keeping consistency with other binding generators
     template <bool AppendOnly>
     global(
         appending_t<AppendOnly>,
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
+        engine_pointer engine
     )
         : global(engine)
     {}
@@ -338,12 +338,12 @@ public:
     }
 };
 
-global(AS_NAMESPACE_QUALIFIER asIScriptEngine*) -> global<false>;
+global(engine_pointer) -> global<false>;
 
 global(const script_engine&) -> global<false>;
 
 template <bool AppendOnly>
-global(appending_t<AppendOnly>, AS_NAMESPACE_QUALIFIER asIScriptEngine*) -> global<false>;
+global(appending_t<AppendOnly>, engine_pointer) -> global<false>;
 } // namespace asbind20
 
 #endif

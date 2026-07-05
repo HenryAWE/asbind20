@@ -20,7 +20,7 @@ public:
                 << "bad function: " << to_string(static_cast<AS_NAMESPACE_QUALIFIER asERetCodes>(id));
         }
 
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = g.get_engine();
+        asbind20::engine_pointer engine = g.get_engine();
         ASSERT_NE(engine, nullptr);
         auto* f = engine->GetFunctionById(id);
         ASSERT_NE(f, nullptr);
@@ -38,7 +38,7 @@ public:
                 << "bad global property: " << to_string(static_cast<AS_NAMESPACE_QUALIFIER asERetCodes>(id));
         }
 
-        AS_NAMESPACE_QUALIFIER asIScriptEngine* engine = g.get_engine();
+        asbind20::engine_pointer engine = g.get_engine();
         ASSERT_NE(engine, nullptr);
         const char* name;
         int r = engine->GetGlobalPropertyByIndex(static_cast<AS_NAMESPACE_QUALIFIER asUINT>(id), &name);

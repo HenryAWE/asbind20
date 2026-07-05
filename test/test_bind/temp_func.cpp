@@ -5,7 +5,7 @@
 
 namespace test_bind
 {
-static void temp_f(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+static void temp_f(asbind20::generic_pointer gen)
 {
     int tid = gen->GetArgTypeId(0);
 

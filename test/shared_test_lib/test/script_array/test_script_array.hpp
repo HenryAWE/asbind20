@@ -59,8 +59,7 @@ public:
         m_engine.reset();
     }
 
-    auto get_engine() const
-        -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
+    asbind20::engine_pointer get_engine() const
     {
         return m_engine.get();
     }
@@ -84,7 +83,7 @@ private:
 
 template <typename Return>
 Return run_string(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    asbind20::engine_pointer engine,
     const char* section,
     std::string_view code,
     std::string_view return_decl
@@ -102,7 +101,7 @@ Return run_string(
     auto* m = engine->GetModule(
         helper_module_name, AS_NAMESPACE_QUALIFIER asGM_ONLY_IF_EXISTS
     );
-    AS_NAMESPACE_QUALIFIER asIScriptFunction* f = nullptr;
+    asbind20::function_pointer f = nullptr;
     r = m->CompileFunction(
         section,
         func_code.c_str(),
@@ -132,7 +131,7 @@ Return run_string(
 }
 
 void run_string(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    asbind20::engine_pointer engine,
     const char* section,
     std::string_view code
 );

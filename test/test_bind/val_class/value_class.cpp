@@ -149,7 +149,7 @@ constexpr AS_NAMESPACE_QUALIFIER asQWORD trivial_value_class_flags =
     AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_MORE_CONSTRUCTORS |
     AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_ALLINTS;
 
-static void register_trivial_value_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void register_trivial_value_class(asbind20::engine_pointer engine)
 {
     using namespace asbind20;
 
@@ -205,7 +205,7 @@ static void register_trivial_value_class(AS_NAMESPACE_QUALIFIER asIScriptEngine*
 }
 
 static void register_trivial_value_class(
-    asbind20::use_generic_t, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
+    asbind20::use_generic_t, asbind20::engine_pointer engine
 )
 {
     using namespace asbind20;
@@ -383,7 +383,7 @@ bool test_14(trivial_value_class val)
 }
 )";
 
-static void check_trivial_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void check_trivial_class(asbind20::engine_pointer engine)
 {
     auto* m = engine->GetModule(
         "test_value_class", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
@@ -474,8 +474,7 @@ public:
         m_engine.reset();
     }
 
-    auto get_engine() const noexcept
-        -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
+    asbind20::engine_pointer get_engine() const noexcept
     {
         return m_engine.get();
     }
@@ -587,7 +586,7 @@ struct friend_ops_helper
 };
 
 template <bool UseGeneric>
-static void register_friend_ops(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, friend_ops_helper& helper)
+static void register_friend_ops(asbind20::engine_pointer engine, friend_ops_helper& helper)
 {
     using namespace asbind20;
 
@@ -681,7 +680,7 @@ int test_9()
 }
 )";
 
-static void check_friend_ops(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, friend_ops_helper& helper)
+static void check_friend_ops(asbind20::engine_pointer engine, friend_ops_helper& helper)
 {
     auto* m = engine->GetModule(
         "test_value_class", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
@@ -754,8 +753,7 @@ public:
         m_engine.reset();
     }
 
-    auto get_engine() const noexcept
-        -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
+    asbind20::engine_pointer get_engine() const noexcept
     {
         return m_engine.get();
     }
@@ -826,7 +824,7 @@ public:
 };
 
 template <bool UseGeneric, bool UseMP, bool CompUseMP>
-static void register_base_val_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void register_base_val_class(asbind20::engine_pointer engine)
 {
     using asbind20::composite;
 
@@ -862,7 +860,7 @@ static void register_base_val_class(AS_NAMESPACE_QUALIFIER asIScriptEngine* engi
     }
 }
 
-static void check_val_class_comp_property(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void check_val_class_comp_property(asbind20::engine_pointer engine)
 {
     auto* m = engine->GetModule(
         "val_class_comp_prop", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
@@ -905,7 +903,7 @@ static void check_val_class_comp_property(AS_NAMESPACE_QUALIFIER asIScriptEngine
 }
 
 template <bool UseGeneric, bool UseMP, bool CompUseMP>
-static void setup_val_class_comp_prop_test(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void setup_val_class_comp_prop_test(asbind20::engine_pointer engine)
 {
     asbind_test::setup_message_callback(engine);
     asbind_test::setup_script_assertion(engine);

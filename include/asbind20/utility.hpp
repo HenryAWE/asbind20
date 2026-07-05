@@ -54,7 +54,7 @@ namespace detail
  */
 template <typename T>
 concept native_function =
-    !std::is_convertible_v<T, AS_NAMESPACE_QUALIFIER asGENFUNC_t> &&
+    !std::is_convertible_v<T, generic_function> &&
     detail::is_native_function_helper<std::decay_t<T>>;
 
 /**
@@ -428,7 +428,7 @@ constexpr bool is_objhandle(int type_id) noexcept
  */
 [[nodiscard]]
 inline int get_script_string_type(
-    const AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
+    const_engine_pointer engine
 )
 {
     if(!engine) [[unlikely]]
@@ -448,7 +448,7 @@ inline int get_script_string_type(
  */
 [[nodiscard]]
 inline bool is_script_string(
-    const AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id
+    const_engine_pointer engine, int type_id
 )
 {
     if(!engine) [[unlikely]]
@@ -465,7 +465,7 @@ inline bool is_script_string(
  *           so it's safe to call this function by `type_requires_gc(ti->GetSubType())`.
  */
 [[nodiscard]]
-inline bool type_requires_gc(const AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+inline bool type_requires_gc(const_typeinfo_pointer ti)
 {
     if(!ti) [[unlikely]]
         return false;
@@ -495,7 +495,7 @@ inline bool type_requires_gc(const AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
  * @param type_id AngelScript type id
  */
 inline auto sizeof_script_type(
-    const AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, int type_id
+    const_engine_pointer engine, int type_id
 )
     -> AS_NAMESPACE_QUALIFIER asUINT
 {
@@ -835,8 +835,7 @@ constexpr std::string string_concat(Args&&... args)
  * @return A pointer to the currently executing context, or null if no context is executing
  */
 [[nodiscard]]
-inline auto current_context()
-    -> AS_NAMESPACE_QUALIFIER asIScriptContext*
+inline context_pointer current_context()
 {
     return AS_NAMESPACE_QUALIFIER asGetActiveContext();
 }
@@ -846,7 +845,7 @@ inline auto current_context()
  */
 [[nodiscard]]
 inline bool has_script_exception(
-    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx = current_context()
+    context_pointer ctx = current_context()
 )
 {
     if(!ctx) [[unlikely]]
@@ -1092,15 +1091,15 @@ constexpr std::string_view static_enum_name() noexcept
 }
 
 [[nodiscard]]
-inline auto get_default_factory(const AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
-    -> AS_NAMESPACE_QUALIFIER asIScriptFunction*
+inline auto get_default_factory(const_typeinfo_pointer ti)
+    -> function_pointer
 {
     if(!ti) [[unlikely]]
         return nullptr;
 
     for(AS_NAMESPACE_QUALIFIER asUINT i = 0; i < ti->GetFactoryCount(); ++i)
     {
-        AS_NAMESPACE_QUALIFIER asIScriptFunction* func =
+        function_pointer func =
             ti->GetFactoryByIndex(i);
         if(func->GetParamCount() == 0)
             return func;
@@ -1110,8 +1109,8 @@ inline auto get_default_factory(const AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
 }
 
 [[nodiscard]]
-inline auto get_default_constructor(const AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
-    -> AS_NAMESPACE_QUALIFIER asIScriptFunction*
+inline auto get_default_constructor(const_typeinfo_pointer ti)
+    -> function_pointer
 {
     if(!ti) [[unlikely]]
         return nullptr;
@@ -1119,7 +1118,7 @@ inline auto get_default_constructor(const AS_NAMESPACE_QUALIFIER asITypeInfo* ti
     for(AS_NAMESPACE_QUALIFIER asUINT i = 0; i < ti->GetBehaviourCount(); ++i)
     {
         AS_NAMESPACE_QUALIFIER asEBehaviours beh;
-        AS_NAMESPACE_QUALIFIER asIScriptFunction* func =
+        function_pointer func =
             ti->GetBehaviourByIndex(i, &beh);
         if(beh == AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT)
         {
@@ -1132,8 +1131,8 @@ inline auto get_default_constructor(const AS_NAMESPACE_QUALIFIER asITypeInfo* ti
 }
 
 [[nodiscard]]
-inline auto get_weakref_flag(const AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
-    -> AS_NAMESPACE_QUALIFIER asIScriptFunction*
+inline auto get_weakref_flag(const_typeinfo_pointer ti)
+    -> function_pointer
 {
     if(!ti) [[unlikely]]
         return nullptr;
@@ -1141,7 +1140,7 @@ inline auto get_weakref_flag(const AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
     for(AS_NAMESPACE_QUALIFIER asUINT i = 0; i < ti->GetBehaviourCount(); ++i)
     {
         AS_NAMESPACE_QUALIFIER asEBehaviours beh;
-        AS_NAMESPACE_QUALIFIER asIScriptFunction* func =
+        function_pointer func =
             ti->GetBehaviourByIndex(i, &beh);
         if(beh == AS_NAMESPACE_QUALIFIER asBEHAVE_GET_WEAKREF_FLAG)
         {

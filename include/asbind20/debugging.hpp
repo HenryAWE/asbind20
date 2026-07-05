@@ -33,7 +33,7 @@ namespace asbind20::debugging
  */
 [[nodiscard]]
 inline const char* get_function_section_name(
-    const AS_NAMESPACE_QUALIFIER asIScriptFunction* func
+    const_function_pointer func
 )
 {
     if(!func) [[unlikely]]

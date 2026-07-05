@@ -124,7 +124,7 @@ using ScriptStringNative = test_script_string::script_string_suite_base<false>;
 
 namespace test_script_string
 {
-static void test_ctor_fn(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void test_ctor_fn(asbind20::engine_pointer engine)
 {
     auto* m = engine->GetModule(
         "test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE

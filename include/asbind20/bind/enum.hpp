@@ -37,7 +37,6 @@ public:
 
     using enum_type = Enum;
     using underlying_type = UnderlyingType;
-    using engine_pointer = AS_NAMESPACE_QUALIFIER asIScriptEngine*;
 
     enum_() = delete;
     enum_(const enum_&) = default;
@@ -150,7 +149,7 @@ private:
 
     void append_to_enum(bool append_only, cstring_ref name)
     {
-        AS_NAMESPACE_QUALIFIER asITypeInfo* ti = this->get_engine()->GetTypeInfoByName(name.c_str());
+        typeinfo_pointer ti = this->get_engine()->GetTypeInfoByName(name.c_str());
         if(ti)
         {
 #ifndef ASBIND20_CONFIG_NO_APPEND_CHECK

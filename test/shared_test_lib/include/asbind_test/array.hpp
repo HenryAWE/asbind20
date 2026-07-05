@@ -37,7 +37,7 @@ namespace detail
         {
             asbind20::container::script_element_comparator comp;
             asbind20::container::get_comparator_result::status status;
-            AS_NAMESPACE_QUALIFIER asITypeInfo* iterator_ti;
+            asbind20::typeinfo_pointer iterator_ti;
 
             ~array_cache() = default;
         };
@@ -46,23 +46,23 @@ namespace detail
             int subtype_id,
             const void* lhs,
             const void* rhs,
-            AS_NAMESPACE_QUALIFIER asIScriptContext* ctx,
+            asbind20::context_pointer ctx,
             const array_cache* cache
         );
 
     public:
         static bool template_callback(
-            AS_NAMESPACE_QUALIFIER asITypeInfo* ti, bool&
+            asbind20::typeinfo_pointer ti, bool&
         );
 
     private:
         static void find_required_elem_methods(
-            array_cache& out, int subtype_id, AS_NAMESPACE_QUALIFIER asITypeInfo* ti
+            array_cache& out, int subtype_id, asbind20::typeinfo_pointer ti
         );
 
     protected:
         static void generate_cache(
-            array_cache& out, int subtype_id, AS_NAMESPACE_QUALIFIER asITypeInfo* ti
+            array_cache& out, int subtype_id, asbind20::typeinfo_pointer ti
         );
 
         // Setups cached methods for script array.
@@ -71,7 +71,7 @@ namespace detail
         // See: https://www.gamedev.net/forums/topic/717709-about-caching-required-methods-in-template-callback/
         template <AS_NAMESPACE_QUALIFIER asPWORD UserDataID>
         static void setup_cache(
-            int subtype_id, AS_NAMESPACE_QUALIFIER asITypeInfo* ti
+            int subtype_id, asbind20::typeinfo_pointer ti
         )
         {
             array_cache* cache = static_cast<array_cache*>(
@@ -103,7 +103,7 @@ namespace detail
         }
 
         template <AS_NAMESPACE_QUALIFIER asPWORD UserDataID>
-        static void cache_cleanup_callback(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+        static void cache_cleanup_callback(asbind20::typeinfo_pointer ti)
         {
             array_cache* mem = get_cache<UserDataID>(ti);
             if(mem)
@@ -114,7 +114,7 @@ namespace detail
         }
 
         template <AS_NAMESPACE_QUALIFIER asPWORD UserDataID>
-        static array_cache* get_cache(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+        static array_cache* get_cache(asbind20::typeinfo_pointer ti)
         {
             assert(ti != nullptr);
             return static_cast<array_cache*>(
@@ -126,7 +126,7 @@ namespace detail
 
 class script_array : private detail::script_array_base
 {
-    friend void register_script_array(AS_NAMESPACE_QUALIFIER asIScriptEngine*, bool, bool);
+    friend void register_script_array(asbind20::engine_pointer, bool, bool);
 
     using my_base = detail::script_array_base;
 
@@ -134,7 +134,7 @@ class script_array : private detail::script_array_base
 
     void setup_cache()
     {
-        AS_NAMESPACE_QUALIFIER asITypeInfo* ti = get_type_info();
+        asbind20::typeinfo_pointer ti = get_type_info();
         my_base::setup_cache<user_id>(ti->GetSubTypeId(), ti);
     }
 
@@ -153,7 +153,7 @@ public:
 
     script_array() = delete;
 
-    script_array(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+    script_array(asbind20::typeinfo_pointer ti)
         : m_data(ti)
     {
         setup_cache();
@@ -165,7 +165,7 @@ public:
         setup_cache();
     }
 
-    script_array(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, const script_array& other)
+    script_array(asbind20::typeinfo_pointer ti, const script_array& other)
         : m_data(ti)
     {
         if(ti != other.get_type_info())
@@ -182,21 +182,21 @@ public:
         }
     }
 
-    script_array(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, size_type n)
+    script_array(asbind20::typeinfo_pointer ti, size_type n)
         : m_data(ti)
     {
         setup_cache();
         m_data.emplace_back_n(n);
     }
 
-    script_array(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, size_type n, const void* value)
+    script_array(asbind20::typeinfo_pointer ti, size_type n, const void* value)
         : m_data(ti)
     {
         setup_cache();
         m_data.push_back_n(n, value);
     }
 
-    script_array(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, asbind20::script_init_list_repeat ilist)
+    script_array(asbind20::typeinfo_pointer ti, asbind20::script_init_list_repeat ilist)
         : m_data(ti, ilist)
     {
         setup_cache();
@@ -209,7 +209,7 @@ public:
     class script_array_iterator
     {
         friend script_array;
-        friend void register_script_array(AS_NAMESPACE_QUALIFIER asIScriptEngine*, bool, bool);
+        friend void register_script_array(asbind20::engine_pointer, bool, bool);
 
     private:
         script_array_iterator() = default;
@@ -217,12 +217,12 @@ public:
     public:
         using difference_type = std::make_signed_t<size_type>;
 
-        script_array_iterator(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+        script_array_iterator(asbind20::typeinfo_pointer ti)
         {
             (void)ti;
         }
 
-        script_array_iterator(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, script_array* arr)
+        script_array_iterator(asbind20::typeinfo_pointer ti, script_array* arr)
             : m_arr(arr)
         {
             (void)ti;
@@ -242,14 +242,14 @@ public:
                 m_arr->addref();
         }
 
-        script_array_iterator(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, const script_array_iterator& other)
+        script_array_iterator(asbind20::typeinfo_pointer ti, const script_array_iterator& other)
             : script_array_iterator(other)
         {
             (void)ti;
             assert(ti->GetSubTypeId() == m_arr->get_type_info()->GetSubTypeId());
         }
 
-        script_array_iterator(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, script_array* arr, size_type offset)
+        script_array_iterator(asbind20::typeinfo_pointer ti, script_array* arr, size_type offset)
             : m_arr(arr), m_offset(offset)
         {
             (void)ti;
@@ -414,14 +414,14 @@ public:
             return m_arr != nullptr;
         }
 
-        void enum_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+        void enum_refs(asbind20::engine_pointer engine)
         {
             if(!m_arr)
                 return;
             engine->GCEnumCallback(m_arr);
         }
 
-        void release_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+        void release_refs(asbind20::engine_pointer engine)
         {
             (void)engine;
 
@@ -448,8 +448,7 @@ public:
         }
     };
 
-    auto get_engine() const
-        -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
+    asbind20::engine_pointer get_engine() const
     {
         return get_type_info()->GetEngine();
     }
@@ -718,7 +717,7 @@ public:
         }
         else
         {
-            AS_NAMESPACE_QUALIFIER asITypeInfo* ti = get_type_info();
+            asbind20::typeinfo_pointer ti = get_type_info();
 
             asbind20::reuse_active_context ctx(ti->GetEngine());
             array_cache* cache = get_cache();
@@ -756,7 +755,7 @@ public:
      * @param n Max checked elements
      * @return size_type Removed element count
      */
-    size_type remove_if(AS_NAMESPACE_QUALIFIER asIScriptFunction* pred, index_type start = 0, size_type n = -1)
+    size_type remove_if(asbind20::function_pointer pred, index_type start = 0, size_type n = -1)
     {
         size_type off = index_to_offset(start);
         if(off == size_type(-1)) [[unlikely]]
@@ -768,7 +767,7 @@ public:
 
         n = std::min(size() - off, n);
 
-        AS_NAMESPACE_QUALIFIER asITypeInfo* ti = get_type_info();
+        asbind20::typeinfo_pointer ti = get_type_info();
 
         callback_guard guard(this);
         asbind20::reuse_active_context ctx(ti->GetEngine());
@@ -831,7 +830,7 @@ public:
         }
     }
 
-    size_type count_if(AS_NAMESPACE_QUALIFIER asIScriptFunction* pred, index_type start = 0, size_type n = -1) const
+    size_type count_if(asbind20::function_pointer pred, index_type start = 0, size_type n = -1) const
     {
         size_type off = index_to_offset(start);
         if(off == size_type(-1)) [[unlikely]]
@@ -893,8 +892,8 @@ private:
     template <bool IsHandle, bool Ascending, bool IsMethod>
     struct script_compare
     {
-        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx;
-        AS_NAMESPACE_QUALIFIER asIScriptFunction* func;
+        asbind20::context_pointer ctx;
+        asbind20::function_pointer func;
 
         bool operator()(void* lhs, void* rhs) const
         {
@@ -940,8 +939,8 @@ private:
     template <typename T>
     struct script_compare_primitive
     {
-        AS_NAMESPACE_QUALIFIER asIScriptContext* ctx;
-        AS_NAMESPACE_QUALIFIER asIScriptFunction* func;
+        asbind20::context_pointer ctx;
+        asbind20::function_pointer func;
 
         bool operator()(const T& lhs, const T& rhs) const
         {
@@ -955,7 +954,7 @@ private:
 
     template <bool IsMethod, bool Stable>
     void sort_by_script_compare_impl(
-        AS_NAMESPACE_QUALIFIER asIScriptFunction* func,
+        asbind20::function_pointer func,
         bool is_handle,
         bool asc,
         size_type off,
@@ -1005,7 +1004,7 @@ private:
 
     template <bool IsMethod>
     void sort_by_script_compare(
-        AS_NAMESPACE_QUALIFIER asIScriptFunction* func,
+        asbind20::function_pointer func,
         bool is_handle,
         bool asc,
         bool stable,
@@ -1098,7 +1097,7 @@ public:
     }
 
     void sort_by(
-        AS_NAMESPACE_QUALIFIER asIScriptFunction* func,
+        asbind20::function_pointer func,
         index_type start = 0,
         size_type n = -1,
         bool stable = false
@@ -1213,8 +1212,7 @@ public:
     }
 
     [[nodiscard]]
-    auto get_type_info() const noexcept
-        -> AS_NAMESPACE_QUALIFIER asITypeInfo*
+    asbind20::typeinfo_pointer get_type_info() const noexcept
     {
         return m_data.get_type_info();
     }
@@ -1243,14 +1241,14 @@ public:
         return m_refcount;
     }
 
-    void enum_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+    void enum_refs(asbind20::engine_pointer engine)
     {
         (void)engine;
         assert(m_data.get_type_info()->GetEngine() == engine);
         m_data.enum_refs();
     }
 
-    void release_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+    void release_refs(asbind20::engine_pointer engine)
     {
         (void)engine;
         assert(m_data.get_type_info()->GetEngine() == engine);
@@ -1517,7 +1515,7 @@ private:
 };
 
 inline void register_script_array(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    asbind20::engine_pointer engine,
     bool as_default = true,
     bool generic = asbind20::has_max_portability()
 )
@@ -1669,14 +1667,14 @@ inline void register_script_array(
 
 template <std::size_t Size>
 script_array* new_script_array(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine,
+    asbind20::engine_pointer engine,
     asbind20::util::fixed_string<Size> subtype_decl
 )
 {
     using asbind20::util::fixed_string;
 
     auto full_decl = fixed_string("array<") + subtype_decl + fixed_string(">");
-    AS_NAMESPACE_QUALIFIER asITypeInfo* ti = engine->GetTypeInfoByDecl(
+    asbind20::typeinfo_pointer ti = engine->GetTypeInfoByDecl(
         full_decl.c_str()
     );
     if(!ti) [[unlikely]]

@@ -64,7 +64,7 @@ public:
 };
 
 template <bool UseMP, bool Nontype>
-static void register_val_comp(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void register_val_comp(asbind20::engine_pointer engine)
 {
     using namespace asbind20;
 
@@ -138,7 +138,7 @@ static void register_val_comp(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 }
 
 template <bool UseMP, bool Explicitly>
-static void register_val_comp(asbind20::use_generic_t, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void register_val_comp(asbind20::use_generic_t, asbind20::engine_pointer engine)
 {
     using namespace asbind20;
 
@@ -219,7 +219,7 @@ static void register_val_comp(asbind20::use_generic_t, AS_NAMESPACE_QUALIFIER as
     }
 }
 
-static void check_val_comp(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void check_val_comp(asbind20::engine_pointer engine)
 {
     auto* m = engine->GetModule(
         "check_val_comp", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
@@ -391,7 +391,7 @@ private:
 };
 
 template <bool UseGeneric>
-static void register_ref_comp(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void register_ref_comp(asbind20::engine_pointer engine)
 {
     using namespace asbind20;
 
@@ -404,7 +404,7 @@ static void register_ref_comp(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         .method("bool vexec(const?&in)", fp<&comp_helper::vexec>, composite<&ref_comp::indirect>(), var_type<0>);
 }
 
-static void check_ref_comp(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void check_ref_comp(asbind20::engine_pointer engine)
 {
     auto* m = engine->GetModule(
         "check_ref_comp", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE

@@ -150,7 +150,7 @@ static int my_div(int a, int b)
 }
 
 // AngelScript decl: int my_mul(int a, int b)
-static void my_mul(AS_NAMESPACE_QUALIFIER asIScriptGeneric* gen)
+static void my_mul(asbind20::generic_pointer gen)
 {
     int a = asbind20::get_generic_arg<int>(gen, 0);
     int b = asbind20::get_generic_arg<int>(gen, 1);
@@ -314,7 +314,7 @@ TEST(Detail, GenericWrapper)
 
     auto my_div_gen = detail::to_asGENFUNC_t(fp<&test_bind::my_div>, cc<AS_NAMESPACE_QUALIFIER asCALL_CDECL>);
     auto my_mul_gen = test_bind::my_mul;
-    auto my_add_gen = [](generic_pointer gen) -> void
+    auto my_add_gen = [](asbind20::generic_pointer gen) -> void
     {
         int a = asbind20::get_generic_arg<int>(gen, 0);
         int b = asbind20::get_generic_arg<int>(gen, 1);

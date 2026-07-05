@@ -12,7 +12,7 @@ void default_assertion_callback(std::string_view msg)
 }
 
 std::string gen_full_assert_msg(
-    AS_NAMESPACE_QUALIFIER asIScriptContext* ctx, std::string_view msg
+    asbind20::context_pointer ctx, std::string_view msg
 )
 {
     std::stringstream ss;
@@ -58,7 +58,7 @@ static void assert_impl(bool cond)
 }
 
 void setup_script_assertion(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine
+    asbind20::engine_pointer engine
 )
 {
     using namespace asbind20;

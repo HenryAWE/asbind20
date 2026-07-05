@@ -171,12 +171,12 @@ public:
         );
     }
 
-    void release_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine*)
+    void release_refs(asbind20::engine_pointer)
     {
         clear_var();
     }
 
-    void enum_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine*)
+    void enum_refs(asbind20::engine_pointer)
     {
         if(asbind20::is_void_type(m_var_type_id))
             return;
@@ -200,13 +200,13 @@ private:
     asbind20::atomic_counter m_counter;
     bool m_gc_flag = false;
 
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* m_engine;
+    asbind20::engine_pointer m_engine;
     asbind20::container::single::data_type m_var_data;
     int m_var_type_id = AS_NAMESPACE_QUALIFIER asTYPEID_VOID;
 };
 
 template <bool UseGeneric>
-auto register_gc_init_list_basic_methods(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+auto register_gc_init_list_basic_methods(asbind20::engine_pointer engine)
 {
     using namespace asbind20;
 
@@ -226,7 +226,7 @@ auto register_gc_init_list_basic_methods(AS_NAMESPACE_QUALIFIER asIScriptEngine*
 }
 
 template <asbind20::policies::initialization_list_policy IListPolicy, bool UseGeneric>
-void register_gc_init_list(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+void register_gc_init_list(asbind20::engine_pointer engine)
 {
     using namespace asbind20;
 
@@ -253,7 +253,7 @@ void register_gc_init_list(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 
 // For testing omitted list policy, i.e., only factory policy is provided
 template <bool UseGeneric>
-void register_gc_init_list_simple(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+void register_gc_init_list_simple(asbind20::engine_pointer engine)
 {
     using namespace asbind20;
 
@@ -688,7 +688,7 @@ static void custom_factory_set_ints(std::vector<int>& out, void* list_buf)
     EXPECT_EQ(out[2], 76);
 }
 
-static gc_init_list* gc_init_list_custom_list_factory_objfirst(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, void* list_buf)
+static gc_init_list* gc_init_list_custom_list_factory_objfirst(asbind20::typeinfo_pointer ti, void* list_buf)
 {
     std::unique_ptr<gc_init_list> p(new gc_init_list);
 
@@ -698,7 +698,7 @@ static gc_init_list* gc_init_list_custom_list_factory_objfirst(AS_NAMESPACE_QUAL
     return p.release();
 }
 
-static gc_init_list* gc_init_list_custom_list_factory_objlast(void* list_buf, AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+static gc_init_list* gc_init_list_custom_list_factory_objlast(void* list_buf, asbind20::typeinfo_pointer ti)
 {
     std::unique_ptr<gc_init_list> p(new gc_init_list);
 
@@ -802,18 +802,18 @@ namespace test_gc
 class templ_gc_init_list
 {
 public:
-    templ_gc_init_list(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+    templ_gc_init_list(asbind20::typeinfo_pointer ti)
         : m_ti(ti) {}
 
     // For pattern {int, int}
-    templ_gc_init_list(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, int* list_buf)
+    templ_gc_init_list(asbind20::typeinfo_pointer ti, int* list_buf)
         : ints{list_buf[0], list_buf[1]}, m_ti(ti)
     {
         std::cerr << "{int, int}" << std::endl;
     }
 
     // For pattern {repeat int}
-    templ_gc_init_list(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, void* list_buf)
+    templ_gc_init_list(asbind20::typeinfo_pointer ti, void* list_buf)
         : m_ti(ti)
     {
         asbind20::script_init_list_repeat ilist(list_buf);
@@ -832,7 +832,7 @@ public:
         return m_ti->GetSubTypeId();
     }
 
-    static bool template_callback(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, bool&)
+    static bool template_callback(asbind20::typeinfo_pointer ti, bool&)
     {
         return !asbind20::is_void_type(ti->GetSubTypeId());
     }
@@ -885,12 +885,12 @@ public:
         );
     }
 
-    void release_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine*)
+    void release_refs(asbind20::engine_pointer)
     {
         clear_var();
     }
 
-    void enum_refs(AS_NAMESPACE_QUALIFIER asIScriptEngine*)
+    void enum_refs(asbind20::engine_pointer)
     {
         asbind20::container::single::enum_refs(
             m_var_data, m_ti.subtype()
@@ -909,8 +909,7 @@ public:
 
     std::vector<int> ints;
 
-    auto get_engine() const
-        -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
+    asbind20::engine_pointer get_engine() const
     {
         return m_ti->GetEngine();
     }
@@ -925,7 +924,7 @@ private:
 };
 
 template <typename ListElemType, bool UseGeneric>
-auto register_gc_init_list_temp_methods(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+auto register_gc_init_list_temp_methods(asbind20::engine_pointer engine)
 {
     using namespace asbind20;
 

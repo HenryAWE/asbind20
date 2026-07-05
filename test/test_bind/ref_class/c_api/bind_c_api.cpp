@@ -3,7 +3,7 @@
 
 namespace test_bind
 {
-static void register_c_api_test(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void register_c_api_test(asbind20::engine_pointer engine)
 {
     using namespace asbind20;
 
@@ -16,7 +16,7 @@ static void register_c_api_test(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         .method("void set_data(int) property", &opaque_set_data);
 }
 
-static void register_c_api_test(asbind20::use_generic_t, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void register_c_api_test(asbind20::use_generic_t, asbind20::engine_pointer engine)
 {
     using namespace asbind20;
 
@@ -29,7 +29,7 @@ static void register_c_api_test(asbind20::use_generic_t, AS_NAMESPACE_QUALIFIER 
         .method("void set_data(int) property", fp<&opaque_set_data>);
 }
 
-static void test_c_api(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void test_c_api(asbind20::engine_pointer engine)
 {
     auto* m = engine->GetModule(
         "test_c_api", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE

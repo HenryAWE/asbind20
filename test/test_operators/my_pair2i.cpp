@@ -128,7 +128,7 @@ public:
     int second;
 };
 
-static void run_pair2i_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void run_pair2i_test_script(asbind20::engine_pointer engine)
 {
     auto* m = engine->GetModule(
         "test_pair2i", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE

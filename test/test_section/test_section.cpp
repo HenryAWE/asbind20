@@ -17,14 +17,13 @@ public:
         m_engine.reset();
     }
 
-    auto get_engine() const
-        -> AS_NAMESPACE_QUALIFIER asIScriptEngine*
+    asbind20::engine_pointer get_engine() const
     {
         return m_engine.get();
     }
 
     auto get_func(AS_NAMESPACE_QUALIFIER asIScriptModule* m) const
-        -> AS_NAMESPACE_QUALIFIER asIScriptFunction*
+        -> asbind20::function_pointer
     {
         if(m == nullptr)
         {
@@ -39,7 +38,7 @@ public:
         return f;
     }
 
-    void check_result(AS_NAMESPACE_QUALIFIER asIScriptFunction* f, int expected) const
+    void check_result(asbind20::function_pointer f, int expected) const
     {
         ASSERT_TRUE(f);
 

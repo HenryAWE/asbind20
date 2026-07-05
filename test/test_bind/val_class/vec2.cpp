@@ -111,7 +111,7 @@ static float& vec2_opIndex(vec2& v, AS_NAMESPACE_QUALIFIER asUINT i)
 
 struct vec2_holder
 {
-    vec2_holder(AS_NAMESPACE_QUALIFIER asITypeInfo* ti)
+    vec2_holder(asbind20::typeinfo_pointer ti)
     {
         (void)ti;
         []()
@@ -123,7 +123,7 @@ struct vec2_holder
 
     ~vec2_holder() = default;
 
-    static bool template_callback(AS_NAMESPACE_QUALIFIER asITypeInfo* ti, bool&)
+    static bool template_callback(asbind20::typeinfo_pointer ti, bool&)
     {
         int subtype_id = ti->GetSubTypeId();
         return subtype_id == AS_NAMESPACE_QUALIFIER asTYPEID_FLOAT;
@@ -135,7 +135,7 @@ static constexpr AS_NAMESPACE_QUALIFIER asQWORD vec2_type_flags =
     AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_ALLFLOATS |
     AS_NAMESPACE_QUALIFIER asOBJ_APP_CLASS_MORE_CONSTRUCTORS;
 
-void register_vec2(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+void register_vec2(asbind20::engine_pointer engine)
 {
     using namespace asbind20;
 
@@ -166,7 +166,7 @@ void register_vec2(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         .property("float y", sizeof(float));
 }
 
-void register_vec2(asbind20::use_generic_t, AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+void register_vec2(asbind20::use_generic_t, asbind20::engine_pointer engine)
 {
     using namespace asbind20;
 
@@ -196,7 +196,7 @@ void register_vec2(asbind20::use_generic_t, AS_NAMESPACE_QUALIFIER asIScriptEngi
 }
 
 void setup_bind_vec2_env(
-    AS_NAMESPACE_QUALIFIER asIScriptEngine* engine, bool generic
+    asbind20::engine_pointer engine, bool generic
 )
 {
     asbind_test::setup_message_callback(engine);
@@ -209,7 +209,7 @@ void setup_bind_vec2_env(
         register_vec2(engine);
 }
 
-static void run_vec2_test_script(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void run_vec2_test_script(asbind20::engine_pointer engine)
 {
     using asbind_test::result_has_value;
 
