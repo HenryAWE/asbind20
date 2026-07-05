@@ -13,14 +13,14 @@ namespace asbind20::ranges
 class generic_view : public detail::view_interface<generic_view>
 {
 public:
-    using index_type = AS_NAMESPACE_QUALIFIER asUINT;
+    using size_type = int;
 
     generic_view() = delete;
     generic_view(const generic_view&) = default;
 
     generic_view(
         generic_pointer gen,
-        index_type offset = 0
+        size_type offset = 0
     ) noexcept
         : m_gen(gen), m_off(offset) {}
 
@@ -41,8 +41,8 @@ public:
     public:
         using iterator_category = std::input_iterator_tag;
         using value_type = std::pair<int, void*>;
-        using size_type = std::size_t;
-        using difference_type = std::ptrdiff_t;
+        using size_type = int;
+        using difference_type = int;
 
         iterator() = default;
 
@@ -124,9 +124,17 @@ public:
         return m_gen;
     }
 
+    [[nodiscard]]
+    int size() const
+    {
+        if(m_gen == nullptr) [[unlikely]]
+            return 0;
+        return m_gen->GetArgCount();
+    }
+
 private:
-    const generic_pointer m_gen;
-    index_type m_off;
+    const generic_pointer m_gen = nullptr;
+    size_type m_off = 0;
 };
 
 namespace views
@@ -137,7 +145,7 @@ namespace views
         {
             generic_view operator()(
                 generic_pointer gen,
-                generic_view::index_type offset = 0
+                generic_view::size_type offset = 0
             ) const
             {
                 return generic_view(gen, offset);
