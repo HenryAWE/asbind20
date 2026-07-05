@@ -4,7 +4,7 @@
 #pragma once
 
 #include "common.hpp"
-#include "../detail/fwd.hpp"
+#include "../fwd.hpp"
 #include "../detail/include_as.hpp"
 #include "../detail/err_handler.hpp"
 

@@ -23,7 +23,7 @@ namespace asbind20::io
  * @return AngelScript error code
  */
 inline int load_string(
-    AS_NAMESPACE_QUALIFIER asIScriptModule* m,
+    module_pointer m,
     const char* section_name,
     std::string_view code,
     int line_offset = 0
@@ -46,7 +46,7 @@ inline int load_string(
  * @return AngelScript error code
  */
 inline int load_file(
-    AS_NAMESPACE_QUALIFIER asIScriptModule* m,
+    module_pointer m,
     const std::filesystem::path& filename,
     std::ios_base::openmode mode = std::ios_base::in
 )

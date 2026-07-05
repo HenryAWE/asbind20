@@ -76,8 +76,7 @@ public:
 
     asbind20::script_engine engine;
 
-    auto compile_module() const
-        -> AS_NAMESPACE_QUALIFIER asIScriptModule*
+    asbind20::module_pointer compile_module() const
     {
         auto* m = engine->GetModule(
             "dtor_test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE

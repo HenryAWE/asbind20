@@ -22,8 +22,9 @@ public:
         return m_engine.get();
     }
 
-    auto get_func(AS_NAMESPACE_QUALIFIER asIScriptModule* m) const
-        -> asbind20::function_pointer
+    asbind20::function_pointer get_func(
+        asbind20::module_pointer m
+    ) const
     {
         if(m == nullptr)
         {

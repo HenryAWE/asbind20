@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "detail/fwd.hpp"
+#include "fwd.hpp"
 #include "memory.hpp"
 
 namespace asbind20
@@ -107,7 +107,7 @@ struct type_traits<script_object>
     )
     {
         return script_object(
-            static_cast<AS_NAMESPACE_QUALIFIER asIScriptObject*>(gen->GetArgObject(arg))
+            static_cast<object_pointer>(gen->GetArgObject(arg))
         );
     }
 
@@ -123,7 +123,7 @@ struct type_traits<script_object>
     )
     {
         return script_object(
-            static_cast<AS_NAMESPACE_QUALIFIER asIScriptObject*>(ctx->GetReturnObject())
+            static_cast<object_pointer>(ctx->GetReturnObject())
         );
     }
 };

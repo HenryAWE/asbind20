@@ -11,7 +11,7 @@ public:
     std::string run_string(std::string_view fragment) const
     {
         auto* engine = this->get_engine();
-        AS_NAMESPACE_QUALIFIER asIScriptModule* tmp_module = engine->GetModule(
+        auto* tmp_module = engine->GetModule(
             "test_string_factory", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
         );
 

@@ -80,7 +80,7 @@ TEST(Compare, ScriptClassEq)
         EXPECT_EQ(cmp.get_opEquals(), expected_func);
     }
 
-    script_function<AS_NAMESPACE_QUALIFIER asIScriptObject*(int)> create(
+    script_function<asbind20::object_pointer(int)> create(
         m->GetFunctionByDecl("foo@ create(int)")
     );
     ASSERT_TRUE(create);
@@ -181,7 +181,7 @@ TEST(Compare, ScriptClassCmp)
         EXPECT_EQ(cmp.get_opEquals(), nullptr);
     }
 
-    script_function<AS_NAMESPACE_QUALIFIER asIScriptObject*(int)> create(
+    script_function<asbind20::object_pointer(int)> create(
         m->GetFunctionByDecl("foo@ create(int)")
     );
     ASSERT_TRUE(create);

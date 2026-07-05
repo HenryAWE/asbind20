@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "../fwd.hpp"
 #include "../detail/include_as.hpp"
 #include "validator.hpp"
 

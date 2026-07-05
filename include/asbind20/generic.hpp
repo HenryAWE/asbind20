@@ -176,8 +176,8 @@ void set_generic_return(
         void* ptr = (void*)ret;
 
         if constexpr(
-            std::same_as<std::remove_cv_t<Return>, AS_NAMESPACE_QUALIFIER asIScriptObject*> ||
-            std::same_as<std::remove_cv_t<Return>, const AS_NAMESPACE_QUALIFIER asIScriptObject*>
+            std::same_as<std::remove_cv_t<Return>, object_pointer> ||
+            std::same_as<std::remove_cv_t<Return>, const_object_pointer>
         )
             gen->SetReturnObject(ptr);
         else

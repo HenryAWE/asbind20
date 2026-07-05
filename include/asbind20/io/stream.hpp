@@ -218,7 +218,7 @@ namespace io
  */
 inline int save_byte_code(
     std::ostream& os,
-    AS_NAMESPACE_QUALIFIER asIScriptModule* m,
+    module_pointer m,
     bool strip_debug_info = false
 )
 {
@@ -242,7 +242,7 @@ inline int save_byte_code(
 template <typename OutputIteratorValueType = std::byte>
 int save_byte_code(
     std::output_iterator<OutputIteratorValueType> auto out,
-    AS_NAMESPACE_QUALIFIER asIScriptModule* m,
+    module_pointer m,
     bool strip_debug_info = false
 )
 {
@@ -261,7 +261,7 @@ int save_byte_code(
  */
 inline io::load_byte_code_result load_byte_code(
     std::istream& is,
-    AS_NAMESPACE_QUALIFIER asIScriptModule* m
+    module_pointer m
 )
 {
     if(!m) [[unlikely]]
@@ -283,7 +283,7 @@ inline io::load_byte_code_result load_byte_code(
 inline io::load_byte_code_result load_byte_code(
     const void* mem,
     std::size_t size,
-    AS_NAMESPACE_QUALIFIER asIScriptModule* m
+    module_pointer m
 )
 {
     if(!m) [[unlikely]]
@@ -296,7 +296,7 @@ inline io::load_byte_code_result load_byte_code(
 
 inline io::load_byte_code_result load_byte_code(
     std::span<const std::byte> mem,
-    AS_NAMESPACE_QUALIFIER asIScriptModule* m
+    module_pointer m
 )
 {
     return load_byte_code(mem.data(), mem.size_bytes(), m);

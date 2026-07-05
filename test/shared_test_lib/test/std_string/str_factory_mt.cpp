@@ -28,8 +28,7 @@ public:
         my_base::TearDown();
     }
 
-    auto get_module()
-        -> AS_NAMESPACE_QUALIFIER asIScriptModule*
+    asbind20::module_pointer get_module()
     {
         asbind20::engine_pointer engine = this->get_engine();
         auto* m = engine->GetModule(

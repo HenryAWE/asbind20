@@ -343,8 +343,7 @@ public:
         m_engine.reset();
     }
 
-    auto build_script()
-        -> AS_NAMESPACE_QUALIFIER asIScriptModule*
+    asbind20::module_pointer build_script()
     {
         auto* m = m_engine->GetModule(
             "test_gc_initlist", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
@@ -416,8 +415,7 @@ public:
         m_engine.reset();
     }
 
-    auto build_script()
-        -> AS_NAMESPACE_QUALIFIER asIScriptModule*
+    asbind20::module_pointer build_script()
     {
         auto* m = m_engine->GetModule(
             "test_gc_initlist_simple", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
@@ -516,8 +514,7 @@ public:
         m_engine.reset();
     }
 
-    auto build_script()
-        -> AS_NAMESPACE_QUALIFIER asIScriptModule*
+    asbind20::module_pointer build_script()
     {
         auto* m = m_engine->GetModule(
             "test_gc_initlist", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
@@ -551,7 +548,7 @@ private:
     asbind20::script_engine m_engine;
 };
 
-void run_initlist_gc_test(AS_NAMESPACE_QUALIFIER asIScriptModule* m, int max_test_idx)
+void run_initlist_gc_test(asbind20::module_pointer m, int max_test_idx)
 {
     auto* engine = m->GetEngine();
 
@@ -742,8 +739,7 @@ public:
         m_engine.reset();
     }
 
-    auto build_script()
-        -> AS_NAMESPACE_QUALIFIER asIScriptModule*
+    asbind20::module_pointer build_script()
     {
         auto* m = m_engine->GetModule(
             "test_gc_initlist", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
@@ -990,8 +986,7 @@ public:
         m_engine.reset();
     }
 
-    auto build_script()
-        -> AS_NAMESPACE_QUALIFIER asIScriptModule*
+    asbind20::module_pointer build_script()
     {
         auto* m = m_engine->GetModule(
             "test_gc_initlist", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
@@ -1010,7 +1005,7 @@ private:
     asbind20::script_engine m_engine;
 };
 
-static void run_templ_gc_list_test(AS_NAMESPACE_QUALIFIER asIScriptModule* m)
+static void run_templ_gc_list_test(asbind20::module_pointer m)
 {
     auto* engine = m->GetEngine();
 

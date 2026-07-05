@@ -21,7 +21,7 @@
 #include <type_traits>
 #include <concepts>
 #include "detail/config.hpp" // IWYU pragma: export configs
-#include "detail/fwd.hpp"
+#include "fwd.hpp"
 #include "detail/compat.hpp"
 #include "detail/err_handler.hpp"
 #include "detail/strutil.hpp"

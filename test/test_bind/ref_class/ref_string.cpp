@@ -159,8 +159,7 @@ static void setup_bind_ref_string_env(
     asbind_test::setup_script_assertion(engine);
 }
 
-static auto build_module(asbind20::engine_pointer engine)
-    -> AS_NAMESPACE_QUALIFIER asIScriptModule*
+static asbind20::module_pointer build_module(asbind20::engine_pointer engine)
 {
     auto m = engine->GetModule("vec2_test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
 

@@ -95,7 +95,7 @@ private:
 class script_object
 {
 public:
-    using handle_type = AS_NAMESPACE_QUALIFIER asIScriptObject*;
+    using handle_type = object_pointer;
 
     script_object() noexcept = default;
 

@@ -12,7 +12,7 @@
 #include <tuple>
 #include <functional>
 #include <optional>
-#include "detail/fwd.hpp"
+#include "fwd.hpp"
 #include "detail/include_as.hpp"
 #include "utility.hpp"
 #include "type_traits.hpp"
@@ -27,8 +27,8 @@ namespace detail
 {
     template <typename T>
     concept is_script_obj =
-        std::same_as<T, AS_NAMESPACE_QUALIFIER asIScriptObject*> ||
-        std::same_as<T, AS_NAMESPACE_QUALIFIER asIScriptObject const*>;
+        std::same_as<T, object_pointer> ||
+        std::same_as<T, const_object_pointer>;
 } // namespace detail
 
 template <typename T>
@@ -48,8 +48,8 @@ decltype(auto) get_script_return(context_pointer ctx)
     }
     else if constexpr(detail::is_script_obj<std::remove_cvref_t<T>>)
     {
-        AS_NAMESPACE_QUALIFIER asIScriptObject* ptr =
-            *(AS_NAMESPACE_QUALIFIER asIScriptObject**)ctx->GetAddressOfReturnValue();
+        object_pointer ptr =
+            *(object_pointer*)ctx->GetAddressOfReturnValue();
         return T(ptr);
     }
     else if constexpr(std::is_reference_v<T>)
@@ -700,7 +700,7 @@ inline int set_script_arg(
 inline int set_script_arg(
     context_pointer ctx,
     AS_NAMESPACE_QUALIFIER asUINT idx,
-    AS_NAMESPACE_QUALIFIER asIScriptObject* obj
+    object_pointer obj
 )
 {
     return ctx->SetArgObject(idx, obj);
@@ -709,10 +709,10 @@ inline int set_script_arg(
 inline int set_script_arg(
     context_pointer ctx,
     AS_NAMESPACE_QUALIFIER asUINT idx,
-    AS_NAMESPACE_QUALIFIER asIScriptObject const* obj
+    const_object_pointer obj
 )
 {
-    return ctx->SetArgObject(idx, const_cast<AS_NAMESPACE_QUALIFIER asIScriptObject*>(obj));
+    return ctx->SetArgObject(idx, const_cast<object_pointer>(obj));
 }
 
 template <typename Class>
@@ -795,10 +795,10 @@ script_invoke_result<R> script_invoke(
 
 template <typename T>
 concept script_object_handle =
-    std::same_as<std::remove_cvref_t<T>, AS_NAMESPACE_QUALIFIER asIScriptObject*> ||
-    std::same_as<std::remove_cvref_t<T>, AS_NAMESPACE_QUALIFIER asIScriptObject const*> ||
+    std::same_as<std::remove_cvref_t<T>, object_pointer> ||
+    std::same_as<std::remove_cvref_t<T>, const_object_pointer> ||
     requires(T&& obj) {
-        (AS_NAMESPACE_QUALIFIER asIScriptObject const*)obj;
+        (const_object_pointer) obj;
     };
 
 inline int set_script_object(
@@ -813,7 +813,7 @@ int set_script_object(
     context_pointer ctx, Object&& obj
 )
 {
-    const void* ptr = (AS_NAMESPACE_QUALIFIER asIScriptObject const*)obj;
+    const void* ptr = (const_object_pointer)obj;
     return set_script_object(ctx, ptr);
 }
 
