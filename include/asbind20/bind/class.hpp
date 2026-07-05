@@ -1414,7 +1414,7 @@ protected:
         opPreDec, --, (m_name, "& opPreDec()"), Class&,
     )
 
-#undef ASBIND20_CLASS_REGISTER_UNARY_PREFIX_OP
+#undef ASBIND20_IMPL_REGISTER_UNARY_PREFIX_OP
 
     // Only for operator++/--(int)
 #define ASBIND20_IMPL_REGISTER_UNARY_SUFFIX_OP(as_op_sig, cpp_op)           \

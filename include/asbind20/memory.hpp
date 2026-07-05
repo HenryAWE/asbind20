@@ -728,7 +728,7 @@ private:
 /**
  * @brief Create a lockable shared bool for implementing weak reference
  *
- * @note Lock the exclusive lock in multithreading enviornment
+ * @note Lock the exclusive lock in multithreading environment
  */
 [[nodiscard]]
 inline lockable_shared_bool make_lockable_shared_bool()

@@ -121,9 +121,9 @@ public:
         return tmp;
     }
 
-    friend std::ostream& operator<<(std::ostream& os, cstring_ref csv)
+    friend std::ostream& operator<<(std::ostream& os, cstring_ref cstr)
     {
-        return os << std::string_view(csv);
+        return os << std::string_view(cstr);
     }
 
 private:

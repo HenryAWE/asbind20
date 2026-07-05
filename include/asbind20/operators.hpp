@@ -230,12 +230,12 @@ namespace detail
     ASBIND20_OP_TAG_BINARY(opSubAssign, -=);
     ASBIND20_OP_TAG_BINARY(opMulAssign, *=);
     ASBIND20_OP_TAG_BINARY(opDivAssign, /=);
-    ASBIND20_OP_TAG_BINARY(opAssignMod, %=);
-    ASBIND20_OP_TAG_BINARY(opAssignAnd, &=);
-    ASBIND20_OP_TAG_BINARY(opAssignOr, |=);
-    ASBIND20_OP_TAG_BINARY(opAssignXor, ^=);
-    ASBIND20_OP_TAG_BINARY(opAssignShl, <<=);
-    ASBIND20_OP_TAG_BINARY(opAssignShr, >>=);
+    ASBIND20_OP_TAG_BINARY(opModAssign, %=);
+    ASBIND20_OP_TAG_BINARY(opAndAssign, &=);
+    ASBIND20_OP_TAG_BINARY(opOrAssign, |=);
+    ASBIND20_OP_TAG_BINARY(opXorAssign, ^=);
+    ASBIND20_OP_TAG_BINARY(opShlAssign, <<=);
+    ASBIND20_OP_TAG_BINARY(opShrAssign, >>=);
 
     ASBIND20_OP_TAG_BINARY(opAdd, +);
     ASBIND20_OP_TAG_BINARY(opSub, -);
@@ -746,12 +746,12 @@ struct this_placeholder
     ASBIND20_THIS_ASSIGN_OP(-=, detail::opSubAssign)
     ASBIND20_THIS_ASSIGN_OP(*=, detail::opMulAssign)
     ASBIND20_THIS_ASSIGN_OP(/=, detail::opDivAssign)
-    ASBIND20_THIS_ASSIGN_OP(%=, detail::opAssignMod)
-    ASBIND20_THIS_ASSIGN_OP(&=, detail::opAssignAnd)
-    ASBIND20_THIS_ASSIGN_OP(|=, detail::opAssignOr)
-    ASBIND20_THIS_ASSIGN_OP(^=, detail::opAssignXor)
-    ASBIND20_THIS_ASSIGN_OP(<<=, detail::opAssignShl)
-    ASBIND20_THIS_ASSIGN_OP(>>=, detail::opAssignShr)
+    ASBIND20_THIS_ASSIGN_OP(%=, detail::opModAssign)
+    ASBIND20_THIS_ASSIGN_OP(&=, detail::opAndAssign)
+    ASBIND20_THIS_ASSIGN_OP(|=, detail::opOrAssign)
+    ASBIND20_THIS_ASSIGN_OP(^=, detail::opXorAssign)
+    ASBIND20_THIS_ASSIGN_OP(<<=, detail::opShlAssign)
+    ASBIND20_THIS_ASSIGN_OP(>>=, detail::opShrAssign)
 
 #undef ASBIND20_THIS_ASSIGN_OP
 

@@ -90,7 +90,7 @@ namespace detail
  * @brief Sequential container for AngelScript objects with small size optimization (SSO)
  *
  * @tparam TypeInfoPolicy Type information policy for element type
- * @tparam StaticCapcityBytes Static capacity in bytes.
+ * @tparam StaticCapacityBytes Static capacity in bytes.
  *                            Must be aligned with the size of pointer, e.g. `4 * sizeof(void*)`.
  * @tparam Allocator Allocator type which is able to rebind to multiple types.
  *                   Its member `pointer_type` must be compatible with raw pointers.

@@ -62,6 +62,8 @@ static void register_int128(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         .opMulAssign()
         .opDiv()
         .opDivAssign()
+        .opMod()
+        .opModAssign()
         .opNeg()
         .template opImplConv<std::int64_t>();
 
@@ -81,6 +83,8 @@ static void register_int128(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         .opMulAssign()
         .opDiv()
         .opDivAssign()
+        .opMod()
+        .opModAssign()
         .opNeg()
         .template opImplConv<std::uint64_t>();
 
@@ -99,7 +103,15 @@ static void check_int128(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         "int128 get_i128() { return -int128(42); }\n"
         "uint128 get_u128() { return uint128(1013); }\n"
         "uint128 add_u128(uint128 lhs, uint128 rhs)\n"
-        "{ return lhs + rhs; }"
+        "{ return lhs + rhs; }\n"
+        "int128 mod_i128(int128 lhs, int128 rhs)\n"
+        "{ return lhs % rhs; }\n"
+        "uint128 mod_u128(uint128 lhs, uint128 rhs)\n"
+        "{ return lhs % rhs; }\n"
+        "int128 mod_assign_i128(int128 lhs, int128 rhs)\n"
+        "{ lhs %= rhs; return lhs; }\n"
+        "uint128 mod_assign_u128(uint128 lhs, uint128 rhs)\n"
+        "{ lhs %= rhs; return lhs; }"
     );
     ASSERT_GE(m->Build(), 0);
 
@@ -126,18 +138,72 @@ static void check_int128(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     }
 
     // TODO: Enable this case after generated operators for primitive type are fixed
-    // {
-    //     auto * f= m->GetFunctionByName("add_u128");
-    //     ASSERT_NE(f, nullptr);
-    //
-    //     asbind20::request_context ctx(engine);
-    //     auto result = asbind20::script_invoke<uint128_t>(
-    //         ctx, f, uint128_t(40), uint128_t(2)
-    //     );
-    //
-    //     ASSERT_TRUE(asbind_test::result_has_value(result));
-    //     EXPECT_EQ(result.value(), 42);
-    // }
+#    if 0
+    {
+        auto* f = m->GetFunctionByName("mod_i128");
+        ASSERT_TRUE(f);
+
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<int128_t>(
+            ctx, f, int128_t(42), int128_t(10)
+        );
+
+        ASSERT_TRUE(asbind_test::result_has_value(result));
+        EXPECT_EQ(result.value(), 2); // 42 % 10 = 2
+    }
+
+    {
+        auto* f = m->GetFunctionByName("mod_u128");
+        ASSERT_TRUE(f);
+
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<uint128_t>(
+            ctx, f, uint128_t(1013), uint128_t(100)
+        );
+
+        ASSERT_TRUE(asbind_test::result_has_value(result));
+        EXPECT_EQ(result.value(), 13); // 1013 % 100 = 13
+    }
+
+    {
+        auto* f = m->GetFunctionByName("mod_assign_i128");
+        ASSERT_TRUE(f);
+
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<int128_t>(
+            ctx, f, int128_t(42), int128_t(10)
+        );
+
+        ASSERT_TRUE(asbind_test::result_has_value(result));
+        EXPECT_EQ(result.value(), 2); // 42 %= 10 → 2
+    }
+
+    {
+        auto* f = m->GetFunctionByName("mod_assign_u128");
+        ASSERT_TRUE(f);
+
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<uint128_t>(
+            ctx, f, uint128_t(1013), uint128_t(100)
+        );
+
+        ASSERT_TRUE(asbind_test::result_has_value(result));
+        EXPECT_EQ(result.value(), 13); // 1013 %= 100 → 13
+    }
+
+    {
+        auto * f= m->GetFunctionByName("add_u128");
+        ASSERT_NE(f, nullptr);
+
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<uint128_t>(
+            ctx, f, uint128_t(40), uint128_t(2)
+        );
+
+        ASSERT_TRUE(asbind_test::result_has_value(result));
+        EXPECT_EQ(result.value(), 42);
+    }
+#    endif
 }
 } // namespace test_bind
 

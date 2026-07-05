@@ -553,7 +553,7 @@ inline auto sizeof_script_type(
  */
 inline std::size_t copy_primitive_value(void* dst, const void* src, int type_id)
 {
-    ASBIND20_ASSERT(!dst && !src);
+    ASBIND20_ASSERT(dst && src);
     ASBIND20_ASSERT(is_primitive_type(type_id));
 
     auto helper = [&](std::size_t sz)
