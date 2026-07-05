@@ -49,7 +49,7 @@ struct map_ret_test_helper
     map_ret_test_helper& operator=(const map_ret_test_helper&) = default;
 
     explicit map_ret_test_helper(int val)
-        : b(val){}
+        : b(val) {}
 
     std::size_t exchange_b(int new_b)
     {

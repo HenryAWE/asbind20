@@ -45,4 +45,3 @@ private:
     asbind20::script_engine m_engine;
 };
 } // namespace test_script_string
-

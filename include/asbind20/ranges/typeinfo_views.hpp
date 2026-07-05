@@ -125,7 +125,7 @@ namespace detail
     iterator& operator=(const iterator&) noexcept = default;             \
     bool operator==(const iterator& rhs) const noexcept                  \
     {                                                                    \
-        ASBIND20_ASSERT(                                                          \
+        ASBIND20_ASSERT(                                                 \
             this->m_view == rhs.m_view &&                                \
             "Comparing unmatched iterator pair"                          \
         );                                                               \
@@ -133,7 +133,7 @@ namespace detail
     }                                                                    \
     std::strong_ordering operator<=>(const iterator& rhs) const noexcept \
     {                                                                    \
-        ASBIND20_ASSERT(                                                          \
+        ASBIND20_ASSERT(                                                 \
             this->m_view == rhs.m_view &&                                \
             "Comparing unmatched iterator pair"                          \
         );                                                               \
@@ -462,7 +462,6 @@ namespace views
         template <typename UnderlyingType>
         struct all_enum_values_of_t
         {
-
             all_enum_values_view<UnderlyingType> operator()(
                 const AS_NAMESPACE_QUALIFIER asITypeInfo* ti
             ) const

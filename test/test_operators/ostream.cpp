@@ -13,7 +13,7 @@ static void register_ostream(std::ostream& os, AS_NAMESPACE_QUALIFIER asIScriptE
 
     os << std::boolalpha;
 
-    ref_class<std::ostream&(*)(std::ostream&)> endl_t(
+    ref_class<std::ostream& (*)(std::ostream&)> endl_t(
         engine,
         "endl_t",
         AS_NAMESPACE_QUALIFIER asOBJ_NOCOUNT

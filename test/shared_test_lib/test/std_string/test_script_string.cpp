@@ -164,4 +164,3 @@ TEST_F(ScriptStringNative, CtorFn)
     auto engine = get_engine();
     test_script_string::test_ctor_fn(engine);
 }
-

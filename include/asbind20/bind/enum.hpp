@@ -65,7 +65,7 @@ public:
           )
     {}
 
-    template <bool AppendOnly,string_like StringLike>
+    template <bool AppendOnly, string_like StringLike>
     enum_(appending_t<AppendOnly>, engine_pointer engine, StringLike&& name)
         : enum_(
               appending_t<AppendOnly>{},

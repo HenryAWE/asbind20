@@ -179,8 +179,7 @@ namespace detail
 } // namespace detail
 
 template <typename T>
-concept wrapped_function = requires()
-{
+concept wrapped_function = requires() {
     typename T::wrapped_function_tag;
 };
 

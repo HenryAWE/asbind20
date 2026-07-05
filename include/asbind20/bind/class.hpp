@@ -1237,7 +1237,7 @@ protected:
         }
         int r = ti->GetTypeId();
 #ifndef ASBIND20_CONFIG_NO_APPEND_CHECK
-        if (flags != 0)
+        if(flags != 0)
         {
             [[maybe_unused]]
             const flag_type existing_flags = ti->GetFlags();
@@ -2394,7 +2394,7 @@ public:
         use_generic_t,
         cstring_ref decl,
         const Function&
-        )
+    )
     {
         int r = this->register_method(
             decl,
@@ -2409,7 +2409,7 @@ public:
     Derived& method(
         cstring_ref decl,
         const Function&
-        )
+    )
     {
         if constexpr(ForceGeneric)
             this->method(use_generic, decl, Function{});

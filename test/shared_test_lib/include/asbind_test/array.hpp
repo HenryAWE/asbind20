@@ -591,7 +591,8 @@ public:
     }
 
 #define ASBIND_TEST_ARRAY_CHECK_CALLBACK(func_name, ret)                     \
-    do {                                                                     \
+    do                                                                       \
+    {                                                                        \
         if(this->m_within_callback)                                          \
         {                                                                    \
             asbind20::set_script_exception(                                  \

@@ -234,7 +234,7 @@ public:
         use_generic_t,
         cstring_ref decl,
         const Function&
-        )
+    )
     {
         this->register_function(
             decl,
@@ -248,7 +248,7 @@ public:
     global& function(
         cstring_ref decl,
         const Function&
-        )
+    )
     {
         if constexpr(ForceGeneric)
             this->function(use_generic, decl, Function{});

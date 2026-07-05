@@ -55,7 +55,7 @@ BEGIN_AS_NAMESPACE
 // Put it in AngelScript namespace so it can be found by std::system_error
 inline std::error_code make_error_code(AS_NAMESPACE_QUALIFIER asERetCodes val)
 {
-    return{
+    return {
         static_cast<int>(val),
         ::asbind20::asERetCodes_category::instance()
     };

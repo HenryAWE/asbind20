@@ -124,6 +124,6 @@ consteval const char* decl_of_beh() noexcept
 
     return behaviour_traits<Beh>::decl;
 }
-} // namespace asbind20
+} // namespace asbind20::detail
 
 #endif

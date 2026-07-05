@@ -47,7 +47,7 @@ namespace detail
     class compressed_pair_impl;
 
 #define ASBIND20_DETAIL_COMPRESSED_PAIR_MEMBER_ORDINARY(name) \
-    name##_type& name()& noexcept                             \
+    name##_type& name() & noexcept                            \
     {                                                         \
         return m_##name;                                      \
     }                                                         \
@@ -55,7 +55,7 @@ namespace detail
     {                                                         \
         return m_##name;                                      \
     }                                                         \
-    name##_type&& name()&& noexcept                           \
+    name##_type&& name() && noexcept                          \
     {                                                         \
         return std::move(m_##name);                           \
     }                                                         \
@@ -65,7 +65,7 @@ namespace detail
     }
 
 #define ASBIND20_DETAIL_COMPRESSED_PAIR_MEMBER_COMPRESSED(name) \
-    name##_type& name()& noexcept                               \
+    name##_type& name() & noexcept                              \
     {                                                           \
         return *this;                                           \
     }                                                           \
@@ -73,7 +73,7 @@ namespace detail
     {                                                           \
         return *this;                                           \
     }                                                           \
-    name##_type&& name()&& noexcept                             \
+    name##_type&& name() && noexcept                            \
     {                                                           \
         return std::move(*this);                                \
     }                                                           \
