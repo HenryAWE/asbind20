@@ -119,9 +119,7 @@ public:
 
     asbind20::module_pointer compile_module() const
     {
-        auto* m = engine->GetModule(
-            "refcount_aux", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-        );
+        auto* m = asbind20::create_module(engine, "refcount_aux");
         if(!m)
         {
             ADD_FAILURE() << "Failed to create module";

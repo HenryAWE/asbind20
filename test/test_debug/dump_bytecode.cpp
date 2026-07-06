@@ -8,9 +8,7 @@ TEST(DumpByteCode, Print)
     using namespace asbind20;
 
     auto engine = make_script_engine();
-    auto* m = engine->GetModule(
-        "test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "test");
     m->AddScriptSection(
         "test",
         "int f() { return 42; }"

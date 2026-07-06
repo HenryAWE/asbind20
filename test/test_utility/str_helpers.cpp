@@ -95,9 +95,7 @@ TEST(SetException, FormatException)
             }
         );
 
-    auto* m = engine->GetModule(
-        "test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "test");
     m->AddScriptSection(
         "test",
         "void f() { throw(1013); }"

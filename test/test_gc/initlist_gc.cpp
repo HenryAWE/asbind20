@@ -345,9 +345,7 @@ public:
 
     asbind20::module_pointer build_script()
     {
-        auto* m = m_engine->GetModule(
-            "test_gc_initlist", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-        );
+        auto* m = asbind20::create_module(m_engine, "test_gc_initlist");
 
         m->AddScriptSection(
             "test_gc_initlist",
@@ -417,9 +415,7 @@ public:
 
     asbind20::module_pointer build_script()
     {
-        auto* m = m_engine->GetModule(
-            "test_gc_initlist_simple", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-        );
+        auto* m = asbind20::create_module(m_engine, "test_gc_initlist_simple");
 
         m->AddScriptSection(
             "test_gc_initlist_simple",
@@ -516,9 +512,7 @@ public:
 
     asbind20::module_pointer build_script()
     {
-        auto* m = m_engine->GetModule(
-            "test_gc_initlist", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-        );
+        auto* m = asbind20::create_module(m_engine, "test_gc_initlist");
 
         if constexpr(Size == 2)
         {
@@ -741,9 +735,7 @@ public:
 
     asbind20::module_pointer build_script()
     {
-        auto* m = m_engine->GetModule(
-            "test_gc_initlist", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-        );
+        auto* m = asbind20::create_module(m_engine, "test_gc_initlist");
 
         m->AddScriptSection(
             "test_gc_initlist",
@@ -988,9 +980,7 @@ public:
 
     asbind20::module_pointer build_script()
     {
-        auto* m = m_engine->GetModule(
-            "test_gc_initlist", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-        );
+        auto* m = asbind20::create_module(m_engine, "test_gc_initlist");
 
         m->AddScriptSection(
             "test_gc_initlist",

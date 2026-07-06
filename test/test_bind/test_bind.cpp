@@ -59,9 +59,7 @@ TEST(TestBind, Interface)
         EXPECT_EQ(i.get_engine(), engine);
     }
 
-    auto* m = engine->GetModule(
-        "test_interface", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "test_interface");
 
     m->AddScriptSection(
         "test_interface.as",
@@ -97,9 +95,7 @@ TEST(TestBind, FuncdefAndTypedef)
         .typedef_("float", "real32")
         .using_("float32", "float");
 
-    auto* m = engine->GetModule(
-        "test_def", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "test_def");
 
     m->AddScriptSection(
         "test_def.as",
@@ -352,9 +348,7 @@ TEST(Detail, GenericWrapper)
         .method("string to_str5(const ?&in)", mem_to_str5)
         .method("void to_str6(int prefix_num, const ?&in, string&out)", mem_to_str6);
 
-    auto* m = engine->GetModule(
-        "test_generic", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "test_generic");
 
     m->AddScriptSection(
         "test_def.as",
@@ -438,9 +432,7 @@ TEST(TestBind, Enum)
 #endif
     }
 
-    auto* m = engine->GetModule(
-        "test_enum", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "test_enum");
 
     m->AddScriptSection(
         "test_enum.as",
@@ -500,9 +492,7 @@ TEST(TestBind, EnumUInt64)
         .value("flag_b", enum_uint64::flag_b);
     EXPECT_EQ(std::string_view(e.get_underlying_name()), "uint64");
 
-    auto* m = engine->GetModule(
-        "test_enum", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "test_enum");
 
     m->AddScriptSection(
         "test_enum_uint64.as",

@@ -12,7 +12,7 @@ TEST(TestIO, IOStreamWrapper)
         auto engine = asbind20::make_script_engine();
         asbind_test::setup_message_callback(engine);
 
-        auto* m = engine->GetModule("test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
+        auto* m = asbind20::create_module(engine, "test");
         m->AddScriptSection("test.as", "int getval() { return 1013; }");
         ASSERT_GE(m->Build(), 0);
 
@@ -23,7 +23,7 @@ TEST(TestIO, IOStreamWrapper)
         auto engine = asbind20::make_script_engine();
         asbind_test::setup_message_callback(engine);
 
-        auto* m = engine->GetModule("test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
+        auto* m = asbind20::create_module(engine, "test");
         {
             auto [r, debug_info_stripped] = asbind20::load_byte_code(ss, m);
             ASSERT_GE(r, 0);
@@ -48,7 +48,7 @@ TEST(TestIO, MemoryWrapper)
         auto engine = asbind20::make_script_engine();
         asbind_test::setup_message_callback(engine);
 
-        auto* m = engine->GetModule("test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
+        auto* m = asbind20::create_module(engine, "test");
         m->AddScriptSection("test.as", "int f(int add) { return 1000 + add; }");
         ASSERT_GE(m->Build(), 0);
 
@@ -61,7 +61,7 @@ TEST(TestIO, MemoryWrapper)
         auto engine = asbind20::make_script_engine();
         asbind_test::setup_message_callback(engine);
 
-        auto* m = engine->GetModule("test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
+        auto* m = asbind20::create_module(engine, "test");
         {
             auto result = asbind20::load_byte_code(buf, m);
             auto [r, debug_info_stripped] = result;

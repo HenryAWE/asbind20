@@ -9,9 +9,7 @@ TEST(TestInvoke, ScriptClass)
 
     auto engine = asbind20::make_script_engine();
     asbind_test::setup_message_callback(engine, true);
-    auto* m = engine->GetModule(
-        "test_script_class", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "test_script_class");
     global<true>(engine)
         .function(
             "void throw_err()",

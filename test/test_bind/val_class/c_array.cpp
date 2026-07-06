@@ -57,9 +57,7 @@ void register_int_array(
 
 static void check_int_array(asbind20::engine_pointer engine)
 {
-    auto* m = engine->GetModule(
-        "test_int_array", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "test_int_array");
     m->AddScriptSection(
         "test_int_array",
         "int test0()\n"

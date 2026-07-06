@@ -240,9 +240,7 @@ public:
 
     void run_script()
     {
-        auto* m = m_engine->GetModule(
-            "optional_gc_test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-        );
+        auto* m = asbind20::create_module(m_engine, "optional_gc_test");
 
         m->AddScriptSection(
             "optional_gc_test_script",

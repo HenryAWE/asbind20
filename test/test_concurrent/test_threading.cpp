@@ -16,9 +16,7 @@ TEST(Threading, AutoCleanUp)
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine, true);
 
-    auto* m = engine->GetModule(
-        "script_multithreading", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "script_multithreading");
     m->AddScriptSection(
         "script_multithreading",
         "int fn(int arg) { return arg * 2; }"

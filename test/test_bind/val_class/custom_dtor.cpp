@@ -78,9 +78,7 @@ public:
 
     asbind20::module_pointer compile_module() const
     {
-        auto* m = engine->GetModule(
-            "dtor_test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-        );
+        auto* m = asbind20::create_module(engine, "dtor_test");
         m->AddScriptSection(
             "dtor_test",
             "void test()\n"

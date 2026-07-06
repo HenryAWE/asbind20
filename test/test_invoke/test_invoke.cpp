@@ -21,9 +21,7 @@ TEST(TestInvoke, CommonTypes)
     asbind_test::setup_message_callback(engine);
     asbind_test::setup_script_string(engine);
     asbind_test::register_script_array(engine);
-    auto* m = engine->GetModule(
-        "test_invoke", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "test_invoke");
 
     m->AddScriptSection(
         "test_invoke.as",
@@ -170,9 +168,7 @@ TEST(TestInvoke, CustomRuleByte)
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
-    auto* m = engine->GetModule(
-        "test_custom_rule", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "test_custom_rule");
 
     m->AddScriptSection(
         "test_custom_rule.as",
@@ -252,9 +248,7 @@ TEST(TestInvoke, BadResult)
             { current_context()->Abort(); }
         );
 
-    auto* m = engine->GetModule(
-        "test_bad_result", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "test_bad_result");
     m->AddScriptSection(
         "bad_result",
         "int test0() { throw_err(); return 42; }\n"
@@ -377,9 +371,7 @@ TEST(TestInvoke, Suspension)
             { current_context()->Suspend(); }
         );
 
-    auto* m = engine->GetModule(
-        "test_bad_result", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "test_bad_result");
     m->AddScriptSection(
         "suspension",
         "int test0() { suspend_this(); return 42; }\n"
@@ -434,9 +426,7 @@ TEST(TestInvoke, CompareValueResult)
     asbind_test::setup_message_callback(engine, true);
     test_invoke::setup_bad_call_helper(engine, "int");
 
-    auto* m = engine->GetModule(
-        "test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "test");
     m->AddScriptSection(
         "test",
         "int f0() { return 10; }\n"
@@ -506,9 +496,7 @@ TEST(TestInvoke, CompareValueClassResult)
     asbind_test::setup_script_string(engine);
     test_invoke::setup_bad_call_helper(engine, "string");
 
-    auto* m = engine->GetModule(
-        "test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "test");
     m->AddScriptSection(
         "test",
         "string aaa() { return 'aaa'; }\n"

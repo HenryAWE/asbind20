@@ -84,9 +84,7 @@ public:
 
     void run_test()
     {
-        auto* m = engine->GetModule(
-            "templ_cb_as_global", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-        );
+        auto* m = asbind20::create_module(engine, "templ_cb_as_global");
         m->AddScriptSection(
             "templ_cb_as_global: run_test",
             "int run()\n"
@@ -108,9 +106,7 @@ public:
 
     void expect_to_fail()
     {
-        auto* m = engine->GetModule(
-            "templ_cb_as_global", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-        );
+        auto* m = asbind20::create_module(engine, "templ_cb_as_global");
         m->AddScriptSection(
             "templ_cb_as_global: expect_to_fail",
             "void f()\n"

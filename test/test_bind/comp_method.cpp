@@ -221,9 +221,7 @@ static void register_val_comp(asbind20::use_generic_t, asbind20::engine_pointer 
 
 static void check_val_comp(asbind20::engine_pointer engine)
 {
-    auto* m = engine->GetModule(
-        "check_val_comp", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "check_val_comp");
     m->AddScriptSection(
         "check_val_comp",
         "int test0(int arg)\n"
@@ -406,9 +404,7 @@ static void register_ref_comp(asbind20::engine_pointer engine)
 
 static void check_ref_comp(asbind20::engine_pointer engine)
 {
-    auto* m = engine->GetModule(
-        "check_ref_comp", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "check_ref_comp");
     m->AddScriptSection(
         "check_ref_comp",
         "int test0(int arg)\n"

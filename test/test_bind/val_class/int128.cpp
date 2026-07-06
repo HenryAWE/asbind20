@@ -94,9 +94,7 @@ static void register_int128(asbind20::engine_pointer engine)
 
 static void check_int128(asbind20::engine_pointer engine)
 {
-    auto* m = engine->GetModule(
-        "check_int128", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "check_int128");
 
     m->AddScriptSection(
         "check_int128",

@@ -21,7 +21,7 @@ static void register_vector_of_ints(asbind20::engine_pointer engine)
 
 static void check_vector_ints(asbind20::engine_pointer engine)
 {
-    auto* m = engine->GetModule("test_vec_ints", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
+    auto* m = asbind20::create_module(engine, "test_vec_ints");
 
     m->AddScriptSection(
         "test_vec_ints",
@@ -116,7 +116,7 @@ static void register_my_vec_ints(asbind20::engine_pointer engine)
 
 static void check_my_vec_ints(asbind20::engine_pointer engine)
 {
-    auto* m = engine->GetModule("test_my_vec_ints", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
+    auto* m = asbind20::create_module(engine, "test_my_vec_ints");
 
     m->AddScriptSection(
         "test_my_vec_ints",
@@ -190,7 +190,7 @@ static void register_from_init_list(asbind20::engine_pointer engine)
 
 static void check_from_init_list(asbind20::engine_pointer engine)
 {
-    auto* m = engine->GetModule("test_from_init_list", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
+    auto* m = asbind20::create_module(engine, "test_from_init_list");
 
     m->AddScriptSection(
         "test_from_init_list",
@@ -264,7 +264,7 @@ static void register_from_span(asbind20::engine_pointer engine)
 
 static void check_from_span(asbind20::engine_pointer engine)
 {
-    auto* m = engine->GetModule("test_from_span", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
+    auto* m = asbind20::create_module(engine, "test_from_span");
 
     m->AddScriptSection(
         "test_from_span",
@@ -502,7 +502,7 @@ void register_ref_test_apply(asbind20::engine_pointer engine)
 
 void check_ref_test_apply(asbind20::engine_pointer engine)
 {
-    auto* m = engine->GetModule("ref_test_apply", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
+    auto* m = asbind20::create_module(engine, "ref_test_apply");
 
     m->AddScriptSection(
         "ref_test_apply",
@@ -602,7 +602,7 @@ static void register_ref_test_vector_with(asbind20::engine_pointer engine)
 
 static void check_ref_test_vector(asbind20::engine_pointer engine)
 {
-    auto* m = engine->GetModule("ref_test_vector", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
+    auto* m = asbind20::create_module(engine, "ref_test_vector");
 
     m->AddScriptSection(
         "ref_test_vector",

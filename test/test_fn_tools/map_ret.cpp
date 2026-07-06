@@ -65,9 +65,7 @@ static auto build_module(
     asbind20::engine_pointer engine, const char* code
 )
 {
-    auto* m = engine->GetModule(
-        "test_fn_tools", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "test_fn_tools");
     m->AddScriptSection(
         "test_fn_tools",
         code

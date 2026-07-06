@@ -227,7 +227,7 @@ static void check_ref_class(asbind20::engine_pointer engine)
 {
     using test_bind::my_ref_class;
 
-    auto* m = engine->GetModule("test_value_class", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
+    auto* m = asbind20::create_module(engine, "test_value_class");
 
     m->AddScriptSection(
         "test_ref_class.as",
@@ -364,7 +364,7 @@ static void check_ref_class_for_helper(asbind20::engine_pointer engine, ref_help
 {
     using test_bind::ref_class_for_helper;
 
-    auto* m = engine->GetModule("test_value_class", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
+    auto* m = asbind20::create_module(engine, "test_value_class");
 
     m->AddScriptSection(
         "test_ref_class.as",
@@ -507,9 +507,7 @@ static void register_base_ref_class(asbind20::engine_pointer engine)
 
 static void check_ref_class_comp_property(asbind20::engine_pointer engine)
 {
-    auto* m = engine->GetModule(
-        "ref_class_comp_prop", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "ref_class_comp_prop");
     ASSERT_TRUE(m);
 
     m->AddScriptSection(

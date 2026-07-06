@@ -161,7 +161,7 @@ static void setup_bind_ref_string_env(
 
 static asbind20::module_pointer build_module(asbind20::engine_pointer engine)
 {
-    auto m = engine->GetModule("vec2_test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
+    auto m = asbind20::create_module(engine, "vec2_test");
 
     m->AddScriptSection("ref_string_test_script.as", ref_string_test_script);
     int r = m->Build();

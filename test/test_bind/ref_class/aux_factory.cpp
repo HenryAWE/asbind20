@@ -119,7 +119,7 @@ static auto register_test_class(asbind20::engine_pointer engine)
 
 static void check_aux_factory(asbind20::engine_pointer engine, int expected_val, int arg)
 {
-    auto* m = engine->GetModule("test_aux_factory", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
+    auto* m = asbind20::create_module(engine, "test_aux_factory");
     m->AddScriptSection(
         "test_aux_factory",
         "int get(int arg) { test_aux_factory f(arg); return f.val; }"
@@ -138,7 +138,7 @@ static void check_aux_factory(asbind20::engine_pointer engine, int expected_val,
 
 static void check_aux_factory_list(asbind20::engine_pointer engine, int expected_val)
 {
-    auto* m = engine->GetModule("test_aux_factory", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
+    auto* m = asbind20::create_module(engine, "test_aux_factory");
     m->AddScriptSection(
         "test_aux_factory",
         "int get() { test_aux_factory f = {10, 3}; return f.val; }"
@@ -542,7 +542,7 @@ auto register_test_class_template(asbind20::engine_pointer engine)
 
 static void check_aux_factory_template(asbind20::engine_pointer engine, int expected_val, int arg)
 {
-    auto* m = engine->GetModule("test_aux_factory_template", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
+    auto* m = asbind20::create_module(engine, "test_aux_factory_template");
     m->AddScriptSection(
         "test_aux_factory_template",
         "int get(int arg) { test_aux_factory_template<int> f(arg); return f.val; }"
@@ -561,7 +561,7 @@ static void check_aux_factory_template(asbind20::engine_pointer engine, int expe
 
 static void check_aux_factory_template_list(asbind20::engine_pointer engine, int expected_val)
 {
-    auto* m = engine->GetModule("test_aux_factory_template", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
+    auto* m = asbind20::create_module(engine, "test_aux_factory_template");
     m->AddScriptSection(
         "test_aux_factory_template",
         "int get() { test_aux_factory_template<int> f = {10, 3}; return f.val; }"

@@ -68,9 +68,7 @@ TEST(Ranges, AllBehavioursWithStdView)
 
     auto engine = asbind20::make_script_engine();
     asbind_test::setup_message_callback(engine, true);
-    auto* m = engine->GetModule(
-        "foo", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "foo");
     m->AddScriptSection(
         "foo",
         "class foo{};"
@@ -122,9 +120,7 @@ TEST(Ranges, AllFactoriesWithStdView)
 
     auto engine = asbind20::make_script_engine();
     asbind_test::setup_message_callback(engine, true);
-    auto* m = engine->GetModule(
-        "foo", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "foo");
     m->AddScriptSection(
         "foo",
         "class foo{};"
@@ -166,9 +162,7 @@ TEST(Ranges, AllEnumValuesWithStdView)
 
     auto engine = asbind20::make_script_engine();
     asbind_test::setup_message_callback(engine, true);
-    auto* m = engine->GetModule(
-        "foo", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "foo");
     m->AddScriptSection(
         "foo",
         "enum E{ A = 0, B = 1, C = 0 };"
@@ -419,9 +413,7 @@ TEST(Ranges, GenericArguments)
             wrapper
         );
 
-    auto* m = engine->GetModule(
-        "test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "test");
     m->AddScriptSection(
         "test",
         "string f2() { return proc_args(10, 13); }\n"

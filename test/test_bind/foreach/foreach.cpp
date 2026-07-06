@@ -112,9 +112,7 @@ void register_int_generator(asbind20::engine_pointer engine)
 auto prepare_int_seq_test(asbind20::engine_pointer engine)
     -> asbind20::function_pointer
 {
-    auto* m = engine->GetModule(
-        "", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "");
     m->AddScriptSection(
         "test_int_seq",
         "int run_foreach()\n"

@@ -385,9 +385,7 @@ bool test_14(trivial_value_class val)
 
 static void check_trivial_class(asbind20::engine_pointer engine)
 {
-    auto* m = engine->GetModule(
-        "test_value_class", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "test_value_class");
     ASSERT_TRUE(m);
 
     m->AddScriptSection(
@@ -682,9 +680,7 @@ int test_9()
 
 static void check_friend_ops(asbind20::engine_pointer engine, friend_ops_helper& helper)
 {
-    auto* m = engine->GetModule(
-        "test_value_class", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "test_value_class");
     ASSERT_TRUE(m);
 
     m->AddScriptSection(
@@ -862,9 +858,7 @@ static void register_base_val_class(asbind20::engine_pointer engine)
 
 static void check_val_class_comp_property(asbind20::engine_pointer engine)
 {
-    auto* m = engine->GetModule(
-        "val_class_comp_prop", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "val_class_comp_prop");
     ASSERT_TRUE(m);
 
     m->AddScriptSection(

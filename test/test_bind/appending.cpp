@@ -65,9 +65,7 @@ TEST(Appending, ValueClass)
     value_class<val_class_for_appending, true>(appending, engine, "val")
         .property("int data", &val_class_for_appending::data);
 
-    auto* m = engine->GetModule(
-        "appending", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "appending");
     ASSERT_NE(m, nullptr);
     m->AddScriptSection(
         "appending",
@@ -93,9 +91,7 @@ namespace test_bind
 {
 static void check_enum_appending(asbind20::engine_pointer engine)
 {
-    auto* m = engine->GetModule(
-        "appending", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "appending");
     ASSERT_NE(m, nullptr);
     m->AddScriptSection(
         "appending",
@@ -155,9 +151,7 @@ namespace test_bind
 {
 void check_ref_class(asbind20::engine_pointer engine)
 {
-    auto* m = engine->GetModule(
-        "appending", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "appending");
     ASSERT_NE(m, nullptr);
     m->AddScriptSection(
         "appending",
@@ -229,9 +223,7 @@ static void check_interface_appending(asbind20::engine_pointer engine)
     ASSERT_NE(ti, nullptr);
     EXPECT_EQ(ti->GetMethodCount(), 2);
 
-    auto* m = engine->GetModule(
-        "appending", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "appending");
     ASSERT_NE(m, nullptr);
     m->AddScriptSection(
         "appending",

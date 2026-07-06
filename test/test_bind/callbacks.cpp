@@ -140,9 +140,7 @@ static void setup_funcs(asbind20::engine_pointer engine)
 
 static void trigger_ex_in_script(asbind20::engine_pointer engine)
 {
-    auto* m = engine->GetModule(
-        "test_ex", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "test_ex");
     ASSERT_NE(m, nullptr);
     m->AddScriptSection(
         "test_ex",

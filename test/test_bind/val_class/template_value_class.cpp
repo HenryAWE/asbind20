@@ -289,7 +289,7 @@ int test_6()
 
 static void check_template_val_class(asbind20::engine_pointer engine)
 {
-    auto* m = engine->GetModule("test_template_value_class", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
+    auto* m = asbind20::create_module(engine, "test_template_value_class");
     ASSERT_TRUE(m);
 
     m->AddScriptSection(

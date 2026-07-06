@@ -1288,6 +1288,23 @@ void format_script_exception_no_catch(
 }
 
 #endif
+
+inline module_pointer create_module(
+    engine_pointer engine,
+    cstring_ref module_name,
+    bool overwrite = true
+)
+{
+    if(!engine) [[unlikely]]
+        return nullptr;
+
+    AS_NAMESPACE_QUALIFIER asEGMFlags flag =
+        overwrite ? AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE :
+                    AS_NAMESPACE_QUALIFIER asGM_CREATE_IF_NOT_EXISTS;
+    return engine->GetModule(
+        module_name.c_str(), flag
+    );
+}
 } // namespace asbind20
 
 #endif

@@ -213,7 +213,7 @@ static void run_vec2_test_script(asbind20::engine_pointer engine)
 {
     using asbind_test::result_has_value;
 
-    auto m = engine->GetModule("vec2_test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
+    auto m = asbind20::create_module(engine, "vec2_test");
 
     m->AddScriptSection("vec2_test_script.as", vec2_test_script);
     ASSERT_GE(m->Build(), 0);

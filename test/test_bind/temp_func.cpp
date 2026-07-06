@@ -36,9 +36,7 @@ TEST(TestBind, TemplateFunc)
     global(engine)
         .function("T temp_f<T>(T val)", &test_bind::temp_f);
 
-    auto* m = engine->GetModule(
-        "temp_func", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "temp_func");
     m->AddScriptSection(
         "temp_func",
         "int test0() { return temp_f<int>(0); }\n"

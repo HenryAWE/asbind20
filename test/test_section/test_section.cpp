@@ -63,9 +63,7 @@ TEST_F(TestLoad, LoadStringView)
 
     using asbind20::io::load_string;
 
-    auto* m = engine->GetModule(
-        "TestLoad", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "TestLoad");
     std::string_view sv = "int func() { return 1013; }";
 
     int r = load_string(m, "LoadStringView", sv);
@@ -87,9 +85,7 @@ TEST_F(TestLoad, LoadString)
 
     using asbind20::io::load_string;
 
-    auto* m = engine->GetModule(
-        "TestLoad", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "TestLoad");
     std::string str = "int func() { return " + std::to_string(1013) + "; }";
 
     int r = load_string(m, "LoadString", str);
@@ -111,9 +107,7 @@ TEST_F(TestLoad, LoadFile)
 
     using asbind20::io::load_file;
 
-    auto* m = engine->GetModule(
-        "TestLoad", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "TestLoad");
     std::string str = "int func() { return " + std::to_string(1013) + "; }";
 
     int r = load_file(m, "script/func.as");

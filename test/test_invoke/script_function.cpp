@@ -9,9 +9,7 @@ TEST(ScriptFunction, Ownership)
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine, true);
 
-    auto* m = engine->GetModule(
-        "test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "test");
     m->AddScriptSection("test", "int test() { return 42; }");
     ASSERT_GE(m->Build(), 0);
 
@@ -63,9 +61,7 @@ TEST(ScriptMethod, Ownership)
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine, true);
 
-    auto* m = engine->GetModule(
-        "test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "test");
     m->AddScriptSection(
         "test",
         "class foo\n"

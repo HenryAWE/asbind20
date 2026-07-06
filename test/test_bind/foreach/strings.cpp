@@ -122,9 +122,7 @@ public:
     auto get_script_func() const
         -> asbind20::function_pointer
     {
-        auto m = m_engine->GetModule(
-            "foreach_string", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-        );
+        auto m = asbind20::create_module(m_engine, "foreach_string");
         m->AddScriptSection(
             "foreach_string",
             "string run_foreach()\n"

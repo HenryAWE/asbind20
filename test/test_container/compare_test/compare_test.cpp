@@ -7,9 +7,7 @@ TEST(Compare, EmptyClass)
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine, true);
-    auto* m = engine->GetModule(
-        "foo", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "foo");
     m->AddScriptSection(
         "foo",
         "class foo{};"
@@ -43,9 +41,7 @@ TEST(Compare, ScriptClassEq)
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine, true);
-    auto* m = engine->GetModule(
-        "foo", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "foo");
     m->AddScriptSection(
         "foo",
         "class foo\n"
@@ -143,9 +139,7 @@ TEST(Compare, ScriptClassCmp)
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine, true);
-    auto* m = engine->GetModule(
-        "foo", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "foo");
     m->AddScriptSection(
         "foo",
         "class foo\n"

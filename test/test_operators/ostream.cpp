@@ -37,9 +37,7 @@ static void register_ostream(std::ostream& os, asbind20::engine_pointer engine)
 
 static void run_ostream_test_script(asbind20::engine_pointer engine)
 {
-    auto* m = engine->GetModule(
-        "test_ostream", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "test_ostream");
     m->AddScriptSection(
         "test_ostream",
         "void main()\n"

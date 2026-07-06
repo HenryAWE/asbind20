@@ -130,9 +130,7 @@ public:
 
 static void run_pair2i_test_script(asbind20::engine_pointer engine)
 {
-    auto* m = engine->GetModule(
-        "test_pair2i", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "test_pair2i");
 
     m->AddScriptSection(
         "test_pair2i",

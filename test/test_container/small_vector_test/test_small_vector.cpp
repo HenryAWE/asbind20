@@ -104,7 +104,7 @@ TEST(SmallVector, ScriptObjectAsElement)
         );
     EXPECT_EQ(counter, 0);
 
-    auto* m = engine->GetModule("test_small_vector", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
+    auto* m = asbind20::create_module(engine, "test_small_vector");
     m->AddScriptSection(
         "test_small_vector_helper",
         "class foo\n"
