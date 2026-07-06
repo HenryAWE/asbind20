@@ -35,7 +35,7 @@ However, asbind20 on other platforms, architectures or compiler toolchains suppo
     - Clang-Cl latest
   * - Linux (Ubuntu)
     - x64
-    - GCC 13, 14 |br|
+    - GCC 12, 13, 14 |br|
       Clang 15, 18, 19
   * - Linux (Ubuntu)
     - arm64
