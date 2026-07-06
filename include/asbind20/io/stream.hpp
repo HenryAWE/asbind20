@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "../detail/include_as.hpp"
+#include "../fwd.hpp"
 #include <cassert>
 #include <cstring>
 #include <algorithm>
