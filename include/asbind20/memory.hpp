@@ -15,6 +15,7 @@
 #include <utility>
 #include <type_traits>
 #include <string>
+#include <limits>
 #include "detail/err_handler.hpp"
 #include "detail/include_as.hpp"
 #include "utility.hpp"
