@@ -532,9 +532,9 @@ static void output_info(std::ostream& os)
     os << "__cplusplus = " << __cplusplus << 'L' << std::endl;
 #endif
 
-    os << "asGetLibraryVersion(): " << AS_NAMESPACE_QUALIFIER asGetLibraryVersion() << std::endl;
-    os << "asGetLibraryOptions(): " << AS_NAMESPACE_QUALIFIER asGetLibraryOptions() << std::endl;
-    os << "asbind20::library_version(): " << asbind20::library_version() << std::endl;
+    os << "script_library_version(): " << asbind20::script_library_version() << std::endl;
+    os << "script_library_options(): " << asbind20::script_library_options() << std::endl;
+    os << "library_version(): " << asbind20::library_version() << std::endl;
 
     os << "ASBIND20_CONFIG_NO_COMPILE_TIME_CHECKS";
 #ifndef ASBIND20_CONFIG_NO_COMPILE_TIME_CHECKS

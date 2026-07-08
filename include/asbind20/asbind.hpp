@@ -51,12 +51,24 @@ constexpr const char* library_version() noexcept
 #endif
 }
 
+[[nodiscard]]
+inline const char* script_library_version()
+{
+    return AS_NAMESPACE_QUALIFIER asGetLibraryVersion();
+}
+
+[[nodiscard]]
+inline const char* script_library_options()
+{
+    return AS_NAMESPACE_QUALIFIER asGetLibraryOptions();
+}
+
 /**
  * @brief Check if `asGetLibraryOptions()` returns `"AS_MAX_PORTABILITY"`
  */
 [[nodiscard]]
 inline bool has_max_portability(
-    const char* options = AS_NAMESPACE_QUALIFIER asGetLibraryOptions()
+    const char* options = script_library_options()
 )
 {
     return std::strstr(options, "AS_MAX_PORTABILITY") != nullptr;
@@ -67,7 +79,7 @@ inline bool has_max_portability(
  */
 [[nodiscard]]
 inline bool has_exceptions(
-    const char* options = AS_NAMESPACE_QUALIFIER asGetLibraryOptions()
+    const char* options = script_library_options()
 )
 {
     return std::strstr(options, "AS_NO_EXCEPTIONS") == nullptr;
@@ -78,7 +90,7 @@ inline bool has_exceptions(
  */
 [[nodiscard]]
 inline bool has_threads(
-    const char* options = AS_NAMESPACE_QUALIFIER asGetLibraryOptions()
+    const char* options = script_library_options()
 )
 {
     return std::strstr(options, "AS_NO_THREADS") == nullptr;
