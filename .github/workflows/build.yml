@@ -125,8 +125,11 @@ jobs:
       strategy:
           fail-fast: false
           matrix:
-            gcc: [13, 14]
+            gcc: [12, 13, 14]
             cxxstd: [20, 23]
+            exclude:
+              - gcc: 12
+                cxxstd: 23 # Only test C++20 with GCC 12
 
       name: Linux x64 GCC ${{matrix.gcc}} C++${{matrix.cxxstd}}
 

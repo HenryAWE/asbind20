@@ -11,6 +11,8 @@ Update
 
 - More utilities
 
+- Bring back GCC 12 support.
+
 2.0.1
 -----
 
