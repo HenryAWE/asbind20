@@ -708,8 +708,7 @@ case AS_NAMESPACE_QUALIFIER as_type_id:                                         
         ASBIND20_UTILITY_VISIT_SCRIPT_TYPE_ID_CASE(asTYPEID_BOOL);
         ASBIND20_UTILITY_VISIT_SCRIPT_TYPE_ID_CASE(asTYPEID_INT8);
         ASBIND20_UTILITY_VISIT_SCRIPT_TYPE_ID_CASE(asTYPEID_INT16);
-        // TODO: 2.39 compatibility
-    default: // enums
+
         ASBIND20_UTILITY_VISIT_SCRIPT_TYPE_ID_CASE(asTYPEID_INT32);
         ASBIND20_UTILITY_VISIT_SCRIPT_TYPE_ID_CASE(asTYPEID_INT64);
         ASBIND20_UTILITY_VISIT_SCRIPT_TYPE_ID_CASE(asTYPEID_UINT8);
@@ -718,6 +717,12 @@ case AS_NAMESPACE_QUALIFIER as_type_id:                                         
         ASBIND20_UTILITY_VISIT_SCRIPT_TYPE_ID_CASE(asTYPEID_UINT64);
         ASBIND20_UTILITY_VISIT_SCRIPT_TYPE_ID_CASE(asTYPEID_FLOAT);
         ASBIND20_UTILITY_VISIT_SCRIPT_TYPE_ID_CASE(asTYPEID_DOUBLE);
+
+    default: // enums
+        return std::invoke(
+            std::forward<Visitor>(vis),
+            std::in_place_type<compat::script_enum_value_type>
+        );
     }
 
 #undef ASBIND20_UTILITY_VISIT_SCRIPT_TYPE_ID_CASE
