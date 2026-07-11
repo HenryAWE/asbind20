@@ -39,13 +39,13 @@ inline const char* get_function_section_name(
     if(!func) [[unlikely]]
         return nullptr;
 
-#if ANGELSCRIPT_VERSION >= 23800
+#ifdef ASBIND20_HAS_SCRIPT_FUNCTION_GET_DECLARED_AT
 
     const char* result;
     func->GetDeclaredAt(&result, nullptr, nullptr);
     return result;
 
-#else // 2.37
+#else
     return func->GetScriptSectionName();
 #endif
 }

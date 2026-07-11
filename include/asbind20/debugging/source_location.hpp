@@ -48,7 +48,7 @@ public:
         return m_column;
     }
 
-#if ANGELSCRIPT_VERSION >= 23800
+#ifdef ASBIND20_HAS_SCRIPT_FUNCTION_GET_DECLARED_AT
 
     static script_source_location from_function(const_function_pointer func)
     {
