@@ -1,10 +1,10 @@
-#ifndef ASBIND20_STACKTRACE_HPP
-#define ASBIND20_STACKTRACE_HPP
+#ifndef ASBIND20_DEBUGGING_STACKTRACE_HPP
+#define ASBIND20_DEBUGGING_STACKTRACE_HPP
 
 #include <sstream>
+#include <vector>
 #include "../fwd.hpp"
 #include "../utility.hpp"
-#include "source_location.hpp"
 
 namespace asbind20::debugging
 {
@@ -96,7 +96,7 @@ private:
         }
 
 #else
-        const char* section_name = func->GetScriptSectionName();
+        const char* section_name = m_func->GetScriptSectionName();
         if(section_name)
             output_helper(section_name);
 #endif
