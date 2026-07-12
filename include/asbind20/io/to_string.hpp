@@ -214,7 +214,7 @@ inline std::wstring to_wstring(AS_NAMESPACE_QUALIFIER asEContextState state)
 inline std::string to_string(AS_NAMESPACE_QUALIFIER asERetCodes ret)
 {
     const char* cstr = detail::ret_to_cstr(ret);
-    if(cstr) [[unlikely]]
+    if(cstr) [[likely]]
         return cstr;
     else
     {
@@ -232,7 +232,7 @@ inline std::string to_string(AS_NAMESPACE_QUALIFIER asERetCodes ret)
 inline std::wstring to_wstring(AS_NAMESPACE_QUALIFIER asERetCodes ret)
 {
     const char* cstr = detail::ret_to_cstr(ret);
-    if(cstr) [[unlikely]]
+    if(cstr) [[likely]]
     {
         std::string_view sv = cstr;
         return std::wstring(sv.cbegin(), sv.cend());

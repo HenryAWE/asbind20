@@ -355,7 +355,7 @@ public:
 
     void swap(script_invoke_result& other) noexcept
     {
-        swap(other);
+        script_invoke_result_base::swap(other);
     }
 };
 
@@ -415,7 +415,7 @@ public:
 
     void swap(script_invoke_result& other) noexcept
     {
-        swap(other);
+        script_invoke_result_base::swap(other);
     }
 };
 

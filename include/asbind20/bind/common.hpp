@@ -361,6 +361,8 @@ public:
     }
 
 protected:
+    // This base class only holds a reference to the engine.
+    // It won't increase the reference count of the engine.
     explicit engine_ref_holder(engine_pointer engine) noexcept
         : m_engine(engine)
     {

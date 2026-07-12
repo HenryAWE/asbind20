@@ -72,9 +72,11 @@ public:
             return *this;
         }
 
-        void operator++(int)
+        iterator operator++(int)
         {
+            iterator tmp = *this;
             next();
+            return tmp;
         }
 
         const value_type& operator*() const noexcept

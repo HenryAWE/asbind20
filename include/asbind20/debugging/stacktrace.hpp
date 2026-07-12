@@ -160,6 +160,7 @@ public:
 
     friend std::ostream& operator<<(std::ostream& os, const basic_stacktrace& trace)
     {
+        // Output nothing if the trace is empty
         for(std::size_t i = 0; i < trace.m_entries.size(); ++i)
         {
             os << '#' << i << ' ';
