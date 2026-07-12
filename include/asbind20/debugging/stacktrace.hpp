@@ -11,11 +11,16 @@
 
 namespace asbind20::debugging
 {
-class stacktrace;
+class stacktrace_entry;
+template <typename Allocator>
+class basic_stacktrace;
+
+using stacktrace = basic_stacktrace<std::allocator<stacktrace_entry>>;
 
 class stacktrace_entry
 {
-    friend class stacktrace;
+    template <typename Allocator>
+    friend class basic_stacktrace;
 
     stacktrace_entry(
         context_pointer ctx,
@@ -111,21 +116,26 @@ private:
     }
 };
 
-class stacktrace
+template <typename Allocator>
+class basic_stacktrace
 {
+    using container_type = std::vector<stacktrace_entry, Allocator>;
+
 public:
     using size_type = AS_NAMESPACE_QUALIFIER asUINT;
+    using const_iterator = typename container_type::const_iterator;
+    using iterator = const_iterator;
 
-    stacktrace() = default;
-    stacktrace(const stacktrace&) = default;
-    stacktrace(stacktrace&&) noexcept = default;
+    basic_stacktrace() = default;
+    basic_stacktrace(const basic_stacktrace&) = default;
+    basic_stacktrace(basic_stacktrace&&) noexcept = default;
 
-    stacktrace& operator=(const stacktrace&) = default;
-    stacktrace& operator=(stacktrace&&) noexcept = default;
+    basic_stacktrace& operator=(const basic_stacktrace&) = default;
+    basic_stacktrace& operator=(basic_stacktrace&&) noexcept = default;
 
-    static stacktrace from_context(context_pointer ctx)
+    static basic_stacktrace from_context(context_pointer ctx)
     {
-        stacktrace result;
+        basic_stacktrace result;
         if(!ctx)
             return result;
 
@@ -141,12 +151,12 @@ public:
         return result;
     }
 
-    static stacktrace current()
+    static basic_stacktrace current()
     {
         return from_context(current_context());
     }
 
-    friend std::ostream& operator<<(std::ostream& os, const stacktrace& trace)
+    friend std::ostream& operator<<(std::ostream& os, const basic_stacktrace& trace)
     {
         for(std::size_t i = 0; i < trace.m_entries.size(); ++i)
         {
@@ -165,6 +175,38 @@ public:
         return std::move(ss).str();
     }
 
+    [[nodiscard]]
+    size_type size() const noexcept
+    {
+        return static_cast<size_type>(m_entries.size());
+    }
+
+    [[nodiscard]]
+    bool empty() const noexcept
+    {
+        return m_entries.empty();
+    }
+
+    const_iterator cbegin() const noexcept
+    {
+        return m_entries.cbegin();
+    }
+
+    const_iterator cend() const noexcept
+    {
+        return m_entries.cend();
+    }
+
+    const_iterator begin() const noexcept
+    {
+        return cbegin();
+    }
+
+    const_iterator end() const noexcept
+    {
+        return cend();
+    }
+
 private:
     std::vector<stacktrace_entry> m_entries;
 };
@@ -174,7 +216,8 @@ inline std::string to_string(const stacktrace_entry& entry)
     return entry.description();
 }
 
-inline std::string to_string(const stacktrace& trace)
+template <typename Allocator>
+std::string to_string(const basic_stacktrace<Allocator>& trace)
 {
     return trace.description();
 }
@@ -201,8 +244,8 @@ public:
     }
 };
 
-template <>
-struct std::formatter<asbind20::debugging::stacktrace> :
+template <typename Allocator>
+struct std::formatter<asbind20::debugging::basic_stacktrace<Allocator>> :
     std::formatter<std::string>
 {
 private:
@@ -210,7 +253,7 @@ private:
 
 public:
     auto format(
-        const asbind20::debugging::stacktrace& trace,
+        const asbind20::debugging::basic_stacktrace<Allocator>& trace,
         std::format_context& ctx
     ) const
     {

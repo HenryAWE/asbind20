@@ -9,18 +9,33 @@ TEST(Trace, Print)
 
     auto engine = make_script_engine();
 
-    std::stringstream ss;
+    struct data_type
+    {
+        std::stringstream ss;
+        std::vector<std::string> collected_entries;
+    };
+
+    data_type data;
 
     global<true>(engine)
         .function(
             "void trace()",
             [](generic_pointer gen) -> void
             {
-                auto& ss = get_generic_auxiliary<std::stringstream>(gen);
-                auto tr = debugging::stacktrace::current();
-                ss << tr;
+                auto& data = get_generic_auxiliary<data_type>(gen);
+                debugging::stacktrace tr = debugging::stacktrace::current();
+                EXPECT_EQ(tr.size(), 3);
+                EXPECT_FALSE(tr.empty());
+                data.ss << tr;
+
+                for(auto& entry : tr)
+                {
+                    data.collected_entries.push_back(
+                        to_string(entry)
+                    );
+                }
             },
-            auxiliary(ss)
+            auxiliary(data)
         );
 
     auto* m = asbind20::create_module(engine, "print_trace");
@@ -35,13 +50,18 @@ TEST(Trace, Print)
     auto* foobar = m->GetFunctionByName("foobar");
     ASSERT_NE(foobar, nullptr);
 
-    EXPECT_TRUE(ss.str().empty());
+    EXPECT_TRUE(data.ss.str().empty());
     request_context ctx(engine);
     auto result = script_invoke<int>(ctx, foobar);
     ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
     EXPECT_EQ(result.value(), 42);
 
-    const std::string traced = ss.str();
+    EXPECT_THAT(
+        data.collected_entries,
+        ::testing::ElementsAre("foo", "bar", "foobar")
+    );
+
+    const std::string traced = data.ss.str();
     EXPECT_THAT(
         traced,
         ::testing::HasSubstr("#0 ")
