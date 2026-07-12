@@ -40,8 +40,7 @@ inline const char* get_function_section_name(
         return nullptr;
 
 #ifdef ASBIND20_HAS_SCRIPT_FUNCTION_GET_DECLARED_AT
-
-    const char* result;
+    const char* result = nullptr;
     func->GetDeclaredAt(&result, nullptr, nullptr);
     return result;
 

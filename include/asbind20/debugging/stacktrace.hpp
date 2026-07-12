@@ -43,6 +43,7 @@ public:
     [[nodiscard]]
     std::string description() const
     {
+        // Output nothing if the function is nullptr
         if(!m_func) [[unlikely]]
             return {};
 
@@ -53,6 +54,7 @@ public:
 
     friend std::ostream& operator<<(std::ostream& os, const stacktrace_entry& entry)
     {
+        // Output nothing if the function is nullptr
         if(entry.m_func)
             entry.output_desc(os);
         return os;

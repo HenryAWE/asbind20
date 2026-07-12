@@ -32,7 +32,6 @@ TEST(Trace, Print)
     );
     ASSERT_GE(m->Build(), 0);
 
-
     auto* foobar = m->GetFunctionByName("foobar");
     ASSERT_NE(foobar, nullptr);
 
@@ -42,18 +41,18 @@ TEST(Trace, Print)
     ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
     EXPECT_EQ(result.value(), 42);
 
-    std::string traced = ss.str();
+    const std::string traced = ss.str();
     EXPECT_THAT(
         traced,
-        ::testing::HasSubstr("#0")
+        ::testing::HasSubstr("#0 ")
     );
     EXPECT_THAT(
         traced,
-        ::testing::HasSubstr("#1")
+        ::testing::HasSubstr("#1 ")
     );
     EXPECT_THAT(
         traced,
-        ::testing::HasSubstr("#2")
+        ::testing::HasSubstr("#2 ")
     );
     EXPECT_THAT(
         traced,
