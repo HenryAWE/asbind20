@@ -1108,7 +1108,7 @@ private:
     static constexpr std::size_t impl_storage_size =
         std::max(sizeof(impl_enum), sizeof(impl_object<false>));
 
-    std::byte m_impl_data[impl_storage_size];
+    alignas(std::max_align_t) std::byte m_impl_data[impl_storage_size];
 
     impl_interface& impl() noexcept
     {
