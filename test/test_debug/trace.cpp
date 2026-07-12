@@ -31,7 +31,7 @@ TEST(Trace, Print)
                 for(auto& entry : tr)
                 {
                     data.collected_entries.push_back(
-                        to_string(entry)
+                        entry.get_function()->GetName()
                     );
                 }
             },
