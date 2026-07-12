@@ -5,6 +5,9 @@
 #include <vector>
 #include "../fwd.hpp"
 #include "../utility.hpp"
+#ifdef ASBIND20_HAS_LIB_FORMAT
+#    include <format>
+#endif
 
 namespace asbind20::debugging
 {
@@ -165,6 +168,58 @@ public:
 private:
     std::vector<stacktrace_entry> m_entries;
 };
+
+inline std::string to_string(const stacktrace_entry& entry)
+{
+    return entry.description();
+}
+
+inline std::string to_string(const stacktrace& trace)
+{
+    return trace.description();
+}
 } // namespace asbind20::debugging
+
+#ifdef ASBIND20_HAS_LIB_FORMAT
+
+template <>
+struct std::formatter<asbind20::debugging::stacktrace_entry> :
+    std::formatter<std::string>
+{
+private:
+    using my_base = std::formatter<std::string>;
+
+public:
+    auto format(
+        const asbind20::debugging::stacktrace_entry& entry,
+        std::format_context& ctx
+    ) const
+    {
+        return my_base::format(
+            to_string(entry), ctx
+        );
+    }
+};
+
+template <>
+struct std::formatter<asbind20::debugging::stacktrace> :
+    std::formatter<std::string>
+{
+private:
+    using my_base = std::formatter<std::string>;
+
+public:
+    auto format(
+        const asbind20::debugging::stacktrace& trace,
+        std::format_context& ctx
+    ) const
+    {
+        return my_base::format(
+            to_string(trace), ctx
+        );
+    }
+};
+
+#endif
 
 #endif
