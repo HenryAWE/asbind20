@@ -105,7 +105,7 @@ public:
 
     bool empty() const noexcept
     {
-        return m_gen != nullptr;
+        return m_gen == nullptr;
     }
 
     iterator begin() const noexcept
