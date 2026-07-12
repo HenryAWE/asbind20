@@ -1,6 +1,8 @@
 #ifndef ASBIND20_DEBUGGING_STACKTRACE_HPP
 #define ASBIND20_DEBUGGING_STACKTRACE_HPP
 
+#pragma once
+
 #include <sstream>
 #include <vector>
 #include "../fwd.hpp"
@@ -208,7 +210,7 @@ public:
     }
 
 private:
-    std::vector<stacktrace_entry> m_entries;
+    container_type m_entries;
 };
 
 inline std::string to_string(const stacktrace_entry& entry)
