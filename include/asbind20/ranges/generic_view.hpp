@@ -103,6 +103,7 @@ public:
         }
     };
 
+    [[nodiscard]]
     bool empty() const noexcept
     {
         return m_gen == nullptr;

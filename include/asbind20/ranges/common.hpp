@@ -3,13 +3,14 @@
 
 #pragma once
 
-#include <version>
+#include "../detail/config.hpp"
 // IWYU pragma: begin_exports
 #include <iterator>
-#ifdef __cpp_lib_ranges
-#    define ASBIND20_HAS_LIB_RANGES __cpp_lib_ranges
+#ifdef ASBIND20_HAS_LIB_RANGES
 #    include <ranges>
 #endif
+#include "../fwd.hpp"
+
 // IWYU pragma: end_exports
 
 namespace asbind20::ranges

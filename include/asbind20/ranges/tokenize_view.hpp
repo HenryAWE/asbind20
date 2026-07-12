@@ -115,6 +115,7 @@ public:
         }
     };
 
+    [[nodiscard]]
     bool empty() const noexcept
     {
         if(m_engine == nullptr) [[unlikely]]

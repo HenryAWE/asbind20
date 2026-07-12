@@ -37,6 +37,10 @@
 #    define ASBIND20_HAS_LIB_FORMAT __cpp_lib_format
 #endif
 
+#ifdef __cpp_lib_ranges
+#    define ASBIND20_HAS_LIB_RANGES __cpp_lib_ranges
+#endif
+
 #if ANGELSCRIPT_VERSION >= 23800
 #    define ASBIND20_HAS_AS_FOREACH
 #    define ASBIND20_HAS_SCRIPT_FUNCTION_GET_DECLARED_AT
