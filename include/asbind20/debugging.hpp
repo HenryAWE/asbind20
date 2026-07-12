@@ -16,7 +16,6 @@
 #include "debugging/extract_string.hpp"
 #include "debugging/gc_statistics.hpp"
 #include "debugging/source_location.hpp"
-#include "debugging/stacktrace.hpp"
 
 // IWYU pragma: end_exports
 
