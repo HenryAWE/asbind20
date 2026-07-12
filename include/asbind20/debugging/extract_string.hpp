@@ -9,9 +9,8 @@
 
 #pragma once
 
-#include <cassert>
 #include <string>
-#include "../detail/include_as.hpp"
+#include "../fwd.hpp"
 #include "../detail/err_handler.hpp"
 
 namespace asbind20::debugging
@@ -105,7 +104,17 @@ public:
         : m_error(other.m_error)
     {
         if(other.has_value())
+        {
             new(m_data) value_type(std::move(*other));
+            other.m_error = AS_NAMESPACE_QUALIFIER asERROR;
+            std::destroy_at(other.ptr());
+        }
+    }
+
+    ~extract_string_result()
+    {
+        if(has_value())
+            std::destroy_at(ptr());
     }
 
     explicit extract_string_result(std::string str)

@@ -10,7 +10,7 @@ namespace asbind20::compat
 #ifndef ASBIND20_HAS_ENUM_UNDERLYING_TYPE
 using script_enum_value_type = int;
 
-#else // AngelScript <= 2.38
+#else // AngelScript >= 2.39
 using script_enum_value_type = AS_NAMESPACE_QUALIFIER asINT64;
 
 #endif

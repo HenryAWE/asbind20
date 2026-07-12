@@ -884,7 +884,7 @@ class generic_wrapper_list_ctor
     static void wrapper_objlast(generic_pointer gen)
     {
         using list_buf_t = typename traits::first_arg_type;
-        ListConstructor(
+        ListConstructorFunc(
             get_buf<list_buf_t>(gen),
             get_generic_object<Class*>(gen)
         );

@@ -9,13 +9,13 @@
 
 #pragma once
 
-#include <cassert>
-#include "detail/include_as.hpp"
+#include "fwd.hpp"
 
 // IWYU pragma: begin_exports
 
 #include "debugging/extract_string.hpp"
 #include "debugging/gc_statistics.hpp"
+#include "debugging/source_location.hpp"
 
 // IWYU pragma: end_exports
 
@@ -39,13 +39,12 @@ inline const char* get_function_section_name(
     if(!func) [[unlikely]]
         return nullptr;
 
-#if ANGELSCRIPT_VERSION >= 23800
-
-    const char* result;
+#ifdef ASBIND20_HAS_SCRIPT_FUNCTION_GET_DECLARED_AT
+    const char* result = nullptr;
     func->GetDeclaredAt(&result, nullptr, nullptr);
     return result;
 
-#else // 2.37
+#else
     return func->GetScriptSectionName();
 #endif
 }

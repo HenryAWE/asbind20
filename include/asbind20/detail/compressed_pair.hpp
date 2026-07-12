@@ -160,7 +160,7 @@ namespace detail
             std::index_sequence<Indices1...>,
             std::index_sequence<Indices2...>
         )
-            : T2(std::get<Indices1>(tuple1)...), m_first(std::get<Indices2>(tuple2)...)
+            : T2(std::get<Indices2>(tuple2)...), m_first(std::get<Indices1>(tuple1)...)
         {}
 
     private:

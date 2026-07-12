@@ -73,9 +73,11 @@ public:
             return *this;
         }
 
-        void operator++(int)
+        iterator operator++(int)
         {
+            iterator tmp = *this;
             next();
+            return tmp;
         }
 
         value_type operator*() const noexcept
@@ -103,9 +105,10 @@ public:
         }
     };
 
+    [[nodiscard]]
     bool empty() const noexcept
     {
-        return m_gen != nullptr;
+        return m_gen == nullptr;
     }
 
     iterator begin() const noexcept

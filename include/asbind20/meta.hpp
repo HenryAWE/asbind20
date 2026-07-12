@@ -168,9 +168,9 @@ namespace detail
  * @tparam T Function type
  */
 template <typename T>
-class function_traits : public detail::func_traits_impl<std::decay_t<std::remove_cvref_t<T>>>
+class function_traits : public detail::func_traits_impl<std::decay_t<T>>
 {
-    using my_base = detail::func_traits_impl<std::decay_t<std::remove_cvref_t<T>>>;
+    using my_base = detail::func_traits_impl<std::decay_t<T>>;
 
 public:
     using type = T;

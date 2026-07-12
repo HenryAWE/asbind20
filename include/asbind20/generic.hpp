@@ -251,7 +251,7 @@ void set_generic_return_by(
     constexpr bool is_customized = requires() {
         { type_traits<std::remove_cv_t<Return>>::set_return(gen, std::declval<Return>()) } -> std::same_as<int>;
     };
-    constexpr bool non_moveable =
+    constexpr bool use_nrvo =
         !(std::is_reference_v<Return> || std::is_pointer_v<Return>) &&
         std::is_class_v<Return> &&
         (!is_customized ||
@@ -261,7 +261,7 @@ void set_generic_return_by(
     {
         std::invoke(std::forward<Fn>(fn), std::forward<Args>(args)...);
     }
-    else if constexpr(non_moveable) // Try NRVO for non-moveable types
+    else if constexpr(use_nrvo) // Try NRVO for non-moveable types
     {
         void* mem = gen->GetAddressOfReturnLocation();
         new(mem) Return(std::invoke(std::forward<Fn>(fn), std::forward<Args>(args)...));

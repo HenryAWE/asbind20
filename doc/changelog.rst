@@ -13,6 +13,13 @@ Update
 
 - Bring back GCC 12 support.
 
+- More debugging tools.
+
+Bug fix
+~~~~~~~
+
+- Miscellaneous fix.
+
 2.0.1
 -----
 

@@ -1108,7 +1108,7 @@ private:
     static constexpr std::size_t impl_storage_size =
         std::max(sizeof(impl_enum), sizeof(impl_object<false>));
 
-    std::byte m_impl_data[impl_storage_size];
+    alignas(std::max_align_t) std::byte m_impl_data[impl_storage_size];
 
     impl_interface& impl() noexcept
     {
@@ -1536,14 +1536,14 @@ public:
             return *this;
         }
 
-        const_iterator& operator++(int) noexcept
+        const_iterator operator++(int) noexcept
         {
             const_iterator tmp(*this);
             ++*this;
             return tmp;
         }
 
-        const_iterator& operator--(int) noexcept
+        const_iterator operator--(int) noexcept
         {
             const_iterator tmp(*this);
             --*this;
@@ -1560,11 +1560,6 @@ public:
         {
             this->advance(-diff);
             return *this;
-        }
-
-        friend const_iterator operator+(const_iterator lhs, const_iterator rhs) noexcept
-        {
-            return lhs += rhs;
         }
 
         friend const_iterator operator+(const_iterator lhs, difference_type rhs) noexcept
@@ -1810,7 +1805,7 @@ public:
     {
         if(start >= size())
             throw_out_of_range();
-        count = std::min(size() - count, count);
+        count = std::min(size() - start, count);
         visit_script_type(
             std::forward<Visitor>(vis),
             element_type_id(),

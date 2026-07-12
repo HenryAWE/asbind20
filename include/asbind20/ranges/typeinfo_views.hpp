@@ -29,7 +29,7 @@ namespace detail
 
         Derived operator++(int) noexcept
         {
-            Derived tmp(*this);
+            Derived tmp(derived());
             ++derived().index;
             return tmp;
         }
@@ -43,7 +43,7 @@ namespace detail
 
         Derived operator--(int) noexcept
         {
-            Derived tmp(*this);
+            Derived tmp(derived());
             --derived().index;
             return tmp;
         }
