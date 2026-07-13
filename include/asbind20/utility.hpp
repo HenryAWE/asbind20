@@ -1294,6 +1294,21 @@ void format_script_exception_no_catch(
 
 #endif
 
+inline module_pointer get_module(
+    engine_pointer engine,
+    cstring_ref module_name,
+    bool create_if_not_exists = false
+)
+{
+    if(!engine) [[unlikely]]
+        return nullptr;
+
+    AS_NAMESPACE_QUALIFIER asEGMFlags flag =
+        create_if_not_exists ? AS_NAMESPACE_QUALIFIER asGM_CREATE_IF_NOT_EXISTS :
+                               AS_NAMESPACE_QUALIFIER asGM_ONLY_IF_EXISTS;
+    return engine->GetModule(module_name.c_str(), flag);
+}
+
 inline module_pointer create_module(
     engine_pointer engine,
     cstring_ref module_name,
