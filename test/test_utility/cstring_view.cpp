@@ -66,7 +66,7 @@ TEST(CStringView, Output)
     {
         cstring_ref csv = "test";
 
-        std::stringstream ss;
+        std::ostringstream ss;
         ss << csv;
 
         EXPECT_EQ(ss.str(), "test");
@@ -75,7 +75,7 @@ TEST(CStringView, Output)
     {
         cstring_ref csv;
 
-        std::stringstream ss;
+        std::ostringstream ss;
         ss << csv;
 
         EXPECT_EQ(ss.str(), "");

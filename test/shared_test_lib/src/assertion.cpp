@@ -15,7 +15,7 @@ std::string gen_full_assert_msg(
     asbind20::context_pointer ctx, std::string_view msg
 )
 {
-    std::stringstream ss;
+    std::ostringstream ss;
 
     if(ctx)
     {

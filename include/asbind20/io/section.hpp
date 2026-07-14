@@ -59,7 +59,7 @@ inline int load_file(
         std::ifstream ifs(filename, std::ios_base::in | mode);
         if(!ifs.good())
             return AS_NAMESPACE_QUALIFIER asERROR;
-        std::stringstream ss;
+        std::ostringstream ss;
         ss << ifs.rdbuf();
         code = std::move(ss).str();
     }

@@ -372,7 +372,7 @@ static std::string proc_args(asbind20::generic_pointer gen)
                     return;
                 }
 
-                std::stringstream ss;
+                std::ostringstream ss;
                 ss << *p;
 
                 result += std::move(ss).str();

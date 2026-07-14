@@ -160,7 +160,7 @@ static void out_str(std::string& out)
 
 static std::string my_to_str(void* ref, int type_id)
 {
-    std::stringstream ss;
+    std::ostringstream ss;
     if(asbind20::is_primitive_type(type_id))
     {
         asbind20::visit_primitive_type(

@@ -21,7 +21,7 @@ TEST(DumpByteCode, Print)
     EXPECT_FALSE(bcs.empty());
 
 #ifdef ASBIND20_HAS_LIB_FORMAT
-    std::stringstream ss;
+    std::ostringstream ss;
     debugging::print_bytecode(ss, bcs);
 
     EXPECT_THAT(

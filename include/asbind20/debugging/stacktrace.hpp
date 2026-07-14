@@ -57,7 +57,7 @@ public:
         if(!m_func) [[unlikely]]
             return {};
 
-        std::stringstream ss;
+        std::ostringstream ss;
         output_desc(ss);
         return std::move(ss).str();
     }
@@ -173,7 +173,7 @@ public:
     [[nodiscard]]
     std::string description() const
     {
-        std::stringstream ss;
+        std::ostringstream ss;
         ss << *this;
         return std::move(ss).str();
     }

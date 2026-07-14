@@ -11,7 +11,7 @@ TEST(Trace, Print)
 
     struct data_type
     {
-        std::stringstream ss;
+        std::ostringstream ss;
         std::vector<std::string> collected_entries;
     };
 
