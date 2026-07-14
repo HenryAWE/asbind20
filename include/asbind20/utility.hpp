@@ -1188,7 +1188,7 @@ void format_script_exception(
 
 template <typename... Args>
 void format_script_exception_no_catch(
-    std::format_string<Args...> fmt, Args&&... args
+    io::format_string<Args...> fmt, Args&&... args
 )
 {
     vformat_script_exception(
@@ -1200,6 +1200,7 @@ void format_script_exception_no_catch(
 
 #endif
 
+[[nodiscard]]
 inline module_pointer get_module(
     engine_pointer engine,
     cstring_ref module_name,
@@ -1215,6 +1216,7 @@ inline module_pointer get_module(
     return engine->GetModule(module_name.c_str(), flag);
 }
 
+[[nodiscard]]
 inline module_pointer create_module(
     engine_pointer engine,
     cstring_ref module_name,
