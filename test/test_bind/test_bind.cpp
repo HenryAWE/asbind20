@@ -464,7 +464,7 @@ TEST(TestBind, Enum)
     m->Discard();
 }
 
-#ifdef ASBIND20_HAS_ENUM_UNDERLYING_TYPE
+#ifdef ASBIND20_HAS_SCRIPT_ENUM_UNDERLYING_TYPE
 
 namespace test_bind
 {
@@ -542,8 +542,8 @@ static void output_info(std::ostream& os)
 #endif
     os << " defined" << std::endl;
 
-    os << "ASBIND20_HAS_ENUM_UNDERLYING_TYPE";
-#ifndef ASBIND20_HAS_ENUM_UNDERLYING_TYPE
+    os << "ASBIND20_HAS_SCRIPT_ENUM_UNDERLYING_TYPE";
+#ifndef ASBIND20_HAS_SCRIPT_ENUM_UNDERLYING_TYPE
     os << " not";
 #endif
     os << " defined" << std::endl;

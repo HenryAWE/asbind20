@@ -205,7 +205,7 @@ TEST(Ranges, AllEnumValuesWithStdView)
     );
 }
 
-#    ifdef ASBIND20_HAS_ENUM_UNDERLYING_TYPE
+#    ifdef ASBIND20_HAS_SCRIPT_ENUM_UNDERLYING_TYPE
 
 TEST(Ranges, AllEnumValuesCustomUnderlying)
 {

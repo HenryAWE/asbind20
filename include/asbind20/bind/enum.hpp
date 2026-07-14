@@ -29,7 +29,7 @@ class enum_ : public binding_generator_base<Listener>
     using listener_type_traits = listener_traits<Listener>;
 
 public:
-#ifndef ASBIND20_HAS_ENUM_UNDERLYING_TYPE
+#ifndef ASBIND20_HAS_SCRIPT_ENUM_UNDERLYING_TYPE
     static_assert(
         std::same_as<UnderlyingType, int>, "Older AngelScript (<= 2.38) only allows int as underlying type of enum"
     );
@@ -136,7 +136,7 @@ private:
         // clang-format off
         int r = this->get_engine()->RegisterEnum(
             name.c_str()
-#ifdef ASBIND20_HAS_ENUM_UNDERLYING_TYPE
+#ifdef ASBIND20_HAS_SCRIPT_ENUM_UNDERLYING_TYPE
             , underlying.c_str()
 #endif
         );
