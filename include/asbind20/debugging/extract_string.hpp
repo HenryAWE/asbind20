@@ -10,17 +10,12 @@
 #pragma once
 
 #include <string>
+#include "../detail/config.hpp"
 #include "../fwd.hpp"
 #include "../detail/err_handler.hpp"
 
 namespace asbind20::debugging
 {
-// AngelScript 2.38+ supports retrieving string factory from engine
-// asIScriptEngine::GetStringFactory
-#if ANGELSCRIPT_VERSION >= 23800
-#    define ASBIND20_HAS_GET_STRING_FACTORY
-#endif
-
 class extract_string_result;
 
 extract_string_result extract_string(
@@ -89,7 +84,7 @@ private:
     explicit extract_string_result(error_type e) noexcept
         : m_error(e)
     {
-        assert(!has_value());
+        ASBIND20_ASSERT(!has_value());
     }
 
 public:
@@ -97,7 +92,7 @@ public:
         : m_error(other.m_error)
     {
         if(other.has_value())
-            new(m_data) value_type(*other);
+            new(&m_value) value_type(other.m_value);
     }
 
     extract_string_result(extract_string_result&& other) noexcept
@@ -105,22 +100,22 @@ public:
     {
         if(other.has_value())
         {
-            new(m_data) value_type(std::move(*other));
+            new(&m_value) value_type(std::move(other.m_value));
             other.m_error = AS_NAMESPACE_QUALIFIER asERROR;
-            std::destroy_at(other.ptr());
+            std::destroy_at(&other.m_value);
         }
     }
 
     ~extract_string_result()
     {
         if(has_value())
-            std::destroy_at(ptr());
+            std::destroy_at(&m_value);
     }
 
     explicit extract_string_result(std::string str)
         : m_error(AS_NAMESPACE_QUALIFIER asSUCCESS)
     {
-        new(m_data) std::string(std::move(str));
+        new(&m_value) std::string(std::move(str));
     }
 
     [[nodiscard]]
@@ -137,14 +132,14 @@ public:
 
     value_type& operator*() noexcept
     {
-        assert(has_value());
-        return *ptr();
+        ASBIND20_ASSERT(has_value());
+        return m_value;
     }
 
     const value_type& operator*() const noexcept
     {
-        assert(has_value());
-        return *ptr();
+        ASBIND20_ASSERT(has_value());
+        return m_value;
     }
 
     value_type& value()
@@ -162,23 +157,16 @@ public:
     }
 
 private:
-    alignas(value_type) std::byte m_data[sizeof(value_type)];
+    union
+    {
+        value_type m_value;
+    };
     error_type m_error;
 
     [[noreturn]]
     void throw_bad_access() const
     {
         asbind20::detail::throw_<bad_extract_string_result_access>(m_error);
-    }
-
-    value_type* ptr() noexcept
-    {
-        return reinterpret_cast<value_type*>(m_data);
-    }
-
-    const value_type* ptr() const noexcept
-    {
-        return reinterpret_cast<const value_type*>(m_data);
     }
 };
 

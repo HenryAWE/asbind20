@@ -13,6 +13,7 @@
 #include <cassert>
 #include <string>
 #include <string_view>
+#include "config.hpp"
 
 namespace asbind20
 {
@@ -109,7 +110,7 @@ public:
 
     constexpr void remove_prefix(size_type n) noexcept
     {
-        assert(n <= size());
+        ASBIND20_ASSERT(n <= size());
         m_cstr += n;
     }
 

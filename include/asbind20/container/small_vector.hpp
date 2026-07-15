@@ -137,7 +137,7 @@ private:
 
         engine_pointer get_engine() const
         {
-            assert(m_type_data.ti != nullptr);
+            ASBIND20_ASSERT(m_type_data.ti != nullptr);
             return m_type_data.ti->GetEngine();
         }
 
@@ -212,7 +212,7 @@ private:
 
         int elem_type_id() const noexcept
         {
-            assert(impl_interface::elem_type_id() == TypeId);
+            ASBIND20_ASSERT(impl_interface::elem_type_id() == TypeId);
             return TypeId;
         }
     };
@@ -247,7 +247,7 @@ private:
 
         void from_ilist(script_init_list_repeat ilist)
         {
-            assert(size() == 0);
+            ASBIND20_ASSERT(size() == 0);
             reserve(ilist.size());
 
             value_type* p_elem = static_cast<value_type*>(ilist.data());
@@ -262,7 +262,7 @@ private:
     protected:
         void copy_from_impl(const impl_storage& other) noexcept
         {
-            assert(capacity() >= other.size());
+            ASBIND20_ASSERT(capacity() >= other.size());
 
             size_type new_size = other.size();
             std::memcpy(
@@ -277,8 +277,8 @@ private:
         // For implementing copy constructor
         void copy_from(const impl_storage& other)
         {
-            assert(this->size() == 0);
-            assert(this != &other);
+            ASBIND20_ASSERT(this->size() == 0);
+            ASBIND20_ASSERT(this != &other);
             if(other.size() == 0)
                 return;
             reserve(other.size());
@@ -289,7 +289,7 @@ private:
     protected:
         void exchange_ptrs(impl_storage& other) noexcept
         {
-            assert(other.is_nonstatic());
+            ASBIND20_ASSERT(other.is_nonstatic());
 
             const pointer other_ptr = other.get_static_storage();
             m_p_begin = std::exchange(other.m_p_begin, other_ptr);
@@ -303,8 +303,8 @@ private:
         // For implementing move constructor
         void take_own(impl_storage& other) noexcept
         {
-            assert(this->size() == 0);
-            assert(this != &other);
+            ASBIND20_ASSERT(this->size() == 0);
+            ASBIND20_ASSERT(this != &other);
             if(other.size() == 0)
                 return;
 
@@ -367,7 +367,7 @@ private:
             if(new_cap <= capacity())
                 return;
 
-            assert(new_cap > static_capacity());
+            ASBIND20_ASSERT(new_cap > static_capacity());
             new_cap = detail::accommodate(new_cap, capacity());
             size_type current_size = size();
             pointer tmp = alloc_traits::allocate(
@@ -545,7 +545,7 @@ private:
                 return;
             else if(n == size())
             {
-                assert(start == 0);
+                ASBIND20_ASSERT(start == 0);
                 clear();
                 return;
             }
@@ -626,7 +626,7 @@ private:
 
         void emplace_back_impl(value_type val) noexcept
         {
-            assert(capacity() - size() >= 1);
+            ASBIND20_ASSERT(capacity() - size() >= 1);
             *m_p_end = val;
             ++m_p_end;
         }
@@ -673,7 +673,7 @@ private:
 
         void from_ilist(script_init_list_repeat ilist)
         {
-            assert(this->size() == 0);
+            ASBIND20_ASSERT(this->size() == 0);
 
             typeinfo_pointer subtype_ti = this->elem_type_info();
             auto flags = subtype_ti->GetFlags();
@@ -704,8 +704,8 @@ private:
 
         void copy_from(const impl_object& other)
         {
-            assert(this->size() == 0);
-            assert(this != &other);
+            ASBIND20_ASSERT(this->size() == 0);
+            ASBIND20_ASSERT(this != &other);
             this->reserve(other.size());
 
             for(size_type i = 0; i < other.size(); ++i)
@@ -715,8 +715,8 @@ private:
         // For implementing move constructor
         void take_own(impl_object& other) noexcept
         {
-            assert(this->size() == 0);
-            assert(this != &other);
+            ASBIND20_ASSERT(this->size() == 0);
+            ASBIND20_ASSERT(this != &other);
             if(other.size() == 0)
                 return;
 
@@ -773,7 +773,7 @@ private:
             {
                 typeinfo_pointer ti = this->elem_type_info();
                 engine_pointer engine = ti->GetEngine();
-                assert(ti != nullptr);
+                ASBIND20_ASSERT(ti != nullptr);
 
                 for(size_type i = 0; i < new_elems; ++i)
                 {
@@ -817,7 +817,7 @@ private:
             {
                 this->reserve(this->size() + 1);
                 typeinfo_pointer ti = this->elem_type_info();
-                assert(ti != nullptr);
+                ASBIND20_ASSERT(ti != nullptr);
 
                 void* obj = ti->GetEngine()->CreateScriptObject(ti);
                 if(!obj) [[unlikely]]
@@ -858,7 +858,7 @@ private:
                 this->reserve(this->size() + n);
                 typeinfo_pointer ti = this->elem_type_info();
                 engine_pointer engine = ti->GetEngine();
-                assert(ti != nullptr);
+                ASBIND20_ASSERT(ti != nullptr);
 
                 for(size_type i = 0; i < n; ++i)
                 {
@@ -877,11 +877,11 @@ private:
                 return;
 
             typeinfo_pointer ti = this->elem_type_info();
-            assert(ti != nullptr);
+            ASBIND20_ASSERT(ti != nullptr);
 
             void* obj = *(this->m_p_end - 1);
             if constexpr(IsHandle)
-                assert(obj != nullptr);
+                ASBIND20_ASSERT(obj != nullptr);
             if(obj)
                 ti->GetEngine()->ReleaseScriptObject(obj, ti);
 
@@ -955,7 +955,7 @@ private:
                 return;
             else if(n == this->size())
             {
-                assert(start == 0);
+                ASBIND20_ASSERT(start == 0);
                 clear();
                 return;
             }
@@ -1015,7 +1015,7 @@ private:
         {
             if constexpr(IsHandle)
             {
-                assert(ref != nullptr);
+                ASBIND20_ASSERT(ref != nullptr);
                 return *static_cast<void* const*>(ref);
             }
             else
@@ -1038,7 +1038,7 @@ private:
             }
             else
             {
-                assert(obj != nullptr);
+                ASBIND20_ASSERT(obj != nullptr);
                 return engine->CreateScriptObjectCopy(obj, ti);
             }
         }
@@ -1048,7 +1048,7 @@ private:
         {
             typeinfo_pointer ti = this->elem_type_info();
             engine_pointer engine = ti->GetEngine();
-            assert(ti != nullptr);
+            ASBIND20_ASSERT(ti != nullptr);
 
             return copy_obj_impl(engine, ti, obj);
         }
@@ -1081,7 +1081,7 @@ private:
                 }
                 else
                 {
-                    assert(obj != nullptr);
+                    ASBIND20_ASSERT(obj != nullptr);
                     dst = engine->CreateScriptObjectCopy(obj, ti);
                 }
             }
@@ -1128,7 +1128,7 @@ private:
 
         if(is_primitive_type(type_id))
         {
-            assert(!is_void_type(type_id));
+            ASBIND20_ASSERT(!is_void_type(type_id));
 
             switch(type_id)
             {
@@ -1153,7 +1153,7 @@ case AS_NAMESPACE_QUALIFIER as_type_id:                                       \
 #undef ASBIND20_CONTAINER_SMALL_VECTOR_VISIT_CASE
 
             default:
-                assert(is_enum_type(type_id));
+                ASBIND20_ASSERT(is_enum_type(type_id));
                 return vis(
                     static_cast<impl_enum&>(base)
                 );
@@ -1184,7 +1184,7 @@ case AS_NAMESPACE_QUALIFIER as_type_id:                                       \
 
         if(is_primitive_type(type_id))
         {
-            assert(!is_void_type(type_id));
+            ASBIND20_ASSERT(!is_void_type(type_id));
 
             switch(type_id)
             {
@@ -1209,7 +1209,7 @@ case AS_NAMESPACE_QUALIFIER as_type_id:                                         
 #undef ASBIND20_CONTAINER_SMALL_VECTOR_VISIT_CASE
 
             default:
-                assert(is_enum_type(type_id));
+                ASBIND20_ASSERT(is_enum_type(type_id));
                 return vis(
                     static_cast<const impl_enum&>(base)
                 );
@@ -1237,7 +1237,7 @@ case AS_NAMESPACE_QUALIFIER as_type_id:                                         
         int type_id, typeinfo_pointer ti, script_init_list_repeat* ilist = nullptr
     )
     {
-        assert(!is_void_type(type_id));
+        ASBIND20_ASSERT(!is_void_type(type_id));
 
         auto helper = [&]<typename ImplType>(std::in_place_type_t<ImplType>)
         {
@@ -1275,7 +1275,7 @@ case AS_NAMESPACE_QUALIFIER as_type_id:                                         
             ASBIND20_SMALL_VECTOR_IMPL_CASE(asTYPEID_DOUBLE);
 
         default:
-            assert(is_enum_type(type_id));
+            ASBIND20_ASSERT(is_enum_type(type_id));
             helper(std::in_place_type<impl_enum>);
             break;
 
@@ -1336,9 +1336,9 @@ public:
             init_impl(type_id, nullptr);
         else
         {
-            assert(engine != nullptr);
+            ASBIND20_ASSERT(engine != nullptr);
             typeinfo_pointer ti = engine->GetTypeInfoById(type_id);
-            assert(ti != nullptr);
+            ASBIND20_ASSERT(ti != nullptr);
             init_impl(type_id, ti);
         }
     }
@@ -1514,13 +1514,13 @@ public:
 
         bool operator==(const const_iterator& rhs) const noexcept
         {
-            assert(this->get_container() == rhs.get_container());
+            ASBIND20_ASSERT(this->get_container() == rhs.get_container());
             return this->get_offset() == rhs.get_offset();
         }
 
         std::strong_ordering operator<=>(const const_iterator& rhs) const noexcept
         {
-            assert(this->get_container() == rhs.get_container());
+            ASBIND20_ASSERT(this->get_container() == rhs.get_container());
             return this->get_offset() <=> rhs.get_offset();
         }
 
@@ -1574,7 +1574,7 @@ public:
 
         friend difference_type operator-(const_iterator lhs, const_iterator rhs) noexcept
         {
-            assert(lhs.get_container() == rhs.get_container());
+            ASBIND20_ASSERT(lhs.get_container() == rhs.get_container());
             return static_cast<difference_type>(lhs.get_offset()) -
                    static_cast<difference_type>(rhs.get_offset());
         }
@@ -1711,7 +1711,7 @@ public:
 
     void insert(const_iterator where, const void* ref)
     {
-        assert(this == where.get_container());
+        ASBIND20_ASSERT(this == where.get_container());
         this->insert(where.get_offset(), ref);
     }
 
@@ -1730,8 +1730,8 @@ public:
 
     void erase(const_iterator start, const_iterator stop)
     {
-        assert(this == start.get_container());
-        assert(this == stop.get_container());
+        ASBIND20_ASSERT(this == start.get_container());
+        ASBIND20_ASSERT(this == stop.get_container());
         difference_type diff = stop - start;
         if(diff < 0) [[unlikely]]
             return;
@@ -1740,7 +1740,7 @@ public:
 
     void erase(const_iterator where)
     {
-        assert(this == where.get_container());
+        ASBIND20_ASSERT(this == where.get_container());
         this->erase(where.get_offset(), 1);
     }
 
@@ -1817,8 +1817,8 @@ public:
     template <typename Visitor>
     decltype(auto) visit(Visitor&& vis, const_iterator start, const_iterator stop)
     {
-        assert(this == start.get_container());
-        assert(this == stop.get_container());
+        ASBIND20_ASSERT(this == start.get_container());
+        ASBIND20_ASSERT(this == stop.get_container());
 
         visit_script_type(
             std::forward<Visitor>(vis),

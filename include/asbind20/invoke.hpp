@@ -35,8 +35,8 @@ template <typename T>
 requires(!std::is_const_v<T>)
 decltype(auto) get_script_return(context_pointer ctx)
 {
-    assert(ctx != nullptr);
-    assert(ctx->GetState() == (AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED));
+    ASBIND20_ASSERT(ctx != nullptr);
+    ASBIND20_ASSERT(ctx->GetState() == (AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED));
 
     constexpr bool is_customized = requires() {
         { type_traits<T>::get_return(ctx) } -> std::convertible_to<T>;
@@ -221,7 +221,7 @@ protected:
     ) noexcept
         : m_ctx(ctx)
     {
-        assert(m_ctx != nullptr);
+        ASBIND20_ASSERT(m_ctx != nullptr);
     }
 
     [[noreturn]]
@@ -281,7 +281,7 @@ public:
 
     return_type operator*() const
     {
-        assert(has_value());
+        ASBIND20_ASSERT(has_value());
         return get_script_return<T>(get_context());
     }
 
@@ -289,7 +289,7 @@ public:
     pointer_type operator->() const
         requires(detail::invoke_result_traits<return_type>::to_pointer_support)
     {
-        assert(has_value());
+        ASBIND20_ASSERT(has_value());
         if constexpr(!std::is_reference_v<return_type>)
             return static_cast<pointer_type>(**this);
         else
@@ -386,13 +386,13 @@ public:
 
     return_type operator*() const noexcept
     {
-        assert(has_value());
+        ASBIND20_ASSERT(has_value());
         return get_script_return<T&>(get_context());
     }
 
     pointer_type operator->() const noexcept
     {
-        assert(has_value());
+        ASBIND20_ASSERT(has_value());
         return std::addressof(**this);
     }
 
@@ -465,7 +465,7 @@ public:
 
     void operator*() const noexcept
     {
-        assert(has_value());
+        ASBIND20_ASSERT(has_value());
     }
 
     void value() const
@@ -632,7 +632,7 @@ int set_script_arg(
     else
     {
         void* addr = ctx->GetAddressOfArg(idx);
-        assert(addr != nullptr);
+        ASBIND20_ASSERT(addr != nullptr);
         new(addr) T(val);
         return AS_NAMESPACE_QUALIFIER asSUCCESS;
     }
@@ -779,13 +779,13 @@ script_invoke_result<R> script_invoke(
     Args&&... args
 )
 {
-    assert(func != nullptr);
-    assert(ctx != nullptr);
+    ASBIND20_ASSERT(func != nullptr);
+    ASBIND20_ASSERT(ctx != nullptr);
 
     [[maybe_unused]]
     int r = 0;
     r = ctx->Prepare(func);
-    assert(r >= 0);
+    ASBIND20_ASSERT(r >= 0);
 
     apply_script_args(ctx, std::forward_as_tuple(args...));
 
@@ -828,15 +828,15 @@ script_invoke_result<R> script_invoke(
     Args&&... args
 )
 {
-    assert(func != nullptr);
-    assert(ctx != nullptr);
+    ASBIND20_ASSERT(func != nullptr);
+    ASBIND20_ASSERT(ctx != nullptr);
 
     [[maybe_unused]]
     int r = 0;
     r = ctx->Prepare(func);
-    assert(r >= 0);
+    ASBIND20_ASSERT(r >= 0);
     r = set_script_object(ctx, std::forward<Object>(obj));
-    assert(r >= 0);
+    ASBIND20_ASSERT(r >= 0);
 
     apply_script_args(ctx, std::forward_as_tuple(std::forward<Args>(args)...));
 
