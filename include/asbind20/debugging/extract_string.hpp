@@ -142,6 +142,7 @@ public:
         return m_value;
     }
 
+    [[nodiscard]]
     value_type& value()
     {
         if(!has_value())
@@ -149,6 +150,7 @@ public:
         return **this;
     }
 
+    [[nodiscard]]
     const value_type& value() const
     {
         if(!has_value())
