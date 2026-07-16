@@ -1202,6 +1202,19 @@ void format_script_exception_no_catch(
 
 [[nodiscard]]
 inline module_pointer get_module(
+    engine_reference engine,
+    cstring_ref module_name,
+    bool create_if_not_exists = false
+)
+{
+    AS_NAMESPACE_QUALIFIER asEGMFlags flag =
+        create_if_not_exists ? AS_NAMESPACE_QUALIFIER asGM_CREATE_IF_NOT_EXISTS :
+                               AS_NAMESPACE_QUALIFIER asGM_ONLY_IF_EXISTS;
+    return engine.GetModule(module_name.c_str(), flag);
+}
+
+[[nodiscard]]
+inline module_pointer get_module(
     engine_pointer engine,
     cstring_ref module_name,
     bool create_if_not_exists = false
@@ -1210,10 +1223,20 @@ inline module_pointer get_module(
     if(!engine) [[unlikely]]
         return nullptr;
 
+    return get_module(*engine, module_name, create_if_not_exists);
+}
+
+[[nodiscard]]
+inline module_pointer create_module(
+    engine_reference engine,
+    cstring_ref module_name,
+    bool overwrite = true
+)
+{
     AS_NAMESPACE_QUALIFIER asEGMFlags flag =
-        create_if_not_exists ? AS_NAMESPACE_QUALIFIER asGM_CREATE_IF_NOT_EXISTS :
-                               AS_NAMESPACE_QUALIFIER asGM_ONLY_IF_EXISTS;
-    return engine->GetModule(module_name.c_str(), flag);
+        overwrite ? AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE :
+                    AS_NAMESPACE_QUALIFIER asGM_CREATE_IF_NOT_EXISTS;
+    return engine.GetModule(module_name.c_str(), flag);
 }
 
 [[nodiscard]]
@@ -1226,12 +1249,7 @@ inline module_pointer create_module(
     if(!engine) [[unlikely]]
         return nullptr;
 
-    AS_NAMESPACE_QUALIFIER asEGMFlags flag =
-        overwrite ? AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE :
-                    AS_NAMESPACE_QUALIFIER asGM_CREATE_IF_NOT_EXISTS;
-    return engine->GetModule(
-        module_name.c_str(), flag
-    );
+    return create_module(*engine, module_name, overwrite);
 }
 } // namespace asbind20
 

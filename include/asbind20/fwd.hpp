@@ -23,6 +23,13 @@ inline namespace script_type
     using context_pointer = AS_NAMESPACE_QUALIFIER asIScriptContext*;
     using const_context_pointer = AS_NAMESPACE_QUALIFIER asIScriptContext const*;
 
+    using engine_reference = AS_NAMESPACE_QUALIFIER asIScriptEngine&;
+    using const_engine_reference = AS_NAMESPACE_QUALIFIER asIScriptEngine const&;
+    using module_reference = AS_NAMESPACE_QUALIFIER asIScriptModule&;
+    using const_module_reference = AS_NAMESPACE_QUALIFIER asIScriptModule const&;
+    using context_reference = AS_NAMESPACE_QUALIFIER asIScriptContext&;
+    using const_context_reference = AS_NAMESPACE_QUALIFIER asIScriptContext const&;
+
     // Secondary interfaces
     using generic_pointer = AS_NAMESPACE_QUALIFIER asIScriptGeneric*;
     using const_generic_pointer = AS_NAMESPACE_QUALIFIER asIScriptGeneric const*;

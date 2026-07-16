@@ -91,6 +91,14 @@ public:
     }
 
     [[nodiscard]]
+    constexpr const char* safe_c_str() const noexcept
+    {
+        if(m_cstr == nullptr) [[unlikely]]
+            return "";
+        return m_cstr;
+    }
+
+    [[nodiscard]]
     constexpr const char* data() const noexcept
     {
         return m_cstr;
