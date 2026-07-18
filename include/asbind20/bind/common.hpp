@@ -16,7 +16,6 @@
 #include "../meta.hpp"
 #include "../utility.hpp"
 #include "auxiliary.hpp"
-#include "../detail/calling_convention.hpp"
 #include "listener.hpp"
 
 namespace asbind20

@@ -1,7 +1,7 @@
-#ifndef ASBIND20_DETAIL_CALLING_CONVENTION_HPP
-#define ASBIND20_DETAIL_CALLING_CONVENTION_HPP
+#ifndef ASBIND20_BIND_CALLING_CONVENTION_HPP
+#define ASBIND20_BIND_CALLING_CONVENTION_HPP
 
-#include "include_as.hpp"
+#include "../detail/include_as.hpp"
 
 namespace asbind20::detail
 {

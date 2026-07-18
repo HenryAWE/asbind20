@@ -2,7 +2,7 @@
 #define ASBIND20_FUNCTION_TOOLS_HPP
 
 #include <functional>
-#include "../detail/calling_convention.hpp"
+#include "calling_convention.hpp"
 #include "genfunc.hpp"
 #include "../meta.hpp"
 

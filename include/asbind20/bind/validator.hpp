@@ -12,7 +12,7 @@
 #include <concepts>
 #include <type_traits>
 #include "../meta.hpp"
-#include "../detail/calling_convention.hpp"
+#include "calling_convention.hpp"
 
 namespace asbind20::detail
 {
