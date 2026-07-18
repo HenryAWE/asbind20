@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <new>
 #include <string>
 #include "../detail/config.hpp"
 #include "../fwd.hpp"
@@ -106,10 +107,44 @@ public:
         }
     }
 
+    extract_string_result& operator=(extract_string_result&& other) noexcept
+    {
+        extract_string_result tmp(std::move(other));
+        swap(tmp);
+        return *this;
+    }
+
     ~extract_string_result()
     {
         if(has_value())
             std::destroy_at(&m_value);
+    }
+
+    void swap(extract_string_result& other) noexcept
+    {
+        if(this == &other)
+            return;
+
+        using std::swap;
+        if(has_value() && other.has_value())
+        {
+            swap(m_value, other.m_value);
+            swap(m_error, other.m_error);
+        }
+        else if(has_value())
+        {
+            new(&other.m_value) value_type(std::move(m_value));
+            std::destroy_at(&m_value);
+            swap(m_error, other.m_error);
+        }
+        else if(other.has_value())
+        {
+            other.swap(*this);
+        }
+        else
+        {
+            swap(m_error, other.m_error);
+        }
     }
 
     explicit extract_string_result(std::string str)
@@ -171,6 +206,11 @@ private:
         asbind20::detail::throw_<bad_extract_string_result_access>(m_error);
     }
 };
+
+inline void swap(extract_string_result& lhs, extract_string_result& rhs) noexcept
+{
+    lhs.swap(rhs);
+}
 
 /**
  * @brief Extracts the contents from a script string without knowing the underlying type
