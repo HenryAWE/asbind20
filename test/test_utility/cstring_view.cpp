@@ -13,13 +13,17 @@ TEST(CStringView, Constructor)
     {
         cstring_ref csv;
         EXPECT_EQ(csv.c_str(), nullptr);
+        EXPECT_STREQ(csv.safe_c_str(), "");
         EXPECT_EQ(csv.size(), 0);
+        EXPECT_FALSE(csv);
     }
 
     {
         cstring_ref csv = "";
         EXPECT_STREQ(csv.c_str(), "");
+        EXPECT_STREQ(csv.safe_c_str(), "");
         EXPECT_EQ(csv.size(), 0);
+        EXPECT_TRUE(csv);
     }
 
     {

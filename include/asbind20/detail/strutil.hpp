@@ -73,6 +73,11 @@ public:
         return lhs == std::string_view(rhs);
     }
 
+    explicit operator bool() const noexcept
+    {
+        return m_cstr != nullptr;
+    }
+
     /**
      * @warning The cost of this function is O(n) !
      */

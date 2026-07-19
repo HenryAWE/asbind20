@@ -9,8 +9,9 @@
 
 #pragma once
 
+#include <string>
 #include "../fwd.hpp"
-#include "../detail/strutil.hpp"
+#include "../utility.hpp"
 
 namespace asbind20::debugging
 {
@@ -48,6 +49,34 @@ public:
     int column() const noexcept
     {
         return m_column;
+    }
+
+    [[nodiscard]]
+    std::string description() const
+    {
+        if(m_function_name)
+        {
+            return string_concat(
+                m_section_name,
+                '(',
+                std::to_string(m_line),
+                ':',
+                std::to_string(m_column),
+                "): ",
+                m_function_name
+            );
+        }
+        else
+        {
+            return string_concat(
+                m_section_name,
+                '(',
+                std::to_string(m_line),
+                ':',
+                std::to_string(m_column),
+                ')'
+            );
+        }
     }
 
 #ifdef ASBIND20_HAS_SCRIPT_FUNCTION_GET_DECLARED_AT
