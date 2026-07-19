@@ -497,8 +497,9 @@ public:
 
     script_engine& operator=(script_engine&& other) noexcept
     {
-        if(this != &other)
-            reset(other.release());
+        if(this == &other)
+            return *this;
+        reset(other.release());
         return *this;
     }
 
@@ -786,15 +787,17 @@ public:
 
     script_typeinfo& operator=(const script_typeinfo& other) noexcept
     {
-        if(this != &other)
-            reset(other.m_ti);
+        if(this == &other)
+            return *this;
+        reset(other.m_ti);
         return *this;
     }
 
     script_typeinfo& operator=(script_typeinfo&& other) noexcept
     {
-        if(this != &other)
-            reset(other.release());
+        if(this == &other)
+            return *this;
+        reset(other.release());
         return *this;
     }
 
