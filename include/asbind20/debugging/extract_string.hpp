@@ -65,6 +65,9 @@ private:
 class extract_string_result
 {
     friend extract_string_result extract_string(
+        const_string_factory_reference factory, const void* str
+    );
+    friend extract_string_result extract_string(
         const_string_factory_pointer factory, const void* str
     );
 
@@ -234,22 +237,18 @@ inline void swap(extract_string_result& lhs, extract_string_result& rhs) noexcep
  */
 [[nodiscard]]
 inline extract_string_result extract_string(
-    const_string_factory_pointer factory, const void* str
+    const_string_factory_reference factory, const void* str
 )
 {
-    if(!factory) [[unlikely]]
-        return extract_string_result(AS_NAMESPACE_QUALIFIER asINVALID_ARG);
-
     std::string result;
     AS_NAMESPACE_QUALIFIER asUINT sz = 0;
 
-    int r = factory->GetRawStringData(str, nullptr, &sz);
+    int r = factory.GetRawStringData(str, nullptr, &sz);
     if(r < 0) [[unlikely]]
         goto bad_result;
 
     result.resize(sz);
-
-    r = factory->GetRawStringData(str, result.data(), nullptr);
+    r = factory.GetRawStringData(str, result.data(), nullptr);
     if(r < 0) [[unlikely]]
         goto bad_result;
 
@@ -265,10 +264,13 @@ bad_result:
 
 [[nodiscard]]
 inline extract_string_result extract_string(
-    const_string_factory_reference factory, const void* str
+    const_string_factory_pointer factory, const void* str
 )
 {
-    return extract_string(std::addressof(factory), str);
+    if(!factory) [[unlikely]]
+        return extract_string_result(AS_NAMESPACE_QUALIFIER asINVALID_ARG);
+
+    return extract_string(*factory, str);
 }
 
 #ifdef ASBIND20_HAS_GET_STRING_FACTORY
