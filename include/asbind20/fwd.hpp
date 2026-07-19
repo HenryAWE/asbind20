@@ -40,6 +40,13 @@ inline namespace script_type
     using function_pointer = AS_NAMESPACE_QUALIFIER asIScriptFunction*;
     using const_function_pointer = AS_NAMESPACE_QUALIFIER asIScriptFunction const*;
 
+    using object_reference = AS_NAMESPACE_QUALIFIER asIScriptObject&;
+    using const_object_reference = AS_NAMESPACE_QUALIFIER asIScriptObject const&;
+    using typeinfo_reference = AS_NAMESPACE_QUALIFIER asITypeInfo&;
+    using const_typeinfo_reference = AS_NAMESPACE_QUALIFIER asITypeInfo const&;
+    using function_reference = AS_NAMESPACE_QUALIFIER asIScriptFunction&;
+    using const_function_reference = AS_NAMESPACE_QUALIFIER asIScriptFunction const&;
+
     using generic_function = AS_NAMESPACE_QUALIFIER asGENFUNC_t;
 } // namespace script_type
 

@@ -8,22 +8,26 @@
 #endif
 #include <iterator>
 #include <iostream>
-#include "../detail/include_as.hpp"
+#include "../fwd.hpp"
 
 namespace asbind20::debugging
 {
 using bytecode_span = std::span<const AS_NAMESPACE_QUALIFIER asDWORD>;
 
 [[nodiscard]]
-inline bytecode_span get_bytecode(
-    function_pointer f
-)
+inline bytecode_span get_bytecode(function_reference f)
+{
+    AS_NAMESPACE_QUALIFIER asUINT len = 0;
+    const auto* pbc = f.GetByteCode(&len);
+    return {pbc, len};
+}
+
+[[nodiscard]]
+inline bytecode_span get_bytecode(function_pointer f)
 {
     if(!f) [[unlikely]]
         return {};
-    AS_NAMESPACE_QUALIFIER asUINT len;
-    const auto* pbc = f->GetByteCode(&len);
-    return {pbc, len};
+    return get_bytecode(*f);
 }
 
 #ifdef ASBIND20_HAS_LIB_FORMAT
@@ -51,7 +55,7 @@ std::pair<OutputIt, int> dump_single_bytecode(
     default:
     case asBCTYPE_NO_ARG:
         out = std::copy(
-            std::begin(name), std::end(name), out
+            name.cbegin(), name.cend(), out
         );
         break;
 
@@ -186,6 +190,22 @@ inline std::ostream& print_bytecode(
         sep
     );
     return os;
+}
+
+inline std::ostream& print_bytecode(
+    std::ostream& os, function_reference func, char sep = '\n'
+)
+{
+    return print_bytecode(os, get_bytecode(func), sep);
+}
+
+inline std::ostream& print_bytecode(
+    std::ostream& os, function_pointer func, char sep = '\n'
+)
+{
+    if(!func) [[unlikely]]
+        return os;
+    return print_bytecode(os, *func, sep);
 }
 
 #endif
