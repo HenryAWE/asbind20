@@ -487,8 +487,8 @@ public:
 
     script_engine(const script_engine&) = delete;
 
-    script_engine(script_engine&&) noexcept
-        : m_engine(std::exchange(m_engine, nullptr)) {}
+    script_engine(script_engine&& other) noexcept
+        : m_engine(std::exchange(other.m_engine, nullptr)) {}
 
     explicit script_engine(handle_type engine) noexcept
         : m_engine(engine) {}
