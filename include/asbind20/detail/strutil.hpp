@@ -63,6 +63,16 @@ public:
         return lhs == std::string_view(rhs);
     }
 
+    constexpr friend bool operator==(cstring_ref lhs, const std::string& rhs) noexcept
+    {
+        return std::string_view(lhs) == std::string_view(rhs);
+    }
+
+    constexpr friend bool operator==(const std::string& lhs, cstring_ref rhs) noexcept
+    {
+        return std::string_view(lhs) == std::string_view(rhs);
+    }
+
     constexpr friend bool operator==(cstring_ref lhs, const char* rhs) noexcept
     {
         return std::string_view(lhs) == rhs;
