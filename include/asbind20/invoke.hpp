@@ -70,7 +70,7 @@ decltype(auto) get_script_return(context_pointer ctx)
     {
         using primitive_t = typename std::conditional_t<
             std::is_enum_v<std::remove_cvref_t<T>>,
-            int,
+            compat::script_enum_value_type,
             std::remove_cvref_t<T>>;
         if constexpr(std::integral<primitive_t>)
         {
@@ -658,6 +658,8 @@ int set_script_arg(
     }
     else
     {
+        // Keep casting to int even in new AS version,
+        // otherwise AS will report error.
         return set_script_arg(ctx, idx, static_cast<int>(val));
     }
 }

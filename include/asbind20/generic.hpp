@@ -122,7 +122,7 @@ T get_generic_arg(
     }
     else if constexpr(std::is_enum_v<T>)
     {
-        return static_cast<T>(get_generic_arg<int>(gen, idx));
+        return static_cast<T>(get_generic_arg<compat::script_enum_value_type>(gen, idx));
     }
     else if constexpr(std::integral<T>)
     {
@@ -199,7 +199,7 @@ void set_generic_return(
     }
     else if constexpr(std::is_enum_v<Return>)
     {
-        set_generic_return<int>(gen, static_cast<int>(ret));
+        set_generic_return<compat::script_enum_value_type>(gen, static_cast<compat::script_enum_value_type>(ret));
     }
     else if constexpr(std::integral<Return>)
     {
