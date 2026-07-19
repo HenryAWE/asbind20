@@ -23,21 +23,35 @@ namespace asbind20::io
  * @return AngelScript error code
  */
 inline int load_string(
+    module_reference m,
+    cstring_ref section_name,
+    std::string_view code,
+    int line_offset = 0
+)
+{
+    return m.AddScriptSection(
+        section_name.c_str(),
+        code.data(),
+        code.size(),
+        line_offset
+    );
+}
+
+/**
+ * @brief Load a string as script section
+ *
+ * @return AngelScript error code
+ */
+inline int load_string(
     module_pointer m,
-    const char* section_name,
+    cstring_ref section_name,
     std::string_view code,
     int line_offset = 0
 )
 {
     if(!m) [[unlikely]]
         return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
-
-    return m->AddScriptSection(
-        section_name,
-        code.data(),
-        code.size(),
-        line_offset
-    );
+    return load_string(*m, section_name, code, line_offset);
 }
 
 /**
@@ -46,14 +60,11 @@ inline int load_string(
  * @return AngelScript error code
  */
 inline int load_file(
-    module_pointer m,
+    module_reference m,
     const std::filesystem::path& filename,
     std::ios_base::openmode mode = std::ios_base::in
 )
 {
-    if(!m) [[unlikely]]
-        return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
-
     std::string code;
     {
         std::ifstream ifs(filename, std::ios_base::in | mode);
@@ -72,6 +83,22 @@ inline int load_file(
         reinterpret_cast<const char*>(section_name.c_str()),
         code
     );
+}
+
+/**
+ * @brief Load a file as script section
+ *
+ * @return AngelScript error code
+ */
+inline int load_file(
+    module_pointer m,
+    const std::filesystem::path& filename,
+    std::ios_base::openmode mode = std::ios_base::in
+)
+{
+    if(!m) [[unlikely]]
+        return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
+    return load_file(*m, filename, mode);
 }
 } // namespace asbind20::io
 

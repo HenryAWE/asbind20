@@ -1042,17 +1042,13 @@ inline auto get_default_constructor(const_typeinfo_pointer ti)
 }
 
 [[nodiscard]]
-inline auto get_weakref_flag(const_typeinfo_pointer ti)
-    -> function_pointer
+inline function_pointer get_weakref_flag(const_typeinfo_reference ti)
 {
-    if(!ti) [[unlikely]]
-        return nullptr;
-
-    for(AS_NAMESPACE_QUALIFIER asUINT i = 0; i < ti->GetBehaviourCount(); ++i)
+    for(AS_NAMESPACE_QUALIFIER asUINT i = 0; i < ti.GetBehaviourCount(); ++i)
     {
         AS_NAMESPACE_QUALIFIER asEBehaviours beh;
         function_pointer func =
-            ti->GetBehaviourByIndex(i, &beh);
+            ti.GetBehaviourByIndex(i, &beh);
         if(beh == AS_NAMESPACE_QUALIFIER asBEHAVE_GET_WEAKREF_FLAG)
         {
             if(func->GetParamCount() == 0)
@@ -1061,6 +1057,14 @@ inline auto get_weakref_flag(const_typeinfo_pointer ti)
     }
 
     return nullptr;
+}
+
+[[nodiscard]]
+inline function_pointer get_weakref_flag(const_typeinfo_pointer ti)
+{
+    if(!ti) [[unlikely]]
+        return nullptr;
+    return get_weakref_flag(*ti);
 }
 
 [[nodiscard]]
