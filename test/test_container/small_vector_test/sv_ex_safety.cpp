@@ -20,8 +20,10 @@ TEST(SmallVector, ExceptionSafety)
         std::allocator<void>>;
 
     {
+        SCOPED_TRACE("instantly thorw");
+
         auto* ti = engine->GetTypeInfoByDecl("instantly_throw");
-        ASSERT_TRUE(ti);
+        ASSERT_NE(ti, nullptr);
 
         sv_type sv(ti);
 
@@ -33,8 +35,10 @@ TEST(SmallVector, ExceptionSafety)
     }
 
     {
+        SCOPED_TRACE("throw on copy");
+
         auto* ti = engine->GetTypeInfoByDecl("throw_on_copy");
-        ASSERT_TRUE(ti);
+        ASSERT_NE(ti, nullptr);
 
         sv_type sv(ti);
 

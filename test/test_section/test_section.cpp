@@ -50,6 +50,16 @@ public:
         EXPECT_EQ(result.value(), expected);
     }
 
+    static ::testing::AssertionResult check_load_result(int r)
+    {
+        if(r >= 0)
+            return ::testing::AssertionSuccess();
+
+        return ::testing::AssertionFailure()
+               << "r = "
+               << asbind20::to_string(static_cast<AS_NAMESPACE_QUALIFIER asERetCodes>(r));
+    }
+
 private:
     asbind20::script_engine m_engine;
 };
@@ -67,8 +77,7 @@ TEST_F(TestLoad, LoadStringView)
     std::string_view sv = "int func() { return 1013; }";
 
     int r = load_string(m, "LoadStringView", sv);
-    EXPECT_GE(r, 0)
-        << "r = " << asbind20::to_string(AS_NAMESPACE_QUALIFIER asERetCodes(r));
+    EXPECT_TRUE(check_load_result(r));
     ASSERT_GE(m->Build(), 0);
 
     auto f = get_func(m);
@@ -89,13 +98,12 @@ TEST_F(TestLoad, LoadString)
     std::string str = "int func() { return " + std::to_string(1013) + "; }";
 
     int r = load_string(m, "LoadString", str);
-    EXPECT_GE(r, 0)
-        << "r = " << asbind20::to_string(AS_NAMESPACE_QUALIFIER asERetCodes(r));
+    EXPECT_TRUE(check_load_result(r));
     ASSERT_GE(m->Build(), 0);
 
     auto f = get_func(m);
-    EXPECT_STREQ(
-        asbind20::debugging::get_function_section_name(f).safe_c_str(),
+    EXPECT_EQ(
+        asbind20::debugging::get_function_section_name(f),
         "LoadString"
     );
     check_result(f, 1013);
@@ -111,13 +119,12 @@ TEST_F(TestLoad, LoadFile)
     std::string str = "int func() { return " + std::to_string(1013) + "; }";
 
     int r = load_file(m, "script/func.as");
-    EXPECT_GE(r, 0)
-        << "r = " << asbind20::to_string(AS_NAMESPACE_QUALIFIER asERetCodes(r));
+    EXPECT_TRUE(check_load_result(r));
     ASSERT_GE(m->Build(), 0);
 
     auto f = get_func(m);
-    EXPECT_STREQ(
-        asbind20::debugging::get_function_section_name(f).safe_c_str(),
+    EXPECT_EQ(
+        asbind20::debugging::get_function_section_name(f),
         "script/func.as"
     );
     check_result(f, 1013);
