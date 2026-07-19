@@ -96,7 +96,7 @@ public:
 
     explicit operator std::string() const
     {
-        std::stringstream ss;
+        std::ostringstream ss;
         ss << '(' << elements[0] << ", " << elements[1] << ')';
         return std::move(ss).str();
     }

@@ -9,11 +9,15 @@ Changelog since the version 1.5.0.
 Update
 ~~~~~~
 
-- More utilities
+- More utilities.
+
+- Some interfaces now have overloads taking reference as parameter.
 
 - Bring back GCC 12 support.
 
 - More debugging tools.
+
+- Update compatibility across different AngelScript versions, including the 2.39 WIP.
 
 Bug fix
 ~~~~~~~

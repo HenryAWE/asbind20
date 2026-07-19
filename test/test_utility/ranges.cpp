@@ -205,7 +205,7 @@ TEST(Ranges, AllEnumValuesWithStdView)
     );
 }
 
-#    ifdef ASBIND20_HAS_ENUM_UNDERLYING_TYPE
+#    ifdef ASBIND20_HAS_SCRIPT_ENUM_UNDERLYING_TYPE
 
 TEST(Ranges, AllEnumValuesCustomUnderlying)
 {
@@ -372,7 +372,7 @@ static std::string proc_args(asbind20::generic_pointer gen)
                     return;
                 }
 
-                std::stringstream ss;
+                std::ostringstream ss;
                 ss << *p;
 
                 result += std::move(ss).str();

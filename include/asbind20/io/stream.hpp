@@ -218,14 +218,31 @@ namespace io
  */
 inline int save_byte_code(
     std::ostream& os,
+    module_reference m,
+    bool strip_debug_info = false
+)
+{
+    io::ostream_wrapper wrapper(os);
+    return m.SaveByteCode(&wrapper, strip_debug_info);
+}
+
+/**
+ * @brief Save byte code to `std::ostream`
+ *
+ * @param os Output stream
+ * @param m Script module to save
+ * @param strip_debug_info Strip debug information
+ * @return Result of `asIScriptModule::SaveByteCode`
+ */
+inline int save_byte_code(
+    std::ostream& os,
     module_pointer m,
     bool strip_debug_info = false
 )
 {
     if(!m) [[unlikely]]
         return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
-    io::ostream_wrapper wrapper(os);
-    return m->SaveByteCode(&wrapper, strip_debug_info);
+    return save_byte_code(os, *m, strip_debug_info);
 }
 
 /**
@@ -242,14 +259,42 @@ inline int save_byte_code(
 template <typename OutputIteratorValueType = std::byte>
 int save_byte_code(
     std::output_iterator<OutputIteratorValueType> auto out,
+    module_reference m,
+    bool strip_debug_info = false
+)
+{
+    io::copy_to<decltype(out), OutputIteratorValueType> wrapper(std::move(out));
+    return m.SaveByteCode(&wrapper, strip_debug_info);
+}
+
+template <typename OutputIteratorValueType = std::byte>
+int save_byte_code(
+    std::output_iterator<OutputIteratorValueType> auto out,
     module_pointer m,
     bool strip_debug_info = false
 )
 {
     if(!m) [[unlikely]]
         return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
-    io::copy_to<decltype(out), OutputIteratorValueType> wrapper(std::move(out));
-    return m->SaveByteCode(&wrapper, strip_debug_info);
+    return save_byte_code<OutputIteratorValueType>(std::move(out), *m, strip_debug_info);
+}
+
+/**
+ * @brief Load byte code from `std::istream`
+ *
+ * @param is Input stream
+ * @param m Script module
+ * @return Loading result
+ */
+inline io::load_byte_code_result load_byte_code(
+    std::istream& is,
+    module_reference m
+)
+{
+    io::istream_wrapper wrapper(is);
+    bool debug_info_stripped;
+    int r = m.LoadByteCode(&wrapper, &debug_info_stripped);
+    return {r, debug_info_stripped};
 }
 
 /**
@@ -266,9 +311,26 @@ inline io::load_byte_code_result load_byte_code(
 {
     if(!m) [[unlikely]]
         return {AS_NAMESPACE_QUALIFIER asINVALID_ARG, false};
-    io::istream_wrapper wrapper(is);
+    return load_byte_code(is, *m);
+}
+
+/**
+ * @brief Load byte code from memory buffer
+ *
+ * @param mem Memory buffer
+ * @param size Buffer size
+ * @param m Script module
+ * @return Loading result
+ */
+inline io::load_byte_code_result load_byte_code(
+    const void* mem,
+    std::size_t size,
+    module_reference m
+)
+{
+    io::memory_reader wrapper(mem, size);
     bool debug_info_stripped;
-    int r = m->LoadByteCode(&wrapper, &debug_info_stripped);
+    int r = m.LoadByteCode(&wrapper, &debug_info_stripped);
     return {r, debug_info_stripped};
 }
 
@@ -288,10 +350,15 @@ inline io::load_byte_code_result load_byte_code(
 {
     if(!m) [[unlikely]]
         return {AS_NAMESPACE_QUALIFIER asINVALID_ARG, false};
-    io::memory_reader wrapper(mem, size);
-    bool debug_info_stripped;
-    int r = m->LoadByteCode(&wrapper, &debug_info_stripped);
-    return {r, debug_info_stripped};
+    return load_byte_code(mem, size, *m);
+}
+
+inline io::load_byte_code_result load_byte_code(
+    std::span<const std::byte> mem,
+    module_reference m
+)
+{
+    return load_byte_code(mem.data(), mem.size_bytes(), m);
 }
 
 inline io::load_byte_code_result load_byte_code(
@@ -299,7 +366,9 @@ inline io::load_byte_code_result load_byte_code(
     module_pointer m
 )
 {
-    return load_byte_code(mem.data(), mem.size_bytes(), m);
+    if(!m) [[unlikely]]
+        return {AS_NAMESPACE_QUALIFIER asINVALID_ARG, false};
+    return load_byte_code(mem, *m);
 }
 
 /// @}

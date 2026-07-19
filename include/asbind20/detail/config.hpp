@@ -42,15 +42,17 @@
 #endif
 
 #if ANGELSCRIPT_VERSION >= 23800
+// AngelScript 2.38+ supports retrieving string factory from engine
+// via asIScriptEngine::GetStringFactory
+#    define ASBIND20_HAS_GET_STRING_FACTORY
+// `foreach` loop in script
 #    define ASBIND20_HAS_AS_FOREACH
+// Getting function declaration location
 #    define ASBIND20_HAS_SCRIPT_FUNCTION_GET_DECLARED_AT
 #endif
 
 #if ANGELSCRIPT_VERSION >= 23900
-#    define ASBIND20_HAS_ENUM_UNDERLYING_TYPE
-#endif
-
-#if ANGELSCRIPT_VERSION >= 23900
+#    define ASBIND20_HAS_SCRIPT_ENUM_UNDERLYING_TYPE
 #    define ASBIND20_HAS_THISCALL_OBJ_FOR_REF_BEHAVIOURS
 #endif
 

@@ -9,20 +9,16 @@
 
 #pragma once
 
-#include <cassert>
 #include <cstdint>
 #include <cstddef>
 #include <cstring>
 #include <string>
 #include <utility>
-#include <bit>
 #include <compare>
 #include <functional>
 #include <type_traits>
 #include <concepts>
-#include "detail/config.hpp" // IWYU pragma: export configs
 #include "fwd.hpp"
-#include "detail/compat.hpp"
 #include "detail/err_handler.hpp"
 #include "detail/strutil.hpp"
 #ifdef ASBIND20_HAS_LIB_FORMAT
@@ -83,99 +79,6 @@ struct fp_wrapper
  */
 template <native_function auto Function>
 constexpr inline fp_wrapper<Function> fp{};
-
-struct this_type_t
-{};
-
-/**
- * @brief Tag indicating current type. Its exact meaning depends on context.
- */
-inline constexpr this_type_t this_type{};
-
-template <typename T>
-class auxiliary_wrapper
-{
-public:
-    auxiliary_wrapper() = delete;
-    constexpr auxiliary_wrapper(const auxiliary_wrapper&) noexcept = default;
-
-    auxiliary_wrapper& operator=(const auxiliary_wrapper&) = delete;
-
-    explicit constexpr auxiliary_wrapper(const T* aux) noexcept
-        : m_aux(const_cast<T*>(aux)) {}
-
-    [[nodiscard]]
-    void* get_address() const noexcept
-    {
-        return m_aux;
-    }
-
-private:
-    T* m_aux;
-};
-
-// Default to void
-auxiliary_wrapper(std::nullptr_t) -> auxiliary_wrapper<void>;
-
-template <>
-class auxiliary_wrapper<this_type_t>
-{
-public:
-    auxiliary_wrapper() = delete;
-    constexpr auxiliary_wrapper(const auxiliary_wrapper&) noexcept = default;
-
-    auxiliary_wrapper& operator=(const auxiliary_wrapper&) = delete;
-
-    explicit constexpr auxiliary_wrapper(this_type_t) noexcept {};
-};
-
-template <typename T>
-[[nodiscard]]
-constexpr auto auxiliary(T& aux) noexcept
-{
-    using type = std::remove_cv_t<T>;
-    return auxiliary_wrapper<type>(std::addressof(aux));
-}
-
-template <typename T>
-[[nodiscard]]
-constexpr auto auxiliary(T* aux) noexcept
-{
-    using type = std::remove_cv_t<T>;
-    return auxiliary_wrapper<type>(aux);
-}
-
-[[nodiscard]]
-constexpr auxiliary_wrapper<void> auxiliary(std::nullptr_t) noexcept
-{
-    return auxiliary_wrapper<void>(nullptr);
-}
-
-[[nodiscard]]
-constexpr auxiliary_wrapper<this_type_t> auxiliary(this_type_t) noexcept
-{
-    return auxiliary_wrapper<this_type_t>(this_type);
-}
-
-// R-value reference will create dangling reference
-template <typename T>
-constexpr auto auxiliary(T&& aux)
-    -> auxiliary_wrapper<std::remove_cv_t<T>> = delete;
-
-/**
- * @brief Store a pointer-sized integer value as auxiliary object
- *
- * @note DO NOT use this unless you know what you are doing!
- *
- * @warning Only use this with the @b generic calling convention!
- *
- * @param val Integer value
- */
-[[nodiscard]]
-constexpr auxiliary_wrapper<void> aux_value(std::intptr_t val) noexcept
-{
-    return auxiliary_wrapper<void>(std::bit_cast<void*>(val));
-}
 
 template <std::size_t... Is>
 struct var_type_t : public std::index_sequence<Is...>
@@ -479,8 +382,7 @@ inline bool type_requires_gc(const_typeinfo_pointer ti)
         else
             return true;
     }
-    else if((flags & AS_NAMESPACE_QUALIFIER asOBJ_VALUE) &&
-            (flags & AS_NAMESPACE_QUALIFIER asOBJ_GC))
+    else if((flags & AS_NAMESPACE_QUALIFIER asOBJ_VALUE) && (flags & AS_NAMESPACE_QUALIFIER asOBJ_GC))
     {
         return true;
     }
@@ -1136,17 +1038,13 @@ inline auto get_default_constructor(const_typeinfo_pointer ti)
 }
 
 [[nodiscard]]
-inline auto get_weakref_flag(const_typeinfo_pointer ti)
-    -> function_pointer
+inline function_pointer get_weakref_flag(const_typeinfo_reference ti)
 {
-    if(!ti) [[unlikely]]
-        return nullptr;
-
-    for(AS_NAMESPACE_QUALIFIER asUINT i = 0; i < ti->GetBehaviourCount(); ++i)
+    for(AS_NAMESPACE_QUALIFIER asUINT i = 0; i < ti.GetBehaviourCount(); ++i)
     {
         AS_NAMESPACE_QUALIFIER asEBehaviours beh;
         function_pointer func =
-            ti->GetBehaviourByIndex(i, &beh);
+            ti.GetBehaviourByIndex(i, &beh);
         if(beh == AS_NAMESPACE_QUALIFIER asBEHAVE_GET_WEAKREF_FLAG)
         {
             if(func->GetParamCount() == 0)
@@ -1155,6 +1053,14 @@ inline auto get_weakref_flag(const_typeinfo_pointer ti)
     }
 
     return nullptr;
+}
+
+[[nodiscard]]
+inline function_pointer get_weakref_flag(const_typeinfo_pointer ti)
+{
+    if(!ti) [[unlikely]]
+        return nullptr;
+    return get_weakref_flag(*ti);
 }
 
 [[nodiscard]]
@@ -1282,7 +1188,7 @@ void format_script_exception(
 
 template <typename... Args>
 void format_script_exception_no_catch(
-    std::format_string<Args...> fmt, Args&&... args
+    io::format_string<Args...> fmt, Args&&... args
 )
 {
     vformat_script_exception(
@@ -1294,6 +1200,46 @@ void format_script_exception_no_catch(
 
 #endif
 
+[[nodiscard]]
+inline module_pointer get_module(
+    engine_reference engine,
+    cstring_ref module_name,
+    bool create_if_not_exists = false
+)
+{
+    AS_NAMESPACE_QUALIFIER asEGMFlags flag =
+        create_if_not_exists ? AS_NAMESPACE_QUALIFIER asGM_CREATE_IF_NOT_EXISTS :
+                               AS_NAMESPACE_QUALIFIER asGM_ONLY_IF_EXISTS;
+    return engine.GetModule(module_name.c_str(), flag);
+}
+
+[[nodiscard]]
+inline module_pointer get_module(
+    engine_pointer engine,
+    cstring_ref module_name,
+    bool create_if_not_exists = false
+)
+{
+    if(!engine) [[unlikely]]
+        return nullptr;
+
+    return get_module(*engine, module_name, create_if_not_exists);
+}
+
+[[nodiscard]]
+inline module_pointer create_module(
+    engine_reference engine,
+    cstring_ref module_name,
+    bool overwrite = true
+)
+{
+    AS_NAMESPACE_QUALIFIER asEGMFlags flag =
+        overwrite ? AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE :
+                    AS_NAMESPACE_QUALIFIER asGM_CREATE_IF_NOT_EXISTS;
+    return engine.GetModule(module_name.c_str(), flag);
+}
+
+[[nodiscard]]
 inline module_pointer create_module(
     engine_pointer engine,
     cstring_ref module_name,
@@ -1303,12 +1249,7 @@ inline module_pointer create_module(
     if(!engine) [[unlikely]]
         return nullptr;
 
-    AS_NAMESPACE_QUALIFIER asEGMFlags flag =
-        overwrite ? AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE :
-                    AS_NAMESPACE_QUALIFIER asGM_CREATE_IF_NOT_EXISTS;
-    return engine->GetModule(
-        module_name.c_str(), flag
-    );
+    return create_module(*engine, module_name, overwrite);
 }
 } // namespace asbind20
 

@@ -73,7 +73,7 @@ TEST_F(TestLoad, LoadStringView)
 
     auto f = get_func(m);
     EXPECT_STREQ(
-        asbind20::debugging::get_function_section_name(f),
+        asbind20::debugging::get_function_section_name(f).safe_c_str(),
         "LoadStringView"
     );
     check_result(f, 1013);
@@ -95,7 +95,7 @@ TEST_F(TestLoad, LoadString)
 
     auto f = get_func(m);
     EXPECT_STREQ(
-        asbind20::debugging::get_function_section_name(f),
+        asbind20::debugging::get_function_section_name(f).safe_c_str(),
         "LoadString"
     );
     check_result(f, 1013);
@@ -117,7 +117,7 @@ TEST_F(TestLoad, LoadFile)
 
     auto f = get_func(m);
     EXPECT_STREQ(
-        asbind20::debugging::get_function_section_name(f),
+        asbind20::debugging::get_function_section_name(f).safe_c_str(),
         "script/func.as"
     );
     check_result(f, 1013);

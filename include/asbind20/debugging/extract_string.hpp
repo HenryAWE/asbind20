@@ -9,22 +9,18 @@
 
 #pragma once
 
+#include <new>
 #include <string>
+#include "../detail/config.hpp"
 #include "../fwd.hpp"
 #include "../detail/err_handler.hpp"
 
 namespace asbind20::debugging
 {
-// AngelScript 2.38+ supports retrieving string factory from engine
-// asIScriptEngine::GetStringFactory
-#if ANGELSCRIPT_VERSION >= 23800
-#    define ASBIND20_HAS_GET_STRING_FACTORY
-#endif
-
 class extract_string_result;
 
 extract_string_result extract_string(
-    const AS_NAMESPACE_QUALIFIER asIStringFactory* factory, const void* str
+    const_string_factory_pointer factory, const void* str
 );
 
 #ifdef ASBIND20_HAS_GET_STRING_FACTORY
@@ -69,7 +65,10 @@ private:
 class extract_string_result
 {
     friend extract_string_result extract_string(
-        const AS_NAMESPACE_QUALIFIER asIStringFactory* factory, const void* str
+        const_string_factory_reference factory, const void* str
+    );
+    friend extract_string_result extract_string(
+        const_string_factory_pointer factory, const void* str
     );
 
 #ifdef ASBIND20_HAS_GET_STRING_FACTORY
@@ -89,7 +88,7 @@ private:
     explicit extract_string_result(error_type e) noexcept
         : m_error(e)
     {
-        assert(!has_value());
+        ASBIND20_ASSERT(!has_value());
     }
 
 public:
@@ -97,7 +96,7 @@ public:
         : m_error(other.m_error)
     {
         if(other.has_value())
-            new(m_data) value_type(*other);
+            new(&m_value) value_type(other.m_value);
     }
 
     extract_string_result(extract_string_result&& other) noexcept
@@ -105,22 +104,65 @@ public:
     {
         if(other.has_value())
         {
-            new(m_data) value_type(std::move(*other));
+            new(&m_value) value_type(std::move(other.m_value));
             other.m_error = AS_NAMESPACE_QUALIFIER asERROR;
-            std::destroy_at(other.ptr());
+            std::destroy_at(&other.m_value);
         }
+    }
+
+    extract_string_result& operator=(const extract_string_result& other)
+    {
+        if(this == &other)
+            return *this;
+        extract_string_result tmp(other);
+        swap(tmp);
+        return *this;
+    }
+
+    extract_string_result& operator=(extract_string_result&& other) noexcept
+    {
+        extract_string_result tmp(std::move(other));
+        swap(tmp);
+        return *this;
     }
 
     ~extract_string_result()
     {
         if(has_value())
-            std::destroy_at(ptr());
+            std::destroy_at(&m_value);
+    }
+
+    void swap(extract_string_result& other) noexcept
+    {
+        if(this == &other)
+            return;
+
+        using std::swap;
+        if(has_value() && other.has_value())
+        {
+            swap(m_value, other.m_value);
+            swap(m_error, other.m_error);
+        }
+        else if(has_value())
+        {
+            new(&other.m_value) value_type(std::move(m_value));
+            std::destroy_at(&m_value);
+            swap(m_error, other.m_error);
+        }
+        else if(other.has_value())
+        {
+            other.swap(*this);
+        }
+        else
+        {
+            swap(m_error, other.m_error);
+        }
     }
 
     explicit extract_string_result(std::string str)
         : m_error(AS_NAMESPACE_QUALIFIER asSUCCESS)
     {
-        new(m_data) std::string(std::move(str));
+        new(&m_value) std::string(std::move(str));
     }
 
     [[nodiscard]]
@@ -137,16 +179,17 @@ public:
 
     value_type& operator*() noexcept
     {
-        assert(has_value());
-        return *ptr();
+        ASBIND20_ASSERT(has_value());
+        return m_value;
     }
 
     const value_type& operator*() const noexcept
     {
-        assert(has_value());
-        return *ptr();
+        ASBIND20_ASSERT(has_value());
+        return m_value;
     }
 
+    [[nodiscard]]
     value_type& value()
     {
         if(!has_value())
@@ -154,6 +197,7 @@ public:
         return **this;
     }
 
+    [[nodiscard]]
     const value_type& value() const
     {
         if(!has_value())
@@ -162,7 +206,11 @@ public:
     }
 
 private:
-    alignas(value_type) std::byte m_data[sizeof(value_type)];
+    union
+    {
+        value_type m_value;
+    };
+
     error_type m_error;
 
     [[noreturn]]
@@ -170,17 +218,12 @@ private:
     {
         asbind20::detail::throw_<bad_extract_string_result_access>(m_error);
     }
-
-    value_type* ptr() noexcept
-    {
-        return reinterpret_cast<value_type*>(m_data);
-    }
-
-    const value_type* ptr() const noexcept
-    {
-        return reinterpret_cast<const value_type*>(m_data);
-    }
 };
+
+inline void swap(extract_string_result& lhs, extract_string_result& rhs) noexcept
+{
+    lhs.swap(rhs);
+}
 
 /**
  * @brief Extracts the contents from a script string without knowing the underlying type
@@ -194,22 +237,18 @@ private:
  */
 [[nodiscard]]
 inline extract_string_result extract_string(
-    const AS_NAMESPACE_QUALIFIER asIStringFactory* factory, const void* str
+    const_string_factory_reference factory, const void* str
 )
 {
-    if(!factory) [[unlikely]]
-        return extract_string_result(AS_NAMESPACE_QUALIFIER asINVALID_ARG);
-
     std::string result;
     AS_NAMESPACE_QUALIFIER asUINT sz = 0;
 
-    int r = factory->GetRawStringData(str, nullptr, &sz);
+    int r = factory.GetRawStringData(str, nullptr, &sz);
     if(r < 0) [[unlikely]]
         goto bad_result;
 
     result.resize(sz);
-
-    r = factory->GetRawStringData(str, result.data(), nullptr);
+    r = factory.GetRawStringData(str, result.data(), nullptr);
     if(r < 0) [[unlikely]]
         goto bad_result;
 
@@ -225,10 +264,13 @@ bad_result:
 
 [[nodiscard]]
 inline extract_string_result extract_string(
-    const AS_NAMESPACE_QUALIFIER asIStringFactory& factory, const void* str
+    const_string_factory_pointer factory, const void* str
 )
 {
-    return extract_string(std::addressof(factory), str);
+    if(!factory) [[unlikely]]
+        return extract_string_result(AS_NAMESPACE_QUALIFIER asINVALID_ARG);
+
+    return extract_string(*factory, str);
 }
 
 #ifdef ASBIND20_HAS_GET_STRING_FACTORY
@@ -241,7 +283,7 @@ inline extract_string_result extract_string(
     if(!engine) [[unlikely]]
         return extract_string_result(AS_NAMESPACE_QUALIFIER asINVALID_ARG);
 
-    AS_NAMESPACE_QUALIFIER asIStringFactory* factory;
+    string_factory_pointer factory;
     int r = engine->GetStringFactory(nullptr, &factory);
     if(r < 0) [[unlikely]]
     {

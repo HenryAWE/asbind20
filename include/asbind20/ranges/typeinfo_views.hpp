@@ -7,7 +7,6 @@
 #include "common.hpp"
 #include "../detail/strutil.hpp"
 #include "../detail/include_as.hpp"
-#include "../detail/compat.hpp"
 
 namespace asbind20::ranges
 {
@@ -346,7 +345,7 @@ class all_enum_values_view :
     public detail::view_interface<all_enum_values_view<UnderlyingType>>
 {
 public:
-#ifndef ASBIND20_HAS_ENUM_UNDERLYING_TYPE
+#ifndef ASBIND20_HAS_SCRIPT_ENUM_UNDERLYING_TYPE
     static_assert(
         std::same_as<UnderlyingType, int>,
         "Older AngelScript (<= 2.38) only allows int as underlying type of enum"

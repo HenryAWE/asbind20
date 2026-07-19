@@ -13,6 +13,7 @@
 #include <cassert>
 #include <string>
 #include <string_view>
+#include "config.hpp"
 
 namespace asbind20
 {
@@ -62,6 +63,16 @@ public:
         return lhs == std::string_view(rhs);
     }
 
+    constexpr friend bool operator==(cstring_ref lhs, const std::string& rhs) noexcept
+    {
+        return std::string_view(lhs) == std::string_view(rhs);
+    }
+
+    constexpr friend bool operator==(const std::string& lhs, cstring_ref rhs) noexcept
+    {
+        return std::string_view(lhs) == std::string_view(rhs);
+    }
+
     constexpr friend bool operator==(cstring_ref lhs, const char* rhs) noexcept
     {
         return std::string_view(lhs) == rhs;
@@ -70,6 +81,11 @@ public:
     constexpr friend bool operator==(const char* lhs, cstring_ref rhs) noexcept
     {
         return lhs == std::string_view(rhs);
+    }
+
+    explicit operator bool() const noexcept
+    {
+        return m_cstr != nullptr;
     }
 
     /**
@@ -86,6 +102,14 @@ public:
     [[nodiscard]]
     constexpr const char* c_str() const noexcept
     {
+        return m_cstr;
+    }
+
+    [[nodiscard]]
+    constexpr const char* safe_c_str() const noexcept
+    {
+        if(m_cstr == nullptr) [[unlikely]]
+            return "";
         return m_cstr;
     }
 
@@ -109,7 +133,7 @@ public:
 
     constexpr void remove_prefix(size_type n) noexcept
     {
-        assert(n <= size());
+        ASBIND20_ASSERT(n <= size());
         m_cstr += n;
     }
 

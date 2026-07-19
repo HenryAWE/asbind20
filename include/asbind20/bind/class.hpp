@@ -96,7 +96,7 @@ namespace detail
                 void* mem = gen->GetObject();
                 new(mem) Class(
                     get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
-                        gen, static_cast<gen_idx_t>(Is)
+                        gen, static_cast<arg_index_type>(Is)
                     )...
                 );
 
@@ -139,7 +139,7 @@ namespace detail
                 new(mem) Class(
                     get_generic_typeinfo(gen),
                     get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
-                        gen, static_cast<gen_idx_t>(Is) + 1
+                        gen, static_cast<arg_index_type>(Is) + 1
                     )...
                 );
 
@@ -505,7 +505,7 @@ namespace detail
                     auto* ptr = new Class(
                         get_generic_typeinfo(gen),
                         get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
-                            gen, static_cast<gen_idx_t>(Is) + 1
+                            gen, static_cast<arg_index_type>(Is) + 1
                         )...
                     );
                     gen->SetReturnAddress(ptr);
@@ -517,7 +517,7 @@ namespace detail
                 {
                     auto* ptr = new Class(
                         get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
-                            gen, static_cast<gen_idx_t>(Is)
+                            gen, static_cast<arg_index_type>(Is)
                         )...
                     );
                     gen->SetReturnAddress(ptr);
@@ -569,7 +569,7 @@ namespace detail
                 auto* ti = (typeinfo_pointer)gen->GetAuxiliary();
                 auto* ptr = new Class(
                     get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
-                        gen, static_cast<gen_idx_t>(Is)
+                        gen, static_cast<arg_index_type>(Is)
                     )...
                 );
                 ASBIND20_ASSERT(ti->GetEngine() == gen->GetEngine());
@@ -627,7 +627,7 @@ namespace detail
                 auto* ptr = new Class(
                     ti,
                     get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
-                        gen, static_cast<gen_idx_t>(Is) + 1
+                        gen, static_cast<arg_index_type>(Is) + 1
                     )...
                 );
 
@@ -1645,13 +1645,22 @@ protected:
     }
 
     void register_as_string(
-        AS_NAMESPACE_QUALIFIER asIStringFactory* factory
+        string_factory_reference factory
     )
     {
         [[maybe_unused]]
         int r = 0;
-        r = get_engine()->RegisterStringFactory(get_name().c_str(), factory);
+        r = get_engine()->RegisterStringFactory(
+            get_name().c_str(), std::addressof(factory)
+        );
         ASBIND20_ASSERT(r >= 0);
+    }
+
+    void register_as_string(
+        string_factory_pointer factory
+    )
+    {
+        this->register_as_string(*factory);
     }
 
 private:
@@ -2465,7 +2474,7 @@ public:
     }
 
     Derived& as_string(
-        AS_NAMESPACE_QUALIFIER asIStringFactory* str_factory
+        string_factory_pointer str_factory
     )
     {
         this->register_as_string(str_factory);

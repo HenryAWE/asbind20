@@ -23,20 +23,65 @@ namespace asbind20::io
  * @return AngelScript error code
  */
 inline int load_string(
+    module_reference m,
+    cstring_ref section_name,
+    std::string_view code,
+    int line_offset = 0
+)
+{
+    return m.AddScriptSection(
+        section_name.c_str(),
+        code.data(),
+        code.size(),
+        line_offset
+    );
+}
+
+/**
+ * @brief Load a string as script section
+ *
+ * @return AngelScript error code
+ */
+inline int load_string(
     module_pointer m,
-    const char* section_name,
+    cstring_ref section_name,
     std::string_view code,
     int line_offset = 0
 )
 {
     if(!m) [[unlikely]]
         return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
+    return load_string(*m, section_name, code, line_offset);
+}
 
-    return m->AddScriptSection(
-        section_name,
-        code.data(),
-        code.size(),
-        line_offset
+/**
+ * @brief Load a file as script section
+ *
+ * @return AngelScript error code
+ */
+inline int load_file(
+    module_reference m,
+    const std::filesystem::path& filename,
+    std::ios_base::openmode mode = std::ios_base::in
+)
+{
+    std::string code;
+    {
+        std::ifstream ifs(filename, std::ios_base::in | mode);
+        if(!ifs.good())
+            return AS_NAMESPACE_QUALIFIER asERROR;
+        std::ostringstream ss;
+        ss << ifs.rdbuf();
+        code = std::move(ss).str();
+    }
+
+    // Force UTF-8 encoding
+    // This can prevent some issues on Windows
+    auto section_name = filename.u8string();
+    return load_string(
+        m,
+        reinterpret_cast<const char*>(section_name.c_str()),
+        code
     );
 }
 
@@ -53,25 +98,7 @@ inline int load_file(
 {
     if(!m) [[unlikely]]
         return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
-
-    std::string code;
-    {
-        std::ifstream ifs(filename, std::ios_base::in | mode);
-        if(!ifs.good())
-            return AS_NAMESPACE_QUALIFIER asERROR;
-        std::stringstream ss;
-        ss << ifs.rdbuf();
-        code = std::move(ss).str();
-    }
-
-    // Force UTF-8 encoding
-    // This can prevent some issues on Windows
-    auto section_name = filename.u8string();
-    return load_string(
-        m,
-        reinterpret_cast<const char*>(section_name.c_str()),
-        code
-    );
+    return load_file(*m, filename, mode);
 }
 } // namespace asbind20::io
 

@@ -29,24 +29,36 @@ namespace asbind20::debugging
  *
  * This helper can handle the different interfaces for getting the section name across AngelScript versions.
  *
- * @param func Script function. It cannot be nullptr.
+ * @param func Script function.
  */
 [[nodiscard]]
-inline const char* get_function_section_name(
+inline cstring_ref get_function_section_name(
+    const_function_reference func
+)
+{
+#ifdef ASBIND20_HAS_SCRIPT_FUNCTION_GET_DECLARED_AT
+    const char* result = nullptr;
+    func.GetDeclaredAt(&result, nullptr, nullptr);
+    return result;
+
+#else
+    return func.GetScriptSectionName();
+#endif
+}
+
+/**
+ * @brief Get script section name of function
+ *
+ * @param func Script function.
+ */
+[[nodiscard]]
+inline cstring_ref get_function_section_name(
     const_function_pointer func
 )
 {
     if(!func) [[unlikely]]
-        return nullptr;
-
-#ifdef ASBIND20_HAS_SCRIPT_FUNCTION_GET_DECLARED_AT
-    const char* result = nullptr;
-    func->GetDeclaredAt(&result, nullptr, nullptr);
-    return result;
-
-#else
-    return func->GetScriptSectionName();
-#endif
+        return {};
+    return get_function_section_name(*func);
 }
 } // namespace asbind20::debugging
 

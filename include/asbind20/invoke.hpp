@@ -35,8 +35,8 @@ template <typename T>
 requires(!std::is_const_v<T>)
 decltype(auto) get_script_return(context_pointer ctx)
 {
-    assert(ctx != nullptr);
-    assert(ctx->GetState() == (AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED));
+    ASBIND20_ASSERT(ctx != nullptr);
+    ASBIND20_ASSERT(ctx->GetState() == (AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED));
 
     constexpr bool is_customized = requires() {
         { type_traits<T>::get_return(ctx) } -> std::convertible_to<T>;
@@ -70,7 +70,7 @@ decltype(auto) get_script_return(context_pointer ctx)
     {
         using primitive_t = typename std::conditional_t<
             std::is_enum_v<std::remove_cvref_t<T>>,
-            int,
+            compat::script_enum_value_type,
             std::remove_cvref_t<T>>;
         if constexpr(std::integral<primitive_t>)
         {
@@ -221,7 +221,7 @@ protected:
     ) noexcept
         : m_ctx(ctx)
     {
-        assert(m_ctx != nullptr);
+        ASBIND20_ASSERT(m_ctx != nullptr);
     }
 
     [[noreturn]]
@@ -281,7 +281,7 @@ public:
 
     return_type operator*() const
     {
-        assert(has_value());
+        ASBIND20_ASSERT(has_value());
         return get_script_return<T>(get_context());
     }
 
@@ -289,7 +289,7 @@ public:
     pointer_type operator->() const
         requires(detail::invoke_result_traits<return_type>::to_pointer_support)
     {
-        assert(has_value());
+        ASBIND20_ASSERT(has_value());
         if constexpr(!std::is_reference_v<return_type>)
             return static_cast<pointer_type>(**this);
         else
@@ -386,13 +386,13 @@ public:
 
     return_type operator*() const noexcept
     {
-        assert(has_value());
+        ASBIND20_ASSERT(has_value());
         return get_script_return<T&>(get_context());
     }
 
     pointer_type operator->() const noexcept
     {
-        assert(has_value());
+        ASBIND20_ASSERT(has_value());
         return std::addressof(**this);
     }
 
@@ -465,7 +465,7 @@ public:
 
     void operator*() const noexcept
     {
-        assert(has_value());
+        ASBIND20_ASSERT(has_value());
     }
 
     void value() const
@@ -605,7 +605,7 @@ std::partial_ordering operator<=>(const T& lhs, const script_invoke_result<U>& r
 template <typename T>
 int set_script_arg(
     context_pointer ctx,
-    AS_NAMESPACE_QUALIFIER asUINT idx,
+    arg_index_type idx,
     std::reference_wrapper<T> ref
 )
 {
@@ -615,7 +615,7 @@ int set_script_arg(
 template <std::integral T>
 int set_script_arg(
     context_pointer ctx,
-    AS_NAMESPACE_QUALIFIER asUINT idx,
+    arg_index_type idx,
     T val
 )
 {
@@ -632,7 +632,7 @@ int set_script_arg(
     else
     {
         void* addr = ctx->GetAddressOfArg(idx);
-        assert(addr != nullptr);
+        ASBIND20_ASSERT(addr != nullptr);
         new(addr) T(val);
         return AS_NAMESPACE_QUALIFIER asSUCCESS;
     }
@@ -642,7 +642,7 @@ template <typename Enum>
 requires std::is_enum_v<Enum>
 int set_script_arg(
     context_pointer ctx,
-    AS_NAMESPACE_QUALIFIER asUINT idx,
+    arg_index_type idx,
     Enum val
 )
 {
@@ -658,6 +658,8 @@ int set_script_arg(
     }
     else
     {
+        // Keep casting to int even in new AS version,
+        // otherwise AS will report error.
         return set_script_arg(ctx, idx, static_cast<int>(val));
     }
 }
@@ -665,7 +667,7 @@ int set_script_arg(
 template <std::floating_point T>
 int set_script_arg(
     context_pointer ctx,
-    AS_NAMESPACE_QUALIFIER asUINT idx,
+    arg_index_type idx,
     T val
 )
 {
@@ -681,7 +683,7 @@ int set_script_arg(
 
 inline int set_script_arg(
     context_pointer ctx,
-    AS_NAMESPACE_QUALIFIER asUINT idx,
+    arg_index_type idx,
     void* obj
 )
 {
@@ -690,7 +692,7 @@ inline int set_script_arg(
 
 inline int set_script_arg(
     context_pointer ctx,
-    AS_NAMESPACE_QUALIFIER asUINT idx,
+    arg_index_type idx,
     const void* obj
 )
 {
@@ -699,7 +701,7 @@ inline int set_script_arg(
 
 inline int set_script_arg(
     context_pointer ctx,
-    AS_NAMESPACE_QUALIFIER asUINT idx,
+    arg_index_type idx,
     object_pointer obj
 )
 {
@@ -708,7 +710,7 @@ inline int set_script_arg(
 
 inline int set_script_arg(
     context_pointer ctx,
-    AS_NAMESPACE_QUALIFIER asUINT idx,
+    arg_index_type idx,
     const_object_pointer obj
 )
 {
@@ -719,7 +721,7 @@ template <typename Class>
 requires std::is_class_v<std::remove_cvref_t<Class>>
 int set_script_arg(
     context_pointer ctx,
-    AS_NAMESPACE_QUALIFIER asUINT idx,
+    arg_index_type idx,
     Class&& obj
 )
 {
@@ -748,10 +750,10 @@ int set_script_arg(
 template <typename Tuple>
 void apply_script_args(context_pointer ctx, Tuple&& tp)
 {
-    [&]<AS_NAMESPACE_QUALIFIER asUINT... Idx>(std::integer_sequence<AS_NAMESPACE_QUALIFIER asUINT, Idx...>)
+    [&]<arg_index_type... Idx>(std::integer_sequence<arg_index_type, Idx...>)
     {
         (set_script_arg(ctx, Idx, std::get<Idx>(tp)), ...);
-    }(std::make_integer_sequence<AS_NAMESPACE_QUALIFIER asUINT, std::tuple_size_v<Tuple>>());
+    }(std::make_integer_sequence<arg_index_type, std::tuple_size_v<Tuple>>());
 }
 
 /**
@@ -779,13 +781,13 @@ script_invoke_result<R> script_invoke(
     Args&&... args
 )
 {
-    assert(func != nullptr);
-    assert(ctx != nullptr);
+    ASBIND20_ASSERT(func != nullptr);
+    ASBIND20_ASSERT(ctx != nullptr);
 
     [[maybe_unused]]
     int r = 0;
     r = ctx->Prepare(func);
-    assert(r >= 0);
+    ASBIND20_ASSERT(r >= 0);
 
     apply_script_args(ctx, std::forward_as_tuple(args...));
 
@@ -828,15 +830,15 @@ script_invoke_result<R> script_invoke(
     Args&&... args
 )
 {
-    assert(func != nullptr);
-    assert(ctx != nullptr);
+    ASBIND20_ASSERT(func != nullptr);
+    ASBIND20_ASSERT(ctx != nullptr);
 
     [[maybe_unused]]
     int r = 0;
     r = ctx->Prepare(func);
-    assert(r >= 0);
+    ASBIND20_ASSERT(r >= 0);
     r = set_script_object(ctx, std::forward<Object>(obj));
-    assert(r >= 0);
+    ASBIND20_ASSERT(r >= 0);
 
     apply_script_args(ctx, std::forward_as_tuple(std::forward<Args>(args)...));
 

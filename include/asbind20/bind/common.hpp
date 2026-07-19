@@ -15,7 +15,7 @@
 #include <concepts>
 #include "../meta.hpp"
 #include "../utility.hpp"
-#include "../detail/calling_convention.hpp"
+#include "auxiliary.hpp"
 #include "listener.hpp"
 
 namespace asbind20
@@ -79,19 +79,6 @@ namespace detail
         else
             return AS_NAMESPACE_QUALIFIER asFunctionPtr(f);
     }
-
-    // Helper for retrieving actual auxiliary type from the helper
-    template <typename Auxiliary>
-    struct auxiliary_traits
-    {
-        using value_type = Auxiliary;
-    };
-
-    template <>
-    struct auxiliary_traits<this_type_t>
-    {
-        using value_type = AS_NAMESPACE_QUALIFIER asITypeInfo;
-    };
 
     template <typename FuncSig>
     requires(!std::is_member_function_pointer_v<FuncSig>)

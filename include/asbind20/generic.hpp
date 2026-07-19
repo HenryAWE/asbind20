@@ -65,7 +65,7 @@ auto get_generic_auxiliary(generic_pointer gen)
  * @brief Get the hidden type information argument for template classes
  */
 inline typeinfo_pointer get_generic_typeinfo(
-    generic_pointer gen, AS_NAMESPACE_QUALIFIER asUINT idx = 0
+    generic_pointer gen, arg_index_type idx = 0
 )
 {
     return *static_cast<typeinfo_pointer*>(
@@ -76,7 +76,7 @@ inline typeinfo_pointer get_generic_typeinfo(
 template <typename T>
 T get_generic_arg(
     generic_pointer gen,
-    AS_NAMESPACE_QUALIFIER asUINT idx
+    arg_index_type idx
 )
 {
     constexpr bool is_customized = requires() {
@@ -122,7 +122,7 @@ T get_generic_arg(
     }
     else if constexpr(std::is_enum_v<T>)
     {
-        return static_cast<T>(get_generic_arg<int>(gen, idx));
+        return static_cast<T>(get_generic_arg<compat::script_enum_value_type>(gen, idx));
     }
     else if constexpr(std::integral<T>)
     {
@@ -199,7 +199,7 @@ void set_generic_return(
     }
     else if constexpr(std::is_enum_v<Return>)
     {
-        set_generic_return<int>(gen, static_cast<int>(ret));
+        set_generic_return<compat::script_enum_value_type>(gen, static_cast<compat::script_enum_value_type>(ret));
     }
     else if constexpr(std::integral<Return>)
     {

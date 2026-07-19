@@ -24,7 +24,7 @@ struct type_traits
 template <typename T>
 T get_generic_arg(
     generic_pointer gen,
-    AS_NAMESPACE_QUALIFIER asUINT idx
+    arg_index_type idx
 );
 
 template <typename Return>
@@ -40,7 +40,7 @@ decltype(auto) get_script_return(context_pointer ctx);
 template <std::integral T>
 int set_script_arg(
     context_pointer ctx,
-    AS_NAMESPACE_QUALIFIER asUINT idx,
+    arg_index_type idx,
     T val
 );
 
@@ -55,7 +55,7 @@ struct underlying_enum_traits
 
     static int set_arg(
         context_pointer ctx,
-        AS_NAMESPACE_QUALIFIER asUINT arg,
+        arg_index_type arg,
         Enum val
     )
     {
@@ -64,7 +64,7 @@ struct underlying_enum_traits
 
     static Enum get_arg(
         generic_pointer gen,
-        AS_NAMESPACE_QUALIFIER asUINT arg
+        arg_index_type arg
     )
     {
         return static_cast<Enum>(get_generic_arg<underlying_type>(gen, arg));
@@ -94,7 +94,7 @@ struct type_traits<script_object>
 {
     static int set_arg(
         context_pointer ctx,
-        AS_NAMESPACE_QUALIFIER asUINT arg,
+        arg_index_type arg,
         const script_object& val
     )
     {
@@ -103,7 +103,7 @@ struct type_traits<script_object>
 
     static script_object get_arg(
         generic_pointer gen,
-        AS_NAMESPACE_QUALIFIER asUINT arg
+        arg_index_type arg
     )
     {
         return script_object(

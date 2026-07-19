@@ -10,7 +10,11 @@
 #pragma once
 
 #include <tuple>
-#include "../detail/include_as.hpp"
+#include <string>
+#include <string_view>
+#include "../detail/config.hpp"
+#include "../fwd.hpp"
+#include "../utility.hpp"
 
 namespace asbind20::debugging
 {
@@ -55,6 +59,26 @@ struct gc_statistics
         value_type,
         value_type>;
 
+    constexpr value_type operator[](std::size_t index) const noexcept
+    {
+        ASBIND20_ASSERT(index < 5);
+        switch(index)
+        {
+        case 0:
+            return current_size;
+        case 1:
+            return total_destroyed;
+        case 2:
+            return total_detected;
+        case 3:
+            return new_objects;
+        case 4:
+            return total_new_destroyed;
+        [[unlikely]] default:
+            return 0;
+        }
+    }
+
     explicit operator tuple_type() const noexcept
     {
         return {
@@ -65,12 +89,57 @@ struct gc_statistics
             total_new_destroyed
         };
     }
+
+    [[nodiscard]]
+    std::string description(std::string_view sep = "; ") const
+    {
+        using namespace std::string_view_literals;
+        using std::to_string;
+
+        return string_concat(
+            "current size: "sv,
+            to_string(current_size),
+            sep,
+            "total destroyed: "sv,
+            to_string(total_destroyed),
+            sep,
+            "total detected: "sv,
+            to_string(total_detected),
+            sep,
+            "new objects: "sv,
+            to_string(new_objects),
+            sep,
+            "total new destroyed: "sv,
+            to_string(total_new_destroyed)
+        );
+    }
 };
 
 /**
  * @brief Get the GC statistics
  *
- * @param engine Script engine. It cannot be nullptr.
+ * @param engine Script engine.
+ */
+[[nodiscard]]
+inline gc_statistics get_gc_statistics(
+    const_engine_reference engine
+)
+{
+    gc_statistics result;
+    engine.GetGCStatistics(
+        &result.current_size,
+        &result.total_destroyed,
+        &result.total_detected,
+        &result.new_objects,
+        &result.total_new_destroyed
+    );
+    return result;
+}
+
+/**
+ * @brief Get the GC statistics
+ *
+ * @param engine Script engine.
  */
 [[nodiscard]]
 inline gc_statistics get_gc_statistics(
@@ -80,15 +149,7 @@ inline gc_statistics get_gc_statistics(
     if(!engine) [[unlikely]]
         return {};
 
-    gc_statistics result;
-    engine->GetGCStatistics(
-        &result.current_size,
-        &result.total_destroyed,
-        &result.total_detected,
-        &result.new_objects,
-        &result.total_new_destroyed
-    );
-    return result;
+    return get_gc_statistics(*engine);
 }
 } // namespace asbind20::debugging
 

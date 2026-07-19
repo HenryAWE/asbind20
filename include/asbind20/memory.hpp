@@ -487,8 +487,8 @@ public:
 
     script_engine(const script_engine&) = delete;
 
-    script_engine(script_engine&&) noexcept
-        : m_engine(std::exchange(m_engine, nullptr)) {}
+    script_engine(script_engine&& other) noexcept
+        : m_engine(std::exchange(other.m_engine, nullptr)) {}
 
     explicit script_engine(handle_type engine) noexcept
         : m_engine(engine) {}
@@ -497,8 +497,9 @@ public:
 
     script_engine& operator=(script_engine&& other) noexcept
     {
-        if(this != &other)
-            reset(other.release());
+        if(this == &other)
+            return *this;
+        reset(other.release());
         return *this;
     }
 
@@ -786,15 +787,17 @@ public:
 
     script_typeinfo& operator=(const script_typeinfo& other) noexcept
     {
-        if(this != &other)
-            reset(other.m_ti);
+        if(this == &other)
+            return *this;
+        reset(other.m_ti);
         return *this;
     }
 
     script_typeinfo& operator=(script_typeinfo&& other) noexcept
     {
-        if(this != &other)
-            reset(other.release());
+        if(this == &other)
+            return *this;
+        reset(other.release());
         return *this;
     }
 

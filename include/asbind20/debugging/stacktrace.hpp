@@ -13,6 +13,8 @@
 
 namespace asbind20::debugging
 {
+using stack_level_type = AS_NAMESPACE_QUALIFIER asUINT;
+
 class stacktrace_entry;
 template <typename Allocator>
 class basic_stacktrace;
@@ -21,20 +23,23 @@ using stacktrace = basic_stacktrace<std::allocator<stacktrace_entry>>;
 
 class stacktrace_entry
 {
-    template <typename Allocator>
-    friend class basic_stacktrace;
-
+public:
     stacktrace_entry(
-        context_pointer ctx,
-        AS_NAMESPACE_QUALIFIER asUINT stack_level
+        context_reference ctx, stack_level_type stack_level
     )
     {
-        if(!ctx)
+        m_func = ctx.GetFunction(stack_level);
+    }
+
+    stacktrace_entry(
+        context_pointer ctx, stack_level_type stack_level
+    )
+    {
+        if(!ctx) [[unlikely]]
             return;
         m_func = ctx->GetFunction(stack_level);
     }
 
-public:
     stacktrace_entry(const stacktrace_entry&) noexcept = default;
 
     stacktrace_entry& operator=(const stacktrace_entry&) noexcept = default;
@@ -57,7 +62,7 @@ public:
         if(!m_func) [[unlikely]]
             return {};
 
-        std::stringstream ss;
+        std::ostringstream ss;
         output_desc(ss);
         return std::move(ss).str();
     }
@@ -124,7 +129,7 @@ class basic_stacktrace
     using container_type = std::vector<stacktrace_entry, Allocator>;
 
 public:
-    using size_type = AS_NAMESPACE_QUALIFIER asUINT;
+    using size_type = stack_level_type;
     using const_iterator = typename container_type::const_iterator;
     using iterator = const_iterator;
 
@@ -135,24 +140,30 @@ public:
     basic_stacktrace& operator=(const basic_stacktrace&) = default;
     basic_stacktrace& operator=(basic_stacktrace&&) noexcept = default;
 
-    static basic_stacktrace from_context(context_pointer ctx)
+    [[nodiscard]]
+    static basic_stacktrace from_context(context_reference ctx)
     {
         basic_stacktrace result;
-        if(!ctx)
-            return result;
 
-        const size_type max_level = ctx->GetCallstackSize();
+        const size_type max_level = ctx.GetCallstackSize();
         result.m_entries.reserve(max_level);
         for(size_type i = 0; i < max_level; ++i)
         {
-            result.m_entries.emplace_back(
-                stacktrace_entry(ctx, i)
-            );
+            result.m_entries.emplace_back(ctx, i);
         }
 
         return result;
     }
 
+    [[nodiscard]]
+    static basic_stacktrace from_context(context_pointer ctx)
+    {
+        if(!ctx)
+            return {};
+        return from_context(*ctx);
+    }
+
+    [[nodiscard]]
     static basic_stacktrace current()
     {
         return from_context(current_context());
@@ -163,8 +174,15 @@ public:
         // Output nothing if the trace is empty
         for(std::size_t i = 0; i < trace.m_entries.size(); ++i)
         {
-            os << '#' << i << ' ';
-            os << trace.m_entries[i] << '\n';
+            os << '#' << i;
+            const auto& entry = trace.m_entries[i];
+            if(!entry)
+            {
+                os << '\n';
+                continue;
+            }
+            os << ' ';
+            os << entry << '\n';
         }
 
         return os;
@@ -173,7 +191,7 @@ public:
     [[nodiscard]]
     std::string description() const
     {
-        std::stringstream ss;
+        std::ostringstream ss;
         ss << *this;
         return std::move(ss).str();
     }

@@ -9,11 +9,14 @@
 
 #pragma once
 
+#include <string>
 #include "../fwd.hpp"
-#include "../detail/strutil.hpp"
+#include "../utility.hpp"
 
 namespace asbind20::debugging
 {
+using stack_level_type = AS_NAMESPACE_QUALIFIER asUINT;
+
 class script_source_location
 {
 public:
@@ -48,41 +51,85 @@ public:
         return m_column;
     }
 
+    [[nodiscard]]
+    std::string description() const
+    {
+        if(m_function_name)
+        {
+            return string_concat(
+                m_section_name,
+                '(',
+                std::to_string(m_line),
+                ':',
+                std::to_string(m_column),
+                "): ",
+                m_function_name
+            );
+        }
+        else
+        {
+            return string_concat(
+                m_section_name,
+                '(',
+                std::to_string(m_line),
+                ':',
+                std::to_string(m_column),
+                ')'
+            );
+        }
+    }
+
 #ifdef ASBIND20_HAS_SCRIPT_FUNCTION_GET_DECLARED_AT
 
-    static script_source_location from_function(const_function_pointer func)
+    [[nodiscard]]
+    static script_source_location from_function(const_function_reference func)
     {
         script_source_location result{};
-        if(!func) [[unlikely]]
-            return result;
 
         const char* section = nullptr;
-        func->GetDeclaredAt(&section, &result.m_line, &result.m_column);
+        func.GetDeclaredAt(&section, &result.m_line, &result.m_column);
         result.m_section_name = section;
-        result.m_function_name = func->GetName();
+        result.m_function_name = func.GetName();
 
         return result;
     }
 
-#endif
+    [[nodiscard]]
+    static script_source_location from_function(const_function_pointer func)
+    {
+        if(!func) [[unlikely]]
+            return {};
+        return from_function(*func);
+    }
 
+#endif
+    [[nodiscard]]
     static script_source_location from_context(
-        context_pointer ctx,
-        AS_NAMESPACE_QUALIFIER asUINT stack_level = 0
+        context_reference ctx,
+        stack_level_type stack_level = 0
     )
     {
         script_source_location result{};
-        if(!ctx) [[unlikely]]
-            return result;
 
         const char* section = nullptr;
-        result.m_line = ctx->GetLineNumber(stack_level, &result.m_column, &section);
+        result.m_line = ctx.GetLineNumber(stack_level, &result.m_column, &section);
         result.m_section_name = section;
-        auto* func = ctx->GetFunction(stack_level);
+        auto* func = ctx.GetFunction(stack_level);
         if(func)
             result.m_function_name = func->GetName();
 
         return result;
+    }
+
+    [[nodiscard]]
+    static script_source_location from_context(
+        context_pointer ctx,
+        stack_level_type stack_level = 0
+    )
+    {
+        if(!ctx) [[unlikely]]
+            return {};
+        return from_context(*ctx, stack_level);
     }
 
 private:
