@@ -21,7 +21,6 @@
 #include <concepts>
 #include "detail/config.hpp" // IWYU pragma: export configs
 #include "fwd.hpp"
-#include "detail/compat.hpp"
 #include "detail/err_handler.hpp"
 #include "detail/strutil.hpp"
 #ifdef ASBIND20_HAS_LIB_FORMAT
@@ -385,8 +384,7 @@ inline bool type_requires_gc(const_typeinfo_pointer ti)
         else
             return true;
     }
-    else if((flags & AS_NAMESPACE_QUALIFIER asOBJ_VALUE) &&
-            (flags & AS_NAMESPACE_QUALIFIER asOBJ_GC))
+    else if((flags & AS_NAMESPACE_QUALIFIER asOBJ_VALUE) && (flags & AS_NAMESPACE_QUALIFIER asOBJ_GC))
     {
         return true;
     }

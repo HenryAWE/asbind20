@@ -10,6 +10,7 @@
 #pragma once
 
 #include "detail/include_as.hpp"
+#include "detail/config.hpp"
 
 namespace asbind20
 {
@@ -33,6 +34,8 @@ inline namespace script_type
     // Secondary interfaces
     using generic_pointer = AS_NAMESPACE_QUALIFIER asIScriptGeneric*;
     using const_generic_pointer = AS_NAMESPACE_QUALIFIER asIScriptGeneric const*;
+    using string_factory_pointer = AS_NAMESPACE_QUALIFIER asIStringFactory*;
+    using const_string_factory_pointer = AS_NAMESPACE_QUALIFIER asIStringFactory const*;
     using object_pointer = AS_NAMESPACE_QUALIFIER asIScriptObject*;
     using const_object_pointer = AS_NAMESPACE_QUALIFIER asIScriptObject const*;
     using typeinfo_pointer = AS_NAMESPACE_QUALIFIER asITypeInfo*;
@@ -40,6 +43,10 @@ inline namespace script_type
     using function_pointer = AS_NAMESPACE_QUALIFIER asIScriptFunction*;
     using const_function_pointer = AS_NAMESPACE_QUALIFIER asIScriptFunction const*;
 
+    using generic_reference = AS_NAMESPACE_QUALIFIER asIScriptGeneric&;
+    using const_generic_reference = AS_NAMESPACE_QUALIFIER asIScriptGeneric const&;
+    using string_factory_reference = AS_NAMESPACE_QUALIFIER asIStringFactory&;
+    using const_string_factory_reference = AS_NAMESPACE_QUALIFIER asIStringFactory const&;
     using object_reference = AS_NAMESPACE_QUALIFIER asIScriptObject&;
     using const_object_reference = AS_NAMESPACE_QUALIFIER asIScriptObject const&;
     using typeinfo_reference = AS_NAMESPACE_QUALIFIER asITypeInfo&;
@@ -47,7 +54,9 @@ inline namespace script_type
     using function_reference = AS_NAMESPACE_QUALIFIER asIScriptFunction&;
     using const_function_reference = AS_NAMESPACE_QUALIFIER asIScriptFunction const&;
 
+    // Utility aliases
     using generic_function = AS_NAMESPACE_QUALIFIER asGENFUNC_t;
+    using arg_index_type = AS_NAMESPACE_QUALIFIER asUINT;
 } // namespace script_type
 
 template <typename T>
@@ -58,6 +67,17 @@ template <typename T>
 class script_function;
 template <typename T>
 class script_method;
+
+namespace compat
+{
+#ifndef ASBIND20_HAS_SCRIPT_ENUM_UNDERLYING_TYPE
+    using script_enum_value_type = int;
+
+#else // AngelScript >= 2.39
+    using script_enum_value_type = AS_NAMESPACE_QUALIFIER asINT64;
+
+#endif
+} // namespace compat
 } // namespace asbind20
 
 #endif

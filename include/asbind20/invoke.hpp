@@ -605,7 +605,7 @@ std::partial_ordering operator<=>(const T& lhs, const script_invoke_result<U>& r
 template <typename T>
 int set_script_arg(
     context_pointer ctx,
-    AS_NAMESPACE_QUALIFIER asUINT idx,
+    arg_index_type idx,
     std::reference_wrapper<T> ref
 )
 {
@@ -615,7 +615,7 @@ int set_script_arg(
 template <std::integral T>
 int set_script_arg(
     context_pointer ctx,
-    AS_NAMESPACE_QUALIFIER asUINT idx,
+    arg_index_type idx,
     T val
 )
 {
@@ -642,7 +642,7 @@ template <typename Enum>
 requires std::is_enum_v<Enum>
 int set_script_arg(
     context_pointer ctx,
-    AS_NAMESPACE_QUALIFIER asUINT idx,
+    arg_index_type idx,
     Enum val
 )
 {
@@ -665,7 +665,7 @@ int set_script_arg(
 template <std::floating_point T>
 int set_script_arg(
     context_pointer ctx,
-    AS_NAMESPACE_QUALIFIER asUINT idx,
+    arg_index_type idx,
     T val
 )
 {
@@ -681,7 +681,7 @@ int set_script_arg(
 
 inline int set_script_arg(
     context_pointer ctx,
-    AS_NAMESPACE_QUALIFIER asUINT idx,
+    arg_index_type idx,
     void* obj
 )
 {
@@ -690,7 +690,7 @@ inline int set_script_arg(
 
 inline int set_script_arg(
     context_pointer ctx,
-    AS_NAMESPACE_QUALIFIER asUINT idx,
+    arg_index_type idx,
     const void* obj
 )
 {
@@ -699,7 +699,7 @@ inline int set_script_arg(
 
 inline int set_script_arg(
     context_pointer ctx,
-    AS_NAMESPACE_QUALIFIER asUINT idx,
+    arg_index_type idx,
     object_pointer obj
 )
 {
@@ -708,7 +708,7 @@ inline int set_script_arg(
 
 inline int set_script_arg(
     context_pointer ctx,
-    AS_NAMESPACE_QUALIFIER asUINT idx,
+    arg_index_type idx,
     const_object_pointer obj
 )
 {
@@ -719,7 +719,7 @@ template <typename Class>
 requires std::is_class_v<std::remove_cvref_t<Class>>
 int set_script_arg(
     context_pointer ctx,
-    AS_NAMESPACE_QUALIFIER asUINT idx,
+    arg_index_type idx,
     Class&& obj
 )
 {
@@ -748,10 +748,10 @@ int set_script_arg(
 template <typename Tuple>
 void apply_script_args(context_pointer ctx, Tuple&& tp)
 {
-    [&]<AS_NAMESPACE_QUALIFIER asUINT... Idx>(std::integer_sequence<AS_NAMESPACE_QUALIFIER asUINT, Idx...>)
+    [&]<arg_index_type... Idx>(std::integer_sequence<arg_index_type, Idx...>)
     {
         (set_script_arg(ctx, Idx, std::get<Idx>(tp)), ...);
-    }(std::make_integer_sequence<AS_NAMESPACE_QUALIFIER asUINT, std::tuple_size_v<Tuple>>());
+    }(std::make_integer_sequence<arg_index_type, std::tuple_size_v<Tuple>>());
 }
 
 /**

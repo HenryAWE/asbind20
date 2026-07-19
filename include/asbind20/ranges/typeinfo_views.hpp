@@ -7,7 +7,6 @@
 #include "common.hpp"
 #include "../detail/strutil.hpp"
 #include "../detail/include_as.hpp"
-#include "../detail/compat.hpp"
 
 namespace asbind20::ranges
 {

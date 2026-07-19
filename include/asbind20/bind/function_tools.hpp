@@ -2,7 +2,6 @@
 #define ASBIND20_FUNCTION_TOOLS_HPP
 
 #include <functional>
-#include "calling_convention.hpp"
 #include "genfunc.hpp"
 #include "../meta.hpp"
 
@@ -39,7 +38,7 @@ namespace detail
                 do_construct<Class>(
                     mem,
                     get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
-                        gen, static_cast<gen_idx_t>(Is)
+                        gen, static_cast<arg_index_type>(Is)
                     )...
                 );
             }(std::make_index_sequence<sizeof...(Args)>{});

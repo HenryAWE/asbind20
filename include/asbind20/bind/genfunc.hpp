@@ -19,9 +19,6 @@
 namespace asbind20::detail
 { // All contents in this file should NOT be directly used by user code
 
-// Index type for arguments of script generic function
-using gen_idx_t = AS_NAMESPACE_QUALIFIER asUINT;
-
 template <std::size_t RawArgCount, std::size_t... Is>
 consteval auto gen_script_arg_idx(var_type_t<Is...> = {})
 {
@@ -60,7 +57,7 @@ int var_type_helper(
     std::true_type, generic_pointer gen, std::size_t idx
 )
 {
-    return gen->GetArgTypeId(static_cast<gen_idx_t>(idx));
+    return gen->GetArgTypeId(static_cast<arg_index_type>(idx));
 }
 
 template <typename T>
@@ -68,7 +65,7 @@ decltype(auto) var_type_helper(
     std::false_type, generic_pointer gen, std::size_t idx
 )
 {
-    return get_generic_arg<T>(gen, static_cast<gen_idx_t>(idx));
+    return get_generic_arg<T>(gen, static_cast<arg_index_type>(idx));
 }
 
 template <std::size_t... Is>
@@ -94,7 +91,7 @@ using var_type_tag = std::bool_constant<var_type_tag_helper(VarType{}, RawIdx)>;
                 func,                                                        \
                 this_(gen),                                                  \
                 get_generic_arg<typename traits::template arg_type<Is>>(     \
-                    gen, static_cast<gen_idx_t>(Is)                          \
+                    gen, static_cast<arg_index_type>(Is)                     \
                 )...                                                         \
             );                                                               \
         }(std::make_index_sequence<traits::arg_count::value>());             \
@@ -109,7 +106,7 @@ using var_type_tag = std::bool_constant<var_type_tag_helper(VarType{}, RawIdx)>;
                 func,                                                        \
                 this_(gen),                                                  \
                 get_generic_arg<typename traits::template arg_type<Is + 1>>( \
-                    gen, static_cast<gen_idx_t>(Is)                          \
+                    gen, static_cast<arg_index_type>(Is)                     \
                 )...                                                         \
             );                                                               \
         }(std::make_index_sequence<traits::arg_count::value - 1>());         \
@@ -123,7 +120,7 @@ using var_type_tag = std::bool_constant<var_type_tag_helper(VarType{}, RawIdx)>;
                 gen,                                                         \
                 func,                                                        \
                 get_generic_arg<typename traits::template arg_type<Is>>(     \
-                    gen, static_cast<gen_idx_t>(Is)                          \
+                    gen, static_cast<arg_index_type>(Is)                     \
                 )...,                                                        \
                 this_(gen)                                                   \
             );                                                               \
@@ -137,7 +134,7 @@ using var_type_tag = std::bool_constant<var_type_tag_helper(VarType{}, RawIdx)>;
                 gen,                                                         \
                 func,                                                        \
                 get_generic_arg<typename traits::template arg_type<Is>>(     \
-                    gen, static_cast<gen_idx_t>(Is)                          \
+                    gen, static_cast<arg_index_type>(Is)                     \
                 )...                                                         \
             );                                                               \
         }(std::make_index_sequence<traits::arg_count::value>());             \
@@ -210,7 +207,7 @@ using var_type_tag = std::bool_constant<var_type_tag_helper(VarType{}, RawIdx)>;
                 var_type_helper<typename traits::template arg_type<Is>>(                        \
                     var_type_tag<VarType, Is>{},                                                \
                     gen,                                                                        \
-                    static_cast<gen_idx_t>(indices[Is])                                         \
+                    static_cast<arg_index_type>(indices[Is])                                    \
                 )...                                                                            \
             );                                                                                  \
         }(std::make_index_sequence<indices.size()>());                                          \
@@ -316,7 +313,7 @@ class generic_wrapper_nontype
                 get_generic_auxiliary<typename traits::class_type*>(gen),
                 this_(gen),
                 get_generic_arg<typename traits::template arg_type<Is + 1>>(
-                    gen, static_cast<gen_idx_t>(Is)
+                    gen, static_cast<arg_index_type>(Is)
                 )...
             );
         }(std::make_index_sequence<traits::arg_count::value - 1>());
@@ -332,7 +329,7 @@ class generic_wrapper_nontype
                 Function,
                 get_generic_auxiliary<typename traits::class_type*>(gen),
                 get_generic_arg<typename traits::template arg_type<Is>>(
-                    gen, static_cast<gen_idx_t>(Is)
+                    gen, static_cast<arg_index_type>(Is)
                 )...,
                 this_(gen)
             );
@@ -353,7 +350,7 @@ class generic_wrapper_nontype
                 var_type_helper<typename traits::template arg_type<Is + 1>>( // Plus 1 to skip the "this_(gen)" argument
                     var_type_tag<VarType, Is>{},
                     gen,
-                    static_cast<gen_idx_t>(indices[Is])
+                    static_cast<arg_index_type>(indices[Is])
                 )...
             );
         }(std::make_index_sequence<indices.size()>());
@@ -372,7 +369,7 @@ class generic_wrapper_nontype
                 var_type_helper<typename traits::template arg_type<Is>>(
                     var_type_tag<VarType, Is>{},
                     gen,
-                    indices[Is]
+                    static_cast<arg_index_type>(indices[Is])
                 )...,
                 this_(gen)
             );
@@ -519,7 +516,7 @@ class generic_wrapper_composite<Function, composite_wrapper_nontype<Composite>>
                 Function,
                 this_(gen),
                 get_generic_arg<typename traits::template arg_type<Is>>(
-                    gen, static_cast<gen_idx_t>(Is)
+                    gen, static_cast<arg_index_type>(Is)
                 )...
             );
         }(std::make_index_sequence<traits::arg_count::value>());
@@ -538,7 +535,7 @@ class generic_wrapper_composite<Function, composite_wrapper_nontype<Composite>>
                 var_type_helper<typename traits::template arg_type<Is>>(
                     var_type_tag<VarType, Is>{},
                     gen,
-                    static_cast<gen_idx_t>(indices[Is])
+                    static_cast<arg_index_type>(indices[Is])
                 )...
             );
         }(std::make_index_sequence<indices.size()>());
@@ -659,7 +656,7 @@ class generic_wrapper_ctor_func
                     get_mem(gen),
                     get_generic_typeinfo(gen),
                     get_generic_arg<std::tuple_element_t<Is + 2, args_tuple>>(
-                        gen, static_cast<gen_idx_t>(Is) + 1
+                        gen, static_cast<arg_index_type>(Is) + 1
                     )...
                 );
             }(std::make_index_sequence<traits::arg_count_v - 2>());
@@ -672,7 +669,7 @@ class generic_wrapper_ctor_func
                     ConstructorFunc,
                     get_mem(gen),
                     get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(
-                        gen, static_cast<gen_idx_t>(Is)
+                        gen, static_cast<arg_index_type>(Is)
                     )...
                 );
             }(std::make_index_sequence<traits::arg_count_v - 1>());
@@ -689,7 +686,7 @@ class generic_wrapper_ctor_func
                     ConstructorFunc,
                     get_generic_typeinfo(gen),
                     get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(
-                        gen, static_cast<gen_idx_t>(Is) + 1
+                        gen, static_cast<arg_index_type>(Is) + 1
                     )...,
                     get_mem(gen)
                 );
@@ -702,7 +699,7 @@ class generic_wrapper_ctor_func
                 std::invoke(
                     ConstructorFunc,
                     get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
-                        gen, static_cast<gen_idx_t>(Is)
+                        gen, static_cast<arg_index_type>(Is)
                     )...,
                     get_mem(gen)
                 );
@@ -747,7 +744,7 @@ class generic_wrapper_ctor_lambda
                     get_mem(gen),
                     get_generic_typeinfo(gen),
                     get_generic_arg<std::tuple_element_t<Is + 2, args_tuple>>(
-                        gen, static_cast<gen_idx_t>(Is) + 1
+                        gen, static_cast<arg_index_type>(Is) + 1
                     )...
                 );
             }(std::make_index_sequence<traits::arg_count_v - 2>());
@@ -760,7 +757,7 @@ class generic_wrapper_ctor_lambda
                     ConstructorLambda{},
                     get_mem(gen),
                     get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(
-                        gen, static_cast<gen_idx_t>(Is)
+                        gen, static_cast<arg_index_type>(Is)
                     )...
                 );
             }(std::make_index_sequence<traits::arg_count_v - 1>());
@@ -777,7 +774,7 @@ class generic_wrapper_ctor_lambda
                     ConstructorLambda{},
                     get_generic_typeinfo(gen),
                     get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(
-                        gen, static_cast<gen_idx_t>(Is) + 1
+                        gen, static_cast<arg_index_type>(Is) + 1
                     )...,
                     get_mem(gen)
                 );
@@ -790,7 +787,7 @@ class generic_wrapper_ctor_lambda
                 std::invoke(
                     ConstructorLambda{},
                     get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
-                        gen, static_cast<gen_idx_t>(Is)
+                        gen, static_cast<arg_index_type>(Is)
                     )...,
                     get_mem(gen)
                 );
@@ -959,7 +956,7 @@ class generic_wrapper_factory_aux
                     get_generic_auxiliary<typename traits::class_type>(gen),
                     get_generic_typeinfo(gen),
                     get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(
-                        gen, static_cast<gen_idx_t>(Is) + 1
+                        gen, static_cast<arg_index_type>(Is) + 1
                     )...
                 );
             }
@@ -970,7 +967,7 @@ class generic_wrapper_factory_aux
                     get_generic_auxiliary<auxiliary_type>(gen),
                     get_generic_typeinfo(gen),
                     get_generic_arg<std::tuple_element_t<Is + 2, args_tuple>>(
-                        gen, static_cast<gen_idx_t>(Is) + 1
+                        gen, static_cast<arg_index_type>(Is) + 1
                     )...
                 );
             }
@@ -980,7 +977,7 @@ class generic_wrapper_factory_aux
                     FactoryFunc,
                     get_generic_typeinfo(gen),
                     get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(
-                        gen, static_cast<gen_idx_t>(Is) + 1
+                        gen, static_cast<arg_index_type>(Is) + 1
                     )...,
                     get_generic_auxiliary<auxiliary_type>(gen)
                 );
@@ -1006,7 +1003,7 @@ class generic_wrapper_factory_aux
                     FactoryFunc,
                     get_generic_auxiliary<typename traits::class_type>(gen),
                     get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
-                        gen, static_cast<gen_idx_t>(Is)
+                        gen, static_cast<arg_index_type>(Is)
                     )...
                 );
             }
@@ -1017,7 +1014,7 @@ class generic_wrapper_factory_aux
                     get_generic_auxiliary<auxiliary_type>(gen),
                     // Plus 1 to skip the auxiliary object at the first position
                     get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(
-                        gen, static_cast<gen_idx_t>(Is)
+                        gen, static_cast<arg_index_type>(Is)
                     )...
                 );
             }
@@ -1026,7 +1023,7 @@ class generic_wrapper_factory_aux
                 return std::invoke(
                     FactoryFunc,
                     get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
-                        gen, static_cast<gen_idx_t>(Is)
+                        gen, static_cast<arg_index_type>(Is)
                     )...,
                     get_generic_auxiliary<auxiliary_type>(gen)
                 );
@@ -1215,7 +1212,7 @@ decltype(auto) apply_generic(Fn&& fn, generic_pointer gen)
         return std::invoke(
             std::forward<Fn>(fn),
             get_generic_arg<std::tuple_element_t<Is, ArgsTuple>>(
-                gen, static_cast<detail::gen_idx_t>(Is)
+                gen, static_cast<arg_index_type>(Is)
             )...
         );
     }(std::make_index_sequence<std::tuple_size_v<ArgsTuple>>{});
@@ -1230,7 +1227,7 @@ decltype(auto) apply_generic(Fn&& fn, Class&& obj, generic_pointer gen)
             std::forward<Fn>(fn),
             std::forward<Class>(obj),
             get_generic_arg<std::tuple_element_t<Is, ArgsTuple>>(
-                gen, static_cast<detail::gen_idx_t>(Is)
+                gen, static_cast<arg_index_type>(Is)
             )...
         );
     }(std::make_index_sequence<std::tuple_size_v<ArgsTuple>>{});

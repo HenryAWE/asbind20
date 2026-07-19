@@ -12,7 +12,7 @@
 #include <cassert>
 #include <concepts>
 #include <string>
-#include "../detail/compat.hpp"
+#include "../fwd.hpp"
 #include "../meta.hpp"
 #include "common.hpp"
 
