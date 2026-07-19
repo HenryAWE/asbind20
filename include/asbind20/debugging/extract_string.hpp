@@ -107,6 +107,15 @@ public:
         }
     }
 
+    extract_string_result& operator=(const extract_string_result& other)
+    {
+        if(this == &other)
+            return *this;
+        extract_string_result tmp(other);
+        swap(tmp);
+        return *this;
+    }
+
     extract_string_result& operator=(extract_string_result&& other) noexcept
     {
         extract_string_result tmp(std::move(other));
