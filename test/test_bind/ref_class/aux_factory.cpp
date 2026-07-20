@@ -1,9 +1,10 @@
 #include <asbind_test/framework.hpp>
+#include <gmock/gmock.h>
 
 namespace test_bind
 {
 // Multipurpose
-struct test_aux_factory
+class test_aux_factory
 {
 public:
     test_aux_factory() = default;
@@ -41,20 +42,27 @@ private:
     int m_counter = 1;
 };
 
+struct mock_create
+{
+    MOCK_METHOD(void, on_create, (), ());
+    MOCK_METHOD(void, on_list_create, (), ());
+};
+
 struct aux_factory_helper
 {
+    using mock_type = ::testing::StrictMock<mock_create>;
+    std::shared_ptr<mock_type> mock = std::make_shared<mock_type>();
     int predefined_value = 0;
-    std::size_t created = 0;
 
     test_aux_factory* create_aux_as_global(int additional)
     {
-        ++created;
+        mock->on_create();
         return new test_aux_factory(predefined_value + additional);
     }
 
     test_aux_factory* create_aux_as_global_list(void* list_buf)
     {
-        ++created;
+        mock->on_list_create();
         return new test_aux_factory(
             predefined_value, asbind20::script_init_list_repeat(list_buf)
         );
@@ -63,13 +71,13 @@ struct aux_factory_helper
 
 static test_aux_factory* create_aux_auxfirst(aux_factory_helper& helper, int additional)
 {
-    ++helper.created;
+    helper.mock->on_create();
     return new test_aux_factory(helper.predefined_value + additional);
 }
 
 static test_aux_factory* create_aux_auxfirst_list(aux_factory_helper& helper, void* list_buf)
 {
-    ++helper.created;
+    helper.mock->on_list_create();
     return new test_aux_factory(
         helper.predefined_value, asbind20::script_init_list_repeat(list_buf)
     );
@@ -77,13 +85,13 @@ static test_aux_factory* create_aux_auxfirst_list(aux_factory_helper& helper, vo
 
 static test_aux_factory* create_aux_auxlast(int additional, aux_factory_helper& helper)
 {
-    ++helper.created;
+    helper.mock->on_create();
     return new test_aux_factory(helper.predefined_value + additional);
 }
 
 static test_aux_factory* create_aux_auxlast_list(void* list_buf, aux_factory_helper& helper)
 {
-    ++helper.created;
+    helper.mock->on_list_create();
     return new test_aux_factory(
         helper.predefined_value, asbind20::script_init_list_repeat(list_buf)
     );
@@ -171,17 +179,14 @@ TEST(AuxFactoryNative, AsGlobal)
         .factory_function("int", use_explicit, &test_bind::aux_factory_helper::create_aux_as_global, auxiliary(helper))
         .list_factory_function("repeat int", &test_bind::aux_factory_helper::create_aux_as_global_list, auxiliary(helper));
 
-    EXPECT_EQ(helper.created, 0);
+    auto& mock = *helper.mock;
+    EXPECT_CALL(mock, on_create()).Times(2);
+    EXPECT_CALL(mock, on_list_create()).Times(1);
 
     test_bind::check_aux_factory(engine, 0, 0);
-    EXPECT_EQ(helper.created, 1);
-
     helper.predefined_value = 1000;
     test_bind::check_aux_factory(engine, 1013, 13);
-    EXPECT_EQ(helper.created, 2);
-
     test_bind::check_aux_factory_list(engine, 1013);
-    EXPECT_EQ(helper.created, 3);
 }
 
 TEST(AuxFactoryGeneric, AsGlobal)
@@ -197,17 +202,14 @@ TEST(AuxFactoryGeneric, AsGlobal)
         .factory_function("int", use_explicit, fp<&test_bind::aux_factory_helper::create_aux_as_global>, auxiliary(helper))
         .list_factory_function("repeat int", fp<&test_bind::aux_factory_helper::create_aux_as_global_list>, auxiliary(helper));
 
-    EXPECT_EQ(helper.created, 0);
+    auto& mock = *helper.mock;
+    EXPECT_CALL(mock, on_create()).Times(2);
+    EXPECT_CALL(mock, on_list_create()).Times(1);
 
     test_bind::check_aux_factory(engine, 0, 0);
-    EXPECT_EQ(helper.created, 1);
-
     helper.predefined_value = 1000;
     test_bind::check_aux_factory(engine, 1013, 13);
-    EXPECT_EQ(helper.created, 2);
-
     test_bind::check_aux_factory_list(engine, 1013);
-    EXPECT_EQ(helper.created, 3);
 }
 
 TEST(AuxFactoryNative, AuxFirst)
@@ -225,17 +227,14 @@ TEST(AuxFactoryNative, AuxFirst)
         .factory_function("int", use_explicit, &test_bind::create_aux_auxfirst, auxiliary(helper))
         .list_factory_function("repeat int", &test_bind::create_aux_auxfirst_list, auxiliary(helper));
 
-    EXPECT_EQ(helper.created, 0);
+    auto& mock = *helper.mock;
+    EXPECT_CALL(mock, on_create()).Times(2);
+    EXPECT_CALL(mock, on_list_create()).Times(1);
 
     test_bind::check_aux_factory(engine, 0, 0);
-    EXPECT_EQ(helper.created, 1);
-
     helper.predefined_value = 1000;
     test_bind::check_aux_factory(engine, 1013, 13);
-    EXPECT_EQ(helper.created, 2);
-
     test_bind::check_aux_factory_list(engine, 1013);
-    EXPECT_EQ(helper.created, 3);
 }
 
 TEST(AuxFactoryGeneric, AuxFirst)
@@ -251,17 +250,14 @@ TEST(AuxFactoryGeneric, AuxFirst)
         .factory_function("int", use_explicit, fp<&test_bind::create_aux_auxfirst>, auxiliary(helper))
         .list_factory_function("repeat int", fp<&test_bind::create_aux_auxfirst_list>, auxiliary(helper));
 
-    EXPECT_EQ(helper.created, 0);
+    auto& mock = *helper.mock;
+    EXPECT_CALL(mock, on_create()).Times(2);
+    EXPECT_CALL(mock, on_list_create()).Times(1);
 
     test_bind::check_aux_factory(engine, 0, 0);
-    EXPECT_EQ(helper.created, 1);
-
     helper.predefined_value = 1000;
     test_bind::check_aux_factory(engine, 1013, 13);
-    EXPECT_EQ(helper.created, 2);
-
     test_bind::check_aux_factory_list(engine, 1013);
-    EXPECT_EQ(helper.created, 3);
 }
 
 TEST(AuxFactoryNative, AuxLast)
@@ -279,17 +275,14 @@ TEST(AuxFactoryNative, AuxLast)
         .factory_function("int", use_explicit, &test_bind::create_aux_auxlast, auxiliary(helper))
         .list_factory_function("repeat int", &test_bind::create_aux_auxlast_list, auxiliary(helper));
 
-    EXPECT_EQ(helper.created, 0);
+    auto& mock = *helper.mock;
+    EXPECT_CALL(mock, on_create()).Times(2);
+    EXPECT_CALL(mock, on_list_create()).Times(1);
 
     test_bind::check_aux_factory(engine, 0, 0);
-    EXPECT_EQ(helper.created, 1);
-
     helper.predefined_value = 1000;
     test_bind::check_aux_factory(engine, 1013, 13);
-    EXPECT_EQ(helper.created, 2);
-
     test_bind::check_aux_factory_list(engine, 1013);
-    EXPECT_EQ(helper.created, 3);
 }
 
 TEST(AuxFactoryGeneric, AuxLast)
@@ -305,17 +298,14 @@ TEST(AuxFactoryGeneric, AuxLast)
         .factory_function("int", use_explicit, fp<&test_bind::create_aux_auxlast>, auxiliary(helper))
         .list_factory_function("repeat int", fp<&test_bind::create_aux_auxlast_list>, auxiliary(helper));
 
-    EXPECT_EQ(helper.created, 0);
+    auto& mock = *helper.mock;
+    EXPECT_CALL(mock, on_create()).Times(2);
+    EXPECT_CALL(mock, on_list_create()).Times(1);
 
     test_bind::check_aux_factory(engine, 0, 0);
-    EXPECT_EQ(helper.created, 1);
-
     helper.predefined_value = 1000;
     test_bind::check_aux_factory(engine, 1013, 13);
-    EXPECT_EQ(helper.created, 2);
-
     test_bind::check_aux_factory_list(engine, 1013);
-    EXPECT_EQ(helper.created, 3);
 }
 
 TEST(AuxFactoryNative, AuxFirstManual)
@@ -333,17 +323,14 @@ TEST(AuxFactoryNative, AuxFirstManual)
         .factory_function("int", use_explicit, &test_bind::create_aux_auxfirst, auxiliary(helper), objfirst)
         .list_factory_function("repeat int", &test_bind::create_aux_auxfirst_list, auxiliary(helper), objfirst);
 
-    EXPECT_EQ(helper.created, 0);
+    auto& mock = *helper.mock;
+    EXPECT_CALL(mock, on_create()).Times(2);
+    EXPECT_CALL(mock, on_list_create()).Times(1);
 
     test_bind::check_aux_factory(engine, 0, 0);
-    EXPECT_EQ(helper.created, 1);
-
     helper.predefined_value = 1000;
     test_bind::check_aux_factory(engine, 1013, 13);
-    EXPECT_EQ(helper.created, 2);
-
     test_bind::check_aux_factory_list(engine, 1013);
-    EXPECT_EQ(helper.created, 3);
 }
 
 TEST(AuxFactoryGeneric, AuxFirstManual)
@@ -359,17 +346,14 @@ TEST(AuxFactoryGeneric, AuxFirstManual)
         .factory_function("int", use_explicit, fp<&test_bind::create_aux_auxfirst>, auxiliary(helper), objfirst)
         .list_factory_function("repeat int", fp<&test_bind::create_aux_auxfirst_list>, auxiliary(helper), objfirst);
 
-    EXPECT_EQ(helper.created, 0);
+    auto& mock = *helper.mock;
+    EXPECT_CALL(mock, on_create()).Times(2);
+    EXPECT_CALL(mock, on_list_create()).Times(1);
 
     test_bind::check_aux_factory(engine, 0, 0);
-    EXPECT_EQ(helper.created, 1);
-
     helper.predefined_value = 1000;
     test_bind::check_aux_factory(engine, 1013, 13);
-    EXPECT_EQ(helper.created, 2);
-
     test_bind::check_aux_factory_list(engine, 1013);
-    EXPECT_EQ(helper.created, 3);
 }
 
 TEST(AuxFactoryNative, AuxLastManual)
@@ -387,17 +371,14 @@ TEST(AuxFactoryNative, AuxLastManual)
         .factory_function("int", use_explicit, &test_bind::create_aux_auxlast, auxiliary(helper), objlast)
         .list_factory_function("repeat int", &test_bind::create_aux_auxlast_list, auxiliary(helper), objlast);
 
-    EXPECT_EQ(helper.created, 0);
+    auto& mock = *helper.mock;
+    EXPECT_CALL(mock, on_create()).Times(2);
+    EXPECT_CALL(mock, on_list_create()).Times(1);
 
     test_bind::check_aux_factory(engine, 0, 0);
-    EXPECT_EQ(helper.created, 1);
-
     helper.predefined_value = 1000;
     test_bind::check_aux_factory(engine, 1013, 13);
-    EXPECT_EQ(helper.created, 2);
-
     test_bind::check_aux_factory_list(engine, 1013);
-    EXPECT_EQ(helper.created, 3);
 }
 
 TEST(AuxFactoryGeneric, AuxLastManual)
@@ -413,17 +394,14 @@ TEST(AuxFactoryGeneric, AuxLastManual)
         .factory_function("int", use_explicit, fp<&test_bind::create_aux_auxlast>, auxiliary(helper), objlast)
         .list_factory_function("repeat int", fp<&test_bind::create_aux_auxlast_list>, auxiliary(helper), objlast);
 
-    EXPECT_EQ(helper.created, 0);
+    auto& mock = *helper.mock;
+    EXPECT_CALL(mock, on_create()).Times(2);
+    EXPECT_CALL(mock, on_list_create()).Times(1);
 
     test_bind::check_aux_factory(engine, 0, 0);
-    EXPECT_EQ(helper.created, 1);
-
     helper.predefined_value = 1000;
     test_bind::check_aux_factory(engine, 1013, 13);
-    EXPECT_EQ(helper.created, 2);
-
     test_bind::check_aux_factory_list(engine, 1013);
-    EXPECT_EQ(helper.created, 3);
 }
 
 namespace test_bind
@@ -484,18 +462,19 @@ static bool aux_factory_helper_template_callback(asbind20::typeinfo_pointer ti, 
 
 struct aux_factory_helper_template
 {
+    using mock_type = mock_create;
+    std::shared_ptr<mock_type> mock = std::make_shared<mock_type>();
     int predefined_value = 0;
-    std::size_t created = 0;
 
     test_aux_factory_template* create_aux_template_as_global(asbind20::typeinfo_pointer ti, int additional)
     {
-        ++created;
+        mock->on_create();
         return new test_aux_factory_template(ti, predefined_value + additional);
     }
 
     test_aux_factory_template* create_aux_template_as_global_list(asbind20::typeinfo_pointer ti, void* list_buf)
     {
-        ++created;
+        mock->on_list_create();
         return new test_aux_factory_template(
             ti, predefined_value, asbind20::script_init_list_repeat(list_buf)
         );
@@ -504,13 +483,13 @@ struct aux_factory_helper_template
 
 static test_aux_factory_template* create_aux_template_auxfirst(aux_factory_helper_template& helper, asbind20::typeinfo_pointer ti, int additional)
 {
-    ++helper.created;
+    helper.mock->on_create();
     return new test_aux_factory_template(ti, helper.predefined_value + additional);
 }
 
 static test_aux_factory_template* create_aux_template_auxfirst_list(aux_factory_helper_template& helper, asbind20::typeinfo_pointer ti, void* list_buf)
 {
-    ++helper.created;
+    helper.mock->on_list_create();
     return new test_aux_factory_template(
         ti, helper.predefined_value, asbind20::script_init_list_repeat(list_buf)
     );
@@ -518,13 +497,13 @@ static test_aux_factory_template* create_aux_template_auxfirst_list(aux_factory_
 
 static test_aux_factory_template* create_aux_template_auxlast(asbind20::typeinfo_pointer ti, int additional, aux_factory_helper_template& helper)
 {
-    ++helper.created;
+    helper.mock->on_create();
     return new test_aux_factory_template(ti, helper.predefined_value + additional);
 }
 
 static test_aux_factory_template* create_aux_template_auxlast_list(asbind20::typeinfo_pointer ti, void* list_buf, aux_factory_helper_template& helper)
 {
-    ++helper.created;
+    helper.mock->on_list_create();
     return new test_aux_factory_template(
         ti, helper.predefined_value, asbind20::script_init_list_repeat(list_buf)
     );
@@ -594,17 +573,14 @@ TEST(AuxFactoryTemplateNative, AsGlobal)
         .factory_function("int", use_explicit, &test_bind::aux_factory_helper_template::create_aux_template_as_global, auxiliary(helper))
         .list_factory_function("repeat int", &test_bind::aux_factory_helper_template::create_aux_template_as_global_list, auxiliary(helper));
 
-    EXPECT_EQ(helper.created, 0);
+    auto& mock = *helper.mock;
+    EXPECT_CALL(mock, on_create()).Times(2);
+    EXPECT_CALL(mock, on_list_create()).Times(1);
 
     test_bind::check_aux_factory_template(engine, 0, 0);
-    EXPECT_EQ(helper.created, 1);
-
     helper.predefined_value = 1000;
     test_bind::check_aux_factory_template(engine, 1013, 13);
-    EXPECT_EQ(helper.created, 2);
-
     test_bind::check_aux_factory_template_list(engine, 1013);
-    EXPECT_EQ(helper.created, 3);
 }
 
 TEST(AuxFactoryTemplateGeneric, AsGlobal)
@@ -620,17 +596,14 @@ TEST(AuxFactoryTemplateGeneric, AsGlobal)
         .factory_function("int", use_explicit, fp<&test_bind::aux_factory_helper_template::create_aux_template_as_global>, auxiliary(helper))
         .list_factory_function("repeat int", fp<&test_bind::aux_factory_helper_template::create_aux_template_as_global_list>, auxiliary(helper));
 
-    EXPECT_EQ(helper.created, 0);
+    auto& mock = *helper.mock;
+    EXPECT_CALL(mock, on_create()).Times(2);
+    EXPECT_CALL(mock, on_list_create()).Times(1);
 
     test_bind::check_aux_factory_template(engine, 0, 0);
-    EXPECT_EQ(helper.created, 1);
-
     helper.predefined_value = 1000;
     test_bind::check_aux_factory_template(engine, 1013, 13);
-    EXPECT_EQ(helper.created, 2);
-
     test_bind::check_aux_factory_template_list(engine, 1013);
-    EXPECT_EQ(helper.created, 3);
 }
 
 TEST(AuxFactoryTemplateNative, AuxFirst)
@@ -648,17 +621,14 @@ TEST(AuxFactoryTemplateNative, AuxFirst)
         .factory_function("int", use_explicit, &test_bind::create_aux_template_auxfirst, auxiliary(helper))
         .list_factory_function("repeat int", &test_bind::create_aux_template_auxfirst_list, auxiliary(helper));
 
-    EXPECT_EQ(helper.created, 0);
+    auto& mock = *helper.mock;
+    EXPECT_CALL(mock, on_create()).Times(2);
+    EXPECT_CALL(mock, on_list_create()).Times(1);
 
     test_bind::check_aux_factory_template(engine, 0, 0);
-    EXPECT_EQ(helper.created, 1);
-
     helper.predefined_value = 1000;
     test_bind::check_aux_factory_template(engine, 1013, 13);
-    EXPECT_EQ(helper.created, 2);
-
     test_bind::check_aux_factory_template_list(engine, 1013);
-    EXPECT_EQ(helper.created, 3);
 }
 
 TEST(AuxFactoryTemplateGeneric, AuxFirst)
@@ -674,17 +644,14 @@ TEST(AuxFactoryTemplateGeneric, AuxFirst)
         .factory_function("int", use_explicit, fp<&test_bind::create_aux_template_auxfirst>, auxiliary(helper))
         .list_factory_function("repeat int", fp<&test_bind::create_aux_template_auxfirst_list>, auxiliary(helper));
 
-    EXPECT_EQ(helper.created, 0);
+    auto& mock = *helper.mock;
+    EXPECT_CALL(mock, on_create()).Times(2);
+    EXPECT_CALL(mock, on_list_create()).Times(1);
 
     test_bind::check_aux_factory_template(engine, 0, 0);
-    EXPECT_EQ(helper.created, 1);
-
     helper.predefined_value = 1000;
     test_bind::check_aux_factory_template(engine, 1013, 13);
-    EXPECT_EQ(helper.created, 2);
-
     test_bind::check_aux_factory_template_list(engine, 1013);
-    EXPECT_EQ(helper.created, 3);
 }
 
 TEST(AuxFactoryTemplateNative, AuxLast)
@@ -702,17 +669,14 @@ TEST(AuxFactoryTemplateNative, AuxLast)
         .factory_function("int", use_explicit, &test_bind::create_aux_template_auxlast, auxiliary(helper))
         .list_factory_function("repeat int", &test_bind::create_aux_template_auxlast_list, auxiliary(helper));
 
-    EXPECT_EQ(helper.created, 0);
+    auto& mock = *helper.mock;
+    EXPECT_CALL(mock, on_create()).Times(2);
+    EXPECT_CALL(mock, on_list_create()).Times(1);
 
     test_bind::check_aux_factory_template(engine, 0, 0);
-    EXPECT_EQ(helper.created, 1);
-
     helper.predefined_value = 1000;
     test_bind::check_aux_factory_template(engine, 1013, 13);
-    EXPECT_EQ(helper.created, 2);
-
     test_bind::check_aux_factory_template_list(engine, 1013);
-    EXPECT_EQ(helper.created, 3);
 }
 
 TEST(AuxFactoryTemplateGeneric, AuxLast)
@@ -728,17 +692,14 @@ TEST(AuxFactoryTemplateGeneric, AuxLast)
         .factory_function("int", use_explicit, fp<&test_bind::create_aux_template_auxlast>, auxiliary(helper))
         .list_factory_function("repeat int", fp<&test_bind::create_aux_template_auxlast_list>, auxiliary(helper));
 
-    EXPECT_EQ(helper.created, 0);
+    auto& mock = *helper.mock;
+    EXPECT_CALL(mock, on_create()).Times(2);
+    EXPECT_CALL(mock, on_list_create()).Times(1);
 
     test_bind::check_aux_factory_template(engine, 0, 0);
-    EXPECT_EQ(helper.created, 1);
-
     helper.predefined_value = 1000;
     test_bind::check_aux_factory_template(engine, 1013, 13);
-    EXPECT_EQ(helper.created, 2);
-
     test_bind::check_aux_factory_template_list(engine, 1013);
-    EXPECT_EQ(helper.created, 3);
 }
 
 TEST(AuxFactoryTemplateNative, AuxFirstManual)
@@ -756,17 +717,14 @@ TEST(AuxFactoryTemplateNative, AuxFirstManual)
         .factory_function("int", use_explicit, &test_bind::create_aux_template_auxfirst, auxiliary(helper), objfirst)
         .list_factory_function("repeat int", &test_bind::create_aux_template_auxfirst_list, auxiliary(helper), objfirst);
 
-    EXPECT_EQ(helper.created, 0);
+    auto& mock = *helper.mock;
+    EXPECT_CALL(mock, on_create()).Times(2);
+    EXPECT_CALL(mock, on_list_create()).Times(1);
 
     test_bind::check_aux_factory_template(engine, 0, 0);
-    EXPECT_EQ(helper.created, 1);
-
     helper.predefined_value = 1000;
     test_bind::check_aux_factory_template(engine, 1013, 13);
-    EXPECT_EQ(helper.created, 2);
-
     test_bind::check_aux_factory_template_list(engine, 1013);
-    EXPECT_EQ(helper.created, 3);
 }
 
 TEST(AuxFactoryTemplateGeneric, AuxFirstManual)
@@ -782,17 +740,14 @@ TEST(AuxFactoryTemplateGeneric, AuxFirstManual)
         .factory_function("int", use_explicit, fp<&test_bind::create_aux_template_auxfirst>, auxiliary(helper), objfirst)
         .list_factory_function("repeat int", fp<&test_bind::create_aux_template_auxfirst_list>, auxiliary(helper), objfirst);
 
-    EXPECT_EQ(helper.created, 0);
+    auto& mock = *helper.mock;
+    EXPECT_CALL(mock, on_create()).Times(2);
+    EXPECT_CALL(mock, on_list_create()).Times(1);
 
     test_bind::check_aux_factory_template(engine, 0, 0);
-    EXPECT_EQ(helper.created, 1);
-
     helper.predefined_value = 1000;
     test_bind::check_aux_factory_template(engine, 1013, 13);
-    EXPECT_EQ(helper.created, 2);
-
     test_bind::check_aux_factory_template_list(engine, 1013);
-    EXPECT_EQ(helper.created, 3);
 }
 
 TEST(AuxFactoryTemplateNative, AuxLastManual)
@@ -810,17 +765,14 @@ TEST(AuxFactoryTemplateNative, AuxLastManual)
         .factory_function("int", use_explicit, &test_bind::create_aux_template_auxlast, auxiliary(helper), objlast)
         .list_factory_function("repeat int", &test_bind::create_aux_template_auxlast_list, auxiliary(helper), objlast);
 
-    EXPECT_EQ(helper.created, 0);
+    auto& mock = *helper.mock;
+    EXPECT_CALL(mock, on_create()).Times(2);
+    EXPECT_CALL(mock, on_list_create()).Times(1);
 
     test_bind::check_aux_factory_template(engine, 0, 0);
-    EXPECT_EQ(helper.created, 1);
-
     helper.predefined_value = 1000;
     test_bind::check_aux_factory_template(engine, 1013, 13);
-    EXPECT_EQ(helper.created, 2);
-
     test_bind::check_aux_factory_template_list(engine, 1013);
-    EXPECT_EQ(helper.created, 3);
 }
 
 TEST(AuxFactoryTemplateGeneric, AuxLastManual)
@@ -836,15 +788,12 @@ TEST(AuxFactoryTemplateGeneric, AuxLastManual)
         .factory_function("int", use_explicit, fp<&test_bind::create_aux_template_auxlast>, auxiliary(helper), objlast)
         .list_factory_function("repeat int", fp<&test_bind::create_aux_template_auxlast_list>, auxiliary(helper), objlast);
 
-    EXPECT_EQ(helper.created, 0);
+    auto& mock = *helper.mock;
+    EXPECT_CALL(mock, on_create()).Times(2);
+    EXPECT_CALL(mock, on_list_create()).Times(1);
 
     test_bind::check_aux_factory_template(engine, 0, 0);
-    EXPECT_EQ(helper.created, 1);
-
     helper.predefined_value = 1000;
     test_bind::check_aux_factory_template(engine, 1013, 13);
-    EXPECT_EQ(helper.created, 2);
-
     test_bind::check_aux_factory_template_list(engine, 1013);
-    EXPECT_EQ(helper.created, 3);
 }
