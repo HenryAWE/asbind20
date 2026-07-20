@@ -1,72 +1,10 @@
 // Recording functions and global properties
 
-#include <asbind_test/framework.hpp>
 #include <asbind20/asbind.hpp>
-#include <gmock/gmock-matchers.h>
 #include "listener_suites.hpp"
 
 namespace test_listener
 {
-class record_func_global_prop
-{
-public:
-    template <typename BindGenerator>
-    void on_function(BindGenerator& g, int id)
-    {
-        if(id < 0)
-        {
-            using asbind20::to_string;
-            GTEST_FAIL()
-                << "bad function: " << to_string(static_cast<AS_NAMESPACE_QUALIFIER asERetCodes>(id));
-        }
-
-        asbind20::engine_pointer engine = g.get_engine();
-        ASSERT_NE(engine, nullptr);
-        auto* f = engine->GetFunctionById(id);
-        ASSERT_NE(f, nullptr);
-
-        recorded_func.emplace_back(f->GetName());
-    }
-
-    template <typename BindGenerator>
-    void on_global_property(BindGenerator& g, int id)
-    {
-        using asbind20::to_string;
-        if(id < 0)
-        {
-            GTEST_FAIL()
-                << "bad global property: " << to_string(static_cast<AS_NAMESPACE_QUALIFIER asERetCodes>(id));
-        }
-
-        asbind20::engine_pointer engine = g.get_engine();
-        ASSERT_NE(engine, nullptr);
-        const char* name;
-        int r = engine->GetGlobalPropertyByIndex(static_cast<AS_NAMESPACE_QUALIFIER asUINT>(id), &name);
-        ASSERT_GE(r, 0)
-            << "r = " << to_string(static_cast<AS_NAMESPACE_QUALIFIER asERetCodes>(r));
-        ASSERT_NE(name, nullptr);
-
-        recorded_prop.emplace_back(name);
-    }
-
-    template <typename BindGenerator>
-    static void on_typedef(BindGenerator& g, int id)
-    {
-        GTEST_FAIL()
-            << "Unreachable. name = " << g.get_name() << " id = " << id;
-    }
-
-    template <typename BindGenerator>
-    static void on_funcdef(BindGenerator& g, int id)
-    {
-        GTEST_FAIL()
-            << "Unreachable. name = " << g.get_name() << " id = " << id;
-    }
-
-    std::vector<std::string> recorded_func;
-    std::vector<std::string> recorded_prop;
-};
-
 static int int_func()
 {
     return 0;
@@ -85,43 +23,49 @@ static float float_prop = 0.0f;
 
 using ListenerTest = test_listener::general_listener_suite;
 
-TEST_F(ListenerTest, RecordFunctions)
+namespace test_listener
 {
-    asbind20::global<true, test_listener::record_func_global_prop> g(engine);
+template <bool UseGeneric>
+static void test_record_functions(asbind20::engine_pointer engine)
+{
+    asbind20::global<UseGeneric, record_global> g(engine);
     auto& listener = g.get_listener();
-    EXPECT_TRUE(listener.recorded_func.empty());
+
+    auto& mock = *listener.mock;
+    EXPECT_CALL(mock, on_function("int_func")).Times(1);
+    EXPECT_CALL(mock, on_function("float_func")).Times(1);
+    EXPECT_CALL(mock, on_function("gfn")).Times(1);
 
     using asbind20::fp;
     g
         .function("int int_func()", fp<&test_listener::int_func>)
-        .function("float float_func()", fp<&test_listener::float_func>);
+        .function("float float_func()", fp<&test_listener::float_func>)
+        .function("void gfn()", &test_listener::gfn);
+}
+} // namespace test_listener
 
-    EXPECT_THAT(listener.recorded_func, ::testing::SizeIs(2));
-    EXPECT_THAT(listener.recorded_func, ::testing::Contains("int_func"));
-    EXPECT_THAT(listener.recorded_func, ::testing::Contains("float_func"));
+TEST_F(ListenerTest, RecordFunctionsGeneric)
+{
+    test_listener::test_record_functions<true>(engine);
+}
 
-    EXPECT_THAT(listener.recorded_prop, ::testing::SizeIs(0));
+TEST_F(ListenerTest, RecordFunctionsNative)
+{
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
-    g.function("void gfn()", &test_listener::gfn);
-    EXPECT_THAT(listener.recorded_func, ::testing::SizeIs(3));
-    EXPECT_THAT(listener.recorded_func, ::testing::Contains("gfn"));
+    test_listener::test_record_functions<true>(engine);
 }
 
 TEST_F(ListenerTest, RecordProperties)
 {
-    asbind20::global<true, test_listener::record_func_global_prop> g(engine);
+    asbind20::global<true, test_listener::record_global> g(engine);
     auto& listener = g.get_listener();
-    EXPECT_TRUE(listener.recorded_prop.empty());
+
+    auto& mock = *listener.mock;
+    EXPECT_CALL(mock, on_global_property("int_prop")).Times(1);
+    EXPECT_CALL(mock, on_global_property("float_prop")).Times(1);
 
     g
-        .property("int int_prop", test_listener::int_prop);
-    EXPECT_THAT(listener.recorded_prop, ::testing::SizeIs(1));
-    EXPECT_THAT(listener.recorded_prop, ::testing::Contains("int_prop"));
-
-    g
+        .property("int int_prop", test_listener::int_prop)
         .property("float float_prop", test_listener::float_prop);
-    EXPECT_THAT(listener.recorded_prop, ::testing::SizeIs(2));
-    EXPECT_THAT(listener.recorded_prop, ::testing::Contains("float_prop"));
-
-    EXPECT_THAT(listener.recorded_func, ::testing::SizeIs(0));
 }

@@ -1,13 +1,19 @@
-#include <asbind_test/framework.hpp>
 #include <asbind20/asbind.hpp>
-#include <gmock/gmock-matchers.h>
 #include "listener_suites.hpp"
 
 namespace test_listener
 {
-class class_listener
+struct class_listener
 {
-public:
+    struct mock_method_listener
+    {
+        MOCK_METHOD(void, on_method, (std::string_view name), ());
+    };
+
+    std::shared_ptr<testing::StrictMock<mock_method_listener>> mock =
+        std::make_shared<testing::StrictMock<mock_method_listener>>();
+    std::string recorded_class;
+
     template <typename BindingGenerator>
     void on_class(BindingGenerator& g, int id)
     {
@@ -25,7 +31,9 @@ public:
         asbind20::typeinfo_pointer ti = engine->GetTypeInfoById(id);
         ASSERT_NE(ti, nullptr);
 
-        recorded_class.emplace_back(ti->GetName());
+        EXPECT_THAT(recorded_class, ::testing::IsEmpty())
+            << "Recording class for a second time";
+        recorded_class = ti->GetName();
     }
 
     template <typename BindingGenerator>
@@ -48,13 +56,10 @@ public:
         ASSERT_NE(f, nullptr);
 
         EXPECT_EQ(f->GetObjectType(), ti)
-            << "ti.GetName(): " << ti->GetName();
+            << "ti->GetName(): " << ti->GetName();
 
-        recorded_method.emplace_back(f->GetName());
+        mock->on_method(f->GetName());
     }
-
-    std::vector<std::string> recorded_method;
-    std::vector<std::string> recorded_class;
 };
 
 class my_class
@@ -92,53 +97,41 @@ using ListenerTest = test_listener::general_listener_suite;
 namespace test_listener
 {
 template <bool UseGeneric>
-static void test_record_method(asbind20::engine_pointer engine)
+static void test_record_methods(asbind20::engine_pointer engine)
 {
     using namespace asbind20;
-    value_class<my_class, true, class_listener> c(engine, "my_class");
+    value_class<my_class, UseGeneric, class_listener> c(engine, "my_class");
     auto& listener = c.get_listener();
-    EXPECT_THAT(listener.recorded_class, ::testing::Contains("my_class"));
+    EXPECT_EQ(listener.recorded_class, "my_class");
+
+    auto& mock = *listener.mock;
+    EXPECT_CALL(mock, on_method("foo")).Times(1);
+    EXPECT_CALL(mock, on_method("bar")).Times(1);
+    EXPECT_CALL(mock, on_method("opEquals")).Times(1);
+    EXPECT_CALL(mock, on_method("opImplConv")).Times(1);
+    EXPECT_CALL(mock, on_method("opConv")).Times(1);
+    EXPECT_CALL(mock, on_method("gfn")).Times(1);
+    EXPECT_CALL(mock, on_method("outer_func")).Times(1);
 
     c
-        .method("void foo()", fp<&my_class::foo>);
-    EXPECT_THAT(listener.recorded_method, ::testing::SizeIs(1));
-    EXPECT_THAT(listener.recorded_method, ::testing::Contains("foo"));
-
-    c
-        .method("void bar() const", fp<&my_class::bar>);
-    EXPECT_THAT(listener.recorded_method, ::testing::SizeIs(2));
-    EXPECT_THAT(listener.recorded_method, ::testing::Contains("bar"));
-
-    c
+        .method("void foo()", fp<&my_class::foo>)
+        .method("void bar() const", fp<&my_class::bar>)
         .opEquals()
-        .opImplConv<int>();
-    EXPECT_THAT(listener.recorded_method, ::testing::SizeIs(4));
-    EXPECT_THAT(listener.recorded_method, ::testing::Contains("opEquals"));
-    EXPECT_THAT(listener.recorded_method, ::testing::Contains("opImplConv"));
-
-    c
-        .opConv<float>();
-    EXPECT_THAT(listener.recorded_method, ::testing::SizeIs(5));
-    EXPECT_THAT(listener.recorded_method, ::testing::Contains("opConv"));
-
-    c
+        .template opImplConv<int>()
+        .template opConv<float>()
         .method("void gfn()", &gfn)
         .method("void outer_func(int)", fp<&outer_func>);
-    EXPECT_THAT(listener.recorded_method, ::testing::SizeIs(7));
-    EXPECT_THAT(listener.recorded_method, ::testing::Contains("gfn"));
-    EXPECT_THAT(listener.recorded_method, ::testing::Contains("outer_func"));
 }
 } // namespace test_listener
 
 TEST_F(ListenerTest, RecordMethodsGeneric)
 {
-    test_listener::test_record_method<true>(engine);
+    test_listener::test_record_methods<true>(engine);
 }
 
 TEST_F(ListenerTest, RecordMethodsNative)
 {
-    if(asbind20::has_max_portability())
-        ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
-    test_listener::test_record_method<false>(engine);
+    test_listener::test_record_methods<false>(engine);
 }

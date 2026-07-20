@@ -109,7 +109,11 @@ void setup_exception_translator(
 )
 {
     if(!asbind20::has_exceptions())
+    {
+        GTEST_LOG_(WARNING)
+            << "has_exceptions() returned false, ignoring exception translator";
         return;
+    }
 
     asbind20::set_exception_translator(
         engine, &exception_translator_impl
@@ -122,11 +126,7 @@ void output_gc_statistics(
     char sep
 )
 {
-    os << "current: " << stat.current_size << sep;
-    os << "total destroyed: " << stat.total_destroyed << sep;
-    os << "total detected: " << stat.total_detected << sep;
-    os << "new objects: " << stat.new_objects << sep;
-    os << "total new destroyed: " << stat.total_new_destroyed;
+    os << stat.description(std::string_view(&sep, 1));
     os << std::endl;
 }
 

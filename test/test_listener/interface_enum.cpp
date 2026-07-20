@@ -1,13 +1,26 @@
 #include <asbind_test/framework.hpp>
 #include <asbind20/asbind.hpp>
-#include <gmock/gmock-matchers.h>
+#include <gmock/gmock.h>
 #include "listener_suites.hpp"
 
 namespace test_listener
 {
-class record_type
+
+// gmock mock for enum value listener verification
+struct mock_type_listener
 {
-public:
+    MOCK_METHOD(void, on_enum_value, (), ());
+};
+
+// Listener adapter — bridges binding generator callbacks to gmock.
+// Uses NiceMock because on_enum and on_interface fire during construction.
+// Constructor callbacks are recorded into recorded_type for post-check.
+struct record_type
+{
+    std::shared_ptr<testing::NiceMock<mock_type_listener>> mock =
+        std::make_shared<testing::NiceMock<mock_type_listener>>();
+    std::vector<std::string> recorded_type;
+
     template <typename BindGenerator>
     void on_enum_value(BindGenerator& g, int r)
     {
@@ -19,8 +32,7 @@ public:
         EXPECT_GE(r, 0)
             << "r = " << to_string(static_cast<AS_NAMESPACE_QUALIFIER asERetCodes>(r));
 
-        // The return value of RegisterEnumValue only reports whether it was successful
-        ++enum_value_count;
+        mock->on_enum_value();
     }
 
     template <typename BindGenerator>
@@ -67,9 +79,6 @@ public:
         rec_type("interface", ti->GetName());
     }
 
-    std::vector<std::string> recorded_type;
-    std::size_t enum_value_count = 0;
-
 private:
     void rec_type(std::string_view type_class, const char* name)
     {
@@ -103,10 +112,9 @@ TEST_F(ListenerTest, RecordFInterfaceAndEnum)
         auto& listener = e.get_listener();
         EXPECT_THAT(listener.recorded_type, ::testing::Contains("enum my_enum"));
 
-        EXPECT_EQ(listener.enum_value_count, 0);
+        EXPECT_CALL(*listener.mock, on_enum_value()).Times(2);
+
         e.value(my_enum::a, "a");
-        EXPECT_EQ(listener.enum_value_count, 1);
         e.value(my_enum::b, "b");
-        EXPECT_EQ(listener.enum_value_count, 2);
     }
 }
