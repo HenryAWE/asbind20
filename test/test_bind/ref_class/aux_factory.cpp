@@ -54,6 +54,12 @@ struct aux_factory_helper
     std::shared_ptr<mock_type> mock = std::make_shared<mock_type>();
     int predefined_value = 0;
 
+    aux_factory_helper() = default;
+    explicit aux_factory_helper(int predefined_val)
+        : predefined_value(predefined_val) {}
+
+    aux_factory_helper(const aux_factory_helper&) = delete;
+
     test_aux_factory* create_aux_as_global(int additional)
     {
         mock->on_create();
@@ -170,10 +176,10 @@ TEST(AuxFactoryNative, AsGlobal)
 
     ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
+    test_bind::aux_factory_helper helper(0);
+
     auto engine = asbind20::make_script_engine();
     test_bind::setup_env(engine);
-
-    test_bind::aux_factory_helper helper{.predefined_value = 0};
 
     test_bind::register_test_class<false>(engine)
         .factory_function("int", use_explicit, &test_bind::aux_factory_helper::create_aux_as_global, auxiliary(helper))
@@ -193,10 +199,10 @@ TEST(AuxFactoryGeneric, AsGlobal)
 {
     using namespace asbind20;
 
+    test_bind::aux_factory_helper helper(0);
+
     auto engine = asbind20::make_script_engine();
     test_bind::setup_env(engine);
-
-    test_bind::aux_factory_helper helper{.predefined_value = 0};
 
     test_bind::register_test_class<true>(engine)
         .factory_function("int", use_explicit, fp<&test_bind::aux_factory_helper::create_aux_as_global>, auxiliary(helper))
@@ -218,10 +224,10 @@ TEST(AuxFactoryNative, AuxFirst)
 
     ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
+    test_bind::aux_factory_helper helper(0);
+
     auto engine = asbind20::make_script_engine();
     test_bind::setup_env(engine);
-
-    test_bind::aux_factory_helper helper{.predefined_value = 0};
 
     test_bind::register_test_class<false>(engine)
         .factory_function("int", use_explicit, &test_bind::create_aux_auxfirst, auxiliary(helper))
@@ -241,10 +247,10 @@ TEST(AuxFactoryGeneric, AuxFirst)
 {
     using namespace asbind20;
 
+    test_bind::aux_factory_helper helper(0);
+
     auto engine = asbind20::make_script_engine();
     test_bind::setup_env(engine);
-
-    test_bind::aux_factory_helper helper{.predefined_value = 0};
 
     test_bind::register_test_class<true>(engine)
         .factory_function("int", use_explicit, fp<&test_bind::create_aux_auxfirst>, auxiliary(helper))
@@ -266,10 +272,10 @@ TEST(AuxFactoryNative, AuxLast)
 
     ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
+    test_bind::aux_factory_helper helper(0);
+
     auto engine = asbind20::make_script_engine();
     test_bind::setup_env(engine);
-
-    test_bind::aux_factory_helper helper{.predefined_value = 0};
 
     test_bind::register_test_class<false>(engine)
         .factory_function("int", use_explicit, &test_bind::create_aux_auxlast, auxiliary(helper))
@@ -289,10 +295,10 @@ TEST(AuxFactoryGeneric, AuxLast)
 {
     using namespace asbind20;
 
+    test_bind::aux_factory_helper helper(0);
+
     auto engine = asbind20::make_script_engine();
     test_bind::setup_env(engine);
-
-    test_bind::aux_factory_helper helper{.predefined_value = 0};
 
     test_bind::register_test_class<true>(engine)
         .factory_function("int", use_explicit, fp<&test_bind::create_aux_auxlast>, auxiliary(helper))
@@ -314,10 +320,10 @@ TEST(AuxFactoryNative, AuxFirstManual)
 
     ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
+    test_bind::aux_factory_helper helper(0);
+
     auto engine = asbind20::make_script_engine();
     test_bind::setup_env(engine);
-
-    test_bind::aux_factory_helper helper{.predefined_value = 0};
 
     test_bind::register_test_class<false>(engine)
         .factory_function("int", use_explicit, &test_bind::create_aux_auxfirst, auxiliary(helper), objfirst)
@@ -337,10 +343,10 @@ TEST(AuxFactoryGeneric, AuxFirstManual)
 {
     using namespace asbind20;
 
+    test_bind::aux_factory_helper helper(0);
+
     auto engine = asbind20::make_script_engine();
     test_bind::setup_env(engine);
-
-    test_bind::aux_factory_helper helper{.predefined_value = 0};
 
     test_bind::register_test_class<true>(engine)
         .factory_function("int", use_explicit, fp<&test_bind::create_aux_auxfirst>, auxiliary(helper), objfirst)
@@ -362,10 +368,10 @@ TEST(AuxFactoryNative, AuxLastManual)
 
     ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
+    test_bind::aux_factory_helper helper(0);
+
     auto engine = asbind20::make_script_engine();
     test_bind::setup_env(engine);
-
-    test_bind::aux_factory_helper helper{.predefined_value = 0};
 
     test_bind::register_test_class<false>(engine)
         .factory_function("int", use_explicit, &test_bind::create_aux_auxlast, auxiliary(helper), objlast)
@@ -385,10 +391,10 @@ TEST(AuxFactoryGeneric, AuxLastManual)
 {
     using namespace asbind20;
 
+    test_bind::aux_factory_helper helper(0);
+
     auto engine = asbind20::make_script_engine();
     test_bind::setup_env(engine);
-
-    test_bind::aux_factory_helper helper{.predefined_value = 0};
 
     test_bind::register_test_class<true>(engine)
         .factory_function("int", use_explicit, fp<&test_bind::create_aux_auxlast>, auxiliary(helper), objlast)
@@ -463,8 +469,14 @@ static bool aux_factory_helper_template_callback(asbind20::typeinfo_pointer ti, 
 struct aux_factory_helper_template
 {
     using mock_type = mock_create;
-    std::shared_ptr<mock_type> mock = std::make_shared<mock_type>();
     int predefined_value = 0;
+    std::shared_ptr<mock_type> mock = std::make_shared<mock_type>();
+
+    aux_factory_helper_template() = default;
+    explicit aux_factory_helper_template(int predefined_val)
+        : predefined_value(predefined_val) {}
+
+    aux_factory_helper_template(const aux_factory_helper_template&) = delete;
 
     test_aux_factory_template* create_aux_template_as_global(asbind20::typeinfo_pointer ti, int additional)
     {
@@ -564,10 +576,10 @@ TEST(AuxFactoryTemplateNative, AsGlobal)
 
     ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
+    test_bind::aux_factory_helper_template helper(0);
+
     auto engine = asbind20::make_script_engine();
     test_bind::setup_env(engine);
-
-    test_bind::aux_factory_helper_template helper{.predefined_value = 0};
 
     test_bind::register_test_class_template<false>(engine)
         .factory_function("int", use_explicit, &test_bind::aux_factory_helper_template::create_aux_template_as_global, auxiliary(helper))
@@ -587,10 +599,10 @@ TEST(AuxFactoryTemplateGeneric, AsGlobal)
 {
     using namespace asbind20;
 
+    test_bind::aux_factory_helper_template helper(0);
+
     auto engine = asbind20::make_script_engine();
     test_bind::setup_env(engine);
-
-    test_bind::aux_factory_helper_template helper{.predefined_value = 0};
 
     test_bind::register_test_class_template<true>(engine)
         .factory_function("int", use_explicit, fp<&test_bind::aux_factory_helper_template::create_aux_template_as_global>, auxiliary(helper))
@@ -612,10 +624,10 @@ TEST(AuxFactoryTemplateNative, AuxFirst)
 
     ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
+    test_bind::aux_factory_helper_template helper(0);
+
     auto engine = asbind20::make_script_engine();
     test_bind::setup_env(engine);
-
-    test_bind::aux_factory_helper_template helper{.predefined_value = 0};
 
     test_bind::register_test_class_template<false>(engine)
         .factory_function("int", use_explicit, &test_bind::create_aux_template_auxfirst, auxiliary(helper))
@@ -635,10 +647,10 @@ TEST(AuxFactoryTemplateGeneric, AuxFirst)
 {
     using namespace asbind20;
 
+    test_bind::aux_factory_helper_template helper(0);
+
     auto engine = asbind20::make_script_engine();
     test_bind::setup_env(engine);
-
-    test_bind::aux_factory_helper_template helper{.predefined_value = 0};
 
     test_bind::register_test_class_template<true>(engine)
         .factory_function("int", use_explicit, fp<&test_bind::create_aux_template_auxfirst>, auxiliary(helper))
@@ -660,10 +672,10 @@ TEST(AuxFactoryTemplateNative, AuxLast)
 
     ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
+    test_bind::aux_factory_helper_template helper(0);
+
     auto engine = asbind20::make_script_engine();
     test_bind::setup_env(engine);
-
-    test_bind::aux_factory_helper_template helper{.predefined_value = 0};
 
     test_bind::register_test_class_template<false>(engine)
         .factory_function("int", use_explicit, &test_bind::create_aux_template_auxlast, auxiliary(helper))
@@ -683,10 +695,10 @@ TEST(AuxFactoryTemplateGeneric, AuxLast)
 {
     using namespace asbind20;
 
+    test_bind::aux_factory_helper_template helper(0);
+
     auto engine = asbind20::make_script_engine();
     test_bind::setup_env(engine);
-
-    test_bind::aux_factory_helper_template helper{.predefined_value = 0};
 
     test_bind::register_test_class_template<true>(engine)
         .factory_function("int", use_explicit, fp<&test_bind::create_aux_template_auxlast>, auxiliary(helper))
@@ -708,10 +720,10 @@ TEST(AuxFactoryTemplateNative, AuxFirstManual)
 
     ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
+    test_bind::aux_factory_helper_template helper(0);
+
     auto engine = asbind20::make_script_engine();
     test_bind::setup_env(engine);
-
-    test_bind::aux_factory_helper_template helper{.predefined_value = 0};
 
     test_bind::register_test_class_template<false>(engine)
         .factory_function("int", use_explicit, &test_bind::create_aux_template_auxfirst, auxiliary(helper), objfirst)
@@ -731,10 +743,10 @@ TEST(AuxFactoryTemplateGeneric, AuxFirstManual)
 {
     using namespace asbind20;
 
+    test_bind::aux_factory_helper_template helper(0);
+
     auto engine = asbind20::make_script_engine();
     test_bind::setup_env(engine);
-
-    test_bind::aux_factory_helper_template helper{.predefined_value = 0};
 
     test_bind::register_test_class_template<true>(engine)
         .factory_function("int", use_explicit, fp<&test_bind::create_aux_template_auxfirst>, auxiliary(helper), objfirst)
@@ -756,10 +768,10 @@ TEST(AuxFactoryTemplateNative, AuxLastManual)
 
     ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
+    test_bind::aux_factory_helper_template helper(0);
+
     auto engine = asbind20::make_script_engine();
     test_bind::setup_env(engine);
-
-    test_bind::aux_factory_helper_template helper{.predefined_value = 0};
 
     test_bind::register_test_class_template<false>(engine)
         .factory_function("int", use_explicit, &test_bind::create_aux_template_auxlast, auxiliary(helper), objlast)
@@ -779,10 +791,10 @@ TEST(AuxFactoryTemplateGeneric, AuxLastManual)
 {
     using namespace asbind20;
 
+    test_bind::aux_factory_helper_template helper(0);
+
     auto engine = asbind20::make_script_engine();
     test_bind::setup_env(engine);
-
-    test_bind::aux_factory_helper_template helper{.predefined_value = 0};
 
     test_bind::register_test_class_template<true>(engine)
         .factory_function("int", use_explicit, fp<&test_bind::create_aux_template_auxlast>, auxiliary(helper), objlast)
