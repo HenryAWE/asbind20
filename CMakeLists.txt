@@ -47,14 +47,14 @@ target_compile_features(asbind20 INTERFACE cxx_std_${asbind_cxxstd})
 
 if(${asbind_build_test})
     if(NOT ${asbind_prefer_system_gtest})
-        message(STATUS "Fetching GoogleTest from GitHub")
+        message(STATUS "Fetching GoogleTest v1.17.0 from GitHub")
 
         include(FetchContent)
 
         FetchContent_Declare(
             googletest
             GIT_REPOSITORY https://github.com/google/googletest.git
-            GIT_TAG fa005b296f90faec4f352d7ab382287bf6548c8d # 2026-7-18 main
+            GIT_TAG v1.17.0
         )
         set(BUILD_GMOCK ON)
         set(INSTALL_GTEST OFF)
