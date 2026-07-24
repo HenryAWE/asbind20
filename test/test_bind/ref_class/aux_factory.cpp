@@ -59,6 +59,7 @@ struct aux_factory_helper
         : predefined_value(predefined_val) {}
 
     aux_factory_helper(const aux_factory_helper&) = delete;
+    aux_factory_helper(aux_factory_helper&&) = delete;
 
     test_aux_factory* create_aux_as_global(int additional)
     {
@@ -477,6 +478,7 @@ struct aux_factory_helper_template
         : predefined_value(predefined_val) {}
 
     aux_factory_helper_template(const aux_factory_helper_template&) = delete;
+    aux_factory_helper_template(aux_factory_helper_template&&) = delete;
 
     test_aux_factory_template* create_aux_template_as_global(asbind20::typeinfo_pointer ti, int additional)
     {

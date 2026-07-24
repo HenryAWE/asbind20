@@ -53,7 +53,7 @@ TEST_F(ListenerTest, RecordFunctionsNative)
 {
     ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
-    test_listener::test_record_functions<true>(engine);
+    test_listener::test_record_functions<false>(engine);
 }
 
 TEST_F(ListenerTest, RecordProperties)
