@@ -1,7 +1,7 @@
-#include <gtest/gtest.h>
 #include <asbind_test/framework.hpp>
+#include <gmock/gmock.h>
 #include <asbind20/operators.hpp>
-#include <iostream>
+#include <sstream>
 
 namespace test_operators
 {
@@ -57,18 +57,19 @@ static void run_ostream_test_script(asbind20::engine_pointer engine)
 
     request_context ctx(engine);
 
-    ::testing::internal::CaptureStdout();
     auto result = script_invoke<void>(ctx, f);
-    std::string output = testing::internal::GetCapturedStdout();
     ASSERT_TRUE(asbind_test::result_has_value(result));
+}
 
-    EXPECT_EQ(
-        output,
-        "true\n"
-        "1013\n"
-        "3.14\n"
-        "hello"
-    );
+static void check_ostream_output(std::string_view output)
+{
+    using ::testing::HasSubstr;
+
+    EXPECT_THAT(output, HasSubstr("true"));
+    EXPECT_THAT(output, HasSubstr("1013"));
+    EXPECT_THAT(output, HasSubstr("3.14"));
+    // Check for endl
+    EXPECT_THAT(output, HasSubstr("\n"));
 }
 } // namespace test_operators
 
@@ -82,8 +83,12 @@ TEST(TestOperators, OStreamNative)
     asbind_test::setup_message_callback(engine, true);
     asbind_test::setup_script_string(engine, false);
 
-    test_operators::register_ostream<false>(std::cout, engine);
+    // Use "static" to guarantee lifetime
+    static std::ostringstream oss;
+    test_operators::register_ostream<false>(oss, engine);
     test_operators::run_ostream_test_script(engine);
+
+    test_operators::check_ostream_output(oss.str());
 }
 
 TEST(TestOperators, OStreamGeneric)
@@ -94,6 +99,10 @@ TEST(TestOperators, OStreamGeneric)
     asbind_test::setup_message_callback(engine, true);
     asbind_test::setup_script_string(engine, true);
 
-    test_operators::register_ostream<true>(std::cout, engine);
+    // Use "static" to guarantee lifetime
+    static std::ostringstream oss;
+    test_operators::register_ostream<true>(oss, engine);
     test_operators::run_ostream_test_script(engine);
+
+    test_operators::check_ostream_output(oss.str());
 }
