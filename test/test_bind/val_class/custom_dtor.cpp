@@ -1,7 +1,14 @@
 #include <asbind_test/framework.hpp>
+#include <gmock/gmock.h>
 
 namespace test_bind
 {
+// Injectable spies for external and lambda destructor tests.
+// Declared here so the base class TearDown can clean them up.
+static std::shared_ptr<::testing::MockFunction<void()>> mfn_spy;
+static std::shared_ptr<::testing::MockFunction<void()>> ext_spy;
+static std::shared_ptr<::testing::MockFunction<void()>> lambda_spy;
+
 class dtor_tester
 {
     [[maybe_unused]]
@@ -22,12 +29,11 @@ public:
     }
 
     static inline int dtor_counter = 0;
-    static inline int mfn_counter = 0;
 
-    // Member function for self-deletion
     void self_delete()
     {
-        ++mfn_counter;
+        if(mfn_spy)
+            mfn_spy->Call();
         std::destroy_at(this);
     }
 };
@@ -36,10 +42,10 @@ template <bool UseGeneric>
 class custom_dtor_suite_base : public ::testing::Test
 {
 protected:
-    virtual void reset_counters() const
+    virtual void reset_counters_and_spies() const
     {
         dtor_tester::dtor_counter = 0;
-        dtor_tester::mfn_counter = 0;
+        mfn_spy.reset();
     }
 
 public:
@@ -61,7 +67,7 @@ public:
 
     void SetUp() override
     {
-        reset_counters();
+        reset_counters_and_spies();
 
         if constexpr(!UseGeneric)
             ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
@@ -71,6 +77,24 @@ public:
 
     void TearDown() override
     {
+        using ::testing::Mock;
+        // Verify and clean up all mock spies before engine teardown,
+        // so mock verification failures are reported.
+        if(mfn_spy)
+        {
+            Mock::VerifyAndClearExpectations(mfn_spy.get());
+            mfn_spy.reset();
+        }
+        if(ext_spy)
+        {
+            Mock::VerifyAndClearExpectations(ext_spy.get());
+            ext_spy.reset();
+        }
+        if(lambda_spy)
+        {
+            Mock::VerifyAndClearExpectations(lambda_spy.get());
+            lambda_spy.reset();
+        }
         engine.reset();
     }
 
@@ -116,7 +140,6 @@ public:
         auto result = asbind20::script_invoke<void>(ctx, f);
         ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
         EXPECT_EQ(dtor_tester::dtor_counter, 1);
-        EXPECT_EQ(dtor_tester::mfn_counter, 1);
     }
 };
 } // namespace test_bind
@@ -127,6 +150,11 @@ using CustomDestructorMFNGeneric = test_bind::custom_dtor_mfn_suite<true>;
 TEST_F(CustomDestructorMFNNative, RunDtorTest)
 {
     using test_bind::dtor_tester;
+    using test_bind::mfn_spy;
+
+    mfn_spy = std::make_shared<::testing::MockFunction<void()>>();
+    EXPECT_CALL(*mfn_spy, Call()).Times(1);
+
     setup_dtor_tester()
         .destructor_function(asbind20::fp<&dtor_tester::self_delete>);
     run_dtor_test();
@@ -135,6 +163,12 @@ TEST_F(CustomDestructorMFNNative, RunDtorTest)
 TEST_F(CustomDestructorMFNGeneric, RunDtorTest)
 {
     using test_bind::dtor_tester;
+    using test_bind::mfn_spy;
+
+    // Set up spy: expect self_delete() to be called exactly once
+    mfn_spy = std::make_shared<::testing::MockFunction<void()>>();
+    EXPECT_CALL(*mfn_spy, Call()).Times(1);
+
     setup_dtor_tester()
         .destructor_function(asbind20::fp<&dtor_tester::self_delete>);
     run_dtor_test();
@@ -142,11 +176,10 @@ TEST_F(CustomDestructorMFNGeneric, RunDtorTest)
 
 namespace test_bind
 {
-static int global_counter = 0;
-
 static void external_dtor(dtor_tester* this_)
 {
-    ++global_counter;
+    if(ext_spy)
+        ext_spy->Call();
     this_->~dtor_tester();
 }
 
@@ -156,10 +189,10 @@ class custom_dtor_external_suite : public custom_dtor_suite_base<UseGeneric>
     using my_base = custom_dtor_suite_base<UseGeneric>;
 
 protected:
-    void reset_counters() const override
+    void reset_counters_and_spies() const override
     {
-        my_base::reset_counters();
-        global_counter = 0;
+        my_base::reset_counters_and_spies();
+        ext_spy.reset();
     }
 
 public:
@@ -176,10 +209,7 @@ public:
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<void>(ctx, f);
         ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
-        EXPECT_EQ(global_counter, 1);
         EXPECT_EQ(dtor_tester::dtor_counter, 1);
-        EXPECT_EQ(dtor_tester::mfn_counter, 0)
-            << "This should be untouched";
     }
 };
 } // namespace test_bind
@@ -189,7 +219,12 @@ using CustomDestructorExternalGeneric = test_bind::custom_dtor_external_suite<tr
 
 TEST_F(CustomDestructorExternalNative, RunDtorTest)
 {
+    using test_bind::ext_spy;
     using test_bind::external_dtor;
+
+    ext_spy = std::make_shared<::testing::MockFunction<void()>>();
+    EXPECT_CALL(*ext_spy, Call()).Times(1);
+
     setup_dtor_tester()
         .destructor_function(asbind20::fp<&external_dtor>);
     run_dtor_test();
@@ -197,7 +232,12 @@ TEST_F(CustomDestructorExternalNative, RunDtorTest)
 
 TEST_F(CustomDestructorExternalGeneric, RunDtorTest)
 {
+    using test_bind::ext_spy;
     using test_bind::external_dtor;
+
+    ext_spy = std::make_shared<::testing::MockFunction<void()>>();
+    EXPECT_CALL(*ext_spy, Call()).Times(1);
+
     setup_dtor_tester()
         .destructor_function(asbind20::fp<&external_dtor>);
     run_dtor_test();
@@ -208,11 +248,17 @@ namespace test_bind
 class aux_counter
 {
 public:
-    int counter = 0;
+    struct mock_dtor_call
+    {
+        MOCK_METHOD(void, on_custom_dtor, (), ());
+    };
+
+    using mock_type = ::testing::StrictMock<mock_dtor_call>;
+    std::shared_ptr<mock_type> mock = std::make_shared<mock_type>();
 
     void aux_dtor(dtor_tester* obj)
     {
-        ++counter;
+        mock->on_custom_dtor();
         obj->~dtor_tester();
     }
 };
@@ -222,21 +268,11 @@ class custom_dtor_suite_aux : public custom_dtor_suite_base<UseGeneric>
 {
     using my_base = custom_dtor_suite_base<UseGeneric>;
 
-    // Magic number to ensure the value is untouched
-    static constexpr int magic_num = 42;
-
-    void reset_counters() const override
-    {
-        my_base::reset_counters();
-        // This value should be untouched
-        global_counter = magic_num;
-    }
-
 public:
     using my_base::compile_module;
     using my_base::engine;
 
-    void run_dtor_test(const aux_counter& instance)
+    void run_dtor_test()
     {
         auto* m = compile_module();
 
@@ -246,10 +282,7 @@ public:
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<void>(ctx, f);
         ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
-        EXPECT_EQ(instance.counter, 1);
         EXPECT_EQ(dtor_tester::dtor_counter, 1);
-        EXPECT_EQ(global_counter, magic_num)
-            << "This should be untouched";
     }
 };
 } // namespace test_bind
@@ -261,35 +294,39 @@ TEST_F(CustomDestructorAuxNative, RunDtorTest)
 {
     using namespace asbind20;
     using test_bind::aux_counter;
+
     aux_counter instance{};
+    EXPECT_CALL(*instance.mock, on_custom_dtor()).Times(1);
+
     setup_dtor_tester()
         .destructor_function(fp<&aux_counter::aux_dtor>, auxiliary(instance));
-    run_dtor_test(instance);
+    run_dtor_test();
 }
 
 TEST_F(CustomDestructorAuxGeneric, RunDtorTest)
 {
     using namespace asbind20;
     using test_bind::aux_counter;
+
     aux_counter instance{};
+    EXPECT_CALL(*instance.mock, on_custom_dtor()).Times(1);
+
     setup_dtor_tester()
         .destructor_function(fp<&aux_counter::aux_dtor>, auxiliary(instance));
-    run_dtor_test(instance);
+    run_dtor_test();
 }
 
 namespace test_bind
 {
-static int counter_lambda = 0;
-
 template <bool UseGeneric>
 class custom_dtor_suite_lambda : public custom_dtor_suite_base<UseGeneric>
 {
     using my_base = custom_dtor_suite_base<UseGeneric>;
 
-    void reset_counters() const override
+    void reset_counters_and_spies() const override
     {
-        my_base::reset_counters();
-        counter_lambda = 0;
+        my_base::reset_counters_and_spies();
+        lambda_spy.reset();
     }
 
 public:
@@ -306,10 +343,7 @@ public:
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<void>(ctx, f);
         ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
-        EXPECT_EQ(counter_lambda, 1);
         EXPECT_EQ(dtor_tester::dtor_counter, 1);
-        EXPECT_EQ(dtor_tester::mfn_counter, 0)
-            << "This should be untouched";
     }
 };
 } // namespace test_bind
@@ -320,11 +354,17 @@ using CustomDestructorLambdaGeneric = test_bind::custom_dtor_suite_lambda<true>;
 TEST_F(CustomDestructorLambdaNative, RunDtorTest)
 {
     using namespace asbind20;
+    using test_bind::lambda_spy;
+
+    // Set up spy: expect lambda destructor to be called exactly once
+    lambda_spy = std::make_shared<::testing::MockFunction<void()>>();
+    EXPECT_CALL(*lambda_spy, Call()).Times(1);
+
     setup_dtor_tester()
         .destructor_function(
             [](test_bind::dtor_tester* this_)
             {
-                ++test_bind::counter_lambda;
+                lambda_spy->Call();
                 std::destroy_at(this_);
             }
         );
@@ -334,11 +374,16 @@ TEST_F(CustomDestructorLambdaNative, RunDtorTest)
 TEST_F(CustomDestructorLambdaGeneric, RunDtorTest)
 {
     using namespace asbind20;
+    using test_bind::lambda_spy;
+
+    lambda_spy = std::make_shared<::testing::MockFunction<void()>>();
+    EXPECT_CALL(*lambda_spy, Call()).Times(1);
+
     setup_dtor_tester()
         .destructor_function(
             [](test_bind::dtor_tester* this_)
             {
-                ++test_bind::counter_lambda;
+                lambda_spy->Call();
                 std::destroy_at(this_);
             }
         );
