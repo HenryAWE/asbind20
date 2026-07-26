@@ -62,6 +62,30 @@ void setup_message_callback(
     bool propagate_error_to_gtest
 )
 {
+    // Checking if a callback has already been registered
+    {
+        AS_NAMESPACE_QUALIFIER asSFuncPtr old_cb{};
+        int r = engine->GetMessageCallback(&old_cb, nullptr, nullptr);
+
+        if(r < 0)
+        {
+            if(r != AS_NAMESPACE_QUALIFIER asNO_FUNCTION)
+            {
+                GTEST_LOG_(WARNING)
+                    << "Failed to call GetMessageCallback() for"
+                    << "checking if a callback has already been registered."
+                    << " r = " << r << ", "
+                    << asbind20::to_string(static_cast<AS_NAMESPACE_QUALIFIER asERetCodes>(r));
+            }
+        }
+        else
+        {
+            GTEST_LOG_(WARNING)
+                << "An message callback has already been registered!"
+                << " flag = " << old_cb.flag;
+        }
+    }
+
     if(propagate_error_to_gtest)
     {
         asbind20::set_message_callback(
