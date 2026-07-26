@@ -45,6 +45,9 @@ public:
     explicit global(engine_pointer engine)
         : my_base(engine) {}
 
+    explicit global(engine_reference engine)
+        : global(std::addressof(engine)) {}
+
     // For keeping consistency with other binding generators
     template <bool AppendOnly>
     global(
@@ -52,6 +55,14 @@ public:
         engine_pointer engine
     )
         : global(engine)
+    {}
+
+    template <bool AppendOnly>
+    global(
+        appending_t<AppendOnly>,
+        engine_reference engine
+    )
+        : global(std::addressof(engine))
     {}
 
     using my_base::get_engine;

@@ -2844,7 +2844,7 @@ class basic_value_class final :
     using listener_traits_type = listener_traits<Listener>;
 
 public:
-    using flag_type = AS_NAMESPACE_QUALIFIER asQWORD;
+    using flag_type = typename my_base::flag_type;
     using class_type = Class;
     using class_binding_generator_tag = void;
 
@@ -2877,15 +2877,37 @@ public:
         );
     }
 
+    basic_value_class(
+        engine_reference engine,
+        std::string name,
+        flag_type flags = 0
+    )
+        : basic_value_class(
+              std::addressof(engine), std::move(name), flags
+          ) {}
+
     template <string_like StringLike>
     basic_value_class(
         engine_pointer engine,
         StringLike&& name,
-        AS_NAMESPACE_QUALIFIER asQWORD flags = 0
+        flag_type flags = 0
     )
         : basic_value_class(
               engine,
               util::string_like_to_string(std::forward<StringLike>(name)),
+              flags
+          )
+    {}
+
+    template <string_like StringLike>
+    basic_value_class(
+        engine_reference engine,
+        StringLike&& name,
+        flag_type flags = 0
+    )
+        : basic_value_class(
+              std::addressof(engine),
+              std::forward<StringLike>(name),
               flags
           )
     {}
@@ -2899,6 +2921,15 @@ public:
     {
         this->append_type(true, 0, 0);
     }
+
+    basic_value_class(
+        appending_t<true>,
+        engine_reference engine,
+        std::string name
+    )
+        : basic_value_class(
+              appending_t<true>{}, std::addressof(engine), name
+          ) {}
 
     template <string_like StringLike>
     basic_value_class(
@@ -4172,7 +4203,7 @@ public:
     basic_ref_class(
         engine_pointer engine,
         std::string name,
-        AS_NAMESPACE_QUALIFIER asQWORD flags = 0
+        flag_type flags = 0
     )
         : my_base(engine, std::move(name))
     {
@@ -4196,15 +4227,37 @@ public:
         );
     }
 
+    basic_ref_class(
+        engine_reference engine,
+        std::string name,
+        flag_type flags = 0
+    )
+        : basic_ref_class(
+              std::addressof(engine), std::move(name), flags
+          ) {}
+
     template <string_like StringLike>
     basic_ref_class(
         engine_pointer engine,
         StringLike&& name,
-        AS_NAMESPACE_QUALIFIER asQWORD flags = 0
+        flag_type flags = 0
     )
         : basic_ref_class(
               engine,
               util::string_like_to_string(std::forward<StringLike>(name)),
+              flags
+          )
+    {}
+
+    template <string_like StringLike>
+    basic_ref_class(
+        engine_reference engine,
+        StringLike&& name,
+        flag_type flags = 0
+    )
+        : basic_ref_class(
+              std::addressof(engine),
+              std::forward<StringLike>(name),
               flags
           )
     {}
@@ -4223,6 +4276,17 @@ public:
         this->append_type(AppendOnly, flags, 0);
     }
 
+    template <bool AppendOnly>
+    basic_ref_class(
+        appending_t<AppendOnly>,
+        engine_reference engine,
+        std::string name
+    )
+        : basic_ref_class(
+              appending_t<AppendOnly>{}, std::addressof(engine), std::move(name)
+          )
+    {}
+
     template <bool AppendOnly, string_like StringLike>
     basic_ref_class(
         appending_t<AppendOnly>,
@@ -4233,6 +4297,19 @@ public:
               appending_t<AppendOnly>{},
               engine,
               util::string_like_to_string(std::forward<StringLike>(name))
+          )
+    {}
+
+    template <bool AppendOnly, string_like StringLike>
+    basic_ref_class(
+        appending_t<AppendOnly>,
+        engine_reference engine,
+        StringLike&& name
+    )
+        : basic_ref_class(
+              appending_t<AppendOnly>{},
+              std::addressof(engine),
+              std::forward<StringLike>(name)
           )
     {}
 

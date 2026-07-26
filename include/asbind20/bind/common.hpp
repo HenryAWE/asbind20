@@ -350,10 +350,19 @@ public:
 protected:
     // This base class only holds a reference to the engine.
     // It won't increase the reference count of the engine.
+    explicit engine_ref_holder(engine_reference engine) noexcept
+        : m_engine(std::addressof(engine))
+    {}
+
     explicit engine_ref_holder(engine_pointer engine) noexcept
-        : m_engine(engine)
     {
+#ifndef ASBIND20_CONFIG_NO_THROW_ON_BAD_BINDING
+        if(!engine) [[unlikely]]
+            detail::throw_<std::invalid_argument>("engine is nullptr");
+#else
         ASBIND20_ASSERT(engine != nullptr);
+#endif
+        m_engine = engine;
     }
 
 private:
