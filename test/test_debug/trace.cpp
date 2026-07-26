@@ -1,5 +1,5 @@
 #include <asbind_test/framework.hpp>
-#include <gmock/gmock-matchers.h>
+#include <gmock/gmock.h>
 #include <asbind20/debugging.hpp>
 #include <asbind20/debugging/stacktrace.hpp>
 
@@ -25,7 +25,7 @@ TEST(Trace, Print)
                 auto& data = get_generic_auxiliary<data_type>(gen);
                 debugging::stacktrace tr = debugging::stacktrace::current();
                 EXPECT_EQ(tr.size(), 3);
-                EXPECT_FALSE(tr.empty());
+                EXPECT_THAT(tr, ::testing::Not(::testing::IsEmpty()));
                 data.ss << tr;
 
                 for(auto& entry : tr)
@@ -50,7 +50,7 @@ TEST(Trace, Print)
     auto* foobar = m->GetFunctionByName("foobar");
     ASSERT_NE(foobar, nullptr);
 
-    EXPECT_TRUE(data.ss.str().empty());
+    EXPECT_THAT(data.ss.str(), ::testing::IsEmpty());
     request_context ctx(engine);
     auto result = script_invoke<int>(ctx, foobar);
     ASBIND_TEST_ASSERT_INVOKE_RESULT(result);

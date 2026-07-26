@@ -1,5 +1,6 @@
 #include <asbind_test/framework.hpp>
 #include <asbind20/container/small_vector.hpp>
+#include <gmock/gmock.h>
 
 TEST(SmallVector, EmptyIntSVMoveCtor)
 {
@@ -12,9 +13,9 @@ TEST(SmallVector, EmptyIntSVMoveCtor)
     sv_type v(
         nullptr, AS_NAMESPACE_QUALIFIER asTYPEID_INT32
     );
-    EXPECT_TRUE(v.empty());
+    EXPECT_THAT(v, ::testing::IsEmpty());
     sv_type new_sv = std::move(v);
-    EXPECT_TRUE(new_sv.empty());
+    EXPECT_THAT(new_sv, ::testing::IsEmpty());
     EXPECT_NE(v.data(), new_sv.data());
 }
 
@@ -101,9 +102,9 @@ TEST(SmallVector, EmptyStringSVMoveCtor)
     ASSERT_NE(string_ti, nullptr);
 
     sv_type v(string_ti);
-    EXPECT_TRUE(v.empty());
+    EXPECT_THAT(v, ::testing::IsEmpty());
     sv_type new_sv = std::move(v);
-    EXPECT_TRUE(new_sv.empty());
+    EXPECT_THAT(new_sv, ::testing::IsEmpty());
     EXPECT_NE(v.data(), new_sv.data());
 }
 

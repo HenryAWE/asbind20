@@ -2,6 +2,7 @@
 #include <asbind20/container/small_vector.hpp>
 #include <asbind_test/framework.hpp>
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
 
 TEST(SmallVector, IntAsElement)
 {
@@ -30,12 +31,12 @@ TEST(SmallVector, IntAsElement)
     EXPECT_GE(v.capacity(), v.static_capacity());
     v.shrink_to_fit();
     EXPECT_GE(v.capacity(), v.static_capacity());
-    EXPECT_FALSE(v.empty());
+    EXPECT_THAT(v, ::testing::Not(::testing::IsEmpty()));
     ASSERT_EQ(v.size(), 1);
     EXPECT_EQ(*(int*)v[0], 1013);
     v.pop_back();
     EXPECT_EQ(v.size(), 0);
-    EXPECT_TRUE(v.empty());
+    EXPECT_THAT(v, ::testing::IsEmpty());
 
     for(int i = 0; i < 64; ++i)
     {
@@ -53,7 +54,7 @@ TEST(SmallVector, IntAsElement)
         EXPECT_EQ(*(int*)v[i], 64 - (i + 1)) << "i = " << i;
     }
     v.clear();
-    EXPECT_TRUE(v.empty());
+    EXPECT_THAT(v, ::testing::IsEmpty());
 
     for(int i = 0; i < 128; ++i)
         push_back_helper(i);
@@ -70,7 +71,7 @@ TEST(SmallVector, IntAsElement)
         EXPECT_EQ(*(int*)v[i], i);
 
     v.clear();
-    EXPECT_TRUE(v.empty());
+    EXPECT_THAT(v, ::testing::IsEmpty());
     EXPECT_GE(v.capacity(), 128);
     v.shrink_to_fit();
     EXPECT_EQ(v.capacity(), v.static_capacity());
@@ -329,5 +330,5 @@ TEST(SmallVector, ScriptStringAsElement)
     v.clear();
     EXPECT_GE(v.capacity(), 128);
     EXPECT_EQ(v.size(), 0);
-    EXPECT_TRUE(v.empty());
+    EXPECT_THAT(v, ::testing::IsEmpty());
 }
