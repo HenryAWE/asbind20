@@ -15,8 +15,7 @@ class mt_string_factory_suite : public script_string_suite_base<UseGeneric>
 public:
     void SetUp() override
     {
-        if(!asbind20::has_threads())
-            GTEST_SKIP() << "No multithread environment";
+        ASBIND_TEST_SKIP_IF_NO_THREADS();
 
         asbind20::concurrent::prepare_multithread();
         my_base::SetUp();
