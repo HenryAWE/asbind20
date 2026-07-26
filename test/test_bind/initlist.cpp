@@ -7,18 +7,7 @@ namespace test_bind
 static void setup_initlist_test_env(asbind20::engine_pointer engine)
 {
     asbind_test::setup_message_callback(engine);
-}
-
-template <bool UseGeneric>
-static void register_vector_of_ints(asbind20::engine_pointer engine)
-{
-    using namespace asbind20;
-
-    using vector_t = std::vector<int>;
-
-    value_class<vector_t, UseGeneric>(engine, "vec_ints")
-        .behaviours_by_traits()
-        .template list_constructor<int>("repeat int", use_policy<policies::as_iterators>);
+    asbind_test::setup_exception_translator(engine);
 }
 
 template <typename T, typename DataGetter>
@@ -65,7 +54,9 @@ static void check_init_list(
             return {};
         }
         asbind20::request_context ctx(engine);
-        return asbind20::script_invoke<T>(ctx, f).value();
+        auto result = asbind20::script_invoke<T>(ctx, f);
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
+        return result.value();
     };
 
     auto v0 = create(0);
@@ -109,6 +100,18 @@ struct my_vec_ints
 
     std::vector<int> data;
 };
+
+template <bool UseGeneric>
+static void register_vector_of_ints(asbind20::engine_pointer engine)
+{
+    using namespace asbind20;
+
+    using vector_t = std::vector<int>;
+
+    value_class<vector_t, UseGeneric>(engine, "vec_ints")
+        .behaviours_by_traits()
+        .template list_constructor<int>("repeat int", use_policy<policies::as_iterators>);
+}
 
 template <asbind20::policies::initialization_list_policy Policy, bool UseGeneric>
 static void register_my_vec_ints(asbind20::engine_pointer engine)
@@ -518,18 +521,21 @@ static void check_ref_test_vector(asbind20::engine_pointer engine)
 
     auto create = [&](int idx) -> ref_test_vector*
     {
-        std::string decl = asbind20::string_concat("ref_test_vector@ create", std::to_string(idx), "()");
+        std::string decl = asbind20::string_concat(
+            "ref_test_vector@ create", std::to_string(idx), "()"
+        );
         auto* f = m->GetFunctionByDecl(decl.c_str());
 
         if(!f)
         {
-            EXPECT_TRUE(f) << decl << ": not found";
+            EXPECT_NE(f, nullptr)
+                << decl << ": not found";
             return nullptr;
         }
 
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<ref_test_vector*>(ctx, f);
-        EXPECT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
 
         auto* val = result.value();
         EXPECT_EQ(val->use_count(), 1);
@@ -539,9 +545,9 @@ static void check_ref_test_vector(asbind20::engine_pointer engine)
 
     {
         auto* val = create(0);
-        ASSERT_EQ(val->use_count(), 1);
+        EXPECT_EQ(val->use_count(), 1);
 
-        EXPECT_EQ(val->data.size(), 0);
+        EXPECT_THAT(val->data, ::testing::IsEmpty());
 
         val->release();
     }
@@ -550,8 +556,7 @@ static void check_ref_test_vector(asbind20::engine_pointer engine)
         auto* val = create(1);
         ASSERT_EQ(val->use_count(), 1);
 
-        EXPECT_EQ(val->data.at(0), 1013);
-        EXPECT_EQ(val->data.size(), 1);
+        EXPECT_THAT(val->data, ::testing::ElementsAre(1013));
 
         val->release();
     }
@@ -560,9 +565,7 @@ static void check_ref_test_vector(asbind20::engine_pointer engine)
         auto* val = create(2);
         ASSERT_EQ(val->use_count(), 1);
 
-        EXPECT_EQ(val->data.at(0), 10);
-        EXPECT_EQ(val->data.at(1), 13);
-        EXPECT_EQ(val->data.size(), 2);
+        EXPECT_THAT(val->data, ::testing::ElementsAre(10, 13));
 
         val->release();
     }
