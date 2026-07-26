@@ -1,24 +1,18 @@
 #include <asbind_test/framework.hpp>
-#include <asbind20/asbind.hpp>
-#include <gmock/gmock.h>
 #include "listener_suites.hpp"
 
 namespace test_listener
 {
-
-// gmock mock for enum value listener verification
-struct mock_type_listener
+class record_type
 {
-    MOCK_METHOD(void, on_enum_value, (), ());
-};
+public:
+    struct mock_type_listener
+    {
+        MOCK_METHOD(void, on_enum_value, (), ());
+    };
 
-// Listener adapter — bridges binding generator callbacks to gmock.
-// Uses NiceMock because on_enum and on_interface fire during construction.
-// Constructor callbacks are recorded into recorded_type for post-check.
-struct record_type
-{
-    std::shared_ptr<testing::NiceMock<mock_type_listener>> mock =
-        std::make_shared<testing::NiceMock<mock_type_listener>>();
+    using mock_type = testing::StrictMock<mock_type_listener>;
+    std::shared_ptr<mock_type> mock = std::make_shared<mock_type>();
     std::vector<std::string> recorded_type;
 
     template <typename BindGenerator>
@@ -104,13 +98,19 @@ TEST_F(ListenerTest, RecordFInterfaceAndEnum)
     {
         asbind20::basic_interface<record_type> i(engine, "interface_0");
         auto& listener = i.get_listener();
-        EXPECT_THAT(listener.recorded_type, ::testing::Contains("interface interface_0"));
+        EXPECT_THAT(
+            listener.recorded_type,
+            ::testing::Contains("interface interface_0")
+        );
     }
 
     {
         asbind20::enum_<my_enum, compat::script_enum_value_type, record_type> e(engine, "my_enum");
         auto& listener = e.get_listener();
-        EXPECT_THAT(listener.recorded_type, ::testing::Contains("enum my_enum"));
+        EXPECT_THAT(
+            listener.recorded_type,
+            ::testing::Contains("enum my_enum")
+        );
 
         EXPECT_CALL(*listener.mock, on_enum_value()).Times(2);
 
