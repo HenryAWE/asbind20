@@ -48,27 +48,27 @@ TEST(TestBind, TemplateFunc)
     {
         request_context ctx(engine);
         auto* f = m->GetFunctionByName("test0");
-        ASSERT_TRUE(f);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         auto result = script_invoke<int>(ctx, f);
-        EXPECT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 42);
     }
 
     {
         request_context ctx(engine);
         auto* f = m->GetFunctionByName("test1");
-        ASSERT_TRUE(f);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         auto result = script_invoke<float>(ctx, f);
-        EXPECT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
         EXPECT_FLOAT_EQ(result.value(), 3.14f);
     }
 
     {
         request_context ctx(engine);
         auto* f = m->GetFunctionByName("test2");
-        ASSERT_TRUE(f);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         // Will trigger exception
         auto result = script_invoke<double>(ctx, f);

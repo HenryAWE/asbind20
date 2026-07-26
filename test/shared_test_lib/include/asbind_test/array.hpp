@@ -4,12 +4,13 @@
 #pragma once
 
 #include <cstddef>
+#include <gtest/gtest.h>
+#include <gmock/gmock.h>
 #include <asbind20/asbind.hpp>
 #include <asbind20/concurrent/mutex.hpp>
 #include <asbind20/container/small_vector.hpp>
 #include <asbind20/operators.hpp>
 #include <asbind20/container/compare.hpp>
-#include "framework.hpp"
 
 namespace asbind_test
 {
@@ -116,7 +117,7 @@ namespace detail
         template <AS_NAMESPACE_QUALIFIER asPWORD UserDataID>
         static array_cache* get_cache(asbind20::typeinfo_pointer ti)
         {
-            assert(ti != nullptr);
+            EXPECT_THAT(ti, ::testing::NotNull());
             return static_cast<array_cache*>(
                 ti->GetUserData(UserDataID)
             );
@@ -226,7 +227,7 @@ public:
             : m_arr(arr)
         {
             (void)ti;
-            assert(ti->GetSubTypeId() == arr->get_type_info()->GetSubTypeId());
+            EXPECT_EQ(ti->GetSubTypeId(), arr->get_type_info()->GetSubTypeId());
             if(arr)
                 m_arr->addref();
         }
@@ -246,14 +247,14 @@ public:
             : script_array_iterator(other)
         {
             (void)ti;
-            assert(ti->GetSubTypeId() == m_arr->get_type_info()->GetSubTypeId());
+            EXPECT_EQ(ti->GetSubTypeId(), m_arr->get_type_info()->GetSubTypeId());
         }
 
         script_array_iterator(asbind20::typeinfo_pointer ti, script_array* arr, size_type offset)
             : m_arr(arr), m_offset(offset)
         {
             (void)ti;
-            assert(ti->GetSubTypeId() == m_arr->get_type_info()->GetSubTypeId());
+            EXPECT_EQ(ti->GetSubTypeId(), m_arr->get_type_info()->GetSubTypeId());
             if(m_arr)
                 m_arr->addref();
         }
@@ -427,7 +428,7 @@ public:
 
             if(!m_arr)
                 return;
-            assert(engine == m_arr->get_engine());
+            EXPECT_EQ(engine, m_arr->get_engine());
             m_arr->release();
             m_arr = nullptr;
         }
@@ -462,7 +463,7 @@ public:
     {
         if(get_type_info() != other.get_type_info()) [[unlikely]]
         {
-            assert(false && "comparing different arrays with different element types");
+            ADD_FAILURE() << "comparing different arrays with different element types";
             return false;
         }
 
@@ -900,7 +901,7 @@ private:
             if(lhs == nullptr || rhs == nullptr)
             {
                 if constexpr(!IsHandle)
-                    assert(false && "bad array");
+                    ADD_FAILURE() << "bad array";
 
                 if constexpr(Ascending)
                     return lhs < rhs;
@@ -1103,7 +1104,7 @@ public:
         bool stable = false
     )
     {
-        assert(func != nullptr);
+        EXPECT_THAT(func, ::testing::NotNull());
 
         ASBIND_TEST_ARRAY_CHECK_CALLBACK(sort_by, void());
         callback_guard guard(this);
@@ -1244,14 +1245,14 @@ public:
     void enum_refs(asbind20::engine_pointer engine)
     {
         (void)engine;
-        assert(m_data.get_type_info()->GetEngine() == engine);
+        EXPECT_EQ(m_data.get_type_info()->GetEngine(), engine);
         m_data.enum_refs();
     }
 
     void release_refs(asbind20::engine_pointer engine)
     {
         (void)engine;
-        assert(m_data.get_type_info()->GetEngine() == engine);
+        EXPECT_EQ(m_data.get_type_info()->GetEngine(), engine);
         clear();
     }
 
@@ -1349,7 +1350,7 @@ private:
         const void* value, size_type start_offset, size_type n, array_cache* cache
     ) const
     {
-        assert(start_offset < size());
+        EXPECT_LT(start_offset, size());
 
         n = std::min(size() - start_offset, n);
 
@@ -1398,7 +1399,7 @@ private:
 public:
     script_array_iterator find(const void* value, index_type start = 0, size_type n = -1) const
     {
-        assert(value != nullptr);
+        EXPECT_THAT(value, ::testing::NotNull());
 
         // Initial value is equivalent to the end() iterator
         size_type result = size();
@@ -1425,7 +1426,7 @@ result_found:
 
     bool contains(const void* value, index_type start, size_type n = -1) const
     {
-        assert(value != nullptr);
+        EXPECT_THAT(value, ::testing::NotNull());
 
         array_cache* cache = get_cache();
         if(!cache) [[unlikely]]
@@ -1497,13 +1498,13 @@ private:
         callback_guard(const script_array* this_) noexcept
             : m_guard(this_->m_within_callback)
         {
-            assert(!m_guard);
+            EXPECT_FALSE(m_guard);
             m_guard = true;
         }
 
         ~callback_guard()
         {
-            assert(m_guard);
+            EXPECT_TRUE(m_guard);
             m_guard = false;
         }
 

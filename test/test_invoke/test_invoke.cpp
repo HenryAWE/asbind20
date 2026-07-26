@@ -36,7 +36,7 @@ TEST(TestInvoke, CommonTypes)
 
     {
         auto* fp = m->GetFunctionByName("add_1");
-        ASSERT_NE(fp, nullptr);
+        ASSERT_THAT(fp, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
 
@@ -46,7 +46,7 @@ TEST(TestInvoke, CommonTypes)
 
     {
         auto* fp = m->GetFunctionByName("add_ref_1");
-        ASSERT_NE(fp, nullptr);
+        ASSERT_THAT(fp, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
 
@@ -61,7 +61,7 @@ TEST(TestInvoke, CommonTypes)
 
     {
         auto* fp = m->GetFunctionByName("flt_identity");
-        ASSERT_NE(fp, nullptr);
+        ASSERT_THAT(fp, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
 
@@ -75,7 +75,7 @@ TEST(TestInvoke, CommonTypes)
 
     {
         auto* fp = m->GetFunctionByName("dbl_identity");
-        ASSERT_NE(fp, nullptr);
+        ASSERT_THAT(fp, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
 
@@ -92,7 +92,7 @@ TEST(TestInvoke, CommonTypes)
         using namespace std::literals;
 
         auto* fp = m->GetFunctionByName("test");
-        ASSERT_NE(fp, nullptr);
+        ASSERT_THAT(fp, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
 
@@ -122,13 +122,13 @@ TEST(TestInvoke, CommonTypes)
         EXPECT_EQ(val, 2);
 
         auto opt = result.to_optional();
-        EXPECT_TRUE(opt.has_value());
+        EXPECT_THAT(opt, ::testing::Optional(::testing::_));
         EXPECT_EQ(*opt, "test");
 
 #ifdef ASBIND20_HAS_EXPECTED
 
         auto ex = std::expected<std::string, AS_NAMESPACE_QUALIFIER asEContextState>(result);
-        EXPECT_TRUE(ex.has_value());
+        EXPECT_THAT(ex, ::testing::Optional(::testing::_));
         EXPECT_EQ(*ex, "test");
 
 #endif
@@ -136,7 +136,7 @@ TEST(TestInvoke, CommonTypes)
 
     {
         auto* fp = m->GetFunctionByName("test_handle");
-        ASSERT_NE(fp, nullptr);
+        ASSERT_THAT(fp, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
 
@@ -149,7 +149,7 @@ TEST(TestInvoke, CommonTypes)
 
     {
         auto* fp = m->GetFunctionByName("test_handle");
-        ASSERT_NE(fp, nullptr);
+        ASSERT_THAT(fp, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
 
@@ -188,7 +188,7 @@ TEST(TestInvoke, CustomRuleByte)
         EXPECT_EQ(result.value_or(0), std::byte(0x2));
 
         auto opt = result.to_optional();
-        EXPECT_TRUE(opt.has_value());
+        EXPECT_THAT(opt, ::testing::Optional(::testing::_));
         EXPECT_EQ(*opt, std::byte(0x2));
     }
 }
@@ -261,7 +261,7 @@ TEST(TestInvoke, BadResult)
 
     {
         auto* f = m->GetFunctionByName("test0");
-        ASSERT_TRUE(f);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         request_context ctx(engine);
         auto result = script_invoke<int>(ctx, f);
@@ -277,7 +277,7 @@ TEST(TestInvoke, BadResult)
         EXPECT_EQ(result.value_or(3.14f), 3);
 
         auto opt = std::optional<int>(result);
-        EXPECT_FALSE(opt.has_value());
+        EXPECT_THAT(opt, ::testing::Eq(std::nullopt));
 
 #    ifdef ASBIND20_HAS_EXPECTED
 
@@ -290,7 +290,7 @@ TEST(TestInvoke, BadResult)
 
     {
         auto* f = m->GetFunctionByName("test0");
-        ASSERT_TRUE(f);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         request_context ctx(engine);
         // Ignore the int result by setting the template argument to void
@@ -305,7 +305,7 @@ TEST(TestInvoke, BadResult)
 
     {
         auto* f = m->GetFunctionByName("test1");
-        ASSERT_TRUE(f);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         request_context ctx(engine);
         auto result = script_invoke<int&>(ctx, f);
@@ -324,7 +324,7 @@ TEST(TestInvoke, BadResult)
 
     {
         auto* f = m->GetFunctionByName("test2");
-        ASSERT_TRUE(f);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         request_context ctx(engine);
         auto result = script_invoke<void>(ctx, f);
@@ -339,7 +339,7 @@ TEST(TestInvoke, BadResult)
 
     {
         auto* f = m->GetFunctionByName("test3");
-        ASSERT_TRUE(f);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         request_context ctx(engine);
         auto result = script_invoke<void>(ctx, f);
@@ -380,7 +380,7 @@ TEST(TestInvoke, Suspension)
 
     {
         auto* f = m->GetFunctionByName("test0");
-        ASSERT_TRUE(f);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         request_context ctx(engine);
         auto result = script_invoke<int>(ctx, f);
@@ -437,13 +437,13 @@ TEST(TestInvoke, CompareValueResult)
     ASSERT_GE(m->Build(), 0);
 
     auto* f0 = m->GetFunctionByName("f0");
-    ASSERT_NE(f0, nullptr);
+    ASSERT_THAT(f0, ::testing::NotNull());
     auto* f1 = m->GetFunctionByName("f1");
-    ASSERT_NE(f1, nullptr);
+    ASSERT_THAT(f1, ::testing::NotNull());
     auto* f2 = m->GetFunctionByName("f2");
-    ASSERT_NE(f2, nullptr);
+    ASSERT_THAT(f2, ::testing::NotNull());
     auto* f3 = m->GetFunctionByName("f3");
-    ASSERT_NE(f3, nullptr);
+    ASSERT_THAT(f3, ::testing::NotNull());
 
     request_context ctx_0(engine);
     auto result_0 = script_invoke<int>(ctx_0, f0); // 10
@@ -506,11 +506,11 @@ TEST(TestInvoke, CompareValueClassResult)
     ASSERT_GE(m->Build(), 0);
 
     auto* aaa = m->GetFunctionByName("aaa");
-    ASSERT_NE(aaa, nullptr);
+    ASSERT_THAT(aaa, ::testing::NotNull());
     auto* bbb = m->GetFunctionByName("bbb");
-    ASSERT_NE(bbb, nullptr);
+    ASSERT_THAT(bbb, ::testing::NotNull());
     auto* bad = m->GetFunctionByName("bad");
-    ASSERT_NE(bad, nullptr);
+    ASSERT_THAT(bad, ::testing::NotNull());
 
     request_context ctx_0(engine);
     auto result_0 = script_invoke<std::string>(ctx_0, aaa);

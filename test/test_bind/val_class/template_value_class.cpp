@@ -290,7 +290,7 @@ int test_6()
 static void check_template_val_class(asbind20::engine_pointer engine)
 {
     auto* m = asbind20::create_module(engine, "test_template_value_class");
-    ASSERT_TRUE(m);
+    ASSERT_THAT(m, ::testing::NotNull());
 
     m->AddScriptSection(
         "test_template_value_class.as",

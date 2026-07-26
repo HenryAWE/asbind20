@@ -135,7 +135,7 @@ TEST(TestBind, GlobalNative)
     {
         asbind20::request_context ctx(engine);
         auto* stdcall_func1 = engine->GetGlobalFunctionByDecl("int stdcall_func1(int,float)");
-        ASSERT_TRUE(stdcall_func1);
+        ASSERT_THAT(stdcall_func1, ::testing::NotNull());
 
         auto result = asbind20::script_invoke<int>(ctx, stdcall_func1, 4, 2.17f);
         EXPECT_TRUE(result_has_value(result));
@@ -145,7 +145,7 @@ TEST(TestBind, GlobalNative)
     {
         asbind20::request_context ctx(engine);
         auto* stdcall_func2 = engine->GetGlobalFunctionByDecl("int stdcall_func2(int,float)");
-        ASSERT_TRUE(stdcall_func2);
+        ASSERT_THAT(stdcall_func2, ::testing::NotNull());
 
         auto result = asbind20::script_invoke<int>(ctx, stdcall_func2, 4, 2.17f);
         EXPECT_TRUE(result_has_value(result));
@@ -155,7 +155,7 @@ TEST(TestBind, GlobalNative)
     {
         asbind20::request_context ctx(engine);
         auto* set_int = engine->GetGlobalFunctionByDecl("void set_int(int&out)");
-        ASSERT_TRUE(set_int);
+        ASSERT_THAT(set_int, ::testing::NotNull());
 
         int out;
         auto result = asbind20::script_invoke<void>(ctx, set_int, std::ref(out));
@@ -166,7 +166,7 @@ TEST(TestBind, GlobalNative)
     {
         asbind20::request_context ctx(engine);
         auto* gen_int = engine->GetGlobalFunctionByDecl("int gen_int()");
-        ASSERT_TRUE(gen_int);
+        ASSERT_THAT(gen_int, ::testing::NotNull());
 
         auto result = asbind20::script_invoke<int>(ctx, gen_int);
         EXPECT_EQ(result.value(), 42);
@@ -202,7 +202,7 @@ TEST(TestBind, GlobalGeneric)
     {
         asbind20::request_context ctx(engine);
         auto* stdcall_func1 = engine->GetGlobalFunctionByDecl("int stdcall_func1(int,float)");
-        ASSERT_TRUE(stdcall_func1);
+        ASSERT_THAT(stdcall_func1, ::testing::NotNull());
 
         auto result = asbind20::script_invoke<int>(ctx, stdcall_func1, 4, 2.17f);
         EXPECT_TRUE(result_has_value(result));
@@ -212,7 +212,7 @@ TEST(TestBind, GlobalGeneric)
     {
         asbind20::request_context ctx(engine);
         auto* stdcall_func2 = engine->GetGlobalFunctionByDecl("int stdcall_func2(int,float)");
-        ASSERT_TRUE(stdcall_func2);
+        ASSERT_THAT(stdcall_func2, ::testing::NotNull());
 
         auto result = asbind20::script_invoke<int>(ctx, stdcall_func2, 4, 2.17f);
         EXPECT_TRUE(result_has_value(result));
@@ -222,7 +222,7 @@ TEST(TestBind, GlobalGeneric)
     {
         asbind20::request_context ctx(engine);
         auto* set_int = engine->GetGlobalFunctionByDecl("void set_int(int&out)");
-        ASSERT_TRUE(set_int);
+        ASSERT_THAT(set_int, ::testing::NotNull());
 
         int out;
         auto result = asbind20::script_invoke<void>(ctx, set_int, std::ref(out));
@@ -233,7 +233,7 @@ TEST(TestBind, GlobalGeneric)
     {
         asbind20::request_context ctx(engine);
         auto* gen_int = engine->GetGlobalFunctionByDecl("int gen_int()");
-        ASSERT_TRUE(gen_int);
+        ASSERT_THAT(gen_int, ::testing::NotNull());
 
         auto result = asbind20::script_invoke<int>(ctx, gen_int);
         EXPECT_EQ(result.value(), 42);

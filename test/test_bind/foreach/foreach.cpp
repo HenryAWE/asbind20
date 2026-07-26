@@ -126,7 +126,7 @@ auto prepare_int_seq_test(asbind20::engine_pointer engine)
     EXPECT_GE(m->Build(), 0);
 
     auto* f = m->GetFunctionByName("run_foreach");
-    EXPECT_TRUE(f);
+    EXPECT_THAT(f, ::testing::NotNull());
     return f;
 }
 } // namespace test_bind
@@ -143,7 +143,7 @@ TEST(TestForeach, IntSeqGeneric)
 
     request_context ctx(engine);
     auto result = script_invoke<int>(ctx, f);
-    EXPECT_TRUE(asbind_test::result_has_value(result));
+    ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
     EXPECT_EQ(result.value(), 10 + 11 + 12 + 13 + 14);
 }
 
@@ -162,7 +162,7 @@ TEST(TestForeach, IntSeqNative)
 
     request_context ctx(engine);
     auto result = script_invoke<int>(ctx, f);
-    EXPECT_TRUE(asbind_test::result_has_value(result));
+    ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
     EXPECT_EQ(result.value(), 10 + 11 + 12 + 13 + 14);
 }
 
@@ -178,7 +178,7 @@ TEST(TestForeach, IntSeqExplicitGeneric)
 
     request_context ctx(engine);
     auto result = script_invoke<int>(ctx, f);
-    EXPECT_TRUE(asbind_test::result_has_value(result));
+    ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
     EXPECT_EQ(result.value(), 10 + 11 + 12 + 13 + 14);
 }
 
@@ -197,7 +197,7 @@ TEST(TestForeach, IntSeqExplicitNative)
 
     request_context ctx(engine);
     auto result = script_invoke<int>(ctx, f);
-    EXPECT_TRUE(asbind_test::result_has_value(result));
+    ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
     EXPECT_EQ(result.value(), 10 + 11 + 12 + 13 + 14);
 }
 

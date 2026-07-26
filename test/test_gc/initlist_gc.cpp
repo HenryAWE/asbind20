@@ -554,13 +554,13 @@ void run_initlist_gc_test(asbind20::module_pointer m, int max_test_idx)
         SCOPED_TRACE("Decl: " + decl);
 
         auto* f = m->GetFunctionByDecl(decl.c_str());
-        EXPECT_NE(f, nullptr);
+        EXPECT_THAT(f, ::testing::NotNull());
         if(!f)
             continue;
 
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<bool>(ctx, f);
-        EXPECT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
         EXPECT_TRUE(result.value());
     }
 }
@@ -1000,14 +1000,14 @@ static void run_templ_gc_list_test(asbind20::module_pointer m)
     auto* engine = m->GetEngine();
 
     auto* f = m->GetFunctionByName("get");
-    ASSERT_TRUE(f);
+    ASSERT_THAT(f, ::testing::NotNull());
 
     std::cerr << "- Before invocation:\n";
     asbind_test::output_gc_statistics(std::cerr, engine);
     {
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<templ_gc_init_list>(ctx, f);
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
 
         std::cerr << "- After invocation:\n";
         asbind_test::output_gc_statistics(std::cerr, engine);

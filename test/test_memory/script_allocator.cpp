@@ -22,7 +22,7 @@ TEST(ScriptAllocator, CommonInterfaces)
     script_allocator<int> alloc;
 
     int* ptr = alloc.allocate(4);
-    EXPECT_NE(ptr, nullptr);
+    EXPECT_THAT(ptr, ::testing::NotNull());
 
     alloc.deallocate(ptr, 4);
 }
@@ -86,7 +86,7 @@ TEST(ScriptAllocator, BadAlloc)
 
     script_allocator<std::byte> alloc;
     auto* mem = alloc.allocate(128);
-    EXPECT_NE(mem, nullptr);
+    EXPECT_THAT(mem, ::testing::NotNull());
 
 #ifndef ASBIND20_NO_EXCEPTIONS
 

@@ -100,6 +100,14 @@ public:
     }
 
     [[nodiscard]]
+    constexpr bool empty() const noexcept
+    {
+        if(m_cstr == nullptr)
+            return true;
+        return m_cstr[0] == '\0';
+    }
+
+    [[nodiscard]]
     constexpr const char* c_str() const noexcept
     {
         return m_cstr;

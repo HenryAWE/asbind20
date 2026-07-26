@@ -66,7 +66,7 @@ TEST(Appending, ValueClass)
         .property("int data", &val_class_for_appending::data);
 
     auto* m = asbind20::create_module(engine, "appending");
-    ASSERT_NE(m, nullptr);
+    ASSERT_THAT(m, ::testing::NotNull());
     m->AddScriptSection(
         "appending",
         "int f()\n"
@@ -79,7 +79,7 @@ TEST(Appending, ValueClass)
     ASSERT_GE(m->Build(), 0);
 
     auto* f = m->GetFunctionByDecl("int f()");
-    ASSERT_NE(f, nullptr);
+    ASSERT_THAT(f, ::testing::NotNull());
 
     request_context ctx(engine);
     auto result = script_invoke<int>(ctx, f);
@@ -92,7 +92,7 @@ namespace test_bind
 static void check_enum_appending(asbind20::engine_pointer engine)
 {
     auto* m = asbind20::create_module(engine, "appending");
-    ASSERT_NE(m, nullptr);
+    ASSERT_THAT(m, ::testing::NotNull());
     m->AddScriptSection(
         "appending",
         "int f()\n"
@@ -103,7 +103,7 @@ static void check_enum_appending(asbind20::engine_pointer engine)
     ASSERT_GE(m->Build(), 0);
 
     auto* f = m->GetFunctionByDecl("int f()");
-    ASSERT_NE(f, nullptr);
+    ASSERT_THAT(f, ::testing::NotNull());
 
     asbind20::request_context ctx(engine);
     auto result = script_invoke<int>(ctx, f);
@@ -152,7 +152,7 @@ namespace test_bind
 void check_ref_class(asbind20::engine_pointer engine)
 {
     auto* m = asbind20::create_module(engine, "appending");
-    ASSERT_NE(m, nullptr);
+    ASSERT_THAT(m, ::testing::NotNull());
     m->AddScriptSection(
         "appending",
         "int f()\n"
@@ -165,7 +165,7 @@ void check_ref_class(asbind20::engine_pointer engine)
     ASSERT_GE(m->Build(), 0);
 
     auto* f = m->GetFunctionByDecl("int f()");
-    ASSERT_NE(f, nullptr);
+    ASSERT_THAT(f, ::testing::NotNull());
 
     asbind20::request_context ctx(engine);
     auto result = script_invoke<int>(ctx, f);
@@ -220,11 +220,11 @@ namespace test_bind
 static void check_interface_appending(asbind20::engine_pointer engine)
 {
     auto* ti = engine->GetTypeInfoByName("intf");
-    ASSERT_NE(ti, nullptr);
+    ASSERT_THAT(ti, ::testing::NotNull());
     EXPECT_EQ(ti->GetMethodCount(), 2);
 
     auto* m = asbind20::create_module(engine, "appending");
-    ASSERT_NE(m, nullptr);
+    ASSERT_THAT(m, ::testing::NotNull());
     m->AddScriptSection(
         "appending",
         "class impl : intf\n"
@@ -241,7 +241,7 @@ static void check_interface_appending(asbind20::engine_pointer engine)
     ASSERT_GE(m->Build(), 0);
 
     auto* f = m->GetFunctionByDecl("int f()");
-    ASSERT_NE(f, nullptr);
+    ASSERT_THAT(f, ::testing::NotNull());
 
     asbind20::request_context ctx(engine);
     auto result = script_invoke<int>(ctx, f);

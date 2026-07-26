@@ -1,6 +1,7 @@
 #include "c_api.hpp"
 #include <new>
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
 
 namespace test_bind
 {
@@ -35,13 +36,13 @@ opaque_structure* create_opaque_with(int data)
 
 void opaque_addref(opaque_structure* ptr)
 {
-    ASSERT_NE(ptr, nullptr);
+    ASSERT_THAT(ptr, ::testing::NotNull());
     ++ptr->ref_count;
 }
 
 void release_opaque(opaque_structure* ptr)
 {
-    ASSERT_NE(ptr, nullptr);
+    ASSERT_THAT(ptr, ::testing::NotNull());
     EXPECT_GT(ptr->ref_count, 0)
         << "Bad reference count";
     --ptr->ref_count;
@@ -51,7 +52,7 @@ void release_opaque(opaque_structure* ptr)
 
 void opaque_set_data(opaque_structure* ptr, int data)
 {
-    ASSERT_NE(ptr, nullptr);
+    ASSERT_THAT(ptr, ::testing::NotNull());
     ptr->data = data;
 }
 

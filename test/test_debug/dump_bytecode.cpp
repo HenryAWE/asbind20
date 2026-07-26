@@ -1,5 +1,5 @@
 #include <asbind_test/framework.hpp>
-#include <gmock/gmock-matchers.h>
+#include <gmock/gmock.h>
 #include <sstream>
 #include <asbind20/debugging/dump_bytecode.hpp>
 
@@ -15,10 +15,12 @@ TEST(DumpByteCode, Print)
     );
     ASSERT_GE(m->Build(), 0);
     auto* f = m->GetFunctionByName("f");
-    ASSERT_NE(f, nullptr);
+    ASSERT_THAT(f, ::testing::NotNull());
 
     auto bcs = debugging::get_bytecode(f);
-    EXPECT_FALSE(bcs.empty());
+    EXPECT_THAT(
+        bcs, ::testing::Not(::testing::IsEmpty())
+    );
 
 #ifdef ASBIND20_HAS_LIB_FORMAT
     std::ostringstream ss;

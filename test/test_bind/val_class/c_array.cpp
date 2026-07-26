@@ -78,21 +78,21 @@ static void check_int_array(asbind20::engine_pointer engine)
 
     {
         auto* f = m->GetFunctionByName("test0");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
         asbind20::request_context ctx(engine);
 
         auto result = asbind20::script_invoke<int>(ctx, f);
-        EXPECT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 1 + 2);
     }
 
     {
         auto* f = m->GetFunctionByName("test1");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
         asbind20::request_context ctx(engine);
 
         auto result = asbind20::script_invoke<int>(ctx, f);
-        EXPECT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 3 + 4);
     }
 }

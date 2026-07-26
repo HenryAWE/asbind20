@@ -9,12 +9,13 @@
 
 #pragma once
 
-#include <cassert>
 #include <stdexcept>
 #include <cstdint>
 #include <cstddef>
 #include <string>
 #include <asbind20/detail/err_handler.hpp>
+#include <gtest/gtest.h>
+#include <gmock/gmock.h>
 
 namespace asbind_test::utf8
 {
@@ -156,7 +157,7 @@ constexpr std::size_t u8_strlen(std::string_view str) noexcept
  */
 inline char32_t u8_bytes_to_int(const char* str) noexcept
 {
-    assert(str != nullptr);
+    EXPECT_THAT(str, ::testing::NotNull());
 
     const std::uint8_t* bytes = reinterpret_cast<const std::uint8_t*>(str);
 

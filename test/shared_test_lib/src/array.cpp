@@ -36,7 +36,7 @@ namespace detail
         if(!cache) [[unlikely]]
             return false;
 
-        EXPECT_NE(ctx, nullptr);
+        EXPECT_THAT(ctx, ::testing::NotNull());
         if(cache->comp.has_opEquals()) [[likely]]
         {
             auto result = cache->comp.get_opEquals()(
@@ -107,7 +107,7 @@ namespace detail
         else if(!asbind20::is_objhandle(subtype_id))
         {
             asbind20::typeinfo_pointer subtype_ti = ti->GetSubType();
-            EXPECT_NE(subtype_ti, nullptr);
+            EXPECT_THAT(subtype_ti, ::testing::NotNull());
             auto flags = subtype_ti->GetFlags();
 
             if(

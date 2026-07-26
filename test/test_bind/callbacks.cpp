@@ -1,44 +1,38 @@
 #include <asbind_test/framework.hpp>
+#include <gmock/gmock.h>
 
 namespace test_bind
 {
-class log_counter
+class msg_callback_helper
 {
 public:
-    void count()
+    struct mock_msg
     {
-        ++m_counter;
+        MOCK_METHOD(void, on_message, (AS_NAMESPACE_QUALIFIER asSMessageInfo*), ());
+    };
+
+    using mock_type = ::testing::StrictMock<mock_msg>;
+    std::shared_ptr<mock_type> mock = std::make_shared<mock_type>();
+
+    // Stdcall (global) callback: passes data as void* to the helper
+    static void ASBIND20_STDCALL stdcall_cb(
+        AS_NAMESPACE_QUALIFIER asSMessageInfo* info, void* data
+    )
+    {
+        auto* self = static_cast<msg_callback_helper*>(data);
+        self->mock->on_message(info);
     }
 
-    std::size_t get() const noexcept
-    {
-        return m_counter;
-    }
-
+    // Member callback bound via auxiliary()
     void mem_cb(AS_NAMESPACE_QUALIFIER asSMessageInfo* info)
     {
-        ASSERT_NE(info, nullptr);
-        EXPECT_STREQ(info->message, "msg");
-        count();
+        mock->on_message(info);
     }
-
-private:
-    std::size_t m_counter = 0;
 };
-
-static void ASBIND20_STDCALL stdcall_msg_cb(AS_NAMESPACE_QUALIFIER asSMessageInfo* info, void* data)
-{
-    ASSERT_NE(data, nullptr);
-    ASSERT_NE(info, nullptr);
-    EXPECT_EQ(info->message, "msg");
-
-    auto* counter = static_cast<log_counter*>(data);
-    counter->count();
-}
 
 static void write_msg_helper(asbind20::engine_pointer engine, const char* msg)
 {
-    ASSERT_NE(engine, nullptr);
+    ASSERT_THAT(engine, ::testing::NotNull());
     engine->WriteMessage(
         "(system)",
         0,
@@ -51,37 +45,47 @@ static void write_msg_helper(asbind20::engine_pointer engine, const char* msg)
 
 TEST(MessageCallback, Global)
 {
-    test_bind::log_counter counter;
+    using ::testing::_;
+
+    test_bind::msg_callback_helper helper;
     auto engine = asbind20::make_script_engine();
 
     asbind20::set_message_callback(
-        engine, &test_bind::stdcall_msg_cb, &counter
+        engine, &test_bind::msg_callback_helper::stdcall_cb, &helper
     );
-    EXPECT_EQ(counter.get(), 0);
+    EXPECT_CALL(*helper.mock, on_message(_)).Times(1);
     test_bind::write_msg_helper(engine, "msg");
-    EXPECT_EQ(counter.get(), 1);
 }
 
 TEST(MessageCallback, Member)
 {
-    test_bind::log_counter counter;
+    using ::testing::_;
+
+    test_bind::msg_callback_helper helper;
     auto engine = asbind20::make_script_engine();
 
     asbind20::set_message_callback(
-        engine, &test_bind::log_counter::mem_cb, asbind20::auxiliary(counter)
+        engine, &test_bind::msg_callback_helper::mem_cb, asbind20::auxiliary(helper)
     );
-    EXPECT_EQ(counter.get(), 0);
+    EXPECT_CALL(*helper.mock, on_message(_)).Times(1);
     test_bind::write_msg_helper(engine, "msg");
-    EXPECT_EQ(counter.get(), 1);
 }
 
 #ifndef ASBIND20_NO_EXCEPTIONS
 
 namespace test_bind
 {
-class ex_counter
+struct mock_ex
+{
+    MOCK_METHOD(void, on_exception, (asbind20::context_pointer), ());
+};
+
+class ex_translator_helper
 {
 public:
+    using mock_type = ::testing::StrictMock<mock_ex>;
+    std::shared_ptr<mock_type> mock = std::make_shared<mock_type>();
+
     class my_ex : public std::exception
     {
     public:
@@ -90,16 +94,6 @@ public:
             return "what";
         }
     };
-
-    void count()
-    {
-        ++m_counter;
-    }
-
-    std::size_t get() const noexcept
-    {
-        return m_counter;
-    }
 
     void translate(asbind20::context_pointer ctx)
     {
@@ -111,17 +105,14 @@ public:
         {
             EXPECT_STREQ(e.what(), "what");
             ctx->SetException(e.what());
-            count();
+            mock->on_exception(ctx);
         }
         catch(...)
         {
-            ctx->SetException("...");
+            ctx->SetException("unreachable");
             FAIL() << "unreachable";
         }
     }
-
-private:
-    std::size_t m_counter = 0;
 };
 
 static void setup_funcs(asbind20::engine_pointer engine)
@@ -133,7 +124,7 @@ static void setup_funcs(asbind20::engine_pointer engine)
             "void throw_my_ex()",
             []() -> void
             {
-                throw ex_counter::my_ex{};
+                throw ex_translator_helper::my_ex{};
             }
         );
 }
@@ -141,7 +132,7 @@ static void setup_funcs(asbind20::engine_pointer engine)
 static void trigger_ex_in_script(asbind20::engine_pointer engine)
 {
     auto* m = asbind20::create_module(engine, "test_ex");
-    ASSERT_NE(m, nullptr);
+    ASSERT_THAT(m, ::testing::NotNull());
     m->AddScriptSection(
         "test_ex",
         "void f()\n"
@@ -152,7 +143,7 @@ static void trigger_ex_in_script(asbind20::engine_pointer engine)
     ASSERT_GE(m->Build(), 0);
 
     auto* f = m->GetFunctionByName("f");
-    ASSERT_NE(f, nullptr);
+    ASSERT_THAT(f, ::testing::NotNull());
     asbind20::request_context ctx(engine);
     auto result = asbind20::script_invoke<void>(ctx, f);
     ASBIND_TEST_EXPECT_INVOKE_NO_RESULT(result);
@@ -162,17 +153,18 @@ static void trigger_ex_in_script(asbind20::engine_pointer engine)
 
 TEST(ExceptionCallback, Member)
 {
+    using ::testing::_;
+
     auto engine = asbind20::make_script_engine();
 
-    test_bind::ex_counter counter;
+    test_bind::ex_translator_helper helper;
     asbind20::set_exception_translator(
-        engine, &test_bind::ex_counter::translate, asbind20::auxiliary(counter)
+        engine, &test_bind::ex_translator_helper::translate, asbind20::auxiliary(helper)
     );
 
-    EXPECT_EQ(counter.get(), 0);
+    EXPECT_CALL(*helper.mock, on_exception(_)).Times(1);
     test_bind::setup_funcs(engine);
     test_bind::trigger_ex_in_script(engine);
-    EXPECT_EQ(counter.get(), 1);
 }
 
 #endif

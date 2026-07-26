@@ -14,9 +14,12 @@ TEST(ThrowHelperDeathTest, Terminate)
 
 TEST(ThrowHelper, Catch)
 {
-    EXPECT_THROW(
-        asbind20::detail::throw_<std::runtime_error>(""),
-        std::runtime_error
+    EXPECT_THAT(
+        []()
+        { asbind20::detail::throw_<std::runtime_error>("test"); },
+        ::testing::ThrowsMessage<std::runtime_error>(
+            ::testing::StrEq("test")
+        )
     );
 }
 

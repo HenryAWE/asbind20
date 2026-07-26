@@ -62,6 +62,32 @@ void setup_message_callback(
     bool propagate_error_to_gtest
 )
 {
+#if ANGELSCRIPT_VERSION >= 23800
+    // Checking if a callback has already been registered
+    {
+        AS_NAMESPACE_QUALIFIER asSFuncPtr old_cb{};
+        int r = engine->GetMessageCallback(&old_cb, nullptr, nullptr);
+
+        if(r < 0)
+        {
+            if(r != AS_NAMESPACE_QUALIFIER asNO_FUNCTION)
+            {
+                GTEST_LOG_(WARNING)
+                    << "Failed to call GetMessageCallback() for"
+                    << "checking if a callback has already been registered."
+                    << " r = " << r << ", "
+                    << asbind20::to_string(static_cast<AS_NAMESPACE_QUALIFIER asERetCodes>(r));
+            }
+        }
+        else
+        {
+            GTEST_LOG_(WARNING)
+                << "A message callback has already been registered!"
+                << " flag = " << old_cb.flag;
+        }
+    }
+#endif
+
     if(propagate_error_to_gtest)
     {
         asbind20::set_message_callback(
@@ -80,7 +106,7 @@ static void exception_translator_impl(
     asbind20::context_pointer ctx, void*
 )
 {
-    ASSERT_NE(ctx, nullptr);
+    ASSERT_THAT(ctx, ::testing::NotNull());
 
 #ifndef ASBIND20_NO_EXCEPTIONS
     try
@@ -109,7 +135,11 @@ void setup_exception_translator(
 )
 {
     if(!asbind20::has_exceptions())
+    {
+        GTEST_LOG_(WARNING)
+            << "has_exceptions() returned false, ignoring exception translator";
         return;
+    }
 
     asbind20::set_exception_translator(
         engine, &exception_translator_impl
@@ -122,11 +152,7 @@ void output_gc_statistics(
     char sep
 )
 {
-    os << "current: " << stat.current_size << sep;
-    os << "total destroyed: " << stat.total_destroyed << sep;
-    os << "total detected: " << stat.total_detected << sep;
-    os << "new objects: " << stat.new_objects << sep;
-    os << "total new destroyed: " << stat.total_new_destroyed;
+    os << stat.description(std::string_view(&sep, 1));
     os << std::endl;
 }
 

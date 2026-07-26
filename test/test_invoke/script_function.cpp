@@ -14,10 +14,10 @@ TEST(ScriptFunction, Ownership)
     ASSERT_GE(m->Build(), 0);
 
     script_function<int()> f;
-    EXPECT_FALSE(f);
+    EXPECT_THAT(f, ::testing::IsFalse());
 
     f.reset(m->GetFunctionByName("test"));
-    EXPECT_TRUE(f);
+    EXPECT_THAT(f, ::testing::IsTrue());
 
     m->Discard();
 
@@ -25,7 +25,7 @@ TEST(ScriptFunction, Ownership)
         request_context ctx(engine);
         auto result = f(ctx);
 
-        EXPECT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 42);
     }
 
@@ -37,7 +37,7 @@ TEST(ScriptFunction, Ownership)
         request_context ctx(engine);
         auto result = rf(ctx);
 
-        EXPECT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 42);
 
         script_function<int()> another = rf;
@@ -49,8 +49,8 @@ TEST(ScriptFunction, Ownership)
         EXPECT_EQ(another.target(), f.target());
 
         f.reset();
-        EXPECT_FALSE(f);
-        EXPECT_EQ(f.target(), nullptr);
+        EXPECT_THAT(f, ::testing::IsFalse());
+        EXPECT_THAT(f.target(), ::testing::IsNull());
     }
 }
 
@@ -72,20 +72,20 @@ TEST(ScriptMethod, Ownership)
     ASSERT_GE(m->Build(), 0);
 
     auto foo_t = script_typeinfo(m->GetTypeInfoByName("foo"));
-    ASSERT_TRUE(foo_t);
+    ASSERT_THAT(foo_t, ::testing::NotNull());
 
     request_context ctx(engine);
     auto foo = instantiate_class(ctx, foo_t);
     EXPECT_TRUE(foo);
 
     script_method<int()> test(foo_t->GetMethodByName("test"));
-    ASSERT_TRUE(test);
+    ASSERT_THAT(test, ::testing::NotNull());
 
     m->Discard();
 
     {
         auto result = test(ctx, foo);
-        EXPECT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 42);
     }
 
@@ -95,7 +95,7 @@ TEST(ScriptMethod, Ownership)
 
         auto result = rf(ctx, foo);
 
-        EXPECT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 42);
 
         script_method<int()> another = rf;
@@ -107,7 +107,7 @@ TEST(ScriptMethod, Ownership)
         EXPECT_EQ(another.target(), test.target());
 
         test.reset();
-        EXPECT_FALSE(test);
-        EXPECT_EQ(test.target(), nullptr);
+        EXPECT_THAT(test, ::testing::IsFalse());
+        EXPECT_THAT(test.target(), ::testing::IsNull());
     }
 }

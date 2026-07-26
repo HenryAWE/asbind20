@@ -15,8 +15,7 @@ class mt_string_factory_suite : public script_string_suite_base<UseGeneric>
 public:
     void SetUp() override
     {
-        if(!asbind20::has_threads())
-            GTEST_SKIP() << "No multithread environment";
+        ASBIND_TEST_SKIP_IF_NO_THREADS();
 
         asbind20::concurrent::prepare_multithread();
         my_base::SetUp();
@@ -34,7 +33,7 @@ public:
         auto* m = engine->GetModule(
             "mt_string_test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
         );
-        EXPECT_NE(m, nullptr);
+        EXPECT_THAT(m, ::testing::NotNull());
 
         m->AddScriptSection(
             "mt_string_test",
@@ -57,7 +56,7 @@ public:
         for(std::size_t i = 0; i < 10; ++i)
         {
             auto& created = contexts.emplace_back(engine);
-            EXPECT_NE(created.get(), nullptr)
+            EXPECT_THAT(created.get(), ::testing::NotNull())
                 << "Failed to create context. i = " << i;
         }
 
@@ -89,7 +88,7 @@ TEST_F(MTStrFactoryTestNative, RunScript)
 
     auto* m = this->get_module();
     auto* f = m->GetFunctionByName("f");
-    ASSERT_NE(f, nullptr);
+    ASSERT_THAT(f, ::testing::NotNull());
 
     auto contexts = this->prepare_contexts();
     std::atomic_int counter = 0;
@@ -118,7 +117,7 @@ TEST_F(MTStrFactoryTestGeneric, RunScript)
 
     auto* m = this->get_module();
     auto* f = m->GetFunctionByName("f");
-    ASSERT_NE(f, nullptr);
+    ASSERT_THAT(f, ::testing::NotNull());
 
     auto contexts = this->prepare_contexts();
     std::atomic_int counter = 0;

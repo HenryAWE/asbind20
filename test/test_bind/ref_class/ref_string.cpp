@@ -64,7 +64,7 @@ public:
 
     void release()
     {
-        assert(m_refcount >= 1);
+        ASSERT_GE(m_refcount, 1);
         --m_refcount;
         if(m_refcount == 0)
             delete this;
@@ -93,7 +93,7 @@ public:
     {
         if(!str)
             return AS_NAMESPACE_QUALIFIER asERROR;
-        auto ptr = (ref_string*)str;
+        auto* ptr = static_cast<const ref_string*>(str);
         if(length)
             *length = static_cast<AS_NAMESPACE_QUALIFIER asUINT>(ptr->str.size());
         if(data)
@@ -177,7 +177,7 @@ static asbind20::module_pointer build_module(asbind20::engine_pointer engine)
 static void run_script(asbind20::engine_pointer engine)
 {
     auto* m = build_module(engine);
-    if(!m)
+    if(!m) // ADD_FAILURE is called by build_module
         return;
 
     for(int idx : {0, 1})
@@ -187,7 +187,7 @@ static void run_script(asbind20::engine_pointer engine)
         auto f = m->GetFunctionByDecl(
             asbind20::string_concat("void test", std::to_string(idx), "()").c_str()
         );
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<void>(ctx, f);
@@ -227,7 +227,7 @@ TEST(BindRefString, Extract)
         return;
 
     auto* f = m->GetFunctionByDecl("string@ get_str()");
-    ASSERT_NE(f, nullptr);
+    ASSERT_THAT(f, ::testing::NotNull());
 
     asbind20::request_context ctx(engine);
     auto result = asbind20::script_invoke<test_bind::ref_string*>(ctx, f);
@@ -235,10 +235,12 @@ TEST(BindRefString, Extract)
 
     namespace debugging = asbind20::debugging;
 
-    EXPECT_NE(result.value(), nullptr);
+    EXPECT_THAT(result.value(), ::testing::NotNull());
     auto extracted = debugging::extract_string(
         test_bind::ref_string_factory::get(), *result
     );
-    ASSERT_TRUE(extracted.has_value());
-    EXPECT_EQ(extracted.value(), "test");
+    EXPECT_THAT(
+        extracted,
+        ::testing::Optional(::testing::StrEq("test"))
+    );
 }

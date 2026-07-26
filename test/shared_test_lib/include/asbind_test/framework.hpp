@@ -1,6 +1,7 @@
 #pragma once
 
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
 #include <typeinfo>
 #include <asbind20/asbind.hpp>
 
@@ -57,11 +58,18 @@ void output_gc_statistics(
 );
 } // namespace asbind_test
 
-#define ASBIND_TEST_SKIP_IF_MAX_PORTABILITY()  \
-    do                                         \
-    {                                          \
-        if(::asbind20::has_max_portability())  \
-            GTEST_SKIP() << "MAX_PORTABILITY"; \
+#define ASBIND_TEST_SKIP_IF_MAX_PORTABILITY()           \
+    do                                                  \
+    {                                                   \
+        if(::asbind20::has_max_portability())           \
+            GTEST_SKIP() << "AS_MAX_PORTABILITY found"; \
+    } while(0)
+
+#define ASBIND_TEST_SKIP_IF_NO_THREADS()           \
+    do                                             \
+    {                                              \
+        if(!::asbind20::has_threads())             \
+            GTEST_SKIP() << "AS_NO_THREADS found"; \
     } while(0)
 
 #define ASBIND_TEST_EXPECT_INVOKE_RESULT(result)              \

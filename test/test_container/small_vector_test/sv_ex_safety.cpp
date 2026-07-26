@@ -9,6 +9,7 @@ TEST(SmallVector, ExceptionSafety)
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_exception_translator(engine);
 
     asbind_test::register_instantly_throw<true>(engine);
     asbind_test::register_throw_on_copy<true>(engine);
@@ -23,22 +24,22 @@ TEST(SmallVector, ExceptionSafety)
         SCOPED_TRACE("instantly thorw");
 
         auto* ti = engine->GetTypeInfoByDecl("instantly_throw");
-        ASSERT_NE(ti, nullptr);
+        ASSERT_THAT(ti, ::testing::NotNull());
 
         sv_type sv(ti);
 
         sv.emplace_back();
-        EXPECT_EQ(sv.size(), 0);
+        EXPECT_THAT(sv, ::testing::IsEmpty());
 
         sv.emplace_back_n(2);
-        EXPECT_EQ(sv.size(), 0);
+        EXPECT_THAT(sv, ::testing::IsEmpty());
     }
 
     {
         SCOPED_TRACE("throw on copy");
 
         auto* ti = engine->GetTypeInfoByDecl("throw_on_copy");
-        ASSERT_NE(ti, nullptr);
+        ASSERT_THAT(ti, ::testing::NotNull());
 
         sv_type sv(ti);
 

@@ -167,7 +167,7 @@ TEST_F(ForeachString, RunScriptGeneric)
     asbind20::request_context ctx(get_engine());
     auto result = asbind20::script_invoke<std::string>(ctx, f);
 
-    ASSERT_TRUE(asbind_test::result_has_value(result));
+    ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
     EXPECT_EQ(result.value(), "1011121314");
 }
 
@@ -182,7 +182,7 @@ TEST_F(ForeachString, RunScriptNative)
     asbind20::request_context ctx(get_engine());
     auto result = asbind20::script_invoke<std::string>(ctx, f);
 
-    ASSERT_TRUE(asbind_test::result_has_value(result));
+    ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
     EXPECT_EQ(result.value(), "1011121314");
 }
 
@@ -194,7 +194,7 @@ TEST_F(ForeachString, ConstRunScriptGeneric)
     asbind20::request_context ctx(get_engine());
     auto result = asbind20::script_invoke<std::string>(ctx, f);
 
-    ASSERT_TRUE(asbind_test::result_has_value(result));
+    ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
     EXPECT_EQ(result.value(), "1011121314");
 }
 
@@ -209,7 +209,7 @@ TEST_F(ForeachString, ConstRunScriptNative)
     asbind20::request_context ctx(get_engine());
     auto result = asbind20::script_invoke<std::string>(ctx, f);
 
-    ASSERT_TRUE(asbind_test::result_has_value(result));
+    ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
     EXPECT_EQ(result.value(), "1011121314");
 }
 

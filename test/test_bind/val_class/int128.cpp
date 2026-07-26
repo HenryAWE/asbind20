@@ -115,23 +115,23 @@ static void check_int128(asbind20::engine_pointer engine)
 
     {
         auto* f = m->GetFunctionByName("get_i128");
-        ASSERT_TRUE(f);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<uint128_t>(ctx, f);
 
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), -42);
     }
 
     {
         auto* f = m->GetFunctionByName("get_u128");
-        ASSERT_TRUE(f);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int128_t>(ctx, f);
 
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 1013);
     }
 
@@ -139,66 +139,66 @@ static void check_int128(asbind20::engine_pointer engine)
 #    if 0
     {
         auto* f = m->GetFunctionByName("mod_i128");
-        ASSERT_TRUE(f);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int128_t>(
             ctx, f, int128_t(42), int128_t(10)
         );
 
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 2); // 42 % 10 = 2
     }
 
     {
         auto* f = m->GetFunctionByName("mod_u128");
-        ASSERT_TRUE(f);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<uint128_t>(
             ctx, f, uint128_t(1013), uint128_t(100)
         );
 
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 13); // 1013 % 100 = 13
     }
 
     {
         auto* f = m->GetFunctionByName("mod_assign_i128");
-        ASSERT_TRUE(f);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int128_t>(
             ctx, f, int128_t(42), int128_t(10)
         );
 
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 2); // 42 %= 10 → 2
     }
 
     {
         auto* f = m->GetFunctionByName("mod_assign_u128");
-        ASSERT_TRUE(f);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<uint128_t>(
             ctx, f, uint128_t(1013), uint128_t(100)
         );
 
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 13); // 1013 %= 100 → 13
     }
 
     {
         auto * f= m->GetFunctionByName("add_u128");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<uint128_t>(
             ctx, f, uint128_t(40), uint128_t(2)
         );
 
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 42);
     }
 #    endif

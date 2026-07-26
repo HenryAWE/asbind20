@@ -56,7 +56,7 @@ public:
 
     void assign(const void* val)
     {
-        EXPECT_NE(m_ti, nullptr);
+        EXPECT_THAT(m_ti, ::testing::NotNull());
 
         if(has_value())
         {
@@ -209,7 +209,7 @@ public:
                 []() -> void
                 {
                     auto* ctx = asbind20::current_context();
-                    ASSERT_TRUE(ctx);
+                    ASSERT_THAT(ctx, ::testing::NotNull());
 
                     auto* f = ctx->GetFunction();
                     const char* section = "(null)";
@@ -256,13 +256,13 @@ public:
             );
             SCOPED_TRACE("Decl: " + decl);
             auto* f = m->GetFunctionByDecl(decl.c_str());
-            EXPECT_NE(f, nullptr);
+            EXPECT_THAT(f, ::testing::NotNull());
             if(!f)
                 continue;
 
             asbind20::request_context ctx(m_engine);
             auto result = asbind20::script_invoke<bool>(ctx, f);
-            EXPECT_TRUE(asbind_test::result_has_value(result));
+            ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
             EXPECT_TRUE(result.value());
         }
 

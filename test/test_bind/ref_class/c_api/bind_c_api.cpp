@@ -32,7 +32,7 @@ static void register_c_api_test(asbind20::use_generic_t, asbind20::engine_pointe
 static void test_c_api(asbind20::engine_pointer engine)
 {
     auto* m = asbind20::create_module(engine, "test_c_api");
-    ASSERT_TRUE(m);
+    ASSERT_THAT(m, ::testing::NotNull());
 
     m->AddScriptSection(
         "test_c_api",
@@ -59,7 +59,7 @@ static void test_c_api(asbind20::engine_pointer engine)
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, test0);
 
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 42);
     }
 
@@ -70,7 +70,7 @@ static void test_c_api(asbind20::engine_pointer engine)
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, test1);
 
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 1013);
     }
 }

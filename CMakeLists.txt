@@ -58,6 +58,11 @@ if(${asbind_build_test})
         )
         set(BUILD_GMOCK ON)
         set(INSTALL_GTEST OFF)
+        if(EMSCRIPTEN)
+            # Emscripten with AS_NO_THREADS must use the non-threaded
+            # GoogleTest implementation.
+            set(gtest_disable_pthreads ON CACHE BOOL "Disable pthread as a workaround" FORCE)
+        endif()
         FetchContent_MakeAvailable(googletest)
     else()
         find_package(GTest 1.14 REQUIRED) # At least 1.14

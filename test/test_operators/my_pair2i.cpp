@@ -153,100 +153,100 @@ static void run_pair2i_test_script(asbind20::engine_pointer engine)
 
     {
         auto* f = m->GetFunctionByName("test0");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
 
         EXPECT_EQ(result.value(), 7);
     }
 
     {
         auto* f = m->GetFunctionByName("test1");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
 
         EXPECT_EQ(result.value(), 9);
     }
 
     {
         auto* f = m->GetFunctionByName("test2");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
 
         EXPECT_EQ(result.value(), 17);
     }
 
     {
         auto* f = m->GetFunctionByName("test3");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<std::string>(ctx, f);
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
 
         EXPECT_EQ(result.value(), "(1, 2): str");
     }
 
     {
         auto* f = m->GetFunctionByName("test4");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<std::string>(ctx, f);
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
 
         EXPECT_EQ(result.value(), "str: (1, 2)");
     }
 
     {
         auto* f = m->GetFunctionByName("test5");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
 
         EXPECT_EQ(result.value(), 11);
     }
 
     {
         auto* f = m->GetFunctionByName("test6");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
 
         EXPECT_EQ(result.value(), -1);
     }
 
     {
         auto* f = m->GetFunctionByName("test7");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
 
         EXPECT_EQ(result.value(), 5);
     }
 
     {
         auto* f = m->GetFunctionByName("test8");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
 
         EXPECT_EQ(result.value(), -3);
     }
 
     {
         auto* f = m->GetFunctionByName("test9");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<my_pair2i>(ctx, f);
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
 
         EXPECT_EQ(result.value().first, 2);
         EXPECT_EQ(result.value().second, 3);
@@ -254,30 +254,30 @@ static void run_pair2i_test_script(asbind20::engine_pointer engine)
 
     {
         auto* f = m->GetFunctionByName("test10");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
 
         EXPECT_EQ(result.value(), 42);
     }
 
     {
         auto* f = m->GetFunctionByName("test11");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
 
         EXPECT_EQ(result.value(), 1013);
     }
 
     {
         auto* f = m->GetFunctionByName("test12");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<my_pair2i>(ctx, f);
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
 
         EXPECT_EQ(result.value().first, 4);
         EXPECT_EQ(result.value().second, 6);
@@ -285,10 +285,10 @@ static void run_pair2i_test_script(asbind20::engine_pointer engine)
 
     {
         auto* f = m->GetFunctionByName("test13");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<bool>(ctx, f);
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
 
         EXPECT_TRUE(result.value());
     }

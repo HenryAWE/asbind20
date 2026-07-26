@@ -243,7 +243,7 @@ static void check_val_comp(asbind20::engine_pointer engine)
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f, 21);
 
-        EXPECT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 42);
     }
 
@@ -253,7 +253,7 @@ static void check_val_comp(asbind20::engine_pointer engine)
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<bool>(ctx, f);
 
-        EXPECT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
         EXPECT_TRUE(result.value());
     }
 }
@@ -426,7 +426,7 @@ static void check_ref_comp(asbind20::engine_pointer engine)
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f, 21);
 
-        EXPECT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 42);
     }
 
@@ -436,7 +436,7 @@ static void check_ref_comp(asbind20::engine_pointer engine)
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<bool>(ctx, f);
 
-        EXPECT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
         EXPECT_TRUE(result.value());
     }
 }

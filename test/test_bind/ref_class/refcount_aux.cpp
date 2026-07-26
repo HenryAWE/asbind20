@@ -1,4 +1,5 @@
 #include <asbind_test/framework.hpp>
+#include <gmock/gmock.h>
 #include <map>
 #include <asbind20/io/to_string.hpp>
 
@@ -18,10 +19,23 @@ public:
 class refcount_aux_helper
 {
 public:
-    refcount_aux_helper() = default;
-    refcount_aux_helper(const refcount_aux_helper&) = default;
+    struct mock_refcount
+    {
+        MOCK_METHOD(void, on_addref, (refcount_aux*), ());
+        MOCK_METHOD(void, on_release, (refcount_aux*), ());
+    };
 
-    refcount_aux_helper& operator=(const refcount_aux_helper&) = default;
+    using mock_type = ::testing::StrictMock<mock_refcount>;
+    std::shared_ptr<mock_type> mock;
+
+    refcount_aux_helper()
+        : mock(std::make_shared<mock_type>()) {}
+
+    refcount_aux_helper(const refcount_aux_helper&) = delete;
+    refcount_aux_helper(refcount_aux_helper&&) noexcept = default;
+
+    refcount_aux_helper& operator=(const refcount_aux_helper&) = delete;
+    refcount_aux_helper& operator=(refcount_aux_helper&&) noexcept = default;
 
     refcount_aux* create()
     {
@@ -39,11 +53,14 @@ public:
 
     void addref(refcount_aux* this_)
     {
+        mock->on_addref(this_);
         m_counts[static_cast<void*>(this_)] += 1;
     }
 
     void release(refcount_aux* this_)
     {
+        mock->on_release(this_);
+
         auto it = m_counts.find(static_cast<void*>(this_));
         if(it == m_counts.end())
             return;
@@ -86,14 +103,15 @@ public:
 
     void SetUp() override
     {
+        if constexpr(!UseGeneric)
+            ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
+
+        // Reset helper with a fresh mock for test isolation
         helper = refcount_aux_helper{};
 
         using namespace asbind20;
         engine = make_script_engine();
         asbind_test::setup_message_callback(engine, true);
-
-        if constexpr(!UseGeneric)
-            ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
         ref_class<refcount_aux, UseGeneric>(engine, "refcount_aux")
             .factory_function("", fp<&refcount_aux_helper::create>, auxiliary(helper))
@@ -113,6 +131,9 @@ public:
             engine->ReturnContext(ctx);
             ctx = nullptr;
         }
+        // GMock: verify call count expectations
+        ::testing::Mock::VerifyAndClearExpectations(helper.mock.get());
+        // Manual counting: verify balanced addref/release
         helper.check_and_clear();
         engine.reset();
     }
@@ -188,16 +209,24 @@ using RefcountAuxGeneric = test_bind::refcount_aux_suite<true>;
 TEST_F(RefcountAuxNative, RunTest0)
 {
     using test_bind::refcount_aux;
-    auto result = run_test<refcount_aux*>(0);
+    using ::testing::_;
 
+    EXPECT_CALL(*helper.mock, on_addref(_)).Times(0);
+    EXPECT_CALL(*helper.mock, on_release(_)).Times(0);
+
+    auto result = run_test<refcount_aux*>(0);
     EXPECT_EQ(result.value(), nullptr);
 }
 
 TEST_F(RefcountAuxGeneric, RunTest0)
 {
     using test_bind::refcount_aux;
-    auto result = run_test<refcount_aux*>(0);
+    using ::testing::_;
 
+    EXPECT_CALL(*helper.mock, on_addref(_)).Times(0);
+    EXPECT_CALL(*helper.mock, on_release(_)).Times(0);
+
+    auto result = run_test<refcount_aux*>(0);
     EXPECT_EQ(result.value(), nullptr);
 }
 
@@ -206,24 +235,35 @@ TEST_F(RefcountAuxGeneric, RunTest0)
 TEST_F(RefcountAuxNative, RunTest1)
 {
     using test_bind::refcount_aux;
-    auto result = run_test<int>(1);
+    using ::testing::_;
+    EXPECT_CALL(*helper.mock, on_addref(_)).Times(1);
+    EXPECT_CALL(*helper.mock, on_release(_)).Times(1);
 
+    auto result = run_test<int>(1);
     EXPECT_EQ(result.value(), 1);
 }
 
 TEST_F(RefcountAuxGeneric, RunTest1)
 {
     using test_bind::refcount_aux;
-    auto result = run_test<int>(1);
+    using ::testing::_;
 
+    EXPECT_CALL(*helper.mock, on_addref(_)).Times(1);
+    EXPECT_CALL(*helper.mock, on_release(_)).Times(1);
+
+    auto result = run_test<int>(1);
     EXPECT_EQ(result.value(), 1);
 }
 
 TEST_F(RefcountAuxNative, RunTest2)
 {
     using test_bind::refcount_aux;
-    auto result = run_test<int>(2);
+    using ::testing::_;
 
+    EXPECT_CALL(*helper.mock, on_addref(_)).Times(1);
+    EXPECT_CALL(*helper.mock, on_release(_)).Times(1);
+
+    auto result = run_test<int>(2);
     EXPECT_EQ(result.value(), 2);
 }
 
@@ -232,7 +272,11 @@ TEST_F(RefcountAuxNative, RunTest2)
 TEST_F(RefcountAuxGeneric, RunTest2)
 {
     using test_bind::refcount_aux;
-    auto result = run_test<int>(2);
+    using ::testing::_;
 
+    EXPECT_CALL(*helper.mock, on_addref(_)).Times(1);
+    EXPECT_CALL(*helper.mock, on_release(_)).Times(1);
+
+    auto result = run_test<int>(2);
     EXPECT_EQ(result.value(), 2);
 }

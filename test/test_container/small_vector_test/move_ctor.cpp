@@ -1,5 +1,6 @@
 #include <asbind_test/framework.hpp>
 #include <asbind20/container/small_vector.hpp>
+#include <gmock/gmock.h>
 
 TEST(SmallVector, EmptyIntSVMoveCtor)
 {
@@ -12,9 +13,9 @@ TEST(SmallVector, EmptyIntSVMoveCtor)
     sv_type v(
         nullptr, AS_NAMESPACE_QUALIFIER asTYPEID_INT32
     );
-    EXPECT_TRUE(v.empty());
+    EXPECT_THAT(v, ::testing::IsEmpty());
     sv_type new_sv = std::move(v);
-    EXPECT_TRUE(new_sv.empty());
+    EXPECT_THAT(new_sv, ::testing::IsEmpty());
     EXPECT_NE(v.data(), new_sv.data());
 }
 
@@ -75,7 +76,7 @@ TEST(SmallVector, DynIntSVMoveCtor)
     EXPECT_EQ(new_sv.element_type_info(), v.element_type_info());
     EXPECT_EQ(new_sv.element_type_id(), v.element_type_id());
 
-    EXPECT_EQ(v.size(), 0);
+    EXPECT_THAT(v, ::testing::IsEmpty());
     EXPECT_EQ(v.capacity(), v.static_capacity());
 
     EXPECT_EQ(new_sv.size(), 128);
@@ -98,12 +99,12 @@ TEST(SmallVector, EmptyStringSVMoveCtor)
     asbind_test::setup_message_callback(engine, true);
 
     asbind20::typeinfo_pointer string_ti = engine->GetTypeInfoByName("string");
-    ASSERT_NE(string_ti, nullptr);
+    ASSERT_THAT(string_ti, ::testing::NotNull());
 
     sv_type v(string_ti);
-    EXPECT_TRUE(v.empty());
+    EXPECT_THAT(v, ::testing::IsEmpty());
     sv_type new_sv = std::move(v);
-    EXPECT_TRUE(new_sv.empty());
+    EXPECT_THAT(new_sv, ::testing::IsEmpty());
     EXPECT_NE(v.data(), new_sv.data());
 }
 
@@ -116,7 +117,7 @@ TEST(SmallVector, SmallStringSVMoveCtor)
     asbind_test::setup_message_callback(engine, true);
 
     asbind20::typeinfo_pointer string_ti = engine->GetTypeInfoByName("string");
-    ASSERT_NE(string_ti, nullptr);
+    ASSERT_THAT(string_ti, ::testing::NotNull());
 
     using sv_type = container::small_vector<
         container::typeinfo_identity,
@@ -133,7 +134,7 @@ TEST(SmallVector, SmallStringSVMoveCtor)
     EXPECT_LE(v.capacity(), v.static_capacity());
 
     sv_type new_sv = std::move(v);
-    EXPECT_EQ(v.size(), 0);
+    EXPECT_THAT(v, ::testing::IsEmpty());
     EXPECT_EQ(new_sv.size(), 2);
     for(unsigned int i = 0; i < 2; ++i)
     {
@@ -151,7 +152,7 @@ TEST(SmallVector, DynStringSVMoveCtor)
     asbind_test::setup_message_callback(engine, true);
 
     asbind20::typeinfo_pointer string_ti = engine->GetTypeInfoByName("string");
-    ASSERT_NE(string_ti, nullptr);
+    ASSERT_THAT(string_ti, ::testing::NotNull());
 
     using sv_type = container::small_vector<
         container::typeinfo_identity,
@@ -168,7 +169,7 @@ TEST(SmallVector, DynStringSVMoveCtor)
     EXPECT_GT(v.capacity(), v.static_capacity());
 
     sv_type new_sv = std::move(v);
-    EXPECT_EQ(v.size(), 0);
+    EXPECT_THAT(v, ::testing::IsEmpty());
     EXPECT_EQ(new_sv.size(), 16);
     for(unsigned int i = 0; i < 16; ++i)
     {

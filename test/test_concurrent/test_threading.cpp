@@ -6,8 +6,7 @@
 
 TEST(Threading, AutoCleanUp)
 {
-    if(!asbind20::has_threads())
-        GTEST_SKIP() << "AS_NO_THREADS";
+    ASBIND_TEST_SKIP_IF_NO_THREADS();
 
     using namespace asbind20;
     using namespace std::chrono_literals;
@@ -23,7 +22,7 @@ TEST(Threading, AutoCleanUp)
     );
     ASSERT_GE(m->Build(), 0);
     auto* f = m->GetFunctionByName("fn");
-    ASSERT_NE(f, nullptr);
+    ASSERT_THAT(f, ::testing::NotNull());
 
     std::condition_variable cv;
     std::mutex mx;
