@@ -143,7 +143,7 @@ static void check_aux_factory(asbind20::engine_pointer engine, int expected_val,
     ASSERT_GE(m->Build(), 0);
 
     auto* f = m->GetFunctionByName("get");
-    ASSERT_NE(f, nullptr);
+    ASSERT_THAT(f, ::testing::NotNull());
 
     asbind20::request_context ctx(engine);
     auto result = asbind20::script_invoke<int>(ctx, f, arg);
@@ -162,7 +162,7 @@ static void check_aux_factory_list(asbind20::engine_pointer engine, int expected
     ASSERT_GE(m->Build(), 0);
 
     auto* f = m->GetFunctionByName("get");
-    ASSERT_NE(f, nullptr);
+    ASSERT_THAT(f, ::testing::NotNull());
 
     asbind20::request_context ctx(engine);
     auto result = asbind20::script_invoke<int>(ctx, f);
@@ -545,7 +545,7 @@ static void check_aux_factory_template(asbind20::engine_pointer engine, int expe
     ASSERT_GE(m->Build(), 0);
 
     auto* f = m->GetFunctionByName("get");
-    ASSERT_NE(f, nullptr);
+    ASSERT_THAT(f, ::testing::NotNull());
 
     asbind20::request_context ctx(engine);
     auto result = asbind20::script_invoke<int>(ctx, f, arg);
@@ -564,7 +564,7 @@ static void check_aux_factory_template_list(asbind20::engine_pointer engine, int
     ASSERT_GE(m->Build(), 0);
 
     auto* f = m->GetFunctionByName("get");
-    ASSERT_NE(f, nullptr);
+    ASSERT_THAT(f, ::testing::NotNull());
 
     asbind20::request_context ctx(engine);
     auto result = asbind20::script_invoke<int>(ctx, f);

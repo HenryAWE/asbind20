@@ -27,9 +27,9 @@ struct class_listener
         SCOPED_TRACE("id = " + std::to_string(id));
 
         asbind20::engine_pointer engine = g.get_engine();
-        ASSERT_NE(engine, nullptr);
+        ASSERT_THAT(engine, ::testing::NotNull());
         asbind20::typeinfo_pointer ti = engine->GetTypeInfoById(id);
-        ASSERT_NE(ti, nullptr);
+        ASSERT_THAT(ti, ::testing::NotNull());
 
         EXPECT_THAT(recorded_class, ::testing::IsEmpty())
             << "Recording class for a second time";
@@ -49,11 +49,11 @@ struct class_listener
         SCOPED_TRACE("id = " + std::to_string(id));
 
         asbind20::engine_pointer engine = g.get_engine();
-        ASSERT_NE(engine, nullptr);
+        ASSERT_THAT(engine, ::testing::NotNull());
         auto* ti = engine->GetTypeInfoById(g.get_type_id());
-        ASSERT_NE(ti, nullptr);
+        ASSERT_THAT(ti, ::testing::NotNull());
         auto* f = engine->GetFunctionById(id);
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         EXPECT_EQ(f->GetObjectType(), ti)
             << "ti->GetName(): " << ti->GetName();

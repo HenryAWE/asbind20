@@ -223,7 +223,7 @@ static void run_vec2_test_script(asbind20::engine_pointer engine)
         auto f = m->GetFunctionByDecl(
             asbind20::string_concat("void test", std::to_string(idx), "()").c_str()
         );
-        ASSERT_NE(f, nullptr)
+        ASSERT_THAT(f, ::testing::NotNull())
             << "func index: " << idx;
 
         asbind20::request_context ctx(engine);

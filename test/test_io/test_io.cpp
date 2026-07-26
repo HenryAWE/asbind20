@@ -31,7 +31,7 @@ TEST(TestIO, IOStreamWrapper)
         }
 
         auto* getval = m->GetFunctionByDecl("int getval()");
-        ASSERT_NE(getval, nullptr);
+        ASSERT_THAT(getval, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, getval);
@@ -71,7 +71,7 @@ TEST(TestIO, MemoryWrapper)
         }
 
         auto* getval = m->GetFunctionByDecl("int f(int)");
-        ASSERT_NE(getval, nullptr);
+        ASSERT_THAT(getval, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, getval, 13);

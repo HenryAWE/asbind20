@@ -98,7 +98,7 @@ public:
         ASSERT_GE(m->Build(), 0);
 
         auto* f = m->GetFunctionByName("run");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);

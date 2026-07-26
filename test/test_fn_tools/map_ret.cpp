@@ -82,7 +82,7 @@ static void check_map_ret(asbind20::engine_pointer engine)
     );
 
     auto* f = m->GetFunctionByName("f");
-    ASSERT_NE(f, nullptr);
+    ASSERT_THAT(f, ::testing::NotNull());
 
     asbind20::request_context ctx(engine);
     auto result = asbind20::script_invoke<AS_NAMESPACE_QUALIFIER asUINT>(ctx, f);
@@ -103,7 +103,7 @@ static void check_mfn_map_ret(asbind20::engine_pointer engine)
     );
 
     auto* f = m->GetFunctionByName("f");
-    ASSERT_NE(f, nullptr);
+    ASSERT_THAT(f, ::testing::NotNull());
 
     asbind20::request_context ctx(engine);
     auto result = asbind20::script_invoke<AS_NAMESPACE_QUALIFIER asUINT>(ctx, f);

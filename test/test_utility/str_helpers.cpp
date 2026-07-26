@@ -103,7 +103,7 @@ TEST(SetException, FormatException)
     ASSERT_GE(m->Build(), 0);
 
     auto* f = m->GetFunctionByName("f");
-    ASSERT_NE(f, nullptr);
+    ASSERT_THAT(f, ::testing::NotNull());
 
     request_context ctx(engine);
     auto result = script_invoke<void>(ctx, f);

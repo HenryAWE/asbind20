@@ -78,7 +78,7 @@ static void check_int_array(asbind20::engine_pointer engine)
 
     {
         auto* f = m->GetFunctionByName("test0");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
         asbind20::request_context ctx(engine);
 
         auto result = asbind20::script_invoke<int>(ctx, f);
@@ -88,7 +88,7 @@ static void check_int_array(asbind20::engine_pointer engine)
 
     {
         auto* f = m->GetFunctionByName("test1");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
         asbind20::request_context ctx(engine);
 
         auto result = asbind20::script_invoke<int>(ctx, f);

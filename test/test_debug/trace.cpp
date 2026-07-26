@@ -48,7 +48,7 @@ TEST(Trace, Print)
     ASSERT_GE(m->Build(), 0);
 
     auto* foobar = m->GetFunctionByName("foobar");
-    ASSERT_NE(foobar, nullptr);
+    ASSERT_THAT(foobar, ::testing::NotNull());
 
     EXPECT_THAT(data.ss.str(), ::testing::IsEmpty());
     request_context ctx(engine);

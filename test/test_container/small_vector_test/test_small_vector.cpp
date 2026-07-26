@@ -50,7 +50,7 @@ TEST(SmallVector, IntAsElement)
     ASSERT_EQ(v.size(), 64);
     for(int i = 0; i < 64; ++i)
     {
-        ASSERT_NE(v[i], nullptr) << "i = " << i;
+        ASSERT_THAT(v[i], ::testing::NotNull()) << "i = " << i;
         EXPECT_EQ(*(int*)v[i], 64 - (i + 1)) << "i = " << i;
     }
     v.clear();
@@ -117,7 +117,7 @@ TEST(SmallVector, ScriptObjectAsElement)
     ASSERT_GE(m->Build(), 0);
 
     asbind20::typeinfo_pointer foo_ti = m->GetTypeInfoByDecl("foo");
-    ASSERT_NE(foo_ti, nullptr);
+    ASSERT_THAT(foo_ti, ::testing::NotNull());
 
     // Use std::allocator for debugging
     using sv_type = container::small_vector<
@@ -142,10 +142,10 @@ TEST(SmallVector, ScriptObjectAsElement)
             );
 
             auto* obj = (AS_NAMESPACE_QUALIFIER asIScriptObject*)*it;
-            ASSERT_NE(obj, nullptr);
+            ASSERT_THAT(obj, ::testing::NotNull());
             int* data = (int*)obj->GetAddressOfProperty(0);
 
-            ASSERT_NE(data, nullptr);
+            ASSERT_THAT(data, ::testing::NotNull());
             EXPECT_EQ(*data, it - cv.begin());
         }
 
@@ -157,9 +157,9 @@ TEST(SmallVector, ScriptObjectAsElement)
             SCOPED_TRACE(string_concat("v[i] is v[", std::to_string(i), ']'));
 
             auto* obj = (AS_NAMESPACE_QUALIFIER asIScriptObject*)v[i];
-            ASSERT_NE(obj, nullptr);
+            ASSERT_THAT(obj, ::testing::NotNull());
             int* data = (int*)obj->GetAddressOfProperty(0);
-            ASSERT_NE(data, nullptr);
+            ASSERT_THAT(data, ::testing::NotNull());
 
             EXPECT_EQ(*data, expected);
         };
@@ -194,7 +194,7 @@ TEST(SmallVector, ScriptObjectAsElement)
     {
         counter = 1013;
         auto* special_foo = (AS_NAMESPACE_QUALIFIER asIScriptObject*)engine->CreateScriptObject(foo_ti);
-        ASSERT_NE(special_foo, nullptr);
+        ASSERT_THAT(special_foo, ::testing::NotNull());
         EXPECT_EQ(*(int*)special_foo->GetAddressOfProperty(0), 1013);
         EXPECT_EQ(counter, 1013 + 1);
 
@@ -214,9 +214,9 @@ TEST(SmallVector, ScriptObjectAsElement)
             SCOPED_TRACE(string_concat("v[i] is v[", std::to_string(i), ']'));
 
             auto* obj = (AS_NAMESPACE_QUALIFIER asIScriptObject*)v[i];
-            ASSERT_NE(obj, nullptr);
+            ASSERT_THAT(obj, ::testing::NotNull());
             int* data = (int*)obj->GetAddressOfProperty(0);
-            ASSERT_NE(data, nullptr);
+            ASSERT_THAT(data, ::testing::NotNull());
 
             EXPECT_EQ(*data, expected);
         };
@@ -227,7 +227,7 @@ TEST(SmallVector, ScriptObjectAsElement)
 
         counter = -1;
         special_foo = (AS_NAMESPACE_QUALIFIER asIScriptObject*)engine->CreateScriptObject(foo_ti);
-        ASSERT_NE(special_foo, nullptr);
+        ASSERT_THAT(special_foo, ::testing::NotNull());
         EXPECT_EQ(counter, -1 + 1);
 
         v.insert(v.begin() + 1, special_foo);
@@ -296,7 +296,7 @@ TEST(SmallVector, ScriptStringAsElement)
     asbind_test::setup_message_callback(engine, true);
 
     asbind20::typeinfo_pointer string_ti = engine->GetTypeInfoByName("string");
-    ASSERT_NE(string_ti, nullptr);
+    ASSERT_THAT(string_ti, ::testing::NotNull());
 
     // Use std::allocator for debugging
     using sv_type = container::small_vector<

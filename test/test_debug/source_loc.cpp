@@ -21,7 +21,7 @@ TEST(SourceLocation, FromFunction)
     ASSERT_GE(m->Build(), 0);
 
     auto* foobar = m->GetFunctionByName("foobar");
-    EXPECT_NE(foobar, nullptr);
+    EXPECT_THAT(foobar, ::testing::NotNull());
 
     auto loc = debugging::script_source_location::from_function(foobar);
     EXPECT_STREQ(loc.function_name().safe_c_str(), "foobar");

@@ -56,7 +56,7 @@ public:
 
     void assign(const void* val)
     {
-        EXPECT_NE(m_ti, nullptr);
+        EXPECT_THAT(m_ti, ::testing::NotNull());
 
         if(has_value())
         {
@@ -256,7 +256,7 @@ public:
             );
             SCOPED_TRACE("Decl: " + decl);
             auto* f = m->GetFunctionByDecl(decl.c_str());
-            EXPECT_NE(f, nullptr);
+            EXPECT_THAT(f, ::testing::NotNull());
             if(!f)
                 continue;
 

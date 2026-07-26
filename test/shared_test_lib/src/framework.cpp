@@ -106,7 +106,7 @@ static void exception_translator_impl(
     asbind20::context_pointer ctx, void*
 )
 {
-    ASSERT_NE(ctx, nullptr);
+    ASSERT_THAT(ctx, ::testing::NotNull());
 
 #ifndef ASBIND20_NO_EXCEPTIONS
     try

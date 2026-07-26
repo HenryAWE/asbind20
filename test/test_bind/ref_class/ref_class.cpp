@@ -530,7 +530,7 @@ static void check_ref_class_comp_property(asbind20::engine_pointer engine)
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<base_ref_class*>(ctx, f);
         ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
-        ASSERT_NE(*result, nullptr);
+        ASSERT_THAT(*result, ::testing::NotNull());
         EXPECT_EQ((*result)->a, 0);
         EXPECT_EQ((*result)->indirect->comp_a, 1);
         EXPECT_EQ((*result)->indirect->comp_b, 2);

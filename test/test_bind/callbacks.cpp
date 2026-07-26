@@ -32,7 +32,7 @@ public:
 
 static void write_msg_helper(asbind20::engine_pointer engine, const char* msg)
 {
-    ASSERT_NE(engine, nullptr);
+    ASSERT_THAT(engine, ::testing::NotNull());
     engine->WriteMessage(
         "(system)",
         0,
@@ -132,7 +132,7 @@ static void setup_funcs(asbind20::engine_pointer engine)
 static void trigger_ex_in_script(asbind20::engine_pointer engine)
 {
     auto* m = asbind20::create_module(engine, "test_ex");
-    ASSERT_NE(m, nullptr);
+    ASSERT_THAT(m, ::testing::NotNull());
     m->AddScriptSection(
         "test_ex",
         "void f()\n"
@@ -143,7 +143,7 @@ static void trigger_ex_in_script(asbind20::engine_pointer engine)
     ASSERT_GE(m->Build(), 0);
 
     auto* f = m->GetFunctionByName("f");
-    ASSERT_NE(f, nullptr);
+    ASSERT_THAT(f, ::testing::NotNull());
     asbind20::request_context ctx(engine);
     auto result = asbind20::script_invoke<void>(ctx, f);
     ASBIND_TEST_EXPECT_INVOKE_NO_RESULT(result);

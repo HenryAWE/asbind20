@@ -134,7 +134,7 @@ public:
         auto* m = compile_module();
 
         auto* f = m->GetFunctionByName("test");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<void>(ctx, f);
@@ -204,7 +204,7 @@ public:
         auto* m = compile_module();
 
         auto* f = m->GetFunctionByName("test");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<void>(ctx, f);
@@ -277,7 +277,7 @@ public:
         auto* m = compile_module();
 
         auto* f = m->GetFunctionByName("test");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<void>(ctx, f);
@@ -338,7 +338,7 @@ public:
         auto* m = compile_module();
 
         auto* f = m->GetFunctionByName("test");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<void>(ctx, f);

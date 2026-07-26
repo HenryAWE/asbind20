@@ -49,7 +49,7 @@ static void check_init_list(
         auto* f = m->GetFunctionByDecl(decl.c_str());
         if(!f)
         {
-            EXPECT_NE(f, nullptr)
+            EXPECT_THAT(f, ::testing::NotNull())
                 << decl << ": not found";
             return {};
         }
@@ -528,7 +528,7 @@ static void check_ref_test_vector(asbind20::engine_pointer engine)
 
         if(!f)
         {
-            EXPECT_NE(f, nullptr)
+            EXPECT_THAT(f, ::testing::NotNull())
                 << decl << ": not found";
             return nullptr;
         }

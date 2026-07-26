@@ -22,7 +22,7 @@ TEST(Threading, AutoCleanUp)
     );
     ASSERT_GE(m->Build(), 0);
     auto* f = m->GetFunctionByName("fn");
-    ASSERT_NE(f, nullptr);
+    ASSERT_THAT(f, ::testing::NotNull());
 
     std::condition_variable cv;
     std::mutex mx;

@@ -187,7 +187,7 @@ static void run_script(asbind20::engine_pointer engine)
         auto f = m->GetFunctionByDecl(
             asbind20::string_concat("void test", std::to_string(idx), "()").c_str()
         );
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<void>(ctx, f);
@@ -227,7 +227,7 @@ TEST(BindRefString, Extract)
         return;
 
     auto* f = m->GetFunctionByDecl("string@ get_str()");
-    ASSERT_NE(f, nullptr);
+    ASSERT_THAT(f, ::testing::NotNull());
 
     asbind20::request_context ctx(engine);
     auto result = asbind20::script_invoke<test_bind::ref_string*>(ctx, f);
@@ -235,7 +235,7 @@ TEST(BindRefString, Extract)
 
     namespace debugging = asbind20::debugging;
 
-    EXPECT_NE(result.value(), nullptr);
+    EXPECT_THAT(result.value(), ::testing::NotNull());
     auto extracted = debugging::extract_string(
         test_bind::ref_string_factory::get(), *result
     );

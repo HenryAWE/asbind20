@@ -24,7 +24,7 @@ TEST(SmallVector, ExceptionSafety)
         SCOPED_TRACE("instantly thorw");
 
         auto* ti = engine->GetTypeInfoByDecl("instantly_throw");
-        ASSERT_NE(ti, nullptr);
+        ASSERT_THAT(ti, ::testing::NotNull());
 
         sv_type sv(ti);
 
@@ -39,7 +39,7 @@ TEST(SmallVector, ExceptionSafety)
         SCOPED_TRACE("throw on copy");
 
         auto* ti = engine->GetTypeInfoByDecl("throw_on_copy");
-        ASSERT_NE(ti, nullptr);
+        ASSERT_THAT(ti, ::testing::NotNull());
 
         sv_type sv(ti);
 

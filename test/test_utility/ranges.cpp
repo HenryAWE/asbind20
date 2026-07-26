@@ -31,7 +31,7 @@ TEST(Ranges, AllMethodsWithStdViews)
     test_utility::setup_abc_interface(engine);
 
     auto* ti = engine->GetTypeInfoByName("abc");
-    ASSERT_NE(ti, nullptr);
+    ASSERT_THAT(ti, ::testing::NotNull());
 
     // Check empty view
     {
@@ -76,7 +76,7 @@ TEST(Ranges, AllBehavioursWithStdView)
     ASSERT_GE(m->Build(), 0);
 
     auto* ti = m->GetTypeInfoByName("foo");
-    ASSERT_NE(ti, nullptr);
+    ASSERT_THAT(ti, ::testing::NotNull());
 
     // Check empty view
     {
@@ -128,7 +128,7 @@ TEST(Ranges, AllFactoriesWithStdView)
     ASSERT_GE(m->Build(), 0);
 
     auto* ti = m->GetTypeInfoByName("foo");
-    ASSERT_NE(ti, nullptr);
+    ASSERT_THAT(ti, ::testing::NotNull());
 
     // Check empty view
     {
@@ -170,7 +170,7 @@ TEST(Ranges, AllEnumValuesWithStdView)
     ASSERT_GE(m->Build(), 0);
 
     auto* ti = m->GetTypeInfoByName("E");
-    ASSERT_NE(ti, nullptr);
+    ASSERT_THAT(ti, ::testing::NotNull());
 
     // Check empty view
     {
@@ -225,7 +225,7 @@ TEST(Ranges, AllEnumValuesCustomUnderlying)
         .value(my_enum::b, "b");
 
     auto* ti = engine->GetTypeInfoByName("my_enum");
-    ASSERT_NE(ti, nullptr);
+    ASSERT_THAT(ti, ::testing::NotNull());
 
     // Check empty view
     {
@@ -423,7 +423,7 @@ TEST(Ranges, GenericArguments)
 
     {
         auto* f2 = m->GetFunctionByDecl("string f2()");
-        ASSERT_NE(f2, nullptr);
+        ASSERT_THAT(f2, ::testing::NotNull());
 
         request_context ctx(engine);
         auto result = asbind20::script_invoke<std::string>(ctx, f2);
@@ -433,7 +433,7 @@ TEST(Ranges, GenericArguments)
 
     {
         auto* f3 = m->GetFunctionByDecl("string f3()");
-        ASSERT_NE(f3, nullptr);
+        ASSERT_THAT(f3, ::testing::NotNull());
 
         request_context ctx(engine);
         auto result = asbind20::script_invoke<std::string>(ctx, f3);

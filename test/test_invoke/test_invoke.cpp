@@ -36,7 +36,7 @@ TEST(TestInvoke, CommonTypes)
 
     {
         auto* fp = m->GetFunctionByName("add_1");
-        ASSERT_NE(fp, nullptr);
+        ASSERT_THAT(fp, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
 
@@ -46,7 +46,7 @@ TEST(TestInvoke, CommonTypes)
 
     {
         auto* fp = m->GetFunctionByName("add_ref_1");
-        ASSERT_NE(fp, nullptr);
+        ASSERT_THAT(fp, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
 
@@ -61,7 +61,7 @@ TEST(TestInvoke, CommonTypes)
 
     {
         auto* fp = m->GetFunctionByName("flt_identity");
-        ASSERT_NE(fp, nullptr);
+        ASSERT_THAT(fp, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
 
@@ -75,7 +75,7 @@ TEST(TestInvoke, CommonTypes)
 
     {
         auto* fp = m->GetFunctionByName("dbl_identity");
-        ASSERT_NE(fp, nullptr);
+        ASSERT_THAT(fp, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
 
@@ -92,7 +92,7 @@ TEST(TestInvoke, CommonTypes)
         using namespace std::literals;
 
         auto* fp = m->GetFunctionByName("test");
-        ASSERT_NE(fp, nullptr);
+        ASSERT_THAT(fp, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
 
@@ -136,7 +136,7 @@ TEST(TestInvoke, CommonTypes)
 
     {
         auto* fp = m->GetFunctionByName("test_handle");
-        ASSERT_NE(fp, nullptr);
+        ASSERT_THAT(fp, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
 
@@ -149,7 +149,7 @@ TEST(TestInvoke, CommonTypes)
 
     {
         auto* fp = m->GetFunctionByName("test_handle");
-        ASSERT_NE(fp, nullptr);
+        ASSERT_THAT(fp, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
 
@@ -437,13 +437,13 @@ TEST(TestInvoke, CompareValueResult)
     ASSERT_GE(m->Build(), 0);
 
     auto* f0 = m->GetFunctionByName("f0");
-    ASSERT_NE(f0, nullptr);
+    ASSERT_THAT(f0, ::testing::NotNull());
     auto* f1 = m->GetFunctionByName("f1");
-    ASSERT_NE(f1, nullptr);
+    ASSERT_THAT(f1, ::testing::NotNull());
     auto* f2 = m->GetFunctionByName("f2");
-    ASSERT_NE(f2, nullptr);
+    ASSERT_THAT(f2, ::testing::NotNull());
     auto* f3 = m->GetFunctionByName("f3");
-    ASSERT_NE(f3, nullptr);
+    ASSERT_THAT(f3, ::testing::NotNull());
 
     request_context ctx_0(engine);
     auto result_0 = script_invoke<int>(ctx_0, f0); // 10
@@ -506,11 +506,11 @@ TEST(TestInvoke, CompareValueClassResult)
     ASSERT_GE(m->Build(), 0);
 
     auto* aaa = m->GetFunctionByName("aaa");
-    ASSERT_NE(aaa, nullptr);
+    ASSERT_THAT(aaa, ::testing::NotNull());
     auto* bbb = m->GetFunctionByName("bbb");
-    ASSERT_NE(bbb, nullptr);
+    ASSERT_THAT(bbb, ::testing::NotNull());
     auto* bad = m->GetFunctionByName("bad");
-    ASSERT_NE(bad, nullptr);
+    ASSERT_THAT(bad, ::testing::NotNull());
 
     request_context ctx_0(engine);
     auto result_0 = script_invoke<std::string>(ctx_0, aaa);

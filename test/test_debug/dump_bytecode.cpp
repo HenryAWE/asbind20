@@ -15,7 +15,7 @@ TEST(DumpByteCode, Print)
     );
     ASSERT_GE(m->Build(), 0);
     auto* f = m->GetFunctionByName("f");
-    ASSERT_NE(f, nullptr);
+    ASSERT_THAT(f, ::testing::NotNull());
 
     auto bcs = debugging::get_bytecode(f);
     EXPECT_THAT(

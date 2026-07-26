@@ -135,7 +135,7 @@ static void test_ctor_fn(asbind20::engine_pointer engine)
     );
     ASSERT_GE(m->Build(), 0);
     auto* f = m->GetFunctionByName("f");
-    ASSERT_NE(f, nullptr);
+    ASSERT_THAT(f, ::testing::NotNull());
 
     {
         asbind20::request_context ctx(engine);

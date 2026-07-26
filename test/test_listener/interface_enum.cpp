@@ -20,7 +20,7 @@ public:
     {
         SCOPED_TRACE(std::string("Type name: ") + g.get_name());
 
-        EXPECT_NE(g.get_engine(), nullptr);
+        EXPECT_THAT(g.get_engine(), ::testing::NotNull());
 
         using asbind20::to_string;
         EXPECT_GE(r, 0)
@@ -35,7 +35,7 @@ public:
         SCOPED_TRACE(std::string("Type name: ") + g.get_name());
 
         asbind20::engine_pointer engine = g.get_engine();
-        ASSERT_NE(engine, nullptr);
+        ASSERT_THAT(engine, ::testing::NotNull());
 
         if(r < 0)
         {
@@ -45,7 +45,7 @@ public:
         }
 
         asbind20::typeinfo_pointer ti = engine->GetTypeInfoById(r);
-        ASSERT_NE(ti, nullptr)
+        ASSERT_THAT(ti, ::testing::NotNull())
             << "id = " << r;
 
         rec_type("enum", ti->GetName());
@@ -57,7 +57,7 @@ public:
         SCOPED_TRACE(std::string("Type name: ") + g.get_name());
 
         asbind20::engine_pointer engine = g.get_engine();
-        ASSERT_NE(engine, nullptr);
+        ASSERT_THAT(engine, ::testing::NotNull());
 
         if(r < 0)
         {
@@ -67,7 +67,7 @@ public:
         }
 
         asbind20::typeinfo_pointer ti = engine->GetTypeInfoById(r);
-        ASSERT_NE(ti, nullptr)
+        ASSERT_THAT(ti, ::testing::NotNull())
             << "id = " << r;
 
         rec_type("interface", ti->GetName());
@@ -76,7 +76,7 @@ public:
 private:
     void rec_type(std::string_view type_class, const char* name)
     {
-        ASSERT_NE(name, nullptr);
+        ASSERT_THAT(name, ::testing::NotNull());
         recorded_type.emplace_back(asbind20::string_concat(type_class, ' ', name));
     }
 };

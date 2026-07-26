@@ -554,7 +554,7 @@ void run_initlist_gc_test(asbind20::module_pointer m, int max_test_idx)
         SCOPED_TRACE("Decl: " + decl);
 
         auto* f = m->GetFunctionByDecl(decl.c_str());
-        EXPECT_NE(f, nullptr);
+        EXPECT_THAT(f, ::testing::NotNull());
         if(!f)
             continue;
 

@@ -14,7 +14,7 @@ TEST(Compare, EmptyClass)
     );
     ASSERT_GE(m->Build(), 0);
     auto* ti = m->GetTypeInfoByName("foo");
-    ASSERT_NE(ti, nullptr);
+    ASSERT_THAT(ti, ::testing::NotNull());
 
     auto result = container::get_comparator(ti);
     {
@@ -55,7 +55,7 @@ TEST(Compare, ScriptClassEq)
     );
     ASSERT_GE(m->Build(), 0);
     auto* ti = m->GetTypeInfoByName("foo");
-    ASSERT_NE(ti, nullptr);
+    ASSERT_THAT(ti, ::testing::NotNull());
 
     auto result = container::get_comparator(ti);
     {
@@ -69,7 +69,7 @@ TEST(Compare, ScriptClassEq)
 
     {
         auto* expected_func = ti->GetMethodByName("opEquals");
-        ASSERT_NE(expected_func, nullptr);
+        ASSERT_THAT(expected_func, ::testing::NotNull());
 
         auto cmp = result.get();
         EXPECT_EQ(cmp.get_opCmp(), nullptr);
@@ -86,10 +86,10 @@ TEST(Compare, ScriptClassEq)
         request_context ctx(engine);
 
         auto* lhs = create(ctx, -1).value();
-        ASSERT_NE(lhs, nullptr);
+        ASSERT_THAT(lhs, ::testing::NotNull());
         lhs->AddRef();
         auto* rhs = create(ctx, 1).value();
-        ASSERT_NE(rhs, nullptr);
+        ASSERT_THAT(rhs, ::testing::NotNull());
         rhs->AddRef();
 
         auto cmp = result.get();
@@ -106,10 +106,10 @@ TEST(Compare, ScriptClassEq)
         request_context ctx(engine);
 
         auto* lhs = create(ctx, 1).value();
-        ASSERT_NE(lhs, nullptr);
+        ASSERT_THAT(lhs, ::testing::NotNull());
         lhs->AddRef();
         auto* rhs = create(ctx, 1).value();
-        ASSERT_NE(rhs, nullptr);
+        ASSERT_THAT(rhs, ::testing::NotNull());
         rhs->AddRef();
         EXPECT_NE(lhs, rhs);
 
@@ -154,7 +154,7 @@ TEST(Compare, ScriptClassCmp)
     );
     ASSERT_GE(m->Build(), 0);
     auto* ti = m->GetTypeInfoByName("foo");
-    ASSERT_NE(ti, nullptr);
+    ASSERT_THAT(ti, ::testing::NotNull());
 
     auto result = container::get_comparator(ti);
     {
@@ -168,7 +168,7 @@ TEST(Compare, ScriptClassCmp)
 
     {
         auto* expected_func = ti->GetMethodByName("opCmp");
-        ASSERT_NE(expected_func, nullptr);
+        ASSERT_THAT(expected_func, ::testing::NotNull());
 
         auto cmp = result.get();
         EXPECT_EQ(cmp.get_opCmp(), expected_func);
@@ -185,10 +185,10 @@ TEST(Compare, ScriptClassCmp)
         request_context ctx(engine);
 
         auto* lhs = create(ctx, -1).value();
-        ASSERT_NE(lhs, nullptr);
+        ASSERT_THAT(lhs, ::testing::NotNull());
         lhs->AddRef();
         auto* rhs = create(ctx, 1).value();
-        ASSERT_NE(rhs, nullptr);
+        ASSERT_THAT(rhs, ::testing::NotNull());
         rhs->AddRef();
 
         auto cmp = result.get();
@@ -205,10 +205,10 @@ TEST(Compare, ScriptClassCmp)
         request_context ctx(engine);
 
         auto* lhs = create(ctx, 1).value();
-        ASSERT_NE(lhs, nullptr);
+        ASSERT_THAT(lhs, ::testing::NotNull());
         lhs->AddRef();
         auto* rhs = create(ctx, 1).value();
-        ASSERT_NE(rhs, nullptr);
+        ASSERT_THAT(rhs, ::testing::NotNull());
         rhs->AddRef();
         EXPECT_NE(lhs, rhs);
 
