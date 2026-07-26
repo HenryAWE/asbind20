@@ -9,9 +9,11 @@
 
 #pragma once
 
+#include <iomanip>
 #include <string>
 #include <asbind20/asbind.hpp>
 #include <asbind20/concurrent/mutex.hpp>
+#include <gtest/gtest.h>
 #include "utf8.hpp"
 
 namespace asbind_test
@@ -122,8 +124,15 @@ public:
             r = AS_NAMESPACE_QUALIFIER asERROR;
         else
         {
-            assert(it->second != 0);
-            it->second -= 1;
+            if(it->second == 0) [[unlikely]]
+            {
+                ADD_FAILURE()
+                    << "bad string reference count."
+                    << " str = " << std::quoted(it->first);
+            }
+            else
+                it->second -= 1;
+
             if(it->second == 0)
                 m_cache.erase(it);
         }

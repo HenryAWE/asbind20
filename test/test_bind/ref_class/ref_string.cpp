@@ -64,7 +64,7 @@ public:
 
     void release()
     {
-        assert(m_refcount >= 1);
+        ASSERT_GE(m_refcount, 1);
         --m_refcount;
         if(m_refcount == 0)
             delete this;
@@ -93,7 +93,7 @@ public:
     {
         if(!str)
             return AS_NAMESPACE_QUALIFIER asERROR;
-        auto ptr = (ref_string*)str;
+        auto* ptr = static_cast<const ref_string*>(str);
         if(length)
             *length = static_cast<AS_NAMESPACE_QUALIFIER asUINT>(ptr->str.size());
         if(data)
@@ -177,7 +177,7 @@ static asbind20::module_pointer build_module(asbind20::engine_pointer engine)
 static void run_script(asbind20::engine_pointer engine)
 {
     auto* m = build_module(engine);
-    if(!m)
+    if(!m) // ADD_FAILURE is called by build_module
         return;
 
     for(int idx : {0, 1})
