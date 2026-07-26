@@ -103,15 +103,15 @@ public:
 
     void SetUp() override
     {
+        if constexpr(!UseGeneric)
+            ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
+
         // Reset helper with a fresh mock for test isolation
         helper = refcount_aux_helper{};
 
         using namespace asbind20;
         engine = make_script_engine();
         asbind_test::setup_message_callback(engine, true);
-
-        if constexpr(!UseGeneric)
-            ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
         ref_class<refcount_aux, UseGeneric>(engine, "refcount_aux")
             .factory_function("", fp<&refcount_aux_helper::create>, auxiliary(helper))
