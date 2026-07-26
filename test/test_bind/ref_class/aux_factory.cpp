@@ -55,6 +55,7 @@ struct aux_factory_helper
     int predefined_value = 0;
 
     aux_factory_helper() = default;
+
     explicit aux_factory_helper(int predefined_val)
         : predefined_value(predefined_val) {}
 
@@ -474,6 +475,7 @@ struct aux_factory_helper_template
     std::shared_ptr<mock_type> mock = std::make_shared<mock_type>();
 
     aux_factory_helper_template() = default;
+
     explicit aux_factory_helper_template(int predefined_val)
         : predefined_value(predefined_val) {}
 
