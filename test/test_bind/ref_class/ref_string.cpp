@@ -239,6 +239,8 @@ TEST(BindRefString, Extract)
     auto extracted = debugging::extract_string(
         test_bind::ref_string_factory::get(), *result
     );
-    ASSERT_TRUE(extracted.has_value());
-    EXPECT_EQ(extracted.value(), "test");
+    EXPECT_THAT(
+        extracted,
+        ::testing::Optional(::testing::StrEq("test"))
+    );
 }

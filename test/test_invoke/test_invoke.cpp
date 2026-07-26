@@ -122,13 +122,13 @@ TEST(TestInvoke, CommonTypes)
         EXPECT_EQ(val, 2);
 
         auto opt = result.to_optional();
-        EXPECT_TRUE(opt.has_value());
+        EXPECT_THAT(opt, ::testing::Optional(::testing::_));
         EXPECT_EQ(*opt, "test");
 
 #ifdef ASBIND20_HAS_EXPECTED
 
         auto ex = std::expected<std::string, AS_NAMESPACE_QUALIFIER asEContextState>(result);
-        EXPECT_TRUE(ex.has_value());
+        EXPECT_THAT(ex, ::testing::Optional(::testing::_));
         EXPECT_EQ(*ex, "test");
 
 #endif
@@ -188,7 +188,7 @@ TEST(TestInvoke, CustomRuleByte)
         EXPECT_EQ(result.value_or(0), std::byte(0x2));
 
         auto opt = result.to_optional();
-        EXPECT_TRUE(opt.has_value());
+        EXPECT_THAT(opt, ::testing::Optional(::testing::_));
         EXPECT_EQ(*opt, std::byte(0x2));
     }
 }
@@ -277,7 +277,7 @@ TEST(TestInvoke, BadResult)
         EXPECT_EQ(result.value_or(3.14f), 3);
 
         auto opt = std::optional<int>(result);
-        EXPECT_FALSE(opt.has_value());
+        EXPECT_THAT(opt, ::testing::Eq(std::nullopt));
 
 #    ifdef ASBIND20_HAS_EXPECTED
 
