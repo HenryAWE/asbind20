@@ -51,7 +51,7 @@ TEST(TestBind, TemplateFunc)
         ASSERT_TRUE(f);
 
         auto result = script_invoke<int>(ctx, f);
-        EXPECT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 42);
     }
 
@@ -61,7 +61,7 @@ TEST(TestBind, TemplateFunc)
         ASSERT_TRUE(f);
 
         auto result = script_invoke<float>(ctx, f);
-        EXPECT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
         EXPECT_FLOAT_EQ(result.value(), 3.14f);
     }
 

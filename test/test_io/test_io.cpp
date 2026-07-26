@@ -35,7 +35,7 @@ TEST(TestIO, IOStreamWrapper)
 
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, getval);
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 1013);
     }
 }
@@ -75,7 +75,7 @@ TEST(TestIO, MemoryWrapper)
 
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, getval, 13);
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 1013);
     }
 }

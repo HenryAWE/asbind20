@@ -262,7 +262,7 @@ public:
 
             asbind20::request_context ctx(m_engine);
             auto result = asbind20::script_invoke<bool>(ctx, f);
-            EXPECT_TRUE(asbind_test::result_has_value(result));
+            ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
             EXPECT_TRUE(result.value());
         }
 

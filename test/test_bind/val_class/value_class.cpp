@@ -401,7 +401,7 @@ static void check_trivial_class(asbind20::engine_pointer engine)
 
         asbind20::request_context ctx(engine);
         auto result = test_case(ctx);
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
         EXPECT_EQ(*result, expected_val)
             << test_name;
     };
@@ -421,7 +421,7 @@ static void check_trivial_class(asbind20::engine_pointer engine)
 
         asbind20::request_context ctx(engine);
         auto result = test_case(ctx);
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
         EXPECT_EQ(result->get_val(), expected_val)
             << test_name;
     };
@@ -439,7 +439,7 @@ static void check_trivial_class(asbind20::engine_pointer engine)
 
         asbind20::request_context ctx(engine);
         auto result = test_case(ctx, std::forward<Args>(args)...);
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
         EXPECT_TRUE(*result)
             << test_name;
     };
@@ -696,7 +696,7 @@ static void check_friend_ops(asbind20::engine_pointer engine, friend_ops_helper&
 
         asbind20::request_context ctx(engine);
         auto result = test_case(ctx);
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
         EXPECT_EQ(*result, expected_val)
             << test_name;
     };
@@ -880,7 +880,7 @@ static void check_val_class_comp_property(asbind20::engine_pointer engine)
 
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<base_val_class>(ctx, f);
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value().a, 0);
         EXPECT_EQ(result.value().indirect->comp_a, 1);
         EXPECT_EQ(result.value().indirect->comp_b, 2);
@@ -892,7 +892,7 @@ static void check_val_class_comp_property(asbind20::engine_pointer engine)
 
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<void>(ctx, f);
-        EXPECT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
     }
 }
 

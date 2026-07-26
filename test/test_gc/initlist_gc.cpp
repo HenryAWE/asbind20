@@ -560,7 +560,7 @@ void run_initlist_gc_test(asbind20::module_pointer m, int max_test_idx)
 
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<bool>(ctx, f);
-        EXPECT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
         EXPECT_TRUE(result.value());
     }
 }
@@ -1007,7 +1007,7 @@ static void run_templ_gc_list_test(asbind20::module_pointer m)
     {
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<templ_gc_init_list>(ctx, f);
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
 
         std::cerr << "- After invocation:\n";
         asbind_test::output_gc_statistics(std::cerr, engine);

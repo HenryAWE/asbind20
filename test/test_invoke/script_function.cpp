@@ -25,7 +25,7 @@ TEST(ScriptFunction, Ownership)
         request_context ctx(engine);
         auto result = f(ctx);
 
-        EXPECT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 42);
     }
 
@@ -37,7 +37,7 @@ TEST(ScriptFunction, Ownership)
         request_context ctx(engine);
         auto result = rf(ctx);
 
-        EXPECT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 42);
 
         script_function<int()> another = rf;
@@ -85,7 +85,7 @@ TEST(ScriptMethod, Ownership)
 
     {
         auto result = test(ctx, foo);
-        EXPECT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 42);
     }
 
@@ -95,7 +95,7 @@ TEST(ScriptMethod, Ownership)
 
         auto result = rf(ctx, foo);
 
-        EXPECT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 42);
 
         script_method<int()> another = rf;

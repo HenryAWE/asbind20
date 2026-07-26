@@ -120,7 +120,7 @@ static void check_int128(asbind20::engine_pointer engine)
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<uint128_t>(ctx, f);
 
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), -42);
     }
 
@@ -131,7 +131,7 @@ static void check_int128(asbind20::engine_pointer engine)
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int128_t>(ctx, f);
 
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 1013);
     }
 
@@ -146,7 +146,7 @@ static void check_int128(asbind20::engine_pointer engine)
             ctx, f, int128_t(42), int128_t(10)
         );
 
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 2); // 42 % 10 = 2
     }
 
@@ -159,7 +159,7 @@ static void check_int128(asbind20::engine_pointer engine)
             ctx, f, uint128_t(1013), uint128_t(100)
         );
 
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 13); // 1013 % 100 = 13
     }
 
@@ -172,7 +172,7 @@ static void check_int128(asbind20::engine_pointer engine)
             ctx, f, int128_t(42), int128_t(10)
         );
 
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 2); // 42 %= 10 → 2
     }
 
@@ -185,7 +185,7 @@ static void check_int128(asbind20::engine_pointer engine)
             ctx, f, uint128_t(1013), uint128_t(100)
         );
 
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 13); // 1013 %= 100 → 13
     }
 
@@ -198,7 +198,7 @@ static void check_int128(asbind20::engine_pointer engine)
             ctx, f, uint128_t(40), uint128_t(2)
         );
 
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 42);
     }
 #    endif

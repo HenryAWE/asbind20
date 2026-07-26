@@ -58,7 +58,7 @@ static void run_ostream_test_script(asbind20::engine_pointer engine)
     request_context ctx(engine);
 
     auto result = script_invoke<void>(ctx, f);
-    ASSERT_TRUE(asbind_test::result_has_value(result));
+    ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
 }
 
 static void check_ostream_output(std::string_view output)

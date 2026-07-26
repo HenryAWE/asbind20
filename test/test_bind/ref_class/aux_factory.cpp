@@ -146,7 +146,7 @@ static void check_aux_factory(asbind20::engine_pointer engine, int expected_val,
 
     asbind20::request_context ctx(engine);
     auto result = asbind20::script_invoke<int>(ctx, f, arg);
-    ASSERT_TRUE(asbind_test::result_has_value(result));
+    ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
 
     EXPECT_EQ(result.value(), expected_val);
 }
@@ -165,7 +165,7 @@ static void check_aux_factory_list(asbind20::engine_pointer engine, int expected
 
     asbind20::request_context ctx(engine);
     auto result = asbind20::script_invoke<int>(ctx, f);
-    ASSERT_TRUE(asbind_test::result_has_value(result));
+    ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
 
     EXPECT_EQ(result.value(), expected_val);
 }
@@ -547,7 +547,7 @@ static void check_aux_factory_template(asbind20::engine_pointer engine, int expe
 
     asbind20::request_context ctx(engine);
     auto result = asbind20::script_invoke<int>(ctx, f, arg);
-    ASSERT_TRUE(asbind_test::result_has_value(result));
+    ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
 
     EXPECT_EQ(result.value(), expected_val);
 }
@@ -566,7 +566,7 @@ static void check_aux_factory_template_list(asbind20::engine_pointer engine, int
 
     asbind20::request_context ctx(engine);
     auto result = asbind20::script_invoke<int>(ctx, f);
-    ASSERT_TRUE(asbind_test::result_has_value(result));
+    ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
 
     EXPECT_EQ(result.value(), expected_val);
 }

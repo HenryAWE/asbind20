@@ -156,7 +156,7 @@ static void run_pair2i_test_script(asbind20::engine_pointer engine)
         ASSERT_NE(f, nullptr);
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
 
         EXPECT_EQ(result.value(), 7);
     }
@@ -166,7 +166,7 @@ static void run_pair2i_test_script(asbind20::engine_pointer engine)
         ASSERT_NE(f, nullptr);
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
 
         EXPECT_EQ(result.value(), 9);
     }
@@ -176,7 +176,7 @@ static void run_pair2i_test_script(asbind20::engine_pointer engine)
         ASSERT_NE(f, nullptr);
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
 
         EXPECT_EQ(result.value(), 17);
     }
@@ -186,7 +186,7 @@ static void run_pair2i_test_script(asbind20::engine_pointer engine)
         ASSERT_NE(f, nullptr);
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<std::string>(ctx, f);
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
 
         EXPECT_EQ(result.value(), "(1, 2): str");
     }
@@ -196,7 +196,7 @@ static void run_pair2i_test_script(asbind20::engine_pointer engine)
         ASSERT_NE(f, nullptr);
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<std::string>(ctx, f);
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
 
         EXPECT_EQ(result.value(), "str: (1, 2)");
     }
@@ -206,7 +206,7 @@ static void run_pair2i_test_script(asbind20::engine_pointer engine)
         ASSERT_NE(f, nullptr);
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
 
         EXPECT_EQ(result.value(), 11);
     }
@@ -216,7 +216,7 @@ static void run_pair2i_test_script(asbind20::engine_pointer engine)
         ASSERT_NE(f, nullptr);
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
 
         EXPECT_EQ(result.value(), -1);
     }
@@ -226,7 +226,7 @@ static void run_pair2i_test_script(asbind20::engine_pointer engine)
         ASSERT_NE(f, nullptr);
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
 
         EXPECT_EQ(result.value(), 5);
     }
@@ -236,7 +236,7 @@ static void run_pair2i_test_script(asbind20::engine_pointer engine)
         ASSERT_NE(f, nullptr);
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
 
         EXPECT_EQ(result.value(), -3);
     }
@@ -246,7 +246,7 @@ static void run_pair2i_test_script(asbind20::engine_pointer engine)
         ASSERT_NE(f, nullptr);
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<my_pair2i>(ctx, f);
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
 
         EXPECT_EQ(result.value().first, 2);
         EXPECT_EQ(result.value().second, 3);
@@ -257,7 +257,7 @@ static void run_pair2i_test_script(asbind20::engine_pointer engine)
         ASSERT_NE(f, nullptr);
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
 
         EXPECT_EQ(result.value(), 42);
     }
@@ -267,7 +267,7 @@ static void run_pair2i_test_script(asbind20::engine_pointer engine)
         ASSERT_NE(f, nullptr);
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
 
         EXPECT_EQ(result.value(), 1013);
     }
@@ -277,7 +277,7 @@ static void run_pair2i_test_script(asbind20::engine_pointer engine)
         ASSERT_NE(f, nullptr);
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<my_pair2i>(ctx, f);
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
 
         EXPECT_EQ(result.value().first, 4);
         EXPECT_EQ(result.value().second, 6);
@@ -288,7 +288,7 @@ static void run_pair2i_test_script(asbind20::engine_pointer engine)
         ASSERT_NE(f, nullptr);
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<bool>(ctx, f);
-        ASSERT_TRUE(asbind_test::result_has_value(result));
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
 
         EXPECT_TRUE(result.value());
     }
