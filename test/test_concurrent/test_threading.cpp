@@ -6,8 +6,7 @@
 
 TEST(Threading, AutoCleanUp)
 {
-    if(!asbind20::has_threads())
-        GTEST_SKIP() << "AS_NO_THREADS";
+    ASBIND_TEST_SKIP_IF_NO_THREADS();
 
     using namespace asbind20;
     using namespace std::chrono_literals;
