@@ -25,7 +25,7 @@ namespace io
     /**
      * @brief Wrapper for `std::ostream`
      */
-    class ostream_wrapper final : public AS_NAMESPACE_QUALIFIER asIBinaryStream
+    class ostream_wrapper final : public binary_stream_interface
     {
     public:
         ostream_wrapper() = delete;
@@ -33,6 +33,7 @@ namespace io
         explicit ostream_wrapper(std::ostream& stream) noexcept
             : m_os(&stream) {}
 
+        ASBIND20_COLD_FUNC
         int Read(void* ptr, AS_NAMESPACE_QUALIFIER asUINT size) override
         {
             (void)ptr;
@@ -62,7 +63,7 @@ namespace io
     /**
      * @brief Wrapper for `std::istream`
      */
-    class istream_wrapper final : public AS_NAMESPACE_QUALIFIER asIBinaryStream
+    class istream_wrapper final : public binary_stream_interface
     {
     public:
         istream_wrapper() = delete;
@@ -79,6 +80,7 @@ namespace io
                 return AS_NAMESPACE_QUALIFIER asERROR;
         }
 
+        ASBIND20_COLD_FUNC
         int Write(const void* ptr, AS_NAMESPACE_QUALIFIER asUINT size) override
         {
             (void)ptr;
@@ -103,7 +105,7 @@ namespace io
      * @tparam ValueType Single byte value type
      */
     template <typename OutputIterator, typename ValueType = std::byte>
-    class copy_to : public AS_NAMESPACE_QUALIFIER asIBinaryStream
+    class copy_to : public binary_stream_interface
     {
     public:
         static_assert(sizeof(ValueType) == 1);
@@ -112,6 +114,7 @@ namespace io
         explicit copy_to(OutputIterator it) noexcept
             : m_out(std::move(it)) {}
 
+        ASBIND20_COLD_FUNC
         int Read(void* ptr, AS_NAMESPACE_QUALIFIER asUINT size) override
         {
             (void)ptr;
@@ -139,7 +142,7 @@ namespace io
     /**
      * @brief Wrapper for reading from memory
      */
-    class memory_reader final : public AS_NAMESPACE_QUALIFIER asIBinaryStream
+    class memory_reader final : public binary_stream_interface
     {
     public:
         memory_reader(const void* mem, std::size_t sz) noexcept
@@ -160,6 +163,7 @@ namespace io
             return AS_NAMESPACE_QUALIFIER asSUCCESS;
         }
 
+        ASBIND20_COLD_FUNC
         int Write(const void* ptr, AS_NAMESPACE_QUALIFIER asUINT size) override
         {
             (void)ptr;

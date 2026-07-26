@@ -33,6 +33,12 @@
 #    define ASBIND20_STDCALL
 #endif
 
+#if defined(__clang__) || defined(__GNUC__)
+#    define ASBIND20_COLD_FUNC [[gnu::cold]]
+#else
+#    define ASBIND20_COLD_FUNC
+#endif
+
 #ifdef __cpp_lib_format
 #    define ASBIND20_HAS_LIB_FORMAT __cpp_lib_format
 #endif

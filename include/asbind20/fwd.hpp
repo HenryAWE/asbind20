@@ -68,6 +68,11 @@ class script_function;
 template <typename T>
 class script_method;
 
+namespace io
+{
+    using binary_stream_interface = AS_NAMESPACE_QUALIFIER asIBinaryStream;
+} // namespace io
+
 namespace compat
 {
 #ifndef ASBIND20_HAS_SCRIPT_ENUM_UNDERLYING_TYPE
