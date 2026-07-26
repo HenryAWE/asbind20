@@ -76,7 +76,7 @@ TEST(SmallVector, DynIntSVMoveCtor)
     EXPECT_EQ(new_sv.element_type_info(), v.element_type_info());
     EXPECT_EQ(new_sv.element_type_id(), v.element_type_id());
 
-    EXPECT_EQ(v.size(), 0);
+    EXPECT_THAT(v, ::testing::IsEmpty());
     EXPECT_EQ(v.capacity(), v.static_capacity());
 
     EXPECT_EQ(new_sv.size(), 128);
@@ -134,7 +134,7 @@ TEST(SmallVector, SmallStringSVMoveCtor)
     EXPECT_LE(v.capacity(), v.static_capacity());
 
     sv_type new_sv = std::move(v);
-    EXPECT_EQ(v.size(), 0);
+    EXPECT_THAT(v, ::testing::IsEmpty());
     EXPECT_EQ(new_sv.size(), 2);
     for(unsigned int i = 0; i < 2; ++i)
     {
@@ -169,7 +169,7 @@ TEST(SmallVector, DynStringSVMoveCtor)
     EXPECT_GT(v.capacity(), v.static_capacity());
 
     sv_type new_sv = std::move(v);
-    EXPECT_EQ(v.size(), 0);
+    EXPECT_THAT(v, ::testing::IsEmpty());
     EXPECT_EQ(new_sv.size(), 16);
     for(unsigned int i = 0; i < 16; ++i)
     {

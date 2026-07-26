@@ -35,7 +35,7 @@ TEST(SmallVector, IntAsElement)
     ASSERT_EQ(v.size(), 1);
     EXPECT_EQ(*(int*)v[0], 1013);
     v.pop_back();
-    EXPECT_EQ(v.size(), 0);
+    EXPECT_THAT(v, ::testing::IsEmpty());
     EXPECT_THAT(v, ::testing::IsEmpty());
 
     for(int i = 0; i < 64; ++i)
@@ -309,7 +309,7 @@ TEST(SmallVector, ScriptStringAsElement)
 
     EXPECT_EQ(v.size(), 1);
     EXPECT_EQ(((std::string*)v[0])->size(), 0);
-    EXPECT_EQ(*(std::string*)v[0], "");
+    EXPECT_THAT(*(std::string*)v[0], ::testing::IsEmpty());
 
     {
         std::string str = "hello";
@@ -323,12 +323,12 @@ TEST(SmallVector, ScriptStringAsElement)
     EXPECT_GE(v.capacity(), 128);
     EXPECT_EQ(v.size(), 2);
     EXPECT_EQ(((std::string*)v[0])->size(), 0);
-    EXPECT_EQ(*(std::string*)v[0], "");
+    EXPECT_THAT(*(std::string*)v[0], ::testing::IsEmpty());
     EXPECT_EQ(((std::string*)v[1])->size(), 5);
     EXPECT_EQ(*(std::string*)v[1], "hello");
 
     v.clear();
     EXPECT_GE(v.capacity(), 128);
-    EXPECT_EQ(v.size(), 0);
+    EXPECT_THAT(v, ::testing::IsEmpty());
     EXPECT_THAT(v, ::testing::IsEmpty());
 }

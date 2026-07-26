@@ -29,10 +29,10 @@ TEST(SmallVector, ExceptionSafety)
         sv_type sv(ti);
 
         sv.emplace_back();
-        EXPECT_EQ(sv.size(), 0);
+        EXPECT_THAT(sv, ::testing::IsEmpty());
 
         sv.emplace_back_n(2);
-        EXPECT_EQ(sv.size(), 0);
+        EXPECT_THAT(sv, ::testing::IsEmpty());
     }
 
     {

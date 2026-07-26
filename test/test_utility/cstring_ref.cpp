@@ -19,8 +19,8 @@ TEST(CStringRef, Basic)
         EXPECT_EQ(csr, ""sv);
         EXPECT_EQ(csr, ""s);
         EXPECT_STREQ(csr.safe_c_str(), "");
-        EXPECT_EQ(csr.size(), 0);
-        EXPECT_FALSE(csr);
+        EXPECT_THAT(csr, ::testing::IsEmpty());
+        EXPECT_THAT(csr, ::testing::IsFalse());
     }
 
     {
@@ -30,14 +30,14 @@ TEST(CStringRef, Basic)
         EXPECT_EQ(csr, "");
         EXPECT_EQ(csr, ""sv);
         EXPECT_EQ(csr, ""s);
-        EXPECT_EQ(csr.size(), 0);
-        EXPECT_TRUE(csr);
+        EXPECT_THAT(csr, ::testing::IsEmpty());
+        EXPECT_THAT(csr, ::testing::IsTrue());
     }
 
     {
         cstring_ref csr("");
         EXPECT_STREQ(csr.c_str(), "");
-        EXPECT_EQ(csr.size(), 0);
+        EXPECT_THAT(csr, ::testing::IsEmpty());
     }
 
     {
@@ -53,6 +53,9 @@ TEST(CStringRef, Basic)
         cstring_ref csr = "test";
         EXPECT_STREQ(csr.c_str(), "test");
         EXPECT_EQ(csr.size(), 4);
+        EXPECT_THAT(
+            csr, ::testing::Not(::testing::IsEmpty())
+        );
     }
 }
 
@@ -93,7 +96,7 @@ TEST(CStringRef, Output)
         std::ostringstream ss;
         ss << csr;
 
-        EXPECT_EQ(ss.str(), "");
+        EXPECT_THAT(ss.str(), ::testing::IsEmpty());
     }
 }
 

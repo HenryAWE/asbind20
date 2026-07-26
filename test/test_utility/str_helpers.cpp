@@ -5,7 +5,7 @@ TEST(Utility, StringConcat)
 {
     using asbind20::string_concat;
 
-    EXPECT_EQ(string_concat(), "");
+    EXPECT_THAT(string_concat(), ::testing::IsEmpty());
 
     {
         const char* name = "my_name";
@@ -65,7 +65,7 @@ TEST(StringLike, Adaptor)
     static_assert(string_like<const char[]>);
     static_assert(string_like<std::string_view>);
 
-    EXPECT_EQ(string_like_to_string(""), "");
+    EXPECT_THAT(string_like_to_string(""), ::testing::IsEmpty());
     EXPECT_EQ(string_like_to_string("test"), "test");
 
     {

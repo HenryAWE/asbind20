@@ -1,6 +1,7 @@
 #include "c_api.hpp"
 #include <new>
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
 
 namespace test_bind
 {
