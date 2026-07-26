@@ -48,7 +48,7 @@ TEST(TestBind, TemplateFunc)
     {
         request_context ctx(engine);
         auto* f = m->GetFunctionByName("test0");
-        ASSERT_TRUE(f);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         auto result = script_invoke<int>(ctx, f);
         ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
@@ -58,7 +58,7 @@ TEST(TestBind, TemplateFunc)
     {
         request_context ctx(engine);
         auto* f = m->GetFunctionByName("test1");
-        ASSERT_TRUE(f);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         auto result = script_invoke<float>(ctx, f);
         ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
@@ -68,7 +68,7 @@ TEST(TestBind, TemplateFunc)
     {
         request_context ctx(engine);
         auto* f = m->GetFunctionByName("test2");
-        ASSERT_TRUE(f);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         // Will trigger exception
         auto result = script_invoke<double>(ctx, f);

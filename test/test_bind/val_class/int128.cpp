@@ -115,7 +115,7 @@ static void check_int128(asbind20::engine_pointer engine)
 
     {
         auto* f = m->GetFunctionByName("get_i128");
-        ASSERT_TRUE(f);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<uint128_t>(ctx, f);
@@ -126,7 +126,7 @@ static void check_int128(asbind20::engine_pointer engine)
 
     {
         auto* f = m->GetFunctionByName("get_u128");
-        ASSERT_TRUE(f);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int128_t>(ctx, f);
@@ -139,7 +139,7 @@ static void check_int128(asbind20::engine_pointer engine)
 #    if 0
     {
         auto* f = m->GetFunctionByName("mod_i128");
-        ASSERT_TRUE(f);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int128_t>(
@@ -152,7 +152,7 @@ static void check_int128(asbind20::engine_pointer engine)
 
     {
         auto* f = m->GetFunctionByName("mod_u128");
-        ASSERT_TRUE(f);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<uint128_t>(
@@ -165,7 +165,7 @@ static void check_int128(asbind20::engine_pointer engine)
 
     {
         auto* f = m->GetFunctionByName("mod_assign_i128");
-        ASSERT_TRUE(f);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int128_t>(
@@ -178,7 +178,7 @@ static void check_int128(asbind20::engine_pointer engine)
 
     {
         auto* f = m->GetFunctionByName("mod_assign_u128");
-        ASSERT_TRUE(f);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<uint128_t>(
@@ -191,7 +191,7 @@ static void check_int128(asbind20::engine_pointer engine)
 
     {
         auto * f= m->GetFunctionByName("add_u128");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<uint128_t>(

@@ -53,7 +53,7 @@ static void run_ostream_test_script(asbind20::engine_pointer engine)
     using namespace asbind20;
 
     auto* f = m->GetFunctionByName("main");
-    ASSERT_TRUE(f);
+    ASSERT_THAT(f, ::testing::NotNull());
 
     request_context ctx(engine);
 

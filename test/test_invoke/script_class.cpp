@@ -60,7 +60,7 @@ TEST(TestInvoke, ScriptClass)
         EXPECT_EQ(val.value(), 182376);
 
         auto* err = my_class_t->GetMethodByDecl("int err()");
-        ASSERT_TRUE(err);
+        ASSERT_THAT(err, ::testing::NotNull());
 
 #ifndef ASBIND20_NO_EXCEPTIONS
         auto err_result = script_invoke<int>(ctx, err);

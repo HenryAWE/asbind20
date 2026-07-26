@@ -46,9 +46,9 @@ TEST(StringViewCompat, ClassType)
         );
     }
 
-    EXPECT_TRUE(engine->GetTypeInfoByDecl("foo"));
-    EXPECT_TRUE(engine->GetTypeInfoByDecl("bar"));
-    EXPECT_TRUE(engine->GetTypeInfoByDecl("my_sv"));
+    EXPECT_THAT(engine->GetTypeInfoByDecl("foo"), ::testing::NotNull());
+    EXPECT_THAT(engine->GetTypeInfoByDecl("bar"), ::testing::NotNull());
+    EXPECT_THAT(engine->GetTypeInfoByDecl("my_sv"), ::testing::NotNull());
 }
 
 TEST(StringViewCompat, Misc)
@@ -66,10 +66,10 @@ TEST(StringViewCompat, Misc)
         .method("void f()");
 
     auto placeholder_enum_t = engine->GetTypeInfoByDecl("placeholder_enum");
-    ASSERT_TRUE(placeholder_enum_t);
+    ASSERT_THAT(placeholder_enum_t, ::testing::NotNull());
 
     auto my_intf_t = engine->GetTypeInfoByDecl("my_intf");
-    ASSERT_TRUE(my_intf_t);
+    ASSERT_THAT(my_intf_t, ::testing::NotNull());
 
     EXPECT_EQ(placeholder_enum_t->GetEnumValueCount(), 1);
     EXPECT_STREQ(my_intf_t->GetName(), "my_intf");

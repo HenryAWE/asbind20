@@ -1,6 +1,7 @@
 #include <cstring>
 #include <sstream>
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
 #include <asbind20/detail/strutil.hpp>
 
 static_assert(!std::is_constructible_v<asbind20::cstring_ref, std::nullptr_t>);
@@ -13,7 +14,7 @@ TEST(CStringRef, Basic)
 
     {
         cstring_ref csr;
-        EXPECT_EQ(csr.c_str(), nullptr);
+        EXPECT_THAT(csr.c_str(), ::testing::IsNull());
         EXPECT_EQ(csr, "");
         EXPECT_EQ(csr, ""sv);
         EXPECT_EQ(csr, ""s);

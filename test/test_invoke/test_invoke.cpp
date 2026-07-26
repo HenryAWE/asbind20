@@ -261,7 +261,7 @@ TEST(TestInvoke, BadResult)
 
     {
         auto* f = m->GetFunctionByName("test0");
-        ASSERT_TRUE(f);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         request_context ctx(engine);
         auto result = script_invoke<int>(ctx, f);
@@ -290,7 +290,7 @@ TEST(TestInvoke, BadResult)
 
     {
         auto* f = m->GetFunctionByName("test0");
-        ASSERT_TRUE(f);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         request_context ctx(engine);
         // Ignore the int result by setting the template argument to void
@@ -305,7 +305,7 @@ TEST(TestInvoke, BadResult)
 
     {
         auto* f = m->GetFunctionByName("test1");
-        ASSERT_TRUE(f);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         request_context ctx(engine);
         auto result = script_invoke<int&>(ctx, f);
@@ -324,7 +324,7 @@ TEST(TestInvoke, BadResult)
 
     {
         auto* f = m->GetFunctionByName("test2");
-        ASSERT_TRUE(f);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         request_context ctx(engine);
         auto result = script_invoke<void>(ctx, f);
@@ -339,7 +339,7 @@ TEST(TestInvoke, BadResult)
 
     {
         auto* f = m->GetFunctionByName("test3");
-        ASSERT_TRUE(f);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         request_context ctx(engine);
         auto result = script_invoke<void>(ctx, f);
@@ -380,7 +380,7 @@ TEST(TestInvoke, Suspension)
 
     {
         auto* f = m->GetFunctionByName("test0");
-        ASSERT_TRUE(f);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         request_context ctx(engine);
         auto result = script_invoke<int>(ctx, f);

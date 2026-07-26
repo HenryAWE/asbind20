@@ -153,7 +153,7 @@ static void run_pair2i_test_script(asbind20::engine_pointer engine)
 
     {
         auto* f = m->GetFunctionByName("test0");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);
         ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
@@ -163,7 +163,7 @@ static void run_pair2i_test_script(asbind20::engine_pointer engine)
 
     {
         auto* f = m->GetFunctionByName("test1");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);
         ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
@@ -173,7 +173,7 @@ static void run_pair2i_test_script(asbind20::engine_pointer engine)
 
     {
         auto* f = m->GetFunctionByName("test2");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);
         ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
@@ -183,7 +183,7 @@ static void run_pair2i_test_script(asbind20::engine_pointer engine)
 
     {
         auto* f = m->GetFunctionByName("test3");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<std::string>(ctx, f);
         ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
@@ -193,7 +193,7 @@ static void run_pair2i_test_script(asbind20::engine_pointer engine)
 
     {
         auto* f = m->GetFunctionByName("test4");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<std::string>(ctx, f);
         ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
@@ -203,7 +203,7 @@ static void run_pair2i_test_script(asbind20::engine_pointer engine)
 
     {
         auto* f = m->GetFunctionByName("test5");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);
         ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
@@ -213,7 +213,7 @@ static void run_pair2i_test_script(asbind20::engine_pointer engine)
 
     {
         auto* f = m->GetFunctionByName("test6");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);
         ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
@@ -223,7 +223,7 @@ static void run_pair2i_test_script(asbind20::engine_pointer engine)
 
     {
         auto* f = m->GetFunctionByName("test7");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);
         ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
@@ -233,7 +233,7 @@ static void run_pair2i_test_script(asbind20::engine_pointer engine)
 
     {
         auto* f = m->GetFunctionByName("test8");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);
         ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
@@ -243,7 +243,7 @@ static void run_pair2i_test_script(asbind20::engine_pointer engine)
 
     {
         auto* f = m->GetFunctionByName("test9");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<my_pair2i>(ctx, f);
         ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
@@ -254,7 +254,7 @@ static void run_pair2i_test_script(asbind20::engine_pointer engine)
 
     {
         auto* f = m->GetFunctionByName("test10");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);
         ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
@@ -264,7 +264,7 @@ static void run_pair2i_test_script(asbind20::engine_pointer engine)
 
     {
         auto* f = m->GetFunctionByName("test11");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);
         ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
@@ -274,7 +274,7 @@ static void run_pair2i_test_script(asbind20::engine_pointer engine)
 
     {
         auto* f = m->GetFunctionByName("test12");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<my_pair2i>(ctx, f);
         ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
@@ -285,7 +285,7 @@ static void run_pair2i_test_script(asbind20::engine_pointer engine)
 
     {
         auto* f = m->GetFunctionByName("test13");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<bool>(ctx, f);
         ASBIND_TEST_ASSERT_INVOKE_RESULT(result);

@@ -1000,7 +1000,7 @@ static void run_templ_gc_list_test(asbind20::module_pointer m)
     auto* engine = m->GetEngine();
 
     auto* f = m->GetFunctionByName("get");
-    ASSERT_TRUE(f);
+    ASSERT_THAT(f, ::testing::NotNull());
 
     std::cerr << "- Before invocation:\n";
     asbind_test::output_gc_statistics(std::cerr, engine);

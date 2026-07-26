@@ -33,7 +33,7 @@ public:
         }
 
         auto* f = m->GetFunctionByDecl("int func()");
-        EXPECT_NE(f, nullptr)
+        EXPECT_THAT(f, ::testing::NotNull())
             << "\"int func()\" not found";
 
         return f;
@@ -41,7 +41,7 @@ public:
 
     void check_result(asbind20::function_pointer f, int expected) const
     {
-        ASSERT_TRUE(f);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         asbind20::request_context ctx(m_engine);
         auto result = asbind20::script_invoke<int>(ctx, f);

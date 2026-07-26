@@ -74,7 +74,7 @@ TEST(TestBind, Interface)
 
     {
         auto* func = m->GetFunctionByDecl("int test()");
-        ASSERT_TRUE(func);
+        ASSERT_THAT(func, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, func);
@@ -109,7 +109,7 @@ TEST(TestBind, FuncdefAndTypedef)
     {
         asbind20::request_context ctx(engine);
         auto* func = m->GetFunctionByDecl("void main()");
-        ASSERT_TRUE(func);
+        ASSERT_THAT(func, ::testing::NotNull());
 
         auto result = asbind20::script_invoke<void>(ctx, func);
         ASSERT_TRUE(result_has_value(result));
@@ -118,7 +118,7 @@ TEST(TestBind, FuncdefAndTypedef)
     {
         asbind20::request_context ctx(engine);
         auto* func = m->GetFunctionByDecl("real32 get_pi()");
-        ASSERT_TRUE(func);
+        ASSERT_THAT(func, ::testing::NotNull());
 
         auto result = asbind20::script_invoke<float>(ctx, func);
         ASSERT_TRUE(result_has_value(result));
@@ -128,7 +128,7 @@ TEST(TestBind, FuncdefAndTypedef)
     {
         asbind20::request_context ctx(engine);
         auto* func = m->GetFunctionByDecl("float32 get_pi_2()");
-        ASSERT_TRUE(func);
+        ASSERT_THAT(func, ::testing::NotNull());
 
         auto result = asbind20::script_invoke<float>(ctx, func);
         ASSERT_TRUE(result_has_value(result));
@@ -385,7 +385,7 @@ TEST(Detail, GenericWrapper)
     {
         request_context ctx(engine);
         auto* func = m->GetFunctionByDecl("void main()");
-        ASSERT_TRUE(func);
+        ASSERT_THAT(func, ::testing::NotNull());
         auto result = script_invoke<void>(ctx, func);
         EXPECT_TRUE(result_has_value(result));
     }
@@ -393,7 +393,7 @@ TEST(Detail, GenericWrapper)
     {
         request_context ctx(engine);
         auto* func = m->GetFunctionByDecl("void test_member()");
-        ASSERT_TRUE(func);
+        ASSERT_THAT(func, ::testing::NotNull());
         auto result = script_invoke<void>(ctx, func);
         EXPECT_TRUE(result_has_value(result));
     }
@@ -444,7 +444,7 @@ TEST(TestBind, Enum)
     {
         asbind20::request_context ctx(engine);
         auto* func = m->GetFunctionByDecl("my_enum get_enum_val()");
-        ASSERT_TRUE(func);
+        ASSERT_THAT(func, ::testing::NotNull());
 
         auto result = asbind20::script_invoke<my_enum>(ctx, func);
         ASSERT_TRUE(result_has_value(result));
@@ -454,7 +454,7 @@ TEST(TestBind, Enum)
     {
         asbind20::request_context ctx(engine);
         auto* func = m->GetFunctionByDecl("bool check_enum_val(my_enum val)");
-        ASSERT_TRUE(func);
+        ASSERT_THAT(func, ::testing::NotNull());
 
         auto result = asbind20::script_invoke<bool>(ctx, func, my_enum::B);
         ASSERT_TRUE(result_has_value(result));
@@ -504,7 +504,7 @@ TEST(TestBind, EnumUInt64)
     {
         asbind20::request_context ctx(engine);
         auto* func = m->GetFunctionByName("get_enum_val");
-        ASSERT_TRUE(func);
+        ASSERT_THAT(func, ::testing::NotNull());
 
         auto result = asbind20::script_invoke<enum_uint64>(ctx, func);
         ASSERT_TRUE(result_has_value(result));
@@ -514,7 +514,7 @@ TEST(TestBind, EnumUInt64)
     {
         asbind20::request_context ctx(engine);
         auto* func = m->GetFunctionByName("check_enum_val");
-        ASSERT_TRUE(func);
+        ASSERT_THAT(func, ::testing::NotNull());
 
         auto result = asbind20::script_invoke<bool>(ctx, func, enum_uint64::flag_b);
         ASSERT_TRUE(result_has_value(result));
