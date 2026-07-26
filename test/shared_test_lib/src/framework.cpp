@@ -62,6 +62,7 @@ void setup_message_callback(
     bool propagate_error_to_gtest
 )
 {
+#if ANGELSCRIPT_VERSION >= 23800
     // Checking if a callback has already been registered
     {
         AS_NAMESPACE_QUALIFIER asSFuncPtr old_cb{};
@@ -81,10 +82,11 @@ void setup_message_callback(
         else
         {
             GTEST_LOG_(WARNING)
-                << "An message callback has already been registered!"
+                << "A message callback has already been registered!"
                 << " flag = " << old_cb.flag;
         }
     }
+#endif
 
     if(propagate_error_to_gtest)
     {
