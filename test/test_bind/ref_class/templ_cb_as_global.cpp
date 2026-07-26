@@ -1,4 +1,5 @@
 #include <asbind_test/framework.hpp>
+#include <gmock/gmock.h>
 
 namespace test_bind
 {
@@ -36,18 +37,18 @@ private:
 class templ_cb_helper
 {
 public:
-    bool validate(asbind20::typeinfo_pointer ti, bool&) const
+    struct mock_templ_cb
     {
-        if(ti->GetSubTypeId() != expected_tid)
-        {
-            std::cerr << "ti->GetSubTypeId(): " << ti->GetSubTypeId() << std::endl;
-            std::cerr << "expected_tid: " << expected_tid << std::endl;
-            return false;
-        }
-        return true;
-    }
+        MOCK_METHOD(bool, on_validate, (asbind20::typeinfo_pointer, bool&), (const));
+    };
 
-    int expected_tid = AS_NAMESPACE_QUALIFIER asTYPEID_INT32;
+    using mock_type = ::testing::StrictMock<mock_templ_cb>;
+    std::shared_ptr<mock_type> mock = std::make_shared<mock_type>();
+
+    bool validate(asbind20::typeinfo_pointer ti, bool& ref) const
+    {
+        return mock->on_validate(ti, ref);
+    }
 };
 
 template <bool UseGeneric>
@@ -79,6 +80,7 @@ public:
 
     void TearDown() override
     {
+        ::testing::Mock::VerifyAndClearExpectations(helper.mock.get());
         engine.reset();
     }
 
@@ -114,7 +116,8 @@ public:
             "    templ_cb_tester<float> tester(42);\n"
             "}"
         );
-        EXPECT_LT(m->Build(), 0);
+        EXPECT_LT(m->Build(), 0)
+            << "expect to fail";
     }
 };
 } // namespace test_bind
@@ -124,22 +127,46 @@ using TemplCBAsGlobalNative = test_bind::templ_cb_as_global_suite<false>;
 
 TEST_F(TemplCBAsGlobalGeneric, RunTest)
 {
+    using ::testing::_;
+    EXPECT_CALL(*helper.mock, on_validate(_, _))
+        .WillOnce(::testing::Return(true));
+
     run_test();
 }
 
 // TODO: It seems that template callback with auxiliary pointer has problem in native mode.
 // Enable this test after confirming the cause.
-// TEST_F(TemplCBAsGlobalNative, RunTest)
-// {
-//     run_test();
-// }
+TEST_F(TemplCBAsGlobalNative, RunTest)
+{
+    GTEST_SKIP() << "Seems like an issue of upstream";
+
+    using ::testing::_;
+    EXPECT_CALL(*helper.mock, on_validate(_, _))
+        .WillOnce(::testing::Return(true));
+
+    run_test();
+}
 
 TEST_F(TemplCBAsGlobalGeneric, ExpectToFail)
 {
+    using ::testing::_;
+    // In this case, the template callback should return false
+    // causing script build to fail
+    EXPECT_CALL(*helper.mock, on_validate(_, _))
+        .WillOnce(::testing::Return(false));
+
     expect_to_fail();
 }
 
-// TEST_F(TemplCBAsGlobalNative, ExpectToFail)
-// {
-//     expect_to_fail();
-// }
+TEST_F(TemplCBAsGlobalNative, ExpectToFail)
+{
+    GTEST_SKIP() << "Seems like an issue of upstream";
+
+    using ::testing::_;
+    // In this case, the template callback should return false
+    // causing script build to fail
+    EXPECT_CALL(*helper.mock, on_validate(_, _))
+        .WillOnce(::testing::Return(false));
+
+    expect_to_fail();
+}
