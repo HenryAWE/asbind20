@@ -16,19 +16,26 @@ public:
     }
 };
 
-struct mock_refcount
-{
-    MOCK_METHOD(void, on_addref, (refcount_aux*), ());
-    MOCK_METHOD(void, on_release, (refcount_aux*), ());
-};
-
 class refcount_aux_helper
 {
 public:
-    using mock_type = ::testing::StrictMock<mock_refcount>;
-    std::shared_ptr<mock_type> mock = std::make_shared<mock_type>();
+    struct mock_refcount
+    {
+        MOCK_METHOD(void, on_addref, (refcount_aux*), ());
+        MOCK_METHOD(void, on_release, (refcount_aux*), ());
+    };
 
-    refcount_aux_helper() = default;
+    using mock_type = ::testing::StrictMock<mock_refcount>;
+    std::shared_ptr<mock_type> mock;
+
+    refcount_aux_helper()
+        : mock(std::make_shared<mock_type>()) {}
+
+    refcount_aux_helper(const refcount_aux_helper&) = delete;
+    refcount_aux_helper(refcount_aux_helper&&) noexcept = default;
+
+    refcount_aux_helper& operator=(const refcount_aux_helper&) = delete;
+    refcount_aux_helper& operator=(refcount_aux_helper&&) noexcept = default;
 
     refcount_aux* create()
     {
@@ -204,7 +211,6 @@ TEST_F(RefcountAuxNative, RunTest0)
     using test_bind::refcount_aux;
     using ::testing::_;
 
-    // Returning a null handle should not trigger any addref/release
     EXPECT_CALL(*helper.mock, on_addref(_)).Times(0);
     EXPECT_CALL(*helper.mock, on_release(_)).Times(0);
 
@@ -217,7 +223,6 @@ TEST_F(RefcountAuxGeneric, RunTest0)
     using test_bind::refcount_aux;
     using ::testing::_;
 
-    // Returning a null handle should not trigger any addref/release
     EXPECT_CALL(*helper.mock, on_addref(_)).Times(0);
     EXPECT_CALL(*helper.mock, on_release(_)).Times(0);
 
@@ -231,8 +236,6 @@ TEST_F(RefcountAuxNative, RunTest1)
 {
     using test_bind::refcount_aux;
     using ::testing::_;
-
-    // Creating and using a refcount_aux object triggers one addref/release cycle
     EXPECT_CALL(*helper.mock, on_addref(_)).Times(1);
     EXPECT_CALL(*helper.mock, on_release(_)).Times(1);
 
@@ -245,7 +248,6 @@ TEST_F(RefcountAuxGeneric, RunTest1)
     using test_bind::refcount_aux;
     using ::testing::_;
 
-    // Creating and using a refcount_aux object triggers one addref/release cycle
     EXPECT_CALL(*helper.mock, on_addref(_)).Times(1);
     EXPECT_CALL(*helper.mock, on_release(_)).Times(1);
 
@@ -258,7 +260,6 @@ TEST_F(RefcountAuxNative, RunTest2)
     using test_bind::refcount_aux;
     using ::testing::_;
 
-    // Creating a refcount_aux with initial value triggers one addref/release cycle
     EXPECT_CALL(*helper.mock, on_addref(_)).Times(1);
     EXPECT_CALL(*helper.mock, on_release(_)).Times(1);
 
@@ -273,7 +274,6 @@ TEST_F(RefcountAuxGeneric, RunTest2)
     using test_bind::refcount_aux;
     using ::testing::_;
 
-    // Creating a refcount_aux with initial value triggers one addref/release cycle
     EXPECT_CALL(*helper.mock, on_addref(_)).Times(1);
     EXPECT_CALL(*helper.mock, on_release(_)).Times(1);
 
