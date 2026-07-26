@@ -209,7 +209,7 @@ public:
                 []() -> void
                 {
                     auto* ctx = asbind20::current_context();
-                    ASSERT_TRUE(ctx);
+                    ASSERT_THAT(ctx, ::testing::NotNull());
 
                     auto* f = ctx->GetFunction();
                     const char* section = "(null)";

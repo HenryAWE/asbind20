@@ -32,7 +32,7 @@ static void register_c_api_test(asbind20::use_generic_t, asbind20::engine_pointe
 static void test_c_api(asbind20::engine_pointer engine)
 {
     auto* m = asbind20::create_module(engine, "test_c_api");
-    ASSERT_TRUE(m);
+    ASSERT_THAT(m, ::testing::NotNull());
 
     m->AddScriptSection(
         "test_c_api",

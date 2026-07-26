@@ -126,7 +126,7 @@ auto prepare_int_seq_test(asbind20::engine_pointer engine)
     EXPECT_GE(m->Build(), 0);
 
     auto* f = m->GetFunctionByName("run_foreach");
-    EXPECT_TRUE(f);
+    EXPECT_THAT(f, ::testing::NotNull());
     return f;
 }
 } // namespace test_bind

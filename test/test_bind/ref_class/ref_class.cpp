@@ -508,7 +508,7 @@ static void register_base_ref_class(asbind20::engine_pointer engine)
 static void check_ref_class_comp_property(asbind20::engine_pointer engine)
 {
     auto* m = asbind20::create_module(engine, "ref_class_comp_prop");
-    ASSERT_TRUE(m);
+    ASSERT_THAT(m, ::testing::NotNull());
 
     m->AddScriptSection(
         "test_comp_prop",
