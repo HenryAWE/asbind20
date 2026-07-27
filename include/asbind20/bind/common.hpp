@@ -16,6 +16,7 @@
 #include "../meta.hpp"
 #include "../utility.hpp"
 #include "auxiliary.hpp"
+#include "calling_convention.hpp"
 #include "listener.hpp"
 
 namespace asbind20
@@ -52,8 +53,7 @@ inline constexpr obj_loc_t<false> objlast{};
 namespace detail
 {
     template <bool ObjFirst>
-    consteval auto conv_of_loc(obj_loc_t<ObjFirst>, bool is_thiscall)
-        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    consteval call_conv_type conv_of_loc(obj_loc_t<ObjFirst>, bool is_thiscall)
     {
         if constexpr(ObjFirst)
         {
@@ -82,7 +82,7 @@ namespace detail
 
     template <typename FuncSig>
     requires(!std::is_member_function_pointer_v<FuncSig>)
-    constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes deduce_function_callconv()
+    constexpr call_conv_type deduce_function_callconv()
     {
         static_assert(!std::convertible_to<FuncSig, generic_function>);
 
@@ -121,8 +121,7 @@ namespace detail
                std::same_as<T, const Class&>;
     }
 
-    consteval auto cdecl_method_callconv(std::size_t arg_count, bool obj_first)
-        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    consteval call_conv_type cdecl_method_callconv(std::size_t arg_count, bool obj_first)
     {
         // The AngelScript itself seems to prefer OBJLAST
         // if both calling conventions are available.
@@ -138,8 +137,7 @@ namespace detail
     }
 
     template <typename Class, typename FuncSig, bool TryVoidPtr = false>
-    consteval auto deduce_method_callconv() noexcept
-        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    consteval call_conv_type deduce_method_callconv() noexcept
     {
         if constexpr(std::is_member_function_pointer_v<FuncSig>)
             return AS_NAMESPACE_QUALIFIER asCALL_THISCALL;
@@ -205,8 +203,7 @@ namespace detail
     }
 
     template <AS_NAMESPACE_QUALIFIER asEBehaviours Beh, typename Class, typename FuncSig>
-    consteval auto deduce_beh_callconv() noexcept
-        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    consteval call_conv_type deduce_beh_callconv() noexcept
     {
         if constexpr(
             Beh == AS_NAMESPACE_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK ||
@@ -227,8 +224,7 @@ namespace detail
     }
 
     template <AS_NAMESPACE_QUALIFIER asEBehaviours Beh, typename Class, typename FuncSig, typename Auxiliary>
-    consteval auto deduce_beh_callconv_aux() noexcept
-        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    consteval call_conv_type deduce_beh_callconv_aux() noexcept
     {
         if constexpr(Beh == AS_NAMESPACE_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK)
         {
@@ -274,8 +270,7 @@ namespace detail
     }
 
     template <typename Class, noncapturing_native_lambda Lambda>
-    consteval auto deduce_lambda_callconv()
-        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    consteval call_conv_type deduce_lambda_callconv()
     {
         using function_type = decltype(+std::declval<const Lambda>());
 

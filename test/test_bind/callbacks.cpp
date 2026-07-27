@@ -137,7 +137,7 @@ static void trigger_ex_in_script(asbind20::engine_pointer engine)
         "test_ex",
         "void f()\n"
         "{\n"
-        "    throw_my_ex();"
+        "    throw_my_ex();\n"
         "}"
     );
     ASSERT_GE(m->Build(), 0);

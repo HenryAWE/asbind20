@@ -2,7 +2,7 @@
 
 namespace test_bind
 {
-void register_int_array(asbind20::engine_pointer engine)
+static void register_int_array(asbind20::engine_pointer engine)
 {
     using namespace asbind20;
 
@@ -28,7 +28,7 @@ void register_int_array(asbind20::engine_pointer engine)
         );
 }
 
-void register_int_array(
+static void register_int_array(
     asbind20::use_generic_t, asbind20::engine_pointer engine
 )
 {
@@ -77,20 +77,24 @@ static void check_int_array(asbind20::engine_pointer engine)
     ASSERT_GE(m->Build(), 0);
 
     {
+        SCOPED_TRACE("test0");
+
         auto* f = m->GetFunctionByName("test0");
         ASSERT_THAT(f, ::testing::NotNull());
-        asbind20::request_context ctx(engine);
 
+        asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);
         ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 1 + 2);
     }
 
     {
+        SCOPED_TRACE("test1");
+
         auto* f = m->GetFunctionByName("test1");
         ASSERT_THAT(f, ::testing::NotNull());
-        asbind20::request_context ctx(engine);
 
+        asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<int>(ctx, f);
         ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 3 + 4);

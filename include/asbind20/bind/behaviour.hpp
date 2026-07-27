@@ -89,7 +89,7 @@ constexpr inline beh_t<Beh> beh{};
 template <
     AS_NAMESPACE_QUALIFIER asEBehaviours Beh,
     typename Fn,
-    AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    call_conv_type CallConv>
 consteval bool match_beh_sig(call_conv_t<CallConv>)
 {
     using matcher = typename behaviour_traits<Beh>::matcher;

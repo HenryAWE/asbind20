@@ -149,7 +149,7 @@ TEST(TryAppending, Enum)
 
 namespace test_bind
 {
-void check_ref_class(asbind20::engine_pointer engine)
+static void check_ref_class(asbind20::engine_pointer engine)
 {
     auto* m = asbind20::create_module(engine, "appending");
     ASSERT_THAT(m, ::testing::NotNull());

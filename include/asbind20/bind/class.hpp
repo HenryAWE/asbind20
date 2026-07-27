@@ -112,7 +112,7 @@ namespace detail
         }
 
     public:
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -157,7 +157,7 @@ namespace detail
         }
 
     public:
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -195,7 +195,7 @@ namespace detail
         }
 
     public:
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -216,7 +216,7 @@ namespace detail
     public:
         static_assert(std::is_reference_v<Arg>);
 
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -292,7 +292,7 @@ namespace detail
         }
 
     public:
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -346,7 +346,7 @@ namespace detail
         }
 
     public:
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -393,7 +393,7 @@ namespace detail
         static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
         static_assert(!Template, "This policy is invalid for a template class");
 
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -471,7 +471,7 @@ namespace detail
         static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
         static_assert(!Template, "This policy is invalid for a template class");
 
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -538,7 +538,7 @@ namespace detail
         }
 
     public:
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -600,7 +600,7 @@ namespace detail
         }
 
     public:
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -664,7 +664,7 @@ namespace detail
         }
 
     public:
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -754,7 +754,7 @@ namespace detail
         }
 
     public:
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -825,7 +825,7 @@ namespace detail
         }
 
     public:
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -889,7 +889,7 @@ namespace detail
         static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
         static_assert(!Template, "This policy is invalid for a template class");
 
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -951,7 +951,7 @@ namespace detail
         }
 
     public:
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -999,7 +999,7 @@ namespace detail
         }
 
     public:
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -1081,7 +1081,7 @@ namespace detail
         static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
         static_assert(!Template, "This policy is invalid for a template class");
 
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -1124,7 +1124,7 @@ namespace detail
         }
 
     public:
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -1138,7 +1138,7 @@ namespace detail
     class opConv
     {
     public:
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -1254,7 +1254,7 @@ protected:
     int register_method(
         cstring_ref decl,
         Fn&& fn,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes conv,
+        detail::call_conv_type conv,
         void* aux = nullptr
     )
     {
@@ -1271,7 +1271,7 @@ protected:
     int register_comp_method(
         cstring_ref decl,
         Fn&& fn,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes conv,
+        detail::call_conv_type conv,
         composite_wrapper comp,
         void* aux = nullptr
     )
@@ -1292,7 +1292,7 @@ protected:
         AS_NAMESPACE_QUALIFIER asEBehaviours beh,
         cstring_ref decl,
         Fn&& fn,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes conv,
+        detail::call_conv_type conv,
         void* aux = nullptr
     )
     {
@@ -1690,8 +1690,7 @@ protected:
     using my_base::my_base;
 
     template <typename Method>
-    static constexpr auto method_callconv() noexcept
-        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    static constexpr detail::call_conv_type method_callconv() noexcept
     {
         if constexpr(noncapturing_native_lambda<Method>)
             return detail::deduce_lambda_callconv<Class, Method>();
@@ -1700,22 +1699,19 @@ protected:
     }
 
     template <auto Method>
-    static constexpr auto method_callconv() noexcept
-        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    static constexpr detail::call_conv_type method_callconv() noexcept
     {
         return method_callconv<decltype(Method)>();
     }
 
     template <typename Method, typename Auxiliary>
-    static consteval auto method_callconv_aux() noexcept
-        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    static consteval detail::call_conv_type method_callconv_aux() noexcept
     {
         return detail::deduce_method_callconv_aux<Class, Method, Auxiliary>();
     }
 
     template <auto Method, typename Auxiliary>
-    static consteval auto method_callconv_aux() noexcept
-        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    static consteval detail::call_conv_type method_callconv_aux() noexcept
     {
         return method_callconv_aux<decltype(Method), Auxiliary>();
     }
@@ -1724,7 +1720,7 @@ private:
     template <typename Fn>
     void register_temp_cb(
         Fn&& fn,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes conv,
+        detail::call_conv_type conv,
         void* aux = nullptr
     )
     {
@@ -1740,8 +1736,7 @@ private:
     template <
         typename Fn,
         typename Auxiliary = void>
-    static consteval auto deduce_temp_cb_cc()
-        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    static consteval detail::call_conv_type deduce_temp_cb_cc()
     {
         if constexpr(std::is_void_v<Auxiliary>)
         {
@@ -2602,7 +2597,7 @@ public:
 private:
     template <
         typename Fn,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        detail::call_conv_type CallConv>
     static consteval bool check_opCmp_sig()
     {
 #ifndef ASBIND20_CONFIG_NO_COMPILE_TIME_CHECKS
@@ -2995,7 +2990,7 @@ private:
         bool explicit_,
         std::string_view params,
         Fn&& fn,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes conv,
+        detail::call_conv_type conv,
         void* aux = nullptr
     )
     {
@@ -3683,7 +3678,7 @@ private:
     template <typename Fn>
     void register_destructor_fn(
         Fn fn,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes conv,
+        detail::call_conv_type conv,
         void* aux = nullptr
     )
     {
@@ -3697,8 +3692,7 @@ private:
     }
 
     template <typename FuncSig, typename Auxiliary = void>
-    static consteval auto deduce_dtor_cc()
-        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    static consteval detail::call_conv_type deduce_dtor_cc()
     {
         if constexpr(std::is_void_v<Auxiliary>)
         {
@@ -3978,7 +3972,7 @@ private:
     void register_list_ctor_func(
         std::string_view pattern,
         Fn&& fn,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes conv,
+        detail::call_conv_type conv,
         void* aux = nullptr
     )
     {
@@ -4365,7 +4359,7 @@ private:
         bool explicit_,
         std::string_view params,
         Fn&& fn,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes conv,
+        detail::call_conv_type conv,
         void* aux = nullptr
     )
     {
@@ -4380,8 +4374,7 @@ private:
     }
 
     template <typename FuncSig, typename Auxiliary = void>
-    static consteval auto deduce_factory_cc()
-        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    static consteval detail::call_conv_type deduce_factory_cc()
     {
         if constexpr(std::is_void_v<Auxiliary>)
         {
@@ -5009,7 +5002,7 @@ private:
     void register_list_factory_func(
         std::string_view pattern,
         Fn&& fn,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes conv,
+        detail::call_conv_type conv,
         void* aux = nullptr
     )
     {

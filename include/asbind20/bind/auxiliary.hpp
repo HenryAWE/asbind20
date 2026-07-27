@@ -126,7 +126,6 @@ namespace detail
         using value_type = AS_NAMESPACE_QUALIFIER asITypeInfo;
     };
 } // namespace detail
-
 } // namespace asbind20
 
 #endif

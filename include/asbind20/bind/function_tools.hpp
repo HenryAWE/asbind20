@@ -47,7 +47,7 @@ namespace detail
     public:
         template <
             typename Class,
-            AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+            call_conv_type CallConv>
         static constexpr auto generate() noexcept
         {
             using args_tuple = typename traits::args_tuple;
@@ -103,7 +103,7 @@ namespace detail
     public:
         using wrapped_function_tag = void;
 
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static constexpr auto generate() noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -153,7 +153,7 @@ namespace detail
     public:
         using wrapped_function_tag = void;
 
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static constexpr auto generate() noexcept
         {
             using args_tuple = typename traits::args_tuple;

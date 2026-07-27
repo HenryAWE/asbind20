@@ -25,7 +25,7 @@ class global final : public binding_generator_interface<ForceGeneric, Listener>
     void register_function(
         cstring_ref decl,
         Fn&& fn,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes conv,
+        detail::call_conv_type conv,
         void* auxiliary = nullptr
     )
     {
