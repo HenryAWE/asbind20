@@ -194,8 +194,7 @@ public:
      * @brief Returns the AngelScript error code of context state
      */
     [[nodiscard]]
-    auto error() const
-        -> AS_NAMESPACE_QUALIFIER asEContextState
+    error_type error() const
     {
         return m_ctx->GetState();
     }
