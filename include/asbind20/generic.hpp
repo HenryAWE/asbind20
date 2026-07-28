@@ -14,6 +14,7 @@
 #include "detail/include_as.hpp"
 #include "meta.hpp"
 #include "type_traits.hpp"
+#include "detail/unreachable.hpp"
 
 namespace asbind20
 {
@@ -94,15 +95,15 @@ T get_generic_arg(
         if constexpr(std::same_as<value_t, AS_NAMESPACE_QUALIFIER asIScriptObject>)
         {
             void* ptr = gen->GetArgObject(idx);
-            return static_cast<AS_NAMESPACE_QUALIFIER asIScriptObject*>(ptr);
+            return static_cast<object_pointer>(ptr);
         }
         else if constexpr(std::same_as<value_t, AS_NAMESPACE_QUALIFIER asITypeInfo>)
         {
-            return *(typeinfo_pointer*)gen->GetAddressOfArg(idx);
+            return *static_cast<typeinfo_pointer*>(gen->GetAddressOfArg(idx));
         }
         else if constexpr(std::same_as<value_t, AS_NAMESPACE_QUALIFIER asIScriptEngine>)
         {
-            return *(engine_pointer*)gen->GetAddressOfArg(idx);
+            return *static_cast<engine_pointer*>(gen->GetAddressOfArg(idx));
         }
         else
         {
@@ -118,7 +119,7 @@ T get_generic_arg(
     else if constexpr(std::is_class_v<T>)
     {
         using pointer_t = std::remove_reference_t<T>*;
-        return std::move(*(pointer_t)gen->GetArgObject(idx));
+        return std::move(*static_cast<pointer_t>(gen->GetArgObject(idx)));
     }
     else if constexpr(std::is_enum_v<T>)
     {
@@ -150,26 +151,36 @@ T get_generic_arg(
     {
         static_assert(!sizeof(T), "Unsupported type");
     }
+
+    // The branches without return statement should be covered by static_assert.
+    // We're suppressing warning here.
+    detail::unreachable();
 }
 
 template <typename Return>
-void set_generic_return(
+int set_generic_return(
     generic_pointer gen,
     std::type_identity_t<Return>&& ret
 )
 {
     constexpr bool is_customized = requires() {
-        { type_traits<std::remove_cv_t<Return>>::set_return(gen, std::forward<Return>(ret)) } -> std::same_as<int>;
+        {
+            type_traits<std::remove_cv_t<Return>>::set_return(
+                gen, std::forward<Return>(ret)
+            )
+        } -> std::same_as<int>;
     };
 
     if constexpr(is_customized)
     {
-        type_traits<std::remove_cv_t<Return>>::set_return(gen, std::forward<Return>(ret));
+        return type_traits<std::remove_cv_t<Return>>::set_return(
+            gen, std::forward<Return>(ret)
+        );
     }
     else if constexpr(std::is_reference_v<Return>)
     {
         using pointer_t = std::remove_reference_t<Return>*;
-        set_generic_return<pointer_t>(gen, std::addressof(ret));
+        return set_generic_return<pointer_t>(gen, std::addressof(ret));
     }
     else if constexpr(std::is_pointer_v<Return>)
     {
@@ -179,10 +190,10 @@ void set_generic_return(
             std::same_as<std::remove_cv_t<Return>, object_pointer> ||
             std::same_as<std::remove_cv_t<Return>, const_object_pointer>
         )
-            gen->SetReturnObject(ptr);
+            return gen->SetReturnObject(ptr);
         else
         {
-            gen->SetReturnAddress(ptr);
+            return gen->SetReturnAddress(ptr);
         }
     }
     else if constexpr(std::is_class_v<Return>)
@@ -191,35 +202,41 @@ void set_generic_return(
         {
             void* mem = gen->GetAddressOfReturnLocation();
             new(mem) Return(std::forward<Return>(ret));
+            return AS_NAMESPACE_QUALIFIER asSUCCESS;
         }
         else
         {
-            gen->SetReturnObject((void*)std::addressof(ret));
+            return gen->SetReturnObject((void*)std::addressof(ret));
         }
     }
     else if constexpr(std::is_enum_v<Return>)
     {
-        set_generic_return<compat::script_enum_value_type>(gen, static_cast<compat::script_enum_value_type>(ret));
+        return set_generic_return<compat::script_enum_value_type>(
+            gen, static_cast<compat::script_enum_value_type>(ret)
+        );
     }
     else if constexpr(std::integral<Return>)
     {
         if constexpr(sizeof(Return) == sizeof(AS_NAMESPACE_QUALIFIER asBYTE))
-            gen->SetReturnByte(static_cast<AS_NAMESPACE_QUALIFIER asBYTE>(ret));
+            return gen->SetReturnByte(static_cast<AS_NAMESPACE_QUALIFIER asBYTE>(ret));
         else if constexpr(sizeof(Return) == sizeof(AS_NAMESPACE_QUALIFIER asWORD))
-            gen->SetReturnWord(static_cast<AS_NAMESPACE_QUALIFIER asWORD>(ret));
+            return gen->SetReturnWord(static_cast<AS_NAMESPACE_QUALIFIER asWORD>(ret));
         else if constexpr(sizeof(Return) == sizeof(AS_NAMESPACE_QUALIFIER asDWORD))
-            gen->SetReturnDWord(static_cast<AS_NAMESPACE_QUALIFIER asDWORD>(ret));
+            return gen->SetReturnDWord(static_cast<AS_NAMESPACE_QUALIFIER asDWORD>(ret));
         else if constexpr(sizeof(Return) == sizeof(AS_NAMESPACE_QUALIFIER asQWORD))
-            gen->SetReturnQWord(static_cast<AS_NAMESPACE_QUALIFIER asQWORD>(ret));
+            return gen->SetReturnQWord(static_cast<AS_NAMESPACE_QUALIFIER asQWORD>(ret));
         else // Compiler extension like __int128
+        {
             new(gen->GetAddressOfReturnLocation()) Return(ret);
+            return AS_NAMESPACE_QUALIFIER asSUCCESS;
+        }
     }
     else if constexpr(std::floating_point<Return>)
     {
         if constexpr(std::same_as<std::remove_cv_t<Return>, float>)
-            gen->SetReturnFloat(ret);
+            return gen->SetReturnFloat(ret);
         else if constexpr(std::same_as<std::remove_cv_t<Return>, double>)
-            gen->SetReturnDouble(ret);
+            return gen->SetReturnDouble(ret);
         else
             static_assert(!sizeof(Return), "Unsupported floating point type");
     }
@@ -227,6 +244,8 @@ void set_generic_return(
     {
         static_assert(!sizeof(Return), "Unsupported type");
     }
+
+    detail::unreachable();
 }
 
 /**
@@ -242,14 +261,18 @@ void set_generic_return(
  * @param args Arguments for the function
  */
 template <typename Return, typename Fn, typename... Args>
-void set_generic_return_by(
+int set_generic_return_by(
     generic_pointer gen,
     Fn&& fn,
     Args&&... args
 )
 {
     constexpr bool is_customized = requires() {
-        { type_traits<std::remove_cv_t<Return>>::set_return(gen, std::declval<Return>()) } -> std::same_as<int>;
+        {
+            type_traits<std::remove_cv_t<Return>>::set_return(
+                gen, std::declval<Return>()
+            )
+        } -> std::same_as<int>;
     };
     constexpr bool use_nrvo =
         !(std::is_reference_v<Return> || std::is_pointer_v<Return>) &&
@@ -268,11 +291,13 @@ void set_generic_return_by(
     }
     else
     {
-        set_generic_return<Return>(
+        return set_generic_return<Return>(
             gen,
             std::invoke(std::forward<Fn>(fn), std::forward<Args>(args)...)
         );
     }
+
+    return AS_NAMESPACE_QUALIFIER asSUCCESS;
 }
 
 /**

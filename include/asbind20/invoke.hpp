@@ -16,6 +16,7 @@
 #include "detail/include_as.hpp"
 #include "utility.hpp"
 #include "type_traits.hpp"
+#include "detail/unreachable.hpp"
 #ifdef __cpp_lib_expected
 #    define ASBIND20_HAS_EXPECTED __cpp_lib_expected
 #    include <expected>
@@ -96,6 +97,9 @@ decltype(auto) get_script_return(context_pointer ctx)
         else
             static_assert(!sizeof(T), "Invalid type");
     }
+
+    // Suppress warning
+    detail::unreachable();
 }
 
 class bad_script_invoke_result_access : public std::exception
@@ -679,6 +683,9 @@ int set_script_arg(
         return ctx->SetArgDouble(idx, val);
     else
         static_assert(!sizeof(T), "Invalid floating point");
+
+    // Suppress warning
+    detail::unreachable();
 }
 
 inline int set_script_arg(

@@ -17,22 +17,21 @@
 #include "../generic.hpp"
 
 namespace asbind20::detail
-{ // All contents in this file should NOT be directly used by user code
+{ // All contents in this section should NOT be directly used by user code
 
+// Generate an index of script argument.
+// For example, given var_type<1> and
+// RawArgCount = 4, which can be (float, void*, int, float) in C++,
+// the result should be {0, 1, 1, 2}, which means (float, ?&in, float) in the AS.
 template <std::size_t RawArgCount, std::size_t... Is>
 consteval auto gen_script_arg_idx(var_type_t<Is...> = {})
 {
-    // Generate an index of script argument.
-    // For example, given var_type<1> and
-    // RawArgCount = 4, which can be (float, void*, int, float) in C++,
-    // the result should be {0, 1, 1, 2}, which means (float, ?&in, float) in the AS.
-
     static_assert(RawArgCount >= sizeof...(Is), "Invalid argument count");
 
     constexpr std::size_t script_arg_count = RawArgCount - sizeof...(Is);
     constexpr std::size_t var_type_pos[]{Is...};
 
-    std::array<std::size_t, RawArgCount> tmp{}; // result
+    std::array<std::size_t, RawArgCount> result{};
     std::size_t current_arg_pos = 0;
     std::size_t j = 0; // index for tmp
     std::size_t k = 0; // index for var_type_pos
@@ -41,15 +40,15 @@ consteval auto gen_script_arg_idx(var_type_t<Is...> = {})
         if(k < sizeof...(Is) && i == var_type_pos[k])
         {
             ++k;
-            tmp[j++] = current_arg_pos;
-            tmp[j++] = current_arg_pos++;
+            result[j++] = current_arg_pos;
+            result[j++] = current_arg_pos++;
             continue;
         }
 
-        tmp[j++] = current_arg_pos++;
+        result[j++] = current_arg_pos++;
     }
 
-    return tmp;
+    return result;
 }
 
 template <typename T> // unused

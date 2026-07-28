@@ -28,7 +28,7 @@ T get_generic_arg(
 );
 
 template <typename Return>
-void set_generic_return(
+int set_generic_return(
     generic_pointer gen,
     std::type_identity_t<Return>&& ret
 );
