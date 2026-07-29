@@ -1,6 +1,11 @@
 #include <asbind_test/framework.hpp>
 #include <asbind_test/array.hpp>
 
+#ifdef _MSC_VER
+// Unreachable code
+#    pragma warning(disable : 4702)
+#endif
+
 namespace asbind_test
 {
 ::testing::AssertionResult check_context_state(
@@ -56,13 +61,14 @@ static void message_callback_impl(const AS_NAMESPACE_QUALIFIER asSMessageInfo* m
 
 #undef ASBIND_TEST_MSG_CALLBACK_WRITE_SRC
 
-    if constexpr(!PropagateError)
-        return;
-    // Check some critical issues
-    ASSERT_THAT(
-        msg->message,
-        ::testing::Not(::testing::HasSubstr("external reference"))
-    ) << "References not released. Possibly a signal of bug!";
+    if constexpr(PropagateError)
+    {
+        // Check some critical issues
+        ASSERT_THAT(
+            msg->message,
+            ::testing::Not(::testing::HasSubstr("external reference"))
+        ) << "References not released. Possibly a signal of bug!";
+    }
 }
 
 void setup_message_callback(
