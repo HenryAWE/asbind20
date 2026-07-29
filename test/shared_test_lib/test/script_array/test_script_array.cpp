@@ -4,7 +4,7 @@ namespace test_script_array
 {
 void run_string(
     asbind20::engine_pointer engine,
-    const char* section,
+    asbind20::cstring_ref section,
     std::string_view code
 )
 {
@@ -18,17 +18,20 @@ using TestArrayGeneric = test_script_array::basic_array_suite<true>;
 
 namespace test_script_array
 {
-using asbind20::compat::script_enum_value_type;
-
-enum my_enum : script_enum_value_type
+namespace
 {
-    neg_one = -1,
-    zero = 0,
-    one = 1,
-    huge_val = std::numeric_limits<script_enum_value_type>::max()
-};
+    using asbind20::compat::script_enum_value_type;
 
-void setup_my_enum(asbind20::engine_pointer engine)
+    enum my_enum : script_enum_value_type
+    {
+        neg_one = -1,
+        zero = 0,
+        one = 1,
+        huge_val = std::numeric_limits<script_enum_value_type>::max()
+    };
+} // namespace
+
+static void setup_my_enum(asbind20::engine_pointer engine)
 {
     asbind20::enum_<my_enum, std::underlying_type_t<my_enum>>(engine, "my_enum")
         .value("neg_one", my_enum::neg_one)
@@ -39,9 +42,7 @@ void setup_my_enum(asbind20::engine_pointer engine)
 
 static void test_empty_arr(asbind20::engine_pointer engine)
 {
-    SCOPED_TRACE(__func__);
-
-    test_script_array::run_string(
+    run_string(
         engine,
         "factory_primitive",
         "int[] arr;\n"
@@ -49,7 +50,7 @@ static void test_empty_arr(asbind20::engine_pointer engine)
         "assert(arr.size == 0);"
     );
 
-    test_script_array::run_string(
+    run_string(
         engine,
         "factory_enum",
         "my_enum[] arr;\n"
@@ -57,7 +58,7 @@ static void test_empty_arr(asbind20::engine_pointer engine)
         "assert(arr.size == 0);"
     );
 
-    test_script_array::run_string(
+    run_string(
         engine,
         "factory_string",
         "string[] arr;\n"
@@ -65,7 +66,7 @@ static void test_empty_arr(asbind20::engine_pointer engine)
         "assert(arr.size == 0);"
     );
 
-    test_script_array::run_string(
+    run_string(
         engine,
         "factory_script_obj",
         "script_ipair[] arr;\n"
@@ -76,8 +77,6 @@ static void test_empty_arr(asbind20::engine_pointer engine)
 
 static void test_construct_arr(asbind20::engine_pointer engine)
 {
-    SCOPED_TRACE(__func__);
-
     run_string(
         engine,
         "factory_size_primitive",
@@ -122,22 +121,38 @@ static void test_construct_arr(asbind20::engine_pointer engine)
 }
 } // namespace test_script_array
 
-TEST_F(TestArrayNative, RunScripts)
+TEST_F(TestArrayNative, EmptyArray)
 {
     auto engine = get_engine();
     asbind_test::setup_script_string(engine, true);
     test_script_array::setup_my_enum(engine);
 
     test_script_array::test_empty_arr(engine);
-    test_script_array::test_construct_arr(engine);
 }
 
-TEST_F(TestArrayGeneric, RunScripts)
+TEST_F(TestArrayGeneric, EmptyArray)
 {
     auto engine = get_engine();
     asbind_test::setup_script_string(engine, true);
     test_script_array::setup_my_enum(engine);
 
     test_script_array::test_empty_arr(engine);
+}
+
+TEST_F(TestArrayNative, ConstructingArray)
+{
+    auto engine = get_engine();
+    asbind_test::setup_script_string(engine, true);
+    test_script_array::setup_my_enum(engine);
+
+    test_script_array::test_empty_arr(engine);
+}
+
+TEST_F(TestArrayGeneric, ConstructingArray)
+{
+    auto engine = get_engine();
+    asbind_test::setup_script_string(engine, true);
+    test_script_array::setup_my_enum(engine);
+
     test_script_array::test_construct_arr(engine);
 }

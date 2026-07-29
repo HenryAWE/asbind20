@@ -172,7 +172,7 @@ private:
 
             void advance(difference_type diff) noexcept
             {
-                if(diff < 0 && static_cast<difference_type>(m_off) + diff < 0)
+                if(diff < 0 && static_cast<difference_type>(m_off) + diff < 0) [[unlikely]]
                     m_off = 0; // guard underflow
                 else
                     m_off += diff;

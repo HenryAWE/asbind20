@@ -894,7 +894,7 @@ public:
     }
 
     result_type operator()(
-        context_pointer ctx, Args&&... args
+        context_pointer ctx, Args... args
     ) const
     {
         handle_type func = target();
@@ -969,7 +969,7 @@ public:
         if(!func)
             detail::throw_bad_call();
 
-        return script_invoke<R>(ctx, std::forward<Object>(obj), func, args...);
+        return script_invoke<R>(ctx, std::forward<Object>(obj), func, std::forward<Args>(args)...);
     }
 
 private:

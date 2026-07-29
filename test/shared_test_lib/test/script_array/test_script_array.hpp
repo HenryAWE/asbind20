@@ -3,6 +3,7 @@
 #include <asbind_test/framework.hpp>
 #include <asbind_test/array.hpp>
 #include <asbind_test/assertion.hpp>
+#include <asbind20/debugging/stacktrace.hpp>
 
 namespace test_script_array
 {
@@ -67,12 +68,10 @@ public:
 private:
     asbind20::script_engine m_engine;
 
-    void build_helper_module()
+    void build_helper_module() const
     {
-        auto* m = m_engine->GetModule(
-            helper_module_name, AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-        );
-        ASSERT_NE(m, nullptr);
+        auto* m = asbind20::create_module(m_engine, helper_module_name);
+        ASSERT_THAT(m, ::testing::NotNull());
         m->AddScriptSection(
             "test_ext_array_helper_module",
             helper_module_script
@@ -84,7 +83,7 @@ private:
 template <typename Return>
 Return run_string(
     asbind20::engine_pointer engine,
-    const char* section,
+    asbind20::cstring_ref section,
     std::string_view code,
     std::string_view return_decl
 )
@@ -98,12 +97,11 @@ Return run_string(
         "\n;}"
     );
 
-    auto* m = engine->GetModule(
-        helper_module_name, AS_NAMESPACE_QUALIFIER asGM_ONLY_IF_EXISTS
-    );
+    auto* m = asbind20::get_module(engine, helper_module_name);
+    ASSERT_THAT(m, ::testing::NotNull());
     asbind20::function_pointer f = nullptr;
     r = m->CompileFunction(
-        section,
+        section.c_str(),
         func_code.c_str(),
         -1,
         0, // Not add to module
@@ -111,11 +109,13 @@ Return run_string(
     );
     if(r < 0)
     {
-        ADD_FAILURE() << "Failed to compile section \"" << section << '\"';
+        ADD_FAILURE()
+            << "Failed to compile section \"" << section << '\"'
+            << ", r = " << asbind20::to_string(static_cast<AS_NAMESPACE_QUALIFIER asERetCodes>(r));
         std::terminate();
     }
 
-    EXPECT_TRUE(f != nullptr);
+    ASSERT_THAT(f, ::testing::NotNull());
     asbind20::request_context ctx(engine);
     auto result = asbind20::script_invoke<Return>(ctx, f);
     f->Release();
@@ -124,7 +124,8 @@ Return run_string(
     {
         ADD_FAILURE()
             << "GetExceptionString: " << ctx->GetExceptionString() << '\n'
-            << "section: " << asbind20::debugging::get_function_section_name(ctx->GetExceptionFunction());
+            << "Script stack trace:\n"
+            << asbind20::debugging::stacktrace::current();
     }
 
     return result.value();
@@ -132,7 +133,7 @@ Return run_string(
 
 void run_string(
     asbind20::engine_pointer engine,
-    const char* section,
+    asbind20::cstring_ref section,
     std::string_view code
 );
 } // namespace test_script_array
