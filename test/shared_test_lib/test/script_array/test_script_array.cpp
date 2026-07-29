@@ -92,9 +92,8 @@ static void test_construct_arr(asbind20::engine_pointer engine)
         "factory_size_enum",
         "my_enum[] arr(n: 2);\n"
         "assert(arr.size == 2);\n"
-        // FIXME: fix me
-        //"assert(arr[0] == my_enum::zero);\n"
-        //"assert(arr[1] == my_enum::zero);"
+        "assert(arr[0] == my_enum::zero);\n"
+        "assert(arr[1] == my_enum::zero);"
     );
 
     run_string(
