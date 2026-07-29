@@ -8,6 +8,7 @@ void run_string(
     std::string_view code
 )
 {
+    SCOPED_TRACE("Running section: " + std::string(section));
     run_string<void>(engine, section, code, "void");
 }
 } // namespace test_script_array

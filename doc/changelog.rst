@@ -19,6 +19,9 @@ Update
 
 - Update compatibility across different AngelScript versions, including the 2.39 WIP.
 
+- ``script_element_comparator`` no longer holds ownership of the script functions,
+  avoiding dangling references.
+
 Bug fix
 ~~~~~~~
 

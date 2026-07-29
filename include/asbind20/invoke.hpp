@@ -940,16 +940,36 @@ public:
         return m_func;
     }
 
+    explicit operator bool() const noexcept
+    {
+        return m_func != nullptr;
+    }
+
+    bool operator==(const script_method_ref& other) const noexcept
+    {
+        return m_func == other.m_func;
+    }
+
+    friend bool operator==(const script_method_ref& lhs, handle_type rhs) noexcept
+    {
+        return lhs.target() == rhs;
+    }
+
+    friend bool operator==(handle_type lhs, const script_method_ref& rhs) noexcept
+    {
+        return lhs == rhs.target();
+    }
+
     template <script_object_handle Object>
     result_type operator()(
-        context_pointer ctx, Object&& obj, Args&&... args
+        context_pointer ctx, Object&& obj, Args... args
     ) const
     {
         handle_type func = target();
         if(!func)
             detail::throw_bad_call();
 
-        return script_invoke<R>(ctx, std::forward<Object>(obj), func, std::forward<Args>(args)...);
+        return script_invoke<R>(ctx, std::forward<Object>(obj), func, args...);
     }
 
 private:
