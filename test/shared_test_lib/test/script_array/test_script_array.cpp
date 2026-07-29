@@ -87,6 +87,10 @@ static void test_construct_arr(asbind20::engine_pointer engine)
         "assert(arr[1] == 0);"
     );
 
+#if ANGELSCRIPT_VERSION < 23900
+    // It seems that the new enum interface of AS has some issue.
+    // TODO: Wait for this upstream issue to be solved:
+    // https://github.com/anjo76/angelscript/issues/84
     run_string(
         engine,
         "factory_size_enum",
@@ -95,6 +99,7 @@ static void test_construct_arr(asbind20::engine_pointer engine)
         "assert(arr[0] == my_enum::zero);\n"
         "assert(arr[1] == my_enum::zero);"
     );
+#endif
 
     run_string(
         engine,
