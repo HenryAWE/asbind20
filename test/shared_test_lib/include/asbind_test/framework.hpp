@@ -37,9 +37,15 @@ template <typename T>
     return check_context_state(r.error());
 }
 
+/**
+ * @brief Setup script message callback
+ *
+ * @param engine Engine pointer. Cannot be nullptr
+ * @param propagate_error_to_gtest True for triggering GTest failure if message level of ERROR is received
+ */
 void setup_message_callback(
     asbind20::engine_pointer engine,
-    bool propagate_error_to_gtest = false
+    bool propagate_error_to_gtest = true
 );
 
 void setup_exception_translator(

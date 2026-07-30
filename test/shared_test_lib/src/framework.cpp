@@ -20,43 +20,50 @@ namespace asbind_test
            << "state = " << to_string(state);
 }
 
+namespace
+{
+    struct message_output_helper
+    {
+        const AS_NAMESPACE_QUALIFIER asSMessageInfo& msg;
+
+        friend std::ostream& operator<<(std::ostream& os, const message_output_helper& h)
+        {
+            os
+                << "(" << h.msg.section << ":" << h.msg.row << ":" << h.msg.col << "): "
+                << h.msg.message;
+            return os;
+        }
+    };
+} // namespace
+
 template <bool PropagateError>
 static void message_callback_impl(const AS_NAMESPACE_QUALIFIER asSMessageInfo* msg, void*)
 {
-#define ASBIND_TEST_MSG_CALLBACK_WRITE_SRC(lvl_str) \
-    lvl_str << " (" << msg->section << ":" << msg->row << ":" << msg->col << "): "
-
     switch(msg->type)
     {
     case AS_NAMESPACE_QUALIFIER asMSGTYPE_ERROR:
         if constexpr(PropagateError)
         {
             FAIL()
-                << ASBIND_TEST_MSG_CALLBACK_WRITE_SRC("ERROR")
-                << msg->message;
+                << message_output_helper(*msg);
             // FAIL() contains return statement
         }
         else
         {
-            std::cerr
-                << ASBIND_TEST_MSG_CALLBACK_WRITE_SRC("ERROR")
-                << msg->message
-                << std::endl;
+            GTEST_LOG_(ERROR)
+                << message_output_helper(*msg);
             break;
         }
 
     case AS_NAMESPACE_QUALIFIER asMSGTYPE_WARNING:
-        std::cerr
-            << ASBIND_TEST_MSG_CALLBACK_WRITE_SRC("WARNING")
-            << msg->message
-            << std::endl;
+        GTEST_LOG_(INFO)
+            << message_output_helper(*msg);
         break;
 
     case AS_NAMESPACE_QUALIFIER asMSGTYPE_INFORMATION:
-        std::cerr
-            << ASBIND_TEST_MSG_CALLBACK_WRITE_SRC("INFO")
-            << msg->message
-            << std::endl;
+        GTEST_LOG_(INFO)
+            << message_output_helper(*msg);
+        break;
     }
 
 #undef ASBIND_TEST_MSG_CALLBACK_WRITE_SRC

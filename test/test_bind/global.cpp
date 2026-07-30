@@ -2,8 +2,6 @@
 #include <asbind_test/framework.hpp>
 #include <asbind20/asbind.hpp>
 
-using namespace asbind_test;
-
 namespace test_bind
 {
 static void set_int(int& out)
@@ -122,23 +120,13 @@ TEST(TestBind, GlobalNative)
 
     register_global_funcs(engine, wrapper, val);
 
-    // EXPECT_EQ(val, "val");
-    // asbind20::ext::exec(engine, "val = \"new string\"");
-    // EXPECT_EQ(val, "new string");
-
-    // EXPECT_EQ(wrapper.value, 0);
-    // asbind20::ext::exec(engine, "set_val(gen_int())");
-    // EXPECT_EQ(wrapper.value, 42);
-    // asbind20::ext::exec(engine, "set_val(from_aux())");
-    // EXPECT_EQ(wrapper.value, 1013);
-
     {
         asbind20::request_context ctx(engine);
         auto* stdcall_func1 = engine->GetGlobalFunctionByDecl("int stdcall_func1(int,float)");
         ASSERT_THAT(stdcall_func1, ::testing::NotNull());
 
         auto result = asbind20::script_invoke<int>(ctx, stdcall_func1, 4, 2.17f);
-        EXPECT_TRUE(result_has_value(result));
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 42);
     }
 
@@ -148,7 +136,7 @@ TEST(TestBind, GlobalNative)
         ASSERT_THAT(stdcall_func2, ::testing::NotNull());
 
         auto result = asbind20::script_invoke<int>(ctx, stdcall_func2, 4, 2.17f);
-        EXPECT_TRUE(result_has_value(result));
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 8);
     }
 
@@ -159,7 +147,7 @@ TEST(TestBind, GlobalNative)
 
         int out;
         auto result = asbind20::script_invoke<void>(ctx, set_int, std::ref(out));
-        EXPECT_TRUE(result_has_value(result));
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
         EXPECT_EQ(out, 1013);
     }
 
@@ -189,23 +177,13 @@ TEST(TestBind, GlobalGeneric)
 
     register_global_funcs(asbind20::use_generic, engine, wrapper, val);
 
-    // EXPECT_EQ(val, "val");
-    // asbind20::ext::exec(engine, "val = \"new string\"");
-    // EXPECT_EQ(val, "new string");
-
-    // EXPECT_EQ(wrapper.value, 0);
-    // asbind20::ext::exec(engine, "set_val(gen_int())");
-    // EXPECT_EQ(wrapper.value, 42);
-    // asbind20::ext::exec(engine, "set_val(from_aux())");
-    // EXPECT_EQ(wrapper.value, 1013);
-
     {
         asbind20::request_context ctx(engine);
         auto* stdcall_func1 = engine->GetGlobalFunctionByDecl("int stdcall_func1(int,float)");
         ASSERT_THAT(stdcall_func1, ::testing::NotNull());
 
         auto result = asbind20::script_invoke<int>(ctx, stdcall_func1, 4, 2.17f);
-        EXPECT_TRUE(result_has_value(result));
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 42);
     }
 
@@ -215,7 +193,7 @@ TEST(TestBind, GlobalGeneric)
         ASSERT_THAT(stdcall_func2, ::testing::NotNull());
 
         auto result = asbind20::script_invoke<int>(ctx, stdcall_func2, 4, 2.17f);
-        EXPECT_TRUE(result_has_value(result));
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 8);
     }
 
@@ -226,7 +204,7 @@ TEST(TestBind, GlobalGeneric)
 
         int out;
         auto result = asbind20::script_invoke<void>(ctx, set_int, std::ref(out));
-        EXPECT_TRUE(result_has_value(result));
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
         EXPECT_EQ(out, 1013);
     }
 

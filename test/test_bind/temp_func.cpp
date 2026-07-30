@@ -30,7 +30,8 @@ TEST(TestBind, TemplateFunc)
     using namespace asbind20;
 
     auto engine = make_script_engine();
-    // Some code will intentionally trigger exception
+    // Some code will intentionally trigger exception,
+    // propagate_error_to_gtest = false
     asbind_test::setup_message_callback(engine, false);
 
     global(engine)
@@ -73,6 +74,7 @@ TEST(TestBind, TemplateFunc)
         // Will trigger exception
         auto result = script_invoke<double>(ctx, f);
         EXPECT_EQ(result.error(), AS_NAMESPACE_QUALIFIER asEXECUTION_EXCEPTION);
+        EXPECT_TRUE(result.has_uncaught_exception());
         EXPECT_STREQ(ctx->GetExceptionString(), "unreachable");
     }
 }
