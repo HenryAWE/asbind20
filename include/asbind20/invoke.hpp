@@ -218,6 +218,12 @@ public:
         return has_value();
     }
 
+    [[nodiscard]]
+    bool has_uncaught_exception() const noexcept
+    {
+        return m_ctx->GetState() == AS_NAMESPACE_QUALIFIER asEXECUTION_EXCEPTION;
+    }
+
     /// @}
 
 protected:

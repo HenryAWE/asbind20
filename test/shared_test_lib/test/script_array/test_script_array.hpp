@@ -36,7 +36,7 @@ constexpr char helper_module_script[] = R"AngelScript(class script_ipair
 template <bool UseGeneric>
 class basic_array_suite : public ::testing::Test
 {
-public:
+protected:
     void SetUp() override
     {
         using namespace asbind20;
@@ -60,6 +60,8 @@ public:
         m_engine.reset();
     }
 
+public:
+    [[nodiscard]]
     asbind20::engine_pointer get_engine() const
     {
         return m_engine.get();
@@ -76,7 +78,7 @@ private:
             "test_ext_array_helper_module",
             helper_module_script
         );
-        EXPECT_GE(m->Build(), 0);
+        ASSERT_GE(m->Build(), 0);
     }
 };
 
@@ -115,7 +117,7 @@ Return run_string(
     asbind20::request_context ctx(engine);
     auto result = f(ctx);
 
-    if(result.error() == AS_NAMESPACE_QUALIFIER asEXECUTION_EXCEPTION)
+    if(result.has_uncaught_exception())
     {
         ADD_FAILURE()
             << "GetExceptionString: " << std::quoted(ctx->GetExceptionString()) << '\n'
