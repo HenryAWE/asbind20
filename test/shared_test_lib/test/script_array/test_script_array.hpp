@@ -88,8 +88,6 @@ Return run_string(
     std::string_view return_decl
 )
 {
-    int r = 0;
-
     std::string func_code = asbind20::string_concat(
         return_decl,
         " test_ext_array(){\n",
@@ -99,31 +97,28 @@ Return run_string(
 
     auto* m = asbind20::get_module(engine, helper_module_name);
     ASSERT_THAT(m, ::testing::NotNull());
-    asbind20::function_pointer f = nullptr;
-    r = m->CompileFunction(
-        section.c_str(),
-        func_code.c_str(),
-        -1,
-        0, // Not add to module
-        &f
+    auto comp_result = asbind20::compile_function<Return()>(
+        *m,
+        section,
+        func_code,
+        -1
     );
-    if(r < 0)
+    if(!comp_result)
     {
         ADD_FAILURE()
-            << "Failed to compile section \"" << section << '\"'
-            << ", r = " << asbind20::to_string(static_cast<AS_NAMESPACE_QUALIFIER asERetCodes>(r));
+            << "Failed to compile section " << std::quoted(section.safe_c_str())
+            << ", r = " << asbind20::to_string(comp_result.error());
         std::terminate();
     }
 
-    ASSERT_THAT(f, ::testing::NotNull());
+    auto& f = comp_result.get();
     asbind20::request_context ctx(engine);
-    auto result = asbind20::script_invoke<Return>(ctx, f);
-    f->Release();
+    auto result = f(ctx);
 
     if(result.error() == AS_NAMESPACE_QUALIFIER asEXECUTION_EXCEPTION)
     {
         ADD_FAILURE()
-            << "GetExceptionString: " << ctx->GetExceptionString() << '\n'
+            << "GetExceptionString: " << std::quoted(ctx->GetExceptionString()) << '\n'
             << "Script stack trace:\n"
             << asbind20::debugging::stacktrace::current();
     }
