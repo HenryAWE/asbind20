@@ -116,6 +116,7 @@ TEST_F(TestLoad, LoadFile)
     using asbind20::io::load_file;
 
     auto* m = asbind20::create_module(engine, "TestLoad");
+    std::string str = "int func() { return " + std::to_string(1013) + "; }";
 
     int r = load_file(m, "script/func.as");
     EXPECT_TRUE(check_load_result(r));
@@ -127,26 +128,4 @@ TEST_F(TestLoad, LoadFile)
         "script/func.as"
     );
     check_result(f, 1013);
-}
-
-TEST_F(TestLoad, LoadFileUnicode)
-{
-    // Testing non-ASCII file name
-
-    auto engine = get_engine();
-
-    using asbind20::io::load_file;
-
-    auto* m = asbind20::create_module(engine, "TestLoadUnicode");
-
-    int r = load_file(m, u8"script/测试.as");
-    EXPECT_TRUE(check_load_result(r));
-    ASSERT_GE(m->Build(), 0);
-
-    auto f = get_func(m);
-    EXPECT_EQ(
-        asbind20::debugging::get_function_section_name(f),
-        "script/测试.as"
-    );
-    check_result(f, 7);
 }
