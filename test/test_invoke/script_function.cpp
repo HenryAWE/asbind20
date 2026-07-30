@@ -7,7 +7,7 @@ TEST(ScriptFunction, Ownership)
     using namespace asbind20;
 
     auto engine = make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
 
     auto* m = asbind20::create_module(engine, "test");
     m->AddScriptSection("test", "int test() { return 42; }");
@@ -59,7 +59,7 @@ TEST(ScriptMethod, Ownership)
     using namespace asbind20;
 
     auto engine = make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
 
     auto* m = asbind20::create_module(engine, "test");
     m->AddScriptSection(

@@ -67,7 +67,7 @@ TEST(Ranges, AllBehavioursWithStdView)
     namespace abv = asbind20::views;
 
     auto engine = asbind20::make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
     auto* m = asbind20::create_module(engine, "foo");
     m->AddScriptSection(
         "foo",
@@ -119,7 +119,7 @@ TEST(Ranges, AllFactoriesWithStdView)
     namespace abv = asbind20::views;
 
     auto engine = asbind20::make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
     auto* m = asbind20::create_module(engine, "foo");
     m->AddScriptSection(
         "foo",
@@ -161,7 +161,7 @@ TEST(Ranges, AllEnumValuesWithStdView)
     namespace abv = asbind20::views;
 
     auto engine = asbind20::make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
     auto* m = asbind20::create_module(engine, "foo");
     m->AddScriptSection(
         "foo",
@@ -212,7 +212,7 @@ TEST(Ranges, AllEnumValuesCustomUnderlying)
     namespace abv = asbind20::views;
 
     auto engine = asbind20::make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
 
     enum my_enum : std::int64_t
     {
@@ -393,7 +393,7 @@ TEST(Ranges, GenericArguments)
     using namespace asbind20;
 
     auto engine = make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
     asbind_test::setup_script_string(engine);
 
     generic_function wrapper = [](asbind20::generic_pointer gen) -> void

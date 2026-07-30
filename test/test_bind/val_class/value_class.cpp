@@ -459,7 +459,7 @@ public:
             ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
         m_engine = asbind20::make_script_engine();
-        asbind_test::setup_message_callback(m_engine, true);
+        asbind_test::setup_message_callback(m_engine);
         asbind_test::setup_script_assertion(m_engine);
         if constexpr(UseGeneric)
             register_trivial_value_class(asbind20::use_generic, m_engine);
@@ -739,7 +739,7 @@ public:
         m_engine = asbind20::make_script_engine();
         m_helper = friend_ops_helper{};
 
-        asbind_test::setup_message_callback(m_engine, true);
+        asbind_test::setup_message_callback(m_engine);
         asbind_test::setup_script_assertion(m_engine);
         register_friend_ops<UseGeneric>(m_engine, m_helper);
     }

@@ -14,7 +14,7 @@ public:
             ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
         m_engine = asbind20::make_script_engine();
-        asbind_test::setup_message_callback(m_engine, true);
+        asbind_test::setup_message_callback(m_engine);
         asbind_test::setup_exception_translator(m_engine);
         asbind_test::setup_script_assertion(m_engine);
     }

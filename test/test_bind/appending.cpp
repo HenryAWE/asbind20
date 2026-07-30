@@ -56,7 +56,7 @@ TEST(Appending, ValueClass)
     using namespace asbind20;
 
     auto engine = make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
 
     value_class<val_class_for_appending, true>(engine, "val")
         .behaviours_by_traits()
@@ -118,7 +118,7 @@ TEST(Appending, Enum)
     using namespace asbind20;
 
     auto engine = make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
 
     enum_<enum_for_appending>(engine, "e")
         .value(enum_for_appending::a, "a");
@@ -136,7 +136,7 @@ TEST(TryAppending, Enum)
     using namespace asbind20;
 
     auto engine = make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
 
     enum_<enum_for_appending>(try_appending, engine, "e"sv)
         .value(enum_for_appending::a, "a");
@@ -180,7 +180,7 @@ TEST(Appending, RefClass)
     using namespace asbind20;
 
     auto engine = make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
 
     ref_class<ref_class_for_appending, true>(engine, "rc")
         .addref(fp<&ref_class_for_appending::addref>)
@@ -201,7 +201,7 @@ TEST(TryAppending, RefClass)
     using namespace std::literals;
 
     auto engine = make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
 
     ref_class<ref_class_for_appending, true>(try_appending, engine, "rc"sv)
         .addref(fp<&ref_class_for_appending::addref>)
@@ -255,7 +255,7 @@ TEST(Appending, Interface)
     using namespace asbind20;
 
     auto engine = make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
 
     interface i(engine, "intf");
     i.method("int a()");
@@ -272,7 +272,7 @@ TEST(TryAppending, Interface)
     using namespace std::literals;
 
     auto engine = make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
 
     interface i(try_appending, engine, "intf"sv);
     i.method("int a()");

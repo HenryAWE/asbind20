@@ -8,7 +8,7 @@ TEST(TestInvoke, ScriptClass)
     using asbind_test::result_has_value;
 
     auto engine = asbind20::make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
     auto* m = asbind20::create_module(engine, "test_script_class");
     global<true>(engine)
         .function(

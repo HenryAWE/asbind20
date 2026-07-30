@@ -91,7 +91,7 @@ public:
     {
         using namespace asbind20;
 
-        asbind_test::setup_message_callback(m_engine, true);
+        asbind_test::setup_message_callback(m_engine);
         asbind_test::setup_script_string(m_engine, UseGeneric);
 
         value_class<string_generator::iterator, UseGeneric> iter(

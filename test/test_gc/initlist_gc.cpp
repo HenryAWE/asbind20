@@ -333,7 +333,7 @@ public:
 
         m_engine = asbind20::make_script_engine();
 
-        asbind_test::setup_message_callback(m_engine, true);
+        asbind_test::setup_message_callback(m_engine);
         asbind_test::setup_script_assertion(m_engine);
         register_gc_init_list<IListPolicy, UseGeneric>(m_engine);
     }
@@ -403,7 +403,7 @@ public:
 
         m_engine = asbind20::make_script_engine();
 
-        asbind_test::setup_message_callback(m_engine, true);
+        asbind_test::setup_message_callback(m_engine);
         asbind_test::setup_script_assertion(m_engine);
         register_gc_init_list_simple<UseGeneric>(m_engine);
     }
@@ -500,7 +500,7 @@ public:
 
         m_engine = asbind20::make_script_engine();
 
-        asbind_test::setup_message_callback(m_engine, true);
+        asbind_test::setup_message_callback(m_engine);
         asbind_test::setup_script_assertion(m_engine);
         register_gc_init_list<asbind20::policies::apply_to<Size>, UseGeneric>(m_engine);
     }
@@ -713,7 +713,7 @@ public:
 
         m_engine = asbind20::make_script_engine();
 
-        asbind_test::setup_message_callback(m_engine, true);
+        asbind_test::setup_message_callback(m_engine);
         asbind_test::setup_script_assertion(m_engine);
 
         using namespace asbind20;
@@ -968,7 +968,7 @@ public:
 
         m_engine = asbind20::make_script_engine();
 
-        asbind_test::setup_message_callback(m_engine, true);
+        asbind_test::setup_message_callback(m_engine);
         asbind_test::setup_script_assertion(m_engine);
         register_gc_init_list_temp_methods<ListElemType, UseGeneric>(m_engine);
     }

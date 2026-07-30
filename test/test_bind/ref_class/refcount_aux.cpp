@@ -111,7 +111,7 @@ public:
 
         using namespace asbind20;
         engine = make_script_engine();
-        asbind_test::setup_message_callback(engine, true);
+        asbind_test::setup_message_callback(engine);
 
         ref_class<refcount_aux, UseGeneric>(engine, "refcount_aux")
             .factory_function("", fp<&refcount_aux_helper::create>, auxiliary(helper))

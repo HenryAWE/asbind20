@@ -327,7 +327,7 @@ TEST(TestBind, TemplateValClassNative)
         GTEST_SKIP() << "AS_MAX_PORTABILITY";
 
     auto engine = asbind20::make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
     asbind_test::setup_script_string(engine, false);
     asbind_test::setup_script_assertion(engine);
 
@@ -338,7 +338,7 @@ TEST(TestBind, TemplateValClassNative)
 TEST(TestBind, TemplateValClassGeneric)
 {
     auto engine = asbind20::make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
     asbind_test::setup_script_string(engine, true);
     asbind_test::setup_script_assertion(engine);
 

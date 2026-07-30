@@ -309,7 +309,7 @@ TEST(TestOperators, MyPair2iNative)
     ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
     asbind_test::setup_script_string(engine, false);
 
     value_class<test_operators::my_pair2i>(
@@ -342,7 +342,7 @@ TEST(TestOperators, MyPair2iGeneric)
     using namespace asbind20;
 
     auto engine = make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
     asbind_test::setup_script_string(engine, true);
 
     value_class<test_operators::my_pair2i, true>(engine, "pair2i", pair2i_flags)
@@ -373,7 +373,7 @@ TEST(TestOperators, MyPair2iNativeWithDecl)
     ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
     asbind_test::setup_script_string(engine, false);
 
     value_class<test_operators::my_pair2i>(engine, "pair2i", pair2i_flags)
@@ -402,7 +402,7 @@ TEST(TestOperators, MyPair2iGenericWithDecl)
     using namespace asbind20;
 
     auto engine = make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
     asbind_test::setup_script_string(engine, true);
 
     value_class<test_operators::my_pair2i, true>(engine, "pair2i", pair2i_flags)

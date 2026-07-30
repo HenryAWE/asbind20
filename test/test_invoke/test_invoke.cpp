@@ -423,7 +423,7 @@ TEST(TestInvoke, CompareValueResult)
     using namespace asbind20;
 
     auto engine = make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
     test_invoke::setup_bad_call_helper(engine, "int");
 
     auto* m = asbind20::create_module(engine, "test");
@@ -492,7 +492,7 @@ TEST(TestInvoke, CompareValueClassResult)
     using namespace asbind20;
 
     auto engine = make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
     asbind_test::setup_script_string(engine);
     test_invoke::setup_bad_call_helper(engine, "string");
 

@@ -45,7 +45,7 @@ protected:
             ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
         m_engine = make_script_engine();
 
-        asbind_test::setup_message_callback(m_engine, true);
+        asbind_test::setup_message_callback(m_engine);
         asbind_test::setup_exception_translator(m_engine);
         asbind_test::register_instantly_throw<UseGeneric>(m_engine);
         asbind_test::register_throw_on_copy<UseGeneric>(m_engine);

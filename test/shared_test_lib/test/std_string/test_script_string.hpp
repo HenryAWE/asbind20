@@ -16,7 +16,7 @@ public:
         if constexpr(!UseGeneric)
             ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
-        asbind_test::setup_message_callback(m_engine, true);
+        asbind_test::setup_message_callback(m_engine);
         asbind_test::setup_exception_translator(m_engine);
 
         asbind_test::configure_engine_for_ext_string(m_engine);
