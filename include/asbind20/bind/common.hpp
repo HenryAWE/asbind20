@@ -349,7 +349,7 @@ protected:
         : m_engine(std::addressof(engine))
     {}
 
-    explicit engine_ref_holder(engine_pointer engine) noexcept
+    explicit engine_ref_holder(engine_pointer engine)
     {
 #ifndef ASBIND20_CONFIG_NO_THROW_ON_BAD_BINDING
         if(!engine) [[unlikely]]

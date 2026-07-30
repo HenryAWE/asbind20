@@ -23,8 +23,10 @@
 
 namespace asbind20
 {
-class [[nodiscard]] access_mask
+class [[nodiscard]] access_mask : public engine_ref_holder
 {
+    using my_base = engine_ref_holder;
+
 public:
     using mask_type = AS_NAMESPACE_QUALIFIER asDWORD;
 
@@ -37,23 +39,28 @@ public:
         engine_pointer engine,
         mask_type mask
     )
-        : m_engine(engine)
+        : my_base(engine)
     {
-        ASBIND20_ASSERT(engine != nullptr);
-        m_prev = m_engine->SetDefaultAccessMask(mask);
+        set_impl(mask);
+    }
+
+    access_mask(
+        engine_reference engine,
+        mask_type mask
+    )
+        : my_base(engine)
+    {
+        set_impl(mask);
     }
 
     ~access_mask()
     {
-        m_engine->SetDefaultAccessMask(m_prev);
+        get_engine()->SetDefaultAccessMask(m_prev);
     }
 
-    [[nodiscard]]
-    engine_pointer get_engine() const noexcept
-    {
-        return m_engine;
-    }
-
+    /**
+     * @brief Get the previous mask
+     */
     [[nodiscard]]
     mask_type previous() const noexcept
     {
@@ -61,23 +68,34 @@ public:
     }
 
 private:
-    engine_pointer m_engine;
-    mask_type m_prev;
+    mask_type m_prev{};
+
+    void set_impl(mask_type mask)
+    {
+        m_prev = get_engine()->SetDefaultAccessMask(mask);
+    }
 };
 
-class [[nodiscard]] namespace_
+class [[nodiscard]] namespace_ : public engine_ref_holder
 {
+    using my_base = engine_ref_holder;
+
 public:
     namespace_() = delete;
     namespace_(const namespace_&) = delete;
 
     namespace_& operator=(const namespace_&) = delete;
 
-    namespace_(engine_pointer engine)
-        : m_engine(engine), m_prev(engine->GetDefaultNamespace())
+    explicit namespace_(engine_pointer engine)
+        : my_base(engine)
     {
-        ASBIND20_ASSERT(engine != nullptr);
-        set_ns_impl("");
+        set_as_global();
+    }
+
+    explicit namespace_(engine_reference engine)
+        : my_base(engine)
+    {
+        set_as_global();
     }
 
     namespace_(
@@ -85,48 +103,24 @@ public:
         std::string_view ns,
         bool nested = true
     )
-        : m_engine(engine), m_prev(engine->GetDefaultNamespace())
+        : my_base(engine)
     {
-        ASBIND20_ASSERT(engine != nullptr);
-        if(nested)
-        {
-            if(!ns.empty()) [[likely]]
-            {
-                if(m_prev.empty())
-                {
-                    util::with_cstr(
-                        [this](const char* ns)
-                        { set_ns_impl(ns); },
-                        ns
-                    );
-                }
-                else
-                {
-                    set_ns_impl(
-                        string_concat(m_prev, "::", ns).c_str()
-                    );
-                }
-            }
-        }
-        else
-        {
-            util::with_cstr(
-                [this](const char* ns)
-                { set_ns_impl(ns); },
-                ns
-            );
-        }
+        set_as(ns, nested);
+    }
+
+    namespace_(
+        engine_reference engine,
+        std::string_view ns,
+        bool nested = true
+    )
+        : my_base(engine)
+    {
+        set_as(ns, nested);
     }
 
     ~namespace_()
     {
         set_ns_impl(m_prev.c_str());
-    }
-
-    [[nodiscard]]
-    engine_pointer get_engine() const noexcept
-    {
-        return m_engine;
     }
 
     [[nodiscard]]
@@ -136,13 +130,45 @@ public:
     }
 
 private:
-    engine_pointer m_engine;
     std::string m_prev;
+
+    void set_as_global()
+    {
+        m_prev = get_engine()->GetDefaultNamespace();
+        set_ns_impl("");
+    }
+
+    void set_as(std::string_view ns, bool nested)
+    {
+        m_prev = get_engine()->GetDefaultNamespace();
+        if(nested && ns.empty()) [[unlikely]]
+            return; // Same as the previous namespace
+
+        // Synthesize "prev::ns" declaration when in nested mode, ns is non-empty,
+        // and a previous namespace exists to nest under.
+        // Otherwise (non-nested, or no previous namespace), pass ns directly.
+        const bool synthesize_decl =
+            nested ? (!ns.empty() && !m_prev.empty()) : false;
+        if(synthesize_decl)
+        {
+            set_ns_impl(
+                string_concat(m_prev, "::", ns).c_str()
+            );
+        }
+        else
+        {
+            util::with_cstr(
+                &namespace_::set_ns_impl,
+                this,
+                ns
+            );
+        }
+    }
 
     void set_ns_impl(const char* ns) const
     {
         [[maybe_unused]]
-        int r = m_engine->SetDefaultNamespace(
+        int r = get_engine()->SetDefaultNamespace(
             ns
         );
         ASBIND20_ASSERT(r >= 0);
@@ -173,8 +199,7 @@ public:
     basic_interface(appending_t<AppendOnly>, engine_pointer engine, std::string name)
         : my_base(engine), m_name(std::move(name))
     {
-        typeinfo_pointer ti = this->get_engine()->GetTypeInfoByName(m_name.c_str());
-        if(ti)
+        if(typeinfo_pointer ti = this->get_engine()->GetTypeInfoByName(m_name.c_str()); ti)
         {
 #ifndef ASBIND20_CONFIG_NO_APPEND_CHECK
             [[maybe_unused]]
