@@ -995,7 +995,7 @@ public:
         : m_func(func)
     {
         if(m_func)
-            m_func->AddRef();
+            (void)m_func->AddRef();
     }
 
     ~script_function()
@@ -1027,12 +1027,12 @@ public:
 
     bool operator==(script_function const& other) const noexcept = default;
 
-    friend bool operator==(script_function const& lhs, handle_type rhs) noexcept
+    friend bool operator==(const script_function& lhs, handle_type rhs) noexcept
     {
         return lhs.target() == rhs;
     }
 
-    friend bool operator==(handle_type lhs, script_function const& rhs) noexcept
+    friend bool operator==(handle_type lhs, const script_function& rhs) noexcept
     {
         return lhs == rhs.target();
     }
@@ -1056,7 +1056,7 @@ public:
     {
         if(m_func)
         {
-            m_func->Release();
+            (void)m_func->Release();
             m_func = nullptr;
         }
     }
@@ -1064,10 +1064,10 @@ public:
     void reset(handle_type func)
     {
         if(m_func)
-            m_func->Release();
+            (void)m_func->Release();
         m_func = func;
         if(m_func)
-            m_func->AddRef();
+            (void)m_func->AddRef();
     }
 
     void swap(script_function& other) noexcept
@@ -1200,7 +1200,7 @@ inline script_object instantiate_class(
 )
 {
     if(!class_info) [[unlikely]]
-        return script_object();
+        return {};
 
     function_pointer factory = nullptr;
     if(AS_NAMESPACE_QUALIFIER asQWORD flags = class_info->GetFlags();
@@ -1210,7 +1210,7 @@ inline script_object instantiate_class(
     }
 
     if(!factory) [[unlikely]]
-        return script_object();
+        return {};
 
     auto result = script_invoke<script_object>(ctx, factory);
     return result.has_value() ? *result : script_object();
