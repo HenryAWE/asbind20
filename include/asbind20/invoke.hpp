@@ -18,7 +18,6 @@
 #include "type_traits.hpp"
 #include "detail/unreachable.hpp"
 
-#include <regex>
 #ifdef __cpp_lib_expected
 #    define ASBIND20_HAS_EXPECTED __cpp_lib_expected
 #    include <expected>
@@ -1171,7 +1170,7 @@ public:
         if(!func)
             detail::throw_bad_call();
 
-        return script_invoke<R>(ctx, std::forward<Object>(obj), func, args...);
+        return script_invoke<R>(ctx, std::forward<Object>(obj), func, std::forward<Args>(args)...);
     }
 
     result_type operator()(
@@ -1182,7 +1181,7 @@ public:
         if(!func)
             detail::throw_bad_call();
 
-        return script_invoke<R>(ctx, obj, func, args...);
+        return script_invoke<R>(ctx, obj, func, std::forward<Args>(args)...);
     }
 
     void swap(script_method& other) noexcept
@@ -1292,7 +1291,7 @@ public:
     }
 
     [[nodiscard]]
-    function_type& get() const noexcept
+    const function_type& get() const noexcept
     {
         return m_func;
     }
