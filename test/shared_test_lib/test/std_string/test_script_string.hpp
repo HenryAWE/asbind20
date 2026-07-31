@@ -8,7 +8,7 @@ namespace test_script_string
 template <bool UseGeneric>
 class script_string_suite_base : public ::testing::Test
 {
-public:
+protected:
     void SetUp() override
     {
         m_engine = asbind20::make_script_engine();
@@ -25,19 +25,21 @@ public:
         asbind_test::setup_string_utils(m_engine, UseGeneric);
     }
 
+    void TearDown() override
+    {
+        m_engine.reset();
+    }
+
+public:
     static auto& get_str_factory()
     {
         return asbind_test::string_factory::get();
     }
 
+    [[nodiscard]]
     asbind20::engine_pointer get_engine() const
     {
         return m_engine.get();
-    }
-
-    void TearDown() override
-    {
-        m_engine.reset();
     }
 
 private:

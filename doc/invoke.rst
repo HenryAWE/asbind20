@@ -112,7 +112,7 @@ tracking the module reference count to keep the function valid even after the mo
     #include <asbind20/asbind.hpp>
 
     auto engine = asbind20::make_script_engine();
-    auto* m = engine->GetModule("test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
+    auto* m = asbind20::create_module(engine, "test");
     m->AddScriptSection("test", "int test() { return 42; }");
     m->Build();
 
@@ -143,7 +143,7 @@ and wrap its methods:
 
 .. code-block:: c++
 
-    auto* m2 = engine->GetModule("test2", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE);
+    auto* m2 = asbind20::create_module(engine, "test2");
     m2->AddScriptSection("test2",
         "class foo { int get_val() const { return 42; } };");
     m2->Build();

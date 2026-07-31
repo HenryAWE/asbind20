@@ -12,7 +12,7 @@ class mt_string_factory_suite : public script_string_suite_base<UseGeneric>
 {
     using my_base = script_string_suite_base<UseGeneric>;
 
-public:
+protected:
     void SetUp() override
     {
         ASBIND_TEST_SKIP_IF_NO_THREADS();
@@ -27,12 +27,11 @@ public:
         my_base::TearDown();
     }
 
+public:
     asbind20::module_pointer get_module()
     {
         asbind20::engine_pointer engine = this->get_engine();
-        auto* m = engine->GetModule(
-            "mt_string_test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-        );
+        auto* m = asbind20::create_module(engine, "mt_string_test");
         EXPECT_THAT(m, ::testing::NotNull());
 
         m->AddScriptSection(

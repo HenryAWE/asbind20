@@ -6,9 +6,7 @@ namespace bench_invoke
 static auto prepare_get_int(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     -> AS_NAMESPACE_QUALIFIER asIScriptFunction*
 {
-    auto* m = engine->GetModule(
-        "bench_get_int", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "bench_get_int");
     m->AddScriptSection(
         "bench_to_lower",
         "int run()"
@@ -115,9 +113,7 @@ static void setup_to_lower_env(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 static auto prepare_to_lower(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     -> AS_NAMESPACE_QUALIFIER asIScriptFunction*
 {
-    auto* m = engine->GetModule(
-        "bench_to_lower", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "bench_to_lower");
     m->AddScriptSection(
         "bench_to_lower",
         "string run(const string&in s1)"

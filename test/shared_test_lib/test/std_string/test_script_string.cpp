@@ -1,5 +1,6 @@
 #include <asbind_test/framework.hpp>
 #include "test_script_string.hpp"
+#include <asbind20/io/section.hpp>
 #include <asbind20/io/to_string.hpp>
 
 namespace test_script_string
@@ -8,25 +9,30 @@ template <bool UseGeneric>
 class test_string_factory : public script_string_suite_base<UseGeneric>
 {
 public:
+    [[nodiscard]]
     std::string run_string(std::string_view fragment) const
     {
         auto* engine = this->get_engine();
-        auto* tmp_module = engine->GetModule(
-            "test_string_factory", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
+        auto* tmp_module = asbind20::create_module(
+            engine, "test_string_factory"
         );
 
-        std::string code;
-        code += "string func(){\n";
-        code += fragment;
-        code += "\n}";
+        std::string code = asbind20::string_concat(
+            "string func(){\n",
+            fragment,
+            "\n}"
+        );
 
-        tmp_module->AddScriptSection(
-            "code", code.c_str(), code.size(), -1
+        asbind20::io::load_string(
+            tmp_module,
+            "code",
+            code,
+            -1
         );
         if(tmp_module->Build() < 0)
         {
             ADD_FAILURE() << "Failed to build module";
-            return std::string();
+            return {};
         }
 
         auto f = tmp_module->GetFunctionByDecl("string func()");
@@ -126,9 +132,7 @@ namespace test_script_string
 {
 static void test_ctor_fn(asbind20::engine_pointer engine)
 {
-    auto* m = engine->GetModule(
-        "test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "test");
     m->AddScriptSection(
         "test",
         "string f(uint count) { return string(count, 'A'); }"
