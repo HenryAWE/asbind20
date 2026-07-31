@@ -195,6 +195,9 @@ public:
         do_register();
     }
 
+    basic_interface(engine_reference engine, std::string name)
+        : basic_interface(std::addressof(engine), std::move(name)) {}
+
     template <bool AppendOnly>
     basic_interface(appending_t<AppendOnly>, engine_pointer engine, std::string name)
         : my_base(engine), m_name(std::move(name))
@@ -213,6 +216,15 @@ public:
         }
     }
 
+    template <bool AppendOnly>
+    basic_interface(appending_t<AppendOnly>, engine_reference engine, std::string name)
+        : basic_interface(
+              appending_t<AppendOnly>{},
+              std::addressof(engine),
+              std::move(name)
+          )
+    {}
+
     template <string_like StringLike>
     basic_interface(
         engine_pointer engine,
@@ -221,6 +233,17 @@ public:
         : basic_interface(
               engine,
               util::string_like_to_string(std::forward<StringLike>(name))
+          )
+    {}
+
+    template <string_like StringLike>
+    basic_interface(
+        engine_reference engine,
+        StringLike&& name
+    )
+        : basic_interface(
+              std::addressof(engine),
+              std::forward<StringLike>(name)
           )
     {}
 
@@ -234,6 +257,19 @@ public:
               appending_t<AppendOnly>{},
               engine,
               util::string_like_to_string(std::forward<StringLike>(name))
+          )
+    {}
+
+    template <bool AppendOnly, string_like StringLike>
+    basic_interface(
+        appending_t<AppendOnly>,
+        engine_reference engine,
+        StringLike&& name
+    )
+        : basic_interface(
+              appending_t<AppendOnly>{},
+              std::addressof(engine),
+              std::forward<StringLike>(name)
           )
     {}
 
