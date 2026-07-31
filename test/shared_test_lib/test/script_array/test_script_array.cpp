@@ -145,7 +145,7 @@ TEST_F(TestArrayNative, ConstructingArray)
     asbind_test::setup_script_string(engine, true);
     test_script_array::setup_my_enum(engine);
 
-    test_script_array::test_empty_arr(engine);
+    test_script_array::test_construct_arr(engine);
 }
 
 TEST_F(TestArrayGeneric, ConstructingArray)

@@ -371,7 +371,7 @@ public:
     binding_generator_base(const binding_generator_base&) noexcept(std::is_nothrow_copy_constructible_v<Listener>) = default;
 
 protected:
-    binding_generator_base(engine_pointer engine) noexcept(std::is_nothrow_default_constructible_v<Listener>)
+    binding_generator_base(engine_pointer engine)
         : engine_ref_holder(engine), m_listener() {}
 
     binding_generator_base(engine_pointer engine, const Listener& listener)
