@@ -101,6 +101,7 @@ public:
     asbind20::context_pointer ctx = nullptr;
     refcount_aux_helper helper;
 
+protected:
     void SetUp() override
     {
         if constexpr(!UseGeneric)
@@ -138,6 +139,8 @@ public:
         engine.reset();
     }
 
+public:
+    [[nodiscard]]
     asbind20::module_pointer compile_module() const
     {
         auto* m = asbind20::create_module(engine, "refcount_aux");

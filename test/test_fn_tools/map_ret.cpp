@@ -7,7 +7,7 @@ namespace test_fn_tools
 template <bool UseGeneric>
 class test_fn_suite : public ::testing::Test
 {
-public:
+protected:
     void SetUp() override
     {
         if constexpr(!UseGeneric)
@@ -24,6 +24,8 @@ public:
         m_engine.reset();
     }
 
+public:
+    [[nodiscard]]
     asbind20::engine_pointer get_engine() const
     {
         return m_engine.get();

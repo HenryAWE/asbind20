@@ -452,7 +452,7 @@ static void check_trivial_class(asbind20::engine_pointer engine)
 template <bool UseGeneric>
 class basic_trivial_value_class_suite : public ::testing::Test
 {
-public:
+protected:
     void SetUp() override
     {
         if constexpr(!UseGeneric)
@@ -472,6 +472,8 @@ public:
         m_engine.reset();
     }
 
+public:
+    [[nodiscard]]
     asbind20::engine_pointer get_engine() const noexcept
     {
         return m_engine.get();
@@ -730,7 +732,7 @@ static void check_friend_ops(asbind20::engine_pointer engine, friend_ops_helper&
 template <bool UseGeneric>
 class basic_friend_ops_suite : public ::testing::Test
 {
-public:
+protected:
     void SetUp() override
     {
         if constexpr(!UseGeneric)
@@ -749,6 +751,8 @@ public:
         m_engine.reset();
     }
 
+public:
+    [[nodiscard]]
     asbind20::engine_pointer get_engine() const noexcept
     {
         return m_engine.get();

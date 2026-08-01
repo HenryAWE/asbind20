@@ -7,7 +7,7 @@ namespace test_listener
 {
 class general_listener_suite : public ::testing::Test
 {
-public:
+protected:
     void SetUp() override
     {
         engine = asbind20::make_script_engine();
@@ -22,6 +22,7 @@ public:
         engine.reset();
     }
 
+public:
     asbind20::script_engine engine;
 };
 

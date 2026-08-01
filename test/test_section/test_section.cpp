@@ -5,7 +5,7 @@ namespace test_load
 {
 class test_suite : public ::testing::Test
 {
-public:
+protected:
     void SetUp() override
     {
         m_engine = asbind20::make_script_engine();
@@ -17,14 +17,17 @@ public:
         m_engine.reset();
     }
 
+public:
+    [[nodiscard]]
     asbind20::engine_pointer get_engine() const
     {
         return m_engine.get();
     }
 
-    asbind20::function_pointer get_func(
+    // Get "inf func" for the module
+    static asbind20::function_pointer get_func(
         asbind20::module_pointer m
-    ) const
+    )
     {
         if(m == nullptr)
         {
@@ -50,7 +53,8 @@ public:
         EXPECT_EQ(result.value(), expected);
     }
 
-    static ::testing::AssertionResult check_load_result(int r)
+    static auto check_load_result(int r)
+        -> ::testing::AssertionResult
     {
         if(r >= 0)
             return ::testing::AssertionSuccess();

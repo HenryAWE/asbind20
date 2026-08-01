@@ -325,7 +325,7 @@ bool test2()
 template <asbind20::policies::initialization_list_policy IListPolicy, bool UseGeneric>
 class basic_initlist_gc_test : public ::testing::Test
 {
-public:
+protected:
     void SetUp() override
     {
         if constexpr(!UseGeneric)
@@ -343,6 +343,7 @@ public:
         m_engine.reset();
     }
 
+public:
     asbind20::module_pointer build_script()
     {
         auto* m = asbind20::create_module(m_engine, "test_gc_initlist");
@@ -392,7 +393,7 @@ bool test0()
 template <bool UseGeneric>
 class simple_initlist_gc_test : public ::testing::Test
 {
-public:
+protected:
     void SetUp() override
     {
         if constexpr(!UseGeneric)
@@ -413,6 +414,7 @@ public:
         m_engine.reset();
     }
 
+public:
     asbind20::module_pointer build_script()
     {
         auto* m = asbind20::create_module(m_engine, "test_gc_initlist_simple");
@@ -489,7 +491,7 @@ template <std::size_t Size, bool UseGeneric>
 requires(Size == 2 || Size == 4)
 class basic_initlist_gc_test<asbind20::policies::apply_to<Size>, UseGeneric> : public ::testing::Test
 {
-public:
+protected:
     void SetUp() override
     {
         if constexpr(!UseGeneric)
@@ -510,6 +512,7 @@ public:
         m_engine.reset();
     }
 
+public:
     asbind20::module_pointer build_script()
     {
         auto* m = asbind20::create_module(m_engine, "test_gc_initlist");
@@ -702,7 +705,7 @@ static gc_init_list* gc_init_list_custom_list_factory_objlast(void* list_buf, as
 template <bool Objfirst, bool UseGeneric>
 class basic_custom_function_suite : public ::testing::Test
 {
-public:
+protected:
     void SetUp() override
     {
         if constexpr(!UseGeneric)
@@ -733,6 +736,7 @@ public:
         m_engine.reset();
     }
 
+public:
     asbind20::module_pointer build_script()
     {
         auto* m = asbind20::create_module(m_engine, "test_gc_initlist");
@@ -897,6 +901,7 @@ public:
 
     std::vector<int> ints;
 
+    [[nodiscard]]
     asbind20::engine_pointer get_engine() const
     {
         return m_ti->GetEngine();
@@ -957,7 +962,7 @@ gc_init_list<int>@ get()
 template <typename ListElemType, bool UseGeneric>
 class basic_temp_initlist_gc_test : public ::testing::Test
 {
-public:
+protected:
     void SetUp() override
     {
         if constexpr(!UseGeneric)
@@ -978,6 +983,7 @@ public:
         m_engine.reset();
     }
 
+public:
     asbind20::module_pointer build_script()
     {
         auto* m = asbind20::create_module(m_engine, "test_gc_initlist");
@@ -1002,15 +1008,18 @@ static void run_templ_gc_list_test(asbind20::module_pointer m)
     auto* f = m->GetFunctionByName("get");
     ASSERT_THAT(f, ::testing::NotNull());
 
-    std::cerr << "- Before invocation:\n";
-    asbind_test::output_gc_statistics(std::cerr, engine);
+    GTEST_LOG_(INFO)
+        << "GC stat before invocation: "
+        << asbind20::debugging::get_gc_statistics(engine).description();
+
     {
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<templ_gc_init_list>(ctx, f);
         ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
 
-        std::cerr << "- After invocation:\n";
-        asbind_test::output_gc_statistics(std::cerr, engine);
+        GTEST_LOG_(INFO)
+            << "GC stat after invocation: "
+            << asbind20::debugging::get_gc_statistics(engine).description();
 
         auto& list = result.value();
         ASSERT_EQ(list.ints.size(), 2);
@@ -1019,8 +1028,9 @@ static void run_templ_gc_list_test(asbind20::module_pointer m)
     }
 
     engine->GarbageCollect();
-    std::cerr << "- After cleanup:\n";
-    asbind_test::output_gc_statistics(std::cerr, engine);
+    GTEST_LOG_(INFO)
+        << "GC stat after cleanup: "
+        << asbind20::debugging::get_gc_statistics(engine).description();
 }
 } // namespace test_gc
 

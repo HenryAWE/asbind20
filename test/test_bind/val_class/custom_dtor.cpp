@@ -65,6 +65,7 @@ public:
         return c;
     }
 
+protected:
     void SetUp() override
     {
         reset_counters_and_spies();
@@ -98,6 +99,7 @@ public:
         engine.reset();
     }
 
+public:
     asbind20::script_engine engine;
 
     asbind20::module_pointer compile_module() const

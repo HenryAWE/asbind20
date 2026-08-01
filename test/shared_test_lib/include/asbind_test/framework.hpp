@@ -51,17 +51,6 @@ void setup_message_callback(
 void setup_exception_translator(
     asbind20::engine_pointer engine
 );
-
-void output_gc_statistics(
-    std::ostream& os,
-    const asbind20::debugging::gc_statistics& stat,
-    char sep = '\n'
-);
-void output_gc_statistics(
-    std::ostream& os,
-    asbind20::engine_pointer engine,
-    char sep = '\n'
-);
 } // namespace asbind_test
 
 #define ASBIND_TEST_SKIP_IF_MAX_PORTABILITY()           \

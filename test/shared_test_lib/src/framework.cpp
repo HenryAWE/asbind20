@@ -166,24 +166,4 @@ void setup_exception_translator(
         engine, &exception_translator_impl
     );
 }
-
-void output_gc_statistics(
-    std::ostream& os,
-    const asbind20::debugging::gc_statistics& stat,
-    char sep
-)
-{
-    os << stat.description(std::string_view(&sep, 1));
-    os << std::endl;
-}
-
-void output_gc_statistics(
-    std::ostream& os,
-    asbind20::engine_pointer engine,
-    char sep
-)
-{
-    auto stat = asbind20::debugging::get_gc_statistics(engine);
-    output_gc_statistics(os, stat, sep);
-}
 } // namespace asbind_test
