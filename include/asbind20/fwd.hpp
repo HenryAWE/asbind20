@@ -4,8 +4,8 @@
  * @brief Forward declarations
  */
 
-#ifndef ASBIND20_DETAIL_FWD_HPP
-#define ASBIND20_DETAIL_FWD_HPP
+#ifndef ASBIND20_FWD_HPP
+#define ASBIND20_FWD_HPP
 
 #pragma once
 

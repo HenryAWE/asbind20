@@ -1878,6 +1878,7 @@ public:
     }
 
     template <native_function Fn, bool ObjFirst>
+    requires(std::is_member_function_pointer_v<Fn>)
     Derived& method(
         cstring_ref decl,
         Fn&& fn,
@@ -2290,12 +2291,13 @@ public:
         composite_wrapper comp
     ) requires(!ForceGeneric)
     {
-        this->register_comp_method(
+        int r = this->register_comp_method(
             decl,
             fn,
             detail::cc<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>,
             comp
         );
+        listener_traits_type::on_method(get_listener(), derived(), r);
         return derived();
     }
 
