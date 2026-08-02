@@ -426,23 +426,10 @@ template <
     std::size_t... Is>
 consteval generic_function lambda_to_asGENFUNC_t_impl()
 {
-#ifndef _MSC_VER
     if constexpr(sizeof...(Is))
         return generic_wrapper_lambda<Lambda, OriginalCallConv>::generate(var_type<Is...>);
     else
         return generic_wrapper_lambda<Lambda, OriginalCallConv>::generate();
-
-#else
-    // GCC < 13.2 has problem on this branch,
-    // but MSVC has problem on the previous branch.
-    // Clang supports both branches.
-
-    if constexpr(sizeof...(Is))
-        return generic_wrapper_nontype<+Lambda{}, OriginalCallConv>::generate(var_type<Is...>);
-    else
-        return generic_wrapper_nontype<+Lambda{}, OriginalCallConv>::generate();
-
-#endif
 }
 
 template <
