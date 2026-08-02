@@ -928,6 +928,12 @@ public:
         return m_data;
     }
 
+    [[nodiscard]]
+    const void* cdata() const noexcept
+    {
+        return m_data;
+    }
+
     /**
      * @brief Revert to raw pointer for forwarding list buffer to another function
      */

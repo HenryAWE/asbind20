@@ -62,6 +62,7 @@ namespace detail
         // it can keep the interface consistent with other types.
         typeinfo_pointer ti;
 
+        [[nodiscard]]
         int get_id() const
         {
             return TypeInfoPolicy::get_type_id(ti);
@@ -80,6 +81,7 @@ namespace detail
         elem_type_data(int tid, typeinfo_pointer t) noexcept
             : type_id(tid), ti(t) {}
 
+        [[nodiscard]]
         int get_id() const
         {
             return type_id;
