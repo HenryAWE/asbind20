@@ -26,6 +26,9 @@ namespace
     {
         const AS_NAMESPACE_QUALIFIER asSMessageInfo& msg;
 
+        explicit message_output_helper(const AS_NAMESPACE_QUALIFIER asSMessageInfo& msg)
+            : msg(msg) {}
+
         friend std::ostream& operator<<(std::ostream& os, const message_output_helper& h)
         {
             os
@@ -39,6 +42,7 @@ namespace
 template <bool PropagateError>
 static void message_callback_impl(const AS_NAMESPACE_QUALIFIER asSMessageInfo* msg, void*)
 {
+    ASSERT_THAT(msg, ::testing::NotNull());
     switch(msg->type)
     {
     case AS_NAMESPACE_QUALIFIER asMSGTYPE_ERROR:
