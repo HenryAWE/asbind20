@@ -2614,8 +2614,41 @@ private:
     static consteval bool check_opCmp_sig()
     {
 #ifndef ASBIND20_CONFIG_NO_COMPILE_TIME_CHECKS
-        // TODO: Complete this
-        return true;
+        using traits = function_traits<Fn>;
+
+        // The script declaration of opCmp is "int opCmp(const T&in) const",
+        // so the comparator must return int.
+        if constexpr(!std::same_as<std::remove_cv_t<typename traits::return_type>, int>)
+            return false;
+        else if constexpr(
+            CallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL ||
+            CallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL
+        )
+        {
+            // Member comparator: int (Class::*)(const Class&) [const]
+            return std::same_as<typename traits::class_type, Class> &&
+                   traits::arg_count_v == 1 &&
+                   detail::is_this_arg<typename traits::template arg_type<0>, Class>(false);
+        }
+        else if constexpr(
+            CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
+            CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
+        )
+        {
+            // Free comparator: int f(const Class& lhs, const Class& rhs)
+            // or with the object as the last parameter.
+            if constexpr(traits::arg_count_v != 2)
+                return false;
+            else
+            {
+                using first_arg_t = typename traits::template arg_type<0>;
+                using last_arg_t = typename traits::template arg_type<1>;
+                return detail::is_this_arg<first_arg_t, Class>(false) &&
+                       detail::is_this_arg<last_arg_t, Class>(false);
+            }
+        }
+        else
+            return false;
 
 #else
         return true;
@@ -2626,10 +2659,12 @@ public:
     template <auto Comparator>
     Derived& opCmp(use_generic_t, fp_wrapper<Comparator>)
     {
-        constexpr auto conv = detail::deduce_method_callconv<Class, Comparator>();
+        constexpr auto conv =
+            detail::deduce_method_callconv<Class, decltype(Comparator)>();
         static_assert(
             check_opCmp_sig<decltype(Comparator), conv>(),
-            "Invalid signature for opCmp"
+            "Invalid signature for opCmp: the comparator must return int "
+            "and compare the registered class type, e.g. int f(const Class& lhs, const Class& rhs)"
         );
         int r = this->register_method(
             this->decl_opCmp(),
@@ -2649,7 +2684,8 @@ public:
             this->opCmp(use_generic, fp<Comparator>);
         else
         {
-            constexpr auto conv = detail::deduce_method_callconv<Class, Comparator>();
+            constexpr auto conv =
+                detail::deduce_method_callconv<Class, decltype(Comparator)>();
             static_assert(
                 check_opCmp_sig<decltype(Comparator), conv>(),
                 "Invalid signature for opCmp"
