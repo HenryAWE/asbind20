@@ -1239,9 +1239,20 @@ protected:
 #ifndef ASBIND20_CONFIG_NO_APPEND_CHECK
         if(flags != 0)
         {
+            // Only the class kind (reference/value, template) must match.
+            // The existing type may carry additional flags from its original
+            // registration, e.g. asOBJ_GC for a reference type.
+            [[maybe_unused]]
+            constexpr flag_type kind_mask =
+                AS_NAMESPACE_QUALIFIER asOBJ_REF |
+                AS_NAMESPACE_QUALIFIER asOBJ_VALUE |
+                AS_NAMESPACE_QUALIFIER asOBJ_TEMPLATE;
+
             [[maybe_unused]]
             const flag_type existing_flags = ti->GetFlags();
-            ASBIND20_ASSERT(existing_flags == flags);
+            ASBIND20_ASSERT(
+                (existing_flags & kind_mask) == (flags & kind_mask)
+            );
         }
 #endif
         if(r > 0) [[likely]]

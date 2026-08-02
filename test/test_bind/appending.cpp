@@ -48,6 +48,55 @@ private:
 
     int m_counter = 1;
 };
+
+// Reference type registered with additional flags (asOBJ_GC)
+// to verify that appending doesn't require an exact flag match.
+struct gc_ref_class_for_appending
+{
+    void addref()
+    {
+        ++m_counter;
+    }
+
+    void release()
+    {
+        ASSERT_GE(m_counter, 0);
+        --m_counter;
+        if(m_counter == 0)
+            delete this;
+    }
+
+    int get_refcount() const
+    {
+        return m_counter;
+    }
+
+    void set_gc_flag() {}
+
+    bool get_gc_flag() const
+    {
+        return false;
+    }
+
+    void enum_refs(asbind20::engine_pointer) {}
+
+    void release_refs(asbind20::engine_pointer) {}
+
+    int data = 0;
+
+    int get_data() const
+    {
+        return data;
+    }
+
+private:
+    ~gc_ref_class_for_appending()
+    {
+        EXPECT_EQ(m_counter, 0);
+    }
+
+    int m_counter = 1;
+};
 } // namespace test_bind
 
 TEST(Appending, ValueClass)
@@ -190,6 +239,35 @@ TEST(Appending, RefClass)
 
     ref_class<ref_class_for_appending>(appending, engine, "rc")
         .property("int data", &ref_class_for_appending::data);
+
+    test_bind::check_ref_class(engine);
+}
+
+TEST(Appending, RefClassWithAdditionalFlags)
+{
+    using test_bind::gc_ref_class_for_appending;
+    using namespace asbind20;
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine);
+
+    ref_class<gc_ref_class_for_appending, true>(
+        engine, "rc", AS_NAMESPACE_QUALIFIER asOBJ_GC
+    )
+        .addref(fp<&gc_ref_class_for_appending::addref>)
+        .release(fp<&gc_ref_class_for_appending::release>)
+        .get_refcount(fp<&gc_ref_class_for_appending::get_refcount>)
+        .set_gc_flag(fp<&gc_ref_class_for_appending::set_gc_flag>)
+        .get_gc_flag(fp<&gc_ref_class_for_appending::get_gc_flag>)
+        .enum_refs(fp<&gc_ref_class_for_appending::enum_refs>)
+        .release_refs(fp<&gc_ref_class_for_appending::release_refs>)
+        .default_factory()
+        .method("int get_data() const", fp<&gc_ref_class_for_appending::get_data>);
+
+    // The existing type has additional flags (asOBJ_GC) compared to the
+    // flags passed by the appending generator. This must not fail the check.
+    ref_class<gc_ref_class_for_appending>(appending, engine, "rc")
+        .property("int data", &gc_ref_class_for_appending::data);
 
     test_bind::check_ref_class(engine);
 }
