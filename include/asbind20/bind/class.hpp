@@ -21,16 +21,6 @@ namespace asbind20
 {
 namespace detail
 {
-    // Helper for the `as_iterators` policy
-    template <typename T, typename Fn>
-    decltype(auto) apply_iter_pair(Fn&& fn, script_init_list_repeat list)
-    {
-        T* const start = (T*)list.data();
-        T* const stop = start + list.size();
-
-        return std::invoke(std::forward<Fn>(fn), start, stop);
-    }
-
     // Wrapper generators for special functions like constructor
 
     /**
@@ -426,23 +416,18 @@ namespace detail
         {
             if constexpr(std::same_as<IListPolicy, policies::as_iterators>)
             {
-                apply_iter_pair<ListElementType>(
-                    [mem](auto start, auto stop)
-                    {
-                        new(mem) Class(start, stop);
-                    },
-                    list
-                );
+                auto sp = list.to_span_of<ListElementType>();
+                new(mem) Class(sp.begin(), sp.end());
             }
             else if constexpr(std::same_as<IListPolicy, policies::pointer_and_size>)
             {
-                new(mem) Class((ListElementType*)list.data(), list.size());
+                new(mem) Class(static_cast<ListElementType*>(list.data()), list.size());
             }
 #ifdef ASBIND20_HAS_CONTAINERS_RANGES
             else if constexpr(std::same_as<IListPolicy, policies::as_from_range>)
             {
-                std::span<ListElementType> rng((ListElementType*)list.data(), list.size());
-                new(mem) Class(std::from_range, rng);
+                auto sp = list.to_span_of<ListElementType>();
+                new(mem) Class(std::from_range, sp);
             }
 #endif
             else if constexpr(
@@ -1023,13 +1008,8 @@ namespace detail
         {
             if constexpr(std::same_as<IListPolicy, policies::as_iterators>)
             {
-                return apply_iter_pair<ListElementType>(
-                    [](auto start, auto stop) -> Class*
-                    {
-                        return new Class(start, stop);
-                    },
-                    list
-                );
+                auto sp = list.to_span_of<ListElementType>();
+                return new Class(sp.begin(), sp.end());
             }
             else if constexpr(std::same_as<IListPolicy, policies::pointer_and_size>)
             {
