@@ -70,19 +70,24 @@ void register_string_array(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         .copy_constructor()
         .constructor_function(
             "const string&in val",
-            [](arr_type* a, const string& val)
+            [](arr_type* a, const string& s)
             {
-                using namespace std::string_literals;
-                new(a) arr_type{{val}, {val}, {"!"s}};
+                arr_type& arr = *a;
+                new(arr) std::string(s);
+                new(arr + 1) std::string(s);
+                new(arr + 2) std::string(s);
             }
         )
         .constructor_function(
             "int iv",
             [](arr_type* a, int iv)
             {
-                using namespace std::string_literals;
+                arr_type& arr = *a;
+
                 std::string s = std::to_string(iv);
-                new(a) arr_type{{s}, {s}, {"!"s}};
+                new(arr) std::string(s);
+                new(arr + 1) std::string(s);
+                new(arr + 2) std::string(s);
             }
         )
         .destructor()
