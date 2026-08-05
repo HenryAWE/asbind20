@@ -1,10 +1,15 @@
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
+#include <memory>
 #include <string>
 #include <asbind_test/framework.hpp>
 #include <asbind20/asbind.hpp>
 
 namespace test_fn_tools
 {
+// Injectable spy for verifying that the destructor of a returned value is invoked
+static std::shared_ptr<::testing::MockFunction<void()>> map_ret_dtor_spy;
+
 template <bool UseGeneric>
 class test_fn_suite : public ::testing::Test
 {
@@ -22,6 +27,13 @@ protected:
 
     void TearDown() override
     {
+        // Verify and clean up the mock spy before engine teardown,
+        // so mock verification failures are reported
+        if(map_ret_dtor_spy)
+        {
+            ::testing::Mock::VerifyAndClearExpectations(map_ret_dtor_spy.get());
+            map_ret_dtor_spy.reset();
+        }
         m_engine.reset();
     }
 
@@ -41,52 +53,31 @@ static std::size_t return_sz(int a, int b)
     return a * 100 + b;
 }
 
-// A non-trivially-destructible type. It is used to verify that the returned
-// value is properly destroyed, even when the script declaration for the
-// registered function is `void` (i.e. `map_ret<void>`).
+// A non-trivially-destructible type,
+// which is used to verify that the returned value is properly destroyed
 struct map_ret_nontrivial
 {
-    static inline std::size_t ctor_count = 0;
-    static inline std::size_t dtor_count = 0;
-    static inline std::size_t live_count = 0;
-
     int value = 0;
 
     explicit map_ret_nontrivial(int val)
         : value(val)
-    {
-        ++ctor_count;
-        ++live_count;
-    }
+    {}
 
     map_ret_nontrivial(const map_ret_nontrivial& other)
         : value(other.value)
-    {
-        ++ctor_count;
-        ++live_count;
-    }
+    {}
 
     map_ret_nontrivial(map_ret_nontrivial&& other) noexcept
         : value(std::exchange(other.value, 0))
-    {
-        ++ctor_count;
-        ++live_count;
-    }
+    {}
 
     map_ret_nontrivial& operator=(const map_ret_nontrivial&) = default;
     map_ret_nontrivial& operator=(map_ret_nontrivial&&) noexcept = default;
 
     ~map_ret_nontrivial()
     {
-        ++dtor_count;
-        --live_count;
-    }
-
-    static void reset_counts()
-    {
-        ctor_count = 0;
-        dtor_count = 0;
-        live_count = 0;
+        if(map_ret_dtor_spy)
+            map_ret_dtor_spy->Call();
     }
 };
 
@@ -189,16 +180,18 @@ static void check_map_ret_void_free(asbind20::engine_pointer engine)
     auto* f = m->GetFunctionByName("f");
     ASSERT_THAT(f, ::testing::NotNull());
 
-    map_ret_nontrivial::reset_counts();
+    map_ret_dtor_spy = std::make_shared<::testing::MockFunction<void()>>();
+    EXPECT_CALL(*map_ret_dtor_spy, Call()).Times(1);
+
     {
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<void>(ctx, f);
         ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
     }
-    // The returned temporary must have been destroyed after the call.
-    EXPECT_EQ(map_ret_nontrivial::live_count, 0);
-    EXPECT_EQ(map_ret_nontrivial::ctor_count, 1);
-    EXPECT_EQ(map_ret_nontrivial::dtor_count, map_ret_nontrivial::ctor_count);
+    // The mock fails the test unless the returned temporary's destructor
+    // was invoked exactly once by the end of the script call
+    ::testing::Mock::VerifyAndClearExpectations(map_ret_dtor_spy.get());
+    map_ret_dtor_spy.reset();
 
     auto* g = m->GetFunctionByName("g");
     ASSERT_THAT(g, ::testing::NotNull());
@@ -222,16 +215,18 @@ static void check_map_ret_void_mfn(asbind20::engine_pointer engine)
     auto* f = m->GetFunctionByName("f");
     ASSERT_THAT(f, ::testing::NotNull());
 
-    map_ret_nontrivial::reset_counts();
+    map_ret_dtor_spy = std::make_shared<::testing::MockFunction<void()>>();
+    EXPECT_CALL(*map_ret_dtor_spy, Call()).Times(1);
+
     {
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<void>(ctx, f);
         ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
     }
-    // The returned temporary must have been destroyed after the call.
-    EXPECT_EQ(map_ret_nontrivial::live_count, 0);
-    EXPECT_EQ(map_ret_nontrivial::ctor_count, 1);
-    EXPECT_EQ(map_ret_nontrivial::dtor_count, map_ret_nontrivial::ctor_count);
+    // The mock fails the test unless the returned temporary's destructor
+    // was invoked exactly once by the end of the script call
+    ::testing::Mock::VerifyAndClearExpectations(map_ret_dtor_spy.get());
+    map_ret_dtor_spy.reset();
 }
 } // namespace test_fn_tools
 
