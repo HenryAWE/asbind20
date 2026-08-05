@@ -165,6 +165,13 @@ static void check_string_array(asbind20::engine_pointer engine)
         "    assert(s[2] == \"!\");\n"
         "    return s[0];\n"
         "}"
+        "string test2()\n"
+        "{\n"
+        "    str_arr s(\"copying a very very very very very long text\");\n"
+        "    assert(s[2] == \"!\");\n"
+        "    str_arr copied(s);\n"
+        "    return copied[0];\n"
+        "}"
     );
     ASSERT_GE(m->Build(), 0);
 
@@ -190,6 +197,18 @@ static void check_string_array(asbind20::engine_pointer engine)
         auto result = asbind20::script_invoke<std::string>(ctx, f);
         ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), "test");
+    }
+
+    {
+        SCOPED_TRACE("test2");
+
+        auto* f = m->GetFunctionByName("test2");
+        ASSERT_THAT(f, ::testing::NotNull());
+
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<std::string>(ctx, f);
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
+        EXPECT_EQ(result.value(), "copying a very very very very very long text");
     }
 }
 } // namespace test_bind
