@@ -257,13 +257,13 @@ namespace detail
                 void* mem = gen->GetObject();
                 new(mem) Class(
                     get_generic_typeinfo(gen),
-                    *(ListElementType**)gen->GetAddressOfArg(1)
+                    *static_cast<ListElementType**>(gen->GetAddressOfArg(1))
                 );
             }
             else
             {
                 void* mem = gen->GetObject();
-                new(mem) Class(*(ListElementType**)gen->GetAddressOfArg(0));
+                new(mem) Class(*static_cast<ListElementType**>(gen->GetAddressOfArg(0)));
             }
         }
 
@@ -370,7 +370,7 @@ namespace detail
         {
             apply_helper(
                 gen->GetObject(),
-                *(ListElementType**)gen->GetAddressOfArg(0)
+                *static_cast<ListElementType**>(gen->GetAddressOfArg(0))
             );
         }
 
@@ -551,7 +551,7 @@ namespace detail
 
             [gen]<std::size_t... Is>(std::index_sequence<Is...>)
             {
-                auto* ti = (typeinfo_pointer)gen->GetAuxiliary();
+                auto ti = static_cast<typeinfo_pointer>(gen->GetAuxiliary());
                 auto* ptr = new Class(
                     get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
                         gen, static_cast<arg_index_type>(Is)
@@ -709,21 +709,21 @@ namespace detail
     {
         static void impl_generic(generic_pointer gen)
         {
+            Class* ptr;
             if constexpr(Template)
             {
-                Class* ptr = new Class(
+                ptr = new Class(
                     get_generic_typeinfo(gen),
-                    *(ListElementType**)gen->GetAddressOfArg(1)
+                    *static_cast<ListElementType**>(gen->GetAddressOfArg(1))
                 );
-                gen->SetReturnAddress(ptr);
             }
             else
             {
-                Class* ptr = new Class(
-                    *(ListElementType**)gen->GetAddressOfArg(0)
+                ptr = new Class(
+                    *static_cast<ListElementType**>(gen->GetAddressOfArg(0))
                 );
-                gen->SetReturnAddress(ptr);
             }
+            gen->SetReturnAddress(ptr);
         }
 
         static Class* impl_cdecl_template(
@@ -765,29 +765,27 @@ namespace detail
 
         static void impl_generic(generic_pointer gen)
         {
+            Class* ptr;
             if constexpr(Template)
             {
                 auto* ti = get_generic_typeinfo(gen);
-                auto* ptr = new Class(
-                    ti, *(ListElementType**)gen->GetAddressOfArg(1)
+                ptr = new Class(
+                    ti, *static_cast<ListElementType**>(gen->GetAddressOfArg(1))
                 );
                 notifier::notify_gc_if_necessary(ptr, ti);
-
-                gen->SetReturnAddress(ptr);
             }
             else
             {
-                auto* ptr = new Class(
-                    *(ListElementType**)gen->GetAddressOfArg(0)
+                ptr = new Class(
+                    *static_cast<ListElementType**>(gen->GetAddressOfArg(0))
                 );
 
                 // Expects the typeinfo is passed by auxiliary pointer (see the helper "auxiliary(this_type)")
                 auto* ti = get_generic_auxiliary<typeinfo_pointer>(gen);
                 ASBIND20_ASSERT(ti != nullptr);
                 notifier::notify_gc_if_necessary(ptr, ti);
-
-                gen->SetReturnAddress(ptr);
             }
+            gen->SetReturnAddress(ptr);
         }
 
         static Class* impl_cdecl_template(
@@ -848,7 +846,7 @@ namespace detail
 
         static void impl_generic(generic_pointer gen)
         {
-            auto* ptr = apply_helper(*(ListElementType**)gen->GetAddressOfArg(0));
+            auto* ptr = apply_helper(*static_cast<ListElementType**>(gen->GetAddressOfArg(0)));
             if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
             {
                 auto* ti = get_generic_auxiliary<typeinfo_pointer>(gen);
@@ -1013,7 +1011,7 @@ namespace detail
             }
             else if constexpr(std::same_as<IListPolicy, policies::pointer_and_size>)
             {
-                return new Class((ListElementType*)list.data(), list.size());
+                return new Class(static_cast<ListElementType*>(list.data()), list.size());
             }
 #ifdef ASBIND20_HAS_CONTAINERS_RANGES
             else if constexpr(std::same_as<IListPolicy, policies::as_from_range>)
@@ -1029,6 +1027,8 @@ namespace detail
             {
                 return new Class(IListPolicy::template convert<ListElementType>(list));
             }
+
+            detail::unreachable();
         }
 
         static void impl_generic(generic_pointer gen)
@@ -1037,7 +1037,7 @@ namespace detail
             if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
             {
                 // Expects the typeinfo is passed by auxiliary pointer (see the helper "auxiliary(this_type)")
-                auto* ti = (typeinfo_pointer)gen->GetAuxiliary();
+                auto* ti = static_cast<typeinfo_pointer>(gen->GetAuxiliary());
                 ASBIND20_ASSERT(ti != nullptr);
                 notifier::notify_gc_if_necessary(ptr, ti);
             }
