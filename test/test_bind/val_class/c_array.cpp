@@ -56,9 +56,10 @@ static void register_int_array(
 }
 
 template <bool UseGeneric>
-void register_string_array(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void register_string_array(asbind20::engine_pointer engine)
 {
     asbind_test::setup_script_string(engine, UseGeneric);
+    asbind_test::setup_script_assertion(engine);
 
     using namespace asbind20;
 
@@ -73,9 +74,9 @@ void register_string_array(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
             [](arr_type* a, const string& s)
             {
                 arr_type& arr = *a;
-                new(arr) std::string(s);
+                new(arr + 0) std::string(s);
                 new(arr + 1) std::string(s);
-                new(arr + 2) std::string(s);
+                new(arr + 2) std::string("!");
             }
         )
         .constructor_function(
@@ -85,9 +86,9 @@ void register_string_array(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
                 arr_type& arr = *a;
 
                 std::string s = std::to_string(iv);
-                new(arr) std::string(s);
+                new(arr + 0) std::string(s);
                 new(arr + 1) std::string(s);
-                new(arr + 2) std::string(s);
+                new(arr + 2) std::string("!");
             }
         )
         .destructor()
@@ -144,24 +145,25 @@ static void check_int_array(asbind20::engine_pointer engine)
     }
 }
 
-static void check_string_array(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void check_string_array(asbind20::engine_pointer engine)
 {
-    using std::string;
-
-    auto* m = engine->GetModule(
-        "test_string_array", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
+    auto* m = asbind20::create_module(
+        engine, "test_string_array"
     );
+    ASSERT_THAT(m, ::testing::NotNull());
     m->AddScriptSection(
         "test_string_array",
-        "uint test0()\n"
+        "string test0()\n"
         "{\n"
-        "    str_arr s(12);\n"
-        "    return s[0].size;\n"
+        "    str_arr s(1013);\n"
+        "    assert(s[2] == \"!\");\n"
+        "    return s[0];\n"
         "}"
-        "uint test1()\n"
+        "string test1()\n"
         "{\n"
         "    str_arr s(\"test\");\n"
-        "    return s[0].size;\n"
+        "    assert(s[2] == \"!\");\n"
+        "    return s[0];\n"
         "}"
     );
     ASSERT_GE(m->Build(), 0);
@@ -173,9 +175,9 @@ static void check_string_array(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         ASSERT_THAT(f, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
-        auto result = asbind20::script_invoke<std::uint32_t>(ctx, f);
+        auto result = asbind20::script_invoke<std::string>(ctx, f);
         ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
-        EXPECT_EQ(result.value(), 2); // "12"
+        EXPECT_EQ(result.value(), "1013");
     }
 
     {
@@ -185,9 +187,9 @@ static void check_string_array(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
         ASSERT_THAT(f, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
-        auto result = asbind20::script_invoke<std::uint32_t>(ctx, f);
+        auto result = asbind20::script_invoke<std::string>(ctx, f);
         ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
-        EXPECT_EQ(result.value(), 4); // "test"
+        EXPECT_EQ(result.value(), "test");
     }
 }
 } // namespace test_bind
@@ -217,7 +219,7 @@ TEST(TestStringCArray, Native)
     ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
 
     test_bind::register_string_array<false>(engine);
     test_bind::check_string_array(engine);
@@ -226,7 +228,7 @@ TEST(TestStringCArray, Native)
 TEST(TestStringCArray, Generic)
 {
     auto engine = asbind20::make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
 
     test_bind::register_string_array<true>(engine);
     test_bind::check_string_array(engine);
