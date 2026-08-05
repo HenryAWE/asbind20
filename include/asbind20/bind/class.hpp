@@ -203,6 +203,27 @@ namespace detail
     {
         using ex_guard = ctor_ex_guard<ElemType[Size]>;
 
+        static void impl_generic(generic_pointer gen)
+        {
+            auto* ptr = static_cast<ElemType*>(gen->GetObject());
+
+            // Decay to pointer
+            std::decay_t<Arg> src = get_generic_arg<Arg>(gen, 0);
+
+            std::uninitialized_copy_n(src, Size, ptr);
+            ex_guard::destroy_if_ex(ptr);
+        }
+
+        static void impl_native(Arg arg, void* mem)
+        {
+            auto* ptr = static_cast<ElemType*>(mem);
+            // Decay to pointer
+            std::decay_t<Arg> src = arg;
+
+            std::uninitialized_copy_n(src, Size, ptr);
+            ex_guard::destroy_if_ex(ptr);
+        }
+
     public:
         static_assert(std::is_reference_v<Arg>);
 
@@ -210,30 +231,9 @@ namespace detail
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-            {
-                return +[](generic_pointer gen) -> void
-                {
-                    auto* ptr = static_cast<ElemType*>(gen->GetObject());
-
-                    // Decay to pointer
-                    std::decay_t<Arg> src = get_generic_arg<Arg>(gen, 0);
-
-                    std::uninitialized_copy_n(src, Size, ptr);
-                    ex_guard::destroy_if_ex(ptr);
-                };
-            }
+                return &impl_generic;
             else // CallConv == asCALL_CDECL_OBJLAST
-            {
-                return +[](Arg arg, void* mem) -> void
-                {
-                    auto* ptr = static_cast<ElemType*>(mem);
-                    // Decay to pointer
-                    std::decay_t<Arg> src = arg;
-
-                    std::uninitialized_copy_n(src, Size, ptr);
-                    ex_guard::destroy_if_ex(ptr);
-                };
-            }
+                return &impl_native;
         }
     };
 
