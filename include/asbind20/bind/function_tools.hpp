@@ -83,7 +83,10 @@ namespace detail
         template <typename... Args>
         static Return do_invoke(Args&&... args)
         {
-            return Return(std::invoke(Fn, std::forward<Args>(args)...));
+            if constexpr(std::is_void_v<Return>)
+                std::invoke(Fn, std::forward<Args>(args)...);
+            else
+                return Return(std::invoke(Fn, std::forward<Args>(args)...));
         }
 
         template <typename... Args>
@@ -95,9 +98,16 @@ namespace detail
         template <typename ArgsTuple>
         static void impl_generic(generic_pointer gen)
         {
-            set_generic_return<Return>(
-                gen, static_cast<Return>(apply_generic<ArgsTuple>(Fn, gen))
-            );
+            if constexpr(std::is_void_v<Return>)
+            {
+                apply_generic<ArgsTuple>(Fn, gen);
+            }
+            else
+            {
+                set_generic_return<Return>(
+                    gen, static_cast<Return>(apply_generic<ArgsTuple>(Fn, gen))
+                );
+            }
         }
 
     public:
@@ -131,7 +141,10 @@ namespace detail
         template <typename... Args>
         static Return do_invoke(class_type* obj, Args&&... args)
         {
-            return Return(std::invoke(Fn, obj, std::forward<Args>(args)...));
+            if constexpr(std::is_void_v<Return>)
+                std::invoke(Fn, obj, std::forward<Args>(args)...);
+            else
+                return Return(std::invoke(Fn, obj, std::forward<Args>(args)...));
         }
 
         template <typename... Args>
@@ -144,10 +157,17 @@ namespace detail
         static void impl_generic(generic_pointer gen)
         {
             auto* this_ = get_generic_object<class_type*>(gen);
-            set_generic_return<Return>(
-                gen,
-                static_cast<Return>(apply_generic<ArgsTuple>(Fn, this_, gen))
-            );
+            if constexpr(std::is_void_v<Return>)
+            {
+                apply_generic<ArgsTuple>(Fn, this_, gen);
+            }
+            else
+            {
+                set_generic_return<Return>(
+                    gen,
+                    static_cast<Return>(apply_generic<ArgsTuple>(Fn, this_, gen))
+                );
+            }
         }
 
     public:
