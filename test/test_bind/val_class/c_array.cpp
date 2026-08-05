@@ -65,22 +65,24 @@ void register_string_array(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     using std::string;
     using arr_type = string[3];
 
-    asbind20::value_class<arr_type>(engine, "str_arr")
+    asbind20::value_class<arr_type, UseGeneric>(engine, "str_arr")
         .default_constructor()
         .copy_constructor()
         .constructor_function(
             "const string&in val",
             [](arr_type* a, const string& val)
             {
-                new(a) arr_type{{val}, {val}, {"!"}};
+                using namespace std::string_literals;
+                new(a) arr_type{{val}, {val}, {"!"s}};
             }
         )
         .constructor_function(
             "int iv",
             [](arr_type* a, int iv)
             {
+                using namespace std::string_literals;
                 std::string s = std::to_string(iv);
-                new(a) arr_type{{s}, {s}, {"!"}};
+                new(a) arr_type{{s}, {s}, {"!"s}};
             }
         )
         .destructor()
@@ -137,7 +139,7 @@ static void check_int_array(asbind20::engine_pointer engine)
     }
 }
 
-void check_string_array(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
+static void check_string_array(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
     using std::string;
 
@@ -160,8 +162,10 @@ void check_string_array(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     ASSERT_GE(m->Build(), 0);
 
     {
+        SCOPED_TRACE("test0");
+
         auto* f = m->GetFunctionByName("test0");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<std::uint32_t>(ctx, f);
@@ -170,8 +174,10 @@ void check_string_array(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     }
 
     {
+        SCOPED_TRACE("test1");
+
         auto* f = m->GetFunctionByName("test1");
-        ASSERT_NE(f, nullptr);
+        ASSERT_THAT(f, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<std::uint32_t>(ctx, f);
