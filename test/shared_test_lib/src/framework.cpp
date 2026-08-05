@@ -70,8 +70,6 @@ static void message_callback_impl(const AS_NAMESPACE_QUALIFIER asSMessageInfo* m
         break;
     }
 
-#undef ASBIND_TEST_MSG_CALLBACK_WRITE_SRC
-
     if constexpr(PropagateError)
     {
         // Check some critical issues

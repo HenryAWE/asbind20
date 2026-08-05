@@ -2643,8 +2643,7 @@ public:
             detail::deduce_method_callconv<Class, decltype(Comparator)>();
         static_assert(
             check_opCmp_sig<decltype(Comparator), conv>(),
-            "Invalid signature for opCmp: the comparator must return int "
-            "and compare the registered class type, e.g. int f(const Class& lhs, const Class& rhs)"
+            "Invalid signature for opCmp"
         );
         int r = this->register_method(
             this->decl_opCmp(),

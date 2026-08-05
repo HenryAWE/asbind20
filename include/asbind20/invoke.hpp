@@ -1005,6 +1005,13 @@ public:
             (void)m_func->AddRef();
     }
 
+    /**
+     * @brief Assign a function object. It @b won't increase the reference count!
+     *
+     * @warning DON'T use this constructor unless you know what you are doing!
+     *          The ownership of the passed function object is transferred to
+     *          this wrapper, which will release it on destruction.
+     */
     script_function(std::in_place_t, handle_type func) noexcept
         : m_func(func) {}
 
@@ -1106,6 +1113,14 @@ public:
 
     explicit script_function(handle_type func)
         : my_base(func) {}
+
+    /**
+     * @brief Assign a function object. It @b won't increase the reference count!
+     *
+     * @warning DON'T use this constructor unless you know what you are doing!
+     *          The ownership of the passed function object is transferred to
+     *          this wrapper, which will release it on destruction.
+     */
     script_function(std::in_place_t, handle_type func) noexcept
         : my_base(std::in_place, func) {}
 
@@ -1251,6 +1266,15 @@ compile_function_result<Signature> compile_function(
     bool add_to_module = false
 );
 
+/**
+ * @brief Result of `compile_function`
+ *
+ * The result owns the compiled script function, i.e., it will release the
+ * function object when destroyed.
+ *
+ * @note The result is move-only. `get()` returns a reference to the owned
+ *       function; keep the result object alive while using it.
+ */
 template <typename Signature>
 class compile_function_result
 {
@@ -1278,6 +1302,7 @@ public:
     compile_function_result() = delete;
 
 private:
+    // Takes ownership of `f` without increasing the reference count
     compile_function_result(function_pointer f, int r) noexcept
         : m_func(std::in_place, f), m_r(r) {}
 
