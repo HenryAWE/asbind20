@@ -27,6 +27,8 @@ Bug fix
 
 - Miscellaneous fix.
 
+- Fix a `set_script_arg` bug when user passing built-in 128-bit integers as argument.
+
 2.0.1
 -----
 
