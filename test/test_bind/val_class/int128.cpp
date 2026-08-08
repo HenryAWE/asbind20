@@ -135,8 +135,6 @@ static void check_int128(asbind20::engine_pointer engine)
         EXPECT_EQ(result.value(), 1013);
     }
 
-    // TODO: Enable this case after generated operators for primitive type are fixed
-#    if 0
     {
         auto* f = m->GetFunctionByName("mod_i128");
         ASSERT_THAT(f, ::testing::NotNull());
@@ -201,7 +199,6 @@ static void check_int128(asbind20::engine_pointer engine)
         ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 42);
     }
-#    endif
 }
 } // namespace test_bind
 

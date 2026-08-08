@@ -626,7 +626,7 @@ template <std::integral T>
 int set_script_arg(
     context_pointer ctx,
     arg_index_type idx,
-    T val
+    const T& val
 )
 {
     constexpr std::size_t int_size = sizeof(std::decay_t<T>);
@@ -641,10 +641,8 @@ int set_script_arg(
         return ctx->SetArgQWord(idx, val);
     else
     {
-        void* addr = ctx->GetAddressOfArg(idx);
-        ASBIND20_ASSERT(addr != nullptr);
-        new(addr) T(val);
-        return AS_NAMESPACE_QUALIFIER asSUCCESS;
+        // Built-in (u)int128
+        return ctx->SetArgObject(idx, (void*)std::addressof(val));
     }
 }
 

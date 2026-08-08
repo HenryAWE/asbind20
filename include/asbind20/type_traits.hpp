@@ -41,7 +41,7 @@ template <std::integral T>
 int set_script_arg(
     context_pointer ctx,
     arg_index_type idx,
-    T val
+    const T& val
 );
 
 /**
