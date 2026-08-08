@@ -1252,7 +1252,7 @@ protected:
         return get_engine()->RegisterObjectMethod(
             m_name.c_str(),
             decl.c_str(),
-            detail::to_asSFuncPtr(fn),
+            to_asSFuncPtr(fn),
             conv,
             aux
         );
@@ -1270,7 +1270,7 @@ protected:
         return get_engine()->RegisterObjectMethod(
             m_name.c_str(),
             decl.c_str(),
-            detail::to_asSFuncPtr(fn),
+            to_asSFuncPtr(fn),
             conv,
             aux,
             static_cast<int>(comp.get_offset()),
@@ -1291,7 +1291,7 @@ protected:
             m_name.c_str(),
             beh,
             decl.c_str(),
-            detail::to_asSFuncPtr(fn),
+            to_asSFuncPtr(fn),
             conv,
             aux
         );

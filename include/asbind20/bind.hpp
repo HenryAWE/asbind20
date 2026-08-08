@@ -354,7 +354,7 @@ int set_message_callback(
     if(!engine) [[unlikely]]
         return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
     return engine->SetMessageCallback(
-        detail::to_asSFuncPtr(fn),
+        to_asSFuncPtr(fn),
         obj,
         detail::deduce_function_callconv<Callback>()
     );
@@ -385,7 +385,7 @@ int set_message_callback(
     if(!engine) [[unlikely]]
         return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
     return engine->SetMessageCallback(
-        detail::to_asSFuncPtr(fn),
+        to_asSFuncPtr(fn),
         aux.get_address(),
         AS_NAMESPACE_QUALIFIER asCALL_THISCALL
     );
@@ -426,7 +426,7 @@ int set_exception_translator(
     if(!engine) [[unlikely]]
         return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
     return engine->SetTranslateAppExceptionCallback(
-        detail::to_asSFuncPtr(fn),
+        to_asSFuncPtr(fn),
         obj,
         detail::deduce_function_callconv<Callback>()
     );
@@ -457,7 +457,7 @@ int set_exception_translator(
     if(!engine) [[unlikely]]
         return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
     return engine->SetTranslateAppExceptionCallback(
-        detail::to_asSFuncPtr(fn),
+        to_asSFuncPtr(fn),
         aux.get_address(),
         AS_NAMESPACE_QUALIFIER asCALL_THISCALL
     );

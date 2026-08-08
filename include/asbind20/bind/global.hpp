@@ -31,7 +31,7 @@ class global final : public binding_generator_interface<ForceGeneric, Listener>
     {
         int r = get_engine()->RegisterGlobalFunction(
             decl.c_str(),
-            detail::to_asSFuncPtr(fn),
+            to_asSFuncPtr(fn),
             conv,
             auxiliary
         );

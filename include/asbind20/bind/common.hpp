@@ -50,6 +50,26 @@ inline constexpr obj_loc_t<ObjFirst> obj_loc;
 inline constexpr obj_loc_t<true> objfirst{};
 inline constexpr obj_loc_t<false> objlast{};
 
+/**
+ * @brief Convert a (member) function pointer to script function
+ */
+template <typename Func>
+internal_func_type to_asSFuncPtr(Func f)
+{
+    static_assert(
+        std::is_member_function_pointer_v<Func> ||
+        std::is_function_v<Func> ||
+        std::is_function_v<std::remove_pointer_t<Func>>,
+        "Requires function or member function"
+    );
+
+    // Reference: asFUNCTION and asMETHOD from the AngelScript interface
+    if constexpr(std::is_member_function_pointer_v<Func>)
+        return AS_NAMESPACE_QUALIFIER asSMethodPtr<sizeof(f)>::Convert(f);
+    else
+        return AS_NAMESPACE_QUALIFIER asFunctionPtr(f);
+}
+
 namespace detail
 {
     template <bool ObjFirst>
@@ -67,17 +87,6 @@ namespace detail
                        AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJLAST :
                        AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST;
         }
-    }
-
-    template <typename Func>
-    auto to_asSFuncPtr(Func f)
-        -> AS_NAMESPACE_QUALIFIER asSFuncPtr
-    {
-        // Reference: asFUNCTION and asMETHOD from the AngelScript interface
-        if constexpr(std::is_member_function_pointer_v<Func>)
-            return AS_NAMESPACE_QUALIFIER asSMethodPtr<sizeof(f)>::Convert(f);
-        else
-            return AS_NAMESPACE_QUALIFIER asFunctionPtr(f);
     }
 
     template <typename FuncSig>
