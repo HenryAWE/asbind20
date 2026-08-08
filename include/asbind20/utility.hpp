@@ -1030,16 +1030,15 @@ constexpr std::string_view static_enum_name() noexcept
 }
 
 [[nodiscard]]
-inline auto get_default_factory(const_typeinfo_pointer ti)
-    -> function_pointer
+inline function_pointer get_default_factory(const_typeinfo_pointer ti)
 {
     if(!ti) [[unlikely]]
         return nullptr;
 
-    for(AS_NAMESPACE_QUALIFIER asUINT i = 0; i < ti->GetFactoryCount(); ++i)
+    const AS_NAMESPACE_QUALIFIER asUINT count = ti->GetFactoryCount();
+    for(AS_NAMESPACE_QUALIFIER asUINT i = 0; i < count; ++i)
     {
-        function_pointer func =
-            ti->GetFactoryByIndex(i);
+        function_pointer func = ti->GetFactoryByIndex(i);
         if(func->GetParamCount() == 0)
             return func;
     }
@@ -1048,17 +1047,16 @@ inline auto get_default_factory(const_typeinfo_pointer ti)
 }
 
 [[nodiscard]]
-inline auto get_default_constructor(const_typeinfo_pointer ti)
-    -> function_pointer
+inline function_pointer get_default_constructor(const_typeinfo_pointer ti)
 {
     if(!ti) [[unlikely]]
         return nullptr;
 
-    for(AS_NAMESPACE_QUALIFIER asUINT i = 0; i < ti->GetBehaviourCount(); ++i)
+    const AS_NAMESPACE_QUALIFIER asUINT count = ti->GetBehaviourCount();
+    for(AS_NAMESPACE_QUALIFIER asUINT i = 0; i < count; ++i)
     {
         AS_NAMESPACE_QUALIFIER asEBehaviours beh;
-        function_pointer func =
-            ti->GetBehaviourByIndex(i, &beh);
+        function_pointer func = ti->GetBehaviourByIndex(i, &beh);
         if(beh == AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT)
         {
             if(func->GetParamCount() == 0)
@@ -1072,11 +1070,11 @@ inline auto get_default_constructor(const_typeinfo_pointer ti)
 [[nodiscard]]
 inline function_pointer get_weakref_flag(const_typeinfo_reference ti)
 {
-    for(AS_NAMESPACE_QUALIFIER asUINT i = 0; i < ti.GetBehaviourCount(); ++i)
+    const AS_NAMESPACE_QUALIFIER asUINT count = ti.GetBehaviourCount();
+    for(AS_NAMESPACE_QUALIFIER asUINT i = 0; i < count; ++i)
     {
         AS_NAMESPACE_QUALIFIER asEBehaviours beh;
-        function_pointer func =
-            ti.GetBehaviourByIndex(i, &beh);
+        function_pointer func = ti.GetBehaviourByIndex(i, &beh);
         if(beh == AS_NAMESPACE_QUALIFIER asBEHAVE_GET_WEAKREF_FLAG)
         {
             if(func->GetParamCount() == 0)
@@ -1096,7 +1094,7 @@ inline function_pointer get_weakref_flag(const_typeinfo_pointer ti)
 }
 
 [[nodiscard]]
-inline int translate_three_way(std::weak_ordering ord) noexcept
+constexpr int translate_three_way(std::weak_ordering ord) noexcept
 {
     if(ord == std::weak_ordering::less)
         return -1;
@@ -1106,7 +1104,7 @@ inline int translate_three_way(std::weak_ordering ord) noexcept
 }
 
 [[nodiscard]]
-inline std::strong_ordering translate_opCmp(int cmp) noexcept
+constexpr std::strong_ordering translate_opCmp(int cmp) noexcept
 {
     return cmp <=> 0;
 }
