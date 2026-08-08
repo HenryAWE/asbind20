@@ -6,7 +6,7 @@ TEST(Compare, EmptyClass)
     using namespace asbind20;
 
     auto engine = make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
     auto* m = asbind20::create_module(engine, "foo");
     m->AddScriptSection(
         "foo",
@@ -40,7 +40,7 @@ TEST(Compare, ScriptClassEq)
     using namespace asbind20;
 
     auto engine = make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
     auto* m = asbind20::create_module(engine, "foo");
     m->AddScriptSection(
         "foo",
@@ -138,7 +138,7 @@ TEST(Compare, ScriptClassCmp)
     using namespace asbind20;
 
     auto engine = make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
     auto* m = asbind20::create_module(engine, "foo");
     m->AddScriptSection(
         "foo",

@@ -17,22 +17,21 @@
 #include "../generic.hpp"
 
 namespace asbind20::detail
-{ // All contents in this file should NOT be directly used by user code
+{ // All contents in this section should NOT be directly used by user code
 
+// Generate an index of script argument.
+// For example, given var_type<1> and
+// RawArgCount = 4, which can be (float, void*, int, float) in C++,
+// the result should be {0, 1, 1, 2}, which means (float, ?&in, float) in the AS.
 template <std::size_t RawArgCount, std::size_t... Is>
 consteval auto gen_script_arg_idx(var_type_t<Is...> = {})
 {
-    // Generate an index of script argument.
-    // For example, given var_type<1> and
-    // RawArgCount = 4, which can be (float, void*, int, float) in C++,
-    // the result should be {0, 1, 1, 2}, which means (float, ?&in, float) in the AS.
-
     static_assert(RawArgCount >= sizeof...(Is), "Invalid argument count");
 
     constexpr std::size_t script_arg_count = RawArgCount - sizeof...(Is);
     constexpr std::size_t var_type_pos[]{Is...};
 
-    std::array<std::size_t, RawArgCount> tmp{}; // result
+    std::array<std::size_t, RawArgCount> result{};
     std::size_t current_arg_pos = 0;
     std::size_t j = 0; // index for tmp
     std::size_t k = 0; // index for var_type_pos
@@ -41,15 +40,15 @@ consteval auto gen_script_arg_idx(var_type_t<Is...> = {})
         if(k < sizeof...(Is) && i == var_type_pos[k])
         {
             ++k;
-            tmp[j++] = current_arg_pos;
-            tmp[j++] = current_arg_pos++;
+            result[j++] = current_arg_pos;
+            result[j++] = current_arg_pos++;
             continue;
         }
 
-        tmp[j++] = current_arg_pos++;
+        result[j++] = current_arg_pos++;
     }
 
-    return tmp;
+    return result;
 }
 
 template <typename T> // unused
@@ -215,7 +214,7 @@ using var_type_tag = std::bool_constant<var_type_tag_helper(VarType{}, RawIdx)>;
 
 template <
     noncapturing_native_lambda Lambda,
-    AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalConv>
+    call_conv_type OriginalConv>
 requires(OriginalConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
 class generic_wrapper_lambda
 {
@@ -281,7 +280,7 @@ public:
 
 template <
     native_function auto Function,
-    AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalConv>
+    call_conv_type OriginalConv>
 requires(OriginalConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
 class generic_wrapper_nontype
 {
@@ -423,32 +422,19 @@ public:
 
 template <
     noncapturing_native_lambda Lambda,
-    AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv,
+    call_conv_type OriginalCallConv,
     std::size_t... Is>
 consteval generic_function lambda_to_asGENFUNC_t_impl()
 {
-#ifndef _MSC_VER
     if constexpr(sizeof...(Is))
         return generic_wrapper_lambda<Lambda, OriginalCallConv>::generate(var_type<Is...>);
     else
         return generic_wrapper_lambda<Lambda, OriginalCallConv>::generate();
-
-#else
-    // GCC < 13.2 has problem on this branch,
-    // but MSVC has problem on the previous branch.
-    // Clang supports both branches.
-
-    if constexpr(sizeof...(Is))
-        return generic_wrapper_nontype<+Lambda{}, OriginalCallConv>::generate(var_type<Is...>);
-    else
-        return generic_wrapper_nontype<+Lambda{}, OriginalCallConv>::generate();
-
-#endif
 }
 
 template <
     native_function auto Function,
-    AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv,
+    call_conv_type OriginalCallConv,
     std::size_t... Is>
 constexpr generic_function fp_to_asGENFUNC_t_impl()
 {
@@ -569,7 +555,7 @@ constexpr generic_function fp_to_asGENFUNC_t_impl_comp()
 
 template <
     noncapturing_native_lambda Lambda,
-    AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv>
+    call_conv_type OriginalCallConv>
 requires(OriginalCallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
 consteval generic_function to_asGENFUNC_t(const Lambda&, call_conv_t<OriginalCallConv>)
 {
@@ -578,7 +564,7 @@ consteval generic_function to_asGENFUNC_t(const Lambda&, call_conv_t<OriginalCal
 
 template <
     native_function auto Function,
-    AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv>
+    call_conv_type OriginalCallConv>
 requires(OriginalCallConv != AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
 consteval generic_function to_asGENFUNC_t(fp_wrapper<Function>, call_conv_t<OriginalCallConv>)
 {
@@ -587,7 +573,7 @@ consteval generic_function to_asGENFUNC_t(fp_wrapper<Function>, call_conv_t<Orig
 
 template <
     noncapturing_native_lambda Lambda,
-    AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv,
+    call_conv_type OriginalCallConv,
     std::size_t... Is>
 consteval generic_function to_asGENFUNC_t(const Lambda&, call_conv_t<OriginalCallConv>, var_type_t<Is...>)
 {
@@ -596,7 +582,7 @@ consteval generic_function to_asGENFUNC_t(const Lambda&, call_conv_t<OriginalCal
 
 template <
     native_function auto Function,
-    AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv,
+    call_conv_type OriginalCallConv,
     std::size_t... Is>
 consteval generic_function to_asGENFUNC_t(fp_wrapper<Function>, call_conv_t<OriginalCallConv>, var_type_t<Is...>)
 {
@@ -633,7 +619,7 @@ template <
     native_function auto ConstructorFunc,
     typename Class,
     bool Template,
-    AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv>
+    call_conv_type OriginalCallConv>
 class generic_wrapper_ctor_func
 {
     using native_function_type = std::decay_t<decltype(ConstructorFunc)>;
@@ -721,7 +707,7 @@ template <
     typename ConstructorLambda,
     typename Class,
     bool Template,
-    AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv>
+    call_conv_type OriginalCallConv>
 class generic_wrapper_ctor_lambda
 {
     using native_function_type = std::decay_t<decltype(+ConstructorLambda{})>;
@@ -809,7 +795,7 @@ template <
     typename Class,
     bool IsTemplate,
     native_function auto ConstructorFunc,
-    AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    call_conv_type CallConv>
 requires(
     CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
     CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
@@ -831,7 +817,7 @@ template <
     typename Class,
     bool IsTemplate,
     noncapturing_native_lambda ConstructorLambda,
-    AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    call_conv_type CallConv>
 requires(
     CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
     CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
@@ -853,7 +839,7 @@ template <
     native_function auto ListConstructorFunc,
     typename Class,
     bool IsTemplate,
-    AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv>
+    call_conv_type OriginalCallConv>
 class generic_wrapper_list_ctor
 {
     // FIXME: Handle IsTemplate
@@ -901,7 +887,7 @@ template <
     typename Class,
     bool IsTemplate,
     native_function auto ListConstructorFunc,
-    AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    call_conv_type CallConv>
 requires(
     CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
     CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
@@ -926,7 +912,7 @@ constexpr auto list_constructor_to_asGENFUNC_t(
 template <
     native_function auto FactoryFunc,
     bool Template,
-    AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv>
+    call_conv_type OriginalCallConv>
 class generic_wrapper_factory_aux
 {
     using traits = function_traits<decltype(FactoryFunc)>;
@@ -1047,7 +1033,7 @@ public:
 template <
     bool IsTemplate,
     auto AuxFactoryFunc,
-    AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+    call_conv_type CallConv>
 requires(
     CallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL ||
     CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
@@ -1070,7 +1056,7 @@ template <
     typename Auxiliary,
     native_function auto ListFactoryFunc,
     bool IsTemplate,
-    AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv>
+    call_conv_type OriginalCallConv>
 requires(
     OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL ||
     OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
@@ -1083,7 +1069,7 @@ template <
     typename Class,
     typename Auxiliary,
     native_function auto ListFactoryFunc,
-    AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv>
+    call_conv_type OriginalCallConv>
 class list_factory_func<Class, Auxiliary, ListFactoryFunc, false, OriginalCallConv>
 {
     using traits = function_traits<std::decay_t<decltype(ListFactoryFunc)>>;
@@ -1142,7 +1128,7 @@ template <
     typename Class,
     typename Auxiliary,
     native_function auto ListFactoryFunc,
-    AS_NAMESPACE_QUALIFIER asECallConvTypes OriginalCallConv>
+    call_conv_type OriginalCallConv>
 class list_factory_func<Class, Auxiliary, ListFactoryFunc, true, OriginalCallConv>
 {
     using traits = function_traits<std::decay_t<decltype(ListFactoryFunc)>>;

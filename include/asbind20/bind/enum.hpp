@@ -49,12 +49,24 @@ public:
         register_enum_type(m_name, get_underlying_name());
     }
 
+    enum_(engine_reference engine, std::string name)
+        : enum_(std::addressof(engine), std::move(name)) {}
+
     template <bool AppendOnly>
     enum_(appending_t<AppendOnly>, engine_pointer engine, std::string name)
         : my_base(engine), m_name(std::move(name))
     {
         append_to_enum(AppendOnly, m_name);
     }
+
+    template <bool AppendOnly>
+    enum_(appending_t<AppendOnly>, engine_reference engine, std::string name)
+        : enum_(
+              appending_t<AppendOnly>{},
+              std::addressof(engine),
+              std::move(name)
+          )
+    {}
 
     template <string_like StringLike>
     enum_(engine_pointer engine, StringLike&& name)
@@ -64,12 +76,29 @@ public:
           )
     {}
 
+    template <string_like StringLike>
+    enum_(engine_reference engine, StringLike&& name)
+        : enum_(
+              std::addressof(engine),
+              std::forward<StringLike>(name)
+          )
+    {}
+
     template <bool AppendOnly, string_like StringLike>
     enum_(appending_t<AppendOnly>, engine_pointer engine, StringLike&& name)
         : enum_(
               appending_t<AppendOnly>{},
               engine,
               util::string_like_to_string(std::forward<StringLike>(name))
+          )
+    {}
+
+    template <bool AppendOnly, string_like StringLike>
+    enum_(appending_t<AppendOnly>, engine_reference engine, StringLike&& name)
+        : enum_(
+              appending_t<AppendOnly>{},
+              std::addressof(engine),
+              std::forward<StringLike>(name)
           )
     {}
 

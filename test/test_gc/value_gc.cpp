@@ -191,14 +191,14 @@ namespace test_gc
 template <bool UseGeneric>
 class basic_value_gc_test : public ::testing::Test
 {
-public:
+protected:
     void SetUp() override
     {
         if constexpr(!UseGeneric)
             ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
         m_engine = asbind20::make_script_engine();
-        asbind_test::setup_message_callback(m_engine, true);
+        asbind_test::setup_message_callback(m_engine);
 
         asbind_test::setup_script_assertion(m_engine);
         register_val_gc<UseGeneric>(m_engine);
@@ -210,20 +210,18 @@ public:
                 {
                     auto* ctx = asbind20::current_context();
                     ASSERT_THAT(ctx, ::testing::NotNull());
+                    auto* engine = ctx->GetEngine();
+                    ASSERT_THAT(engine, ::testing::NotNull());
 
                     auto* f = ctx->GetFunction();
                     const char* section = "(null)";
                     int line = ctx->GetLineNumber(0, nullptr, &section);
-                    std::cerr
+                    GTEST_LOG_(INFO)
                         << '['
                         << section << ':' << line
                         << " (" << f->GetName()
-                        << ")] ";
-                    asbind_test::output_gc_statistics(
-                        std::cerr,
-                        ctx->GetEngine(),
-                        ';'
-                    );
+                        << ")] "
+                        << asbind20::debugging::get_gc_statistics(engine).description();
                 }
             );
     }
@@ -233,14 +231,16 @@ public:
         m_engine.reset();
     }
 
+public:
+    [[nodiscard]]
     asbind20::engine_pointer get_engine() const noexcept
     {
         return m_engine.get();
     }
 
-    void run_script()
+    void run_script() const
     {
-        auto* m = asbind20::create_module(m_engine, "optional_gc_test");
+        auto* m = asbind20::create_module(m_engine, "value_gc_test");
 
         m->AddScriptSection(
             "optional_gc_test_script",
@@ -266,10 +266,14 @@ public:
             EXPECT_TRUE(result.value());
         }
 
-        std::cerr << "After tests: ";
-        asbind_test::output_gc_statistics(
-            std::cerr, m_engine, ';'
-        );
+        {
+            auto collected = asbind20::debugging::get_gc_statistics(m_engine);
+            auto [curr_size, total_destroyed, total_detected, new_obj, total_new_destroyed] =
+                collected;
+
+            EXPECT_GT(curr_size, 0)
+                << "GC stat: " << collected.description();
+        }
 
         m_engine->GarbageCollect(AS_NAMESPACE_QUALIFIER asGC_FULL_CYCLE);
 
@@ -278,13 +282,9 @@ public:
             auto [curr_size, total_destroyed, total_detected, new_obj, total_new_destroyed] =
                 collected;
 
-            EXPECT_EQ(curr_size, 0);
+            EXPECT_EQ(curr_size, 0)
+                << "GC stat: " << collected.description();
         }
-
-        std::cerr << "Collected: ";
-        asbind_test::output_gc_statistics(
-            std::cerr, m_engine, ';'
-        );
     }
 
 private:

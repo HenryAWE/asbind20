@@ -7,9 +7,7 @@ namespace bench_io
 static auto prepare_module(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
     -> AS_NAMESPACE_QUALIFIER asIScriptModule*
 {
-    auto* m = engine->GetModule(
-        "test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "test");
     m->AddScriptSection(
         "test",
         "int test() { return 42; }"
@@ -118,9 +116,7 @@ static void load_byte_code_sstream(benchmark::State& state)
 
     for(auto&& _ : state)
     {
-        auto* m = engine->GetModule(
-            "test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-        );
+        auto* m = asbind20::create_module(engine, "test");
         std::stringstream ss(s);
         [[maybe_unused]]
         auto result = asbind20::load_byte_code(ss, m);
@@ -144,9 +140,7 @@ static void load_byte_code_sstream_stripped(benchmark::State& state)
 
     for(auto&& _ : state)
     {
-        auto* m = engine->GetModule(
-            "test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-        );
+        auto* m = asbind20::create_module(engine, "test");
         std::stringstream ss(s);
         [[maybe_unused]]
         auto result = asbind20::load_byte_code(ss, m);
@@ -165,9 +159,7 @@ static void load_byte_code_mem(benchmark::State& state)
 
     for(auto&& _ : state)
     {
-        auto* m = engine->GetModule(
-            "test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-        );
+        auto* m = asbind20::create_module(engine, "test");
         [[maybe_unused]]
         auto result = asbind20::load_byte_code(bc.data(), bc.size(), m);
         assert(!result.debug_info_stripped);
@@ -185,9 +177,7 @@ static void load_byte_code_mem_stripped(benchmark::State& state)
 
     for(auto&& _ : state)
     {
-        auto* m = engine->GetModule(
-            "test", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-        );
+        auto* m = asbind20::create_module(engine, "test");
         [[maybe_unused]]
         auto result = asbind20::load_byte_code(bc.data(), bc.size(), m);
         assert(result.debug_info_stripped);

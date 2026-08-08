@@ -25,13 +25,13 @@ class global final : public binding_generator_interface<ForceGeneric, Listener>
     void register_function(
         cstring_ref decl,
         Fn&& fn,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes conv,
+        detail::call_conv_type conv,
         void* auxiliary = nullptr
     )
     {
         int r = get_engine()->RegisterGlobalFunction(
             decl.c_str(),
-            detail::to_asSFuncPtr(fn),
+            to_asSFuncPtr(fn),
             conv,
             auxiliary
         );
@@ -45,6 +45,9 @@ public:
     explicit global(engine_pointer engine)
         : my_base(engine) {}
 
+    explicit global(engine_reference engine)
+        : global(std::addressof(engine)) {}
+
     // For keeping consistency with other binding generators
     template <bool AppendOnly>
     global(
@@ -52,6 +55,14 @@ public:
         engine_pointer engine
     )
         : global(engine)
+    {}
+
+    template <bool AppendOnly>
+    global(
+        appending_t<AppendOnly>,
+        engine_reference engine
+    )
+        : global(std::addressof(engine))
     {}
 
     using my_base::get_engine;

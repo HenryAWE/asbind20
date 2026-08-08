@@ -16,6 +16,7 @@
 #include "../meta.hpp"
 #include "../utility.hpp"
 #include "auxiliary.hpp"
+#include "calling_convention.hpp"
 #include "listener.hpp"
 
 namespace asbind20
@@ -49,11 +50,30 @@ inline constexpr obj_loc_t<ObjFirst> obj_loc;
 inline constexpr obj_loc_t<true> objfirst{};
 inline constexpr obj_loc_t<false> objlast{};
 
+/**
+ * @brief Convert a (member) function pointer to script function
+ */
+template <typename Func>
+internal_func_type to_asSFuncPtr(Func f)
+{
+    static_assert(
+        std::is_member_function_pointer_v<Func> ||
+        std::is_function_v<Func> ||
+        std::is_function_v<std::remove_pointer_t<Func>>,
+        "Requires function or member function"
+    );
+
+    // Reference: asFUNCTION and asMETHOD from the AngelScript interface
+    if constexpr(std::is_member_function_pointer_v<Func>)
+        return AS_NAMESPACE_QUALIFIER asSMethodPtr<sizeof(f)>::Convert(f);
+    else
+        return AS_NAMESPACE_QUALIFIER asFunctionPtr(f);
+}
+
 namespace detail
 {
     template <bool ObjFirst>
-    consteval auto conv_of_loc(obj_loc_t<ObjFirst>, bool is_thiscall)
-        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    consteval call_conv_type conv_of_loc(obj_loc_t<ObjFirst>, bool is_thiscall)
     {
         if constexpr(ObjFirst)
         {
@@ -69,20 +89,9 @@ namespace detail
         }
     }
 
-    template <typename Func>
-    auto to_asSFuncPtr(Func f)
-        -> AS_NAMESPACE_QUALIFIER asSFuncPtr
-    {
-        // Reference: asFUNCTION and asMETHOD from the AngelScript interface
-        if constexpr(std::is_member_function_pointer_v<Func>)
-            return AS_NAMESPACE_QUALIFIER asSMethodPtr<sizeof(f)>::Convert(f);
-        else
-            return AS_NAMESPACE_QUALIFIER asFunctionPtr(f);
-    }
-
     template <typename FuncSig>
     requires(!std::is_member_function_pointer_v<FuncSig>)
-    constexpr AS_NAMESPACE_QUALIFIER asECallConvTypes deduce_function_callconv()
+    constexpr call_conv_type deduce_function_callconv()
     {
         static_assert(!std::convertible_to<FuncSig, generic_function>);
 
@@ -121,8 +130,7 @@ namespace detail
                std::same_as<T, const Class&>;
     }
 
-    consteval auto cdecl_method_callconv(std::size_t arg_count, bool obj_first)
-        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    consteval call_conv_type cdecl_method_callconv(std::size_t arg_count, bool obj_first)
     {
         // The AngelScript itself seems to prefer OBJLAST
         // if both calling conventions are available.
@@ -138,8 +146,7 @@ namespace detail
     }
 
     template <typename Class, typename FuncSig, bool TryVoidPtr = false>
-    consteval auto deduce_method_callconv() noexcept
-        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    consteval call_conv_type deduce_method_callconv() noexcept
     {
         if constexpr(std::is_member_function_pointer_v<FuncSig>)
             return AS_NAMESPACE_QUALIFIER asCALL_THISCALL;
@@ -205,8 +212,7 @@ namespace detail
     }
 
     template <AS_NAMESPACE_QUALIFIER asEBehaviours Beh, typename Class, typename FuncSig>
-    consteval auto deduce_beh_callconv() noexcept
-        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    consteval call_conv_type deduce_beh_callconv() noexcept
     {
         if constexpr(
             Beh == AS_NAMESPACE_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK ||
@@ -227,8 +233,7 @@ namespace detail
     }
 
     template <AS_NAMESPACE_QUALIFIER asEBehaviours Beh, typename Class, typename FuncSig, typename Auxiliary>
-    consteval auto deduce_beh_callconv_aux() noexcept
-        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    consteval call_conv_type deduce_beh_callconv_aux() noexcept
     {
         if constexpr(Beh == AS_NAMESPACE_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK)
         {
@@ -274,8 +279,7 @@ namespace detail
     }
 
     template <typename Class, noncapturing_native_lambda Lambda>
-    consteval auto deduce_lambda_callconv()
-        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    consteval call_conv_type deduce_lambda_callconv()
     {
         using function_type = decltype(+std::declval<const Lambda>());
 
@@ -350,10 +354,19 @@ public:
 protected:
     // This base class only holds a reference to the engine.
     // It won't increase the reference count of the engine.
-    explicit engine_ref_holder(engine_pointer engine) noexcept
-        : m_engine(engine)
+    explicit engine_ref_holder(engine_reference engine) noexcept
+        : m_engine(std::addressof(engine))
+    {}
+
+    explicit engine_ref_holder(engine_pointer engine)
     {
+#ifndef ASBIND20_CONFIG_NO_THROW_ON_BAD_BINDING
+        if(!engine) [[unlikely]]
+            detail::throw_<std::invalid_argument>("engine is nullptr");
+#else
         ASBIND20_ASSERT(engine != nullptr);
+#endif
+        m_engine = engine;
     }
 
 private:
@@ -367,7 +380,7 @@ public:
     binding_generator_base(const binding_generator_base&) noexcept(std::is_nothrow_copy_constructible_v<Listener>) = default;
 
 protected:
-    binding_generator_base(engine_pointer engine) noexcept(std::is_nothrow_default_constructible_v<Listener>)
+    binding_generator_base(engine_pointer engine)
         : engine_ref_holder(engine), m_listener() {}
 
     binding_generator_base(engine_pointer engine, const Listener& listener)

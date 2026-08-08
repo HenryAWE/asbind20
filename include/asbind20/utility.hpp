@@ -13,6 +13,7 @@
 #include <cstddef>
 #include <cstring>
 #include <string>
+#include <span>
 #include <utility>
 #include <compare>
 #include <functional>
@@ -873,8 +874,9 @@ class script_init_list_repeat
 {
 public:
     using size_type = AS_NAMESPACE_QUALIFIER asUINT;
+    using raw_buffer_type = void*;
 
-    script_init_list_repeat() = delete;
+    script_init_list_repeat() noexcept = default;
     script_init_list_repeat(const script_init_list_repeat&) noexcept = default;
 
     explicit script_init_list_repeat(std::nullptr_t) = delete;
@@ -882,11 +884,16 @@ public:
     /**
      * @brief Construct from the initialization list buffer
      *
-     * @param list_buf Address of the buffer
+     * @param list_buf Address of the raw buffer. It @b cannot be nullptr!
      */
     explicit script_init_list_repeat(void* list_buf) noexcept
     {
         ASBIND20_ASSERT(list_buf != nullptr);
+
+        // The structure of the buffer:
+        // Header: an asUINT representing list size
+        // Body: sequential data
+
         m_size = *static_cast<size_type*>(list_buf);
         m_data = static_cast<std::byte*>(list_buf) + sizeof(size_type);
     }
@@ -899,15 +906,27 @@ public:
      */
     explicit script_init_list_repeat(
         generic_pointer gen,
-        size_type idx = 0
+        arg_index_type idx = 0
     )
-        : script_init_list_repeat(*(void**)gen->GetAddressOfArg(idx)) {}
+        : script_init_list_repeat(*static_cast<void**>(gen->GetAddressOfArg(idx)))
+    {}
 
     script_init_list_repeat& operator=(const script_init_list_repeat&) noexcept = default;
 
     bool operator==(const script_init_list_repeat& rhs) const noexcept
     {
         return m_data == rhs.data();
+    }
+
+    [[nodiscard]]
+    bool empty() const noexcept
+    {
+        return m_size == 0;
+    }
+
+    explicit operator bool() const noexcept
+    {
+        return m_data != nullptr;
     }
 
     /**
@@ -928,6 +947,12 @@ public:
         return m_data;
     }
 
+    [[nodiscard]]
+    const void* cdata() const noexcept
+    {
+        return m_data;
+    }
+
     /**
      * @brief Revert to raw pointer for forwarding list buffer to another function
      */
@@ -937,9 +962,16 @@ public:
         return static_cast<std::byte*>(m_data) - sizeof(size_type);
     }
 
+    template <typename T>
+    std::span<T> to_span_of() const noexcept
+    {
+        using ptr_t = std::add_pointer_t<T>;
+        return std::span<T>(static_cast<ptr_t>(m_data), m_size);
+    }
+
 private:
-    size_type m_size;
-    void* m_data;
+    size_type m_size = 0;
+    void* m_data = nullptr;
 };
 
 /**
@@ -998,16 +1030,15 @@ constexpr std::string_view static_enum_name() noexcept
 }
 
 [[nodiscard]]
-inline auto get_default_factory(const_typeinfo_pointer ti)
-    -> function_pointer
+inline function_pointer get_default_factory(const_typeinfo_pointer ti)
 {
     if(!ti) [[unlikely]]
         return nullptr;
 
-    for(AS_NAMESPACE_QUALIFIER asUINT i = 0; i < ti->GetFactoryCount(); ++i)
+    const AS_NAMESPACE_QUALIFIER asUINT count = ti->GetFactoryCount();
+    for(AS_NAMESPACE_QUALIFIER asUINT i = 0; i < count; ++i)
     {
-        function_pointer func =
-            ti->GetFactoryByIndex(i);
+        function_pointer func = ti->GetFactoryByIndex(i);
         if(func->GetParamCount() == 0)
             return func;
     }
@@ -1016,17 +1047,16 @@ inline auto get_default_factory(const_typeinfo_pointer ti)
 }
 
 [[nodiscard]]
-inline auto get_default_constructor(const_typeinfo_pointer ti)
-    -> function_pointer
+inline function_pointer get_default_constructor(const_typeinfo_pointer ti)
 {
     if(!ti) [[unlikely]]
         return nullptr;
 
-    for(AS_NAMESPACE_QUALIFIER asUINT i = 0; i < ti->GetBehaviourCount(); ++i)
+    const AS_NAMESPACE_QUALIFIER asUINT count = ti->GetBehaviourCount();
+    for(AS_NAMESPACE_QUALIFIER asUINT i = 0; i < count; ++i)
     {
         AS_NAMESPACE_QUALIFIER asEBehaviours beh;
-        function_pointer func =
-            ti->GetBehaviourByIndex(i, &beh);
+        function_pointer func = ti->GetBehaviourByIndex(i, &beh);
         if(beh == AS_NAMESPACE_QUALIFIER asBEHAVE_CONSTRUCT)
         {
             if(func->GetParamCount() == 0)
@@ -1040,11 +1070,11 @@ inline auto get_default_constructor(const_typeinfo_pointer ti)
 [[nodiscard]]
 inline function_pointer get_weakref_flag(const_typeinfo_reference ti)
 {
-    for(AS_NAMESPACE_QUALIFIER asUINT i = 0; i < ti.GetBehaviourCount(); ++i)
+    const AS_NAMESPACE_QUALIFIER asUINT count = ti.GetBehaviourCount();
+    for(AS_NAMESPACE_QUALIFIER asUINT i = 0; i < count; ++i)
     {
         AS_NAMESPACE_QUALIFIER asEBehaviours beh;
-        function_pointer func =
-            ti.GetBehaviourByIndex(i, &beh);
+        function_pointer func = ti.GetBehaviourByIndex(i, &beh);
         if(beh == AS_NAMESPACE_QUALIFIER asBEHAVE_GET_WEAKREF_FLAG)
         {
             if(func->GetParamCount() == 0)
@@ -1064,7 +1094,7 @@ inline function_pointer get_weakref_flag(const_typeinfo_pointer ti)
 }
 
 [[nodiscard]]
-inline int translate_three_way(std::weak_ordering ord) noexcept
+constexpr int translate_three_way(std::weak_ordering ord) noexcept
 {
     if(ord == std::weak_ordering::less)
         return -1;
@@ -1074,7 +1104,7 @@ inline int translate_three_way(std::weak_ordering ord) noexcept
 }
 
 [[nodiscard]]
-inline std::strong_ordering translate_opCmp(int cmp) noexcept
+constexpr std::strong_ordering translate_opCmp(int cmp) noexcept
 {
     return cmp <=> 0;
 }

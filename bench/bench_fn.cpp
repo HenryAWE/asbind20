@@ -28,9 +28,7 @@ static void setup_small_fn_env(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 
 static auto prepare_small_fn(AS_NAMESPACE_QUALIFIER asIScriptEngine* engine)
 {
-    auto* m = engine->GetModule(
-        "bench_fn", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "bench_fn");
     m->AddScriptSection(
         "bench_fn",
         "int run() { return small_fn(1, 2); }"
@@ -68,9 +66,7 @@ static void script_small_fn(benchmark::State& state)
 
     auto engine = make_script_engine();
 
-    auto* m = engine->GetModule(
-        "bench_fn", AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-    );
+    auto* m = asbind20::create_module(engine, "bench_fn");
     m->AddScriptSection(
         "bench_fn",
         "int small_fn(int a, int b) { return a + b; }\n"

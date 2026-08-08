@@ -81,7 +81,7 @@ TEST(CAPI, Native)
     ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
 
     test_bind::register_c_api_test(engine);
     test_bind::test_c_api(engine);
@@ -90,7 +90,7 @@ TEST(CAPI, Native)
 TEST(CAPI, Generic)
 {
     auto engine = asbind20::make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
 
     test_bind::register_c_api_test(asbind20::use_generic, engine);
     test_bind::test_c_api(engine);

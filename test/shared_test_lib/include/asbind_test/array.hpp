@@ -449,6 +449,7 @@ public:
         }
     };
 
+    [[nodiscard]]
     asbind20::engine_pointer get_engine() const
     {
         return get_type_info()->GetEngine();

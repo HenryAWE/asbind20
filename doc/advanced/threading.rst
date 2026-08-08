@@ -40,9 +40,7 @@ Example code:
 
         auto engine = make_script_engine();
 
-        auto* m = engine->GetModule(
-            "script_multithreading", asGM_ALWAYS_CREATE
-        );
+        auto* m = create_module(engine, "script_multithreading");
         m->AddScriptSection(
             "script_multithreading",
             "int fn(int arg) { return arg * 2; }"

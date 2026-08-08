@@ -8,7 +8,7 @@ TEST(SmallVector, ExceptionSafety)
     using namespace asbind20;
 
     auto engine = make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
     asbind_test::setup_exception_translator(engine);
 
     asbind_test::register_instantly_throw<true>(engine);

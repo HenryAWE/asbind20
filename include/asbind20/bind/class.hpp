@@ -21,16 +21,6 @@ namespace asbind20
 {
 namespace detail
 {
-    // Helper for the `as_iterators` policy
-    template <typename T, typename Fn>
-    decltype(auto) apply_iter_pair(Fn&& fn, script_init_list_repeat list)
-    {
-        T* const start = (T*)list.data();
-        T* const stop = start + list.size();
-
-        return std::invoke(std::forward<Fn>(fn), start, stop);
-    }
-
     // Wrapper generators for special functions like constructor
 
     /**
@@ -112,7 +102,7 @@ namespace detail
         }
 
     public:
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -157,7 +147,7 @@ namespace detail
         }
 
     public:
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -195,7 +185,7 @@ namespace detail
         }
 
     public:
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -213,37 +203,37 @@ namespace detail
     {
         using ex_guard = ctor_ex_guard<ElemType[Size]>;
 
+        static void impl_generic(generic_pointer gen)
+        {
+            auto* ptr = static_cast<ElemType*>(gen->GetObject());
+
+            // Decay to pointer
+            std::decay_t<Arg> src = get_generic_arg<Arg>(gen, 0);
+
+            std::uninitialized_copy_n(src, Size, ptr);
+            ex_guard::destroy_if_ex(ptr);
+        }
+
+        static void impl_native(Arg arg, void* mem)
+        {
+            auto* ptr = static_cast<ElemType*>(mem);
+            // Decay to pointer
+            std::decay_t<Arg> src = arg;
+
+            std::uninitialized_copy_n(src, Size, ptr);
+            ex_guard::destroy_if_ex(ptr);
+        }
+
     public:
         static_assert(std::is_reference_v<Arg>);
 
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
-            {
-                return +[](generic_pointer gen) -> void
-                {
-                    auto* ptr = static_cast<ElemType*>(gen->GetObject());
-
-                    // Decay to pointer
-                    std::decay_t<Arg> src = get_generic_arg<Arg>(gen, 0);
-
-                    std::uninitialized_copy_n(src, Size, ptr);
-                    ex_guard::destroy_if_ex(ptr);
-                };
-            }
+                return &impl_generic;
             else // CallConv == asCALL_CDECL_OBJLAST
-            {
-                return +[](Arg arg, void* mem) -> void
-                {
-                    auto* ptr = static_cast<ElemType*>(mem);
-                    // Decay to pointer
-                    std::decay_t<Arg> src = arg;
-
-                    std::uninitialized_copy_n(src, Size, ptr);
-                    ex_guard::destroy_if_ex(ptr);
-                };
-            }
+                return &impl_native;
         }
     };
 
@@ -267,13 +257,13 @@ namespace detail
                 void* mem = gen->GetObject();
                 new(mem) Class(
                     get_generic_typeinfo(gen),
-                    *(ListElementType**)gen->GetAddressOfArg(1)
+                    *static_cast<ListElementType**>(gen->GetAddressOfArg(1))
                 );
             }
             else
             {
                 void* mem = gen->GetObject();
-                new(mem) Class(*(ListElementType**)gen->GetAddressOfArg(0));
+                new(mem) Class(*static_cast<ListElementType**>(gen->GetAddressOfArg(0)));
             }
         }
 
@@ -292,7 +282,7 @@ namespace detail
         }
 
     public:
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -346,7 +336,7 @@ namespace detail
         }
 
     public:
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -380,7 +370,7 @@ namespace detail
         {
             apply_helper(
                 gen->GetObject(),
-                *(ListElementType**)gen->GetAddressOfArg(0)
+                *static_cast<ListElementType**>(gen->GetAddressOfArg(0))
             );
         }
 
@@ -393,7 +383,7 @@ namespace detail
         static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
         static_assert(!Template, "This policy is invalid for a template class");
 
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -426,23 +416,18 @@ namespace detail
         {
             if constexpr(std::same_as<IListPolicy, policies::as_iterators>)
             {
-                apply_iter_pair<ListElementType>(
-                    [mem](auto start, auto stop)
-                    {
-                        new(mem) Class(start, stop);
-                    },
-                    list
-                );
+                auto sp = list.to_span_of<ListElementType>();
+                new(mem) Class(sp.begin(), sp.end());
             }
             else if constexpr(std::same_as<IListPolicy, policies::pointer_and_size>)
             {
-                new(mem) Class((ListElementType*)list.data(), list.size());
+                new(mem) Class(static_cast<ListElementType*>(list.data()), list.size());
             }
 #ifdef ASBIND20_HAS_CONTAINERS_RANGES
             else if constexpr(std::same_as<IListPolicy, policies::as_from_range>)
             {
-                std::span<ListElementType> rng((ListElementType*)list.data(), list.size());
-                new(mem) Class(std::from_range, rng);
+                auto sp = list.to_span_of<ListElementType>();
+                new(mem) Class(std::from_range, sp);
             }
 #endif
             else if constexpr(
@@ -471,7 +456,7 @@ namespace detail
         static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
         static_assert(!Template, "This policy is invalid for a template class");
 
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -538,7 +523,7 @@ namespace detail
         }
 
     public:
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -566,7 +551,7 @@ namespace detail
 
             [gen]<std::size_t... Is>(std::index_sequence<Is...>)
             {
-                auto* ti = (typeinfo_pointer)gen->GetAuxiliary();
+                auto ti = static_cast<typeinfo_pointer>(gen->GetAuxiliary());
                 auto* ptr = new Class(
                     get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
                         gen, static_cast<arg_index_type>(Is)
@@ -600,7 +585,7 @@ namespace detail
         }
 
     public:
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -664,7 +649,7 @@ namespace detail
         }
 
     public:
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -724,21 +709,21 @@ namespace detail
     {
         static void impl_generic(generic_pointer gen)
         {
+            Class* ptr;
             if constexpr(Template)
             {
-                Class* ptr = new Class(
+                ptr = new Class(
                     get_generic_typeinfo(gen),
-                    *(ListElementType**)gen->GetAddressOfArg(1)
+                    *static_cast<ListElementType**>(gen->GetAddressOfArg(1))
                 );
-                gen->SetReturnAddress(ptr);
             }
             else
             {
-                Class* ptr = new Class(
-                    *(ListElementType**)gen->GetAddressOfArg(0)
+                ptr = new Class(
+                    *static_cast<ListElementType**>(gen->GetAddressOfArg(0))
                 );
-                gen->SetReturnAddress(ptr);
             }
+            gen->SetReturnAddress(ptr);
         }
 
         static Class* impl_cdecl_template(
@@ -754,7 +739,7 @@ namespace detail
         }
 
     public:
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -780,29 +765,27 @@ namespace detail
 
         static void impl_generic(generic_pointer gen)
         {
+            Class* ptr;
             if constexpr(Template)
             {
                 auto* ti = get_generic_typeinfo(gen);
-                auto* ptr = new Class(
-                    ti, *(ListElementType**)gen->GetAddressOfArg(1)
+                ptr = new Class(
+                    ti, *static_cast<ListElementType**>(gen->GetAddressOfArg(1))
                 );
                 notifier::notify_gc_if_necessary(ptr, ti);
-
-                gen->SetReturnAddress(ptr);
             }
             else
             {
-                auto* ptr = new Class(
-                    *(ListElementType**)gen->GetAddressOfArg(0)
+                ptr = new Class(
+                    *static_cast<ListElementType**>(gen->GetAddressOfArg(0))
                 );
 
                 // Expects the typeinfo is passed by auxiliary pointer (see the helper "auxiliary(this_type)")
                 auto* ti = get_generic_auxiliary<typeinfo_pointer>(gen);
                 ASBIND20_ASSERT(ti != nullptr);
                 notifier::notify_gc_if_necessary(ptr, ti);
-
-                gen->SetReturnAddress(ptr);
             }
+            gen->SetReturnAddress(ptr);
         }
 
         static Class* impl_cdecl_template(
@@ -825,7 +808,7 @@ namespace detail
         }
 
     public:
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -863,7 +846,7 @@ namespace detail
 
         static void impl_generic(generic_pointer gen)
         {
-            auto* ptr = apply_helper(*(ListElementType**)gen->GetAddressOfArg(0));
+            auto* ptr = apply_helper(*static_cast<ListElementType**>(gen->GetAddressOfArg(0)));
             if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
             {
                 auto* ti = get_generic_auxiliary<typeinfo_pointer>(gen);
@@ -889,7 +872,7 @@ namespace detail
         static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
         static_assert(!Template, "This policy is invalid for a template class");
 
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -951,7 +934,7 @@ namespace detail
         }
 
     public:
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -999,7 +982,7 @@ namespace detail
         }
 
     public:
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static constexpr auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -1023,17 +1006,12 @@ namespace detail
         {
             if constexpr(std::same_as<IListPolicy, policies::as_iterators>)
             {
-                return apply_iter_pair<ListElementType>(
-                    [](auto start, auto stop) -> Class*
-                    {
-                        return new Class(start, stop);
-                    },
-                    list
-                );
+                auto sp = list.to_span_of<ListElementType>();
+                return new Class(sp.begin(), sp.end());
             }
             else if constexpr(std::same_as<IListPolicy, policies::pointer_and_size>)
             {
-                return new Class((ListElementType*)list.data(), list.size());
+                return new Class(static_cast<ListElementType*>(list.data()), list.size());
             }
 #ifdef ASBIND20_HAS_CONTAINERS_RANGES
             else if constexpr(std::same_as<IListPolicy, policies::as_from_range>)
@@ -1049,6 +1027,8 @@ namespace detail
             {
                 return new Class(IListPolicy::template convert<ListElementType>(list));
             }
+
+            detail::unreachable();
         }
 
         static void impl_generic(generic_pointer gen)
@@ -1057,7 +1037,7 @@ namespace detail
             if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
             {
                 // Expects the typeinfo is passed by auxiliary pointer (see the helper "auxiliary(this_type)")
-                auto* ti = (typeinfo_pointer)gen->GetAuxiliary();
+                auto* ti = static_cast<typeinfo_pointer>(gen->GetAuxiliary());
                 ASBIND20_ASSERT(ti != nullptr);
                 notifier::notify_gc_if_necessary(ptr, ti);
             }
@@ -1081,7 +1061,7 @@ namespace detail
         static_assert(!std::is_void_v<ListElementType>, "Invalid list element type");
         static_assert(!Template, "This policy is invalid for a template class");
 
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -1124,7 +1104,7 @@ namespace detail
         }
 
     public:
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -1138,7 +1118,7 @@ namespace detail
     class opConv
     {
     public:
-        template <AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        template <call_conv_type CallConv>
         static auto generate(call_conv_t<CallConv>) noexcept
         {
             if constexpr(CallConv == AS_NAMESPACE_QUALIFIER asCALL_GENERIC)
@@ -1239,9 +1219,20 @@ protected:
 #ifndef ASBIND20_CONFIG_NO_APPEND_CHECK
         if(flags != 0)
         {
+            // Only the class kind (reference/value, template) must match.
+            // The existing type may carry additional flags from its original
+            // registration, e.g. asOBJ_GC for a reference type.
+            [[maybe_unused]]
+            constexpr flag_type kind_mask =
+                AS_NAMESPACE_QUALIFIER asOBJ_REF |
+                AS_NAMESPACE_QUALIFIER asOBJ_VALUE |
+                AS_NAMESPACE_QUALIFIER asOBJ_TEMPLATE;
+
             [[maybe_unused]]
             const flag_type existing_flags = ti->GetFlags();
-            ASBIND20_ASSERT(existing_flags == flags);
+            ASBIND20_ASSERT(
+                (existing_flags & kind_mask) == (flags & kind_mask)
+            );
         }
 #endif
         if(r > 0) [[likely]]
@@ -1254,14 +1245,14 @@ protected:
     int register_method(
         cstring_ref decl,
         Fn&& fn,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes conv,
+        detail::call_conv_type conv,
         void* aux = nullptr
     )
     {
         return get_engine()->RegisterObjectMethod(
             m_name.c_str(),
             decl.c_str(),
-            detail::to_asSFuncPtr(fn),
+            to_asSFuncPtr(fn),
             conv,
             aux
         );
@@ -1271,7 +1262,7 @@ protected:
     int register_comp_method(
         cstring_ref decl,
         Fn&& fn,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes conv,
+        detail::call_conv_type conv,
         composite_wrapper comp,
         void* aux = nullptr
     )
@@ -1279,7 +1270,7 @@ protected:
         return get_engine()->RegisterObjectMethod(
             m_name.c_str(),
             decl.c_str(),
-            detail::to_asSFuncPtr(fn),
+            to_asSFuncPtr(fn),
             conv,
             aux,
             static_cast<int>(comp.get_offset()),
@@ -1292,7 +1283,7 @@ protected:
         AS_NAMESPACE_QUALIFIER asEBehaviours beh,
         cstring_ref decl,
         Fn&& fn,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes conv,
+        detail::call_conv_type conv,
         void* aux = nullptr
     )
     {
@@ -1300,7 +1291,7 @@ protected:
             m_name.c_str(),
             beh,
             decl.c_str(),
-            detail::to_asSFuncPtr(fn),
+            to_asSFuncPtr(fn),
             conv,
             aux
         );
@@ -1690,8 +1681,7 @@ protected:
     using my_base::my_base;
 
     template <typename Method>
-    static constexpr auto method_callconv() noexcept
-        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    static constexpr detail::call_conv_type method_callconv() noexcept
     {
         if constexpr(noncapturing_native_lambda<Method>)
             return detail::deduce_lambda_callconv<Class, Method>();
@@ -1700,22 +1690,19 @@ protected:
     }
 
     template <auto Method>
-    static constexpr auto method_callconv() noexcept
-        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    static constexpr detail::call_conv_type method_callconv() noexcept
     {
         return method_callconv<decltype(Method)>();
     }
 
     template <typename Method, typename Auxiliary>
-    static consteval auto method_callconv_aux() noexcept
-        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    static consteval detail::call_conv_type method_callconv_aux() noexcept
     {
         return detail::deduce_method_callconv_aux<Class, Method, Auxiliary>();
     }
 
     template <auto Method, typename Auxiliary>
-    static consteval auto method_callconv_aux() noexcept
-        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    static consteval detail::call_conv_type method_callconv_aux() noexcept
     {
         return method_callconv_aux<decltype(Method), Auxiliary>();
     }
@@ -1724,7 +1711,7 @@ private:
     template <typename Fn>
     void register_temp_cb(
         Fn&& fn,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes conv,
+        detail::call_conv_type conv,
         void* aux = nullptr
     )
     {
@@ -1740,8 +1727,7 @@ private:
     template <
         typename Fn,
         typename Auxiliary = void>
-    static consteval auto deduce_temp_cb_cc()
-        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    static consteval detail::call_conv_type deduce_temp_cb_cc()
     {
         if constexpr(std::is_void_v<Auxiliary>)
         {
@@ -1872,6 +1858,7 @@ public:
     }
 
     template <native_function Fn, bool ObjFirst>
+    requires(std::is_member_function_pointer_v<Fn>)
     Derived& method(
         cstring_ref decl,
         Fn&& fn,
@@ -2284,12 +2271,13 @@ public:
         composite_wrapper comp
     ) requires(!ForceGeneric)
     {
-        this->register_comp_method(
+        int r = this->register_comp_method(
             decl,
             fn,
             detail::cc<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>,
             comp
         );
+        listener_traits_type::on_method(get_listener(), derived(), r);
         return derived();
     }
 
@@ -2602,12 +2590,45 @@ public:
 private:
     template <
         typename Fn,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        detail::call_conv_type CallConv>
     static consteval bool check_opCmp_sig()
     {
 #ifndef ASBIND20_CONFIG_NO_COMPILE_TIME_CHECKS
-        // TODO: Complete this
-        return true;
+        using traits = function_traits<Fn>;
+
+        // The script declaration of opCmp is "int opCmp(const T&in) const",
+        // so the comparator must return int.
+        if constexpr(!std::same_as<std::remove_cv_t<typename traits::return_type>, int>)
+            return false;
+        else if constexpr(
+            CallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL ||
+            CallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL
+        )
+        {
+            // Member comparator: int (Class::*)(const Class&) [const]
+            return std::same_as<typename traits::class_type, Class> &&
+                   traits::arg_count_v == 1 &&
+                   detail::is_this_arg<typename traits::template arg_type<0>, Class>(false);
+        }
+        else if constexpr(
+            CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
+            CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
+        )
+        {
+            // Free comparator: int f(const Class& lhs, const Class& rhs)
+            // or with the object as the last parameter.
+            if constexpr(traits::arg_count_v != 2)
+                return false;
+            else
+            {
+                using first_arg_t = typename traits::template arg_type<0>;
+                using last_arg_t = typename traits::template arg_type<1>;
+                return detail::is_this_arg<first_arg_t, Class>(false) &&
+                       detail::is_this_arg<last_arg_t, Class>(false);
+            }
+        }
+        else
+            return false;
 
 #else
         return true;
@@ -2618,7 +2639,8 @@ public:
     template <auto Comparator>
     Derived& opCmp(use_generic_t, fp_wrapper<Comparator>)
     {
-        constexpr auto conv = detail::deduce_method_callconv<Class, Comparator>();
+        constexpr auto conv =
+            detail::deduce_method_callconv<Class, decltype(Comparator)>();
         static_assert(
             check_opCmp_sig<decltype(Comparator), conv>(),
             "Invalid signature for opCmp"
@@ -2641,7 +2663,8 @@ public:
             this->opCmp(use_generic, fp<Comparator>);
         else
         {
-            constexpr auto conv = detail::deduce_method_callconv<Class, Comparator>();
+            constexpr auto conv =
+                detail::deduce_method_callconv<Class, decltype(Comparator)>();
             static_assert(
                 check_opCmp_sig<decltype(Comparator), conv>(),
                 "Invalid signature for opCmp"
@@ -2844,7 +2867,7 @@ class basic_value_class final :
     using listener_traits_type = listener_traits<Listener>;
 
 public:
-    using flag_type = AS_NAMESPACE_QUALIFIER asQWORD;
+    using flag_type = typename my_base::flag_type;
     using class_type = Class;
     using class_binding_generator_tag = void;
 
@@ -2877,15 +2900,37 @@ public:
         );
     }
 
+    basic_value_class(
+        engine_reference engine,
+        std::string name,
+        flag_type flags = 0
+    )
+        : basic_value_class(
+              std::addressof(engine), std::move(name), flags
+          ) {}
+
     template <string_like StringLike>
     basic_value_class(
         engine_pointer engine,
         StringLike&& name,
-        AS_NAMESPACE_QUALIFIER asQWORD flags = 0
+        flag_type flags = 0
     )
         : basic_value_class(
               engine,
               util::string_like_to_string(std::forward<StringLike>(name)),
+              flags
+          )
+    {}
+
+    template <string_like StringLike>
+    basic_value_class(
+        engine_reference engine,
+        StringLike&& name,
+        flag_type flags = 0
+    )
+        : basic_value_class(
+              std::addressof(engine),
+              std::forward<StringLike>(name),
               flags
           )
     {}
@@ -2899,6 +2944,15 @@ public:
     {
         this->append_type(true, 0, 0);
     }
+
+    basic_value_class(
+        appending_t<true>,
+        engine_reference engine,
+        std::string name
+    )
+        : basic_value_class(
+              appending_t<true>{}, std::addressof(engine), name
+          ) {}
 
     template <string_like StringLike>
     basic_value_class(
@@ -2964,7 +3018,7 @@ private:
         bool explicit_,
         std::string_view params,
         Fn&& fn,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes conv,
+        detail::call_conv_type conv,
         void* aux = nullptr
     )
     {
@@ -3652,7 +3706,7 @@ private:
     template <typename Fn>
     void register_destructor_fn(
         Fn fn,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes conv,
+        detail::call_conv_type conv,
         void* aux = nullptr
     )
     {
@@ -3666,8 +3720,7 @@ private:
     }
 
     template <typename FuncSig, typename Auxiliary = void>
-    static consteval auto deduce_dtor_cc()
-        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    static consteval detail::call_conv_type deduce_dtor_cc()
     {
         if constexpr(std::is_void_v<Auxiliary>)
         {
@@ -3947,7 +4000,7 @@ private:
     void register_list_ctor_func(
         std::string_view pattern,
         Fn&& fn,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes conv,
+        detail::call_conv_type conv,
         void* aux = nullptr
     )
     {
@@ -4172,7 +4225,7 @@ public:
     basic_ref_class(
         engine_pointer engine,
         std::string name,
-        AS_NAMESPACE_QUALIFIER asQWORD flags = 0
+        flag_type flags = 0
     )
         : my_base(engine, std::move(name))
     {
@@ -4196,15 +4249,37 @@ public:
         );
     }
 
+    basic_ref_class(
+        engine_reference engine,
+        std::string name,
+        flag_type flags = 0
+    )
+        : basic_ref_class(
+              std::addressof(engine), std::move(name), flags
+          ) {}
+
     template <string_like StringLike>
     basic_ref_class(
         engine_pointer engine,
         StringLike&& name,
-        AS_NAMESPACE_QUALIFIER asQWORD flags = 0
+        flag_type flags = 0
     )
         : basic_ref_class(
               engine,
               util::string_like_to_string(std::forward<StringLike>(name)),
+              flags
+          )
+    {}
+
+    template <string_like StringLike>
+    basic_ref_class(
+        engine_reference engine,
+        StringLike&& name,
+        flag_type flags = 0
+    )
+        : basic_ref_class(
+              std::addressof(engine),
+              std::forward<StringLike>(name),
               flags
           )
     {}
@@ -4223,6 +4298,17 @@ public:
         this->append_type(AppendOnly, flags, 0);
     }
 
+    template <bool AppendOnly>
+    basic_ref_class(
+        appending_t<AppendOnly>,
+        engine_reference engine,
+        std::string name
+    )
+        : basic_ref_class(
+              appending_t<AppendOnly>{}, std::addressof(engine), std::move(name)
+          )
+    {}
+
     template <bool AppendOnly, string_like StringLike>
     basic_ref_class(
         appending_t<AppendOnly>,
@@ -4233,6 +4319,19 @@ public:
               appending_t<AppendOnly>{},
               engine,
               util::string_like_to_string(std::forward<StringLike>(name))
+          )
+    {}
+
+    template <bool AppendOnly, string_like StringLike>
+    basic_ref_class(
+        appending_t<AppendOnly>,
+        engine_reference engine,
+        StringLike&& name
+    )
+        : basic_ref_class(
+              appending_t<AppendOnly>{},
+              std::addressof(engine),
+              std::forward<StringLike>(name)
           )
     {}
 
@@ -4288,7 +4387,7 @@ private:
         bool explicit_,
         std::string_view params,
         Fn&& fn,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes conv,
+        detail::call_conv_type conv,
         void* aux = nullptr
     )
     {
@@ -4303,8 +4402,7 @@ private:
     }
 
     template <typename FuncSig, typename Auxiliary = void>
-    static consteval auto deduce_factory_cc()
-        -> AS_NAMESPACE_QUALIFIER asECallConvTypes
+    static consteval detail::call_conv_type deduce_factory_cc()
     {
         if constexpr(std::is_void_v<Auxiliary>)
         {
@@ -4932,7 +5030,7 @@ private:
     void register_list_factory_func(
         std::string_view pattern,
         Fn&& fn,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes conv,
+        detail::call_conv_type conv,
         void* aux = nullptr
     )
     {

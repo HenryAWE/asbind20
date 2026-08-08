@@ -70,7 +70,7 @@ public:
 
 class foreach_string_suite : public ::testing::Test
 {
-public:
+protected:
     void SetUp() override
     {
         m_engine = asbind20::make_script_engine();
@@ -81,6 +81,8 @@ public:
         m_engine.reset();
     }
 
+public:
+    [[nodiscard]]
     asbind20::engine_pointer get_engine() const
     {
         return m_engine.get();
@@ -91,7 +93,7 @@ public:
     {
         using namespace asbind20;
 
-        asbind_test::setup_message_callback(m_engine, true);
+        asbind_test::setup_message_callback(m_engine);
         asbind_test::setup_script_string(m_engine, UseGeneric);
 
         value_class<string_generator::iterator, UseGeneric> iter(

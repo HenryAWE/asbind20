@@ -136,7 +136,7 @@ TEST(TestForeach, IntSeqGeneric)
     using namespace asbind20;
 
     auto engine = make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
 
     test_bind::register_int_generator<true, false, true>(engine);
     auto* f = test_bind::prepare_int_seq_test(engine);
@@ -155,7 +155,7 @@ TEST(TestForeach, IntSeqNative)
         GTEST_SKIP() << "AS_MAX_PORTABILITY";
 
     auto engine = make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
 
     test_bind::register_int_generator<true, false, false>(engine);
     auto* f = test_bind::prepare_int_seq_test(engine);
@@ -171,7 +171,7 @@ TEST(TestForeach, IntSeqExplicitGeneric)
     using namespace asbind20;
 
     auto engine = make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
 
     test_bind::register_int_generator<true, true, true>(engine);
     auto* f = test_bind::prepare_int_seq_test(engine);
@@ -190,7 +190,7 @@ TEST(TestForeach, IntSeqExplicitNative)
         GTEST_SKIP() << "AS_MAX_PORTABILITY";
 
     auto engine = make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
 
     test_bind::register_int_generator<true, true, false>(engine);
     auto* f = test_bind::prepare_int_seq_test(engine);

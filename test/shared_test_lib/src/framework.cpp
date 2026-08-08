@@ -1,6 +1,11 @@
 #include <asbind_test/framework.hpp>
 #include <asbind_test/array.hpp>
 
+#ifdef _MSC_VER
+// Unreachable code
+#    pragma warning(disable : 4702)
+#endif
+
 namespace asbind_test
 {
 ::testing::AssertionResult check_context_state(
@@ -15,46 +20,64 @@ namespace asbind_test
            << "state = " << to_string(state);
 }
 
+namespace
+{
+    struct message_output_helper
+    {
+        const AS_NAMESPACE_QUALIFIER asSMessageInfo& msg;
+
+        explicit message_output_helper(const AS_NAMESPACE_QUALIFIER asSMessageInfo& msg)
+            : msg(msg) {}
+
+        friend std::ostream& operator<<(std::ostream& os, const message_output_helper& h)
+        {
+            os
+                << "(" << h.msg.section << ":" << h.msg.row << ":" << h.msg.col << "): "
+                << h.msg.message;
+            return os;
+        }
+    };
+} // namespace
+
 template <bool PropagateError>
 static void message_callback_impl(const AS_NAMESPACE_QUALIFIER asSMessageInfo* msg, void*)
 {
-#define ASBIND_TEST_MSG_CALLBACK_WRITE_SRC(lvl_str) \
-    lvl_str << " (" << msg->section << ":" << msg->row << ":" << msg->col << "): "
-
+    ASSERT_THAT(msg, ::testing::NotNull());
     switch(msg->type)
     {
     case AS_NAMESPACE_QUALIFIER asMSGTYPE_ERROR:
         if constexpr(PropagateError)
         {
             FAIL()
-                << ASBIND_TEST_MSG_CALLBACK_WRITE_SRC("ERROR")
-                << msg->message;
+                << message_output_helper(*msg);
             // FAIL() contains return statement
         }
         else
         {
-            std::cerr
-                << ASBIND_TEST_MSG_CALLBACK_WRITE_SRC("ERROR")
-                << msg->message
-                << std::endl;
+            GTEST_LOG_(ERROR)
+                << message_output_helper(*msg);
             break;
         }
 
     case AS_NAMESPACE_QUALIFIER asMSGTYPE_WARNING:
-        std::cerr
-            << ASBIND_TEST_MSG_CALLBACK_WRITE_SRC("WARNING")
-            << msg->message
-            << std::endl;
+        GTEST_LOG_(INFO)
+            << message_output_helper(*msg);
         break;
 
     case AS_NAMESPACE_QUALIFIER asMSGTYPE_INFORMATION:
-        std::cerr
-            << ASBIND_TEST_MSG_CALLBACK_WRITE_SRC("INFO")
-            << msg->message
-            << std::endl;
+        GTEST_LOG_(INFO)
+            << message_output_helper(*msg);
+        break;
     }
 
-#undef ASBIND_TEST_MSG_CALLBACK_WRITE_SRC
+    if constexpr(PropagateError)
+    {
+        // Check some critical issues
+        ASSERT_THAT(
+            msg->message,
+            ::testing::Not(::testing::HasSubstr("external reference"))
+        ) << "References not released. Possibly a signal of bug!";
+    }
 }
 
 void setup_message_callback(
@@ -144,25 +167,5 @@ void setup_exception_translator(
     asbind20::set_exception_translator(
         engine, &exception_translator_impl
     );
-}
-
-void output_gc_statistics(
-    std::ostream& os,
-    const asbind20::debugging::gc_statistics& stat,
-    char sep
-)
-{
-    os << stat.description(std::string_view(&sep, 1));
-    os << std::endl;
-}
-
-void output_gc_statistics(
-    std::ostream& os,
-    asbind20::engine_pointer engine,
-    char sep
-)
-{
-    auto stat = asbind20::debugging::get_gc_statistics(engine);
-    output_gc_statistics(os, stat, sep);
 }
 } // namespace asbind_test

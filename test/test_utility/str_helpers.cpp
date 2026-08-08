@@ -84,7 +84,7 @@ TEST(SetException, FormatException)
     SCOPED_TRACE(std::format("__cpp_lib_format={}L", __cpp_lib_format));
 
     auto engine = make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
 
     global<true>(engine)
         .function(

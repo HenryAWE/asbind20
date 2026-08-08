@@ -65,6 +65,7 @@ public:
         return c;
     }
 
+protected:
     void SetUp() override
     {
         reset_counters_and_spies();
@@ -72,7 +73,7 @@ public:
         if constexpr(!UseGeneric)
             ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
         engine = asbind20::make_script_engine();
-        asbind_test::setup_message_callback(engine, true);
+        asbind_test::setup_message_callback(engine);
     }
 
     void TearDown() override
@@ -98,6 +99,7 @@ public:
         engine.reset();
     }
 
+public:
     asbind20::script_engine engine;
 
     asbind20::module_pointer compile_module() const

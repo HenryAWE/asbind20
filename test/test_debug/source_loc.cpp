@@ -9,7 +9,7 @@ TEST(SourceLocation, FromFunction)
     using namespace asbind20;
 
     auto engine = make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
 
     auto* m = create_module(engine, "source_loc_from_function");
     m->AddScriptSection(

@@ -30,6 +30,7 @@ namespace detail
 {
     constexpr std::size_t accommodate(std::size_t new_cap, std::size_t current_cap) noexcept
     {
+        // TODO: Check a better way from standard and popular libraries
         // If the new capacity is only slightly larger than the current capacity,
         // make the new capacity two times of the current capacity.
         if(new_cap < current_cap * 2)
@@ -61,6 +62,7 @@ namespace detail
         // it can keep the interface consistent with other types.
         typeinfo_pointer ti;
 
+        [[nodiscard]]
         int get_id() const
         {
             return TypeInfoPolicy::get_type_id(ti);
@@ -79,6 +81,7 @@ namespace detail
         elem_type_data(int tid, typeinfo_pointer t) noexcept
             : type_id(tid), ti(t) {}
 
+        [[nodiscard]]
         int get_id() const
         {
             return type_id;
@@ -171,7 +174,7 @@ private:
 
             void advance(difference_type diff) noexcept
             {
-                if(diff < 0 && difference_type(m_off) + diff < 0) [[unlikely]]
+                if(diff < 0 && static_cast<difference_type>(m_off) + diff < 0) [[unlikely]]
                     m_off = 0; // guard underflow
                 else
                     m_off += diff;
@@ -685,7 +688,7 @@ private:
 
                     engine_pointer engine = subtype_ti->GetEngine();
                     size_type elem_size = subtype_ti->GetSize();
-                    std::byte* p_elem = static_cast<std::byte*>(ilist.data());
+                    auto* p_elem = static_cast<std::byte*>(ilist.data());
                     for(size_type i = 0; i < static_cast<size_type>(ilist.size()); ++i)
                     {
                         *this->m_p_end = engine->CreateScriptObjectCopy(p_elem, subtype_ti);

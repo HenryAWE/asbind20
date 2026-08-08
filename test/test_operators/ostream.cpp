@@ -80,7 +80,7 @@ TEST(TestOperators, OStreamNative)
     ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
     asbind_test::setup_script_string(engine, false);
 
     // Use "static" to guarantee lifetime
@@ -97,7 +97,7 @@ TEST(TestOperators, OStreamGeneric)
     using namespace asbind20;
 
     auto engine = make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
     asbind_test::setup_script_string(engine, true);
 
     // Use "static" to guarantee lifetime

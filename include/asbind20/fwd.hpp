@@ -4,8 +4,8 @@
  * @brief Forward declarations
  */
 
-#ifndef ASBIND20_DETAIL_FWD_HPP
-#define ASBIND20_DETAIL_FWD_HPP
+#ifndef ASBIND20_FWD_HPP
+#define ASBIND20_FWD_HPP
 
 #pragma once
 
@@ -57,6 +57,7 @@ inline namespace script_type
     // Utility aliases
     using generic_function = AS_NAMESPACE_QUALIFIER asGENFUNC_t;
     using arg_index_type = AS_NAMESPACE_QUALIFIER asUINT;
+    using internal_func_type = AS_NAMESPACE_QUALIFIER asSFuncPtr;
 } // namespace script_type
 
 template <typename T>

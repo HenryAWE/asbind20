@@ -3,6 +3,7 @@
 #include <asbind_test/framework.hpp>
 #include <asbind_test/array.hpp>
 #include <asbind_test/assertion.hpp>
+#include <asbind20/debugging/stacktrace.hpp>
 
 namespace test_script_array
 {
@@ -35,7 +36,7 @@ constexpr char helper_module_script[] = R"AngelScript(class script_ipair
 template <bool UseGeneric>
 class basic_array_suite : public ::testing::Test
 {
-public:
+protected:
     void SetUp() override
     {
         using namespace asbind20;
@@ -44,7 +45,7 @@ public:
             ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
         m_engine = make_script_engine();
 
-        asbind_test::setup_message_callback(m_engine, true);
+        asbind_test::setup_message_callback(m_engine);
         asbind_test::setup_exception_translator(m_engine);
         asbind_test::register_instantly_throw<UseGeneric>(m_engine);
         asbind_test::register_throw_on_copy<UseGeneric>(m_engine);
@@ -59,6 +60,8 @@ public:
         m_engine.reset();
     }
 
+public:
+    [[nodiscard]]
     asbind20::engine_pointer get_engine() const
     {
         return m_engine.get();
@@ -67,30 +70,26 @@ public:
 private:
     asbind20::script_engine m_engine;
 
-    void build_helper_module()
+    void build_helper_module() const
     {
-        auto* m = m_engine->GetModule(
-            helper_module_name, AS_NAMESPACE_QUALIFIER asGM_ALWAYS_CREATE
-        );
-        ASSERT_NE(m, nullptr);
+        auto* m = asbind20::create_module(m_engine, helper_module_name);
+        ASSERT_THAT(m, ::testing::NotNull());
         m->AddScriptSection(
             "test_ext_array_helper_module",
             helper_module_script
         );
-        EXPECT_GE(m->Build(), 0);
+        ASSERT_GE(m->Build(), 0);
     }
 };
 
 template <typename Return>
 Return run_string(
     asbind20::engine_pointer engine,
-    const char* section,
+    asbind20::cstring_ref section,
     std::string_view code,
     std::string_view return_decl
 )
 {
-    int r = 0;
-
     std::string func_code = asbind20::string_concat(
         return_decl,
         " test_ext_array(){\n",
@@ -98,33 +97,32 @@ Return run_string(
         "\n;}"
     );
 
-    auto* m = engine->GetModule(
-        helper_module_name, AS_NAMESPACE_QUALIFIER asGM_ONLY_IF_EXISTS
-    );
-    asbind20::function_pointer f = nullptr;
-    r = m->CompileFunction(
+    auto* m = asbind20::get_module(engine, helper_module_name);
+    ASSERT_THAT(m, ::testing::NotNull());
+    auto comp_result = asbind20::compile_function<Return()>(
+        *m,
         section,
-        func_code.c_str(),
-        -1,
-        0, // Not add to module
-        &f
+        func_code,
+        -1
     );
-    if(r < 0)
+    if(!comp_result)
     {
-        ADD_FAILURE() << "Failed to compile section \"" << section << '\"';
+        ADD_FAILURE()
+            << "Failed to compile section " << std::quoted(section.safe_c_str())
+            << ", r = " << asbind20::to_string(comp_result.error());
         std::terminate();
     }
 
-    EXPECT_TRUE(f != nullptr);
+    auto& f = comp_result.get();
     asbind20::request_context ctx(engine);
-    auto result = asbind20::script_invoke<Return>(ctx, f);
-    f->Release();
+    auto result = f(ctx);
 
-    if(result.error() == AS_NAMESPACE_QUALIFIER asEXECUTION_EXCEPTION)
+    if(result.has_uncaught_exception())
     {
         ADD_FAILURE()
-            << "GetExceptionString: " << ctx->GetExceptionString() << '\n'
-            << "section: " << asbind20::debugging::get_function_section_name(ctx->GetExceptionFunction());
+            << "GetExceptionString: " << std::quoted(ctx->GetExceptionString()) << '\n'
+            << "Script stack trace:\n"
+            << asbind20::debugging::stacktrace::current();
     }
 
     return result.value();
@@ -132,7 +130,7 @@ Return run_string(
 
 void run_string(
     asbind20::engine_pointer engine,
-    const char* section,
+    asbind20::cstring_ref section,
     std::string_view code
 );
 } // namespace test_script_array

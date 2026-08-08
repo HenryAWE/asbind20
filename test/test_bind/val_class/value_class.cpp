@@ -452,14 +452,14 @@ static void check_trivial_class(asbind20::engine_pointer engine)
 template <bool UseGeneric>
 class basic_trivial_value_class_suite : public ::testing::Test
 {
-public:
+protected:
     void SetUp() override
     {
         if constexpr(!UseGeneric)
             ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
         m_engine = asbind20::make_script_engine();
-        asbind_test::setup_message_callback(m_engine, true);
+        asbind_test::setup_message_callback(m_engine);
         asbind_test::setup_script_assertion(m_engine);
         if constexpr(UseGeneric)
             register_trivial_value_class(asbind20::use_generic, m_engine);
@@ -472,6 +472,8 @@ public:
         m_engine.reset();
     }
 
+public:
+    [[nodiscard]]
     asbind20::engine_pointer get_engine() const noexcept
     {
         return m_engine.get();
@@ -730,7 +732,7 @@ static void check_friend_ops(asbind20::engine_pointer engine, friend_ops_helper&
 template <bool UseGeneric>
 class basic_friend_ops_suite : public ::testing::Test
 {
-public:
+protected:
     void SetUp() override
     {
         if constexpr(!UseGeneric)
@@ -739,7 +741,7 @@ public:
         m_engine = asbind20::make_script_engine();
         m_helper = friend_ops_helper{};
 
-        asbind_test::setup_message_callback(m_engine, true);
+        asbind_test::setup_message_callback(m_engine);
         asbind_test::setup_script_assertion(m_engine);
         register_friend_ops<UseGeneric>(m_engine, m_helper);
     }
@@ -749,6 +751,8 @@ public:
         m_engine.reset();
     }
 
+public:
+    [[nodiscard]]
     asbind20::engine_pointer get_engine() const noexcept
     {
         return m_engine.get();

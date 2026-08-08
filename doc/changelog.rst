@@ -19,10 +19,15 @@ Update
 
 - Update compatibility across different AngelScript versions, including the 2.39 WIP.
 
+- ``script_element_comparator`` no longer holds ownership of the script functions,
+  avoiding dangling references.
+
 Bug fix
 ~~~~~~~
 
 - Miscellaneous fix.
+
+- Fix a `set_script_arg` bug when user passing built-in 128-bit integers as argument.
 
 2.0.1
 -----

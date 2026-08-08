@@ -16,6 +16,8 @@
 #include "detail/include_as.hpp"
 #include "utility.hpp"
 #include "type_traits.hpp"
+#include "detail/unreachable.hpp"
+
 #ifdef __cpp_lib_expected
 #    define ASBIND20_HAS_EXPECTED __cpp_lib_expected
 #    include <expected>
@@ -96,6 +98,9 @@ decltype(auto) get_script_return(context_pointer ctx)
         else
             static_assert(!sizeof(T), "Invalid type");
     }
+
+    // Suppress warning
+    detail::unreachable();
 }
 
 class bad_script_invoke_result_access : public std::exception
@@ -190,8 +195,7 @@ public:
      * @brief Returns the AngelScript error code of context state
      */
     [[nodiscard]]
-    auto error() const
-        -> AS_NAMESPACE_QUALIFIER asEContextState
+    error_type error() const
     {
         return m_ctx->GetState();
     }
@@ -211,6 +215,12 @@ public:
     explicit operator bool() const noexcept
     {
         return has_value();
+    }
+
+    [[nodiscard]]
+    bool has_uncaught_exception() const noexcept
+    {
+        return m_ctx->GetState() == AS_NAMESPACE_QUALIFIER asEXECUTION_EXCEPTION;
     }
 
     /// @}
@@ -616,7 +626,7 @@ template <std::integral T>
 int set_script_arg(
     context_pointer ctx,
     arg_index_type idx,
-    T val
+    const T& val
 )
 {
     constexpr std::size_t int_size = sizeof(std::decay_t<T>);
@@ -631,10 +641,8 @@ int set_script_arg(
         return ctx->SetArgQWord(idx, val);
     else
     {
-        void* addr = ctx->GetAddressOfArg(idx);
-        ASBIND20_ASSERT(addr != nullptr);
-        new(addr) T(val);
-        return AS_NAMESPACE_QUALIFIER asSUCCESS;
+        // Built-in (u)int128
+        return ctx->SetArgObject(idx, (void*)std::addressof(val));
     }
 }
 
@@ -679,6 +687,9 @@ int set_script_arg(
         return ctx->SetArgDouble(idx, val);
     else
         static_assert(!sizeof(T), "Invalid floating point");
+
+    // Suppress warning
+    detail::unreachable();
 }
 
 inline int set_script_arg(
@@ -888,7 +899,7 @@ public:
     }
 
     result_type operator()(
-        context_pointer ctx, Args&&... args
+        context_pointer ctx, Args... args
     ) const
     {
         handle_type func = target();
@@ -934,9 +945,29 @@ public:
         return m_func;
     }
 
+    explicit operator bool() const noexcept
+    {
+        return m_func != nullptr;
+    }
+
+    bool operator==(const script_method_ref& other) const noexcept
+    {
+        return m_func == other.m_func;
+    }
+
+    friend bool operator==(const script_method_ref& lhs, handle_type rhs) noexcept
+    {
+        return lhs.target() == rhs;
+    }
+
+    friend bool operator==(handle_type lhs, const script_method_ref& rhs) noexcept
+    {
+        return lhs == rhs.target();
+    }
+
     template <script_object_handle Object>
     result_type operator()(
-        context_pointer ctx, Object&& obj, Args&&... args
+        context_pointer ctx, Object&& obj, Args... args
     ) const
     {
         handle_type func = target();
@@ -969,8 +1000,18 @@ public:
         : m_func(func)
     {
         if(m_func)
-            m_func->AddRef();
+            (void)m_func->AddRef();
     }
+
+    /**
+     * @brief Assign a function object. It @b won't increase the reference count!
+     *
+     * @warning DON'T use this constructor unless you know what you are doing!
+     *          The ownership of the passed function object is transferred to
+     *          this wrapper, which will release it on destruction.
+     */
+    script_function(std::in_place_t, handle_type func) noexcept
+        : m_func(func) {}
 
     ~script_function()
     {
@@ -1001,12 +1042,12 @@ public:
 
     bool operator==(script_function const& other) const noexcept = default;
 
-    friend bool operator==(script_function const& lhs, handle_type rhs) noexcept
+    friend bool operator==(const script_function& lhs, handle_type rhs) noexcept
     {
         return lhs.target() == rhs;
     }
 
-    friend bool operator==(handle_type lhs, script_function const& rhs) noexcept
+    friend bool operator==(handle_type lhs, const script_function& rhs) noexcept
     {
         return lhs == rhs.target();
     }
@@ -1030,7 +1071,7 @@ public:
     {
         if(m_func)
         {
-            m_func->Release();
+            (void)m_func->Release();
             m_func = nullptr;
         }
     }
@@ -1038,10 +1079,10 @@ public:
     void reset(handle_type func)
     {
         if(m_func)
-            m_func->Release();
+            (void)m_func->Release();
         m_func = func;
         if(m_func)
-            m_func->AddRef();
+            (void)m_func->AddRef();
     }
 
     void swap(script_function& other) noexcept
@@ -1070,6 +1111,16 @@ public:
 
     explicit script_function(handle_type func)
         : my_base(func) {}
+
+    /**
+     * @brief Assign a function object. It @b won't increase the reference count!
+     *
+     * @warning DON'T use this constructor unless you know what you are doing!
+     *          The ownership of the passed function object is transferred to
+     *          this wrapper, which will release it on destruction.
+     */
+    script_function(std::in_place_t, handle_type func) noexcept
+        : my_base(std::in_place, func) {}
 
     script_function& operator=(const script_function&) = default;
     script_function& operator=(script_function&&) noexcept = default;
@@ -1132,7 +1183,7 @@ public:
         if(!func)
             detail::throw_bad_call();
 
-        return script_invoke<R>(ctx, std::forward<Object>(obj), func, args...);
+        return script_invoke<R>(ctx, std::forward<Object>(obj), func, std::forward<Args>(args)...);
     }
 
     result_type operator()(
@@ -1143,7 +1194,7 @@ public:
         if(!func)
             detail::throw_bad_call();
 
-        return script_invoke<R>(ctx, obj, func, args...);
+        return script_invoke<R>(ctx, obj, func, std::forward<Args>(args)...);
     }
 
     void swap(script_method& other) noexcept
@@ -1174,7 +1225,7 @@ inline script_object instantiate_class(
 )
 {
     if(!class_info) [[unlikely]]
-        return script_object();
+        return {};
 
     function_pointer factory = nullptr;
     if(AS_NAMESPACE_QUALIFIER asQWORD flags = class_info->GetFlags();
@@ -1184,10 +1235,158 @@ inline script_object instantiate_class(
     }
 
     if(!factory) [[unlikely]]
-        return script_object();
+        return {};
 
     auto result = script_invoke<script_object>(ctx, factory);
     return result.has_value() ? *result : script_object();
+}
+
+template <typename Signature>
+class compile_function_result;
+
+template <typename Signature>
+[[nodiscard]]
+compile_function_result<Signature> compile_function(
+    module_reference m,
+    cstring_ref section_name,
+    cstring_ref code,
+    int line_offset = 0,
+    bool add_to_module = false
+);
+
+template <typename Signature>
+[[nodiscard]]
+compile_function_result<Signature> compile_function(
+    module_pointer m,
+    cstring_ref section_name,
+    cstring_ref code,
+    int line_offset = 0,
+    bool add_to_module = false
+);
+
+/**
+ * @brief Result of `compile_function`
+ *
+ * The result owns the compiled script function, i.e., it will release the
+ * function object when destroyed.
+ *
+ * @note The result is move-only. `get()` returns a reference to the owned
+ *       function; keep the result object alive while using it.
+ */
+template <typename Signature>
+class compile_function_result
+{
+    friend compile_function_result<Signature> compile_function<Signature>(
+        module_reference m,
+        cstring_ref section_name,
+        cstring_ref code,
+        int line_offset,
+        bool add_to_module
+    );
+
+    friend compile_function_result<Signature> compile_function<Signature>(
+        module_pointer m,
+        cstring_ref section_name,
+        cstring_ref code,
+        int line_offset,
+        bool add_to_module
+    );
+
+public:
+    using signature_type = Signature;
+    using function_type = script_function<Signature>;
+    using error_type = AS_NAMESPACE_QUALIFIER asERetCodes;
+
+    compile_function_result() = delete;
+
+private:
+    // Takes ownership of `f` without increasing the reference count
+    compile_function_result(function_pointer f, int r) noexcept
+        : m_func(std::in_place, f), m_r(r) {}
+
+public:
+    compile_function_result(compile_function_result&& other) noexcept = default;
+
+    [[nodiscard]]
+    function_type& get() noexcept
+    {
+        return m_func;
+    }
+
+    [[nodiscard]]
+    const function_type& get() const noexcept
+    {
+        return m_func;
+    }
+
+    [[nodiscard]]
+    error_type error() const noexcept
+    {
+        if(m_r >= 0)
+            return AS_NAMESPACE_QUALIFIER asSUCCESS;
+        return static_cast<error_type>(m_r);
+    }
+
+    /**
+     * @brief Get The result of compilation
+     *
+     * @return Negative value on error
+     */
+    [[nodiscard]]
+    int result() const noexcept
+    {
+        return m_r;
+    }
+
+    explicit operator bool() const noexcept
+    {
+        return m_r >= 0;
+    }
+
+private:
+    function_type m_func;
+    int m_r;
+};
+
+template <typename Signature>
+compile_function_result<Signature> compile_function(
+    module_reference m,
+    cstring_ref section_name,
+    cstring_ref code,
+    int line_offset,
+    bool add_to_module
+)
+{
+    function_pointer out = nullptr;
+    int r = m.CompileFunction(
+        section_name.c_str(),
+        code.c_str(),
+        line_offset,
+        add_to_module ?
+            AS_NAMESPACE_QUALIFIER asCOMP_ADD_TO_MODULE :
+            0 /* not add to the module  */,
+        &out
+    );
+
+    return compile_function_result<Signature>(out, r);
+}
+
+template <typename Signature>
+compile_function_result<Signature> compile_function(
+    module_pointer m,
+    cstring_ref section_name,
+    cstring_ref code,
+    int line_offset,
+    bool add_to_module
+)
+{
+    if(!m) [[unlikely]]
+        return compile_function_result<Signature>(
+            nullptr, AS_NAMESPACE_QUALIFIER asINVALID_ARG
+        );
+    return compile_function<Signature>(
+        *m, section_name, code, line_offset, add_to_module
+    );
 }
 } // namespace asbind20
 

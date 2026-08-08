@@ -58,6 +58,7 @@ public:
     asbind20::script_engine engine;
     templ_cb_helper helper;
 
+protected:
     void SetUp() override
     {
         using namespace asbind20;

@@ -88,7 +88,7 @@ TEST(SmallVector, ScriptObjectAsElement)
     using namespace asbind20;
 
     auto engine = make_script_engine();
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
 
     int counter = 0;
     global(engine)
@@ -293,7 +293,7 @@ TEST(SmallVector, ScriptStringAsElement)
     auto engine = make_script_engine();
 
     asbind_test::setup_script_string(engine, true);
-    asbind_test::setup_message_callback(engine, true);
+    asbind_test::setup_message_callback(engine);
 
     asbind20::typeinfo_pointer string_ti = engine->GetTypeInfoByName("string");
     ASSERT_THAT(string_ti, ::testing::NotNull());

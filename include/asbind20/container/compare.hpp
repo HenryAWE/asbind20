@@ -30,8 +30,8 @@ get_comparator_result get_comparator(
 class script_element_comparator
 {
 public:
-    using opEquals_type = script_method<bool(const void*)>;
-    using opCmp_type = script_method<int(const void*)>;
+    using opEquals_type = script_method_ref<bool(const void*)>;
+    using opCmp_type = script_method_ref<int(const void*)>;
 
     script_element_comparator() = default;
     script_element_comparator(const script_element_comparator&) = default;

@@ -132,7 +132,7 @@ public:
 
     template <
         typename Fn,
-        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+        call_conv_type CallConv>
     constexpr bool operator()(
         std::in_place_type_t<Fn>,
         call_conv_t<CallConv>

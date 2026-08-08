@@ -113,7 +113,7 @@ struct as_initializer_list
                 : ptr(p), size(s) {}
         };
 
-        tmp_type tmp((const T*)list.data(), list.size());
+        tmp_type tmp(static_cast<const T*>(list.cdata()), list.size());
 
         return std::bit_cast<std::initializer_list<T>>(tmp);
     }
@@ -150,7 +150,7 @@ struct as_span
     template <typename T>
     static std::span<T> convert(script_init_list_repeat list)
     {
-        return std::span<T>((T*)list.data(), list.size());
+        return std::span<T>(static_cast<T*>(list.data()), list.size());
     }
 };
 
