@@ -15,7 +15,7 @@
 #include <algorithm>
 #include "../utility.hpp"
 #include "../memory.hpp"
-#include "../detail/compressed_pair.hpp"
+#include "../util/compressed_pair.hpp"
 #include "options.hpp"
 
 #ifdef _MSC_VER

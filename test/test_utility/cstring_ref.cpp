@@ -2,7 +2,7 @@
 #include <sstream>
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
-#include <asbind20/detail/strutil.hpp>
+#include <asbind20/util/strutil.hpp>
 
 static_assert(!std::is_constructible_v<asbind20::cstring_ref, std::nullptr_t>);
 static_assert(std::is_constructible_v<asbind20::cstring_ref, const char*>);
@@ -98,6 +98,22 @@ TEST(CStringRef, Output)
 
         EXPECT_THAT(ss.str(), ::testing::IsEmpty());
     }
+
+#ifdef ASBIND20_HAS_LIB_FORMAT
+
+    {
+        cstring_ref csr = "test";
+
+        EXPECT_EQ(std::format("{}", csr), "test");
+    }
+
+    {
+        cstring_ref csr;
+
+        EXPECT_THAT(std::format("{}", csr), ::testing::IsEmpty());
+    }
+
+#endif
 }
 
 TEST(CStringRef, CAPI)
@@ -109,6 +125,7 @@ TEST(CStringRef, CAPI)
         csr.remove_prefix(2);
 
         EXPECT_EQ(std::strlen(csr.c_str()), csr.size());
+        EXPECT_STREQ(csr.c_str(), "st");
         EXPECT_EQ(std::strcmp(csr.c_str(), "st"), 0);
     }
 }

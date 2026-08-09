@@ -4,8 +4,8 @@
  * @brief String utilities
  */
 
-#ifndef ASBIND20_DETAIL_STRUTIL_HPP
-#define ASBIND20_DETAIL_STRUTIL_HPP
+#ifndef ASBIND20_UTIL_STRUTIL_HPP
+#define ASBIND20_UTIL_STRUTIL_HPP
 
 #pragma once
 
@@ -13,7 +13,10 @@
 #include <cassert>
 #include <string>
 #include <string_view>
-#include "config.hpp"
+#include "../detail/config.hpp"
+#ifdef ASBIND20_HAS_LIB_FORMAT
+#    include <format>
+#endif
 
 namespace asbind20
 {
@@ -188,7 +191,8 @@ namespace util
             : internal_data{static_cast<char>(chs)..., '\0'}
         {}
 
-        constexpr fixed_string(const char (&str)[Size + 1])
+        // explicit(false) on purpose
+        constexpr explicit(false) fixed_string(const char (&str)[Size + 1])
         {
             for(size_type i = 0; i < Size; ++i)
             {
@@ -206,21 +210,25 @@ namespace util
             return false;
         }
 
+        [[nodiscard]]
         static constexpr size_type size() noexcept
         {
             return Size;
         };
 
+        [[nodiscard]]
         static constexpr bool empty() noexcept
         {
             return Size == 0;
         }
 
+        [[nodiscard]]
         constexpr const value_type* data() const noexcept
         {
             return internal_data;
         }
 
+        [[nodiscard]]
         constexpr const value_type* c_str() const noexcept
         {
             return data();
@@ -231,6 +239,7 @@ namespace util
             return cstring_ref(c_str());
         }
 
+        [[nodiscard]]
         constexpr std::string_view view() const noexcept
         {
             return std::string_view(data(), size());
@@ -384,7 +393,7 @@ namespace util
         else if constexpr(convertible_to<std::decay_t<type>, const char*>)
         {
             const char* cstr = str;
-            return std::string(cstr);
+            return cstr;
         }
         else
         {
@@ -394,5 +403,31 @@ namespace util
     }
 } // namespace util
 } // namespace asbind20
+
+#ifdef ASBIND20_HAS_LIB_FORMAT
+
+template <>
+struct std::formatter<asbind20::cstring_ref> : std::formatter<std::string_view>
+{
+    template <typename FormatContext>
+    auto format(asbind20::cstring_ref str, FormatContext& ctx) const
+    {
+        using my_base = std::formatter<std::string_view>;
+        return my_base::format(static_cast<std::string_view>(str), ctx);
+    }
+};
+
+template <std::size_t Size>
+struct std::formatter<asbind20::util::fixed_string<Size>> : std::formatter<std::string_view>
+{
+    template <typename FormatContext>
+    auto format(const asbind20::util::fixed_string<Size>& str, FormatContext& ctx) const
+    {
+        using my_base = std::formatter<std::string_view>;
+        return my_base::format(str.view(), ctx);
+    }
+};
+
+#endif
 
 #endif

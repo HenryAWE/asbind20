@@ -1,10 +1,10 @@
-#ifndef ASBIND20_DETAIL_UNREACHABLE_HPP
-#define ASBIND20_DETAIL_UNREACHABLE_HPP
+#ifndef ASBIND20_UTIL_UNREACHABLE_HPP
+#define ASBIND20_UTIL_UNREACHABLE_HPP
 
 #include <version>
 #include <utility>
 
-namespace asbind20::detail
+namespace asbind20::util
 {
 /**
  * @brief Backport of C++23 `std::unreachable()`
@@ -22,6 +22,10 @@ inline void unreachable()
     // According to cppreference,
     // an empty function body and the [[noreturn]] attribute
     // is enough to raise undefined behavior.
+
+#    ifndef NDEBUG
+    std::terminate();
+#    endif
 #endif
 }
 } // namespace asbind20::detail

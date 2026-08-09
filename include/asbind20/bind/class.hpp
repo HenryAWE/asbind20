@@ -1028,7 +1028,8 @@ namespace detail
                 return new Class(IListPolicy::template convert<ListElementType>(list));
             }
 
-            detail::unreachable();
+            // It shouldn't reach here
+            util::unreachable();
         }
 
         static void impl_generic(generic_pointer gen)

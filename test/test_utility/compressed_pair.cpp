@@ -1,5 +1,5 @@
 #include <asbind20/asbind.hpp>
-#include <asbind20/detail/compressed_pair.hpp>
+#include <asbind20/util/compressed_pair.hpp>
 #include <asbind_test/framework.hpp>
 
 TEST(CompressedPair, Ordinary)

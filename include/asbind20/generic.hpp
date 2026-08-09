@@ -14,7 +14,7 @@
 #include "detail/include_as.hpp"
 #include "meta.hpp"
 #include "type_traits.hpp"
-#include "detail/unreachable.hpp"
+#include "util/unreachable.hpp"
 
 namespace asbind20
 {
@@ -154,7 +154,7 @@ T get_generic_arg(
 
     // The branches without return statement should be covered by static_assert.
     // We're suppressing warning here.
-    detail::unreachable();
+    util::unreachable();
 }
 
 template <typename Return>
@@ -245,7 +245,7 @@ int set_generic_return(
         static_assert(!sizeof(Return), "Unsupported type");
     }
 
-    detail::unreachable();
+    util::unreachable();
 }
 
 /**

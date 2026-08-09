@@ -21,7 +21,7 @@
 #include <concepts>
 #include "fwd.hpp"
 #include "detail/err_handler.hpp"
-#include "detail/strutil.hpp"
+#include "util/strutil.hpp"
 #ifdef ASBIND20_HAS_LIB_FORMAT
 #    include <format>
 #endif
