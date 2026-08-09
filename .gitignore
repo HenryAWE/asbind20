@@ -8,5 +8,5 @@ CMakeSettings.json
 # clangd
 .cache/
 
-.DS_store
+.DS_Store
 .idea/
