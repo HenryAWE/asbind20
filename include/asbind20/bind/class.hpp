@@ -1016,8 +1016,8 @@ namespace detail
 #ifdef ASBIND20_HAS_CONTAINERS_RANGES
             else if constexpr(std::same_as<IListPolicy, policies::as_from_range>)
             {
-                std::span<ListElementType> rng((ListElementType*)list.data(), list.size());
-                return new Class(std::from_range, rng);
+                auto sp = list.to_span_of<ListElementType>();
+                return new Class(std::from_range, sp);
             }
 #endif
             else if constexpr(
