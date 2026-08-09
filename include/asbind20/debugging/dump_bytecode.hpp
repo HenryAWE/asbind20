@@ -37,6 +37,12 @@ std::pair<OutputIt, int> dump_single_bytecode(
     OutputIt out, const AS_NAMESPACE_QUALIFIER asDWORD* bc
 )
 {
+#    if defined(__GNUC__) || defined(__clang__)
+#        pragma GCC diagnostic push
+    // asBC_* macros have C-style cast in their implementation
+#        pragma GCC diagnostic ignored "-Wold-style-cast"
+#    endif
+
     if(!bc) [[unlikely]]
         return {std::move(out), 0};
 
@@ -157,6 +163,10 @@ std::pair<OutputIt, int> dump_single_bytecode(
         }
         break;
     }
+
+#    if defined(__GNUC__) || defined(__clang__)
+#        pragma GCC diagnostic pop
+#    endif
 
     return {std::move(out), asBCTypeSize[info.type]};
 }

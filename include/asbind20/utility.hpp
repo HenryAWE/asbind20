@@ -528,7 +528,7 @@ decltype(auto) visit_primitive_type(Visitor&& vis, int type_id, VoidPtrs... args
     {
         return std::invoke(
             std::forward<Visitor>(vis),
-            ((typename std::pointer_traits<VoidPtrs>::template rebind<T>)args)...
+            typename std::pointer_traits<VoidPtrs>::template rebind<T>(args)...
         );
     };
 
@@ -576,7 +576,7 @@ decltype(auto) visit_script_type(Visitor&& vis, int type_id, VoidPtrs... args)
     {
         return std::invoke(
             std::forward<Visitor>(vis),
-            ((typename std::pointer_traits<VoidPtrs>::template rebind<void*>)args)...
+            typename std::pointer_traits<VoidPtrs>::template rebind<void*>(args)...
         );
     }
     else

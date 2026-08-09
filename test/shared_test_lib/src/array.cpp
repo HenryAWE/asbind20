@@ -29,7 +29,8 @@ namespace detail
 
         if(asbind20::is_objhandle(subtype_id))
         {
-            if(*(const void* const*)lhs == *(const void* const*)rhs)
+            if(*static_cast<const void* const*>(lhs) ==
+               *static_cast<const void* const*>(rhs))
                 return true;
         }
 

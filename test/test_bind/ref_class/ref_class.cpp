@@ -93,7 +93,7 @@ static void get_ref_class_data(asbind20::generic_pointer gen)
     using namespace asbind20;
 
     const my_ref_class* this_ = get_generic_object<const my_ref_class*>(gen);
-    set_generic_return<int>(gen, (int)this_->data);
+    set_generic_return<int>(gen, static_cast<int>(this_->data));
 }
 
 void register_ref_class(asbind20::engine_pointer engine)
@@ -326,7 +326,7 @@ struct ref_helper
     {
         this_.value += additional;
         if(type_id == AS_NAMESPACE_QUALIFIER asTYPEID_INT32)
-            this_.value += *(int*)ref;
+            this_.value += *static_cast<int*>(ref);
         return std::exchange(predefined_value, 0);
     }
 
@@ -334,7 +334,7 @@ struct ref_helper
     {
         this_.value += additional;
         if(type_id == AS_NAMESPACE_QUALIFIER asTYPEID_INT32)
-            this_.value += *(int*)ref;
+            this_.value += *static_cast<int*>(ref);
         return std::exchange(predefined_value, 0);
     }
 };

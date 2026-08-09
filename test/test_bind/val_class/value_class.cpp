@@ -193,7 +193,7 @@ static void register_trivial_value_class(asbind20::engine_pointer engine)
             [](trivial_value_class& v, void* ref, int type_id)
             {
                 if(type_id == AS_NAMESPACE_QUALIFIER asTYPEID_INT32)
-                    v.value = *(int*)ref;
+                    v.value = *static_cast<int*>(ref);
             }
         )
         .method("void add3(int val)", fp<&test_bind::add_obj_last>)
@@ -250,7 +250,7 @@ static void register_trivial_value_class(
             [](trivial_value_class& v, void* ref, int type_id)
             {
                 if(type_id == AS_NAMESPACE_QUALIFIER asTYPEID_INT32)
-                    v.value = *(int*)ref;
+                    v.value = *static_cast<int*>(ref);
             },
             var_type<0>
         )
@@ -562,7 +562,7 @@ struct friend_ops_helper
     {
         this_.value += additional;
         if(type_id == AS_NAMESPACE_QUALIFIER asTYPEID_INT32)
-            this_.value += *(int*)ref;
+            this_.value += *static_cast<int*>(ref);
         return std::exchange(predefined_value, 0);
     }
 
@@ -570,7 +570,7 @@ struct friend_ops_helper
     {
         this_.value += additional;
         if(type_id == AS_NAMESPACE_QUALIFIER asTYPEID_INT32)
-            this_.value += *(int*)ref;
+            this_.value += *static_cast<int*>(ref);
         return std::exchange(predefined_value, 0);
     }
 

@@ -25,6 +25,12 @@ namespace asbind20
 #    pragma warning(disable : 4702)
 #endif
 
+#if defined(__GNUC__) || defined(__clang__)
+#    pragma GCC diagnostic push
+// Some wrappers still need C-style cast to convert any address into void* pointer
+#    pragma GCC diagnostic ignored "-Wold-style-cast"
+#endif
+
 /**
  * @brief Get pointer/reference to the object
  *
@@ -37,12 +43,12 @@ auto get_generic_object(generic_pointer gen)
     void* obj = gen->GetObject();
     if constexpr(std::is_pointer_v<T>)
     {
-        return (T)obj;
+        return static_cast<T>(obj);
     }
     else
     {
         using pointer_t = std::add_pointer_t<std::remove_reference_t<T>>;
-        return *(pointer_t)obj;
+        return *static_cast<pointer_t>(obj);
     }
 }
 
@@ -53,12 +59,12 @@ auto get_generic_auxiliary(generic_pointer gen)
     void* obj = gen->GetAuxiliary();
     if constexpr(std::is_pointer_v<T>)
     {
-        return (T)obj;
+        return static_cast<T>(obj);
     }
     else
     {
         using pointer_t = std::add_pointer_t<std::remove_reference_t<T>>;
-        return *(pointer_t)obj;
+        return *static_cast<pointer_t>(obj);
     }
 }
 
@@ -108,7 +114,7 @@ T get_generic_arg(
         else
         {
             void* ptr = gen->GetArgAddress(idx);
-            return (T)ptr;
+            return T(ptr);
         }
     }
     else if constexpr(std::is_reference_v<T>)
@@ -363,6 +369,10 @@ decltype(auto) get_generic_this(
 
 #ifdef _MSC_VER
 #    pragma warning(pop)
+#endif
+
+#if defined(__GNUC__) || defined(__clang__)
+#    pragma GCC diagnostic pop
 #endif
 } // namespace asbind20
 

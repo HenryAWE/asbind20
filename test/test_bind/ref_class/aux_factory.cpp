@@ -15,7 +15,7 @@ public:
     test_aux_factory(int initial_val, asbind20::script_init_list_repeat list)
         : value(initial_val)
     {
-        int* start = (int*)list.data();
+        int* start = static_cast<int*>(list.data());
         int* sentinel = start + list.size();
 
         for(int* p = start; p != sentinel; ++p)
@@ -430,7 +430,7 @@ struct test_aux_factory_template
     {
         EXPECT_EQ(ti->GetSubTypeId(), AS_NAMESPACE_QUALIFIER asTYPEID_INT32);
 
-        int* start = (int*)list.data();
+        int* start = static_cast<int*>(list.data());
         int* sentinel = start + list.size();
         EXPECT_EQ(list.size(), 2);
 

@@ -96,7 +96,7 @@ public:
     {
         set_engine();
 
-        int* start = (int*)list.data();
+        int* start = static_cast<int*>(list.data());
         int* sentinel = start + list.size();
         std::copy(start, sentinel, std::back_inserter(ints));
     }
@@ -672,7 +672,7 @@ bool test0()
 static void custom_factory_set_ints(std::vector<int>& out, void* list_buf)
 {
     asbind20::script_init_list_repeat list(list_buf);
-    int* data = (int*)list.data();
+    int* data = static_cast<int*>(list.data());
     EXPECT_EQ(list.size(), 2);
     out.push_back(data[0] / 10);
     EXPECT_EQ(out[0], 18);
@@ -809,7 +809,7 @@ public:
         : m_ti(ti)
     {
         asbind20::script_init_list_repeat ilist(list_buf);
-        std::copy_n((int*)ilist.data(), ilist.size(), std::back_inserter(ints));
+        std::copy_n(static_cast<int*>(ilist.data()), ilist.size(), std::back_inserter(ints));
 
         std::cerr << "{repeat int}" << std::endl;
     }

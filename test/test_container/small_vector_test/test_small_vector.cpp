@@ -33,7 +33,7 @@ TEST(SmallVector, IntAsElement)
     EXPECT_GE(v.capacity(), v.static_capacity());
     EXPECT_THAT(v, ::testing::Not(::testing::IsEmpty()));
     ASSERT_EQ(v.size(), 1);
-    EXPECT_EQ(*(int*)v[0], 1013);
+    EXPECT_EQ(*static_cast<int*>(v[0]), 1013);
     v.pop_back();
     EXPECT_THAT(v, ::testing::IsEmpty());
     EXPECT_THAT(v, ::testing::IsEmpty());
@@ -41,17 +41,17 @@ TEST(SmallVector, IntAsElement)
     for(int i = 0; i < 64; ++i)
     {
         insert_helper(v.begin(), i);
-        EXPECT_EQ(*(int*)v[0], i);
+        EXPECT_EQ(*static_cast<int*>(v[0]), i);
         if(i != 0)
         {
-            EXPECT_EQ(*(int*)v[1], i - 1);
+            EXPECT_EQ(*static_cast<int*>(v[1]), i - 1);
         }
     }
     ASSERT_EQ(v.size(), 64);
     for(int i = 0; i < 64; ++i)
     {
         ASSERT_THAT(v[i], ::testing::NotNull()) << "i = " << i;
-        EXPECT_EQ(*(int*)v[i], 64 - (i + 1)) << "i = " << i;
+        EXPECT_EQ(*static_cast<int*>(v[i]), 64 - (i + 1)) << "i = " << i;
     }
     v.clear();
     EXPECT_THAT(v, ::testing::IsEmpty());
@@ -62,13 +62,13 @@ TEST(SmallVector, IntAsElement)
 
     ASSERT_EQ(v.size(), 128);
     for(int i = 0; i < 128; ++i)
-        EXPECT_EQ(*(int*)v[i], i);
+        EXPECT_EQ(*static_cast<int*>(v[i]), i);
 
     v.shrink_to_fit();
     EXPECT_EQ(v.capacity(), v.size());
     ASSERT_EQ(v.size(), 128);
     for(int i = 0; i < 128; ++i)
-        EXPECT_EQ(*(int*)v[i], i);
+        EXPECT_EQ(*static_cast<int*>(v[i]), i);
 
     v.clear();
     EXPECT_THAT(v, ::testing::IsEmpty());
@@ -79,8 +79,8 @@ TEST(SmallVector, IntAsElement)
     insert_helper(0, 13);
     insert_helper(v.begin(), 10);
     EXPECT_EQ(v.size(), 2);
-    EXPECT_EQ(*(int*)v[0], 10);
-    EXPECT_EQ(*(int*)v[1], 13);
+    EXPECT_EQ(*static_cast<int*>(v[0]), 10);
+    EXPECT_EQ(*static_cast<int*>(v[1]), 13);
 }
 
 TEST(SmallVector, ScriptObjectAsElement)
@@ -141,9 +141,9 @@ TEST(SmallVector, ScriptObjectAsElement)
                     std::random_access_iterator_tag>
             );
 
-            auto* obj = (AS_NAMESPACE_QUALIFIER asIScriptObject*)*it;
+            auto* obj = object_pointer(*it);
             ASSERT_THAT(obj, ::testing::NotNull());
-            int* data = (int*)obj->GetAddressOfProperty(0);
+            int* data = static_cast<int*>(obj->GetAddressOfProperty(0));
 
             ASSERT_THAT(data, ::testing::NotNull());
             EXPECT_EQ(*data, it - cv.begin());
@@ -156,9 +156,9 @@ TEST(SmallVector, ScriptObjectAsElement)
         {
             SCOPED_TRACE(string_concat("v[i] is v[", std::to_string(i), ']'));
 
-            auto* obj = (AS_NAMESPACE_QUALIFIER asIScriptObject*)v[i];
+            auto* obj = static_cast<object_pointer>(v[i]);
             ASSERT_THAT(obj, ::testing::NotNull());
-            int* data = (int*)obj->GetAddressOfProperty(0);
+            int* data = static_cast<int*>(obj->GetAddressOfProperty(0));
             ASSERT_THAT(data, ::testing::NotNull());
 
             EXPECT_EQ(*data, expected);
@@ -193,9 +193,9 @@ TEST(SmallVector, ScriptObjectAsElement)
 
     {
         counter = 1013;
-        auto* special_foo = (AS_NAMESPACE_QUALIFIER asIScriptObject*)engine->CreateScriptObject(foo_ti);
+        auto* special_foo = static_cast<object_pointer>(engine->CreateScriptObject(foo_ti));
         ASSERT_THAT(special_foo, ::testing::NotNull());
-        EXPECT_EQ(*(int*)special_foo->GetAddressOfProperty(0), 1013);
+        EXPECT_EQ(*static_cast<int*>(special_foo->GetAddressOfProperty(0)), 1013);
         EXPECT_EQ(counter, 1013 + 1);
 
         counter = 0;
@@ -205,7 +205,7 @@ TEST(SmallVector, ScriptObjectAsElement)
         EXPECT_EQ(v.size(), 10);
         EXPECT_EQ(counter, 10);
         v.insert(v.begin(), special_foo);
-        special_foo->Release();
+        (void)special_foo->Release();
         special_foo = nullptr;
         EXPECT_EQ(v.size(), 11);
 
@@ -213,9 +213,9 @@ TEST(SmallVector, ScriptObjectAsElement)
         {
             SCOPED_TRACE(string_concat("v[i] is v[", std::to_string(i), ']'));
 
-            auto* obj = (AS_NAMESPACE_QUALIFIER asIScriptObject*)v[i];
+            auto* obj = static_cast<object_pointer>(v[i]);
             ASSERT_THAT(obj, ::testing::NotNull());
-            int* data = (int*)obj->GetAddressOfProperty(0);
+            int* data = static_cast<int*>(obj->GetAddressOfProperty(0));
             ASSERT_THAT(data, ::testing::NotNull());
 
             EXPECT_EQ(*data, expected);
@@ -226,12 +226,12 @@ TEST(SmallVector, ScriptObjectAsElement)
             expect_member_data_at(i, static_cast<int>(i - 1));
 
         counter = -1;
-        special_foo = (AS_NAMESPACE_QUALIFIER asIScriptObject*)engine->CreateScriptObject(foo_ti);
+        special_foo = static_cast<object_pointer>(engine->CreateScriptObject(foo_ti));
         ASSERT_THAT(special_foo, ::testing::NotNull());
         EXPECT_EQ(counter, -1 + 1);
 
         v.insert(v.begin() + 1, special_foo);
-        special_foo->Release();
+        (void)special_foo->Release();
         special_foo = nullptr;
         EXPECT_EQ(v.size(), 12);
 
@@ -256,7 +256,7 @@ TEST(SmallVector, ScriptObjectAsElement)
 
         for(std::size_t i = 0; i < v.size(); ++i)
         {
-            void* handle = *(void**)v[0];
+            void* handle = *static_cast<void**>(v[0]);
             EXPECT_EQ(handle, nullptr);
         }
 
@@ -308,24 +308,24 @@ TEST(SmallVector, ScriptStringAsElement)
     v.emplace_back();
 
     EXPECT_EQ(v.size(), 1);
-    EXPECT_EQ(((std::string*)v[0])->size(), 0);
-    EXPECT_THAT(*(std::string*)v[0], ::testing::IsEmpty());
+    EXPECT_EQ(static_cast<std::string*>(v[0])->size(), 0);
+    EXPECT_THAT(*static_cast<std::string*>(v[0]), ::testing::IsEmpty());
 
     {
         std::string str = "hello";
         v.push_back(&str);
     }
     EXPECT_EQ(v.size(), 2);
-    EXPECT_EQ(((std::string*)v[1])->size(), 5);
-    EXPECT_EQ(*(std::string*)v[1], "hello");
+    EXPECT_EQ(static_cast<std::string*>(v[1])->size(), 5);
+    EXPECT_EQ(*static_cast<std::string*>(v[1]), "hello");
 
     v.reserve(128);
     EXPECT_GE(v.capacity(), 128);
     EXPECT_EQ(v.size(), 2);
-    EXPECT_EQ(((std::string*)v[0])->size(), 0);
-    EXPECT_THAT(*(std::string*)v[0], ::testing::IsEmpty());
-    EXPECT_EQ(((std::string*)v[1])->size(), 5);
-    EXPECT_EQ(*(std::string*)v[1], "hello");
+    EXPECT_EQ(static_cast<std::string*>(v[0])->size(), 0);
+    EXPECT_THAT(*static_cast<std::string*>(v[0]), ::testing::IsEmpty());
+    EXPECT_EQ(static_cast<std::string*>(v[1])->size(), 5);
+    EXPECT_EQ(*static_cast<std::string*>(v[1]), "hello");
 
     v.clear();
     EXPECT_GE(v.capacity(), 128);

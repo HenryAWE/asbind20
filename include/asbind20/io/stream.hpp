@@ -125,7 +125,7 @@ namespace io
         int Write(const void* ptr, AS_NAMESPACE_QUALIFIER asUINT size) override
         {
             using input_iterator_type = std::add_const_t<ValueType>*;
-            m_out = std::copy_n((input_iterator_type)ptr, size, m_out);
+            m_out = std::copy_n(input_iterator_type(ptr), size, m_out);
 
             return AS_NAMESPACE_QUALIFIER asSUCCESS;
         }

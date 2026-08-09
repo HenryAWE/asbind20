@@ -80,7 +80,7 @@ struct my_vec_ints
     ~my_vec_ints() = default;
 
     my_vec_ints(asbind20::script_init_list_repeat list)
-        : my_vec_ints((int*)list.data(), list.size())
+        : my_vec_ints(static_cast<int*>(list.data()), list.size())
     {}
 
     my_vec_ints(int* ptr, std::size_t count)
@@ -481,7 +481,7 @@ public:
     {}
 
     ref_test_vector(asbind20::script_init_list_repeat list)
-        : ref_test_vector((int*)list.data(), list.size())
+        : ref_test_vector(static_cast<int*>(list.data()), list.size())
     {}
 
 

@@ -84,7 +84,8 @@ public:
         if(!str)
             return AS_NAMESPACE_QUALIFIER asERROR;
 
-        auto* ptr = (ref_string*)str;
+        using ptr_t = ref_string*;
+        auto* ptr = ptr_t(str);
         ptr->release();
         return AS_NAMESPACE_QUALIFIER asSUCCESS;
     }

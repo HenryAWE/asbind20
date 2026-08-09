@@ -143,8 +143,8 @@ TEST(TestInvoke, CommonTypes)
         auto result = asbind20::script_invoke<asbind_test::script_array*>(ctx, fp, 10, 13);
         ASSERT_TRUE(result_has_value(result));
         EXPECT_EQ(result->size(), 2);
-        EXPECT_EQ(*(int*)result->opIndex(0), 10);
-        EXPECT_EQ(*(int*)result->opIndex(1), 13);
+        EXPECT_EQ(*static_cast<int*>(result->opIndex(0)), 10);
+        EXPECT_EQ(*static_cast<int*>(result->opIndex(1)), 13);
     }
 
     {
@@ -396,7 +396,7 @@ TEST(TestInvoke, Suspension)
 
         int r = result.get_context()->Execute();
         EXPECT_EQ(r, AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED);
-        EXPECT_EQ(r, (int)result.error());
+        EXPECT_EQ(r, static_cast<int>(result.error()));
 
         EXPECT_EQ(result.value(), 42);
     }

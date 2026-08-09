@@ -51,7 +51,7 @@ decltype(auto) get_script_return(context_pointer ctx)
     else if constexpr(detail::is_script_obj<std::remove_cvref_t<T>>)
     {
         object_pointer ptr =
-            *(object_pointer*)ctx->GetAddressOfReturnValue();
+            *static_cast<object_pointer*>(ctx->GetAddressOfReturnValue());
         return T(ptr);
     }
     else if constexpr(std::is_reference_v<T>)
@@ -61,7 +61,7 @@ decltype(auto) get_script_return(context_pointer ctx)
     }
     else if constexpr(std::is_pointer_v<T>)
     {
-        return (T)ctx->GetReturnAddress();
+        return static_cast<T>(ctx->GetReturnAddress());
     }
     else if constexpr(std::is_class_v<T>)
     {
@@ -85,7 +85,7 @@ decltype(auto) get_script_return(context_pointer ctx)
             else if constexpr(sizeof(primitive_t) == 8)
                 return static_cast<T>(ctx->GetReturnQWord());
             else // Compiler extensions like __int128
-                return *(T*)ctx->GetAddressOfReturnValue();
+                return *static_cast<T*>(ctx->GetAddressOfReturnValue());
         }
         else if constexpr(std::same_as<primitive_t, float>)
         {
@@ -612,6 +612,12 @@ std::partial_ordering operator<=>(const T& lhs, const script_invoke_result<U>& r
     return detail::cmp_weak_ord_helper(lhs, *rhs);
 }
 
+#if defined(__GNUC__) || defined(__clang__)
+#    pragma GCC diagnostic push
+// Some wrappers still need C-style cast to convert any address into void* pointer
+#    pragma GCC diagnostic ignored "-Wold-style-cast"
+#endif
+
 template <typename T>
 int set_script_arg(
     context_pointer ctx,
@@ -752,6 +758,10 @@ int set_script_arg(
     }
 }
 
+#if defined(__GNUC__) || defined(__clang__)
+#    pragma GCC diagnostic pop
+#endif
+
 /**
  * @brief Apply a tuple to script context as arguments
  *
@@ -811,7 +821,7 @@ concept script_object_handle =
     std::same_as<std::remove_cvref_t<T>, object_pointer> ||
     std::same_as<std::remove_cvref_t<T>, const_object_pointer> ||
     requires(T&& obj) {
-        (const_object_pointer) obj;
+        const_object_pointer(obj);
     };
 
 inline int set_script_object(
@@ -826,7 +836,7 @@ int set_script_object(
     context_pointer ctx, Object&& obj
 )
 {
-    const void* ptr = (const_object_pointer)obj;
+    const void* ptr = const_object_pointer(obj);
     return set_script_object(ctx, ptr);
 }
 

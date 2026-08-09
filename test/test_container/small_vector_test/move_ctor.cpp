@@ -46,10 +46,10 @@ TEST(SmallVector, SmallIntSVMoveCtor)
     // The content of old container of primitive type remains unchanged
     // if it's not dynamically allocated.
     EXPECT_EQ(v.size(), 1);
-    EXPECT_EQ(*(int*)v[0], 1013);
+    EXPECT_EQ(*static_cast<int*>(v[0]), 1013);
 
     EXPECT_EQ(new_sv.size(), 1);
-    EXPECT_EQ(*(int*)new_sv[0], 1013);
+    EXPECT_EQ(*static_cast<int*>(new_sv[0]), 1013);
 }
 
 TEST(SmallVector, DynIntSVMoveCtor)
@@ -82,7 +82,7 @@ TEST(SmallVector, DynIntSVMoveCtor)
     EXPECT_EQ(new_sv.size(), 128);
     for(int i = 0; i < 128; ++i)
     {
-        EXPECT_EQ(*(int*)new_sv[i], i);
+        EXPECT_EQ(*static_cast<int*>(new_sv[i]), i);
     }
 }
 
@@ -138,7 +138,7 @@ TEST(SmallVector, SmallStringSVMoveCtor)
     EXPECT_EQ(new_sv.size(), 2);
     for(unsigned int i = 0; i < 2; ++i)
     {
-        const std::string& s = *(std::string*)new_sv[i];
+        const std::string& s = *static_cast<std::string*>(new_sv[i]);
         EXPECT_EQ(s, std::to_string(i));
     }
 }
@@ -173,7 +173,7 @@ TEST(SmallVector, DynStringSVMoveCtor)
     EXPECT_EQ(new_sv.size(), 16);
     for(unsigned int i = 0; i < 16; ++i)
     {
-        const std::string& s = *(std::string*)new_sv[i];
+        const std::string& s = *static_cast<std::string*>(new_sv[i]);
         EXPECT_EQ(s, std::to_string(i));
     }
 }

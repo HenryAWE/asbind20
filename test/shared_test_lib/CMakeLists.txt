@@ -11,7 +11,7 @@ target_link_libraries(shared_test_lib PUBLIC asbind20 GTest::gtest GTest::gmock 
 if(${asbind_dev_warning_as_error})
     target_compile_options(shared_test_lib PUBLIC
         $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic -Werror>
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic -Werror -Wold-style-cast>
         # Workaround for GCC and GoogleTest, see https://github.com/google/googletest/issues/4232
         $<$<CXX_COMPILER_ID:GNU>:-Wno-error=restrict -Wno-restrict>
     )

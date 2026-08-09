@@ -914,7 +914,10 @@ namespace container
 
             data_type(data_type&& other) noexcept
             {
-                std::memcpy((void*)this, &other, sizeof(data_type));
+                // Cast to void* to avoid clangd warning
+                std::memcpy(
+                    static_cast<void*>(this), static_cast<void*>(&other), sizeof(data_type)
+                );
                 other.ptr = nullptr;
             }
 
@@ -932,7 +935,10 @@ namespace container
                 if(this == &other) [[unlikely]]
                     return *this;
 
-                std::memcpy((void*)this, &other, sizeof(data_type));
+                // Cast to void* to avoid clangd warning
+                std::memcpy(
+                    static_cast<void*>(this), static_cast<void*>(&other), sizeof(data_type)
+                );
                 other.ptr = nullptr;
 
                 return *this;

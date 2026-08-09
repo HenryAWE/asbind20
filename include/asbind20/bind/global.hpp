@@ -283,6 +283,13 @@ public:
         T& val
     )
     {
+#if defined(__GNUC__) || defined(__clang__)
+#    pragma GCC diagnostic push
+// This wrapper needs C-style cast to convert any address into void* pointer
+#    pragma GCC diagnostic ignored "-Wold-style-cast"
+#endif
+
+
         int r = get_engine()->RegisterGlobalProperty(
             decl.c_str(),
             (void*)std::addressof(val)
@@ -292,6 +299,10 @@ public:
         );
 
         return *this;
+
+#if defined(__GNUC__) || defined(__clang__)
+#    pragma GCC diagnostic pop
+#endif
     }
 
     /**
