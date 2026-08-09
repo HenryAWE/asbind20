@@ -125,7 +125,7 @@ TEST(TestInvoke, CommonTypes)
         EXPECT_THAT(opt, ::testing::Optional(::testing::_));
         EXPECT_EQ(*opt, "test");
 
-#ifdef ASBIND20_HAS_EXPECTED
+#ifdef ASBIND20_HAS_LIB_EXPECTED
 
         auto ex = std::expected<std::string, AS_NAMESPACE_QUALIFIER asEContextState>(result);
         EXPECT_THAT(ex, ::testing::Optional(::testing::_));
@@ -279,7 +279,7 @@ TEST(TestInvoke, BadResult)
         auto opt = std::optional<int>(result);
         EXPECT_THAT(opt, ::testing::Eq(std::nullopt));
 
-#    ifdef ASBIND20_HAS_EXPECTED
+#    ifdef ASBIND20_HAS_LIB_EXPECTED
 
         auto ex = std::expected<int, AS_NAMESPACE_QUALIFIER asEContextState>(result);
         EXPECT_FALSE(ex.has_value());
@@ -546,10 +546,10 @@ TEST(TestInvoke, CompareValueClassResult)
 
 static void output_info(std::ostream& os)
 {
-#ifdef ASBIND20_HAS_EXPECTED
-    os << "ASBIND20_HAS_EXPECTED: " << ASBIND20_HAS_EXPECTED << std::endl;
+#ifdef ASBIND20_HAS_LIB_EXPECTED
+    os << "ASBIND20_HAS_LIB_EXPECTED: " << ASBIND20_HAS_LIB_EXPECTED << std::endl;
 #else
-    os << "ASBIND20_HAS_EXPECTED not defined" << std::endl;
+    os << "ASBIND20_HAS_LIB_EXPECTED not defined" << std::endl;
 #endif
 }
 

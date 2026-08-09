@@ -1,12 +1,11 @@
-#ifndef ASBIND20_UTIL_RESULT_HPP
-#define ASBIND20_UTIL_RESULT_HPP
+#ifndef ASBIND20_INVOKE_RESULT_HPP
+#define ASBIND20_INVOKE_RESULT_HPP
 
-#include <version>
+#include <optional>
 #include "../fwd.hpp"
 #include "../type_traits.hpp"
-
-#ifdef __cpp_lib_expected
-#    define ASBIND20_HAS_EXPECTED __cpp_lib_expected
+#include "../util/unreachable.hpp"
+#ifdef ASBIND20_HAS_LIB_EXPECTED
 #    include <expected>
 #endif
 
@@ -22,6 +21,7 @@ namespace detail
 
 template <typename T>
 requires(!std::is_const_v<T>)
+[[nodiscard]]
 decltype(auto) get_script_return(context_pointer ctx)
 {
     ASBIND20_ASSERT(ctx != nullptr);
@@ -333,17 +333,19 @@ public:
         return to_optional();
     }
 
-#ifdef ASBIND20_HAS_EXPECTED
+#ifdef ASBIND20_HAS_LIB_EXPECTED
+
+    using expected_type = std::expected<T, error_type>;
 
     [[nodiscard]]
-    std::expected<T, error_type> to_expected() const
+    expected_type to_expected() const
     {
         if(has_value())
-            return std::expected<T, error_type>(**this);
+            return expected_type(**this);
         return std::unexpected<error_type>(error());
     }
 
-    operator std::expected<T, error_type>() const
+    explicit operator std::expected<T, error_type>() const
     {
         return to_expected();
     }
@@ -613,6 +615,6 @@ auto get_context_result(context_pointer ctx)
 {
     return script_invoke_result<R>(ctx);
 }
-}
+} // namespace asbind20
 
 #endif

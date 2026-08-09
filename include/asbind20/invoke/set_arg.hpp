@@ -3,6 +3,7 @@
 
 #include "../fwd.hpp"
 #include "../type_traits.hpp"
+#include "../util/unreachable.hpp"
 
 namespace asbind20
 {

@@ -10,8 +10,13 @@
 #pragma once
 
 #include <concepts>
+
+// IWYU pragma: begin_exports
+
 #include "detail/include_as.hpp"
 #include "detail/config.hpp"
+
+// IWYU pragma: end_exports
 
 namespace asbind20
 {

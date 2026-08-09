@@ -1,9 +1,9 @@
-#ifndef ASBIND20_UTIL_COMPILE_FUNC_HPP
-#define ASBIND20_UTIL_COMPILE_FUNC_HPP
+#ifndef ASBIND20_INVOKE_COMPILE_FUNC_HPP
+#define ASBIND20_INVOKE_COMPILE_FUNC_HPP
 
 #include "../fwd.hpp"
-#include "strutil.hpp"
-#include "../invoke.hpp"
+#include "../util/strutil.hpp"
+#include "script_func.hpp"
 
 namespace asbind20
 {

@@ -4,7 +4,6 @@
 #include <asbind_test/array.hpp>
 #include <asbind_test/assertion.hpp>
 #include <asbind20/debugging/stacktrace.hpp>
-#include <asbind20/util/compile_func.hpp>
 
 namespace test_script_array
 {
