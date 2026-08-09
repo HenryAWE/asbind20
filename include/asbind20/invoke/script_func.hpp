@@ -441,7 +441,6 @@ public:
         return target();
     }
 };
-
 } // namespace asbind20
 
 #endif

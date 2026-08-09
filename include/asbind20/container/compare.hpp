@@ -69,6 +69,7 @@ public:
         return static_cast<bool>(m_opCmp);
     }
 
+    [[nodiscard]]
     auto invoke_eq(
         context_pointer ctx, const void* lhs, const void* rhs
     ) const
@@ -77,6 +78,7 @@ public:
         return get_opEquals()(ctx, lhs, rhs);
     }
 
+    [[nodiscard]]
     auto invoke_compare(
         context_pointer ctx, const void* lhs, const void* rhs
     ) const
