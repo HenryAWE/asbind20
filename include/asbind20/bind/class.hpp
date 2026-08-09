@@ -16,6 +16,7 @@
 #include "../policies.hpp"
 #include "behaviour.hpp"
 #include "function_tools.hpp"
+#include "../util/assume.hpp"
 
 namespace asbind20
 {
@@ -552,6 +553,7 @@ namespace detail
             [gen]<std::size_t... Is>(std::index_sequence<Is...>)
             {
                 auto ti = static_cast<typeinfo_pointer>(gen->GetAuxiliary());
+                ASBIND20_ASSUME(ti != nullptr);
                 auto* ptr = new Class(
                     get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
                         gen, static_cast<arg_index_type>(Is)
@@ -609,6 +611,7 @@ namespace detail
             [gen]<std::size_t... Is>(std::index_sequence<Is...>)
             {
                 auto* ti = get_generic_typeinfo(gen);
+                ASBIND20_ASSUME(ti != nullptr);
                 auto* ptr = new Class(
                     ti,
                     get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
@@ -769,6 +772,7 @@ namespace detail
             if constexpr(Template)
             {
                 auto* ti = get_generic_typeinfo(gen);
+                ASBIND20_ASSUME(ti != nullptr);
                 ptr = new Class(
                     ti, *static_cast<ListElementType**>(gen->GetAddressOfArg(1))
                 );
@@ -782,7 +786,7 @@ namespace detail
 
                 // Expects the typeinfo is passed by auxiliary pointer (see the helper "auxiliary(this_type)")
                 auto* ti = get_generic_auxiliary<typeinfo_pointer>(gen);
-                ASBIND20_ASSERT(ti != nullptr);
+                ASBIND20_ASSUME(ti != nullptr);
                 notifier::notify_gc_if_necessary(ptr, ti);
             }
             gen->SetReturnAddress(ptr);
@@ -792,6 +796,7 @@ namespace detail
             typeinfo_pointer ti, ListElementType* list_buf
         )
         {
+            ASBIND20_ASSUME(ti != nullptr);
             auto* ptr = new Class(ti, list_buf);
             notifier::notify_gc_if_necessary(ptr, ti);
             return ptr;
@@ -802,6 +807,7 @@ namespace detail
             ListElementType* list_buf, typeinfo_pointer ti
         )
         {
+            ASBIND20_ASSUME(ti != nullptr);
             auto* ptr = new Class(list_buf);
             notifier::notify_gc_if_necessary(ptr, ti);
             return ptr;
