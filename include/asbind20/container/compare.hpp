@@ -15,7 +15,7 @@
 
 #include "options.hpp"
 #include "../utility.hpp"
-#include "../invoke.hpp"
+#include "../invoke/script_func.hpp"
 #include "../ranges/ranges.hpp"
 
 namespace asbind20::container

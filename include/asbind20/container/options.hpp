@@ -10,7 +10,7 @@
 #pragma once
 
 #include <concepts>
-#include "../detail/include_as.hpp"
+#include "../fwd.hpp"
 
 namespace asbind20::container
 {
