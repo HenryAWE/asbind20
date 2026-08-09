@@ -34,8 +34,8 @@ int set_generic_return(
 );
 
 template <typename T>
-requires(!std::is_const_v<T>)
-decltype(auto) get_script_return(context_pointer ctx);
+requires(!std::is_const_v<T> && !std::is_volatile_v<T>)
+decltype(auto) get_script_return(context_reference ctx);
 
 template <std::integral T>
 int set_script_arg(
@@ -54,12 +54,12 @@ struct underlying_enum_traits
     using underlying_type = std::underlying_type_t<Enum>;
 
     static int set_arg(
-        context_pointer ctx,
+        context_reference ctx,
         arg_index_type arg,
         Enum val
     )
     {
-        return set_script_arg(ctx, arg, static_cast<underlying_type>(val));
+        return set_script_arg(&ctx, arg, static_cast<underlying_type>(val));
     }
 
     static Enum get_arg(
@@ -78,7 +78,7 @@ struct underlying_enum_traits
     }
 
     static Enum get_return(
-        context_pointer ctx
+        context_reference ctx
     )
     {
         return static_cast<Enum>(get_script_return<underlying_type>(ctx));
@@ -93,12 +93,12 @@ template <>
 struct type_traits<script_object>
 {
     static int set_arg(
-        context_pointer ctx,
+        context_reference ctx,
         arg_index_type arg,
         const script_object& val
     )
     {
-        return ctx->SetArgObject(arg, val.get());
+        return ctx.SetArgObject(arg, val.get());
     }
 
     static script_object get_arg(
@@ -119,11 +119,11 @@ struct type_traits<script_object>
     }
 
     static script_object get_return(
-        context_pointer ctx
+        context_reference ctx
     )
     {
         return script_object(
-            static_cast<object_pointer>(ctx->GetReturnObject())
+            static_cast<object_pointer>(ctx.GetReturnObject())
         );
     }
 };

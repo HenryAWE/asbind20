@@ -58,12 +58,12 @@ int set_script_arg(
     using type = std::remove_cv_t<Enum>;
 
     constexpr bool is_customized = requires() {
-        { type_traits<type>::set_arg(ctx, idx, val) } -> std::same_as<int>;
+        { type_traits<type>::set_arg(*ctx, idx, val) } -> std::same_as<int>;
     };
 
     if constexpr(is_customized)
     {
-        return type_traits<type>::set_arg(ctx, idx, val);
+        return type_traits<type>::set_arg(*ctx, idx, val);
     }
     else
     {

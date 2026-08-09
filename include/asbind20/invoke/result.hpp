@@ -20,12 +20,11 @@ namespace detail
 } // namespace detail
 
 template <typename T>
-requires(!std::is_const_v<T>)
+requires(!std::is_const_v<T> && !std::is_volatile_v<T>)
 [[nodiscard]]
-decltype(auto) get_script_return(context_pointer ctx)
+decltype(auto) get_script_return(context_reference ctx)
 {
-    ASBIND20_ASSERT(ctx != nullptr);
-    ASBIND20_ASSERT(ctx->GetState() == (AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED));
+    ASBIND20_ASSERT(ctx.GetState() == (AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED));
 
     constexpr bool is_customized = requires() {
         { type_traits<T>::get_return(ctx) } -> std::convertible_to<T>;
@@ -38,22 +37,22 @@ decltype(auto) get_script_return(context_pointer ctx)
     else if constexpr(detail::is_script_obj<std::remove_cvref_t<T>>)
     {
         object_pointer ptr =
-            *static_cast<object_pointer*>(ctx->GetAddressOfReturnValue());
+            *static_cast<object_pointer*>(ctx.GetAddressOfReturnValue());
         return T(ptr);
     }
     else if constexpr(std::is_reference_v<T>)
     {
         using ptr_t = std::add_pointer_t<std::remove_reference_t<T>>;
-        return *reinterpret_cast<ptr_t>(ctx->GetReturnAddress());
+        return *reinterpret_cast<ptr_t>(ctx.GetReturnAddress());
     }
     else if constexpr(std::is_pointer_v<T>)
     {
-        return static_cast<T>(ctx->GetReturnAddress());
+        return static_cast<T>(ctx.GetReturnAddress());
     }
     else if constexpr(std::is_class_v<T>)
     {
         using ptr_t = std::add_pointer_t<std::remove_reference_t<T>>;
-        return *reinterpret_cast<ptr_t>(ctx->GetReturnObject());
+        return *reinterpret_cast<ptr_t>(ctx.GetReturnObject());
     }
     else
     {
@@ -64,23 +63,23 @@ decltype(auto) get_script_return(context_pointer ctx)
         if constexpr(std::integral<primitive_t>)
         {
             if constexpr(sizeof(primitive_t) == 1)
-                return static_cast<T>(ctx->GetReturnByte());
+                return static_cast<T>(ctx.GetReturnByte());
             else if constexpr(sizeof(primitive_t) == 2)
-                return static_cast<T>(ctx->GetReturnWord());
+                return static_cast<T>(ctx.GetReturnWord());
             else if constexpr(sizeof(primitive_t) == 4)
-                return static_cast<T>(ctx->GetReturnDWord());
+                return static_cast<T>(ctx.GetReturnDWord());
             else if constexpr(sizeof(primitive_t) == 8)
-                return static_cast<T>(ctx->GetReturnQWord());
+                return static_cast<T>(ctx.GetReturnQWord());
             else // Compiler extensions like __int128
-                return *static_cast<T*>(ctx->GetAddressOfReturnValue());
+                return *static_cast<T*>(ctx.GetAddressOfReturnValue());
         }
         else if constexpr(std::same_as<primitive_t, float>)
         {
-            return ctx->GetReturnFloat();
+            return ctx.GetReturnFloat();
         }
         else if constexpr(std::same_as<primitive_t, double>)
         {
-            return ctx->GetReturnDouble();
+            return ctx.GetReturnDouble();
         }
         else
             static_assert(!sizeof(T), "Invalid type");
@@ -88,6 +87,15 @@ decltype(auto) get_script_return(context_pointer ctx)
 
     // Suppress warning
     util::unreachable();
+}
+
+template <typename T>
+requires(!std::is_const_v<T> && !std::is_volatile_v<T>)
+[[nodiscard]]
+decltype(auto) get_script_return(context_pointer ctx)
+{
+    ASBIND20_ASSERT(ctx != nullptr);
+    return get_script_return<T>(*ctx);
 }
 
 class bad_script_invoke_result_access : public std::exception
@@ -153,7 +161,7 @@ namespace detail
 } // namespace detail
 
 template <typename R>
-auto get_context_result(context_pointer ctx);
+auto get_context_result(context_reference ctx);
 
 /**
  * @brief Base class of script results
@@ -172,6 +180,11 @@ public:
 
     ~script_invoke_result_base() = default;
 
+    /**
+     * @brief Get the script context associated with this result
+     *
+     * @return Never returns `nullptr`
+     */
     [[nodiscard]]
     context_pointer get_context() const noexcept
     {
@@ -214,12 +227,10 @@ public:
 
 protected:
     explicit script_invoke_result_base(
-        context_pointer ctx
+        context_reference ctx
     ) noexcept
-        : m_ctx(ctx)
-    {
-        ASBIND20_ASSERT(m_ctx != nullptr);
-    }
+        : m_ctx(std::addressof(ctx))
+    {}
 
     [[noreturn]]
     void throw_bad_access() const
@@ -233,6 +244,7 @@ protected:
     }
 
 private:
+    // Never be nullptr
     context_pointer m_ctx;
 };
 
@@ -245,10 +257,10 @@ template <typename T>
 class script_invoke_result : public script_invoke_result_base
 {
     template <typename R>
-    friend auto get_context_result(context_pointer ctx);
+    friend auto get_context_result(context_reference ctx);
 
     script_invoke_result(
-        context_pointer ctx
+        context_reference ctx
     ) noexcept
         : script_invoke_result_base(ctx) {}
 
@@ -365,10 +377,10 @@ template <typename T>
 class script_invoke_result<T&> : public script_invoke_result_base
 {
     template <typename R>
-    friend auto get_context_result(context_pointer ctx);
+    friend auto get_context_result(context_reference ctx);
 
     script_invoke_result(
-        context_pointer ctx
+        context_reference ctx
     ) noexcept
         : script_invoke_result_base(ctx) {}
 
@@ -425,10 +437,10 @@ template <>
 class script_invoke_result<void> : public script_invoke_result_base
 {
     template <typename R>
-    friend auto get_context_result(context_pointer ctx);
+    friend auto get_context_result(context_reference ctx);
 
     script_invoke_result(
-        context_pointer ctx
+        context_reference ctx
     ) noexcept
         : script_invoke_result_base(ctx) {}
 
@@ -606,6 +618,21 @@ std::partial_ordering operator<=>(const T& lhs, const script_invoke_result<U>& r
  *
  * @tparam R Return type. It can be safely ignored by `void` if you only want the error code
  *
+ * @param ctx Script context.
+ *
+ * @return Result of the execution
+ */
+template <typename R>
+auto get_context_result(context_reference ctx)
+{
+    return script_invoke_result<R>(ctx);
+}
+
+/**
+ * @brief Get the result of context
+ *
+ * @tparam R Return type. It can be safely ignored by `void` if you only want the error code
+ *
  * @param ctx Script context. Cannot be `nullptr`.
  *
  * @return Result of the execution
@@ -613,7 +640,8 @@ std::partial_ordering operator<=>(const T& lhs, const script_invoke_result<U>& r
 template <typename R>
 auto get_context_result(context_pointer ctx)
 {
-    return script_invoke_result<R>(ctx);
+    ASBIND20_ASSERT(ctx != nullptr);
+    return get_context_result<R>(*ctx);
 }
 } // namespace asbind20
 
