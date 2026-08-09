@@ -898,6 +898,26 @@ public:
         return m_func;
     }
 
+    explicit operator bool() const noexcept
+    {
+        return m_func != nullptr;
+    }
+
+    bool operator==(const script_function_ref& other) const noexcept
+    {
+        return m_func == other.m_func;
+    }
+
+    friend bool operator==(const script_function_ref& lhs, handle_type rhs) noexcept
+    {
+        return lhs.target() == rhs;
+    }
+
+    friend bool operator==(handle_type lhs, const script_function_ref& rhs) noexcept
+    {
+        return lhs == rhs.target();
+    }
+
     result_type operator()(
         context_pointer ctx, Args... args
     ) const

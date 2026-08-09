@@ -33,6 +33,10 @@ TEST(ScriptFunction, Ownership)
     {
         script_function_ref<int()> rf = f;
         EXPECT_EQ(f.target(), rf.target());
+        EXPECT_TRUE(rf);
+        EXPECT_EQ(rf, f.target());
+        EXPECT_EQ(f.target(), rf);
+        EXPECT_EQ(rf, rf);
 
         request_context ctx(engine);
         auto result = rf(ctx);
@@ -42,6 +46,14 @@ TEST(ScriptFunction, Ownership)
 
         script_function<int()> another = rf;
         EXPECT_EQ(another.target(), rf.target());
+    }
+
+    {
+        script_function_ref<int()> empty;
+        EXPECT_FALSE(empty);
+        EXPECT_EQ(empty, nullptr);
+        EXPECT_EQ(nullptr, empty);
+        EXPECT_EQ(empty, empty);
     }
 
     {
