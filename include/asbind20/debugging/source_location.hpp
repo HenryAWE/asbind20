@@ -17,6 +17,11 @@ namespace asbind20::debugging
 {
 using stack_level_type = AS_NAMESPACE_QUALIFIER asUINT;
 
+/**
+ * @brief Script source location
+ *
+ * @note The section and function name are not owning! Copy them if you want to use them later.
+ */
 class script_source_location
 {
 public:
@@ -103,6 +108,7 @@ public:
     }
 
 #endif
+
     [[nodiscard]]
     static script_source_location from_context(
         context_reference ctx,

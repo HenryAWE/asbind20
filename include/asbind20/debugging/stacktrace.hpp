@@ -82,9 +82,8 @@ private:
     {
         os << m_func->GetName();
 
-        bool first = true;
         bool ex_info_written = false;
-        auto output_helper = [&](const auto& v)
+        auto output_helper = [&, first = true](const auto& v) mutable
         {
             if(!first)
                 os << ':';
@@ -97,15 +96,13 @@ private:
             ex_info_written = true;
         };
 
-        const char* mod_name = m_func->GetModuleName();
-        if(mod_name)
+        if(const char* mod_name = m_func->GetModuleName(); mod_name)
             output_helper(mod_name);
 
 #ifdef ASBIND20_HAS_SCRIPT_FUNCTION_GET_DECLARED_AT
         const char* section_name = "";
         int row = 0, col = 0;
-        int r = m_func->GetDeclaredAt(&section_name, &row, &col);
-        if(r >= 0)
+        if(m_func->GetDeclaredAt(&section_name, &row, &col) >= 0)
         {
             output_helper(section_name);
             output_helper(row);
@@ -158,7 +155,7 @@ public:
     [[nodiscard]]
     static basic_stacktrace from_context(context_pointer ctx)
     {
-        if(!ctx)
+        if(!ctx) [[unlikely]]
             return {};
         return from_context(*ctx);
     }
@@ -232,12 +229,14 @@ private:
     container_type m_entries;
 };
 
+[[nodiscard]]
 inline std::string to_string(const stacktrace_entry& entry)
 {
     return entry.description();
 }
 
 template <typename Allocator>
+[[nodiscard]]
 std::string to_string(const basic_stacktrace<Allocator>& trace)
 {
     return trace.description();
