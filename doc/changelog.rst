@@ -6,6 +6,16 @@ Changelog since the version 1.5.0.
 2.1.0
 -----
 
+Breaking Change
+~~~~~~~~~~~~~~~
+
+- The customization points in ``type_traits`` (``set_arg``, ``set_script_arg`` and
+  ``get_return``) now receive ``context_reference`` instead of ``context_pointer``.
+  User-defined specializations must be updated to the new signature.
+
+- ``script_invoke_result<T&>::value_or`` now returns a copy of ``T`` instead of a
+  reference to it, matching the value semantics of the primary template.
+
 Update
 ~~~~~~
 
@@ -21,6 +31,19 @@ Update
 
 - ``script_element_comparator`` no longer holds ownership of the script functions,
   avoiding dangling references.
+
+- The main interfaces for invoking scripts now take ``context_reference`` instead
+  of ``context_pointer``:
+
+  - ``set_script_arg``
+  - ``set_script_object``
+  - ``apply_script_args``
+  - ``script_invoke``
+  - ``operator()`` of ``script_function``, ``script_function_ref``,
+    ``script_method`` and ``script_method_ref``
+
+  The previous ``context_pointer`` overloads are kept as forwarding versions that
+  assert on a null context, so existing call sites passing a pointer still work.
 
 Bug fix
 ~~~~~~~
