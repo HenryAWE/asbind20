@@ -416,12 +416,12 @@ public:
     }
 
     template <typename U = std::remove_cv_t<T>>
-    T& value_or(U&& default_val) const
+    T value_or(U&& default_val) const
     {
         if(has_value())
             return **this;
         else
-            return std::forward<U>(default_val);
+            return static_cast<T>(std::forward<U>(default_val));
     }
 
     void swap(script_invoke_result& other) noexcept

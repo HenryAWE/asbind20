@@ -256,6 +256,7 @@ TEST(TestInvoke, BadResult)
         "int& test1() { throw_err(); return placeholder; }\n"
         "void test2() { throw_err(); }"
         "void test3() { abort_ctx(); }"
+        "int& test_ref() { return placeholder; }\n"
     );
     ASSERT_GE(m->Build(), 0);
 
@@ -318,8 +319,10 @@ TEST(TestInvoke, BadResult)
         EXPECT_TRUE(test_invoke::check_result_ex(result));
 
         int tmp = 3;
+        // value_or returns a copy, not a reference
+        static_assert(std::is_same_v<decltype(result.value_or(tmp)), int>);
         EXPECT_EQ(result.value_or(tmp), 3);
-        EXPECT_EQ(std::addressof(result.value_or(tmp)), std::addressof(tmp));
+        EXPECT_EQ(result.value_or(5), 5);
     }
 
     {
@@ -350,6 +353,24 @@ TEST(TestInvoke, BadResult)
 
         EXPECT_THROW((void)result.value(), bad_script_invoke_result_access);
         EXPECT_TRUE(test_invoke::check_result_ex(result, AS_NAMESPACE_QUALIFIER asEXECUTION_ABORTED));
+    }
+
+    {
+        auto* f = m->GetFunctionByName("test_ref");
+        ASSERT_THAT(f, ::testing::NotNull());
+
+        request_context ctx(engine);
+        auto result = script_invoke<int&>(ctx, f);
+
+        ASSERT_TRUE(result_has_value(result));
+        EXPECT_TRUE(result.has_value());
+        EXPECT_EQ(result.value(), 42);
+
+        int tmp = 10;
+        // value_or returns a copy of the referenced value
+        static_assert(std::is_same_v<decltype(result.value_or(tmp)), int>);
+        EXPECT_EQ(result.value_or(tmp), 42);
+        EXPECT_EQ(result.value_or(5), 42);
     }
 }
 

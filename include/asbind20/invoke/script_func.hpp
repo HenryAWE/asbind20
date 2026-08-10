@@ -312,6 +312,10 @@ public:
 
     void reset(handle_type func)
     {
+        // Avoid Release-then-AddRef on the same handle,
+        if(m_func == func) [[unlikely]]
+            return;
+
         if(m_func)
             (void)m_func->Release();
         m_func = func;

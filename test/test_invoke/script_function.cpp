@@ -19,6 +19,22 @@ TEST(ScriptFunction, Ownership)
     f.reset(m->GetFunctionByName("test"));
     EXPECT_THAT(f, ::testing::IsTrue());
 
+    {
+        // Resetting to the same function object should be a no-op,
+        // avoiding Release-then-AddRef on the same handle
+        function_pointer target = f.target();
+        f.reset(target);
+        EXPECT_EQ(f.target(), target);
+        f.reset(f.target());
+        EXPECT_EQ(f.target(), target);
+
+        request_context ctx(engine);
+        auto result = f(ctx);
+
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
+        EXPECT_EQ(result.value(), 42);
+    }
+
     m->Discard();
 
     {
@@ -59,6 +75,10 @@ TEST(ScriptFunction, Ownership)
     {
         auto another = f;
         EXPECT_EQ(another.target(), f.target());
+
+        // Copy assignment where both wrappers refer to the same function object
+        f = another;
+        EXPECT_EQ(f.target(), another.target());
 
         f.reset();
         EXPECT_THAT(f, ::testing::IsFalse());
