@@ -15,17 +15,17 @@ namespace asbind20
 
 template <typename T>
 int set_script_arg(
-    context_pointer ctx,
+    context_reference ctx,
     arg_index_type idx,
     std::reference_wrapper<T> ref
 )
 {
-    return ctx->SetArgAddress(idx, (void*)std::addressof(ref.get()));
+    return ctx.SetArgAddress(idx, (void*)std::addressof(ref.get()));
 }
 
 template <std::integral T>
 int set_script_arg(
-    context_pointer ctx,
+    context_reference ctx,
     arg_index_type idx,
     const T& val
 )
@@ -33,24 +33,24 @@ int set_script_arg(
     constexpr std::size_t int_size = sizeof(std::decay_t<T>);
 
     if constexpr(int_size == sizeof(AS_NAMESPACE_QUALIFIER asBYTE))
-        return ctx->SetArgByte(idx, val);
+        return ctx.SetArgByte(idx, val);
     else if constexpr(int_size == sizeof(AS_NAMESPACE_QUALIFIER asWORD))
-        return ctx->SetArgWord(idx, val);
+        return ctx.SetArgWord(idx, val);
     else if constexpr(int_size == sizeof(AS_NAMESPACE_QUALIFIER asDWORD))
-        return ctx->SetArgDWord(idx, val);
+        return ctx.SetArgDWord(idx, val);
     else if constexpr(int_size == sizeof(AS_NAMESPACE_QUALIFIER asQWORD))
-        return ctx->SetArgQWord(idx, val);
+        return ctx.SetArgQWord(idx, val);
     else
     {
         // Built-in (u)int128
-        return ctx->SetArgObject(idx, (void*)std::addressof(val));
+        return ctx.SetArgObject(idx, (void*)std::addressof(val));
     }
 }
 
 template <typename Enum>
 requires std::is_enum_v<Enum>
 int set_script_arg(
-    context_pointer ctx,
+    context_reference ctx,
     arg_index_type idx,
     Enum val
 )
@@ -58,12 +58,12 @@ int set_script_arg(
     using type = std::remove_cv_t<Enum>;
 
     constexpr bool is_customized = requires() {
-        { type_traits<type>::set_arg(*ctx, idx, val) } -> std::same_as<int>;
+        { type_traits<type>::set_arg(ctx, idx, val) } -> std::same_as<int>;
     };
 
     if constexpr(is_customized)
     {
-        return type_traits<type>::set_arg(*ctx, idx, val);
+        return type_traits<type>::set_arg(ctx, idx, val);
     }
     else
     {
@@ -75,7 +75,7 @@ int set_script_arg(
 
 template <std::floating_point T>
 int set_script_arg(
-    context_pointer ctx,
+    context_reference ctx,
     arg_index_type idx,
     T val
 )
@@ -83,9 +83,9 @@ int set_script_arg(
     using type = std::remove_cv_t<T>;
 
     if constexpr(std::same_as<type, float>)
-        return ctx->SetArgFloat(idx, val);
+        return ctx.SetArgFloat(idx, val);
     else if constexpr(std::same_as<type, double>)
-        return ctx->SetArgDouble(idx, val);
+        return ctx.SetArgDouble(idx, val);
     else
         static_assert(!sizeof(T), "Invalid floating point");
 
@@ -94,45 +94,45 @@ int set_script_arg(
 }
 
 inline int set_script_arg(
-    context_pointer ctx,
+    context_reference ctx,
     arg_index_type idx,
     void* obj
 )
 {
-    return ctx->SetArgAddress(idx, obj);
+    return ctx.SetArgAddress(idx, obj);
 }
 
 inline int set_script_arg(
-    context_pointer ctx,
+    context_reference ctx,
     arg_index_type idx,
     const void* obj
 )
 {
-    return ctx->SetArgAddress(idx, const_cast<void*>(obj));
+    return ctx.SetArgAddress(idx, const_cast<void*>(obj));
 }
 
 inline int set_script_arg(
-    context_pointer ctx,
+    context_reference ctx,
     arg_index_type idx,
     object_pointer obj
 )
 {
-    return ctx->SetArgObject(idx, obj);
+    return ctx.SetArgObject(idx, obj);
 }
 
 inline int set_script_arg(
-    context_pointer ctx,
+    context_reference ctx,
     arg_index_type idx,
     const_object_pointer obj
 )
 {
-    return ctx->SetArgObject(idx, const_cast<object_pointer>(obj));
+    return ctx.SetArgObject(idx, const_cast<object_pointer>(obj));
 }
 
 template <typename Class>
 requires std::is_class_v<std::remove_cvref_t<Class>>
 int set_script_arg(
-    context_pointer ctx,
+    context_reference ctx,
     arg_index_type idx,
     Class&& obj
 )
@@ -149,7 +149,7 @@ int set_script_arg(
     }
     else
     {
-        return ctx->SetArgObject(idx, (void*)std::addressof(obj));
+        return ctx.SetArgObject(idx, (void*)std::addressof(obj));
     }
 }
 
@@ -164,7 +164,7 @@ int set_script_arg(
  * @param tp Tuple of arguments
  */
 template <typename Tuple>
-void apply_script_args(context_pointer ctx, Tuple&& tp)
+void apply_script_args(context_reference ctx, Tuple&& tp)
 {
     [&]<arg_index_type... Idx>(std::integer_sequence<arg_index_type, Idx...>)
     {
@@ -173,10 +173,141 @@ void apply_script_args(context_pointer ctx, Tuple&& tp)
 }
 
 inline int set_script_object(
+    context_reference ctx, const void* obj
+)
+{
+    return ctx.SetObject(const_cast<void*>(obj));
+}
+
+template <script_object_handle Object>
+int set_script_object(
+    context_reference ctx, Object&& obj
+)
+{
+    const void* ptr = const_object_pointer(obj);
+    return set_script_object(ctx, ptr);
+}
+
+/**
+ * @brief Pointer overloads of `set_script_arg`
+ *
+ * These overloads forward to the reference versions.
+ * The context pointer should not be null.
+ */
+/// @{
+
+template <typename T>
+int set_script_arg(
+    context_pointer ctx,
+    arg_index_type idx,
+    std::reference_wrapper<T> ref
+)
+{
+    ASBIND20_ASSERT(ctx != nullptr);
+    return set_script_arg(*ctx, idx, ref);
+}
+
+template <std::integral T>
+int set_script_arg(
+    context_pointer ctx,
+    arg_index_type idx,
+    const T& val
+)
+{
+    ASBIND20_ASSERT(ctx != nullptr);
+    return set_script_arg(*ctx, idx, val);
+}
+
+template <typename Enum>
+requires std::is_enum_v<Enum>
+int set_script_arg(
+    context_pointer ctx,
+    arg_index_type idx,
+    Enum val
+)
+{
+    ASBIND20_ASSERT(ctx != nullptr);
+    return set_script_arg(*ctx, idx, val);
+}
+
+template <std::floating_point T>
+int set_script_arg(
+    context_pointer ctx,
+    arg_index_type idx,
+    T val
+)
+{
+    ASBIND20_ASSERT(ctx != nullptr);
+    return set_script_arg(*ctx, idx, val);
+}
+
+inline int set_script_arg(
+    context_pointer ctx,
+    arg_index_type idx,
+    void* obj
+)
+{
+    ASBIND20_ASSERT(ctx != nullptr);
+    return set_script_arg(*ctx, idx, obj);
+}
+
+inline int set_script_arg(
+    context_pointer ctx,
+    arg_index_type idx,
+    const void* obj
+)
+{
+    ASBIND20_ASSERT(ctx != nullptr);
+    return set_script_arg(*ctx, idx, obj);
+}
+
+inline int set_script_arg(
+    context_pointer ctx,
+    arg_index_type idx,
+    object_pointer obj
+)
+{
+    ASBIND20_ASSERT(ctx != nullptr);
+    return set_script_arg(*ctx, idx, obj);
+}
+
+inline int set_script_arg(
+    context_pointer ctx,
+    arg_index_type idx,
+    const_object_pointer obj
+)
+{
+    ASBIND20_ASSERT(ctx != nullptr);
+    return set_script_arg(*ctx, idx, obj);
+}
+
+template <typename Class>
+requires std::is_class_v<std::remove_cvref_t<Class>>
+int set_script_arg(
+    context_pointer ctx,
+    arg_index_type idx,
+    Class&& obj
+)
+{
+    ASBIND20_ASSERT(ctx != nullptr);
+    return set_script_arg(*ctx, idx, std::forward<Class>(obj));
+}
+
+template <typename Tuple>
+void apply_script_args(
+    context_pointer ctx, Tuple&& tp
+)
+{
+    ASBIND20_ASSERT(ctx != nullptr);
+    apply_script_args(*ctx, std::forward<Tuple>(tp));
+}
+
+inline int set_script_object(
     context_pointer ctx, const void* obj
 )
 {
-    return ctx->SetObject(const_cast<void*>(obj));
+    ASBIND20_ASSERT(ctx != nullptr);
+    return set_script_object(*ctx, obj);
 }
 
 template <script_object_handle Object>
@@ -184,9 +315,11 @@ int set_script_object(
     context_pointer ctx, Object&& obj
 )
 {
-    const void* ptr = const_object_pointer(obj);
-    return set_script_object(ctx, ptr);
+    ASBIND20_ASSERT(ctx != nullptr);
+    return set_script_object(*ctx, std::forward<Object>(obj));
 }
+
+/// @}
 } // namespace asbind20
 
 #endif

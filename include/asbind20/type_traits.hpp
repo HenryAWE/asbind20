@@ -39,7 +39,7 @@ decltype(auto) get_script_return(context_reference ctx);
 
 template <std::integral T>
 int set_script_arg(
-    context_pointer ctx,
+    context_reference ctx,
     arg_index_type idx,
     const T& val
 );
@@ -59,7 +59,7 @@ struct underlying_enum_traits
         Enum val
     )
     {
-        return set_script_arg(&ctx, arg, static_cast<underlying_type>(val));
+        return set_script_arg(ctx, arg, static_cast<underlying_type>(val));
     }
 
     static Enum get_arg(
