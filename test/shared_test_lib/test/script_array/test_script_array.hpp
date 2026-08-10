@@ -113,7 +113,7 @@ Return run_string(
         std::terminate();
     }
 
-    auto& f = comp_result.get();
+    auto f = std::move(comp_result).get();
     asbind20::request_context ctx(engine);
     auto result = f(ctx);
 
