@@ -17,6 +17,7 @@
 #include "behaviour.hpp"
 #include "function_tools.hpp"
 #include "../util/assume.hpp"
+#include "../detail/prefix.inl"
 
 namespace asbind20
 {
@@ -5528,5 +5529,7 @@ concept class_binding_generator =
         typename T::class_binding_generator_tag;
     };
 } // namespace asbind20
+
+#include "../detail/suffix.inl"
 
 #endif
