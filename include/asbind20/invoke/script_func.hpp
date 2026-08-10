@@ -24,22 +24,21 @@ namespace asbind20
  */
 template <typename R, typename... Args>
 script_invoke_result<R> script_invoke(
-    context_pointer ctx,
+    context_reference ctx,
     function_pointer func,
     Args&&... args
 )
 {
     ASBIND20_ASSERT(func != nullptr);
-    ASBIND20_ASSERT(ctx != nullptr);
 
     [[maybe_unused]]
     int r = 0;
-    r = ctx->Prepare(func);
+    r = ctx.Prepare(func);
     ASBIND20_ASSERT(r >= 0);
 
     apply_script_args(ctx, std::forward_as_tuple(args...));
 
-    ctx->Execute();
+    ctx.Execute();
     return get_context_result<R>(ctx);
 }
 
@@ -49,25 +48,24 @@ script_invoke_result<R> script_invoke(
  */
 template <typename R, script_object_handle Object, typename... Args>
 script_invoke_result<R> script_invoke(
-    context_pointer ctx,
+    context_reference ctx,
     Object&& obj,
     function_pointer func,
     Args&&... args
 )
 {
     ASBIND20_ASSERT(func != nullptr);
-    ASBIND20_ASSERT(ctx != nullptr);
 
     [[maybe_unused]]
     int r = 0;
-    r = ctx->Prepare(func);
+    r = ctx.Prepare(func);
     ASBIND20_ASSERT(r >= 0);
     r = set_script_object(ctx, std::forward<Object>(obj));
     ASBIND20_ASSERT(r >= 0);
 
     apply_script_args(ctx, std::forward_as_tuple(std::forward<Args>(args)...));
 
-    ctx->Execute();
+    ctx.Execute();
     return get_context_result<R>(ctx);
 }
 
@@ -133,7 +131,7 @@ public:
     }
 
     result_type operator()(
-        context_pointer ctx, Args... args
+        context_reference ctx, Args... args
     ) const
     {
         handle_type func = target();
@@ -141,6 +139,14 @@ public:
             detail::throw_bad_call();
 
         return script_invoke<R>(ctx, func, std::forward<Args>(args)...);
+    }
+
+    result_type operator()(
+        context_pointer ctx, Args... args
+    ) const
+    {
+        ASBIND20_ASSERT(ctx != nullptr);
+        return operator()(*ctx, std::forward<Args>(args)...);
     }
 
 private:
@@ -201,7 +207,7 @@ public:
 
     template <script_object_handle Object>
     result_type operator()(
-        context_pointer ctx, Object&& obj, Args... args
+        context_reference ctx, Object&& obj, Args... args
     ) const
     {
         handle_type func = target();
@@ -209,6 +215,15 @@ public:
             detail::throw_bad_call();
 
         return script_invoke<R>(ctx, std::forward<Object>(obj), func, std::forward<Args>(args)...);
+    }
+
+    template <script_object_handle Object>
+    result_type operator()(
+        context_pointer ctx, Object&& obj, Args... args
+    ) const
+    {
+        ASBIND20_ASSERT(ctx != nullptr);
+        return operator()(*ctx, std::forward<Object>(obj), std::forward<Args>(args)...);
     }
 
 private:
@@ -367,7 +382,7 @@ public:
         : my_base(rf.target()) {}
 
     result_type operator()(
-        context_pointer ctx, Args... args
+        context_reference ctx, Args... args
     ) const
     {
         handle_type func = target();
@@ -375,6 +390,14 @@ public:
             detail::throw_bad_call();
 
         return script_invoke<R>(ctx, func, std::forward<Args>(args)...);
+    }
+
+    result_type operator()(
+        context_pointer ctx, Args... args
+    ) const
+    {
+        ASBIND20_ASSERT(ctx != nullptr);
+        return operator()(*ctx, std::forward<Args>(args)...);
     }
 
     void swap(script_function& other) noexcept
@@ -414,7 +437,7 @@ public:
 
     template <script_object_handle Object>
     result_type operator()(
-        context_pointer ctx, Object&& obj, Args... args
+        context_reference ctx, Object&& obj, Args... args
     ) const
     {
         handle_type func = target();
@@ -424,8 +447,17 @@ public:
         return script_invoke<R>(ctx, std::forward<Object>(obj), func, std::forward<Args>(args)...);
     }
 
+    template <script_object_handle Object>
     result_type operator()(
-        context_pointer ctx, const void* obj, Args... args
+        context_pointer ctx, Object&& obj, Args... args
+    ) const
+    {
+        ASBIND20_ASSERT(ctx != nullptr);
+        return operator()(*ctx, std::forward<Object>(obj), std::forward<Args>(args)...);
+    }
+
+    result_type operator()(
+        context_reference ctx, const void* obj, Args... args
     ) const
     {
         handle_type func = target();
@@ -433,6 +465,14 @@ public:
             detail::throw_bad_call();
 
         return script_invoke<R>(ctx, obj, func, std::forward<Args>(args)...);
+    }
+
+    result_type operator()(
+        context_pointer ctx, const void* obj, Args... args
+    ) const
+    {
+        ASBIND20_ASSERT(ctx != nullptr);
+        return operator()(*ctx, obj, std::forward<Args>(args)...);
     }
 
     void swap(script_method& other) noexcept
@@ -445,6 +485,39 @@ public:
         return target();
     }
 };
+
+/**
+ * @brief Pointer overloads of `script_invoke`
+ *
+ * These overloads forward to the reference versions.
+ * The context pointer should not be null.
+ */
+/// @{
+
+template <typename R, typename... Args>
+script_invoke_result<R> script_invoke(
+    context_pointer ctx,
+    function_pointer func,
+    Args&&... args
+)
+{
+    ASBIND20_ASSERT(ctx != nullptr);
+    return script_invoke<R>(*ctx, func, std::forward<Args>(args)...);
+}
+
+template <typename R, script_object_handle Object, typename... Args>
+script_invoke_result<R> script_invoke(
+    context_pointer ctx,
+    Object&& obj,
+    function_pointer func,
+    Args&&... args
+)
+{
+    ASBIND20_ASSERT(ctx != nullptr);
+    return script_invoke<R>(*ctx, std::forward<Object>(obj), func, std::forward<Args>(args)...);
+}
+
+/// @}
 } // namespace asbind20
 
 #endif
