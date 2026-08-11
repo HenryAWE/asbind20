@@ -4,23 +4,14 @@
 #include <asbind_test/framework.hpp>
 #include <asbind20/container/small_vector.hpp>
 #include <gmock/gmock.h>
+#include "sv_helper.hpp"
 
 namespace
 {
 using namespace asbind20;
 
-using sv_type = container::small_vector<
-    container::typeinfo_identity,
-    4 * sizeof(void*),
-    std::allocator<void>>;
-
-sv_type make_int_sv(std::initializer_list<int> values)
-{
-    sv_type v(nullptr, AS_NAMESPACE_QUALIFIER asTYPEID_INT32);
-    for(int val : values)
-        v.push_back(&val);
-    return v;
-}
+using sv_type = test_container::int_sv_type;
+using test_container::make_int_sv;
 } // namespace
 
 TEST(SmallVector, ConstIteratorBasics)

@@ -6,24 +6,14 @@
 #include <asbind_test/framework.hpp>
 #include <asbind20/container/small_vector.hpp>
 #include <gmock/gmock.h>
+#include "sv_helper.hpp"
 
 namespace
 {
 using namespace asbind20;
 
-using sv_type = container::small_vector<
-    container::typeinfo_identity,
-    4 * sizeof(void*),
-    std::allocator<void>>;
-
-sv_type make_int_sv()
-{
-    // We won't use any AngelScript APIs for primitive element types,
-    // so we can pass nullptr for the engine and use the type ID directly
-    return sv_type(
-        nullptr, AS_NAMESPACE_QUALIFIER asTYPEID_INT32
-    );
-}
+using sv_type = test_container::int_sv_type;
+using test_container::make_int_sv;
 
 void push_ints(sv_type& v, std::initializer_list<int> values)
 {
@@ -34,7 +24,7 @@ void push_ints(sv_type& v, std::initializer_list<int> values)
 
 TEST(SmallVector, ResizeGrow)
 {
-    auto v = make_int_sv();
+    auto v = make_int_sv({});
     v.resize(5);
     ASSERT_EQ(v.size(), 5);
     for(std::size_t i = 0; i < v.size(); ++i)
@@ -47,8 +37,7 @@ TEST(SmallVector, ResizeGrow)
 
 TEST(SmallVector, ResizeShrink)
 {
-    auto v = make_int_sv();
-    push_ints(v, {0, 1, 2, 3});
+    auto v = make_int_sv({0, 1, 2, 3});
 
     v.resize(2);
     ASSERT_EQ(v.size(), 2);
@@ -58,8 +47,7 @@ TEST(SmallVector, ResizeShrink)
 
 TEST(SmallVector, ResizeToZero)
 {
-    auto v = make_int_sv();
-    push_ints(v, {0, 1, 2});
+    auto v = make_int_sv({0, 1, 2});
 
     v.resize(0);
     EXPECT_THAT(v, ::testing::IsEmpty());
@@ -67,8 +55,7 @@ TEST(SmallVector, ResizeToZero)
 
 TEST(SmallVector, ResizeNoChange)
 {
-    auto v = make_int_sv();
-    push_ints(v, {7});
+    auto v = make_int_sv({7});
 
     v.resize(1); // same size, must be a no-op
     ASSERT_EQ(v.size(), 1);
@@ -77,8 +64,7 @@ TEST(SmallVector, ResizeNoChange)
 
 TEST(SmallVector, Assign)
 {
-    auto v = make_int_sv();
-    push_ints(v, {0, 1, 2});
+    auto v = make_int_sv({0, 1, 2});
 
     int val = 42;
     v.assign(1, &val);
@@ -97,8 +83,7 @@ TEST(SmallVector, Remove)
 {
     // `remove()` moves the element to the end of the buffer without
     // shrinking the size; the caller is expected to erase the tail later.
-    auto v = make_int_sv();
-    push_ints(v, {0, 1, 2, 3});
+    auto v = make_int_sv({0, 1, 2, 3});
 
     v.remove(1);
     ASSERT_EQ(v.size(), 4);
@@ -117,8 +102,7 @@ TEST(SmallVector, Remove)
 
 TEST(SmallVector, Reverse)
 {
-    auto v = make_int_sv();
-    push_ints(v, {0, 1, 2, 3, 4});
+    auto v = make_int_sv({0, 1, 2, 3, 4});
 
     v.reverse(0, 5);
     ASSERT_EQ(v.size(), 5);
@@ -142,8 +126,7 @@ TEST(SmallVector, Reverse)
 
 TEST(SmallVector, ReverseNoOp)
 {
-    auto v = make_int_sv();
-    push_ints(v, {0, 1, 2});
+    auto v = make_int_sv({0, 1, 2});
 
     v.reverse(0, 0); // n == 0 -> no effect
     ASSERT_EQ(v.size(), 3);
@@ -156,8 +139,7 @@ TEST(SmallVector, ReverseNoOp)
 
 TEST(SmallVector, DataAt)
 {
-    auto v = make_int_sv();
-    push_ints(v, {10, 20});
+    auto v = make_int_sv({10, 20});
 
     int* base = static_cast<int*>(v.data());
     ASSERT_THAT(base, ::testing::NotNull());
@@ -168,7 +150,7 @@ TEST(SmallVector, DataAt)
 
 TEST(SmallVector, ShrinkToFitFallbackToStatic)
 {
-    auto v = make_int_sv();
+    auto v = make_int_sv({});
 
     for(int i = 0; i < 64; ++i)
         v.push_back(&i);
@@ -185,7 +167,7 @@ TEST(SmallVector, ShrinkToFitFallbackToStatic)
 
 TEST(SmallVector, ClearKeepsCapacity)
 {
-    auto v = make_int_sv();
+    auto v = make_int_sv({});
     for(int i = 0; i < 16; ++i)
         v.push_back(&i);
     std::size_t cap = v.capacity();
@@ -198,15 +180,14 @@ TEST(SmallVector, ClearKeepsCapacity)
 
 TEST(SmallVector, PopBackEmpty)
 {
-    auto v = make_int_sv();
+    auto v = make_int_sv({});
     v.pop_back(); // must be a no-op
     EXPECT_THAT(v, ::testing::IsEmpty());
 }
 
 TEST(SmallVector, EraseAll)
 {
-    auto v = make_int_sv();
-    push_ints(v, {0, 1, 2});
+    auto v = make_int_sv({0, 1, 2});
 
     v.erase(0, v.size());
     EXPECT_THAT(v, ::testing::IsEmpty());
@@ -214,8 +195,7 @@ TEST(SmallVector, EraseAll)
 
 TEST(SmallVector, EraseZeroCount)
 {
-    auto v = make_int_sv();
-    push_ints(v, {0, 1, 2});
+    auto v = make_int_sv({0, 1, 2});
 
     v.erase(0, 0); // n == 0 -> no effect
     ASSERT_EQ(v.size(), 3);
@@ -228,7 +208,7 @@ TEST(SmallVector, EraseZeroCount)
 
 TEST(SmallVector, PushBackN)
 {
-    auto v = make_int_sv();
+    auto v = make_int_sv({});
     int val = 42;
     v.push_back_n(3, &val);
     ASSERT_EQ(v.size(), 3);
@@ -241,7 +221,7 @@ TEST(SmallVector, PushBackN)
 
 TEST(SmallVector, EmplaceBackN)
 {
-    auto v = make_int_sv();
+    auto v = make_int_sv({});
     v.emplace_back_n(5);
     ASSERT_EQ(v.size(), 5);
     for(std::size_t i = 0; i < v.size(); ++i)
@@ -253,8 +233,7 @@ TEST(SmallVector, EmplaceBackN)
 
 TEST(SmallVector, OperatorIndexOutOfRangeReturnsNull)
 {
-    auto v = make_int_sv();
-    push_ints(v, {0, 1});
+    auto v = make_int_sv({0, 1});
     EXPECT_THAT(v[0], ::testing::NotNull());
     EXPECT_EQ(v[2], nullptr);   // past-the-end
     EXPECT_EQ(v[100], nullptr); // far out of range
@@ -262,8 +241,7 @@ TEST(SmallVector, OperatorIndexOutOfRangeReturnsNull)
 
 TEST(SmallVector, VisitPrimitive)
 {
-    auto v = make_int_sv();
-    push_ints(v, {0, 1, 2, 3, 4});
+    auto v = make_int_sv({0, 1, 2, 3, 4});
     const auto& cv = std::as_const(v);
 
     // The visitor must accept all pointer kinds because every branch of

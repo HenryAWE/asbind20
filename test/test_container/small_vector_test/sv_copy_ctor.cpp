@@ -2,27 +2,17 @@
 // Copying is deep: the copy owns its own storage independent from the source.
 
 #include <atomic>
-#include <cassert>
 #include <asbind_test/framework.hpp>
 #include <asbind20/container/small_vector.hpp>
 #include <gmock/gmock.h>
+#include "sv_helper.hpp"
 
 namespace
 {
 using namespace asbind20;
 
-using sv_type = container::small_vector<
-    container::typeinfo_identity,
-    4 * sizeof(void*),
-    std::allocator<void>>;
-
-sv_type make_int_sv(std::initializer_list<int> values)
-{
-    sv_type v(nullptr, AS_NAMESPACE_QUALIFIER asTYPEID_INT32);
-    for(int val : values)
-        v.push_back(&val);
-    return v;
-}
+using sv_type = test_container::int_sv_type;
+using test_container::make_int_sv;
 } // namespace
 
 TEST(SmallVector, CopyCtorEmpty)
@@ -186,6 +176,8 @@ namespace
 class copy_ref_foo
 {
 public:
+    using counter_type = AS_NAMESPACE_QUALIFIER asUINT;
+
     copy_ref_foo()
         : data(0)
     {
@@ -204,7 +196,7 @@ public:
 
     void release()
     {
-        assert(m_use_count != 0);
+        ASSERT_NE(m_use_count, 0);
         m_use_count -= 1;
         if(m_use_count == 0)
             delete this;
@@ -222,7 +214,7 @@ public:
     void release_refs(asbind20::engine_pointer) {}
 
     [[nodiscard]]
-    AS_NAMESPACE_QUALIFIER asUINT use_count() const
+    counter_type use_count() const
     {
         return m_use_count;
     }
@@ -232,7 +224,7 @@ public:
     inline static std::atomic<int> live_count;
 
 private:
-    AS_NAMESPACE_QUALIFIER asUINT m_use_count = 1;
+    counter_type m_use_count = 1;
 };
 
 void register_copy_ref_foo(engine_pointer engine)
