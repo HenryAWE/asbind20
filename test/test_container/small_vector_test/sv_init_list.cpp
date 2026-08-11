@@ -49,9 +49,8 @@ TEST(SmallVector, InitListEnum)
     using enum_value = compat::script_enum_value_type;
 
     // Manually simulate AngelScript's initialization list layout
-    alignas(std::max_align_t) std::byte buf[
-        sizeof(AS_NAMESPACE_QUALIFIER asUINT) + 3 * sizeof(enum_value)
-    ];
+    alignas(std::max_align_t) std::byte buf
+        [sizeof(AS_NAMESPACE_QUALIFIER asUINT) + 3 * sizeof(enum_value)];
     *reinterpret_cast<AS_NAMESPACE_QUALIFIER asUINT*>(buf) = 3;
     auto* data = reinterpret_cast<enum_value*>(buf + sizeof(AS_NAMESPACE_QUALIFIER asUINT));
     data[0] = static_cast<enum_value>(my_enum::one);
@@ -92,9 +91,8 @@ TEST(SmallVector, InitListString)
     // Manually simulate AngelScript's initialization list layout:
     // Build an initialization list of two std::string objects.
     // Buffer layout: [asUINT size][string body 0][string body 1]
-    alignas(std::max_align_t) std::byte buf[
-        sizeof(AS_NAMESPACE_QUALIFIER asUINT) + 2 * sizeof(std::string)
-    ];
+    alignas(std::max_align_t) std::byte buf
+        [sizeof(AS_NAMESPACE_QUALIFIER asUINT) + 2 * sizeof(std::string)];
     *reinterpret_cast<AS_NAMESPACE_QUALIFIER asUINT*>(buf) = 2;
     auto* body = buf + sizeof(AS_NAMESPACE_QUALIFIER asUINT);
     new(body) std::string("hello");
