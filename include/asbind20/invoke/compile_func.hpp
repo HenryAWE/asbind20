@@ -74,7 +74,7 @@ public:
     compile_function_result(compile_function_result&& other) noexcept = default;
 
     [[nodiscard]]
-    function_type get() const noexcept
+    function_type get() const& noexcept
     {
         return m_func;
     }
