@@ -717,8 +717,27 @@ private:
             ASBIND20_ASSERT(this != &other);
             this->reserve(other.size());
 
+            typeinfo_pointer ti = this->elem_type_info();
+            engine_pointer engine = ti->GetEngine();
+            ASBIND20_ASSERT(ti != nullptr);
+
             for(size_type i = 0; i < other.size(); ++i)
-                this->emplace_back_impl(other.value_ref_at(i));
+            {
+                void* src = other.value_ref_at(i);
+                if constexpr(IsHandle)
+                {
+                    // value_ref_at() returns the address of the stored handle
+                    src = src ? *static_cast<void**>(src) : nullptr;
+                }
+
+                void* obj = copy_obj_impl(engine, ti, src);
+                if constexpr(!IsHandle)
+                {
+                    if(!obj) [[unlikely]]
+                        return; // script exception
+                }
+                this->emplace_back_impl(obj);
+            }
         }
 
         // For implementing move constructor
