@@ -24,6 +24,12 @@
 #    pragma warning(disable : 4324)
 #endif
 
+#ifdef __GNUC__
+#    pragma GCC diagnostic push
+// Suppress false positive warning
+#    pragma GCC diagnostic ignored "-Warray-bounds"
+#endif
+
 namespace asbind20::container
 {
 namespace detail
@@ -1848,6 +1854,10 @@ public:
 
 #ifdef _MSC_VER
 #    pragma warning(pop)
+#endif
+
+#ifdef __GNUC__
+#    pragma GCC diagnostic pop
 #endif
 
 #endif
