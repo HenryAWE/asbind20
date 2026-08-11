@@ -50,10 +50,10 @@ TEST(SmallVector, InitListEnum)
 
     // Manually simulate AngelScript's initialization list layout
     alignas(std::max_align_t) std::byte buf[
-        sizeof(asUINT) + 3 * sizeof(enum_value)
+        sizeof(AS_NAMESPACE_QUALIFIER asUINT) + 3 * sizeof(enum_value)
     ];
-    *reinterpret_cast<asUINT*>(buf) = 3;
-    auto* data = reinterpret_cast<enum_value*>(buf + sizeof(asUINT));
+    *reinterpret_cast<AS_NAMESPACE_QUALIFIER asUINT*>(buf) = 3;
+    auto* data = reinterpret_cast<enum_value*>(buf + sizeof(AS_NAMESPACE_QUALIFIER asUINT));
     data[0] = static_cast<enum_value>(my_enum::one);
     data[1] = static_cast<enum_value>(my_enum::two);
     data[2] = static_cast<enum_value>(my_enum::three);
@@ -71,6 +71,46 @@ TEST(SmallVector, InitListEnum)
     EXPECT_EQ(
         *static_cast<enum_value*>(v[2]),
         static_cast<enum_value>(my_enum::three)
+    );
+}
+
+TEST(SmallVector, InitListString)
+{
+    using namespace asbind20;
+    auto engine = make_script_engine();
+    asbind_test::setup_script_string(engine, true);
+    asbind_test::setup_message_callback(engine);
+
+    auto* string_ti = engine->GetTypeInfoByName("string");
+    ASSERT_THAT(string_ti, ::testing::NotNull());
+
+    using sv_type = container::small_vector<
+        container::typeinfo_identity,
+        4 * sizeof(void*),
+        std::allocator<void>>;
+
+    // Manually simulate AngelScript's initialization list layout:
+    // Build an initialization list of two std::string objects.
+    // Buffer layout: [asUINT size][string body 0][string body 1]
+    alignas(std::max_align_t) std::byte buf[
+        sizeof(AS_NAMESPACE_QUALIFIER asUINT) + 2 * sizeof(std::string)
+    ];
+    *reinterpret_cast<AS_NAMESPACE_QUALIFIER asUINT*>(buf) = 2;
+    auto* body = buf + sizeof(AS_NAMESPACE_QUALIFIER asUINT);
+    new(body) std::string("hello");
+    new(body + sizeof(std::string)) std::string("world");
+
+    {
+        sv_type v(string_ti, script_init_list_repeat(buf));
+        ASSERT_EQ(v.size(), 2);
+        EXPECT_EQ(*static_cast<std::string*>(v[0]), "hello");
+        EXPECT_EQ(*static_cast<std::string*>(v[1]), "world");
+    }
+
+    // Destroy the strings kept in the buffer
+    std::destroy_n(
+        static_cast<std::string*>(static_cast<void*>(body)),
+        2
     );
 }
 
