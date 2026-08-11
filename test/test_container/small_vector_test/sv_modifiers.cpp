@@ -18,6 +18,8 @@ using sv_type = container::small_vector<
 
 sv_type make_int_sv()
 {
+    // We won't use any AngelScript APIs for primitive element types,
+    // so we can pass nullptr for the engine and use the type ID directly
     return sv_type(
         nullptr, AS_NAMESPACE_QUALIFIER asTYPEID_INT32
     );
@@ -222,4 +224,69 @@ TEST(SmallVector, EraseZeroCount)
         SCOPED_TRACE(string_concat("i = ", std::to_string(i)));
         EXPECT_EQ(*static_cast<int*>(v[i]), static_cast<int>(i));
     }
+}
+
+TEST(SmallVector, PushBackN)
+{
+    auto v = make_int_sv();
+    int val = 42;
+    v.push_back_n(3, &val);
+    ASSERT_EQ(v.size(), 3);
+    for(std::size_t i = 0; i < v.size(); ++i)
+    {
+        SCOPED_TRACE(string_concat("i = ", std::to_string(i)));
+        EXPECT_EQ(*static_cast<int*>(v[i]), 42);
+    }
+}
+
+TEST(SmallVector, EmplaceBackN)
+{
+    auto v = make_int_sv();
+    v.emplace_back_n(5);
+    ASSERT_EQ(v.size(), 5);
+    for(std::size_t i = 0; i < v.size(); ++i)
+    {
+        SCOPED_TRACE(string_concat("i = ", std::to_string(i)));
+        EXPECT_EQ(*static_cast<int*>(v[i]), 0);
+    }
+}
+
+TEST(SmallVector, OperatorIndexOutOfRangeReturnsNull)
+{
+    auto v = make_int_sv();
+    push_ints(v, {0, 1});
+    EXPECT_THAT(v[0], ::testing::NotNull());
+    EXPECT_EQ(v[2], nullptr);   // past-the-end
+    EXPECT_EQ(v[100], nullptr); // far out of range
+}
+
+TEST(SmallVector, VisitPrimitive)
+{
+    auto v = make_int_sv();
+    push_ints(v, {0, 1, 2, 3, 4});
+    const auto& cv = std::as_const(v);
+
+    // The visitor must accept all pointer kinds because every branch of
+    // visit_script_type is instantiated at compile time.
+    auto sum_visitor = [](int& sum)
+    {
+        return [&sum]<typename T>(T* start, T* stop)
+        {
+            if constexpr(std::same_as<T, int>)
+            {
+                for(int* it = start; it != stop; ++it)
+                    sum += *it;
+            }
+        };
+    };
+
+    // visit(start, count): elements [1, 4)
+    int sum = 0;
+    v.visit(sum_visitor(sum), 1, 3);
+    EXPECT_EQ(sum, 1 + 2 + 3);
+
+    // visit(iterator, iterator): elements [2, end)
+    int sum2 = 0;
+    v.visit(sum_visitor(sum2), cv.cbegin() + 2, cv.cend());
+    EXPECT_EQ(sum2, 2 + 3 + 4);
 }

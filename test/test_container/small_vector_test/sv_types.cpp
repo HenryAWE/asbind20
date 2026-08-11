@@ -153,3 +153,37 @@ TEST(SmallVector, DefaultScriptAllocator)
     for(int i = 0; i < 64; ++i)
         EXPECT_EQ(*static_cast<int*>(v[i]), i);
 }
+
+TEST(SmallVector, Int64AsElement)
+{
+    using namespace asbind20;
+
+    using sv_type = container::small_vector<
+        container::typeinfo_identity,
+        4 * sizeof(void*),
+        std::allocator<void>>;
+
+    sv_type v(nullptr, AS_NAMESPACE_QUALIFIER asTYPEID_INT64);
+    std::int64_t val = 123456789012345LL;
+    v.push_back(&val);
+    v.push_back(&val);
+    ASSERT_EQ(v.size(), 2);
+    EXPECT_EQ(*static_cast<std::int64_t*>(v[0]), 123456789012345LL);
+    EXPECT_EQ(*static_cast<std::int64_t*>(v[1]), 123456789012345LL);
+}
+
+TEST(SmallVector, UIntAsElement)
+{
+    using namespace asbind20;
+
+    using sv_type = container::small_vector<
+        container::typeinfo_identity,
+        4 * sizeof(void*),
+        std::allocator<void>>;
+
+    sv_type v(nullptr, AS_NAMESPACE_QUALIFIER asTYPEID_UINT32);
+    std::uint32_t val = 0xFFFFFFFFU;
+    v.push_back(&val);
+    ASSERT_EQ(v.size(), 1);
+    EXPECT_EQ(*static_cast<std::uint32_t*>(v[0]), 0xFFFFFFFFU);
+}
