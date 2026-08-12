@@ -45,6 +45,8 @@ Update
   The previous ``context_pointer`` overloads are kept as forwarding versions that
   assert on a null context, so existing call sites passing a pointer still work.
 
+- Make ``asbind20::library_version()`` informative.
+
 Bug fix
 ~~~~~~~
 
