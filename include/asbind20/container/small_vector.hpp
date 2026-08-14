@@ -718,8 +718,8 @@ private:
             this->reserve(other.size());
 
             typeinfo_pointer ti = this->elem_type_info();
-            engine_pointer engine = ti->GetEngine();
             ASBIND20_ASSERT(ti != nullptr);
+            engine_pointer engine = ti->GetEngine();
 
             for(size_type i = 0; i < other.size(); ++i)
             {
