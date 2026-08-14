@@ -10,8 +10,7 @@
 #pragma once
 
 #include <string>
-#include "../detail/config.hpp"
-#include "../detail/include_as.hpp"
+#include "../fwd.hpp"
 #ifdef ASBIND20_HAS_LIB_FORMAT
 #    include <format>
 #endif

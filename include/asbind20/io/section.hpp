@@ -13,7 +13,8 @@
 #include <filesystem>
 #include <fstream>
 #include <sstream>
-#include <asbind20/asbind.hpp>
+#include "../fwd.hpp"
+#include "../util/strutil.hpp"
 
 namespace asbind20::io
 {

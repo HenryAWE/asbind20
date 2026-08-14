@@ -9,11 +9,10 @@
 
 #pragma once
 
-#include "../fwd.hpp"
-#include <cassert>
 #include <cstring>
 #include <algorithm>
 #include <iostream>
+#include "../fwd.hpp"
 
 namespace asbind20
 {
