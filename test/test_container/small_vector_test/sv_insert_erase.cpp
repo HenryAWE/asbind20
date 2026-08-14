@@ -3,7 +3,6 @@
 
 #include <asbind_test/framework.hpp>
 #include <asbind20/container/small_vector.hpp>
-#include <gmock/gmock.h>
 #include "sv_helper.hpp"
 
 namespace

@@ -1,86 +1,14 @@
 // Tests for small_vector with reference type elements (asOBJ_REF / handles)
 // and the GC support via enum_refs().
 
-#include <atomic>
-#include <cassert>
 #include <asbind_test/framework.hpp>
 #include <asbind20/container/small_vector.hpp>
-#include <gmock/gmock.h>
+#include "sv_helper.hpp"
 
 namespace
 {
-using namespace asbind20;
-
-class sv_ref_foo
-{
-public:
-    sv_ref_foo()
-        : data(0)
-    {
-        ++live_count;
-    }
-
-    ~sv_ref_foo()
-    {
-        --live_count;
-    }
-
-    void addref()
-    {
-        m_use_count += 1;
-    }
-
-    void release()
-    {
-        assert(m_use_count != 0);
-        m_use_count -= 1;
-        if(m_use_count == 0)
-            delete this;
-    }
-
-    void set_gc_flag() {}
-
-    bool get_gc_flag() const
-    {
-        return true;
-    }
-
-    void enum_refs(asbind20::engine_pointer) {}
-
-    void release_refs(asbind20::engine_pointer) {}
-
-    [[nodiscard]]
-    AS_NAMESPACE_QUALIFIER asUINT use_count() const
-    {
-        return m_use_count;
-    }
-
-    int data = 0;
-
-    inline static std::atomic<int> live_count;
-
-private:
-    AS_NAMESPACE_QUALIFIER asUINT m_use_count = 1;
-};
-
-void register_sv_ref_foo(engine_pointer engine)
-{
-    ref_class<sv_ref_foo> c(
-        engine, "sv_ref_foo", AS_NAMESPACE_QUALIFIER asOBJ_GC
-    );
-    c.default_factory()
-        .addref(fp<&sv_ref_foo::addref>)
-        .release(fp<&sv_ref_foo::release>)
-        .set_gc_flag(fp<&sv_ref_foo::set_gc_flag>)
-        .get_gc_flag(fp<&sv_ref_foo::get_gc_flag>)
-        .enum_refs(fp<&sv_ref_foo::enum_refs>)
-        .release_refs(fp<&sv_ref_foo::release_refs>)
-        .method("uint use_count() const", fp<&sv_ref_foo::use_count>)
-        .property("int data", &sv_ref_foo::data);
-}
-
-using sv_type = container::small_vector<
-    container::typeinfo_identity,
+using sv_type = asbind20::container::small_vector<
+    asbind20::container::typeinfo_identity,
     4 * sizeof(void*),
     std::allocator<void>>;
 } // namespace
@@ -88,10 +16,11 @@ using sv_type = container::small_vector<
 TEST(SmallVector, RefHandleAsElement)
 {
     using namespace asbind20;
-    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
+    using test_container::sv_ref_foo;
+
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
-    register_sv_ref_foo(engine);
+    test_container::register_sv_ref_foo(engine);
 
     auto* foo_ti = engine->GetTypeInfoByName("sv_ref_foo");
     ASSERT_THAT(foo_ti, ::testing::NotNull());
@@ -100,6 +29,8 @@ TEST(SmallVector, RefHandleAsElement)
 
     const int baseline = sv_ref_foo::live_count;
     {
+        SCOPED_TRACE("baseline live_count = " + std::to_string(baseline));
+
         sv_type v(engine, foo_handle_id);
         EXPECT_TRUE(is_objhandle(v.element_type_id()));
 
@@ -142,24 +73,24 @@ TEST(SmallVector, RefHandleAsElement)
         ASSERT_EQ(v.size(), 2);
         EXPECT_EQ(sv_ref_foo::live_count, baseline + 2);
 
-        // enum_refs on handle elements must not crash
-        v.enum_refs();
+        v.enum_refs(); // Should be no-op
 
-        // clear -> all elements are released
         v.clear();
         EXPECT_EQ(sv_ref_foo::live_count, baseline);
     }
-    // Destructor releases the remaining elements
-    EXPECT_EQ(sv_ref_foo::live_count, baseline);
+
+    EXPECT_EQ(sv_ref_foo::live_count, baseline)
+        << "Destructor should release the remaining elements";
 }
 
 TEST(SmallVector, RefHandleResize)
 {
     using namespace asbind20;
-    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
+    using test_container::sv_ref_foo;
+
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
-    register_sv_ref_foo(engine);
+    test_container::register_sv_ref_foo(engine);
 
     int foo_handle_id = engine->GetTypeIdByDecl("sv_ref_foo@");
     ASSERT_TRUE(is_objhandle(foo_handle_id));

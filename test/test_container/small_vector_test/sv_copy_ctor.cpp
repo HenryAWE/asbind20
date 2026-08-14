@@ -1,23 +1,15 @@
-// Tests for small_vector copy construction.
-// Copying is deep: the copy owns its own storage independent from the source.
+// Tests for small_vector copy construction
 
-#include <atomic>
 #include <asbind_test/framework.hpp>
 #include <asbind20/container/small_vector.hpp>
-#include <gmock/gmock.h>
 #include "sv_helper.hpp"
-
-namespace
-{
-using namespace asbind20;
 
 using sv_type = test_container::int_sv_type;
 using test_container::make_int_sv;
-} // namespace
 
 TEST(SmallVector, CopyCtorEmpty)
 {
-    auto v = make_int_sv({});
+    auto v = make_int_sv();
     ASSERT_THAT(v, ::testing::IsEmpty());
 
     sv_type copy(v);
@@ -58,8 +50,8 @@ TEST(SmallVector, CopyCtorDynamic)
     EXPECT_NE(copy.data(), v.data());
     for(std::size_t i = 0; i < copy.size(); ++i)
     {
-        SCOPED_TRACE(string_concat("i = ", std::to_string(i)));
-        EXPECT_EQ(*static_cast<int*>(copy[i]), static_cast<int>(i));
+        EXPECT_EQ(*static_cast<int*>(copy[i]), static_cast<int>(i))
+            << "i = " << i;
     }
 
     // Modifying the source must not affect the copy
@@ -136,6 +128,7 @@ TEST(SmallVector, CopyCtorValueObject)
 TEST(SmallVector, CopyCtorString)
 {
     using namespace asbind20;
+
     auto engine = make_script_engine();
     asbind_test::setup_script_string(engine, true);
     asbind_test::setup_message_callback(engine);
@@ -157,10 +150,10 @@ TEST(SmallVector, CopyCtorString)
         std::string s = "world";
         v.push_back(&s);
     }
-    ASSERT_EQ(v.size(), 2);
+    EXPECT_EQ(v.size(), 2);
 
     sv_type copy(v);
-    ASSERT_EQ(copy.size(), 2);
+    EXPECT_EQ(copy.size(), 2);
     EXPECT_EQ(*static_cast<std::string*>(copy[0]), "hello");
     EXPECT_EQ(*static_cast<std::string*>(copy[1]), "world");
 
@@ -171,126 +164,57 @@ TEST(SmallVector, CopyCtorString)
     );
 }
 
-namespace
-{
-class copy_ref_foo
-{
-public:
-    using counter_type = AS_NAMESPACE_QUALIFIER asUINT;
-
-    copy_ref_foo()
-        : data(0)
-    {
-        ++live_count;
-    }
-
-    ~copy_ref_foo()
-    {
-        --live_count;
-    }
-
-    void addref()
-    {
-        m_use_count += 1;
-    }
-
-    void release()
-    {
-        ASSERT_NE(m_use_count, 0);
-        m_use_count -= 1;
-        if(m_use_count == 0)
-            delete this;
-    }
-
-    void set_gc_flag() {}
-
-    bool get_gc_flag() const
-    {
-        return true;
-    }
-
-    void enum_refs(asbind20::engine_pointer) {}
-
-    void release_refs(asbind20::engine_pointer) {}
-
-    [[nodiscard]]
-    counter_type use_count() const
-    {
-        return m_use_count;
-    }
-
-    int data = 0;
-
-    inline static std::atomic<int> live_count;
-
-private:
-    counter_type m_use_count = 1;
-};
-
-void register_copy_ref_foo(engine_pointer engine)
-{
-    ref_class<copy_ref_foo> c(
-        engine, "copy_ref_foo", AS_NAMESPACE_QUALIFIER asOBJ_GC
-    );
-    c.default_factory()
-        .addref(fp<&copy_ref_foo::addref>)
-        .release(fp<&copy_ref_foo::release>)
-        .set_gc_flag(fp<&copy_ref_foo::set_gc_flag>)
-        .get_gc_flag(fp<&copy_ref_foo::get_gc_flag>)
-        .enum_refs(fp<&copy_ref_foo::enum_refs>)
-        .release_refs(fp<&copy_ref_foo::release_refs>)
-        .method("uint use_count() const", fp<&copy_ref_foo::use_count>)
-        .property("int data", &copy_ref_foo::data);
-}
-} // namespace
-
 TEST(SmallVector, CopyCtorHandle)
 {
     using namespace asbind20;
-    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
+    using test_container::sv_ref_foo;
+
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
-    register_copy_ref_foo(engine);
+    test_container::register_sv_ref_foo(engine);
 
-    int foo_handle_id = engine->GetTypeIdByDecl("copy_ref_foo@");
-    ASSERT_TRUE(is_objhandle(foo_handle_id));
+    int sv_ref_foo_handle_tid = engine->GetTypeIdByDecl("sv_ref_foo@");
+    ASSERT_PRED1(&is_objhandle, sv_ref_foo_handle_tid);
 
     using sv_type = container::small_vector<
         container::typeinfo_identity,
         4 * sizeof(void*),
         std::allocator<void>>;
 
-    const int baseline = copy_ref_foo::live_count;
+    const int baseline = test_container::sv_ref_foo::live_count;
     {
-        sv_type v(engine, foo_handle_id);
+        SCOPED_TRACE("baseline live_count = " + std::to_string(baseline));
 
-        for(int i = 0; i < 2; ++i)
+        sv_type v(engine, sv_ref_foo_handle_tid);
+
+        for(int val : {10, 13})
         {
-            copy_ref_foo* obj = new copy_ref_foo;
-            obj->data = i;
+            sv_ref_foo* obj = new sv_ref_foo;
+            obj->data = val;
             v.push_back(&obj);
             obj->release();
         }
         ASSERT_EQ(v.size(), 2);
-        EXPECT_EQ(copy_ref_foo::live_count, baseline + 2);
+        EXPECT_EQ(sv_ref_foo::live_count, baseline + 2);
 
         // After copying, both containers share the same objects
         sv_type copy(v);
-        ASSERT_EQ(copy.size(), 2);
-        EXPECT_EQ(copy_ref_foo::live_count, baseline + 2);
+        EXPECT_EQ(copy.size(), 2);
+        EXPECT_EQ(sv_ref_foo::live_count, baseline + 2);
 
         // The handles in the copy point to the same objects as the source
-        auto* obj_a = *static_cast<copy_ref_foo**>(copy[0]);
-        auto* obj_b = *static_cast<copy_ref_foo**>(copy[1]);
+        auto* obj_a = *static_cast<sv_ref_foo**>(copy[0]);
+        auto* obj_b = *static_cast<sv_ref_foo**>(copy[1]);
         ASSERT_THAT(obj_a, ::testing::NotNull());
         ASSERT_THAT(obj_b, ::testing::NotNull());
-        EXPECT_EQ(obj_a->data, 0);
-        EXPECT_EQ(obj_b->data, 1);
+        EXPECT_EQ(obj_a->data, 10);
+        EXPECT_EQ(obj_b->data, 13);
 
         // Each container holds one reference
-        EXPECT_EQ(obj_a->use_count(), 2); // v + copy
+        EXPECT_EQ(obj_a->use_count(), 2);
         EXPECT_EQ(obj_b->use_count(), 2);
     }
-    // All references released on destruction
-    EXPECT_EQ(copy_ref_foo::live_count, baseline);
+
+    EXPECT_EQ(sv_ref_foo::live_count, baseline)
+        << "All references should be released on destruction";
 }
