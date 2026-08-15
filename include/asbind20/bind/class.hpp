@@ -1753,6 +1753,150 @@ private:
         }
     }
 
+    // Common implementation for the method() overload set.
+    template <typename Fn>
+    Derived& register_method_impl(
+        cstring_ref decl,
+        Fn&& fn,
+        detail::call_conv_type conv,
+        void* aux = nullptr
+    )
+    {
+        int r = this->register_method(
+            decl,
+            std::forward<Fn>(fn),
+            conv,
+            aux
+        );
+        listener_traits_type::on_method(
+            this->get_listener(), this->derived(), r
+        );
+        return this->derived();
+    }
+
+    template <typename Fn>
+    Derived& register_comp_method_impl(
+        cstring_ref decl,
+        Fn&& fn,
+        detail::call_conv_type conv,
+        composite_wrapper comp,
+        void* aux = nullptr
+    )
+    {
+        int r = this->register_comp_method(
+            decl,
+            std::forward<Fn>(fn),
+            conv,
+            comp,
+            aux
+        );
+        listener_traits_type::on_method(
+            this->get_listener(), this->derived(), r
+        );
+        return this->derived();
+    }
+
+    template <auto Method, detail::call_conv_type Conv>
+    Derived& method_fp_generic_impl(
+        cstring_ref decl,
+        void* aux = nullptr
+    )
+    {
+        return this->register_method_impl(
+            decl,
+            detail::to_asGENFUNC_t(fp<Method>, detail::cc<Conv>),
+            detail::generic_cc,
+            aux
+        );
+    }
+
+    template <
+        auto Method,
+        detail::call_conv_type Conv,
+        std::size_t... Is>
+    Derived& method_fp_var_generic_impl(
+        cstring_ref decl,
+        void* aux = nullptr
+    )
+    {
+        return this->register_method_impl(
+            decl,
+            detail::to_asGENFUNC_t(
+                fp<Method>, detail::cc<Conv>, var_type<Is...>
+            ),
+            detail::generic_cc,
+            aux
+        );
+    }
+
+    template <
+        noncapturing_native_lambda Lambda,
+        detail::call_conv_type Conv>
+    Derived& method_lambda_generic_impl(cstring_ref decl)
+    {
+        return this->register_method_impl(
+            decl,
+            detail::to_asGENFUNC_t(Lambda{}, detail::cc<Conv>),
+            detail::generic_cc
+        );
+    }
+
+    template <
+        noncapturing_native_lambda Lambda,
+        detail::call_conv_type Conv,
+        std::size_t... Is>
+    Derived& method_lambda_var_generic_impl(cstring_ref decl)
+    {
+        return this->register_method_impl(
+            decl,
+            detail::to_asGENFUNC_t(
+                Lambda{}, detail::cc<Conv>, var_type<Is...>
+            ),
+            detail::generic_cc
+        );
+    }
+
+    template <auto Method, auto Composite>
+    Derived& method_composite_generic_impl(cstring_ref decl)
+    {
+        return this->register_method_impl(
+            decl,
+            detail::to_asGENFUNC_t(
+                fp<Method>,
+                detail::cc<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>,
+                composite_wrapper_nontype<Composite>{}
+            ),
+            detail::generic_cc
+        );
+    }
+
+    template <auto Method, auto Composite, std::size_t... Is>
+    Derived& method_composite_var_generic_impl(cstring_ref decl)
+    {
+        return this->register_method_impl(
+            decl,
+            detail::to_asGENFUNC_t(
+                fp<Method>,
+                detail::cc<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>,
+                composite_wrapper_nontype<Composite>{},
+                var_type<Is...>
+            ),
+            detail::generic_cc
+        );
+    }
+
+    template <
+        fn_tools::wrapped_function Function,
+        detail::call_conv_type CallConv>
+    Derived& method_wrapped_impl(cstring_ref decl)
+    {
+        return this->register_method_impl(
+            decl,
+            Function::template generate<CallConv>(),
+            CallConv
+        );
+    }
+
 public:
     using my_base::get_listener;
 
@@ -1859,9 +2003,7 @@ public:
     ) requires(!ForceGeneric)
     {
         constexpr auto conv = method_callconv<Fn>();
-        int r = this->register_method(decl, fn, conv);
-        listener_traits_type::on_method(get_listener(), derived(), r);
-        return derived();
+        return this->register_method_impl(decl, fn, conv);
     }
 
     template <native_function Fn, bool ObjFirst>
@@ -1873,13 +2015,7 @@ public:
     ) requires(!ForceGeneric)
     {
         constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, false);
-        int r = this->register_method(
-            decl,
-            fn,
-            conv
-        );
-        listener_traits_type::on_method(get_listener(), derived(), r);
-        return derived();
+        return this->register_method_impl(decl, fn, conv);
     }
 
     Derived& method(
@@ -1887,13 +2023,11 @@ public:
         generic_function gfn
     )
     {
-        int r = this->register_method(
+        return this->register_method_impl(
             decl,
             gfn,
             detail::generic_cc
         );
-        listener_traits_type::on_method(get_listener(), derived(), r);
-        return derived();
     }
 
     template <
@@ -1906,14 +2040,12 @@ public:
     ) requires(!ForceGeneric)
     {
         constexpr auto conv = method_callconv_aux<Fn, Auxiliary>();
-        int r = this->register_method(
+        return this->register_method_impl(
             decl,
             std::forward<Fn>(fn),
             conv,
             my_base::get_auxiliary_address(aux)
         );
-        listener_traits_type::on_method(get_listener(), derived(), r);
-        return derived();
     }
 
     template <typename Auxiliary>
@@ -1923,14 +2055,12 @@ public:
         auxiliary_wrapper<Auxiliary> aux
     )
     {
-        int r = this->register_method(
+        return this->register_method_impl(
             decl,
             gfn,
             detail::generic_cc,
             my_base::get_auxiliary_address(aux)
         );
-        listener_traits_type::on_method(get_listener(), derived(), r);
-        return derived();
     }
 
     template <auto Method>
@@ -1941,13 +2071,7 @@ public:
     )
     {
         constexpr auto conv = method_callconv<Method>();
-        int r = this->register_method(
-            decl,
-            detail::to_asGENFUNC_t(fp<Method>, detail::cc<conv>),
-            detail::generic_cc
-        );
-        listener_traits_type::on_method(get_listener(), derived(), r);
-        return derived();
+        return this->template method_fp_generic_impl<Method, conv>(decl);
     }
 
     template <auto Method>
@@ -1972,14 +2096,9 @@ public:
     )
     {
         constexpr auto conv = method_callconv_aux<Method, Auxiliary>();
-        int r = this->register_method(
-            decl,
-            detail::to_asGENFUNC_t(fp<Method>, detail::cc<conv>),
-            detail::generic_cc,
-            my_base::get_auxiliary_address(aux)
+        return this->template method_fp_generic_impl<Method, conv>(
+            decl, my_base::get_auxiliary_address(aux)
         );
-        listener_traits_type::on_method(get_listener(), derived(), r);
-        return derived();
     }
 
     template <auto Method, typename Auxiliary>
@@ -2009,14 +2128,9 @@ public:
         // its calling convention should be THISCALL_OBJFIRST/LAST,
         // so we are getting convention with is_thiscall: true here.
         constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, true);
-        int r = this->register_method(
-            decl,
-            detail::to_asGENFUNC_t(fp<Method>, detail::cc<conv>),
-            detail::generic_cc,
-            my_base::get_auxiliary_address(aux)
+        return this->template method_fp_generic_impl<Method, conv>(
+            decl, my_base::get_auxiliary_address(aux)
         );
-        listener_traits_type::on_method(get_listener(), derived(), r);
-        return derived();
     }
 
     template <auto Method, typename Auxiliary, bool ObjFirst>
@@ -2035,13 +2149,12 @@ public:
             // its calling convention should be THISCALL_OBJFIRST/LAST,
             // so we are getting convention with is_thiscall: true here.
             constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, true);
-            int r = this->register_method(
+            return this->register_method_impl(
                 decl,
                 Method,
                 conv,
                 my_base::get_auxiliary_address(aux)
             );
-            listener_traits_type::on_method(get_listener(), derived(), r);
         }
         return derived();
     }
@@ -2054,13 +2167,7 @@ public:
     )
     {
         constexpr auto conv = method_callconv<Lambda>();
-        int r = this->register_method(
-            decl,
-            detail::to_asGENFUNC_t(Lambda{}, detail::cc<conv>),
-            detail::generic_cc
-        );
-        listener_traits_type::on_method(get_listener(), derived(), r);
-        return derived();
+        return this->template method_lambda_generic_impl<Lambda, conv>(decl);
     }
 
     template <noncapturing_native_lambda Lambda, bool ObjFirst>
@@ -2072,13 +2179,7 @@ public:
     )
     {
         constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, false);
-        int r = this->register_method(
-            decl,
-            detail::to_asGENFUNC_t(Lambda{}, detail::cc<conv>),
-            detail::generic_cc
-        );
-        listener_traits_type::on_method(get_listener(), derived(), r);
-        return derived();
+        return this->template method_lambda_generic_impl<Lambda, conv>(decl);
     }
 
     template <noncapturing_native_lambda Lambda>
@@ -2092,12 +2193,11 @@ public:
         else
         {
             constexpr auto conv = method_callconv<Lambda>();
-            int r = this->register_method(
+            return this->register_method_impl(
                 decl,
                 +Lambda{},
                 detail::cc<conv>
             );
-            listener_traits_type::on_method(get_listener(), derived(), r);
         }
         return derived();
     }
@@ -2114,12 +2214,7 @@ public:
         else
         {
             constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, false);
-            int r = this->register_method(
-                decl,
-                detail::to_asGENFUNC_t(Lambda{}, detail::cc<conv>),
-                detail::generic_cc
-            );
-            listener_traits_type::on_method(get_listener(), derived(), r);
+            return this->template method_lambda_generic_impl<Lambda, conv>(decl);
         }
         return derived();
     }
@@ -2135,17 +2230,9 @@ public:
     )
     {
         constexpr auto conv = method_callconv<Function>();
-        int r = this->register_method(
-            decl,
-            detail::to_asGENFUNC_t(
-                fp<Function>,
-                detail::cc<conv>,
-                var_type<Is...>
-            ),
-            detail::generic_cc
+        return this->template method_fp_var_generic_impl<Function, conv, Is...>(
+            decl
         );
-        listener_traits_type::on_method(get_listener(), derived(), r);
-        return derived();
     }
 
     template <
@@ -2177,18 +2264,9 @@ public:
     )
     {
         constexpr auto conv = method_callconv_aux<Function, Auxiliary>();
-        int r = this->register_method(
-            decl,
-            detail::to_asGENFUNC_t(
-                fp<Function>,
-                detail::cc<conv>,
-                var_type<Is...>
-            ),
-            detail::generic_cc,
-            my_base::get_auxiliary_address(aux)
+        return this->template method_fp_var_generic_impl<Function, conv, Is...>(
+            decl, my_base::get_auxiliary_address(aux)
         );
-        listener_traits_type::on_method(get_listener(), derived(), r);
-        return derived();
     }
 
     template <
@@ -2207,17 +2285,9 @@ public:
         else
         {
             constexpr auto conv = method_callconv_aux<Function, Auxiliary>();
-            int r = this->register_method(
-                decl,
-                detail::to_asGENFUNC_t(
-                    fp<Function>,
-                    detail::cc<conv>,
-                    var_type<Is...>
-                ),
-                detail::generic_cc,
-                my_base::get_auxiliary_address(aux)
+            return this->template method_fp_var_generic_impl<Function, conv, Is...>(
+                decl, my_base::get_auxiliary_address(aux)
             );
-            listener_traits_type::on_method(get_listener(), derived(), r);
         }
         return derived();
     }
@@ -2233,17 +2303,9 @@ public:
     )
     {
         constexpr auto conv = method_callconv<Lambda>();
-        int r = this->register_method(
-            decl,
-            detail::to_asGENFUNC_t(
-                Lambda{},
-                detail::cc<conv>,
-                var_type<Is...>
-            ),
-            detail::generic_cc
+        return this->template method_lambda_var_generic_impl<Lambda, conv, Is...>(
+            decl
         );
-        listener_traits_type::on_method(get_listener(), derived(), r);
-        return derived();
     }
 
     template <
@@ -2260,12 +2322,11 @@ public:
             this->method(use_generic, decl, Lambda{}, var_type<Is...>);
         else
         {
-            int r = this->register_method(
+            return this->register_method_impl(
                 decl,
                 +Lambda{},
                 detail::cc<conv>
             );
-            listener_traits_type::on_method(get_listener(), derived(), r);
         }
         return derived();
     }
@@ -2278,14 +2339,12 @@ public:
         composite_wrapper comp
     ) requires(!ForceGeneric)
     {
-        int r = this->register_comp_method(
+        return this->register_comp_method_impl(
             decl,
             fn,
             detail::cc<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>,
             comp
         );
-        listener_traits_type::on_method(get_listener(), derived(), r);
-        return derived();
     }
 
     template <auto Fn, auto Composite>
@@ -2297,18 +2356,8 @@ public:
         composite_wrapper_nontype<Composite>
     )
     {
-        int r = this->register_method(
-            decl,
-            // The composite offset will be handled by the generic wrapper
-            detail::to_asGENFUNC_t(
-                fp<Fn>,
-                detail::cc<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>,
-                composite_wrapper_nontype<Composite>{}
-            ),
-            detail::generic_cc
-        );
-        listener_traits_type::on_method(get_listener(), derived(), r);
-        return derived();
+        // The composite offset will be handled by the generic wrapper.
+        return this->template method_composite_generic_impl<Fn, Composite>(decl);
     }
 
     template <auto Fn, auto Composite>
@@ -2349,18 +2398,9 @@ public:
         var_type_t<Is...>
     )
     {
-        int r = this->register_method(
-            decl,
-            detail::to_asGENFUNC_t(
-                fp<Fn>,
-                detail::cc<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>,
-                composite_wrapper_nontype<Composite>{},
-                var_type<Is...>
-            ),
-            detail::generic_cc
+        return this->template method_composite_var_generic_impl<Fn, Composite, Is...>(
+            decl
         );
-        listener_traits_type::on_method(get_listener(), derived(), r);
-        return derived();
     }
 
     template <auto Fn, auto Composite, std::size_t... Is>
@@ -2400,13 +2440,9 @@ public:
         const Function&
     )
     {
-        int r = this->register_method(
-            decl,
-            Function::template generate<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>(),
-            AS_NAMESPACE_QUALIFIER asCALL_GENERIC
-        );
-        listener_traits_type::on_method(get_listener(), derived(), r);
-        return derived();
+        return this->template method_wrapped_impl<
+            Function,
+            AS_NAMESPACE_QUALIFIER asCALL_GENERIC>(decl);
     }
 
     template <fn_tools::wrapped_function Function>
@@ -2419,12 +2455,9 @@ public:
             this->method(use_generic, decl, Function{});
         else
         {
-            int r = this->register_method(
-                decl,
-                Function::template generate<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>(),
-                AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST
-            );
-            listener_traits_type::on_method(get_listener(), derived(), r);
+            return this->template method_wrapped_impl<
+                Function,
+                AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>(decl);
         }
         return derived();
     }
