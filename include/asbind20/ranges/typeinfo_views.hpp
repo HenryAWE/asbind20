@@ -4,6 +4,7 @@
 #pragma once
 
 #include <cassert>
+#include <compare>
 #include "common.hpp"
 #include "../util/strutil.hpp"
 #include "../detail/include_as.hpp"
@@ -99,6 +100,35 @@ namespace detail
             return derived().get_value(idx);
         }
 
+        friend bool operator==(
+            const Derived& lhs,
+            const Derived& rhs
+        ) noexcept
+        {
+            ASBIND20_ASSERT(
+                lhs.m_view == rhs.m_view &&
+                "Comparing unmatched iterator pair"
+            );
+            return lhs.index == rhs.index;
+        }
+
+        friend std::strong_ordering operator<=>(
+            const Derived& lhs,
+            const Derived& rhs
+        ) noexcept
+        {
+            ASBIND20_ASSERT(
+                lhs.m_view == rhs.m_view &&
+                "Comparing unmatched iterator pair"
+            );
+            return lhs.index <=> rhs.index;
+        }
+
+        explicit operator bool() const noexcept
+        {
+            return this->derived().m_view != nullptr;
+        }
+
     protected:
         constexpr indexed_iterator_interface() noexcept = default;
         constexpr indexed_iterator_interface(const indexed_iterator_interface&) noexcept = default;
@@ -116,64 +146,53 @@ namespace detail
             return static_cast<const Derived&>(*this);
         }
     };
+
+    template <typename Derived>
+    class typeinfo_based_view_interface : public view_interface<Derived>
+    {
+    public:
+        using size_type = AS_NAMESPACE_QUALIFIER asUINT;
+
+    protected:
+        constexpr typeinfo_based_view_interface(
+            const_typeinfo_pointer ti
+        ) noexcept
+            : m_ti(ti)
+        {}
+
+    public:
+        [[nodiscard]]
+        bool empty() const
+        {
+            return this->derived().size() == 0;
+        }
+
+        [[nodiscard]]
+        const_typeinfo_pointer get_type_info() const noexcept
+        {
+            return m_ti;
+        }
+
+    private:
+        constexpr Derived& derived() noexcept
+        {
+            return static_cast<Derived&>(*this);
+        }
+
+        constexpr const Derived& derived() const noexcept
+        {
+            return static_cast<const Derived&>(*this);
+        }
+
+    protected:
+        const_typeinfo_pointer m_ti;
+    };
 } // namespace detail
 
-#define ASBIND20_VIEWS_COMMON_ITER_MEMBERS_IMPL()                        \
-    iterator() noexcept = default;                                       \
-    iterator(const iterator&) noexcept = default;                        \
-    iterator& operator=(const iterator&) noexcept = default;             \
-    bool operator==(const iterator& rhs) const noexcept                  \
-    {                                                                    \
-        ASBIND20_ASSERT(                                                 \
-            this->m_view == rhs.m_view &&                                \
-            "Comparing unmatched iterator pair"                          \
-        );                                                               \
-        return this->index == rhs.index;                                 \
-    }                                                                    \
-    std::strong_ordering operator<=>(const iterator& rhs) const noexcept \
-    {                                                                    \
-        ASBIND20_ASSERT(                                                 \
-            this->m_view == rhs.m_view &&                                \
-            "Comparing unmatched iterator pair"                          \
-        );                                                               \
-        return this->index <=> rhs.index;                                \
-    }                                                                    \
-    explicit operator bool() const noexcept                              \
-    {                                                                    \
-        return this->m_view != nullptr;                                  \
-    }
-
-#define ASBIND20_VIEWS_TYPEINFO_BASED_VIEW_COMMON_MEMBERS_IMPL(size_getter) \
-    [[nodiscard]]                                                           \
-    size_type size() const                                                  \
-    {                                                                       \
-        if(this->m_ti == nullptr) [[unlikely]]                              \
-            return 0;                                                       \
-        return this->m_ti->size_getter();                                   \
-    }                                                                       \
-    [[nodiscard]]                                                           \
-    bool empty() const                                                      \
-    {                                                                       \
-        return size() == 0;                                                 \
-    }                                                                       \
-    [[nodiscard]]                                                           \
-    iterator begin() const noexcept                                         \
-    {                                                                       \
-        return {this, 0};                                                   \
-    }                                                                       \
-    [[nodiscard]]                                                           \
-    iterator end() const noexcept                                           \
-    {                                                                       \
-        return {this, this->size()};                                        \
-    }                                                                       \
-    [[nodiscard]]                                                           \
-    const_typeinfo_pointer get_type_info() const noexcept                   \
-    {                                                                       \
-        return this->m_ti;                                                  \
-    }
-
-class all_methods_view : public detail::view_interface<all_methods_view>
+class all_methods_view : public detail::typeinfo_based_view_interface<all_methods_view>
 {
+    using my_base = detail::typeinfo_based_view_interface<all_methods_view>;
+
 public:
     class iterator : public detail::indexed_iterator_interface<iterator>
     {
@@ -185,6 +204,8 @@ public:
         using value_type = function_pointer;
         using size_type = typename my_base::size_type;
 
+        iterator() noexcept = default;
+
     private:
         iterator(
             const all_methods_view* v,
@@ -193,10 +214,6 @@ public:
             : m_view(v), index(idx)
         {}
 
-    public:
-        ASBIND20_VIEWS_COMMON_ITER_MEMBERS_IMPL()
-
-    private:
         const all_methods_view* m_view = nullptr;
 
         value_type get_value(size_type idx) const
@@ -209,8 +226,6 @@ public:
         size_type index = 0;
     };
 
-    using size_type = typename iterator::size_type;
-
     all_methods_view() = delete;
     all_methods_view(const all_methods_view&) noexcept = default;
 
@@ -218,7 +233,7 @@ public:
         const_typeinfo_pointer ti,
         bool get_virtual = true
     ) noexcept
-        : m_ti(ti), m_get_virtual(get_virtual)
+        : my_base(ti), m_get_virtual(get_virtual)
     {}
 
     explicit all_methods_view(
@@ -228,15 +243,35 @@ public:
         : all_methods_view(std::addressof(ti), get_virtual)
     {}
 
-    ASBIND20_VIEWS_TYPEINFO_BASED_VIEW_COMMON_MEMBERS_IMPL(GetMethodCount)
+    [[nodiscard]]
+    size_type size() const
+    {
+        if(m_ti == nullptr) [[unlikely]]
+            return 0;
+        return m_ti->GetMethodCount();
+    }
+
+    [[nodiscard]]
+    iterator begin() const noexcept
+    {
+        return {this, 0};
+    }
+
+    [[nodiscard]]
+    iterator end() const noexcept
+    {
+        return {this, this->size()};
+    }
 
 private:
-    const_typeinfo_pointer m_ti;
     bool m_get_virtual;
 };
 
-class all_behaviours_view : public detail::view_interface<all_behaviours_view>
+class all_behaviours_view :
+    public detail::typeinfo_based_view_interface<all_behaviours_view>
 {
+    using my_base = detail::typeinfo_based_view_interface<all_behaviours_view>;
+
 public:
     class iterator : public detail::indexed_iterator_interface<iterator>
     {
@@ -250,6 +285,8 @@ public:
             function_pointer>;
         using size_type = typename my_base::size_type;
 
+        iterator() noexcept = default;
+
     private:
         iterator(
             const all_behaviours_view* v,
@@ -258,10 +295,6 @@ public:
             : m_view(v), index(idx)
         {}
 
-    public:
-        ASBIND20_VIEWS_COMMON_ITER_MEMBERS_IMPL()
-
-    private:
         const all_behaviours_view* m_view = nullptr;
 
         value_type get_value(size_type idx) const
@@ -276,15 +309,13 @@ public:
         size_type index = 0;
     };
 
-    using size_type = typename iterator::size_type;
-
     all_behaviours_view() = delete;
     all_behaviours_view(const all_behaviours_view&) noexcept = default;
 
     explicit all_behaviours_view(
         const_typeinfo_pointer ti
     ) noexcept
-        : m_ti(ti)
+        : my_base(ti)
     {}
 
     explicit all_behaviours_view(
@@ -293,14 +324,32 @@ public:
         : all_behaviours_view(std::addressof(ti))
     {}
 
-    ASBIND20_VIEWS_TYPEINFO_BASED_VIEW_COMMON_MEMBERS_IMPL(GetBehaviourCount)
+    [[nodiscard]]
+    size_type size() const
+    {
+        if(m_ti == nullptr) [[unlikely]]
+            return 0;
+        return m_ti->GetBehaviourCount();
+    }
 
-private:
-    const_typeinfo_pointer m_ti;
+    [[nodiscard]]
+    iterator begin() const noexcept
+    {
+        return {this, 0};
+    }
+
+    [[nodiscard]]
+    iterator end() const noexcept
+    {
+        return {this, this->size()};
+    }
 };
 
-class all_factories_view : public detail::view_interface<all_factories_view>
+class all_factories_view :
+    public detail::typeinfo_based_view_interface<all_factories_view>
 {
+    using my_base = detail::typeinfo_based_view_interface<all_factories_view>;
+
 public:
     class iterator : public detail::indexed_iterator_interface<iterator>
     {
@@ -312,6 +361,8 @@ public:
         using value_type = function_pointer;
         using size_type = typename my_base::size_type;
 
+        iterator() noexcept = default;
+
     private:
         iterator(
             const all_factories_view* v,
@@ -320,10 +371,6 @@ public:
             : m_view(v), index(idx)
         {}
 
-    public:
-        ASBIND20_VIEWS_COMMON_ITER_MEMBERS_IMPL()
-
-    private:
         const all_factories_view* m_view = nullptr;
 
         value_type get_value(size_type idx) const
@@ -336,27 +383,44 @@ public:
         size_type index = 0;
     };
 
-    using size_type = typename iterator::size_type;
-
     all_factories_view() = delete;
     all_factories_view(const all_factories_view&) noexcept = default;
 
     explicit all_factories_view(
         const_typeinfo_pointer ti
     ) noexcept
-        : m_ti(ti)
+        : my_base(ti)
     {}
 
-    ASBIND20_VIEWS_TYPEINFO_BASED_VIEW_COMMON_MEMBERS_IMPL(GetFactoryCount)
+    [[nodiscard]]
+    size_type size() const
+    {
+        if(m_ti == nullptr) [[unlikely]]
+            return 0;
+        return m_ti->GetFactoryCount();
+    }
 
-private:
-    const_typeinfo_pointer m_ti;
+    [[nodiscard]]
+    iterator begin() const noexcept
+    {
+        return {this, 0};
+    }
+
+    [[nodiscard]]
+    iterator end() const noexcept
+    {
+        return {this, this->size()};
+    }
 };
 
 template <std::integral UnderlyingType = int>
 class all_enum_values_view :
-    public detail::view_interface<all_enum_values_view<UnderlyingType>>
+    public detail::typeinfo_based_view_interface<all_enum_values_view<UnderlyingType>>
 {
+    using my_base =
+        detail::typeinfo_based_view_interface<all_enum_values_view<UnderlyingType>>;
+    using size_type = typename my_base::size_type;
+
 public:
 #ifndef ASBIND20_HAS_SCRIPT_ENUM_UNDERLYING_TYPE
     static_assert(
@@ -378,14 +442,13 @@ public:
         using size_type = AS_NAMESPACE_QUALIFIER asUINT;
         using value_type = std::pair<cstring_ref, UnderlyingType>;
 
+        iterator() noexcept = default;
+
     private:
         iterator(const all_enum_values_view* view, size_type idx) noexcept
-            : m_view(view), index(idx) {}
+            : m_view(view), index(idx)
+        {}
 
-    public:
-        ASBIND20_VIEWS_COMMON_ITER_MEMBERS_IMPL()
-
-    private:
         const all_enum_values_view* m_view = nullptr;
 
         value_type get_value(size_type idx) const
@@ -400,15 +463,13 @@ public:
         size_type index = 0;
     };
 
-    using size_type = typename iterator::size_type;
-
     all_enum_values_view() = delete;
     all_enum_values_view(const all_enum_values_view&) noexcept = default;
 
     explicit all_enum_values_view(
         const_typeinfo_pointer ti
     ) noexcept
-        : m_ti(ti)
+        : my_base(ti)
     {}
 
     explicit all_enum_values_view(
@@ -417,14 +478,26 @@ public:
         : all_enum_values_view(std::addressof(ti))
     {}
 
-    ASBIND20_VIEWS_TYPEINFO_BASED_VIEW_COMMON_MEMBERS_IMPL(GetEnumValueCount)
+    [[nodiscard]]
+    size_type size() const
+    {
+        if(this->m_ti == nullptr) [[unlikely]]
+            return 0;
+        return this->m_ti->GetEnumValueCount();
+    }
 
-private:
-    const_typeinfo_pointer m_ti;
+    [[nodiscard]]
+    iterator begin() const noexcept
+    {
+        return {this, 0};
+    }
+
+    [[nodiscard]]
+    iterator end() const noexcept
+    {
+        return {this, this->size()};
+    }
 };
-
-#undef ASBIND20_VIEWS_COMMON_ITER_MEMBERS_IMPL
-#undef ASBIND20_VIEWS_TYPEINFO_BASED_VIEW_COMMON_MEMBERS_IMPL
 
 namespace views
 {
