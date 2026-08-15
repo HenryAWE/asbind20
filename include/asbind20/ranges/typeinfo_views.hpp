@@ -221,6 +221,13 @@ public:
         : m_ti(ti), m_get_virtual(get_virtual)
     {}
 
+    explicit all_methods_view(
+        const_typeinfo_reference ti,
+        bool get_virtual = true
+    ) noexcept
+        : all_methods_view(std::addressof(ti), get_virtual)
+    {}
+
     ASBIND20_VIEWS_TYPEINFO_BASED_VIEW_COMMON_MEMBERS_IMPL(GetMethodCount)
 
 private:
@@ -278,6 +285,12 @@ public:
         const_typeinfo_pointer ti
     ) noexcept
         : m_ti(ti)
+    {}
+
+    explicit all_behaviours_view(
+        const_typeinfo_reference ti
+    ) noexcept
+        : all_behaviours_view(std::addressof(ti))
     {}
 
     ASBIND20_VIEWS_TYPEINFO_BASED_VIEW_COMMON_MEMBERS_IMPL(GetBehaviourCount)
@@ -396,6 +409,12 @@ public:
         const_typeinfo_pointer ti
     ) noexcept
         : m_ti(ti)
+    {}
+
+    explicit all_enum_values_view(
+        const_typeinfo_reference ti
+    ) noexcept
+        : all_enum_values_view(std::addressof(ti))
     {}
 
     ASBIND20_VIEWS_TYPEINFO_BASED_VIEW_COMMON_MEMBERS_IMPL(GetEnumValueCount)
