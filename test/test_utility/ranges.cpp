@@ -1,4 +1,5 @@
 #include <version>
+#include <algorithm>
 #include <vector>
 #include <asbind_test/framework.hpp>
 #include <asbind20/ranges/ranges.hpp>
@@ -322,12 +323,19 @@ TEST(Ranges, Tokenize)
 
 namespace test_utility
 {
-static std::string proc_args(asbind20::generic_pointer gen)
+static std::string proc_args(
+    asbind20::generic_pointer gen, int offset = 0
+)
 {
-    namespace abv = asbind20::views;
-    auto v = abv::all_generic_args(gen);
+    SCOPED_TRACE("offset = " + std::to_string(offset));
 
-    EXPECT_EQ(std::ranges::size(v), gen->GetArgCount());
+    namespace abv = asbind20::views;
+    auto v = abv::all_generic_args(gen, offset);
+
+    EXPECT_EQ(
+        std::ranges::size(v),
+        std::max(gen->GetArgCount() - offset, 0)
+    ) << "GetArgCount(): " << gen->GetArgCount();
 
     bool first = true;
     std::string result;
@@ -439,6 +447,116 @@ TEST(Ranges, GenericArguments)
         auto result = asbind20::script_invoke<std::string>(ctx, f3);
         ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), "1, 3.14, (string)");
+    }
+}
+
+TEST(Ranges, GenericArgumentsOffset)
+{
+    using namespace asbind20;
+    namespace abr = asbind20::ranges;
+
+    static_assert(std::ranges::view<abr::generic_view>);
+    static_assert(std::ranges::input_range<abr::generic_view>);
+    static_assert(std::ranges::sized_range<abr::generic_view>);
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine);
+    asbind_test::setup_script_string(engine);
+
+    generic_function offset_wrapper = [](generic_pointer gen) -> void
+    {
+        namespace abv = asbind20::views;
+
+        const int argc = gen->GetArgCount();
+        SCOPED_TRACE("GetArgCount (argc): " + std::to_string(argc));
+        auto v = abv::all_generic_args(gen, 1);
+
+        EXPECT_EQ(std::ranges::size(v), std::max(argc - 1, 0));
+        EXPECT_EQ(v.empty(), argc <= 1);
+        EXPECT_EQ(v.begin() == v.end(), argc <= 1);
+
+        int counter = 0;
+        for(auto&& [tid, addr] : v)
+        {
+            EXPECT_GE(tid, 1); // offset == 1
+            EXPECT_THAT(addr, ::testing::NotNull());
+            ++counter;
+        }
+        EXPECT_EQ(counter, std::ranges::size(v));
+
+        // generic_view must be usable directly as a view in a pipeline
+        auto piped =
+            abv::all_generic_args(gen) |
+            std::views::take(2);
+        EXPECT_EQ(
+            std::ranges::size(piped),
+            static_cast<std::size_t>(std::min(argc, 2))
+        );
+
+        set_generic_return<std::string>(
+            gen, test_utility::proc_args(gen, 1)
+        );
+    };
+
+    generic_function overflow_wrapper = [](generic_pointer gen) -> void
+    {
+        namespace abv = asbind20::views;
+
+        auto v = abv::all_generic_args(gen, 1000);
+        EXPECT_EQ(std::ranges::size(v), 0);
+        EXPECT_TRUE(v.empty());
+        EXPECT_EQ(v.begin(), v.end());
+
+        int counter = 0;
+        for(auto&& [tid, addr] : v)
+        {
+            EXPECT_GE(tid, 0);
+            EXPECT_THAT(addr, ::testing::NotNull());
+            ++counter;
+        }
+        EXPECT_EQ(counter, 0);
+
+        set_generic_return<std::string>(
+            gen, test_utility::proc_args(gen, 1000)
+        );
+    };
+
+    global<true>(engine)
+        .function(
+            "string proc_args_off(const?&in,const?&in,const?&in)",
+            offset_wrapper
+        )
+        .function(
+            "string proc_args_off_empty(const?&in,const?&in,const?&in)",
+            overflow_wrapper
+        );
+
+    auto* m = asbind20::create_module(engine, "test_offset");
+    m->AddScriptSection(
+        "test_offset",
+        "string f3() { return proc_args_off(1, 3.14, 'test'); }\n"
+        "string f3e() { return proc_args_off_empty(1, 3.14, 'test'); }"
+    );
+    ASSERT_GE(m->Build(), 0);
+
+    {
+        auto* f3 = m->GetFunctionByDecl("string f3()");
+        ASSERT_THAT(f3, ::testing::NotNull());
+
+        request_context ctx(engine);
+        auto result = asbind20::script_invoke<std::string>(ctx, f3);
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
+        EXPECT_EQ(result.value(), "3.14, (string)");
+    }
+
+    {
+        auto* f3e = m->GetFunctionByDecl("string f3e()");
+        ASSERT_THAT(f3e, ::testing::NotNull());
+
+        request_context ctx(engine);
+        auto result = asbind20::script_invoke<std::string>(ctx, f3e);
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
+        EXPECT_EQ(result.value(), "");
     }
 }
 

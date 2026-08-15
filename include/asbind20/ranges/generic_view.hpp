@@ -22,7 +22,20 @@ public:
         generic_pointer gen,
         size_type offset = 0
     ) noexcept
-        : m_gen(gen), m_off(offset) {}
+        : m_gen(gen)
+    {
+        if(offset >= 0) [[likely]]
+            m_off = offset;
+        else
+            m_off = 0;
+    }
+
+    generic_view(
+        generic_reference gen,
+        size_type offset = 0
+    ) noexcept
+        : generic_view(std::addressof(gen), offset)
+    {}
 
     class sentinel
     {};
@@ -108,7 +121,9 @@ public:
     [[nodiscard]]
     bool empty() const noexcept
     {
-        return m_gen == nullptr;
+        if(m_gen == nullptr) [[unlikely]]
+            return true;
+        return m_gen->GetArgCount() <= m_off;
     }
 
     iterator begin() const noexcept
@@ -128,15 +143,18 @@ public:
     }
 
     [[nodiscard]]
-    int size() const
+    size_type size() const
     {
         if(m_gen == nullptr) [[unlikely]]
             return 0;
-        return m_gen->GetArgCount();
+        size_type count = m_gen->GetArgCount();
+        if(count <= m_off) [[unlikely]]
+            return 0;
+        return count - m_off;
     }
 
 private:
-    const generic_pointer m_gen = nullptr;
+    generic_pointer m_gen = nullptr;
     size_type m_off = 0;
 };
 
