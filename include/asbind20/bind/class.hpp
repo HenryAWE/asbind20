@@ -238,6 +238,81 @@ namespace detail
         }
     };
 
+    // Helpers shared by list_constructor and list_factory wrappers.
+    template <typename T>
+    concept repeat_list_based_policy =
+        policies::initialization_list_policy<T> &&
+        (std::same_as<T, policies::as_iterators> ||
+         std::same_as<T, policies::pointer_and_size> ||
+         std::same_as<T, policies::as_initializer_list> ||
+         std::same_as<T, policies::as_span>
+#ifdef ASBIND20_HAS_CONTAINERS_RANGES
+         || std::same_as<T, policies::as_from_range>
+#endif
+        );
+
+    template <bool Template, typename ListElementType>
+    ListElementType* get_list_buf_ptr(generic_pointer gen)
+    {
+        constexpr arg_index_type off = Template ? 1 : 0;
+        return *static_cast<ListElementType**>(
+            gen->GetAddressOfArg(off)
+        );
+    }
+
+    template <bool Template>
+    script_init_list_repeat get_list_repeat(generic_pointer gen)
+    {
+        constexpr arg_index_type off = Template ? 1 : 0;
+        return script_init_list_repeat(gen, off);
+    }
+
+    template <
+        typename Class,
+        typename ListElementType,
+        repeat_list_based_policy IListPolicy,
+        typename Fn>
+    decltype(auto) apply_list_policy(script_init_list_repeat list, Fn&& fn)
+    {
+        if constexpr(std::same_as<IListPolicy, policies::as_iterators>)
+        {
+            auto sp = list.to_span_of<ListElementType>();
+            return std::invoke(
+                std::forward<Fn>(fn), sp.begin(), sp.end()
+            );
+        }
+        else if constexpr(std::same_as<IListPolicy, policies::pointer_and_size>)
+        {
+            return std::invoke(
+                std::forward<Fn>(fn),
+                static_cast<ListElementType*>(list.data()),
+                list.size()
+            );
+        }
+#ifdef ASBIND20_HAS_CONTAINERS_RANGES
+        else if constexpr(std::same_as<IListPolicy, policies::as_from_range>)
+        {
+            auto sp = list.to_span_of<ListElementType>();
+            return std::invoke(std::forward<Fn>(fn), std::from_range, sp);
+        }
+#endif
+        else if constexpr(
+            std::same_as<IListPolicy, policies::as_initializer_list> ||
+            std::same_as<IListPolicy, policies::as_span>
+        )
+        {
+            return std::invoke(
+                std::forward<Fn>(fn),
+                IListPolicy::template convert<ListElementType>(list)
+            );
+        }
+        else
+        {
+            // Suppress warnings
+            util::unreachable();
+        }
+    }
+
     template <
         typename Class,
         bool Template,
@@ -253,19 +328,13 @@ namespace detail
     {
         static void impl_generic(generic_pointer gen)
         {
+            void* mem = gen->GetObject();
+            auto* list_buf = get_list_buf_ptr<Template, ListElementType>(gen);
+
             if constexpr(Template)
-            {
-                void* mem = gen->GetObject();
-                new(mem) Class(
-                    get_generic_typeinfo(gen),
-                    *static_cast<ListElementType**>(gen->GetAddressOfArg(1))
-                );
-            }
+                new(mem) Class(get_generic_typeinfo(gen), list_buf);
             else
-            {
-                void* mem = gen->GetObject();
-                new(mem) Class(*static_cast<ListElementType**>(gen->GetAddressOfArg(0)));
-            }
+                new(mem) Class(list_buf);
         }
 
         static void impl_objlast_template(
@@ -307,19 +376,13 @@ namespace detail
     {
         static void impl_generic(generic_pointer gen)
         {
+            void* mem = gen->GetObject();
+            auto list = get_list_repeat<Template>(gen);
+
             if constexpr(Template)
-            {
-                void* mem = gen->GetObject();
-                new(mem) Class(
-                    get_generic_typeinfo(gen),
-                    script_init_list_repeat(gen, 1)
-                );
-            }
+                new(mem) Class(get_generic_typeinfo(gen), list);
             else
-            {
-                void* mem = gen->GetObject();
-                new(mem) Class(script_init_list_repeat(gen));
-            }
+                new(mem) Class(list);
         }
 
         static void impl_objlast_template(
@@ -371,7 +434,7 @@ namespace detail
         {
             apply_helper(
                 gen->GetObject(),
-                *static_cast<ListElementType**>(gen->GetAddressOfArg(0))
+                get_list_buf_ptr<false, ListElementType>(gen)
             );
         }
 
@@ -394,18 +457,6 @@ namespace detail
         }
     };
 
-    template <typename T>
-    concept repeat_list_based_policy =
-        policies::initialization_list_policy<T> &&
-        (std::same_as<T, policies::as_iterators> ||
-         std::same_as<T, policies::pointer_and_size> ||
-         std::same_as<T, policies::as_initializer_list> ||
-         std::same_as<T, policies::as_span>
-#ifdef ASBIND20_HAS_CONTAINERS_RANGES
-         || std::same_as<T, policies::as_from_range>
-#endif
-        );
-
     template <
         typename Class,
         bool Template,
@@ -415,36 +466,20 @@ namespace detail
     {
         static void from_list_helper(void* mem, script_init_list_repeat list)
         {
-            if constexpr(std::same_as<IListPolicy, policies::as_iterators>)
-            {
-                auto sp = list.to_span_of<ListElementType>();
-                new(mem) Class(sp.begin(), sp.end());
-            }
-            else if constexpr(std::same_as<IListPolicy, policies::pointer_and_size>)
-            {
-                new(mem) Class(static_cast<ListElementType*>(list.data()), list.size());
-            }
-#ifdef ASBIND20_HAS_CONTAINERS_RANGES
-            else if constexpr(std::same_as<IListPolicy, policies::as_from_range>)
-            {
-                auto sp = list.to_span_of<ListElementType>();
-                new(mem) Class(std::from_range, sp);
-            }
-#endif
-            else if constexpr(
-                std::same_as<IListPolicy, policies::as_initializer_list> ||
-                std::same_as<IListPolicy, policies::as_span>
-            )
-            {
-                new(mem) Class(IListPolicy::template convert<ListElementType>(list));
-            }
+            apply_list_policy<Class, ListElementType, IListPolicy>(
+                list,
+                [mem]<typename... Args>(Args&&... args) -> void
+                {
+                    new(mem) Class(std::forward<Args>(args)...);
+                }
+            );
         }
 
         static void impl_generic(generic_pointer gen)
         {
             from_list_helper(
                 gen->GetObject(),
-                script_init_list_repeat(gen)
+                get_list_repeat<false>(gen)
             );
         }
 
@@ -713,19 +748,13 @@ namespace detail
         static void impl_generic(generic_pointer gen)
         {
             Class* ptr;
+            auto* list_buf = get_list_buf_ptr<Template, ListElementType>(gen);
+
             if constexpr(Template)
-            {
-                ptr = new Class(
-                    get_generic_typeinfo(gen),
-                    *static_cast<ListElementType**>(gen->GetAddressOfArg(1))
-                );
-            }
+                ptr = new Class(get_generic_typeinfo(gen), list_buf);
             else
-            {
-                ptr = new Class(
-                    *static_cast<ListElementType**>(gen->GetAddressOfArg(0))
-                );
-            }
+                ptr = new Class(list_buf);
+
             gen->SetReturnAddress(ptr);
         }
 
@@ -769,20 +798,18 @@ namespace detail
         static void impl_generic(generic_pointer gen)
         {
             Class* ptr;
+            auto* list_buf = get_list_buf_ptr<Template, ListElementType>(gen);
+
             if constexpr(Template)
             {
                 auto* ti = get_generic_typeinfo(gen);
                 ASBIND20_ASSUME(ti != nullptr);
-                ptr = new Class(
-                    ti, *static_cast<ListElementType**>(gen->GetAddressOfArg(1))
-                );
+                ptr = new Class(ti, list_buf);
                 notifier::notify_gc_if_necessary(ptr, ti);
             }
             else
             {
-                ptr = new Class(
-                    *static_cast<ListElementType**>(gen->GetAddressOfArg(0))
-                );
+                ptr = new Class(list_buf);
 
                 // Expects the typeinfo is passed by auxiliary pointer (see the helper "auxiliary(this_type)")
                 auto* ti = get_generic_auxiliary<typeinfo_pointer>(gen);
@@ -852,7 +879,9 @@ namespace detail
 
         static void impl_generic(generic_pointer gen)
         {
-            auto* ptr = apply_helper(*static_cast<ListElementType**>(gen->GetAddressOfArg(0)));
+            auto* ptr = apply_helper(
+                get_list_buf_ptr<false, ListElementType>(gen)
+            );
             if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
             {
                 auto* ti = get_generic_auxiliary<typeinfo_pointer>(gen);
@@ -907,9 +936,10 @@ namespace detail
 
         static void impl_generic(generic_pointer gen)
         {
+            auto list = get_list_repeat<false>(gen);
             if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
             {
-                auto* ptr = new Class(script_init_list_repeat(gen));
+                auto* ptr = new Class(list);
                 // Works together with the helper "auxiliary(this_type)"
                 auto* ti = get_generic_auxiliary<typeinfo_pointer>(gen);
                 ASBIND20_ASSERT(ti != nullptr);
@@ -918,9 +948,7 @@ namespace detail
             }
             else
             {
-                gen->SetReturnAddress(
-                    new Class(script_init_list_repeat(gen))
-                );
+                gen->SetReturnAddress(new Class(list));
             }
         }
 
@@ -972,7 +1000,7 @@ namespace detail
             auto* ti = get_generic_typeinfo(gen);
             auto* ptr = new Class(
                 ti,
-                script_init_list_repeat(gen, 1)
+                get_list_repeat<true>(gen)
             );
             notifier::notify_gc_if_necessary(ptr, ti);
             gen->SetReturnAddress(ptr);
@@ -1010,37 +1038,18 @@ namespace detail
 
         static Class* from_list_helper(script_init_list_repeat list)
         {
-            if constexpr(std::same_as<IListPolicy, policies::as_iterators>)
-            {
-                auto sp = list.to_span_of<ListElementType>();
-                return new Class(sp.begin(), sp.end());
-            }
-            else if constexpr(std::same_as<IListPolicy, policies::pointer_and_size>)
-            {
-                return new Class(static_cast<ListElementType*>(list.data()), list.size());
-            }
-#ifdef ASBIND20_HAS_CONTAINERS_RANGES
-            else if constexpr(std::same_as<IListPolicy, policies::as_from_range>)
-            {
-                auto sp = list.to_span_of<ListElementType>();
-                return new Class(std::from_range, sp);
-            }
-#endif
-            else if constexpr(
-                std::same_as<IListPolicy, policies::as_initializer_list> ||
-                std::same_as<IListPolicy, policies::as_span>
-            )
-            {
-                return new Class(IListPolicy::template convert<ListElementType>(list));
-            }
-
-            // It shouldn't reach here
-            util::unreachable();
+            return apply_list_policy<Class, ListElementType, IListPolicy>(
+                list,
+                []<typename... Args>(Args&&... args) -> Class*
+                {
+                    return new Class(std::forward<Args>(args)...);
+                }
+            );
         }
 
         static void impl_generic(generic_pointer gen)
         {
-            Class* ptr = from_list_helper(script_init_list_repeat(gen));
+            Class* ptr = from_list_helper(get_list_repeat<false>(gen));
             if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
             {
                 // Expects the typeinfo is passed by auxiliary pointer (see the helper "auxiliary(this_type)")
