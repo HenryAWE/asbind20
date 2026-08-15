@@ -2151,7 +2151,7 @@ public:
     )
     {
         if constexpr(ForceGeneric)
-            this->method(use_generic, decl, fp<Method>, aux, obj_loc<ObjFirst>);
+            return this->method(use_generic, decl, fp<Method>, aux, obj_loc<ObjFirst>);
         else
         {
             // For method with auxiliary object,
@@ -2165,7 +2165,6 @@ public:
                 my_base::get_auxiliary_address(aux)
             );
         }
-        return derived();
     }
 
     template <noncapturing_native_lambda Lambda>
@@ -2198,7 +2197,7 @@ public:
     )
     {
         if constexpr(ForceGeneric)
-            this->method(use_generic, decl, Lambda{});
+            return this->method(use_generic, decl, Lambda{});
         else
         {
             constexpr auto conv = method_callconv<Lambda>();
@@ -2208,7 +2207,6 @@ public:
                 detail::cc<conv>
             );
         }
-        return derived();
     }
 
     template <noncapturing_native_lambda Lambda, bool ObjFirst>
@@ -2219,13 +2217,15 @@ public:
     )
     {
         if constexpr(ForceGeneric)
+        {
             this->method(use_generic, decl, Lambda{}, obj_loc<ObjFirst>);
+            return derived();
+        }
         else
         {
             constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, false);
             return this->template method_lambda_generic_impl<Lambda, conv>(decl);
         }
-        return derived();
     }
 
     template <
@@ -2290,7 +2290,7 @@ public:
     )
     {
         if constexpr(ForceGeneric)
-            this->method(use_generic, decl, fp<Function>, var_type<Is...>, aux);
+            return this->method(use_generic, decl, fp<Function>, var_type<Is...>, aux);
         else
         {
             constexpr auto conv = method_callconv_aux<Function, Auxiliary>();
@@ -2298,7 +2298,6 @@ public:
                 decl, my_base::get_auxiliary_address(aux)
             );
         }
-        return derived();
     }
 
     template <
@@ -2328,7 +2327,7 @@ public:
     {
         constexpr auto conv = method_callconv<Lambda>();
         if constexpr(ForceGeneric)
-            this->method(use_generic, decl, Lambda{}, var_type<Is...>);
+            return this->method(use_generic, decl, Lambda{}, var_type<Is...>);
         else
         {
             return this->register_method_impl(
@@ -2337,7 +2336,6 @@ public:
                 detail::cc<conv>
             );
         }
-        return derived();
     }
 
     template <native_function Fn>
