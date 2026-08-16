@@ -37,7 +37,7 @@ inline cstring_ref get_function_section_name(
 )
 {
 #ifdef ASBIND20_HAS_SCRIPT_FUNCTION_GET_DECLARED_AT
-    const char* result = nullptr;
+    cstring_ref result;
     func.GetDeclaredAt(&result, nullptr, nullptr);
     return result;
 

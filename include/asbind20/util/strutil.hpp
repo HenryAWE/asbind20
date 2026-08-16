@@ -161,6 +161,30 @@ public:
         return os << std::string_view(cstr);
     }
 
+    class op_addr_proxy
+    {
+        friend cstring_ref;
+
+        explicit op_addr_proxy(cstring_ref& dst)
+            : m_dst(dst) {}
+
+    public:
+        op_addr_proxy(const op_addr_proxy&) noexcept = delete;
+
+        operator const char**() const noexcept
+        {
+            return &m_dst.m_cstr;
+        }
+
+    private:
+        cstring_ref& m_dst;
+    };
+
+    op_addr_proxy operator&() noexcept
+    {
+        return op_addr_proxy{*this};
+    }
+
 private:
     const char* m_cstr;
 };
