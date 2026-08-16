@@ -116,6 +116,12 @@ TEST(CStringRef, Output)
 #endif
 }
 
+static void assign_by_outptr(const char** out)
+{
+    ASSERT_THAT(out, ::testing::NotNull());
+    *out = "assign_by_outptr";
+}
+
 TEST(CStringRef, CAPI)
 {
     using namespace asbind20;
@@ -127,5 +133,11 @@ TEST(CStringRef, CAPI)
         EXPECT_EQ(std::strlen(csr.c_str()), csr.size());
         EXPECT_STREQ(csr.c_str(), "st");
         EXPECT_EQ(std::strcmp(csr.c_str(), "st"), 0);
+    }
+
+    {
+        cstring_ref csr;
+        assign_by_outptr(&csr);
+        EXPECT_EQ(csr, "assign_by_outptr");
     }
 }

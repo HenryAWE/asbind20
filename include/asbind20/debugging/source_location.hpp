@@ -91,9 +91,9 @@ public:
     {
         script_source_location result{};
 
-        const char* section = nullptr;
-        func.GetDeclaredAt(&section, &result.m_line, &result.m_column);
-        result.m_section_name = section;
+        func.GetDeclaredAt(
+            &result.m_section_name, &result.m_line, &result.m_column
+        );
         result.m_function_name = func.GetName();
 
         return result;
@@ -117,9 +117,9 @@ public:
     {
         script_source_location result{};
 
-        const char* section = nullptr;
-        result.m_line = ctx.GetLineNumber(stack_level, &result.m_column, &section);
-        result.m_section_name = section;
+        result.m_line = ctx.GetLineNumber(
+            stack_level, &result.m_column, &result.m_section_name
+        );
         auto* func = ctx.GetFunction(stack_level);
         if(func)
             result.m_function_name = func->GetName();
