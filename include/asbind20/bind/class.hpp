@@ -16,6 +16,7 @@
 #include "../policies.hpp"
 #include "behaviour.hpp"
 #include "function_tools.hpp"
+#include "../util/assume.hpp"
 
 namespace asbind20
 {
@@ -237,6 +238,81 @@ namespace detail
         }
     };
 
+    // Helpers shared by list_constructor and list_factory wrappers.
+    template <typename T>
+    concept repeat_list_based_policy =
+        policies::initialization_list_policy<T> &&
+        (std::same_as<T, policies::as_iterators> ||
+         std::same_as<T, policies::pointer_and_size> ||
+         std::same_as<T, policies::as_initializer_list> ||
+         std::same_as<T, policies::as_span>
+#ifdef ASBIND20_HAS_CONTAINERS_RANGES
+         || std::same_as<T, policies::as_from_range>
+#endif
+        );
+
+    template <bool Template, typename ListElementType>
+    ListElementType* get_list_buf_ptr(generic_pointer gen)
+    {
+        constexpr arg_index_type off = Template ? 1 : 0;
+        return *static_cast<ListElementType**>(
+            gen->GetAddressOfArg(off)
+        );
+    }
+
+    template <bool Template>
+    script_init_list_repeat get_list_repeat(generic_pointer gen)
+    {
+        constexpr arg_index_type off = Template ? 1 : 0;
+        return script_init_list_repeat(gen, off);
+    }
+
+    template <
+        typename Class,
+        typename ListElementType,
+        repeat_list_based_policy IListPolicy,
+        typename Fn>
+    decltype(auto) apply_list_policy(script_init_list_repeat list, Fn&& fn)
+    {
+        if constexpr(std::same_as<IListPolicy, policies::as_iterators>)
+        {
+            auto sp = list.to_span_of<ListElementType>();
+            return std::invoke(
+                std::forward<Fn>(fn), sp.begin(), sp.end()
+            );
+        }
+        else if constexpr(std::same_as<IListPolicy, policies::pointer_and_size>)
+        {
+            return std::invoke(
+                std::forward<Fn>(fn),
+                static_cast<ListElementType*>(list.data()),
+                list.size()
+            );
+        }
+#ifdef ASBIND20_HAS_CONTAINERS_RANGES
+        else if constexpr(std::same_as<IListPolicy, policies::as_from_range>)
+        {
+            auto sp = list.to_span_of<ListElementType>();
+            return std::invoke(std::forward<Fn>(fn), std::from_range, sp);
+        }
+#endif
+        else if constexpr(
+            std::same_as<IListPolicy, policies::as_initializer_list> ||
+            std::same_as<IListPolicy, policies::as_span>
+        )
+        {
+            return std::invoke(
+                std::forward<Fn>(fn),
+                IListPolicy::template convert<ListElementType>(list)
+            );
+        }
+        else
+        {
+            // Suppress warnings
+            util::unreachable();
+        }
+    }
+
     template <
         typename Class,
         bool Template,
@@ -252,19 +328,13 @@ namespace detail
     {
         static void impl_generic(generic_pointer gen)
         {
+            void* mem = gen->GetObject();
+            auto* list_buf = get_list_buf_ptr<Template, ListElementType>(gen);
+
             if constexpr(Template)
-            {
-                void* mem = gen->GetObject();
-                new(mem) Class(
-                    get_generic_typeinfo(gen),
-                    *static_cast<ListElementType**>(gen->GetAddressOfArg(1))
-                );
-            }
+                new(mem) Class(get_generic_typeinfo(gen), list_buf);
             else
-            {
-                void* mem = gen->GetObject();
-                new(mem) Class(*static_cast<ListElementType**>(gen->GetAddressOfArg(0)));
-            }
+                new(mem) Class(list_buf);
         }
 
         static void impl_objlast_template(
@@ -306,19 +376,13 @@ namespace detail
     {
         static void impl_generic(generic_pointer gen)
         {
+            void* mem = gen->GetObject();
+            auto list = get_list_repeat<Template>(gen);
+
             if constexpr(Template)
-            {
-                void* mem = gen->GetObject();
-                new(mem) Class(
-                    get_generic_typeinfo(gen),
-                    script_init_list_repeat(gen, 1)
-                );
-            }
+                new(mem) Class(get_generic_typeinfo(gen), list);
             else
-            {
-                void* mem = gen->GetObject();
-                new(mem) Class(script_init_list_repeat(gen));
-            }
+                new(mem) Class(list);
         }
 
         static void impl_objlast_template(
@@ -370,7 +434,7 @@ namespace detail
         {
             apply_helper(
                 gen->GetObject(),
-                *static_cast<ListElementType**>(gen->GetAddressOfArg(0))
+                get_list_buf_ptr<false, ListElementType>(gen)
             );
         }
 
@@ -393,18 +457,6 @@ namespace detail
         }
     };
 
-    template <typename T>
-    concept repeat_list_based_policy =
-        policies::initialization_list_policy<T> &&
-        (std::same_as<T, policies::as_iterators> ||
-         std::same_as<T, policies::pointer_and_size> ||
-         std::same_as<T, policies::as_initializer_list> ||
-         std::same_as<T, policies::as_span>
-#ifdef ASBIND20_HAS_CONTAINERS_RANGES
-         || std::same_as<T, policies::as_from_range>
-#endif
-        );
-
     template <
         typename Class,
         bool Template,
@@ -414,36 +466,20 @@ namespace detail
     {
         static void from_list_helper(void* mem, script_init_list_repeat list)
         {
-            if constexpr(std::same_as<IListPolicy, policies::as_iterators>)
-            {
-                auto sp = list.to_span_of<ListElementType>();
-                new(mem) Class(sp.begin(), sp.end());
-            }
-            else if constexpr(std::same_as<IListPolicy, policies::pointer_and_size>)
-            {
-                new(mem) Class(static_cast<ListElementType*>(list.data()), list.size());
-            }
-#ifdef ASBIND20_HAS_CONTAINERS_RANGES
-            else if constexpr(std::same_as<IListPolicy, policies::as_from_range>)
-            {
-                auto sp = list.to_span_of<ListElementType>();
-                new(mem) Class(std::from_range, sp);
-            }
-#endif
-            else if constexpr(
-                std::same_as<IListPolicy, policies::as_initializer_list> ||
-                std::same_as<IListPolicy, policies::as_span>
-            )
-            {
-                new(mem) Class(IListPolicy::template convert<ListElementType>(list));
-            }
+            apply_list_policy<Class, ListElementType, IListPolicy>(
+                list,
+                [mem]<typename... Args>(Args&&... args) -> void
+                {
+                    new(mem) Class(std::forward<Args>(args)...);
+                }
+            );
         }
 
         static void impl_generic(generic_pointer gen)
         {
             from_list_helper(
                 gen->GetObject(),
-                script_init_list_repeat(gen)
+                get_list_repeat<false>(gen)
             );
         }
 
@@ -552,6 +588,7 @@ namespace detail
             [gen]<std::size_t... Is>(std::index_sequence<Is...>)
             {
                 auto ti = static_cast<typeinfo_pointer>(gen->GetAuxiliary());
+                ASBIND20_ASSUME(ti != nullptr);
                 auto* ptr = new Class(
                     get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
                         gen, static_cast<arg_index_type>(Is)
@@ -609,6 +646,7 @@ namespace detail
             [gen]<std::size_t... Is>(std::index_sequence<Is...>)
             {
                 auto* ti = get_generic_typeinfo(gen);
+                ASBIND20_ASSUME(ti != nullptr);
                 auto* ptr = new Class(
                     ti,
                     get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
@@ -710,19 +748,13 @@ namespace detail
         static void impl_generic(generic_pointer gen)
         {
             Class* ptr;
+            auto* list_buf = get_list_buf_ptr<Template, ListElementType>(gen);
+
             if constexpr(Template)
-            {
-                ptr = new Class(
-                    get_generic_typeinfo(gen),
-                    *static_cast<ListElementType**>(gen->GetAddressOfArg(1))
-                );
-            }
+                ptr = new Class(get_generic_typeinfo(gen), list_buf);
             else
-            {
-                ptr = new Class(
-                    *static_cast<ListElementType**>(gen->GetAddressOfArg(0))
-                );
-            }
+                ptr = new Class(list_buf);
+
             gen->SetReturnAddress(ptr);
         }
 
@@ -766,23 +798,22 @@ namespace detail
         static void impl_generic(generic_pointer gen)
         {
             Class* ptr;
+            auto* list_buf = get_list_buf_ptr<Template, ListElementType>(gen);
+
             if constexpr(Template)
             {
                 auto* ti = get_generic_typeinfo(gen);
-                ptr = new Class(
-                    ti, *static_cast<ListElementType**>(gen->GetAddressOfArg(1))
-                );
+                ASBIND20_ASSUME(ti != nullptr);
+                ptr = new Class(ti, list_buf);
                 notifier::notify_gc_if_necessary(ptr, ti);
             }
             else
             {
-                ptr = new Class(
-                    *static_cast<ListElementType**>(gen->GetAddressOfArg(0))
-                );
+                ptr = new Class(list_buf);
 
                 // Expects the typeinfo is passed by auxiliary pointer (see the helper "auxiliary(this_type)")
                 auto* ti = get_generic_auxiliary<typeinfo_pointer>(gen);
-                ASBIND20_ASSERT(ti != nullptr);
+                ASBIND20_ASSUME(ti != nullptr);
                 notifier::notify_gc_if_necessary(ptr, ti);
             }
             gen->SetReturnAddress(ptr);
@@ -792,6 +823,7 @@ namespace detail
             typeinfo_pointer ti, ListElementType* list_buf
         )
         {
+            ASBIND20_ASSUME(ti != nullptr);
             auto* ptr = new Class(ti, list_buf);
             notifier::notify_gc_if_necessary(ptr, ti);
             return ptr;
@@ -802,6 +834,7 @@ namespace detail
             ListElementType* list_buf, typeinfo_pointer ti
         )
         {
+            ASBIND20_ASSUME(ti != nullptr);
             auto* ptr = new Class(list_buf);
             notifier::notify_gc_if_necessary(ptr, ti);
             return ptr;
@@ -846,7 +879,9 @@ namespace detail
 
         static void impl_generic(generic_pointer gen)
         {
-            auto* ptr = apply_helper(*static_cast<ListElementType**>(gen->GetAddressOfArg(0)));
+            auto* ptr = apply_helper(
+                get_list_buf_ptr<false, ListElementType>(gen)
+            );
             if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
             {
                 auto* ti = get_generic_auxiliary<typeinfo_pointer>(gen);
@@ -901,9 +936,10 @@ namespace detail
 
         static void impl_generic(generic_pointer gen)
         {
+            auto list = get_list_repeat<false>(gen);
             if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
             {
-                auto* ptr = new Class(script_init_list_repeat(gen));
+                auto* ptr = new Class(list);
                 // Works together with the helper "auxiliary(this_type)"
                 auto* ti = get_generic_auxiliary<typeinfo_pointer>(gen);
                 ASBIND20_ASSERT(ti != nullptr);
@@ -912,9 +948,7 @@ namespace detail
             }
             else
             {
-                gen->SetReturnAddress(
-                    new Class(script_init_list_repeat(gen))
-                );
+                gen->SetReturnAddress(new Class(list));
             }
         }
 
@@ -966,7 +1000,7 @@ namespace detail
             auto* ti = get_generic_typeinfo(gen);
             auto* ptr = new Class(
                 ti,
-                script_init_list_repeat(gen, 1)
+                get_list_repeat<true>(gen)
             );
             notifier::notify_gc_if_necessary(ptr, ti);
             gen->SetReturnAddress(ptr);
@@ -1004,37 +1038,18 @@ namespace detail
 
         static Class* from_list_helper(script_init_list_repeat list)
         {
-            if constexpr(std::same_as<IListPolicy, policies::as_iterators>)
-            {
-                auto sp = list.to_span_of<ListElementType>();
-                return new Class(sp.begin(), sp.end());
-            }
-            else if constexpr(std::same_as<IListPolicy, policies::pointer_and_size>)
-            {
-                return new Class(static_cast<ListElementType*>(list.data()), list.size());
-            }
-#ifdef ASBIND20_HAS_CONTAINERS_RANGES
-            else if constexpr(std::same_as<IListPolicy, policies::as_from_range>)
-            {
-                auto sp = list.to_span_of<ListElementType>();
-                return new Class(std::from_range, sp);
-            }
-#endif
-            else if constexpr(
-                std::same_as<IListPolicy, policies::as_initializer_list> ||
-                std::same_as<IListPolicy, policies::as_span>
-            )
-            {
-                return new Class(IListPolicy::template convert<ListElementType>(list));
-            }
-
-            // It shouldn't reach here
-            util::unreachable();
+            return apply_list_policy<Class, ListElementType, IListPolicy>(
+                list,
+                []<typename... Args>(Args&&... args) -> Class*
+                {
+                    return new Class(std::forward<Args>(args)...);
+                }
+            );
         }
 
         static void impl_generic(generic_pointer gen)
         {
-            Class* ptr = from_list_helper(script_init_list_repeat(gen));
+            Class* ptr = from_list_helper(get_list_repeat<false>(gen));
             if constexpr(std::same_as<FactoryPolicy, policies::notify_gc>)
             {
                 // Expects the typeinfo is passed by auxiliary pointer (see the helper "auxiliary(this_type)")
@@ -1747,6 +1762,150 @@ private:
         }
     }
 
+    // Common implementation for the method() overload set.
+    template <typename Fn>
+    Derived& register_method_impl(
+        cstring_ref decl,
+        Fn&& fn,
+        detail::call_conv_type conv,
+        void* aux = nullptr
+    )
+    {
+        int r = this->register_method(
+            decl,
+            std::forward<Fn>(fn),
+            conv,
+            aux
+        );
+        listener_traits_type::on_method(
+            this->get_listener(), this->derived(), r
+        );
+        return this->derived();
+    }
+
+    template <typename Fn>
+    Derived& register_comp_method_impl(
+        cstring_ref decl,
+        Fn&& fn,
+        detail::call_conv_type conv,
+        composite_wrapper comp,
+        void* aux = nullptr
+    )
+    {
+        int r = this->register_comp_method(
+            decl,
+            std::forward<Fn>(fn),
+            conv,
+            comp,
+            aux
+        );
+        listener_traits_type::on_method(
+            this->get_listener(), this->derived(), r
+        );
+        return this->derived();
+    }
+
+    template <auto Method, detail::call_conv_type Conv>
+    Derived& method_fp_generic_impl(
+        cstring_ref decl,
+        void* aux = nullptr
+    )
+    {
+        return this->register_method_impl(
+            decl,
+            detail::to_asGENFUNC_t(fp<Method>, detail::cc<Conv>),
+            detail::generic_cc,
+            aux
+        );
+    }
+
+    template <
+        auto Method,
+        detail::call_conv_type Conv,
+        std::size_t... Is>
+    Derived& method_fp_var_generic_impl(
+        cstring_ref decl,
+        void* aux = nullptr
+    )
+    {
+        return this->register_method_impl(
+            decl,
+            detail::to_asGENFUNC_t(
+                fp<Method>, detail::cc<Conv>, var_type<Is...>
+            ),
+            detail::generic_cc,
+            aux
+        );
+    }
+
+    template <
+        noncapturing_native_lambda Lambda,
+        detail::call_conv_type Conv>
+    Derived& method_lambda_generic_impl(cstring_ref decl)
+    {
+        return this->register_method_impl(
+            decl,
+            detail::to_asGENFUNC_t(Lambda{}, detail::cc<Conv>),
+            detail::generic_cc
+        );
+    }
+
+    template <
+        noncapturing_native_lambda Lambda,
+        detail::call_conv_type Conv,
+        std::size_t... Is>
+    Derived& method_lambda_var_generic_impl(cstring_ref decl)
+    {
+        return this->register_method_impl(
+            decl,
+            detail::to_asGENFUNC_t(
+                Lambda{}, detail::cc<Conv>, var_type<Is...>
+            ),
+            detail::generic_cc
+        );
+    }
+
+    template <auto Method, auto Composite>
+    Derived& method_composite_generic_impl(cstring_ref decl)
+    {
+        return this->register_method_impl(
+            decl,
+            detail::to_asGENFUNC_t(
+                fp<Method>,
+                detail::cc<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>,
+                composite_wrapper_nontype<Composite>{}
+            ),
+            detail::generic_cc
+        );
+    }
+
+    template <auto Method, auto Composite, std::size_t... Is>
+    Derived& method_composite_var_generic_impl(cstring_ref decl)
+    {
+        return this->register_method_impl(
+            decl,
+            detail::to_asGENFUNC_t(
+                fp<Method>,
+                detail::cc<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>,
+                composite_wrapper_nontype<Composite>{},
+                var_type<Is...>
+            ),
+            detail::generic_cc
+        );
+    }
+
+    template <
+        fn_tools::wrapped_function Function,
+        detail::call_conv_type CallConv>
+    Derived& method_wrapped_impl(cstring_ref decl)
+    {
+        return this->register_method_impl(
+            decl,
+            Function::template generate<CallConv>(),
+            CallConv
+        );
+    }
+
 public:
     using my_base::get_listener;
 
@@ -1853,9 +2012,7 @@ public:
     ) requires(!ForceGeneric)
     {
         constexpr auto conv = method_callconv<Fn>();
-        int r = this->register_method(decl, fn, conv);
-        listener_traits_type::on_method(get_listener(), derived(), r);
-        return derived();
+        return this->register_method_impl(decl, fn, conv);
     }
 
     template <native_function Fn, bool ObjFirst>
@@ -1867,13 +2024,7 @@ public:
     ) requires(!ForceGeneric)
     {
         constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, false);
-        int r = this->register_method(
-            decl,
-            fn,
-            conv
-        );
-        listener_traits_type::on_method(get_listener(), derived(), r);
-        return derived();
+        return this->register_method_impl(decl, fn, conv);
     }
 
     Derived& method(
@@ -1881,13 +2032,11 @@ public:
         generic_function gfn
     )
     {
-        int r = this->register_method(
+        return this->register_method_impl(
             decl,
             gfn,
             detail::generic_cc
         );
-        listener_traits_type::on_method(get_listener(), derived(), r);
-        return derived();
     }
 
     template <
@@ -1900,14 +2049,12 @@ public:
     ) requires(!ForceGeneric)
     {
         constexpr auto conv = method_callconv_aux<Fn, Auxiliary>();
-        int r = this->register_method(
+        return this->register_method_impl(
             decl,
             std::forward<Fn>(fn),
             conv,
             my_base::get_auxiliary_address(aux)
         );
-        listener_traits_type::on_method(get_listener(), derived(), r);
-        return derived();
     }
 
     template <typename Auxiliary>
@@ -1917,14 +2064,12 @@ public:
         auxiliary_wrapper<Auxiliary> aux
     )
     {
-        int r = this->register_method(
+        return this->register_method_impl(
             decl,
             gfn,
             detail::generic_cc,
             my_base::get_auxiliary_address(aux)
         );
-        listener_traits_type::on_method(get_listener(), derived(), r);
-        return derived();
     }
 
     template <auto Method>
@@ -1935,13 +2080,7 @@ public:
     )
     {
         constexpr auto conv = method_callconv<Method>();
-        int r = this->register_method(
-            decl,
-            detail::to_asGENFUNC_t(fp<Method>, detail::cc<conv>),
-            detail::generic_cc
-        );
-        listener_traits_type::on_method(get_listener(), derived(), r);
-        return derived();
+        return this->template method_fp_generic_impl<Method, conv>(decl);
     }
 
     template <auto Method>
@@ -1966,14 +2105,9 @@ public:
     )
     {
         constexpr auto conv = method_callconv_aux<Method, Auxiliary>();
-        int r = this->register_method(
-            decl,
-            detail::to_asGENFUNC_t(fp<Method>, detail::cc<conv>),
-            detail::generic_cc,
-            my_base::get_auxiliary_address(aux)
+        return this->template method_fp_generic_impl<Method, conv>(
+            decl, my_base::get_auxiliary_address(aux)
         );
-        listener_traits_type::on_method(get_listener(), derived(), r);
-        return derived();
     }
 
     template <auto Method, typename Auxiliary>
@@ -2003,14 +2137,9 @@ public:
         // its calling convention should be THISCALL_OBJFIRST/LAST,
         // so we are getting convention with is_thiscall: true here.
         constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, true);
-        int r = this->register_method(
-            decl,
-            detail::to_asGENFUNC_t(fp<Method>, detail::cc<conv>),
-            detail::generic_cc,
-            my_base::get_auxiliary_address(aux)
+        return this->template method_fp_generic_impl<Method, conv>(
+            decl, my_base::get_auxiliary_address(aux)
         );
-        listener_traits_type::on_method(get_listener(), derived(), r);
-        return derived();
     }
 
     template <auto Method, typename Auxiliary, bool ObjFirst>
@@ -2022,22 +2151,20 @@ public:
     )
     {
         if constexpr(ForceGeneric)
-            this->method(use_generic, decl, fp<Method>, aux, obj_loc<ObjFirst>);
+            return this->method(use_generic, decl, fp<Method>, aux, obj_loc<ObjFirst>);
         else
         {
             // For method with auxiliary object,
             // its calling convention should be THISCALL_OBJFIRST/LAST,
             // so we are getting convention with is_thiscall: true here.
             constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, true);
-            int r = this->register_method(
+            return this->register_method_impl(
                 decl,
                 Method,
                 conv,
                 my_base::get_auxiliary_address(aux)
             );
-            listener_traits_type::on_method(get_listener(), derived(), r);
         }
-        return derived();
     }
 
     template <noncapturing_native_lambda Lambda>
@@ -2048,13 +2175,7 @@ public:
     )
     {
         constexpr auto conv = method_callconv<Lambda>();
-        int r = this->register_method(
-            decl,
-            detail::to_asGENFUNC_t(Lambda{}, detail::cc<conv>),
-            detail::generic_cc
-        );
-        listener_traits_type::on_method(get_listener(), derived(), r);
-        return derived();
+        return this->template method_lambda_generic_impl<Lambda, conv>(decl);
     }
 
     template <noncapturing_native_lambda Lambda, bool ObjFirst>
@@ -2066,13 +2187,7 @@ public:
     )
     {
         constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, false);
-        int r = this->register_method(
-            decl,
-            detail::to_asGENFUNC_t(Lambda{}, detail::cc<conv>),
-            detail::generic_cc
-        );
-        listener_traits_type::on_method(get_listener(), derived(), r);
-        return derived();
+        return this->template method_lambda_generic_impl<Lambda, conv>(decl);
     }
 
     template <noncapturing_native_lambda Lambda>
@@ -2082,18 +2197,16 @@ public:
     )
     {
         if constexpr(ForceGeneric)
-            this->method(use_generic, decl, Lambda{});
+            return this->method(use_generic, decl, Lambda{});
         else
         {
             constexpr auto conv = method_callconv<Lambda>();
-            int r = this->register_method(
+            return this->register_method_impl(
                 decl,
                 +Lambda{},
                 detail::cc<conv>
             );
-            listener_traits_type::on_method(get_listener(), derived(), r);
         }
-        return derived();
     }
 
     template <noncapturing_native_lambda Lambda, bool ObjFirst>
@@ -2104,18 +2217,15 @@ public:
     )
     {
         if constexpr(ForceGeneric)
+        {
             this->method(use_generic, decl, Lambda{}, obj_loc<ObjFirst>);
+            return derived();
+        }
         else
         {
             constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, false);
-            int r = this->register_method(
-                decl,
-                detail::to_asGENFUNC_t(Lambda{}, detail::cc<conv>),
-                detail::generic_cc
-            );
-            listener_traits_type::on_method(get_listener(), derived(), r);
+            return this->template method_lambda_generic_impl<Lambda, conv>(decl);
         }
-        return derived();
     }
 
     template <
@@ -2129,17 +2239,9 @@ public:
     )
     {
         constexpr auto conv = method_callconv<Function>();
-        int r = this->register_method(
-            decl,
-            detail::to_asGENFUNC_t(
-                fp<Function>,
-                detail::cc<conv>,
-                var_type<Is...>
-            ),
-            detail::generic_cc
+        return this->template method_fp_var_generic_impl<Function, conv, Is...>(
+            decl
         );
-        listener_traits_type::on_method(get_listener(), derived(), r);
-        return derived();
     }
 
     template <
@@ -2171,18 +2273,9 @@ public:
     )
     {
         constexpr auto conv = method_callconv_aux<Function, Auxiliary>();
-        int r = this->register_method(
-            decl,
-            detail::to_asGENFUNC_t(
-                fp<Function>,
-                detail::cc<conv>,
-                var_type<Is...>
-            ),
-            detail::generic_cc,
-            my_base::get_auxiliary_address(aux)
+        return this->template method_fp_var_generic_impl<Function, conv, Is...>(
+            decl, my_base::get_auxiliary_address(aux)
         );
-        listener_traits_type::on_method(get_listener(), derived(), r);
-        return derived();
     }
 
     template <
@@ -2197,23 +2290,14 @@ public:
     )
     {
         if constexpr(ForceGeneric)
-            this->method(use_generic, decl, fp<Function>, var_type<Is...>, aux);
+            return this->method(use_generic, decl, fp<Function>, var_type<Is...>, aux);
         else
         {
             constexpr auto conv = method_callconv_aux<Function, Auxiliary>();
-            int r = this->register_method(
-                decl,
-                detail::to_asGENFUNC_t(
-                    fp<Function>,
-                    detail::cc<conv>,
-                    var_type<Is...>
-                ),
-                detail::generic_cc,
-                my_base::get_auxiliary_address(aux)
+            return this->template method_fp_var_generic_impl<Function, conv, Is...>(
+                decl, my_base::get_auxiliary_address(aux)
             );
-            listener_traits_type::on_method(get_listener(), derived(), r);
         }
-        return derived();
     }
 
     template <
@@ -2227,17 +2311,9 @@ public:
     )
     {
         constexpr auto conv = method_callconv<Lambda>();
-        int r = this->register_method(
-            decl,
-            detail::to_asGENFUNC_t(
-                Lambda{},
-                detail::cc<conv>,
-                var_type<Is...>
-            ),
-            detail::generic_cc
+        return this->template method_lambda_var_generic_impl<Lambda, conv, Is...>(
+            decl
         );
-        listener_traits_type::on_method(get_listener(), derived(), r);
-        return derived();
     }
 
     template <
@@ -2251,17 +2327,15 @@ public:
     {
         constexpr auto conv = method_callconv<Lambda>();
         if constexpr(ForceGeneric)
-            this->method(use_generic, decl, Lambda{}, var_type<Is...>);
+            return this->method(use_generic, decl, Lambda{}, var_type<Is...>);
         else
         {
-            int r = this->register_method(
+            return this->register_method_impl(
                 decl,
                 +Lambda{},
                 detail::cc<conv>
             );
-            listener_traits_type::on_method(get_listener(), derived(), r);
         }
-        return derived();
     }
 
     template <native_function Fn>
@@ -2272,14 +2346,12 @@ public:
         composite_wrapper comp
     ) requires(!ForceGeneric)
     {
-        int r = this->register_comp_method(
+        return this->register_comp_method_impl(
             decl,
             fn,
             detail::cc<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>,
             comp
         );
-        listener_traits_type::on_method(get_listener(), derived(), r);
-        return derived();
     }
 
     template <auto Fn, auto Composite>
@@ -2291,18 +2363,8 @@ public:
         composite_wrapper_nontype<Composite>
     )
     {
-        int r = this->register_method(
-            decl,
-            // The composite offset will be handled by the generic wrapper
-            detail::to_asGENFUNC_t(
-                fp<Fn>,
-                detail::cc<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>,
-                composite_wrapper_nontype<Composite>{}
-            ),
-            detail::generic_cc
-        );
-        listener_traits_type::on_method(get_listener(), derived(), r);
-        return derived();
+        // The composite offset will be handled by the generic wrapper.
+        return this->template method_composite_generic_impl<Fn, Composite>(decl);
     }
 
     template <auto Fn, auto Composite>
@@ -2343,18 +2405,9 @@ public:
         var_type_t<Is...>
     )
     {
-        int r = this->register_method(
-            decl,
-            detail::to_asGENFUNC_t(
-                fp<Fn>,
-                detail::cc<AS_NAMESPACE_QUALIFIER asCALL_THISCALL>,
-                composite_wrapper_nontype<Composite>{},
-                var_type<Is...>
-            ),
-            detail::generic_cc
+        return this->template method_composite_var_generic_impl<Fn, Composite, Is...>(
+            decl
         );
-        listener_traits_type::on_method(get_listener(), derived(), r);
-        return derived();
     }
 
     template <auto Fn, auto Composite, std::size_t... Is>
@@ -2394,13 +2447,9 @@ public:
         const Function&
     )
     {
-        int r = this->register_method(
-            decl,
-            Function::template generate<AS_NAMESPACE_QUALIFIER asCALL_GENERIC>(),
-            AS_NAMESPACE_QUALIFIER asCALL_GENERIC
-        );
-        listener_traits_type::on_method(get_listener(), derived(), r);
-        return derived();
+        return this->template method_wrapped_impl<
+            Function,
+            AS_NAMESPACE_QUALIFIER asCALL_GENERIC>(decl);
     }
 
     template <fn_tools::wrapped_function Function>
@@ -2413,12 +2462,9 @@ public:
             this->method(use_generic, decl, Function{});
         else
         {
-            int r = this->register_method(
-                decl,
-                Function::template generate<AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>(),
-                AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST
-            );
-            listener_traits_type::on_method(get_listener(), derived(), r);
+            return this->template method_wrapped_impl<
+                Function,
+                AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>(decl);
         }
         return derived();
     }
@@ -2574,7 +2620,6 @@ public:
     // or reference of type being registered.
     // It's safe to have them available for both value and reference classes.
 
-    // FIXME: Handle primitive types
     ASBIND20_BG_INTERFACE_DEFINE_OP(Derived, opAssign)
     ASBIND20_BG_INTERFACE_DEFINE_OP(Derived, opAddAssign)
     ASBIND20_BG_INTERFACE_DEFINE_OP(Derived, opSubAssign)

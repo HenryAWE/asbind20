@@ -44,11 +44,21 @@ namespace asbind20
 [[nodiscard]]
 constexpr const char* library_version() noexcept
 {
-#ifndef NDEBUG
-    return ASBIND20_VERSION_STRING " DEBUG";
-#else
-    return ASBIND20_VERSION_STRING;
+    constexpr const char* ver_str =
+        ASBIND20_VERSION_STRING
+    // TODO: Rename the macro to ASBIND20_CONFIG_NO_RUNTIME_BIND_CHECKS
+#ifdef ASBIND20_CONFIG_NO_THROW_ON_BAD_BINDING
+    " NO_RUNTIME_BIND_CHECKS"
 #endif
+#ifdef ASBIND20_CONFIG_NO_COMPILE_TIME_CHECKS
+    " NO_COMPTIME_CHECKS"
+#endif
+#ifndef NDEBUG
+        " DEBUG"
+#endif
+        ;
+
+    return ver_str;
 }
 
 [[nodiscard]]

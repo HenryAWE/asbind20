@@ -73,6 +73,15 @@ TEST(Utility, Version)
     }
 
     {
+        std::string lib_ver_str = asbind20::library_version();
+#ifndef NDEBUG
+        EXPECT_THAT(lib_ver_str, ::testing::HasSubstr("DEBUG"));
+#else
+        EXPECT_THAT(lib_ver_str, ::testing::Not(::testing::HasSubstr("DEBUG")));
+#endif
+    }
+
+    {
         std::string_view sv = AS_NAMESPACE_QUALIFIER asGetLibraryOptions();
         bool max_portability_found = sv.find("AS_MAX_PORTABILITY") != sv.npos;
 

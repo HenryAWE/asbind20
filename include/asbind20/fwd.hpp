@@ -9,8 +9,14 @@
 
 #pragma once
 
+#include <concepts>
+
+// IWYU pragma: begin_exports
+
 #include "detail/include_as.hpp"
 #include "detail/config.hpp"
+
+// IWYU pragma: end_exports
 
 namespace asbind20
 {
@@ -59,6 +65,14 @@ inline namespace script_type
     using arg_index_type = AS_NAMESPACE_QUALIFIER asUINT;
     using internal_func_type = AS_NAMESPACE_QUALIFIER asSFuncPtr;
 } // namespace script_type
+
+template <typename T>
+concept script_object_handle =
+    std::same_as<std::remove_cvref_t<T>, object_pointer> ||
+    std::same_as<std::remove_cvref_t<T>, const_object_pointer> ||
+    requires(T&& obj) {
+        const_object_pointer(obj);
+    };
 
 template <typename T>
 class script_function_ref;

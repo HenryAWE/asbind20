@@ -47,6 +47,10 @@
 #    define ASBIND20_HAS_LIB_RANGES __cpp_lib_ranges
 #endif
 
+#ifdef __cpp_lib_expected
+#    define ASBIND20_HAS_LIB_EXPECTED __cpp_lib_expected
+#endif
+
 #if ANGELSCRIPT_VERSION >= 23800
 // AngelScript 2.38+ supports retrieving string factory from engine
 // via asIScriptEngine::GetStringFactory

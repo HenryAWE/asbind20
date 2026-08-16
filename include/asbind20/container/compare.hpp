@@ -15,7 +15,7 @@
 
 #include "options.hpp"
 #include "../utility.hpp"
-#include "../invoke.hpp"
+#include "../invoke/script_func.hpp"
 #include "../ranges/ranges.hpp"
 
 namespace asbind20::container
@@ -69,6 +69,7 @@ public:
         return static_cast<bool>(m_opCmp);
     }
 
+    [[nodiscard]]
     auto invoke_eq(
         context_pointer ctx, const void* lhs, const void* rhs
     ) const
@@ -77,6 +78,7 @@ public:
         return get_opEquals()(ctx, lhs, rhs);
     }
 
+    [[nodiscard]]
     auto invoke_compare(
         context_pointer ctx, const void* lhs, const void* rhs
     ) const

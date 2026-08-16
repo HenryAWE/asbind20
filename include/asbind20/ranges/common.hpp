@@ -3,13 +3,14 @@
 
 #pragma once
 
-#include "../detail/config.hpp"
+#include "../fwd.hpp"
+
 // IWYU pragma: begin_exports
+
 #include <iterator>
 #ifdef ASBIND20_HAS_LIB_RANGES
 #    include <ranges>
 #endif
-#include "../fwd.hpp"
 
 // IWYU pragma: end_exports
 

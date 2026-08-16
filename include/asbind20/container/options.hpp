@@ -10,7 +10,7 @@
 #pragma once
 
 #include <concepts>
-#include "../detail/include_as.hpp"
+#include "../fwd.hpp"
 
 namespace asbind20::container
 {
@@ -58,9 +58,9 @@ struct typeinfo_identity
  *
  * @tparam Idx Index of the subtype
  */
-template <AS_NAMESPACE_QUALIFIER asUINT Idx>
+template <arg_index_type Idx>
 struct typeinfo_subtype :
-    public std::integral_constant<AS_NAMESPACE_QUALIFIER asUINT, Idx>
+    public std::integral_constant<arg_index_type, Idx>
 {
     using typeinfo_policy_tag = void;
 

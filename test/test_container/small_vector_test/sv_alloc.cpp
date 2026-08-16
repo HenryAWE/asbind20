@@ -58,6 +58,7 @@ TEST(SmallVector, CountedAlloc)
     EXPECT_GE(counter, 32 * sizeof(AS_NAMESPACE_QUALIFIER asINT32));
 
     sv.clear();
+    EXPECT_GE(counter, 32 * sizeof(AS_NAMESPACE_QUALIFIER asINT32));
     sv.shrink_to_fit();
     EXPECT_EQ(counter, 0);
 }
