@@ -11,6 +11,12 @@
 
 namespace asbind20
 {
+#if defined(_MSC_VER)
+#    pragma warning(push)
+// Unreachable code
+#    pragma warning(disable : 4702)
+#endif
+
 namespace detail
 {
     template <typename T>
@@ -97,6 +103,10 @@ decltype(auto) get_script_return(context_pointer ctx)
     ASBIND20_ASSERT(ctx != nullptr);
     return get_script_return<T>(*ctx);
 }
+
+#if defined(_MSC_VER)
+#    pragma warning(pop)
+#endif
 
 class bad_script_invoke_result_access : public std::exception
 {

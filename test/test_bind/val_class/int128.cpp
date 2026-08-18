@@ -171,7 +171,7 @@ static void check_int128(asbind20::engine_pointer engine)
         );
 
         ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
-        EXPECT_EQ(result.value(), 2); // 42 %= 10 → 2
+        EXPECT_EQ(result.value(), 2); // 42 %= 10 -> 2
     }
 
     {
@@ -184,11 +184,11 @@ static void check_int128(asbind20::engine_pointer engine)
         );
 
         ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
-        EXPECT_EQ(result.value(), 13); // 1013 %= 100 → 13
+        EXPECT_EQ(result.value(), 13); // 1013 %= 100 -> 13
     }
 
     {
-        auto * f= m->GetFunctionByName("add_u128");
+        auto* f = m->GetFunctionByName("add_u128");
         ASSERT_THAT(f, ::testing::NotNull());
 
         asbind20::request_context ctx(engine);

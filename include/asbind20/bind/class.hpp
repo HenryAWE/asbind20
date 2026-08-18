@@ -2459,14 +2459,13 @@ public:
     )
     {
         if constexpr(ForceGeneric)
-            this->method(use_generic, decl, Function{});
+            return this->method(use_generic, decl, Function{});
         else
         {
             return this->template method_wrapped_impl<
                 Function,
                 AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST>(decl);
         }
-        return derived();
     }
 
     Derived& property(cstring_ref decl, std::size_t off)

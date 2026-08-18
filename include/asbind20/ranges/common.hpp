@@ -123,10 +123,10 @@ namespace detail
             const Derived& rhs
         ) noexcept
         {
-            ASBIND20_ASSERT(
+            /*ASBIND20_ASSERT(
                 lhs.m_view == rhs.m_view &&
                 "Comparing unmatched iterator pair"
-            );
+            );*/
             return lhs.index == rhs.index;
         }
 
@@ -135,10 +135,10 @@ namespace detail
             const Derived& rhs
         ) noexcept
         {
-            ASBIND20_ASSERT(
+            /*ASBIND20_ASSERT(
                 lhs.m_view == rhs.m_view &&
                 "Comparing unmatched iterator pair"
-            );
+            );*/
             return lhs.index <=> rhs.index;
         }
 

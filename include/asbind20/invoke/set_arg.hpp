@@ -13,6 +13,12 @@ namespace asbind20
 #    pragma GCC diagnostic ignored "-Wold-style-cast"
 #endif
 
+#if defined(_MSC_VER)
+#    pragma warning(push)
+// Unreachable code
+#    pragma warning(disable : 4702)
+#endif
+
 template <typename T>
 int set_script_arg(
     context_reference ctx,
@@ -155,6 +161,10 @@ int set_script_arg(
 
 #if defined(__GNUC__) || defined(__clang__)
 #    pragma GCC diagnostic pop
+#endif
+
+#if defined(_MSC_VER)
+#    pragma warning(pop)
 #endif
 
 /**

@@ -1,6 +1,11 @@
 #include <asbind_test/framework.hpp>
 #include <gmock/gmock.h>
 
+#ifdef _MSC_VER
+// Unreachable code
+#    pragma warning(disable : 4702)
+#endif
+
 namespace test_bind
 {
 class templ_cb_tester
