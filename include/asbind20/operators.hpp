@@ -212,7 +212,7 @@ namespace detail
     template <typename ClassType, bool IsConst>
     using this_arg_t = std::conditional_t<IsConst, std::add_const_t<ClassType>, ClassType>;
 
-    // Operator tags — extract lambda creation logic
+    // Operator tags - extract lambda creation logic
 
     // Binary/assignment operator tags
 #define ASBIND20_OP_TAG_BINARY(Name, Op)                \
@@ -250,7 +250,7 @@ namespace detail
 
 #undef ASBIND20_OP_TAG_BINARY
 
-    // opCmp — always returns int, uses three-way comparison
+    // opCmp - always returns int, uses three-way comparison
     struct op_cmp
     {
         static constexpr std::string_view name = "opCmp";
@@ -491,7 +491,7 @@ namespace detail
         ));
     };
 
-    // opCmp — always returns int, no return_proxy_with_decl
+    // opCmp - always returns int, no return_proxy_with_decl
 
     // Case 1: this <=> this
     template <bool LhsConst, bool RhsConst>
@@ -596,7 +596,7 @@ namespace detail
 
     // Index operator class templates
 
-    // Case 1: this[this] — index by class type
+    // Case 1: this[this] - index by class type
     template <bool ThisConst, bool IndexConst>
     class index_this_op : public operator_base<index_this_op<ThisConst, IndexConst>, true>
     {
@@ -625,7 +625,7 @@ namespace detail
                                              [std::declval<this_arg_t<typename RegisterHelper::class_type, IndexConst>&>()]);
     };
 
-    // Case 2: this[param] — index by arbitrary type
+    // Case 2: this[param] - index by arbitrary type
     template <bool ThisConst, typename Index, bool AutoDecl>
     class index_param_op :
         private param_placeholder<Index, AutoDecl>,
