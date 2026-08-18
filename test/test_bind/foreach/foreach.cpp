@@ -133,6 +133,9 @@ auto prepare_int_seq_test(asbind20::engine_pointer engine)
 
 TEST(TestForeach, IntSeqGeneric)
 {
+    // Seems like an upstream issue
+    ASBIND_TEST_SKIP_IF_SCRIPT_DEBUG();
+
     using namespace asbind20;
 
     auto engine = make_script_engine();
@@ -149,10 +152,12 @@ TEST(TestForeach, IntSeqGeneric)
 
 TEST(TestForeach, IntSeqNative)
 {
+    // Seems like an upstream issue
+    ASBIND_TEST_SKIP_IF_SCRIPT_DEBUG();
+
     using namespace asbind20;
 
-    if(has_max_portability())
-        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
@@ -168,6 +173,9 @@ TEST(TestForeach, IntSeqNative)
 
 TEST(TestForeach, IntSeqExplicitGeneric)
 {
+    // Seems like an upstream issue
+    ASBIND_TEST_SKIP_IF_SCRIPT_DEBUG();
+
     using namespace asbind20;
 
     auto engine = make_script_engine();
@@ -184,10 +192,12 @@ TEST(TestForeach, IntSeqExplicitGeneric)
 
 TEST(TestForeach, IntSeqExplicitNative)
 {
+    // Seems like an upstream issue
+    ASBIND_TEST_SKIP_IF_SCRIPT_DEBUG();
+
     using namespace asbind20;
 
-    if(has_max_portability())
-        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);

@@ -27,6 +27,8 @@ Update
 
 - More debugging tools.
 
+- Support debug version of AngelScript library (``asGetLibraryVersion()`` returns something like ``2.38.0 DEBUG``).
+
 - Update compatibility across different AngelScript versions, including the 2.39 WIP.
 
 - ``script_element_comparator`` no longer holds ownership of the script functions,

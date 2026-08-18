@@ -48,10 +48,10 @@ constexpr const char* library_version() noexcept
         ASBIND20_VERSION_STRING
     // TODO: Rename the macro to ASBIND20_CONFIG_NO_RUNTIME_BIND_CHECKS
 #ifdef ASBIND20_CONFIG_NO_THROW_ON_BAD_BINDING
-    " NO_RUNTIME_BIND_CHECKS"
+        " NO_RUNTIME_BIND_CHECKS"
 #endif
 #ifdef ASBIND20_CONFIG_NO_COMPILE_TIME_CHECKS
-    " NO_COMPTIME_CHECKS"
+        " NO_COMPTIME_CHECKS"
 #endif
 #ifndef NDEBUG
         " DEBUG"
@@ -104,6 +104,17 @@ inline bool has_threads(
 )
 {
     return std::strstr(options, "AS_NO_THREADS") == nullptr;
+}
+
+/**
+ * @brief Check if `asGetLibraryVersion()` contains "DEBUG"
+ */
+[[nodiscard]]
+inline bool scirpt_debug_mode(
+    const char* version = script_library_version()
+)
+{
+    return std::strstr(version, "DEBUG") != nullptr;
 }
 } // namespace asbind20
 

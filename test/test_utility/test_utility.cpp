@@ -88,6 +88,14 @@ TEST(Utility, Version)
         EXPECT_EQ(asbind20::has_max_portability(), max_portability_found)
             << "asGetLibraryOptions: " << sv;
     }
+
+    {
+        std::string_view sv = AS_NAMESPACE_QUALIFIER asGetLibraryVersion();
+        bool script_debug_found = sv.find("DEBUG") != sv.npos;
+
+        EXPECT_EQ(asbind20::scirpt_debug_mode(), script_debug_found)
+            << "asGetLibraryVersion: " << sv;
+    }
 }
 
 TEST(NameOf, Arithmetic)

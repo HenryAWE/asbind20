@@ -67,6 +67,13 @@ void setup_exception_translator(
             GTEST_SKIP() << "AS_NO_THREADS found"; \
     } while(0)
 
+#define ASBIND_TEST_SKIP_IF_SCRIPT_DEBUG()           \
+    do                                                  \
+    {                                                   \
+        if(::asbind20::scirpt_debug_mode())           \
+            GTEST_SKIP() << "script library DEBUG found"; \
+    } while(0)
+
 #define ASBIND_TEST_EXPECT_INVOKE_RESULT(result)              \
     do                                                        \
     {                                                         \
