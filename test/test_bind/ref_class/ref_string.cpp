@@ -244,7 +244,9 @@ TEST(BindRefString, Extract)
         test_bind::ref_string_factory::get(), *result
     );
     EXPECT_THAT(
-        extracted,
+        extracted.to_optional(),
         ::testing::Optional(::testing::StrEq("test"))
     );
+    EXPECT_EQ(extracted.value(), "test");
+    EXPECT_EQ(std::as_const(extracted).value(), "test");
 }

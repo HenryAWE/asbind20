@@ -205,6 +205,16 @@ public:
         return **this;
     }
 
+    using optional_type = std::optional<std::string>;
+
+    [[nodiscard]]
+    optional_type to_optional() const
+    {
+        if(!has_value())
+            return std::nullopt;
+        return **this;
+    }
+
 private:
     union
     {
