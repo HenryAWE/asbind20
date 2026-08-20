@@ -85,3 +85,72 @@ TEST(TestBind, Float16Native)
 }
 
 #endif
+
+namespace
+{
+float long_double_to_float(long double val)
+{
+    return static_cast<float>(val);
+}
+
+void check_long_double(asbind20::engine_pointer engine)
+{
+    auto* m = asbind20::create_module(
+        engine, "check_long_double"
+    );
+    ASSERT_THAT(m, ::testing::NotNull());
+    m->AddScriptSection(
+        "check_long_double",
+        "long_double get_val() { return long_double(3.14); }\n"
+        "float test0(long_double val)\n"
+        "{\n"
+        "    return long_double_to_float(val);\n"
+        "}"
+    );
+    ASSERT_GE(m->Build(), 0);
+
+    {
+        SCOPED_TRACE("script func: get_val");
+
+        auto* get_val = m->GetFunctionByName("get_val");
+        ASSERT_THAT(get_val, ::testing::NotNull());
+
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<long double>(ctx, get_val);
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
+        EXPECT_NEAR(result.value(), 3.14L, 0.00001L);
+    }
+}
+} // namespace
+
+TEST(TestBind, LongDoubleNative)
+{
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
+
+    using namespace asbind20;
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine);
+
+    value_class<long double>(
+        engine,
+        "long_double",
+        AS_NAMESPACE_QUALIFIER asOBJ_POD
+    )
+        .default_constructor()
+        .copy_constructor()
+        .constructor_function(
+            "float",
+            [](long double* mem, float val) -> void
+            { new(mem) long double(val); }
+        )
+        .opAdd()
+        .opAddAssign()
+        .opSub()
+        .opSubAssign();
+
+    global(engine)
+        .function("float long_double_to_float(long_double val)", fp<&long_double_to_float>);
+
+    check_long_double(engine);
+}
