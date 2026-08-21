@@ -83,7 +83,7 @@ template <std::floating_point T>
 int set_script_arg(
     context_reference ctx,
     arg_index_type idx,
-    T val
+    const T& val
 )
 {
     using type = std::remove_cv_t<T>;
@@ -93,10 +93,10 @@ int set_script_arg(
     else if constexpr(std::same_as<type, double>)
         return ctx.SetArgDouble(idx, val);
     else
-        static_assert(!sizeof(T), "Invalid floating point");
-
-    // Suppress warning
-    util::unreachable();
+    {
+        // Extended floating-point types
+        return ctx.SetArgObject(idx, (void*)std::addressof(val));
+    }
 }
 
 inline int set_script_arg(

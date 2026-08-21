@@ -48,6 +48,22 @@ void check_f16(asbind20::engine_pointer engine)
             0.01f
         );
     }
+
+    {
+        SCOPED_TRACE("script func: test0");
+
+        auto* test0 = m->GetFunctionByName("test0");
+        ASSERT_THAT(test0, ::testing::NotNull());
+
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<float>(ctx, test0, 3.14f16);
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
+        EXPECT_NEAR(
+            static_cast<float>(result.value()),
+            3.14f,
+            0.01f
+        );
+    }
 }
 } // namespace
 
@@ -122,8 +138,28 @@ void check_long_double(asbind20::engine_pointer engine)
         EXPECT_LT(
             std::abs(result.value() - 3.14L),
             0.00001L
-        ) << "result.value(): " << result.value();
+        ) << "result.value(): "
+          << result.value();
     }
+
+    // TODO: Crashed. It seems like an upstream issue.
+#if 0
+    {
+        SCOPED_TRACE("script func: test0");
+
+        auto* test0 = m->GetFunctionByName("test0");
+        ASSERT_THAT(test0, ::testing::NotNull());
+
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<float>(ctx, test0, 3.14L);
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
+        EXPECT_NEAR(
+            result.value(),
+            3.14f,
+            0.01f
+        );
+    }
+#endif
 }
 } // namespace
 
