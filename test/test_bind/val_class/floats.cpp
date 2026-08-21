@@ -3,7 +3,7 @@
 #    include <stdfloat>
 #endif
 
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(__clang__)
 #    pragma GCC diagnostic ignored "-Wnarrowing"
 #endif
 
@@ -71,7 +71,7 @@ TEST(TestBind, Float16Native)
         .constructor_function(
             "float",
             [](std::float16_t* mem, float val) -> void
-            { new(mem) float16_t(static_cast<float>(val)); }
+            { new(mem) float16_t(val); }
         )
         .opAdd()
         .opAddAssign()
@@ -118,7 +118,10 @@ void check_long_double(asbind20::engine_pointer engine)
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<long double>(ctx, get_val);
         ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
-        EXPECT_NEAR(result.value(), 3.14L, 0.00001L);
+        EXPECT_LT(
+            std::abs(result.value() - 3.14L),
+            0.00001L
+        ) << "result.value(): " << result.value();
     }
 }
 } // namespace
