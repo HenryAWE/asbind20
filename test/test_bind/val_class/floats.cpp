@@ -118,6 +118,7 @@ void check_long_double(asbind20::engine_pointer engine)
         asbind20::request_context ctx(engine);
         auto result = asbind20::script_invoke<long double>(ctx, get_val);
         ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
+        // GTest doesn't support EXPECT_NEAR with long double
         EXPECT_LT(
             std::abs(result.value() - 3.14L),
             0.00001L
