@@ -71,7 +71,7 @@ TEST(TestBind, Float16Native)
         .constructor_function(
             "float",
             [](std::float16_t* mem, float val) -> void
-            { new(mem) float16_t(val); }
+            { new(mem) float16_t(static_cast<std::float16_t>(val)); }
         )
         .opAdd()
         .opAddAssign()
