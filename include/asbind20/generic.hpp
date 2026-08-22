@@ -151,7 +151,7 @@ T get_generic_arg(
         else if constexpr(std::same_as<std::remove_cv_t<T>, double>)
             return gen->GetArgDouble(idx);
         else
-            static_assert(!sizeof(T), "Unsupported floating point type");
+            return *static_cast<T*>(gen->GetAddressOfArg(idx));
     }
     else
     {
@@ -244,7 +244,12 @@ int set_generic_return(
         else if constexpr(std::same_as<std::remove_cv_t<Return>, double>)
             return gen->SetReturnDouble(ret);
         else
-            static_assert(!sizeof(Return), "Unsupported floating point type");
+        {
+            // Long double and eExtended floating-point types
+            void* addr = gen->GetAddressOfReturnLocation();
+            new(addr) Return(ret);
+            return AS_NAMESPACE_QUALIFIER asSUCCESS;
+        }
     }
     else
     {

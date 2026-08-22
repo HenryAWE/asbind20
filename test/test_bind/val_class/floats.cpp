@@ -100,6 +100,37 @@ TEST(TestBind, Float16Native)
     check_f16(engine);
 }
 
+TEST(TestBind, Float16Generic)
+{
+    using namespace asbind20;
+    using std::float16_t;
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine);
+
+    value_class<float16_t, true>(
+        engine,
+        "float16",
+        AS_NAMESPACE_QUALIFIER asOBJ_POD
+    )
+        .default_constructor()
+        .copy_constructor()
+        .constructor_function(
+            "float",
+            [](std::float16_t* mem, float val) -> void
+            { new(mem) float16_t(static_cast<std::float16_t>(val)); }
+        )
+        .opAdd()
+        .opAddAssign()
+        .opSub()
+        .opSubAssign();
+
+    global<true>(engine)
+        .function("float f16_to_float(float16 val)", fp<&f16_to_float>);
+
+    check_f16(engine);
+}
+
 #endif
 
 namespace
@@ -190,6 +221,37 @@ TEST(TestBind, LongDoubleNative)
         .opSubAssign();
 
     global(engine)
+        .function("float long_double_to_float(long_double val)", fp<&long_double_to_float>);
+
+    check_long_double(engine);
+}
+
+
+TEST(TestBind, LongDoubleGeneric)
+{
+    using namespace asbind20;
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine);
+
+    value_class<long double, true>(
+        engine,
+        "long_double",
+        AS_NAMESPACE_QUALIFIER asOBJ_POD
+    )
+        .default_constructor()
+        .copy_constructor()
+        .constructor_function(
+            "float",
+            [](long double* mem, float val) -> void
+            { new(mem) long double(val); }
+        )
+        .opAdd()
+        .opAddAssign()
+        .opSub()
+        .opSubAssign();
+
+    global<true>(engine)
         .function("float long_double_to_float(long_double val)", fp<&long_double_to_float>);
 
     check_long_double(engine);
