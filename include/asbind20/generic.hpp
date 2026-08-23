@@ -31,16 +31,37 @@ namespace asbind20
 #    pragma GCC diagnostic ignored "-Wold-style-cast"
 #endif
 
+
+namespace detail
+{
+    template <typename T>
+    struct gen_aux_obj_ret_type_of;
+
+    template <typename T>
+    requires(std::is_pointer_v<T>)
+    struct gen_aux_obj_ret_type_of<T>
+    {
+        using type = T;
+    };
+
+    template <typename T>
+    requires(!std::is_pointer_v<T>)
+    struct gen_aux_obj_ret_type_of<T>
+    {
+        using type = std::add_lvalue_reference_t<T>;
+    };
+} // namespace detail
+
 /**
  * @brief Get pointer/reference to the object
  *
  * @tparam T Object type, can be a pointer, otherwise the return type will a reference
  */
 template <typename T>
-auto get_generic_object(generic_pointer gen)
-    -> std::conditional_t<std::is_pointer_v<T>, T, std::add_lvalue_reference_t<T>>
+auto get_generic_object(generic_reference gen)
+    -> typename detail::gen_aux_obj_ret_type_of<T>::type
 {
-    void* obj = gen->GetObject();
+    void* obj = gen.GetObject();
     if constexpr(std::is_pointer_v<T>)
     {
         return static_cast<T>(obj);
@@ -52,29 +73,17 @@ auto get_generic_object(generic_pointer gen)
     }
 }
 
-namespace detail
+template <typename T>
+auto get_generic_object(generic_pointer gen)
+    -> typename detail::gen_aux_obj_ret_type_of<T>::type
 {
-    template <typename T>
-    struct gen_aux_ret_type_of;
-
-    template <typename T>
-    requires(std::is_pointer_v<T>)
-    struct gen_aux_ret_type_of<T>
-    {
-        using type = T;
-    };
-
-    template <typename T>
-    requires(!std::is_pointer_v<T>)
-    struct gen_aux_ret_type_of<T>
-    {
-        using type = std::add_lvalue_reference_t<T>;
-    };
+    ASBIND20_ASSERT(gen != nullptr);
+    return get_generic_object<T>(*gen);
 }
 
 template <typename T>
 auto get_generic_auxiliary(const_generic_reference gen)
-    -> typename detail::gen_aux_ret_type_of<T>::type
+    -> typename detail::gen_aux_obj_ret_type_of<T>::type
 {
     void* obj = gen.GetAuxiliary();
     if constexpr(std::is_pointer_v<T>)
@@ -90,7 +99,7 @@ auto get_generic_auxiliary(const_generic_reference gen)
 
 template <typename T>
 auto get_generic_auxiliary(const_generic_pointer gen)
-    -> typename detail::gen_aux_ret_type_of<T>::type
+    -> typename detail::gen_aux_obj_ret_type_of<T>::type
 {
     ASBIND20_ASSERT(gen != nullptr);
     return get_generic_auxiliary<T>(*gen);
@@ -100,12 +109,20 @@ auto get_generic_auxiliary(const_generic_pointer gen)
  * @brief Get the hidden type information argument for template classes
  */
 inline typeinfo_pointer get_generic_typeinfo(
-    generic_pointer gen, arg_index_type idx = 0
+    generic_reference gen, arg_index_type idx = 0
 )
 {
     return *static_cast<typeinfo_pointer*>(
-        gen->GetAddressOfArg(idx)
+        gen.GetAddressOfArg(idx)
     );
+}
+
+inline typeinfo_pointer get_generic_typeinfo(
+    generic_pointer gen, arg_index_type idx = 0
+)
+{
+    ASBIND20_ASSERT(gen != nullptr);
+    return get_generic_typeinfo(*gen, idx);
 }
 
 template <typename T>
