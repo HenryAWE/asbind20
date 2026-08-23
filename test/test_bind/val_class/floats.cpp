@@ -7,7 +7,6 @@
 #    pragma GCC diagnostic ignored "-Wnarrowing"
 #endif
 
-
 #ifdef __STDCPP_FLOAT16_T__
 
 namespace
@@ -89,6 +88,8 @@ TEST(TestBind, Float16Native)
             [](std::float16_t* mem, float val) -> void
             { new(mem) float16_t(static_cast<std::float16_t>(val)); }
         )
+        .opEquals()
+        .opCmp()
         .opAdd()
         .opAddAssign()
         .opSub()
@@ -120,6 +121,8 @@ TEST(TestBind, Float16Generic)
             [](std::float16_t* mem, float val) -> void
             { new(mem) float16_t(static_cast<std::float16_t>(val)); }
         )
+        .opEquals()
+        .opCmp()
         .opAdd()
         .opAddAssign()
         .opSub()
@@ -140,7 +143,10 @@ float long_double_to_float(long double val)
     return static_cast<float>(val);
 }
 
-void check_long_double(asbind20::engine_pointer engine)
+void check_long_double(
+    asbind20::engine_pointer engine,
+    bool skip_generic_only_test = false
+)
 {
     auto* m = asbind20::create_module(
         engine, "check_long_double"
@@ -173,8 +179,11 @@ void check_long_double(asbind20::engine_pointer engine)
           << result.value();
     }
 
-    // TODO: Crashed. It seems like an upstream issue.
-#if 0
+    if(skip_generic_only_test)
+        return;
+
+    // Crashed in native mode. It seems like either type flag issue or upstream issue.
+    // TODO: Figure it out.
     {
         SCOPED_TRACE("script func: test0");
 
@@ -190,7 +199,6 @@ void check_long_double(asbind20::engine_pointer engine)
             0.01f
         );
     }
-#endif
 }
 } // namespace
 
@@ -215,6 +223,8 @@ TEST(TestBind, LongDoubleNative)
             [](long double* mem, float val) -> void
             { new(mem) long double(val); }
         )
+        .opEquals()
+        .opCmp()
         .opAdd()
         .opAddAssign()
         .opSub()
@@ -223,9 +233,8 @@ TEST(TestBind, LongDoubleNative)
     global(engine)
         .function("float long_double_to_float(long_double val)", fp<&long_double_to_float>);
 
-    check_long_double(engine);
+    check_long_double(engine, true);
 }
-
 
 TEST(TestBind, LongDoubleGeneric)
 {
@@ -246,6 +255,8 @@ TEST(TestBind, LongDoubleGeneric)
             [](long double* mem, float val) -> void
             { new(mem) long double(val); }
         )
+        .opEquals()
+        .opCmp()
         .opAdd()
         .opAddAssign()
         .opSub()
