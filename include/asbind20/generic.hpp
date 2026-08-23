@@ -52,11 +52,31 @@ auto get_generic_object(generic_pointer gen)
     }
 }
 
-template <typename T>
-auto get_generic_auxiliary(generic_pointer gen)
-    -> std::conditional_t<std::is_pointer_v<T>, T, std::add_lvalue_reference_t<T>>
+namespace detail
 {
-    void* obj = gen->GetAuxiliary();
+    template <typename T>
+    struct gen_aux_ret_type_of;
+
+    template <typename T>
+    requires(std::is_pointer_v<T>)
+    struct gen_aux_ret_type_of<T>
+    {
+        using type = T;
+    };
+
+    template <typename T>
+    requires(!std::is_pointer_v<T>)
+    struct gen_aux_ret_type_of<T>
+    {
+        using type = std::add_lvalue_reference_t<T>;
+    };
+}
+
+template <typename T>
+auto get_generic_auxiliary(const_generic_reference gen)
+    -> typename detail::gen_aux_ret_type_of<T>::type
+{
+    void* obj = gen.GetAuxiliary();
     if constexpr(std::is_pointer_v<T>)
     {
         return static_cast<T>(obj);
@@ -66,6 +86,14 @@ auto get_generic_auxiliary(generic_pointer gen)
         using pointer_t = std::add_pointer_t<std::remove_reference_t<T>>;
         return *static_cast<pointer_t>(obj);
     }
+}
+
+template <typename T>
+auto get_generic_auxiliary(const_generic_pointer gen)
+    -> typename detail::gen_aux_ret_type_of<T>::type
+{
+    ASBIND20_ASSERT(gen != nullptr);
+    return get_generic_auxiliary<T>(*gen);
 }
 
 /**
