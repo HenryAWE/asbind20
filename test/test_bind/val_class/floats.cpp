@@ -25,6 +25,8 @@ void check_f16(asbind20::engine_pointer engine)
     m->AddScriptSection(
         "check_f16",
         "float16 get_val() { return float16(3.14); }\n"
+        "bool greater_than_0(float16 val)\n"
+        "{ return val > float16(0.0); }\n"
         "float test0(float16 val)\n"
         "{\n"
         "    return f16_to_float(val);\n"
@@ -46,6 +48,27 @@ void check_f16(asbind20::engine_pointer engine)
             3.14f,
             0.01f
         );
+    }
+
+    {
+        SCOPED_TRACE("script func: greater_than_0");
+
+        auto* greater_than_0 = m->GetFunctionByName("greater_than_0");
+        ASSERT_THAT(greater_than_0, ::testing::NotNull());
+
+        {
+            asbind20::request_context ctx(engine);
+            auto result = asbind20::script_invoke<bool>(ctx, greater_than_0, 1.0f16);
+            ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
+            EXPECT_TRUE(result.value());
+        }
+
+        {
+            asbind20::request_context ctx(engine);
+            auto result = asbind20::script_invoke<bool>(ctx, greater_than_0, -1.0f16);
+            ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
+            EXPECT_FALSE(result.value());
+        }
     }
 
     {
@@ -155,6 +178,8 @@ void check_long_double(
     m->AddScriptSection(
         "check_long_double",
         "long_double get_val() { return long_double(3.14); }\n"
+        "bool greater_than_0(long_double val)\n"
+        "{ return val > long_double(0.0); }\n"
         "float test0(long_double val)\n"
         "{\n"
         "    return long_double_to_float(val);\n"
@@ -177,6 +202,27 @@ void check_long_double(
             0.00001L
         ) << "result.value(): "
           << result.value();
+    }
+
+    {
+        SCOPED_TRACE("script func: greater_than_0");
+
+        auto* greater_than_0 = m->GetFunctionByName("greater_than_0");
+        ASSERT_THAT(greater_than_0, ::testing::NotNull());
+
+        {
+            asbind20::request_context ctx(engine);
+            auto result = asbind20::script_invoke<bool>(ctx, greater_than_0, 1.0L);
+            ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
+            EXPECT_TRUE(result.value());
+        }
+
+        {
+            asbind20::request_context ctx(engine);
+            auto result = asbind20::script_invoke<bool>(ctx, greater_than_0, -1.0L);
+            ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
+            EXPECT_FALSE(result.value());
+        }
     }
 
     if(skip_generic_only_test)
