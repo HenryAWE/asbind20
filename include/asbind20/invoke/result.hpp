@@ -87,6 +87,12 @@ decltype(auto) get_script_return(context_reference ctx)
         {
             return ctx.GetReturnDouble();
         }
+        else if constexpr(std::floating_point<primitive_t>)
+        {
+            // Extended floating points,
+            // e.g. std::float16_t from C++23
+            return *static_cast<T*>(ctx.GetAddressOfReturnValue());
+        }
         else
             static_assert(!sizeof(T), "Invalid type");
     }
