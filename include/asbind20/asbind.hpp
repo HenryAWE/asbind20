@@ -110,7 +110,7 @@ inline bool has_threads(
  * @brief Check if `asGetLibraryVersion()` contains "DEBUG"
  */
 [[nodiscard]]
-inline bool scirpt_debug_mode(
+inline bool script_debug_mode(
     const char* version = script_library_version()
 )
 {

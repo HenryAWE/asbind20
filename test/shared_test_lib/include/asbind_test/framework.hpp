@@ -70,7 +70,7 @@ void setup_exception_translator(
 #define ASBIND_TEST_SKIP_IF_SCRIPT_DEBUG()           \
     do                                                  \
     {                                                   \
-        if(::asbind20::scirpt_debug_mode())           \
+        if(::asbind20::script_debug_mode())           \
             GTEST_SKIP() << "script library DEBUG found"; \
     } while(0)
 

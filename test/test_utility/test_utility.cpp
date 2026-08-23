@@ -93,7 +93,7 @@ TEST(Utility, Version)
         std::string_view sv = AS_NAMESPACE_QUALIFIER asGetLibraryVersion();
         bool script_debug_found = sv.find("DEBUG") != sv.npos;
 
-        EXPECT_EQ(asbind20::scirpt_debug_mode(), script_debug_found)
+        EXPECT_EQ(asbind20::script_debug_mode(), script_debug_found)
             << "asGetLibraryVersion: " << sv;
     }
 }
