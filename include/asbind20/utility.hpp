@@ -974,61 +974,6 @@ private:
     void* m_data = nullptr;
 };
 
-/**
- * @brief Get string from an enum value
- *
- * @note This function uses compiler extension to get name of enum.
- *       It cannot handle enum value that has same underlying value with another enum.
- *
- * @tparam Value Enum value
- */
-template <auto Value>
-requires(std::is_enum_v<decltype(Value)>)
-constexpr std::string_view static_enum_name() noexcept
-{
-    std::string_view name;
-
-#if defined(__clang__) || defined(__GNUC__)
-    name = __PRETTY_FUNCTION__;
-
-    std::size_t start = name.find("Value = ") + 8;
-
-#    ifdef __clang__
-#        define ASBIND20_HAS_STATIC_ENUM_NAME "__PRETTY_FUNCTION__ (Clang)"
-
-    std::size_t end = name.find_last_of(']');
-#    else // GCC
-#        define ASBIND20_HAS_STATIC_ENUM_NAME "__PRETTY_FUNCTION__ (GCC)"
-
-    std::size_t end = std::min(name.find(';', start), name.find_last_of(']'));
-#    endif
-
-    name = std::string_view(name.data() + start, end - start);
-
-#elif defined(_MSC_VER)
-#    define ASBIND20_HAS_STATIC_ENUM_NAME "__FUNCSIG__"
-
-    name = __FUNCSIG__;
-    std::size_t start = name.find("static_enum_name<") + 17;
-    std::size_t end = name.find_last_of('>');
-    name = std::string_view(name.data() + start, end - start);
-
-#else
-    static_assert(false, "Not supported");
-
-#endif
-
-    // Remove qualifier
-    std::size_t qual_end = name.rfind("::");
-    if(qual_end != std::string_view::npos)
-    {
-        qual_end += 2; // skip "::"
-        return name.substr(qual_end);
-    }
-
-    return name;
-}
-
 [[nodiscard]]
 inline function_pointer get_default_factory(const_typeinfo_pointer ti)
 {

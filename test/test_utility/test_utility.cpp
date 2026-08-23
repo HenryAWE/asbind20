@@ -2,6 +2,7 @@
 #include <gmock/gmock-matchers.h>
 #include <asbind20/asbind.hpp>
 #include <asbind20/ranges/ranges.hpp>
+#include <asbind20/meta/enum_name.hpp>
 
 namespace test_utility
 {
@@ -31,12 +32,12 @@ enum my_enum
 
 TEST(Utility, StaticEnumName)
 {
-    using namespace asbind20;
-
 #ifndef ASBIND20_HAS_STATIC_ENUM_NAME
     GTEST_SKIP() << "static_enum_name not supported";
 
 #else
+
+    using asbind20::meta::static_enum_name;
 
     {
         using test_utility::my_enum;
@@ -301,6 +302,10 @@ static void output_info(std::ostream& os)
     os << "ASBIND20_HAS_STATIC_ENUM_NAME: "
        << ASBIND20_HAS_STATIC_ENUM_NAME
        << std::endl;
+#endif
+
+#ifdef ASBIND20_HAS_LIB_REFLECTION
+    os << "ASBIND20_HAS_LIB_REFLECTION defined: " << __cpp_lib_reflection << 'L' << std::endl;
 #endif
 }
 
