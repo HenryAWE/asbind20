@@ -1,0 +1,38 @@
+#include <asbind_test/framework.hpp>
+#include <asbind20/meta/reflection.hpp>
+
+#ifdef ASBIND20_HAS_LIB_REFLECTION
+
+#    if defined(__GNUC__) && !defined(__clang__)
+// False positive if functions are only used in reflection
+#        pragma GCC diagnostic ignored "-Wunused-function"
+#    endif
+
+namespace
+{
+int func0()
+{
+    return 0;
+}
+
+int func1(std::int8_t arg0, float arg1)
+{
+    (void)arg0;
+    (void)arg1;
+    return 0;
+}
+} // namespace
+
+TEST(Reflection, FuncSig)
+{
+    EXPECT_EQ(
+        asbind20::meta::refl_function_sig<^^func0>(),
+        "int func0()"
+    );
+    EXPECT_EQ(
+        asbind20::meta::refl_function_sig<^^func1>(),
+        "int func1(int8 arg0,float arg1)"
+    );
+}
+
+#endif
