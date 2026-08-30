@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include "../util/strutil.hpp"
+#include "../utility.hpp"
 #if ASBIND20_HAS_LIB_REFLECTION
 #    include <meta>
 
@@ -16,35 +17,58 @@ namespace asbind20::meta
 {
 namespace detail
 {
-    consteval std::string_view calc_type_name(std::meta::info type_info)
+    template <std::meta::info TypeInfo>
+    consteval std::string_view calc_type_name()
     {
         // "^^std::int8_t" will cause compilation error, WHY?
+        // Use the old "std::same_as" solution.
+        using type = typename [:TypeInfo:];
 
-        if(std::meta::is_same_type(type_info, ^^int8_t))
+        if(std::same_as<type, std::int8_t>)
             return "int8";
-        return std::meta::display_string_of(type_info);
+        if(std::same_as<type, std::int16_t>)
+            return "int16";
+        if(std::same_as<type, std::int32_t>)
+            return "int";
+        if(std::same_as<type, std::int64_t>)
+            return "int64";
+
+        if(std::same_as<type, std::uint8_t>)
+            return "uint8";
+        if(std::same_as<type, std::uint16_t>)
+            return "uint16";
+        if(std::same_as<type, std::uint32_t>)
+            return "uint";
+        if(std::same_as<type, std::uint64_t>)
+            return "uint64";
+
+        return std::meta::display_string_of(TypeInfo);
     }
 
     template <std::meta::info func_info>
-    constexpr std::string get_param_str()
+    constexpr std::string calc_param_list_str()
     {
         constexpr static auto params =
             std::define_static_array(std::meta::parameters_of(func_info));
 
         std::string params_str;
+        params_str += '(';
+
         bool first = true;
         template for(constexpr auto param : params)
         {
             if(!first)
                 params_str += ',';
             first = false;
-            params_str += detail::calc_type_name(std::meta::type_of(param));
+            params_str += detail::calc_type_name<std::meta::type_of(param)>();
             if constexpr(std::meta::has_identifier(param))
             {
                 params_str += ' ';
                 params_str += std::meta::identifier_of(param);
             }
         }
+
+        params_str += ')';
         return params_str;
     }
 } // namespace detail
@@ -54,17 +78,20 @@ namespace detail
 #    endif
 
 template <std::meta::info FuncInfo>
-constexpr cstring_ref refl_function_sig()
+consteval cstring_ref refl_function_sig(bool skip_func_name = false)
 {
     constexpr auto ret_t = std::meta::return_type_of(FuncInfo);
 
+    std::string_view func_identifier =
+        skip_func_name ? "f" : std::meta::identifier_of(FuncInfo);
+
     return std::define_static_string(
-        detail::calc_type_name(ret_t) +
-        std::string(1, ' ') +
-        std::meta::identifier_of(FuncInfo) +
-        std::string(1, '(') +
-        detail::get_param_str<FuncInfo>() +
-        std::string(1, ')')
+        string_concat(
+            detail::calc_type_name<ret_t>(),
+            ' ',
+            func_identifier,
+            detail::calc_param_list_str<FuncInfo>()
+        )
     );
 }
 } // namespace asbind20::meta
