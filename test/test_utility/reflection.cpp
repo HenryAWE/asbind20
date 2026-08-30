@@ -45,4 +45,33 @@ TEST(Reflection, FuncSig)
     );
 }
 
+namespace
+{
+int helper(int)
+{
+    return 1013;
+}
+} // namespace
+
+TEST(Reflection, Proxy)
+{
+    using asbind20::reflect;
+
+    {
+        auto proxy = reflect<^^helper>();
+        EXPECT_EQ(
+            proxy.get_decl(),
+            "int helper(int)"
+        );
+        EXPECT_EQ(
+            proxy.get_func(),
+            &helper
+        );
+        EXPECT_EQ(
+            std::invoke(proxy.get_func(), 0),
+            1013
+        );
+    }
+}
+
 #endif

@@ -122,7 +122,39 @@ consteval cstring_ref refl_function_sig(bool skip_func_name = false)
         )
     );
 }
+
+template <std::meta::info Function>
+struct function_refl_proxy
+{
+    constexpr function_refl_proxy() = default;
+
+    static constexpr cstring_ref get_decl() noexcept
+    {
+        return refl_function_sig<Function>();
+    }
+
+    static constexpr auto get_func()
+    {
+        return &[:Function:];
+    }
+};
+
+template <std::meta::info Info>
+constexpr  auto get_proxy()
+{
+    return function_refl_proxy<Info>{};
+}
 } // namespace asbind20::meta
+
+namespace asbind20
+{
+template <std::meta::info FuncInfo>
+consteval auto reflect()
+{
+    //return std::meta::reflect_function<T>(f);
+    return meta::get_proxy<FuncInfo>();
+}
+}
 
 #else
 
