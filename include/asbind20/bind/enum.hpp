@@ -123,7 +123,7 @@ public:
     /**
      * @brief Registering an enum value. Its declaration will be generated from its name in C++.
      *
-     * @note This function has some limitations. @sa static_enum_name
+     * @note This function has some limitations. @sa meta::static_enum_name
      *
      * @tparam Value Enum value
      */
