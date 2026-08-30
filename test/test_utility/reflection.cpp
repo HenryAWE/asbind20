@@ -21,6 +21,12 @@ int func1(std::int8_t arg0, float arg1)
     (void)arg1;
     return 0;
 }
+
+unsigned int& func2(const std::int8_t& arg0)
+{
+    (void)arg0;
+    std::terminate();
+}
 } // namespace
 
 TEST(Reflection, FuncSig)
@@ -32,6 +38,10 @@ TEST(Reflection, FuncSig)
     EXPECT_EQ(
         asbind20::meta::refl_function_sig<^^func1>(),
         "int func1(int8 arg0,float arg1)"
+    );
+    EXPECT_EQ(
+        asbind20::meta::refl_function_sig<^^func2>(),
+        "uint& func2(const int8&in arg0)"
     );
 }
 
