@@ -2,6 +2,7 @@
 #define ASBIND20_META_ENUM_NAME_HPP
 
 #include "../detail/config.hpp"
+#include <algorithm>
 #include <string_view>
 #ifdef ASBIND20_HAS_LIB_REFLECTION
 #    include <meta>
