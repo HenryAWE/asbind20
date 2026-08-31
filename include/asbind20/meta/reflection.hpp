@@ -140,7 +140,7 @@ struct function_refl_proxy
 };
 
 template <std::meta::info Info>
-constexpr  auto get_proxy()
+constexpr auto get_proxy()
 {
     return function_refl_proxy<Info>{};
 }
@@ -151,7 +151,6 @@ namespace asbind20
 template <std::meta::info FuncInfo>
 consteval auto reflect()
 {
-    //return std::meta::reflect_function<T>(f);
     return meta::get_proxy<FuncInfo>();
 }
 }
