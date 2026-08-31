@@ -71,6 +71,11 @@ TEST(Reflection, Proxy)
             std::invoke(proxy.get_func(), 0),
             1013
         );
+
+        EXPECT_EQ(
+            std::invoke(asbind20::fp<proxy.get_func()>.get(), 0),
+            1013
+        );
     }
 }
 
