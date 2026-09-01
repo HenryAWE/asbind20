@@ -541,16 +541,137 @@ private:
     handle_type m_engine;
 };
 
+using script_version_type = AS_NAMESPACE_QUALIFIER asDWORD;
+
+inline constexpr script_version_type default_script_version = ANGELSCRIPT_VERSION;
+
+[[nodiscard]]
+inline engine_pointer create_script_engine(
+    script_version_type version = default_script_version
+)
+{
+    return AS_NAMESPACE_QUALIFIER asCreateScriptEngine(version);
+}
+
 /**
  * @brief Create an AngelScript engine
  */
 [[nodiscard]]
 inline script_engine make_script_engine(
-    AS_NAMESPACE_QUALIFIER asDWORD version = ANGELSCRIPT_VERSION
+    script_version_type version = default_script_version
 )
 {
     return script_engine(
-        AS_NAMESPACE_QUALIFIER asCreateScriptEngine(version)
+        create_script_engine(version)
+    );
+}
+
+using unique_script_engine = script_engine;
+
+class shared_script_engine
+{
+public:
+    using handle_type = engine_pointer;
+
+    shared_script_engine() noexcept
+        : m_engine(nullptr) {}
+
+    shared_script_engine(const shared_script_engine& other)
+        : m_engine(other.get())
+    {
+        m_engine->AddRef();
+    }
+
+    shared_script_engine(shared_script_engine&& other) noexcept
+        : m_engine(std::exchange(other.m_engine, nullptr)) {}
+
+    shared_script_engine(std::in_place_t, handle_type engine) noexcept
+        : m_engine(engine) {}
+
+    shared_script_engine(const unique_script_engine&) = delete;
+
+    shared_script_engine(unique_script_engine&& other) noexcept
+        : m_engine(other.release()) {}
+
+    shared_script_engine& operator=(const shared_script_engine& other)
+    {
+        if(this == &other)
+            return *this;
+
+        reset(other.get());
+        return *this;
+    }
+
+    shared_script_engine& operator=(shared_script_engine&& other) noexcept
+    {
+        if(this == &other)
+            return *this;
+        reset(other.release());
+        return *this;
+    }
+
+    shared_script_engine& operator=(unique_script_engine&& other) noexcept
+    {
+        m_engine = other.release();
+        return *this;
+    }
+
+    ~shared_script_engine()
+    {
+        reset();
+    }
+
+    [[nodiscard]]
+    handle_type get() const noexcept
+    {
+        return m_engine;
+    }
+
+    operator handle_type() const noexcept
+    {
+        return get();
+    }
+
+    handle_type operator->() const noexcept
+    {
+        return get();
+    }
+
+    [[nodiscard]]
+    handle_type release() noexcept
+    {
+        return std::exchange(m_engine, nullptr);
+    }
+
+    void reset(const unique_script_engine&) = delete;
+
+    void reset(unique_script_engine&& other)
+    {
+        if(m_engine)
+            m_engine->Release();
+        m_engine = other.release();
+    }
+
+    void reset(handle_type engine = nullptr)
+    {
+        if(m_engine)
+            m_engine->Release();
+        m_engine = engine;
+        if(m_engine)
+            m_engine->AddRef();
+    }
+
+private:
+    handle_type m_engine;
+};
+
+[[nodiscard]]
+inline shared_script_engine make_shared_script_engine(
+    script_version_type version = default_script_version
+)
+{
+    return shared_script_engine(
+        std::in_place, create_script_engine(version)
     );
 }
 
