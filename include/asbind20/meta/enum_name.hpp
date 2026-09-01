@@ -4,9 +4,7 @@
 #include "../detail/config.hpp"
 #include <algorithm>
 #include <string_view>
-#ifdef ASBIND20_HAS_LIB_REFLECTION
-#    include <meta>
-#endif
+#include "refl_common.hpp"
 
 namespace asbind20::meta
 {

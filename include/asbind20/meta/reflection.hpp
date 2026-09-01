@@ -3,9 +3,9 @@
 
 #include <cstdint>
 #include "../util/strutil.hpp"
-#include "../utility.hpp"
+#include "refl_common.hpp"
+
 #if ASBIND20_HAS_LIB_REFLECTION
-#    include <meta>
 
 #    if defined(__GNUC__) && !defined(__clang__)
 #        pragma GCC diagnostic push
