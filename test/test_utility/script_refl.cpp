@@ -12,7 +12,7 @@ TEST(ScriptRefl, ScriptModule)
     m->AddScriptSection(
         "test_refl",
         "int var = 0;\n"
-        "float f(int arg = 3) { return 0.0; }"
+        "float f(float, int arg = 3) { return 0.0; }"
     );
     ASSERT_GE(m->Build(), 0);
 
@@ -21,10 +21,24 @@ TEST(ScriptRefl, ScriptModule)
 
     {
         auto param_info = asbind20::get_func_param_info(f, 0);
+        EXPECT_THAT(param_info.name, ::testing::IsEmpty());
+        EXPECT_EQ(param_info.type_id, AS_NAMESPACE_QUALIFIER asTYPEID_FLOAT);
+        EXPECT_EQ(param_info.flags, 0);
+        EXPECT_THAT(
+            param_info.default_arg,
+            ::testing::IsEmpty()
+        );
+    }
+
+    {
+        auto param_info = asbind20::get_func_param_info(f, 1);
         EXPECT_EQ(param_info.name, "arg");
         EXPECT_EQ(param_info.type_id, AS_NAMESPACE_QUALIFIER asTYPEID_INT32);
         EXPECT_EQ(param_info.flags, 0);
-        EXPECT_EQ(param_info.default_arg, "3");
+        EXPECT_THAT(
+            param_info.default_arg,
+            ::testing::HasSubstr("3")
+        );
     }
 
     {
