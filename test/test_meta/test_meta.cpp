@@ -1,4 +1,5 @@
 #include <asbind_test/framework.hpp>
+#include <asbind20/meta/type_name.hpp>
 
 namespace
 {
@@ -35,4 +36,25 @@ TEST(Meta, StaticEnumName)
     }
 
 #endif
+}
+
+namespace
+{
+struct my_type
+{};
+} // namespace
+
+TEST(Meta, TypeName)
+{
+    using namespace asbind20;
+
+    {
+        constexpr auto name = meta::fixed_type_name<int>();
+        EXPECT_STREQ(name.c_str(), "int");
+    }
+
+    {
+        constexpr auto name = meta::fixed_type_name<my_type>();
+        EXPECT_STREQ(name.c_str(), "my_type");
+    }
 }
