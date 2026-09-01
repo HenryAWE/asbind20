@@ -8,6 +8,8 @@ add_subdirectory(test_listener)
 
 add_subdirectory(test_memory)
 
+add_subdirectory(test_meta)
+
 add_subdirectory(test_bind)
 
 add_subdirectory(test_invoke)
