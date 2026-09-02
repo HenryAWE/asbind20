@@ -20,7 +20,7 @@ namespace detail
         {
             result = __FUNCSIG__;
             auto start = result.find("type_name_of_impl<");
-            start += 15; // strlen("type_name_of_impl<")
+            start += 18; // strlen("type_name_of_impl<")
             auto stop = result.rfind('>');
 
             result = result.substr(start, stop - start);
