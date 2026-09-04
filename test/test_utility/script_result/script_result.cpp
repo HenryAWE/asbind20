@@ -174,3 +174,33 @@ TEST(ScriptResult, VoidReturnCode)
         EXPECT_EQ(result.error(), AS_NAMESPACE_QUALIFIER asSUCCESS);
     }
 }
+
+TEST(ScriptResult, ContextState)
+{
+    using asbind20::bad_script_result;
+    using asbind20::script_result;
+    using asbind20::script_result_policy;
+
+    {
+        script_result<std::string, script_result_policy::context_state> result(
+            bad_script_result,
+            AS_NAMESPACE_QUALIFIER asEXECUTION_ERROR
+        );
+        EXPECT_FALSE(result);
+        EXPECT_EQ(result.error(), AS_NAMESPACE_QUALIFIER asEXECUTION_ERROR);
+
+        result.emplace_value("val");
+        EXPECT_TRUE(result);
+        EXPECT_NE(result.error(), AS_NAMESPACE_QUALIFIER asEXECUTION_ERROR);
+    }
+
+    {
+        script_result<std::string, script_result_policy::context_state> result(
+            std::piecewise_construct,
+            std::forward_as_tuple(3, 'A'),
+            std::forward_as_tuple(AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED)
+        );
+        EXPECT_TRUE(result);
+        EXPECT_EQ(result.error(), AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED);
+    }
+}

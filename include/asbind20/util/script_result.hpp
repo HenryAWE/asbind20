@@ -27,7 +27,8 @@ inline constexpr bad_script_result_t bad_script_result{};
 enum class script_result_policy
 {
     nonnegative,
-    return_code
+    return_code,
+    context_state
 };
 
 namespace detail
@@ -79,6 +80,29 @@ namespace detail
             AS_NAMESPACE_QUALIFIER asERROR;
         static constexpr error_type good_status =
             AS_NAMESPACE_QUALIFIER asSUCCESS;
+    };
+
+    template <>
+    struct script_result_policy_helper<
+        script_result_policy::context_state>
+    {
+        using error_type = AS_NAMESPACE_QUALIFIER asEContextState;
+
+        static bool has_value(error_type e) noexcept
+        {
+            return e == AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED;
+        }
+
+        static std::string error_description(error_type e)
+        {
+            // From IO module
+            return to_string(e);
+        }
+
+        static constexpr error_type bad_status =
+            AS_NAMESPACE_QUALIFIER asEXECUTION_ERROR;
+        static constexpr error_type good_status =
+            AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED;
     };
 } // namespace detail
 
