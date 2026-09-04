@@ -9,7 +9,7 @@
 
 namespace asbind20
 {
-class bad_script_result_access : std::exception
+class bad_script_result_access : public std::exception
 {
 public:
     [[nodiscard]]
@@ -93,7 +93,7 @@ public:
     class bad_access : public bad_script_result_access
     {
     public:
-        using error_type = error_type;
+        using error_type = typename helper::error_type;
 
         bad_access() = delete;
         constexpr bad_access(const bad_access&) noexcept = default;
@@ -126,7 +126,7 @@ protected:
     [[noreturn]]
     static void throw_bad_access(error_type status)
     {
-        throw bad_access(status);
+        detail::throw_<bad_access>(status);
     }
 };
 
@@ -189,9 +189,11 @@ public:
 
     ~script_result()
     {
-        destroy_impl();
+        if(has_value()) [[likely]]
+            destroy_impl();
     }
 
+    [[nodiscard]]
     bool has_value() const noexcept
     {
         return helper::has_value(m_status);
@@ -205,7 +207,8 @@ public:
     template <typename... Args>
     void emplace_value(Args&&... args)
     {
-        destroy_impl();
+        if(has_value()) [[likely]]
+            destroy_impl();
         m_status = helper::bad_status;
         this->val_emplace_impl(std::forward<Args>(args)...);
         m_status = helper::good_status;
@@ -315,6 +318,7 @@ public:
         : m_status(status)
     {}
 
+    [[nodiscard]]
     bool has_value() const noexcept
     {
         return helper::has_value(m_status);
