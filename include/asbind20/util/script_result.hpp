@@ -189,7 +189,7 @@ public:
 
     ~script_result()
     {
-        if(has_value()) [[likely]]
+        if(has_value())
             destroy_impl();
     }
 
@@ -207,7 +207,7 @@ public:
     template <typename... Args>
     void emplace_value(Args&&... args)
     {
-        if(has_value()) [[likely]]
+        if(has_value())
             destroy_impl();
         m_status = helper::bad_status;
         this->val_emplace_impl(std::forward<Args>(args)...);
@@ -314,6 +314,7 @@ public:
         m_status = e;
     }
 
+    // For consistency with the general version
     explicit script_result(error_type status) noexcept
         : m_status(status)
     {}
