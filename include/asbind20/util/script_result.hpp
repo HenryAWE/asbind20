@@ -282,6 +282,80 @@ private:
         new(std::addressof(m_value)) value_type(std::forward<Args>(args)...);
     }
 };
+
+/**
+ * @brief Script result for void type
+ */
+template <script_result_policy Policy>
+class script_result<void, Policy> : public script_result_base<Policy>
+{
+    using my_base = script_result_base<Policy>;
+    using helper = detail::script_result_policy_helper<Policy>;
+
+public:
+    using value_type = void;
+    using error_type = typename helper::error_type;
+
+    template <typename U>
+    using rebind = script_result<U, Policy>;
+
+    script_result() noexcept
+        : m_status(helper::good_status)
+    {}
+
+    script_result(bad_script_result_t, error_type e) noexcept
+    {
+        // The error status shouldn't have value for this constructor
+        if(helper::has_value(e)) [[unlikely]]
+            e = helper::bad_status;
+        m_status = e;
+    }
+
+    explicit script_result(error_type status) noexcept
+        : m_status(status)
+    {}
+
+    bool has_value() const noexcept
+    {
+        return helper::has_value(m_status);
+    }
+
+    explicit operator bool() const noexcept
+    {
+        return has_value();
+    }
+
+    void emplace_value() noexcept
+    {
+        m_status = helper::good_status;
+    }
+
+    void operator*() const noexcept
+    {
+        ASBIND20_ASSERT(has_value());
+    }
+
+    void value() const
+    {
+        if(!has_value()) [[unlikely]]
+            my_base::throw_bad_access(m_status);
+    }
+
+    [[nodiscard]]
+    error_type error() const noexcept
+    {
+        return m_status;
+    }
+
+    [[nodiscard]]
+    std::string error_description() const
+    {
+        return helper::error_description(m_status);
+    }
+
+private:
+    error_type m_status = helper::good_status;
+};
 } // namespace asbind20
 
 #endif
