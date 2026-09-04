@@ -75,8 +75,8 @@ TEST(ScriptResult, ReturnCode)
 
 TEST(ScriptResult, VoidNonNegative)
 {
-    using asbind20::bad_script_result_access;
     using asbind20::bad_script_result;
+    using asbind20::bad_script_result_access;
     using asbind20::script_result;
 
     static_assert(std::same_as<script_result<void>::value_type, void>);
@@ -128,8 +128,8 @@ TEST(ScriptResult, VoidNonNegative)
 
 TEST(ScriptResult, VoidReturnCode)
 {
-    using asbind20::bad_script_result_access;
     using asbind20::bad_script_result;
+    using asbind20::bad_script_result_access;
     using asbind20::script_result;
     using asbind20::script_result_policy;
 

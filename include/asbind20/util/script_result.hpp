@@ -229,23 +229,47 @@ public:
         return m_value;
     }
 
+    const value_type&& operator*() const&& noexcept
+    {
+        return std::move(m_value);
+    }
+
+    value_type* operator->() noexcept
+    {
+        return std::addressof(m_value);
+    }
+
     const value_type* operator->() const noexcept
     {
         return std::addressof(m_value);
     }
 
-    value_type& value()
+    value_type& value() &
     {
         if(!has_value()) [[unlikely]]
             my_base::throw_bad_access(m_status);
         return m_value;
     }
 
-    const value_type& value() const
+    value_type&& value() &&
+    {
+        if(!has_value()) [[unlikely]]
+            my_base::throw_bad_access(m_status);
+        return std::move(m_value);
+    }
+
+    const value_type& value() const&
     {
         if(!has_value()) [[unlikely]]
             my_base::throw_bad_access(m_status);
         return m_value;
+    }
+
+    const value_type&& value() const&&
+    {
+        if(!has_value()) [[unlikely]]
+            my_base::throw_bad_access(m_status);
+        return std::move(m_value);
     }
 
     [[nodiscard]]
