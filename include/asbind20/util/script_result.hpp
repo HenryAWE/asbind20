@@ -194,6 +194,50 @@ public:
             val_emplace_impl(other.m_value);
     }
 
+    script_result& operator=(const script_result& other)
+    {
+        if(this == &other)
+            return *this;
+
+        if(other.has_value())
+        {
+            if(has_value())
+                m_value = other.m_value;
+            else
+            {
+                m_status = helper::bad_status;
+                val_emplace_impl(other.m_value);
+            }
+        }
+        else if(has_value())
+            destroy_impl();
+
+        m_status = other.m_status;
+        return *this;
+    }
+
+    script_result& operator=(script_result&& other) noexcept
+    {
+        if(this == &other)
+            return *this;
+
+        if(other.has_value())
+        {
+            if(has_value())
+                m_value = std::move(other.m_value);
+            else
+            {
+                m_status = helper::bad_status;
+                val_emplace_impl(std::move(other.m_value));
+            }
+        }
+        else if(has_value())
+            destroy_impl();
+
+        m_status = other.m_status;
+        return *this;
+    }
+
     ~script_result()
     {
         if(has_value())
@@ -458,6 +502,9 @@ public:
     {}
 
     script_result(const script_result&) noexcept = default;
+
+    script_result& operator=(const script_result&) noexcept = default;
+    script_result& operator=(script_result&&) noexcept = default;
 
     script_result(bad_script_result_t, error_type e) noexcept
     {
