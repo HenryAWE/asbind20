@@ -711,7 +711,7 @@ public:
     }
 
 private:
-    error_type m_status = helper::good_status;
+    error_type m_status = helper::bad_status;
 };
 } // namespace asbind20
 
