@@ -1,5 +1,5 @@
-#ifndef ASBIND20_INVOKE_RESULT_HPP
-#define ASBIND20_INVOKE_RESULT_HPP
+#ifndef ASBIND20_INVOKE_INVOKE_RESULT_HPP
+#define ASBIND20_INVOKE_INVOKE_RESULT_HPP
 
 #include <optional>
 #include "../fwd.hpp"
