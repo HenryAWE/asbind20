@@ -1,3 +1,9 @@
+/**
+ * @file script_result.hpp
+ * @author HenryAWE
+ * @brief Script result holder like std::expected
+ */
+
 #ifndef ASBIND20_UTIL_SCRIPT_RESULT_HPP
 #define ASBIND20_UTIL_SCRIPT_RESULT_HPP
 
