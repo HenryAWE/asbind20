@@ -5,6 +5,7 @@
 #include "../fwd.hpp"
 #include "../type_traits.hpp"
 #include "../util/unreachable.hpp"
+#include "../detail/cmp_helpers.hpp"
 #ifdef ASBIND20_HAS_LIB_EXPECTED
 #    include <expected>
 #endif
@@ -532,14 +533,6 @@ struct is_script_invoke_result :
 template <typename T>
 inline constexpr bool is_script_invoke_result_v = is_script_invoke_result<T>::value;
 
-namespace detail
-{
-    template <typename T, typename U>
-    concept check_op_eq = requires(const T& lhs, const U& rhs) {
-        { lhs == rhs } -> std::convertible_to<bool>;
-    };
-} // namespace detail
-
 template <typename T, typename U>
 bool operator==(const script_invoke_result<T>& lhs, const script_invoke_result<U>& rhs)
     requires(detail::check_op_eq<T, U>)
@@ -564,37 +557,6 @@ bool operator==(const T& lhs, const script_invoke_result<U>& rhs)
 {
     return rhs.has_value() ? lhs == *rhs : false;
 }
-
-namespace detail
-{
-    template <typename T, typename U>
-    concept check_op_cmp = requires(const T& lhs, const U& rhs) {
-        { lhs == rhs } -> std::convertible_to<bool>;
-        { lhs < rhs } -> std::convertible_to<bool>;
-        { rhs < lhs } -> std::convertible_to<bool>;
-    } || requires(const T& lhs, const U& rhs) {
-        { lhs <=> rhs } -> std::convertible_to<std::partial_ordering>;
-    };
-
-    template <typename T, typename U>
-    std::partial_ordering cmp_weak_ord_helper(T&& lhs, U&& rhs)
-    {
-        using std::partial_ordering;
-        constexpr bool use_three_way = requires() {
-            { lhs <=> rhs } -> std::convertible_to<std::partial_ordering>;
-        };
-        if constexpr(use_three_way)
-            return std::forward<T>(lhs) <=> std::forward<U>(rhs);
-        else
-        {
-            // Logic of std::compare_partial_order_fallback
-            return std::forward<T>(lhs) == std::forward<U>(rhs) ? partial_ordering::equivalent :
-                   std::forward<T>(lhs) < std::forward<U>(rhs)  ? partial_ordering::less :
-                   std::forward<U>(rhs) < std::forward<T>(lhs)  ? partial_ordering::greater :
-                                                                  partial_ordering::unordered;
-        }
-    }
-} // namespace detail
 
 template <typename T, typename U>
 std::partial_ordering operator<=>(const script_invoke_result<T>& lhs, const script_invoke_result<U>& rhs)

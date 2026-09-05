@@ -11,6 +11,7 @@
 #include <string>
 #include "../fwd.hpp"
 #include "../detail/err_handler.hpp"
+#include "../detail/cmp_helpers.hpp"
 #include "../io/to_string.hpp"
 
 namespace asbind20
@@ -831,6 +832,55 @@ void swap(
 ) noexcept(noexcept(lhs.swap(rhs)))
 {
     lhs.swap(rhs);
+}
+
+namespace detail
+{
+    template <typename T>
+    struct is_script_result_helper : std::false_type
+    {};
+
+    template <typename T, script_result_policy Policy>
+    struct is_script_result_helper<script_result<T, Policy>> : std::true_type
+    {};
+} // namespace detail
+
+template <typename T>
+struct is_script_result : detail::is_script_result_helper<T>
+{};
+
+template <typename T>
+inline constexpr bool is_script_result_v = is_script_result<T>::value;
+
+template <typename T1, typename T2, script_result_policy Policy>
+requires(detail::check_op_eq<T1, T2>)
+bool operator==(
+    const script_result<T1, Policy>& lhs,
+    const script_result<T2, Policy>& rhs
+) noexcept
+{
+    const bool lhs_has_value = lhs.has_value();
+    if(lhs_has_value == rhs.has_value())
+    {
+        if(lhs_has_value)
+            return *lhs == *rhs;
+        else
+            return lhs.error() == rhs.error();
+    }
+
+    return false;
+}
+
+template <typename T1, typename T2, script_result_policy Policy>
+requires(detail::check_op_cmp<T1, T2>)
+std::partial_ordering operator<=>(
+    const script_result<T1, Policy>& lhs,
+    const script_result<T2, Policy>& rhs
+)
+{
+    if(lhs.has_value() && rhs.has_value())
+        return detail::cmp_weak_ord_helper(*lhs, *rhs);
+    return std::partial_ordering::unordered;
 }
 } // namespace asbind20
 
