@@ -501,6 +501,89 @@ private:
     }
 };
 
+template <typename T, script_result_policy Policy>
+class script_result<T&, Policy> : public script_result_base<Policy>
+{
+    using my_base = script_result_base<Policy>;
+    using helper = detail::script_result_policy_helper<Policy>;
+
+public:
+    using value_type = T&;
+    using error_type = typename helper::error_type;
+
+    template <typename U>
+    using rebind = script_result<U, Policy>;
+
+    script_result(bad_script_result_t, error_type e) noexcept
+    {
+        if(helper::has_value(e)) [[unlikely]]
+            e = helper::bad_status;
+        m_status = e;
+    }
+
+    explicit script_result(T& val, error_type e = helper::good_status) noexcept
+        : m_ptr(std::addressof(val))
+    {
+        if(!helper::has_value(e)) [[unlikely]]
+            e = helper::good_status;
+        m_status = e;
+    }
+
+    script_result(const script_result& other) noexcept = default;
+
+    script_result& operator=(const script_result& other) noexcept = default;
+
+    template <typename Arg>
+    script_result(
+        std::piecewise_construct_t,
+        std::tuple<Arg> arg,
+        std::tuple<error_type> status
+    )
+        : m_ptr(std::addressof(static_cast<T&>(std::get<0>(arg)))),
+          m_status(std::get<0>(status))
+    {}
+
+    [[nodiscard]]
+    bool has_value() const noexcept
+    {
+        return helper::has_value(m_status);
+    }
+
+    explicit operator bool() const noexcept
+    {
+        return has_value();
+    }
+
+    T& operator*() const noexcept
+    {
+        ASBIND20_ASSERT(*this);
+        return *m_ptr;
+    }
+
+    [[nodiscard]]
+    error_type error() const noexcept
+    {
+        return m_status;
+    }
+
+    T& value() const
+    {
+        if(!has_value())
+            my_base::throw_bad_access(m_status);
+        return *m_ptr;
+    }
+
+    template <typename U>
+    T value_or(U&& alt) const
+    {
+        return has_value() ? *m_ptr : std::forward<U>(alt);
+    }
+
+private:
+    T* m_ptr;
+    error_type m_status = helper::bad_status;
+};
+
 /**
  * @brief Script result for void type
  */

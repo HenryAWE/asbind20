@@ -175,6 +175,38 @@ TEST(ScriptResult, VoidReturnCode)
     }
 }
 
+TEST(ScriptResult, RefNonNegative)
+{
+    using asbind20::bad_script_result;
+    using asbind20::bad_script_result_access;
+    using asbind20::script_result;
+
+    {
+        int val = 42;
+        script_result<int&> result(
+            std::piecewise_construct,
+            std::forward_as_tuple(std::ref(val)),
+            std::forward_as_tuple(0)
+        );
+        EXPECT_TRUE(result);
+        EXPECT_EQ(result.error(), 0);
+        EXPECT_EQ(result.value_or(0), 42);
+        EXPECT_EQ(*result, 42);
+        EXPECT_EQ(std::addressof(*result), &val);
+    }
+
+    {
+        script_result<int&> result(
+            bad_script_result, -1
+        );
+        EXPECT_FALSE(result);
+
+#ifndef ASBIND20_NO_EXCEPTIONS
+        EXPECT_THROW(result.value(), bad_script_result_access);
+#endif
+    }
+}
+
 TEST(ScriptResult, ContextState)
 {
     using asbind20::bad_script_result;
