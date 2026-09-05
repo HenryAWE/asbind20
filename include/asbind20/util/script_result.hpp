@@ -555,6 +555,36 @@ public:
             swap(m_status, other.m_status);
     }
 
+    using optional_type = std::optional<value_type>;
+
+    optional_type to_optional() &
+    {
+        if(!has_value())
+            return std::nullopt;
+        return optional_type(m_value);
+    }
+
+    optional_type to_optional() &&
+    {
+        if(!has_value())
+            return std::nullopt;
+        return optional_type(std::move(m_value));
+    }
+
+    optional_type to_optional() const&
+    {
+        if(!has_value())
+            return std::nullopt;
+        return optional_type(m_value);
+    }
+
+    optional_type to_optional() const&&
+    {
+        if(!has_value())
+            return std::nullopt;
+        return optional_type(std::move(m_value));
+    }
+
 private:
     union
     {
