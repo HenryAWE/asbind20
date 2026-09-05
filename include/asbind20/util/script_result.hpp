@@ -7,8 +7,17 @@
 #ifndef ASBIND20_UTIL_SCRIPT_RESULT_HPP
 #define ASBIND20_UTIL_SCRIPT_RESULT_HPP
 
+#include <cstddef>
+#include <compare>
+#include <concepts>
+#include <exception>
+#include <functional>
 #include <memory>
+#include <new>
 #include <string>
+#include <tuple>
+#include <type_traits>
+#include <utility>
 #include "../fwd.hpp"
 #include "../detail/err_handler.hpp"
 #include "../detail/cmp_helpers.hpp"
@@ -218,6 +227,15 @@ public:
         m_status = e;
     }
 
+    script_result(script_result&& other) noexcept(
+        std::is_nothrow_move_constructible_v<value_type>
+    )
+        : m_status(other.m_status)
+    {
+        if(has_value())
+            val_emplace_impl(std::move(other.m_value));
+    }
+
     script_result(const script_result& other)
         : m_status(other.m_status)
     {
@@ -247,7 +265,10 @@ public:
         return *this;
     }
 
-    script_result& operator=(script_result&& other) noexcept
+    script_result& operator=(script_result&& other) noexcept(
+        std::is_nothrow_move_constructible_v<value_type> &&
+        std::is_nothrow_move_assignable_v<value_type>
+    )
     {
         if(this == &other)
             return *this;
@@ -415,7 +436,7 @@ public:
     template <typename F>
     auto transform(F&& f) const&&
     {
-        ASBIND20_SCRIPT_RESULT_TRANSFORM_IMPL(value_type&&, std::move(m_value));
+        ASBIND20_SCRIPT_RESULT_TRANSFORM_IMPL(const value_type&&, std::move(m_value));
     }
 
 #undef ASBIND20_SCRIPT_RESULT_TRANSFORM_IMPL
@@ -857,7 +878,7 @@ requires(detail::check_op_eq<T1, T2>)
 bool operator==(
     const script_result<T1, Policy>& lhs,
     const script_result<T2, Policy>& rhs
-) noexcept
+) noexcept(noexcept(std::declval<T1>() == std::declval<T2>()))
 {
     const bool lhs_has_value = lhs.has_value();
     if(lhs_has_value == rhs.has_value())
@@ -878,9 +899,15 @@ std::partial_ordering operator<=>(
     const script_result<T2, Policy>& rhs
 )
 {
-    if(lhs.has_value() && rhs.has_value())
-        return detail::cmp_weak_ord_helper(*lhs, *rhs);
-    return std::partial_ordering::unordered;
+    if(lhs.has_value() != rhs.has_value())
+        return std::partial_ordering::unordered;
+    if(!lhs.has_value())
+    {
+        return lhs.error() == rhs.error() ?
+                   std::partial_ordering::equivalent :
+                   std::partial_ordering::unordered;
+    }
+    return detail::cmp_weak_ord_helper(*lhs, *rhs);
 }
 } // namespace asbind20
 

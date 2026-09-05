@@ -1,5 +1,7 @@
 #include <asbind_test/framework.hpp>
 #include <asbind20/util/script_result.hpp>
+#include <string>
+#include <utility>
 
 TEST(ScriptResult, AndThenNonNegative)
 {
@@ -831,4 +833,32 @@ TEST(ScriptResult, RefOrElseReturnCode)
         EXPECT_EQ(mapped.error(), AS_NAMESPACE_QUALIFIER asSUCCESS);
         EXPECT_EQ(std::addressof(*mapped), &recovered);
     }
+}
+
+namespace
+{
+struct const_rvalue_transform_callable
+{
+    std::string operator()(std::string&&) const
+    {
+        return "wrong overload";
+    }
+
+    int operator()(const std::string&&) const
+    {
+        return 42;
+    }
+};
+} // namespace
+
+TEST(ScriptResult, TransformConstRvalue)
+{
+    using asbind20::script_result;
+
+    script_result<std::string> result("abc");
+    auto mapped = std::move(std::as_const(result)).transform(const_rvalue_transform_callable{});
+
+    static_assert(std::same_as<decltype(mapped), script_result<int>>);
+    EXPECT_TRUE(mapped);
+    EXPECT_EQ(mapped.value(), 42);
 }

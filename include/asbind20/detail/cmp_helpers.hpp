@@ -1,7 +1,9 @@
 #ifndef ASBIND20_DETAIL_CMP_HELPERS_HPP
 #define ASBIND20_DETAIL_CMP_HELPERS_HPP
 
+#include <compare>
 #include <concepts>
+#include <utility>
 
 namespace asbind20::detail
 {

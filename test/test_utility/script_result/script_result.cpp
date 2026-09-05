@@ -236,3 +236,59 @@ TEST(ScriptResult, ContextState)
         EXPECT_EQ(result.error(), AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED);
     }
 }
+
+TEST(ScriptResult, MoveOnlyValue)
+{
+    using asbind20::bad_script_result;
+    using asbind20::script_result;
+
+    script_result<std::unique_ptr<int>> source(bad_script_result, -1);
+    source.emplace_value(std::make_unique<int>(42));
+    EXPECT_TRUE(source);
+
+    script_result<std::unique_ptr<int>> moved(std::move(source));
+    EXPECT_TRUE(moved);
+    ASSERT_NE(moved.value(), nullptr);
+    EXPECT_EQ(*moved.value(), 42);
+
+    script_result<std::unique_ptr<int>> assigned(bad_script_result, -2);
+    assigned = std::move(moved);
+    EXPECT_TRUE(assigned);
+    ASSERT_NE(assigned.value(), nullptr);
+    EXPECT_EQ(*assigned.value(), 42);
+}
+
+TEST(ScriptResult, Compare)
+{
+    using asbind20::bad_script_result;
+    using asbind20::script_result;
+
+    {
+        script_result<int> a(bad_script_result, -1);
+        script_result<int> b(bad_script_result, -1);
+        EXPECT_TRUE(a == b);
+        EXPECT_EQ(a <=> b, std::partial_ordering::equivalent);
+    }
+
+    {
+        script_result<int> a(bad_script_result, -1);
+        script_result<int> b(bad_script_result, -2);
+        EXPECT_FALSE(a == b);
+        EXPECT_EQ(a <=> b, std::partial_ordering::unordered);
+    }
+
+    {
+        script_result<int> a(1);
+        script_result<int> b(bad_script_result, -1);
+        EXPECT_FALSE(a == b);
+        EXPECT_EQ(a <=> b, std::partial_ordering::unordered);
+    }
+
+    {
+        script_result<int> a(1);
+        script_result<int> b(2);
+        EXPECT_TRUE(a != b);
+        EXPECT_EQ(a <=> b, std::partial_ordering::less);
+        EXPECT_EQ(b <=> a, std::partial_ordering::greater);
+    }
+}
