@@ -22,6 +22,9 @@
 #include "../detail/err_handler.hpp"
 #include "../detail/cmp_helpers.hpp"
 #include "../io/to_string.hpp"
+#ifdef ASBIND20_HAS_LIB_EXPECTED
+#    include <expected>
+#endif
 
 namespace asbind20
 {
@@ -584,6 +587,45 @@ public:
             return std::nullopt;
         return optional_type(std::move(m_value));
     }
+
+
+#ifdef ASBIND20_HAS_LIB_EXPECTED
+
+    using expected_type = std::expected<T, error_type>;
+
+    [[nodiscard]]
+    expected_type to_expected() &
+    {
+        if(has_value())
+            return expected_type(m_value);
+        return std::unexpected<error_type>(error());
+    }
+
+    [[nodiscard]]
+    expected_type to_expected() &&
+    {
+        if(has_value())
+            return expected_type(std::move(m_value));
+        return std::unexpected<error_type>(error());
+    }
+
+    [[nodiscard]]
+    expected_type to_expected() const&
+    {
+        if(has_value())
+            return expected_type(m_value);
+        return std::unexpected<error_type>(error());
+    }
+
+    [[nodiscard]]
+    expected_type to_expected() const&&
+    {
+        if(has_value())
+            return expected_type(std::move(m_value));
+        return std::unexpected<error_type>(error());
+    }
+
+#endif
 
 private:
     union
