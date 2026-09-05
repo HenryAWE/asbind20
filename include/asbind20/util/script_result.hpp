@@ -560,6 +560,7 @@ public:
 
     using optional_type = std::optional<value_type>;
 
+    [[nodiscard]]
     optional_type to_optional() &
     {
         if(!has_value())
@@ -567,6 +568,7 @@ public:
         return optional_type(m_value);
     }
 
+    [[nodiscard]]
     optional_type to_optional() &&
     {
         if(!has_value())
@@ -574,6 +576,7 @@ public:
         return optional_type(std::move(m_value));
     }
 
+    [[nodiscard]]
     optional_type to_optional() const&
     {
         if(!has_value())
@@ -581,6 +584,7 @@ public:
         return optional_type(m_value);
     }
 
+    [[nodiscard]]
     optional_type to_optional() const&&
     {
         if(!has_value())
@@ -710,6 +714,12 @@ public:
     error_type error() const noexcept
     {
         return m_status;
+    }
+
+    [[nodiscard]]
+    std::string error_description() const
+    {
+        return helper::error_description(m_status);
     }
 
     T& value() const
