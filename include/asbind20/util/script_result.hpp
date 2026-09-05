@@ -371,11 +371,23 @@ public:
         using val_t = std::remove_cvref_t<std::invoke_result_t<F, value_type&>>;
         if(!has_value())
             return script_result<val_t, Policy>(bad_script_result, m_status);
-        return script_result<val_t, Policy>(
-            std::piecewise_construct,
-            std::forward_as_tuple(std::invoke(std::forward<F>(f), m_value)),
-            std::forward_as_tuple(m_status)
-        );
+        if constexpr(std::is_void_v<val_t>)
+        {
+            std::invoke(std::forward<F>(f), m_value);
+            return script_result<void, Policy>(
+                std::piecewise_construct,
+                std::tuple<>{},
+                std::forward_as_tuple(m_status)
+            );
+        }
+        else
+        {
+            return script_result<val_t, Policy>(
+                std::piecewise_construct,
+                std::forward_as_tuple(std::invoke(std::forward<F>(f), m_value)),
+                std::forward_as_tuple(m_status)
+            );
+        }
     }
 
     template <typename F>
@@ -384,11 +396,23 @@ public:
         using val_t = std::remove_cvref_t<std::invoke_result_t<F, value_type&&>>;
         if(!has_value())
             return script_result<val_t, Policy>(bad_script_result, m_status);
-        return script_result<val_t, Policy>(
-            std::piecewise_construct,
-            std::forward_as_tuple(std::invoke(std::forward<F>(f), std::move(m_value))),
-            std::forward_as_tuple(m_status)
-        );
+        if constexpr(std::is_void_v<val_t>)
+        {
+            std::invoke(std::forward<F>(f), std::move(m_value));
+            return script_result<void, Policy>(
+                std::piecewise_construct,
+                std::tuple<>{},
+                std::forward_as_tuple(m_status)
+            );
+        }
+        else
+        {
+            return script_result<val_t, Policy>(
+                std::piecewise_construct,
+                std::forward_as_tuple(std::invoke(std::forward<F>(f), std::move(m_value))),
+                std::forward_as_tuple(m_status)
+            );
+        }
     }
 
     template <typename F>
@@ -397,11 +421,23 @@ public:
         using val_t = std::remove_cvref_t<std::invoke_result_t<F, const value_type&>>;
         if(!has_value())
             return script_result<val_t, Policy>(bad_script_result, m_status);
-        return script_result<val_t, Policy>(
-            std::piecewise_construct,
-            std::forward_as_tuple(std::invoke(std::forward<F>(f), m_value)),
-            std::forward_as_tuple(m_status)
-        );
+        if constexpr(std::is_void_v<val_t>)
+        {
+            std::invoke(std::forward<F>(f), m_value);
+            return script_result<void, Policy>(
+                std::piecewise_construct,
+                std::tuple<>{},
+                std::forward_as_tuple(m_status)
+            );
+        }
+        else
+        {
+            return script_result<val_t, Policy>(
+                std::piecewise_construct,
+                std::forward_as_tuple(std::invoke(std::forward<F>(f), m_value)),
+                std::forward_as_tuple(m_status)
+            );
+        }
     }
 
     template <typename F>
@@ -410,11 +446,23 @@ public:
         using val_t = std::remove_cvref_t<std::invoke_result_t<F, const value_type&&>>;
         if(!has_value())
             return script_result<val_t, Policy>(bad_script_result, m_status);
-        return script_result<val_t, Policy>(
-            std::piecewise_construct,
-            std::forward_as_tuple(std::invoke(std::forward<F>(f), std::move(m_value))),
-            std::forward_as_tuple(m_status)
-        );
+        if constexpr(std::is_void_v<val_t>)
+        {
+            std::invoke(std::forward<F>(f), std::move(m_value));
+            return script_result<void, Policy>(
+                std::piecewise_construct,
+                std::tuple<>{},
+                std::forward_as_tuple(m_status)
+            );
+        }
+        else
+        {
+            return script_result<val_t, Policy>(
+                std::piecewise_construct,
+                std::forward_as_tuple(std::invoke(std::forward<F>(f), std::move(m_value))),
+                std::forward_as_tuple(m_status)
+            );
+        }
     }
 
     template <typename F>
@@ -539,6 +587,17 @@ public:
     }
 
     // For consistency with the general version
+    script_result(
+        std::piecewise_construct_t,
+        std::tuple<> args,
+        std::tuple<error_type> status
+    )
+        : m_status(std::get<0>(status))
+    {
+        (void)args;
+    }
+
+    // For consistency with the general version
     explicit script_result(error_type status) noexcept
         : m_status(status)
     {}
@@ -585,85 +644,25 @@ public:
     template <typename F>
     auto transform(F&& f) &
     {
-        using val_t = std::remove_cvref_t<std::invoke_result_t<F>>;
-        if(!has_value())
-            return script_result<val_t, Policy>(bad_script_result, m_status);
-        if constexpr(std::is_void_v<val_t>)
-        {
-            std::invoke(std::forward<F>(f));
-            return script_result<void, Policy>(m_status);
-        }
-        else
-        {
-            return script_result<val_t, Policy>(
-                std::piecewise_construct,
-                std::forward_as_tuple(std::invoke(std::forward<F>(f))),
-                std::forward_as_tuple(m_status)
-            );
-        }
+        return transform_impl(std::forward<F>(f));
     }
 
     template <typename F>
     auto transform(F&& f) &&
     {
-        using val_t = std::remove_cvref_t<std::invoke_result_t<F>>;
-        if(!has_value())
-            return script_result<val_t, Policy>(bad_script_result, m_status);
-        if constexpr(std::is_void_v<val_t>)
-        {
-            std::invoke(std::forward<F>(f));
-            return script_result<void, Policy>(m_status);
-        }
-        else
-        {
-            return script_result<val_t, Policy>(
-                std::piecewise_construct,
-                std::forward_as_tuple(std::invoke(std::forward<F>(f))),
-                std::forward_as_tuple(m_status)
-            );
-        }
+        return transform_impl(std::forward<F>(f));
     }
 
     template <typename F>
     auto transform(F&& f) const&
     {
-        using val_t = std::remove_cvref_t<std::invoke_result_t<F>>;
-        if(!has_value())
-            return script_result<val_t, Policy>(bad_script_result, m_status);
-        if constexpr(std::is_void_v<val_t>)
-        {
-            std::invoke(std::forward<F>(f));
-            return script_result<void, Policy>(m_status);
-        }
-        else
-        {
-            return script_result<val_t, Policy>(
-                std::piecewise_construct,
-                std::forward_as_tuple(std::invoke(std::forward<F>(f))),
-                std::forward_as_tuple(m_status)
-            );
-        }
+        return transform_impl(std::forward<F>(f));
     }
 
     template <typename F>
     auto transform(F&& f) const&&
     {
-        using val_t = std::remove_cvref_t<std::invoke_result_t<F>>;
-        if(!has_value())
-            return script_result<val_t, Policy>(bad_script_result, m_status);
-        if constexpr(std::is_void_v<val_t>)
-        {
-            std::invoke(std::forward<F>(f));
-            return script_result<void, Policy>(m_status);
-        }
-        else
-        {
-            return script_result<val_t, Policy>(
-                std::piecewise_construct,
-                std::forward_as_tuple(std::invoke(std::forward<F>(f))),
-                std::forward_as_tuple(m_status)
-            );
-        }
+        return transform_impl(std::forward<F>(f));
     }
 
     template <typename F>
@@ -735,6 +734,32 @@ public:
     }
 
 private:
+    template <typename F>
+    auto transform_impl(F&& f) const
+    {
+        using val_t = std::remove_cvref_t<std::invoke_result_t<F>>;
+        if(!has_value())
+            return script_result<val_t, Policy>(bad_script_result, m_status);
+
+        if constexpr(std::is_void_v<val_t>)
+        {
+            std::invoke(std::forward<F>(f));
+            return script_result<void, Policy>(
+                std::piecewise_construct,
+                std::tuple<>{},
+                std::forward_as_tuple(m_status)
+            );
+        }
+        else
+        {
+            return script_result<val_t, Policy>(
+                std::piecewise_construct,
+                std::forward_as_tuple(std::invoke(std::forward<F>(f))),
+                std::forward_as_tuple(m_status)
+            );
+        }
+    }
+
     error_type m_status = helper::bad_status;
 };
 } // namespace asbind20

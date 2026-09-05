@@ -322,6 +322,89 @@ TEST(ScriptResult, VoidTransformReturnCode)
     }
 }
 
+TEST(ScriptResult, TransformToVoidNonNegative)
+{
+    using asbind20::bad_script_result;
+    using asbind20::script_result;
+
+    {
+        bool invoked = false;
+        script_result<std::string> result(
+            std::piecewise_construct,
+            std::forward_as_tuple("abc"),
+            std::forward_as_tuple(2)
+        );
+        auto mapped = result.transform(
+            [&](const std::string& value)
+            {
+                invoked = true;
+                EXPECT_EQ(value, "abc");
+            }
+        );
+        static_assert(
+            std::same_as<decltype(mapped), script_result<void>>
+        );
+        EXPECT_TRUE(invoked);
+        EXPECT_TRUE(mapped);
+        EXPECT_EQ(mapped.error(), 2);
+    }
+
+    {
+        bool invoked = false;
+        script_result<std::string> result("abc");
+        auto mapped = std::move(result).transform(
+            [&](std::string&& value)
+            {
+                invoked = true;
+                EXPECT_EQ(value, "abc");
+            }
+        );
+        static_assert(
+            std::same_as<decltype(mapped), script_result<void>>
+        );
+        EXPECT_TRUE(invoked);
+        EXPECT_TRUE(mapped);
+    }
+
+    {
+        bool invoked = false;
+        script_result<std::string> result(bad_script_result, -1);
+        auto mapped = result.transform(
+            [&](const std::string&)
+            {
+                invoked = true;
+            }
+        );
+        EXPECT_FALSE(invoked);
+        EXPECT_FALSE(mapped);
+        EXPECT_EQ(mapped.error(), -1);
+    }
+}
+
+TEST(ScriptResult, TransformToVoidReturnCode)
+{
+    using asbind20::script_result;
+    using asbind20::script_result_policy;
+    using string_result_t =
+        script_result<std::string, script_result_policy::return_code>;
+    using void_result_t =
+        script_result<void, script_result_policy::return_code>;
+
+    {
+        string_result_t result(
+            std::piecewise_construct,
+            std::forward_as_tuple("abc"),
+            std::forward_as_tuple(AS_NAMESPACE_QUALIFIER asSUCCESS)
+        );
+        auto mapped = result.transform(
+            [](const std::string&) {}
+        );
+        static_assert(std::same_as<decltype(mapped), void_result_t>);
+        EXPECT_TRUE(mapped);
+        EXPECT_EQ(mapped.error(), AS_NAMESPACE_QUALIFIER asSUCCESS);
+    }
+}
+
 TEST(ScriptResult, VoidAndThenNonNegative)
 {
     using asbind20::bad_script_result;
