@@ -487,6 +487,42 @@ public:
         return std::invoke(std::forward<F>(f), std::move(m_status));
     }
 
+    void swap(script_result& other) noexcept(
+        std::is_nothrow_move_constructible_v<value_type> &&
+        std::is_nothrow_move_assignable_v<value_type>
+    )
+    {
+        if(this == &other)
+            return;
+
+        using std::swap;
+
+        if(has_value())
+        {
+            if(other.has_value())
+            {
+                swap(m_value, other.m_value);
+                swap(m_status, other.m_status);
+            }
+            else
+            {
+                other.val_emplace_impl(std::move(m_value));
+                destroy_impl();
+
+                swap(m_status, other.m_status);
+            }
+        }
+        else if(other.has_value())
+        {
+            val_emplace_impl(std::move(other.m_value));
+            other.destroy_impl();
+
+            swap(m_status, other.m_status);
+        }
+        else
+            swap(m_status, other.m_status);
+    }
+
 private:
     union
     {
@@ -628,6 +664,17 @@ public:
         return std::invoke(std::forward<F>(f), error());
     }
 
+    void swap(script_result& other) noexcept
+    {
+        if(this == &other)
+            return;
+
+        using std::swap;
+
+        swap(m_ptr, other.m_ptr);
+        swap(m_status, other.m_status);
+    }
+
 private:
     T* m_ptr;
     error_type m_status = helper::bad_status;
@@ -764,8 +811,27 @@ public:
         return std::invoke(std::forward<F>(f), error());
     }
 
+    void swap(script_result& other) noexcept
+    {
+        if(this == &other)
+            return;
+
+        using std::swap;
+
+        swap(m_status, other.m_status);
+    }
+
     error_type m_status = helper::bad_status;
 };
+
+template <typename T, script_result_policy Policy>
+void swap(
+    script_result<T, Policy>& lhs,
+    script_result<T, Policy>& rhs
+) noexcept(noexcept(lhs.swap(rhs)))
+{
+    lhs.swap(rhs);
+}
 } // namespace asbind20
 
 #endif
