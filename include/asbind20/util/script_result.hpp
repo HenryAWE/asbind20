@@ -209,16 +209,26 @@ public:
           )
     {}
 
+    explicit script_result(
+        T&& value, error_type status = helper::good_status
+    ) noexcept(std::is_nothrow_move_constructible_v<T>)
+        : script_result(
+              std::piecewise_construct,
+              std::forward_as_tuple(std::move(value)),
+              std::forward_as_tuple(status)
+          )
+    {}
+
     template <typename... Args1, typename Args2>
     script_result(
         std::piecewise_construct_t,
         std::tuple<Args1...> args,
         std::tuple<Args2> status
-    )
+    ) noexcept(std::is_nothrow_constructible_v<T, Args1...> && std::is_nothrow_constructible_v<error_type, Args2>)
     {
         [&]<std::size_t... Is>(std::index_sequence<Is...>)
         {
-            this->emplace_value(std::get<Is>(args)...);
+            this->val_emplace_impl(std::get<Is>(args)...);
         }(std::make_index_sequence<sizeof...(Args1)>{});
 
         auto e = static_cast<error_type>(std::get<0>(status));
