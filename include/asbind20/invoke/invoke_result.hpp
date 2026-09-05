@@ -5,6 +5,7 @@
 #include "../fwd.hpp"
 #include "../type_traits.hpp"
 #include "../util/unreachable.hpp"
+#include "../util/script_result.hpp"
 #include "../detail/cmp_helpers.hpp"
 #ifdef ASBIND20_HAS_LIB_EXPECTED
 #    include <expected>
@@ -385,6 +386,20 @@ public:
     {
         script_invoke_result_base::swap(other);
     }
+
+    using result_type = script_result<return_type, script_result_policy::context_state>;
+
+    [[nodiscard]]
+    result_type extract() const
+    {
+        if(!has_value())
+            return {bad_script_result, error()};
+        return result_type(
+            std::piecewise_construct,
+            std::forward_as_tuple(**this),
+            std::forward_as_tuple(error())
+        );
+    }
 };
 
 /**
@@ -444,6 +459,20 @@ public:
     void swap(script_invoke_result& other) noexcept
     {
         script_invoke_result_base::swap(other);
+    }
+
+    using result_type = script_result<return_type, script_result_policy::context_state>;
+
+    [[nodiscard]]
+    result_type extract() const
+    {
+        if(!has_value())
+            return {bad_script_result, error()};
+        return result_type(
+            std::piecewise_construct,
+            std::forward_as_tuple(**this),
+            std::forward_as_tuple(error())
+        );
     }
 };
 
@@ -505,6 +534,20 @@ public:
     void swap(script_invoke_result& other) noexcept
     {
         script_invoke_result_base::swap(other);
+    }
+
+    using result_type = script_result<void, script_result_policy::context_state>;
+
+    [[nodiscard]]
+    result_type extract() const
+    {
+        if(!has_value())
+            return {bad_script_result, error()};
+        return {
+            std::piecewise_construct,
+            std::forward_as_tuple(),
+            std::forward_as_tuple(error())
+        };
     }
 };
 
