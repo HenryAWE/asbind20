@@ -579,6 +579,49 @@ public:
         return has_value() ? *m_ptr : std::forward<U>(alt);
     }
 
+    template <typename F>
+    auto transform(F&& f) const
+    {
+        using val_t = std::remove_cvref_t<std::invoke_result_t<F, T&>>;
+        if(!has_value())
+            return script_result<val_t, Policy>(bad_script_result, m_status);
+
+        if constexpr(std::is_void_v<val_t>)
+        {
+            std::invoke(std::forward<F>(f), *m_ptr);
+            return script_result<void, Policy>(
+                std::piecewise_construct,
+                std::tuple<>{},
+                std::forward_as_tuple(m_status)
+            );
+        }
+        else
+        {
+            return script_result<val_t, Policy>(
+                std::piecewise_construct,
+                std::forward_as_tuple(std::invoke(std::forward<F>(f), *m_ptr)),
+                std::forward_as_tuple(m_status)
+            );
+        }
+    }
+
+    template <typename F>
+    auto and_then(F&& f) const
+    {
+        using ret_t = std::remove_cvref_t<std::invoke_result_t<F, T&>>;
+        if(!has_value())
+            return ret_t{bad_script_result, m_status};
+        return std::invoke(std::forward<F>(f), *m_ptr);
+    }
+
+    template <typename F>
+    auto or_else(F&& f) const
+    {
+        if(has_value())
+            return *this;
+        return std::invoke(std::forward<F>(f), error());
+    }
+
 private:
     T* m_ptr;
     error_type m_status = helper::bad_status;
@@ -673,80 +716,7 @@ public:
     }
 
     template <typename F>
-    auto transform(F&& f) &
-    {
-        return transform_impl(std::forward<F>(f));
-    }
-
-    template <typename F>
-    auto transform(F&& f) &&
-    {
-        return transform_impl(std::forward<F>(f));
-    }
-
-    template <typename F>
-    auto transform(F&& f) const&
-    {
-        return transform_impl(std::forward<F>(f));
-    }
-
-    template <typename F>
-    auto transform(F&& f) const&&
-    {
-        return transform_impl(std::forward<F>(f));
-    }
-
-    template <typename F>
-    auto and_then(F&& f) &
-    {
-        return and_then_impl(std::forward<F>(f));
-    }
-
-    template <typename F>
-    auto and_then(F&& f) &&
-    {
-        return and_then_impl(std::forward<F>(f));
-    }
-
-    template <typename F>
-    auto and_then(F&& f) const&
-    {
-        return and_then_impl(std::forward<F>(f));
-    }
-
-    template <typename F>
-    auto and_then(F&& f) const&&
-    {
-        return and_then_impl(std::forward<F>(f));
-    }
-
-    template <typename F>
-    auto or_else(F&& f) &
-    {
-        return or_else_impl(std::forward<F>(f));
-    }
-
-    template <typename F>
-    auto or_else(F&& f) &&
-    {
-        return or_else_impl(std::forward<F>(f));
-    }
-
-    template <typename F>
-    auto or_else(F&& f) const&
-    {
-        return or_else_impl(std::forward<F>(f));
-    }
-
-    template <typename F>
-    auto or_else(F&& f) const&&
-    {
-        return or_else_impl(std::forward<F>(f));
-    }
-
-private:
-    template <typename F>
-    auto transform_impl(F&& f) const
+    auto transform(F&& f) const
     {
         using val_t = std::remove_cvref_t<std::invoke_result_t<F>>;
         if(!has_value())
@@ -772,7 +742,7 @@ private:
     }
 
     template <typename F>
-    auto and_then_impl(F&& f) const
+    auto and_then(F&& f) const
     {
         using ret_t = std::remove_cvref_t<std::invoke_result_t<F>>;
         if(!has_value())
@@ -781,7 +751,7 @@ private:
     }
 
     template <typename F>
-    auto or_else_impl(F&& f) const
+    auto or_else(F&& f) const
     {
         if(has_value())
             return *this;
