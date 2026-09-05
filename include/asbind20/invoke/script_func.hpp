@@ -15,7 +15,7 @@
 #include "../fwd.hpp"
 #include "../detail/err_handler.hpp"
 #include "set_arg.hpp"
-#include "result.hpp"
+#include "invoke_result.hpp"
 
 namespace asbind20
 {
