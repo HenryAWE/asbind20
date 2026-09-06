@@ -10,8 +10,8 @@ Breaking Change
 ~~~~~~~~~~~~~~~
 
 - The customization points in ``type_traits`` (``set_arg``, ``set_script_arg`` and
-  ``get_return``) now receive ``context_reference`` instead of ``context_pointer``.
-  User-defined specializations must be updated to the new signature.
+  ``get_return``) now receive both ``context_reference`` and ``context_pointer``.
+  Old interfaces are kept for compatibility with existing user-defined specializations .
 
 - ``script_invoke_result<T&>::value_or`` now returns a copy of ``T`` instead of a
   reference to it, matching the value semantics of the primary template.
@@ -26,6 +26,9 @@ Update
 - Bring back GCC 12 support.
 
 - More debugging tools.
+
+- (Experimental) Partially support C++26 static reflection.
+  Currently only GCC 16 has this support. You can easily bind global functions and properties via reflection.
 
 - Support debug version of AngelScript library (``asGetLibraryVersion()`` returns something like ``2.38.0 DEBUG``).
 
