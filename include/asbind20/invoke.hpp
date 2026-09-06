@@ -16,7 +16,7 @@
 // IWYU pragma: begin_exports
 
 #include "invoke/set_arg.hpp"
-#include "invoke/result.hpp"
+#include "invoke/invoke_result.hpp"
 #include "invoke/script_func.hpp"
 #include "invoke/compile_func.hpp"
 
