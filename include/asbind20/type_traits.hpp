@@ -177,7 +177,57 @@ namespace detail
 
         static decltype(auto) get_return(context_reference ctx)
         {
-            return traits::get_return(ctx);
+            if constexpr(has_customized_ret_getter_ref)
+                return traits::get_return(ctx);
+            else
+                return traits::get_return(std::addressof(ctx));
+        }
+
+    private:
+        static constexpr bool has_customized_ret_setter_ref =
+            requires(generic_reference gen, T&& obj) {
+                { traits::set_return(gen, std::forward<T>(obj)) } -> std::convertible_to<int>;
+            };
+
+    public:
+        static constexpr bool has_customized_ret_setter =
+            has_customized_arg_setter_ref ||
+            requires(generic_reference gen, T&& obj) {
+                { traits::set_return(gen, std::forward<T>(obj)) } -> std::convertible_to<int>;
+            };
+
+        template <typename Return>
+        static int set_return(
+            generic_reference gen, Return&& val
+        )
+        {
+            if constexpr(has_customized_ret_setter_ref)
+                return traits::set_return(gen, std::forward<Return>(val));
+            else
+                return traits::set_return(std::addressof(gen), std::forward<Return>(val));
+        }
+
+    private:
+        static constexpr bool has_customized_arg_getter_ref =
+            requires(generic_reference gen, arg_index_type idx) {
+                traits::set_return(gen, idx);
+            };
+
+    public:
+        static constexpr bool has_customized_arg_getter =
+            has_customized_arg_getter_ref ||
+            requires(generic_reference gen, arg_index_type idx) {
+                traits::get_arg(gen, idx);
+            };
+
+        static decltype(auto) get_arg(
+            generic_reference gen, arg_index_type idx
+        )
+        {
+            if constexpr(has_customized_arg_getter_ref)
+                return traits::get_arg(gen, idx);
+            else
+                return traits::get_arg(std::addressof(gen), idx);
         }
     };
 } // namespace detail
