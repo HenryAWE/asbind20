@@ -230,6 +230,21 @@ namespace detail
                 return traits::get_arg(std::addressof(gen), idx);
         }
     };
+
+    // Workaround for older compiler like Clang 15
+    // It will complain about "cannot form a reference to 'void'" for requires
+    template <typename Void>
+    requires(std::is_void_v<Void>)
+    class type_traits_helper<Void>
+    {
+    public:
+        using traits = asbind20::type_traits<void>;
+
+        static constexpr bool has_customized_arg_setter = false;
+        static constexpr bool has_customized_ret_getter = false;
+        static constexpr bool has_customized_ret_setter = false;
+        static constexpr bool has_customized_arg_getter = false;
+    };
 } // namespace detail
 } // namespace asbind20
 
