@@ -400,6 +400,35 @@ public:
             std::forward_as_tuple(error())
         );
     }
+
+    template <typename F>
+    auto transform(F&& f) const
+    {
+        using val_t = std::remove_cv_t<std::invoke_result_t<F, return_type>>;
+        using ret_t = script_result<val_t, script_result_policy::context_state>;
+
+        if(!has_value())
+            return ret_t{bad_script_result, error()};
+        if constexpr(std::is_void_v<val_t>)
+        {
+            std::invoke(std::forward<F>(f), **this);
+            return ret_t{
+                std::piecewise_construct,
+                std::forward_as_tuple(),
+                std::forward_as_tuple(error())
+            };
+        }
+        else
+        {
+            return ret_t{
+                std::piecewise_construct,
+                std::forward_as_tuple(
+                    std::invoke(std::forward<F>(f), **this)
+                ),
+                std::forward_as_tuple(error())
+            };
+        }
+    }
 };
 
 /**
