@@ -62,14 +62,11 @@ int set_script_arg(
 )
 {
     using type = std::remove_cv_t<Enum>;
+    using traits_helper = detail::type_traits_helper<type>;
 
-    constexpr bool is_customized = requires() {
-        { type_traits<type>::set_arg(ctx, idx, val) } -> std::same_as<int>;
-    };
-
-    if constexpr(is_customized)
+    if constexpr(traits_helper::has_customized_arg_setter)
     {
-        return type_traits<type>::set_arg(ctx, idx, val);
+        return traits_helper::set_arg(ctx, idx, val);
     }
     else
     {
@@ -144,14 +141,11 @@ int set_script_arg(
 )
 {
     using type = std::remove_cvref_t<Class>;
+    using traits_helper = detail::type_traits_helper<type>;
 
-    constexpr bool is_customized = requires() {
-        { type_traits<type>::set_script_arg(ctx, idx, obj) } -> std::same_as<int>;
-    };
-
-    if constexpr(is_customized)
+    if constexpr(traits_helper::has_customized_arg_setter)
     {
-        return type_traits<type>::set_script_arg(ctx, idx, obj);
+        return traits_helper ::set_arg(ctx, idx, obj);
     }
     else
     {

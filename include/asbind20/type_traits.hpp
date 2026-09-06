@@ -127,6 +127,60 @@ struct type_traits<script_object>
         );
     }
 };
+
+namespace detail
+{
+    template <typename T>
+    class type_traits_helper
+    {
+    public:
+        using traits = asbind20::type_traits<T>;
+
+    private:
+        static constexpr bool has_customized_arg_setter_ref =
+            requires(context_reference ctx, arg_index_type idx, T&& obj) {
+                { traits::set_arg(ctx, idx, std::forward<T>(obj)) } -> std::convertible_to<int>;
+            };
+
+    public:
+        static constexpr bool has_customized_arg_setter =
+            has_customized_arg_setter_ref ||
+            requires(context_pointer ctx, arg_index_type idx, T&& obj) {
+                { traits::set_arg(ctx, idx, std::forward<T>(obj)) } -> std::convertible_to<int>;
+            };
+
+        template <typename Arg>
+        static int set_arg(
+            context_reference ctx,
+            arg_index_type idx,
+            Arg&& val
+        )
+        {
+            if constexpr(has_customized_arg_setter_ref)
+                return traits::set_arg(ctx, idx, std::forward<Arg>(val));
+            else
+                return traits::set_arg(std::addressof(ctx), idx, std::forward<Arg>(val));
+        }
+
+    private:
+        static constexpr bool has_customized_ret_getter_ref =
+            requires(context_reference ctx) {
+                traits::get_return(ctx);
+            };
+
+    public:
+        static constexpr bool has_customized_ret_getter =
+            has_customized_ret_getter_ref ||
+            requires(context_pointer ctx) {
+                traits::get_return(ctx);
+            };
+
+        static decltype(auto) get_return(context_reference ctx)
+        {
+            return traits::get_return(ctx);
+        }
+    };
+} // namespace detail
 } // namespace asbind20
 
 #endif
