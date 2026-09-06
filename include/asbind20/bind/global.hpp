@@ -310,6 +310,43 @@ public:
         return *this;
     }
 
+    template <std::meta::info FuncInfo, typename Auxiliary>
+    global& function(
+        use_generic_t,
+        const meta::function_refl_proxy<FuncInfo>&,
+        auxiliary_wrapper<Auxiliary> aux
+    )
+    {
+        using proxy_t = meta::function_refl_proxy<FuncInfo>;
+        this->function(
+            use_generic,
+            proxy_t::get_decl(true),
+            fp<proxy_t::get_func()>,
+            aux
+        );
+        return *this;
+    }
+
+    template <std::meta::info FuncInfo, typename Auxiliary>
+    global& function(
+        const meta::function_refl_proxy<FuncInfo>&,
+        auxiliary_wrapper<Auxiliary> aux
+    )
+    {
+        using proxy_t = meta::function_refl_proxy<FuncInfo>;
+        if constexpr(ForceGeneric)
+            this->function(use_generic, proxy_t{}, aux);
+        else
+        {
+            this->function(
+                proxy_t::get_decl(true),
+                proxy_t::get_func(),
+                aux
+            );
+        }
+        return *this;
+    }
+
 #endif
 
     /**

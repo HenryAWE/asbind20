@@ -73,11 +73,26 @@ namespace detail
         return result;
     }
 
-    template <std::meta::info func_info>
+    template <std::meta::info FuncInfo>
+    consteval std::span<const std::meta::info> params_of(
+        bool no_first = false,
+        bool no_last = false
+    )
+    {
+        constexpr auto params = std::define_static_array(
+            std::meta::parameters_of(FuncInfo)
+        );
+        if(no_first && !params.empty())
+            return std::span(params.begin() + 1, params.end());
+        if(no_last && !params.empty())
+            return std::span(params.begin(), params.end() - 1);
+        return params;
+    }
+
+    template <std::meta::info FuncInfo>
     constexpr std::string calc_param_list_str()
     {
-        constexpr static auto params =
-            std::define_static_array(std::meta::parameters_of(func_info));
+        constexpr static auto params = params_of<FuncInfo>();
 
         std::string params_str;
         params_str += '(';
@@ -107,19 +122,32 @@ namespace detail
 #    endif
 
 template <std::meta::info FuncInfo>
-consteval cstring_ref refl_function_sig(bool skip_func_name = false)
+consteval cstring_ref refl_function_sig(
+    bool skip_mem_fn_const = false,
+    bool skip_func_name = false
+    )
 {
     constexpr auto ret_t = std::meta::return_type_of(FuncInfo);
 
     std::string_view func_identifier =
         skip_func_name ? "f" : std::meta::identifier_of(FuncInfo);
 
+    std::string suffix;
+    // Constant member functions
+    if(!skip_mem_fn_const &&
+       std::meta::is_class_member(FuncInfo) &&
+       std::meta::is_const(FuncInfo))
+    {
+        suffix += "const";
+    }
+
     return std::define_static_string(
         string_concat(
             detail::calc_full_type_name<ret_t>(true),
             ' ',
             func_identifier,
-            detail::calc_param_list_str<FuncInfo>()
+            detail::calc_param_list_str<FuncInfo>(),
+            suffix
         )
     );
 }
@@ -143,9 +171,9 @@ struct function_refl_proxy
 {
     constexpr function_refl_proxy() = default;
 
-    static constexpr cstring_ref get_decl() noexcept
+    static constexpr cstring_ref get_decl(bool skip_mem_fn_const = false) noexcept
     {
-        return refl_function_sig<Function>();
+        return refl_function_sig<Function>(skip_mem_fn_const);
     }
 
     static constexpr auto get_func()

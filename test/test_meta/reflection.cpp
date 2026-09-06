@@ -27,6 +27,21 @@ unsigned int& func2(const std::int8_t& arg0)
     (void)arg0;
     std::terminate();
 }
+
+struct my_struct
+{
+    int mem_func(float f_arg)
+    {
+        (void)f_arg;
+        std::terminate();
+    }
+
+    int c_mem_func(float f_arg) const
+    {
+        (void)f_arg;
+        std::terminate();
+    }
+};
 } // namespace
 
 TEST(Reflection, FuncSig)
@@ -42,6 +57,18 @@ TEST(Reflection, FuncSig)
     EXPECT_EQ(
         asbind20::meta::refl_function_sig<^^func2>(),
         "uint& func2(const int8&in arg0)"
+    );
+    EXPECT_EQ(
+        asbind20::meta::refl_function_sig<^^my_struct::mem_func>(),
+        "int mem_func(float f_arg)"
+    );
+    EXPECT_EQ(
+        asbind20::meta::refl_function_sig<^^my_struct::c_mem_func>(),
+        "int c_mem_func(float f_arg)const"
+    );
+    EXPECT_EQ(
+        asbind20::meta::refl_function_sig<^^my_struct::c_mem_func>(true),
+        "int c_mem_func(float f_arg)"
     );
 }
 
@@ -107,16 +134,33 @@ int global_fn(int arg)
 int prop = 0;
 const int c_prop = 1000;
 
-void check_reflected_global(asbind20::engine_pointer engine)
+struct wrapper
 {
-    // Reset global value
+    int val;
+
+    int get() const
+    {
+        return val;
+    }
+
+    void set(int v)
+    {
+        val = v;
+    }
+};
+
+void check_reflected_global(asbind20::engine_pointer engine, wrapper& w)
+{
+    // Reset global & wrapper value
     prop = 0;
+    w.val = 3;
 
     auto m = asbind20::create_module(engine, "refl_global");
     m->AddScriptSection(
         "refl_global",
         "int run0() { return global_fn(13); }\n"
-        "int run1() { prop = 13; return prop + c_prop; }"
+        "int run1() { prop = 13; return prop + c_prop; }\n"
+        "int run2() { int old = get(); set(4); return old + 4; }"
     );
     ASSERT_GE(m->Build(), 0);
 
@@ -142,6 +186,20 @@ void check_reflected_global(asbind20::engine_pointer engine)
             << "global property is not set";
         EXPECT_EQ(result.value(), 1013);
     }
+
+    {
+        EXPECT_EQ(w.val, 3)
+            << "wrapper property is set";
+
+        auto* run2 = m->GetFunctionByName("run2");
+        ASSERT_THAT(run2, ::testing::NotNull());
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<int>(ctx, run2);
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
+        EXPECT_EQ(w.val, 4)
+            << "wrapper property is not set";
+        EXPECT_EQ(result.value(), 7);
+    }
 }
 } // namespace
 
@@ -153,26 +211,33 @@ TEST(Reflection, GlobalNative)
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
 
+    wrapper w{};
     global<false>(engine)
         .function(reflect<^^global_fn>())
         .property(reflect<^^c_prop>())
-        .property(reflect<^^prop>());
+        .property(reflect<^^prop>())
+        .function(reflect<^^wrapper::get>(), auxiliary(w))
+        .function(reflect<^^wrapper::set>(), auxiliary(w));
 
-    check_reflected_global(engine);
+    check_reflected_global(engine, w);
 }
 
 TEST(Reflection, GlobalGeneric)
 {
     using namespace asbind20;
+
+    wrapper w{};
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
 
     global<true>(engine)
         .function(reflect<^^global_fn>())
         .property(reflect<^^c_prop>())
-        .property(reflect<^^prop>());
+        .property(reflect<^^prop>())
+        .function(reflect<^^wrapper::get>(), auxiliary(w))
+        .function(reflect<^^wrapper::set>(), auxiliary(w));
 
-    check_reflected_global(engine);
+    check_reflected_global(engine, w);
 }
 
 #endif
