@@ -12,6 +12,7 @@
 #include "common.hpp"
 #include "function_tools.hpp"
 #include "genfunc.hpp"
+#include "../meta/reflection.hpp"
 
 namespace asbind20
 {
@@ -274,6 +275,43 @@ public:
         return *this;
     }
 
+#ifdef ASBIND20_HAS_LIB_REFLECTION
+
+    template <std::meta::info FuncInfo>
+    global& function(
+        use_generic_t,
+        const meta::function_refl_proxy<FuncInfo>&
+    )
+    {
+        using proxy_t = meta::function_refl_proxy<FuncInfo>;
+        this->function(
+            use_generic,
+            proxy_t::get_decl(),
+            fp<proxy_t::get_func()>
+        );
+        return *this;
+    }
+
+    template <std::meta::info FuncInfo>
+    global& function(
+        const meta::function_refl_proxy<FuncInfo>&
+    )
+    {
+        using proxy_t = meta::function_refl_proxy<FuncInfo>;
+        if constexpr(ForceGeneric)
+            this->function(use_generic, proxy_t{});
+        else
+        {
+            this->function(
+                proxy_t::get_decl(),
+                proxy_t::get_func()
+            );
+        }
+        return *this;
+    }
+
+#endif
+
     /**
      * @brief Register a global property
      */
@@ -304,6 +342,23 @@ public:
 #    pragma GCC diagnostic pop
 #endif
     }
+
+#ifdef ASBIND20_HAS_LIB_REFLECTION
+
+    template <std::meta::info PropInfo>
+    global& property(
+        meta::prop_refl_proxy<PropInfo>
+    )
+    {
+        using proxy_t = meta::prop_refl_proxy<PropInfo>;
+        this->property(
+            proxy_t::get_decl(),
+            *proxy_t::get_addr()
+        );
+        return *this;
+    }
+
+#endif
 
     /**
      * @brief Register a funcdef

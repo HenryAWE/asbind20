@@ -50,7 +50,7 @@ namespace detail
 
     template <std::meta::info TypeInfo>
     consteval std::string calc_full_type_name(
-        bool is_return
+        bool no_additional_ref_mod
     )
     {
         constexpr bool is_const = std::meta::is_const_type(
@@ -63,7 +63,7 @@ namespace detail
         if constexpr(std::meta::is_reference_type(TypeInfo))
         {
             result += '&';
-            if(!is_return)
+            if(!no_additional_ref_mod)
             {
                 // TODO: Let user decide "inout" or "out" for mutable reference
                 result += is_const ? "in" : "inout";
@@ -124,6 +124,20 @@ consteval cstring_ref refl_function_sig(bool skip_func_name = false)
     );
 }
 
+template <std::meta::info PropInfo>
+constexpr cstring_ref refl_property_decl()
+{
+    constexpr auto type = std::meta::type_of(PropInfo);
+
+    return std::define_static_string(
+        string_concat(
+            detail::calc_full_type_name<type>(true),
+            ' ',
+            std::meta::identifier_of(PropInfo)
+        )
+    );
+}
+
 template <std::meta::info Function>
 struct function_refl_proxy
 {
@@ -140,21 +154,36 @@ struct function_refl_proxy
     }
 };
 
-template <std::meta::info Info>
-constexpr auto get_proxy()
+template <std::meta::info Property>
+struct prop_refl_proxy
 {
-    return function_refl_proxy<Info>{};
-}
+    constexpr prop_refl_proxy() = default;
+
+    static constexpr cstring_ref get_decl() noexcept
+    {
+        return refl_property_decl<Property>();
+    }
+
+    static constexpr auto* get_addr()
+    {
+        return std::addressof([:Property:]);
+    }
+};
 } // namespace asbind20::meta
 
 namespace asbind20
 {
-template <std::meta::info FuncInfo>
+template <std::meta::info Info>
 consteval auto reflect()
 {
-    return meta::get_proxy<FuncInfo>();
+    if constexpr(std::meta::is_function(Info))
+        return meta::function_refl_proxy<Info>{};
+    else if constexpr(std::meta::is_variable(Info))
+        return meta::prop_refl_proxy<Info>{};
+    else
+        static_assert(false);
 }
-}
+} // namespace asbind20
 
 #else
 
