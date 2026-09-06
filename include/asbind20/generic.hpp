@@ -135,7 +135,7 @@ T get_generic_arg(
 
     if constexpr(traits_helper::has_customized_arg_getter)
     {
-        return traits_helper::get_arg(gen, idx);
+        return traits_helper::get_arg(*gen, idx);
     }
     else if constexpr(std::is_pointer_v<T>)
     {

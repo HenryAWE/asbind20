@@ -191,8 +191,8 @@ namespace detail
 
     public:
         static constexpr bool has_customized_ret_setter =
-            has_customized_arg_setter_ref ||
-            requires(generic_reference gen, T&& obj) {
+            has_customized_ret_setter_ref ||
+            requires(generic_pointer gen, T&& obj) {
                 { traits::set_return(gen, std::forward<T>(obj)) } -> std::convertible_to<int>;
             };
 
@@ -210,13 +210,13 @@ namespace detail
     private:
         static constexpr bool has_customized_arg_getter_ref =
             requires(generic_reference gen, arg_index_type idx) {
-                traits::set_return(gen, idx);
+                traits::get_arg(gen, idx);
             };
 
     public:
         static constexpr bool has_customized_arg_getter =
             has_customized_arg_getter_ref ||
-            requires(generic_reference gen, arg_index_type idx) {
+            requires(generic_pointer gen, arg_index_type idx) {
                 traits::get_arg(gen, idx);
             };
 
