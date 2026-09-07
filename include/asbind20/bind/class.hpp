@@ -17,6 +17,7 @@
 #include "behaviour.hpp"
 #include "function_tools.hpp"
 #include "../util/assume.hpp"
+#include "../meta/reflection.hpp"
 
 namespace asbind20
 {
@@ -2473,6 +2474,20 @@ public:
         this->register_property(decl, off);
         return derived();
     }
+
+#ifdef ASBIND20_HAS_LIB_REFLECTION
+
+    template <std::meta::info Property>
+    Derived property(meta::prop_refl_proxy<Property>)
+    {
+        using proxy_t = meta::prop_refl_proxy<Property>;
+        this->register_property(
+            proxy_t::get_decl(), proxy_t::get_off()
+        );
+        return derived();
+    }
+
+#endif
 
     template <typename MemberPointer>
     requires(std::is_member_object_pointer_v<MemberPointer>)

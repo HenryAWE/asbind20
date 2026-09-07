@@ -192,9 +192,21 @@ struct prop_refl_proxy
         return refl_property_decl<Property>();
     }
 
+    // For global properties
     static constexpr auto* get_addr()
     {
+        static_assert(std::meta::is_variable(Property));
         return std::addressof([:Property:]);
+    }
+
+    // For member variables
+    static constexpr std::size_t get_off()
+    {
+        static_assert(std::meta::is_class_member(Property));
+
+        constexpr auto off = std::meta::offset_of(Property);
+        static_assert(off.bits == 0, "No bit field");
+        return static_cast<std::size_t>(off.bytes);
     }
 };
 } // namespace asbind20::meta
@@ -207,6 +219,8 @@ consteval auto reflect()
     if constexpr(std::meta::is_function(Info))
         return meta::function_refl_proxy<Info>{};
     else if constexpr(std::meta::is_variable(Info))
+        return meta::prop_refl_proxy<Info>{};
+    else if constexpr(std::meta::is_class_member(Info))
         return meta::prop_refl_proxy<Info>{};
     else
         static_assert(false);

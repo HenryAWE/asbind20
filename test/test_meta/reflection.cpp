@@ -240,4 +240,73 @@ TEST(Reflection, GlobalGeneric)
     check_reflected_global(engine, w);
 }
 
+namespace
+{
+class my_class
+{
+public:
+    my_class()
+        : val0(4), val1(3.14f) {}
+
+    int val0;
+    float val1;
+};
+
+void check_reflected_val_class(asbind20::engine_pointer engine)
+{
+    using namespace asbind20;
+
+    auto* m = create_module(engine, "my_class_test");
+    ASSERT_THAT(m, ::testing::NotNull());
+    m->AddScriptSection(
+        "my_class_test",
+        "int run0() { my_class c; return c.val0 + int(c.val1); }"
+    );
+    ASSERT_GE(m->Build(), 0);
+
+    {
+        auto* run0 = m->GetFunctionByName("run0");
+        ASSERT_THAT(run0, ::testing::NotNull());
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<int>(ctx, run0);
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
+        EXPECT_EQ(result.value(), 7);
+    }
+}
+} // namespace
+
+TEST(Reflection, ClassNative)
+{
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
+
+    using namespace asbind20;
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine);
+
+    value_class<my_class, false>(
+        engine, "my_class", AS_NAMESPACE_QUALIFIER asOBJ_POD
+    )
+        .behaviours_by_traits()
+        .property(reflect<^^my_class::val0>())
+        .property(reflect<^^my_class::val1>());
+
+    check_reflected_val_class(engine);
+}
+
+TEST(Reflection, ClassGeneric)
+{
+    using namespace asbind20;
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine);
+
+    value_class<my_class, true>(
+        engine, "my_class", AS_NAMESPACE_QUALIFIER asOBJ_POD
+    )
+        .behaviours_by_traits()
+        .property(reflect<^^my_class::val0>())
+        .property(reflect<^^my_class::val1>());
+
+    check_reflected_val_class(engine);
+}
+
 #endif
