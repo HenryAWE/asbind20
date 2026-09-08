@@ -5,6 +5,7 @@
 #include "../util/strutil.hpp"
 #include "../utility.hpp"
 #include "refl_common.hpp"
+#include "../bind/calling_convention.hpp"
 
 #if ASBIND20_HAS_LIB_REFLECTION
 
@@ -75,8 +76,7 @@ namespace detail
 
     template <std::meta::info FuncInfo>
     consteval std::span<const std::meta::info> params_of(
-        bool no_first = false,
-        bool no_last = false
+        bool no_first, bool no_last
     )
     {
         constexpr auto params = std::define_static_array(
@@ -89,10 +89,12 @@ namespace detail
         return params;
     }
 
-    template <std::meta::info FuncInfo>
+    template <std::meta::info FuncInfo, bool NoFirst, bool NoLast>
     constexpr std::string calc_param_list_str()
     {
-        constexpr static auto params = params_of<FuncInfo>();
+        constexpr static auto params = params_of<FuncInfo>(
+            NoFirst, NoLast
+        );
 
         std::string params_str;
         params_str += '(';
@@ -121,11 +123,14 @@ namespace detail
 #        pragma GCC diagnostic pop
 #    endif
 
-template <std::meta::info FuncInfo>
+template <
+    std::meta::info FuncInfo,
+    bool NoFirst = false,
+    bool NoLast = false>
 consteval cstring_ref refl_function_sig(
     bool skip_mem_fn_const = false,
     bool skip_func_name = false
-    )
+)
 {
     constexpr auto ret_t = std::meta::return_type_of(FuncInfo);
 
@@ -146,7 +151,7 @@ consteval cstring_ref refl_function_sig(
             detail::calc_full_type_name<ret_t>(true),
             ' ',
             func_identifier,
-            detail::calc_param_list_str<FuncInfo>(),
+            detail::calc_param_list_str<FuncInfo, NoFirst, NoLast>(),
             suffix
         )
     );
@@ -171,9 +176,24 @@ struct function_refl_proxy
 {
     constexpr function_refl_proxy() = default;
 
-    static constexpr cstring_ref get_decl(bool skip_mem_fn_const = false) noexcept
+    template <
+        AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv = AS_NAMESPACE_QUALIFIER asCALL_CDECL>
+    static consteval cstring_ref get_decl(
+        asbind20::detail::call_conv_t<CallConv> = {}
+    ) noexcept
     {
-        return refl_function_sig<Function>(skip_mem_fn_const);
+        constexpr bool skip_mem_fn_const =
+            CallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL;
+        constexpr bool no_first =
+            CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
+            CallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJFIRST;
+        constexpr bool no_last =
+            CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST ||
+            CallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJLAST;
+        return refl_function_sig<Function, no_first, no_last>(
+            skip_mem_fn_const,
+            false
+        );
     }
 
     static constexpr auto get_func()

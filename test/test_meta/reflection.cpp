@@ -250,7 +250,19 @@ public:
 
     int val0;
     float val1;
+
+    int mem_f() const
+    {
+        return 1013;
+    }
 };
+
+// TODO: const this for CDECL_OBJ
+
+void helper_setter(my_class* c)
+{
+    c->val0 = 42;
+}
 
 void check_reflected_val_class(asbind20::engine_pointer engine)
 {
@@ -260,7 +272,9 @@ void check_reflected_val_class(asbind20::engine_pointer engine)
     ASSERT_THAT(m, ::testing::NotNull());
     m->AddScriptSection(
         "my_class_test",
-        "int run0() { my_class c; return c.val0 + int(c.val1); }"
+        "int run0() { my_class c; return c.val0 + int(c.val1); }\n"
+        "int run1() { my_class c; return c.mem_f(); }\n"
+        "int run2() { my_class c; c.helper_setter(); return c.val0; }"
     );
     ASSERT_GE(m->Build(), 0);
 
@@ -271,6 +285,24 @@ void check_reflected_val_class(asbind20::engine_pointer engine)
         auto result = asbind20::script_invoke<int>(ctx, run0);
         ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 7);
+    }
+
+    {
+        auto* run1 = m->GetFunctionByName("run1");
+        ASSERT_THAT(run1, ::testing::NotNull());
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<int>(ctx, run1);
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
+        EXPECT_EQ(result.value(), 1013);
+    }
+
+    {
+        auto* run2 = m->GetFunctionByName("run2");
+        ASSERT_THAT(run2, ::testing::NotNull());
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<int>(ctx, run2);
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
+        EXPECT_EQ(result.value(), 42);
     }
 }
 } // namespace
@@ -288,7 +320,9 @@ TEST(Reflection, ClassNative)
     )
         .behaviours_by_traits()
         .property(reflect<^^my_class::val0>())
-        .property(reflect<^^my_class::val1>());
+        .property(reflect<^^my_class::val1>())
+        .method(reflect<^^my_class::mem_f>())
+        .method(reflect<^^helper_setter>());
 
     check_reflected_val_class(engine);
 }
@@ -304,7 +338,9 @@ TEST(Reflection, ClassGeneric)
     )
         .behaviours_by_traits()
         .property(reflect<^^my_class::val0>())
-        .property(reflect<^^my_class::val1>());
+        .property(reflect<^^my_class::val1>())
+        .method(reflect<^^my_class::mem_f>())
+        .method(reflect<^^helper_setter>());
 
     check_reflected_val_class(engine);
 }

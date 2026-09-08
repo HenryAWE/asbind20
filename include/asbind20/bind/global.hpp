@@ -317,10 +317,13 @@ public:
         auxiliary_wrapper<Auxiliary> aux
     )
     {
+        static_assert(std::meta::is_class_member(FuncInfo));
         using proxy_t = meta::function_refl_proxy<FuncInfo>;
         this->function(
             use_generic,
-            proxy_t::get_decl(true),
+            proxy_t::get_decl(
+                detail::cc<AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL>
+            ),
             fp<proxy_t::get_func()>,
             aux
         );
@@ -338,8 +341,11 @@ public:
             this->function(use_generic, proxy_t{}, aux);
         else
         {
+            static_assert(std::meta::is_class_member(FuncInfo));
             this->function(
-                proxy_t::get_decl(true),
+                proxy_t::get_decl(
+                    detail::cc<AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL>
+                ),
                 proxy_t::get_func(),
                 aux
             );

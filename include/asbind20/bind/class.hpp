@@ -2441,6 +2441,45 @@ public:
         return derived();
     }
 
+#ifdef ASBIND20_HAS_LIB_REFLECTION
+
+    template <std::meta::info FuncInfo>
+    Derived& method(
+        use_generic_t,
+        const meta::function_refl_proxy<FuncInfo>&
+    )
+    {
+        using proxy_t = meta::function_refl_proxy<FuncInfo>;
+        constexpr auto conv = method_callconv<proxy_t::get_func()>();
+        this->method(
+            use_generic,
+            proxy_t::get_decl(detail::cc<conv>),
+            fp<proxy_t::get_func()>
+        );
+        return derived();
+    }
+
+    template <std::meta::info FuncInfo>
+    Derived& method(
+        const meta::function_refl_proxy<FuncInfo>&
+    )
+    {
+        using proxy_t = meta::function_refl_proxy<FuncInfo>;
+        if constexpr(ForceGeneric)
+            this->method(use_generic, proxy_t{});
+        else
+        {
+            constexpr auto conv = method_callconv<proxy_t::get_func()>();
+            this->method(
+                proxy_t::get_decl(detail::cc<conv>),
+                proxy_t::get_func()
+            );
+        }
+        return derived();
+    }
+
+#endif
+
     template <fn_tools::wrapped_function Function>
     Derived& method(
         use_generic_t,
