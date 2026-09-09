@@ -17,6 +17,13 @@
 
 namespace asbind20::meta
 {
+consteval std::meta::info remove_ptrref(std::meta::info type)
+{
+    return std::meta::remove_pointer(
+        std::meta::remove_reference(type)
+    );
+}
+
 namespace detail
 {
     template <std::meta::info TypeInfo>
@@ -117,6 +124,31 @@ namespace detail
         params_str += ')';
         return params_str;
     }
+
+    template <std::meta::info FuncInfo>
+    consteval bool is_const_method(bool check_first, bool check_last)
+    {
+        constexpr auto params = std::define_static_array(
+            std::meta::parameters_of(FuncInfo)
+        );
+
+        if(params.empty())
+            return false;
+
+        if(check_first)
+        {
+            return std::meta::is_const(
+                remove_ptrref(std::meta::type_of(params.front()))
+            );
+        }
+        if(check_last)
+        {
+            return std::meta::is_const(
+                remove_ptrref(std::meta::type_of(params.back()))
+            );
+        }
+        return false;
+    }
 } // namespace detail
 
 #    if defined(__GNUC__) && !defined(__clang__)
@@ -129,7 +161,8 @@ template <
     bool NoLast = false>
 consteval cstring_ref refl_function_sig(
     bool skip_mem_fn_const = false,
-    bool skip_func_name = false
+    bool skip_func_name = false,
+    bool force_const = false
 )
 {
     constexpr auto ret_t = std::meta::return_type_of(FuncInfo);
@@ -138,8 +171,10 @@ consteval cstring_ref refl_function_sig(
         skip_func_name ? "f" : std::meta::identifier_of(FuncInfo);
 
     std::string suffix;
+    if(force_const)
+        suffix = "const";
     // Constant member functions
-    if(!skip_mem_fn_const &&
+    else if(!skip_mem_fn_const &&
        std::meta::is_class_member(FuncInfo) &&
        std::meta::is_const(FuncInfo))
     {
@@ -180,7 +215,7 @@ struct function_refl_proxy
         AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv = AS_NAMESPACE_QUALIFIER asCALL_CDECL>
     static consteval cstring_ref get_decl(
         asbind20::detail::call_conv_t<CallConv> = {}
-    ) noexcept
+    )
     {
         constexpr bool skip_mem_fn_const =
             CallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL;
@@ -192,7 +227,8 @@ struct function_refl_proxy
             CallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJLAST;
         return refl_function_sig<Function, no_first, no_last>(
             skip_mem_fn_const,
-            false
+            false,
+            meta::detail::is_const_method<Function>(no_first, no_last)
         );
     }
 

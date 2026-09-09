@@ -257,11 +257,32 @@ public:
     }
 };
 
-// TODO: const this for CDECL_OBJ
-
 void helper_setter(my_class* c)
 {
     c->val0 = 42;
+}
+
+int helper_getter(const my_class* c, int val)
+{
+    EXPECT_EQ(val, 7);
+    return c->val0 + static_cast<int>(c->val1);
+}
+
+void check_registered_my_class_interface(asbind20::typeinfo_pointer ti)
+{
+    ASSERT_THAT(ti, ::testing::NotNull());
+    EXPECT_STREQ(ti->GetName(), "my_class");
+
+    {
+        auto* helper_getter_fp = ti->GetMethodByName("helper_getter");
+        ASSERT_THAT(helper_getter_fp, ::testing::NotNull());
+
+        EXPECT_THAT(
+            helper_getter_fp->GetDeclaration(),
+            ::testing::HasSubstr("const")
+        );
+        EXPECT_TRUE(helper_getter_fp->IsReadOnly());
+    }
 }
 
 void check_reflected_val_class(asbind20::engine_pointer engine)
@@ -274,7 +295,8 @@ void check_reflected_val_class(asbind20::engine_pointer engine)
         "my_class_test",
         "int run0() { my_class c; return c.val0 + int(c.val1); }\n"
         "int run1() { my_class c; return c.mem_f(); }\n"
-        "int run2() { my_class c; c.helper_setter(); return c.val0; }"
+        "int run2() { my_class c; c.helper_setter(); return c.val0; }\n"
+        "int run3() { my_class c; return c.helper_getter(7); }"
     );
     ASSERT_GE(m->Build(), 0);
 
@@ -304,6 +326,15 @@ void check_reflected_val_class(asbind20::engine_pointer engine)
         ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
         EXPECT_EQ(result.value(), 42);
     }
+
+    {
+        auto* run3 = m->GetFunctionByName("run3");
+        ASSERT_THAT(run3, ::testing::NotNull());
+        asbind20::request_context ctx(engine);
+        auto result = asbind20::script_invoke<int>(ctx, run3);
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
+        EXPECT_EQ(result.value(), 7);
+    }
 }
 } // namespace
 
@@ -322,8 +353,12 @@ TEST(Reflection, ClassNative)
         .property(reflect<^^my_class::val0>())
         .property(reflect<^^my_class::val1>())
         .method(reflect<^^my_class::mem_f>())
-        .method(reflect<^^helper_setter>());
+        .method(reflect<^^helper_setter>())
+        .method(reflect<^^helper_getter>());
 
+    check_registered_my_class_interface(
+        engine->GetTypeInfoByName("my_class")
+    );
     check_reflected_val_class(engine);
 }
 
@@ -340,8 +375,12 @@ TEST(Reflection, ClassGeneric)
         .property(reflect<^^my_class::val0>())
         .property(reflect<^^my_class::val1>())
         .method(reflect<^^my_class::mem_f>())
-        .method(reflect<^^helper_setter>());
+        .method(reflect<^^helper_setter>())
+        .method(reflect<^^helper_getter>());
 
+    check_registered_my_class_interface(
+        engine->GetTypeInfoByName("my_class")
+    );
     check_reflected_val_class(engine);
 }
 
