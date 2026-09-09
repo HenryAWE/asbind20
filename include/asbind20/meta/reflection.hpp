@@ -7,12 +7,12 @@
 #include "refl_common.hpp"
 #include "../bind/calling_convention.hpp"
 
-#if ASBIND20_HAS_LIB_REFLECTION
+#ifdef ASBIND20_HAS_LIB_REFLECTION
 
 #    if defined(__GNUC__) && !defined(__clang__)
 #        pragma GCC diagnostic push
 // False positive for template for
-#        pragma GCC diagnostic ignored "-Wunused-but-set-variable="
+#        pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 #    endif
 
 namespace asbind20::meta

@@ -4,9 +4,10 @@
 // Common headers and utilities for meta programming
 
 #include <cstdint>
+#include "../detail/config.hpp"
 #include "../util/strutil.hpp"
 #include "../utility.hpp"
-#if ASBIND20_HAS_LIB_REFLECTION
+#ifdef ASBIND20_HAS_LIB_REFLECTION
 #    include <meta>
 #endif
 
