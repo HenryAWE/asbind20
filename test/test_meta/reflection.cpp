@@ -257,9 +257,9 @@ public:
     }
 };
 
-void helper_setter(my_class* c)
+void helper_setter(my_class& c)
 {
-    c->val0 = 42;
+    c.val0 = 42;
 }
 
 int helper_getter(const my_class* c, int val)
