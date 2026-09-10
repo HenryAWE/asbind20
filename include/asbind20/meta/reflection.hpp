@@ -265,6 +265,22 @@ struct prop_refl_proxy
         return static_cast<std::size_t>(off.bytes);
     }
 };
+
+template <std::meta::info Enumerator>
+struct enum_refl_proxy
+{
+    static constexpr cstring_ref get_decl()
+    {
+        return std::define_static_string(
+            std::meta::identifier_of(Enumerator)
+        );
+    }
+
+    static constexpr compat::script_enum_value_type get_val()
+    {
+        return static_cast<compat::script_enum_value_type>([:Enumerator:]);
+    }
+};
 } // namespace asbind20::meta
 
 namespace asbind20
@@ -274,6 +290,8 @@ consteval auto reflect()
 {
     if constexpr(std::meta::is_function(Info))
         return meta::function_refl_proxy<Info>{};
+    else if constexpr(std::meta::is_enumerator(Info))
+        return meta::enum_refl_proxy<Info>{};
     else if constexpr(std::meta::is_variable(Info))
         return meta::prop_refl_proxy<Info>{};
     else if constexpr(std::meta::is_class_member(Info))

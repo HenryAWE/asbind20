@@ -384,4 +384,56 @@ TEST(Reflection, ClassGeneric)
     check_reflected_val_class(engine);
 }
 
+namespace
+{
+enum my_enum0 : int
+{
+    zero = 0,
+    one = 1
+};
+
+enum my_scoped_enum0 : int
+{
+    scoped_zero = 0,
+    scoped_one = 1
+};
+} // namespace
+
+TEST(Reflection, Enum)
+{
+    using namespace asbind20;
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine);
+
+    enum_<my_enum0>(engine, "my_enum0")
+        .value(reflect<^^my_enum0::zero>())
+        .value(reflect<^^my_enum0::one>());
+
+    enum_<my_scoped_enum0>(engine, "my_scoped_enum0")
+        .value(reflect<^^my_scoped_enum0::scoped_zero>())
+        .value(reflect<^^my_scoped_enum0::scoped_one>());
+
+    {
+        auto ti = engine->GetTypeInfoByName("my_enum0");
+        ASSERT_THAT(ti, ::testing::NotNull());
+        EXPECT_EQ(ti->GetEnumValueCount(), 2);
+
+        compat::script_enum_value_type val;
+        cstring_ref str = ti->GetEnumValueByIndex(0, &val);
+        EXPECT_EQ(str, "zero");
+        EXPECT_EQ(static_cast<my_enum0>(val), my_enum0::zero);
+    }
+
+    {
+        auto ti = engine->GetTypeInfoByName("my_scoped_enum0");
+        ASSERT_THAT(ti, ::testing::NotNull());
+        EXPECT_EQ(ti->GetEnumValueCount(), 2);
+
+        compat::script_enum_value_type val;
+        cstring_ref str = ti->GetEnumValueByIndex(0, &val);
+        EXPECT_EQ(str, "scoped_zero");
+        EXPECT_EQ(static_cast<my_enum0>(val), my_scoped_enum0::scoped_zero);
+    }
+}
+
 #endif

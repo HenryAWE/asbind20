@@ -15,6 +15,7 @@
 #include "../fwd.hpp"
 #include "../meta.hpp"
 #include "common.hpp"
+#include "../meta/reflection.hpp"
 
 namespace asbind20
 {
@@ -138,6 +139,22 @@ public:
 
         return *this;
     }
+
+#ifdef ASBIND20_HAS_LIB_REFLECTION
+
+    template <std::meta::info Enumerator>
+    enum_& value(meta::enum_refl_proxy<Enumerator>)
+    {
+        using proxy_t = meta::enum_refl_proxy<Enumerator>;
+        register_enum_val(
+            proxy_t::get_decl(),
+            proxy_t::get_val()
+        );
+
+        return *this;
+    }
+
+#endif
 
     [[nodiscard]]
     const std::string& get_name() const noexcept
