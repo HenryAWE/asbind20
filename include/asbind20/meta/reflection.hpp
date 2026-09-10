@@ -6,6 +6,7 @@
 #include "../utility.hpp"
 #include "refl_common.hpp"
 #include "../bind/calling_convention.hpp"
+#include "annotation.hpp"
 
 #ifdef ASBIND20_HAS_LIB_REFLECTION
 
@@ -31,7 +32,18 @@ namespace detail
     {
         constexpr auto type_info = std::meta::remove_cvref(TypeInfo);
 
-        // "^^std::int8_t" will cause compilation error, WHY?
+        constexpr auto rename_ann =
+           std::define_static_array(std::meta::annotations_of_with_type(type_info, ^^asbind20::rename));
+        if constexpr(!rename_ann.empty())
+        {
+            return std::meta::extract<asbind20::rename>(
+                       rename_ann.back()
+            )
+                .get();
+        }
+
+        // "^^std::int8_t" will cause compilation error,
+        // because reflection has limitation on `using decl;`
         // Use the old "std::same_as" solution.
         using type = typename[:type_info:];
 
@@ -175,8 +187,8 @@ consteval cstring_ref refl_function_sig(
         suffix = "const";
     // Constant member functions
     else if(!skip_mem_fn_const &&
-       std::meta::is_class_member(FuncInfo) &&
-       std::meta::is_const(FuncInfo))
+            std::meta::is_class_member(FuncInfo) &&
+            std::meta::is_const(FuncInfo))
     {
         suffix += "const";
     }

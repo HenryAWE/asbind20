@@ -1,0 +1,34 @@
+#ifndef ASBIND20_META_ANNOTATION_HPP
+#define ASBIND20_META_ANNOTATION_HPP
+
+#include "refl_common.hpp"
+
+#ifdef ASBIND20_HAS_LIB_REFLECTION
+
+namespace asbind20
+{
+struct rename
+{
+    const char* name;
+
+    explicit rename(std::nullptr_t) = delete;
+
+    explicit consteval rename(const char* name_)
+    {
+        if(!name_)
+            throw "name is nullptr";
+        // We need to promote the string here,
+        // otherwise we'll get error when using this str
+        name = std::define_static_string(std::string_view(name_));
+    }
+
+    constexpr std::string_view get() const
+    {
+        return name;
+    }
+};
+} // namespace asbind20
+
+#endif
+
+#endif
