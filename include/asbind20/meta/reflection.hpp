@@ -139,7 +139,7 @@ namespace detail
             if(!ParseDefaultArg)
                 continue;
             // TODO: Enable the folloing code after upgrading to GCC 16.1
-#if 0
+#if 1
             constexpr static auto arg_ann = std::define_static_array(
                 std::meta::annotations_of_with_type(param, ^^asbind20::default_arg)
             );

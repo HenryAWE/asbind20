@@ -38,13 +38,11 @@ TEST(Annotation, Rename)
 
 TEST(Annotation, DefaultArg)
 {
-    GTEST_SKIP() << "Awaiting GCC 16.1";
-
-    // constexpr std::string_view sv= std::meta::extract<asbind20::default_arg>(std::meta::annotations_of_with_type(
-    //     std::meta::parameters_of(^^func)[0],
-    //     ^^asbind20::default_arg
-    // )[0]).get();
-    // EXPECT_EQ(sv, "42");
+    constexpr std::string_view sv= std::meta::extract<asbind20::default_arg>(std::meta::annotations_of_with_type(
+        std::meta::parameters_of(^^func)[0],
+        ^^asbind20::default_arg
+    )[0]).get();
+    EXPECT_EQ(sv, "42");
 }
 
 #endif
