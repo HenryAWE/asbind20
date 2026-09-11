@@ -108,7 +108,11 @@ namespace detail
         return params;
     }
 
-    template <std::meta::info FuncInfo, bool NoFirst, bool NoLast>
+    template <
+        std::meta::info FuncInfo,
+        bool NoFirst,
+        bool NoLast,
+        bool ParseDefaultArg>
     constexpr std::string calc_param_list_str()
     {
         constexpr static auto params = params_of<FuncInfo>(
@@ -131,6 +135,23 @@ namespace detail
                 params_str += ' ';
                 params_str += std::meta::identifier_of(param);
             }
+
+            if(!ParseDefaultArg)
+                continue;
+            // TODO: Enable the folloing code after upgrading to GCC 16.1
+#if 0
+            constexpr static auto arg_ann = std::define_static_array(
+                std::meta::annotations_of_with_type(param, ^^asbind20::default_arg)
+            );
+            if constexpr(!arg_ann.empty())
+            {
+                params_str += '=';
+                params_str += std::meta::extract<asbind20::default_arg>(
+                              arg_ann.back()
+                )
+                              .get();
+            }
+#endif
         }
 
         params_str += ')';
@@ -170,7 +191,8 @@ namespace detail
 template <
     std::meta::info FuncInfo,
     bool NoFirst = false,
-    bool NoLast = false>
+    bool NoLast = false,
+    bool ParseDefaultArg = false>
 consteval cstring_ref refl_function_sig(
     bool skip_mem_fn_const = false,
     bool skip_func_name = false,
@@ -198,7 +220,7 @@ consteval cstring_ref refl_function_sig(
             detail::calc_full_type_name<ret_t>(true),
             ' ',
             func_identifier,
-            detail::calc_param_list_str<FuncInfo, NoFirst, NoLast>(),
+            detail::calc_param_list_str<FuncInfo, NoFirst, NoLast, false>(),
             suffix
         )
     );
@@ -237,7 +259,7 @@ struct function_refl_proxy
         constexpr bool no_last =
             CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST ||
             CallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJLAST;
-        return refl_function_sig<Function, no_first, no_last>(
+        return refl_function_sig<Function, no_first, no_last, true>(
             skip_mem_fn_const,
             false,
             meta::detail::is_const_method<Function>(no_first, no_last)
