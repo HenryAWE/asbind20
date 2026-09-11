@@ -16,13 +16,12 @@ struct rename
 
     explicit consteval rename(const char* name_)
     {
-        if(!name_)
-            throw "name is nullptr";
         // We need to promote the string here,
         // otherwise we'll get error when using this str
         name = std::define_static_string(std::string_view(name_));
     }
 
+    [[nodiscard]]
     constexpr std::string_view get() const
     {
         return name;
@@ -42,6 +41,7 @@ struct default_arg
         arg = std::define_static_string(std::string_view(arg_));
     }
 
+    [[nodiscard]]
     constexpr std::string_view get() const
     {
         return arg;
