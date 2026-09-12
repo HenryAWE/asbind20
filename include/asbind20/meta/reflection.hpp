@@ -73,6 +73,22 @@ namespace detail
         return name;
     }
 
+    template <std::meta::info Info>
+    consteval std::string_view calc_identifier_name()
+    {
+        constexpr auto rename_ann =
+           std::define_static_array(std::meta::annotations_of_with_type(Info, ^^asbind20::rename));
+        if constexpr(!rename_ann.empty())
+        {
+            return std::meta::extract<asbind20::rename>(
+                       rename_ann.back()
+            )
+                .get();
+        }
+
+        return std::meta::identifier_of(Info);
+    }
+
     template <std::meta::info TypeInfo>
     consteval std::string calc_full_type_name(
         bool no_additional_ref_mod
@@ -138,7 +154,7 @@ namespace detail
             if constexpr(std::meta::has_identifier(param))
             {
                 params_str += ' ';
-                params_str += std::meta::identifier_of(param);
+                params_str += calc_identifier_name<param>();
             }
 
             if(!ParseDefaultArg)
@@ -204,7 +220,7 @@ consteval cstring_ref refl_function_sig(
     constexpr auto ret_t = std::meta::return_type_of(FuncInfo);
 
     std::string_view func_identifier =
-        skip_func_name ? "f" : std::meta::identifier_of(FuncInfo);
+        skip_func_name ? "f" : detail::calc_identifier_name<FuncInfo>();
 
     std::string suffix;
     if(force_const)
@@ -237,7 +253,7 @@ constexpr cstring_ref refl_property_decl()
         string_concat(
             detail::calc_full_type_name<type>(true),
             ' ',
-            std::meta::identifier_of(PropInfo)
+            detail::calc_identifier_name<PropInfo>()
         )
     );
 }
@@ -308,7 +324,7 @@ struct enum_refl_proxy
     static constexpr cstring_ref get_decl()
     {
         return std::define_static_string(
-            std::meta::identifier_of(Enumerator)
+            detail::calc_identifier_name<Enumerator>()
         );
     }
 
