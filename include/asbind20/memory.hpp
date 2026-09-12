@@ -109,7 +109,7 @@ public:
         : m_obj(obj)
     {
         if(m_obj)
-            m_obj->AddRef();
+            (void)m_obj->AddRef();
     }
 
     ~script_object()
@@ -131,6 +131,11 @@ public:
     explicit operator bool() const noexcept
     {
         return get() != nullptr;
+    }
+
+    object_reference operator*() const noexcept
+    {
+        return *get();
     }
 
     handle_type operator->() const noexcept
@@ -158,7 +163,7 @@ public:
     {
         if(m_obj)
         {
-            m_obj->Release();
+            (void)m_obj->Release();
             m_obj = nullptr;
         }
     }
@@ -171,7 +176,7 @@ public:
     void reset(handle_type obj)
     {
         if(m_obj)
-            m_obj->Release();
+            (void)m_obj->Release();
         m_obj = obj;
         if(obj)
             obj->AddRef();
@@ -249,6 +254,11 @@ public:
     operator handle_type() const noexcept
     {
         return get();
+    }
+
+    context_reference operator*() const noexcept
+    {
+        return *get();
     }
 
     handle_type operator->() const noexcept
@@ -357,6 +367,11 @@ public:
         return get();
     }
 
+    context_reference operator*() const noexcept
+    {
+        return *get();
+    }
+
     handle_type operator->() const noexcept
     {
         return get();
@@ -433,6 +448,16 @@ public:
         return get();
     }
 
+    context_reference operator*() const noexcept
+    {
+        return *get();
+    }
+
+    handle_type operator->() const noexcept
+    {
+        return get();
+    }
+
     explicit operator bool() const noexcept
     {
         return m_ctx != nullptr;
@@ -447,14 +472,14 @@ public:
     void reset(std::nullptr_t) noexcept
     {
         if(m_ctx)
-            m_ctx->Release();
+            (void)m_ctx->Release();
         m_ctx = nullptr;
     }
 
     void reset(std::in_place_t, handle_type ctx)
     {
         if(m_ctx)
-            m_ctx->Release();
+            (void)m_ctx->Release();
         m_ctx = ctx;
     }
 
@@ -462,7 +487,7 @@ public:
     {
         reset(std::in_place, ctx);
         if(m_ctx)
-            m_ctx->AddRef();
+            (void)m_ctx->AddRef();
     }
 
     void swap(script_context& other) noexcept
@@ -517,6 +542,11 @@ public:
     operator handle_type() const noexcept
     {
         return get();
+    }
+
+    engine_reference operator*() const noexcept
+    {
+        return *get();
     }
 
     handle_type operator->() const noexcept
@@ -579,7 +609,7 @@ public:
     shared_script_engine(const shared_script_engine& other)
         : m_engine(other.get())
     {
-        m_engine->AddRef();
+        (void)m_engine->AddRef();
     }
 
     shared_script_engine(shared_script_engine&& other) noexcept
@@ -632,6 +662,11 @@ public:
         return get();
     }
 
+    engine_reference operator*() const noexcept
+    {
+        return *get();
+    }
+
     handle_type operator->() const noexcept
     {
         return get();
@@ -648,17 +683,17 @@ public:
     void reset(unique_script_engine&& other)
     {
         if(m_engine)
-            m_engine->Release();
+            (void)m_engine->Release();
         m_engine = other.release();
     }
 
     void reset(handle_type engine = nullptr)
     {
         if(m_engine)
-            m_engine->Release();
+            (void)m_engine->Release();
         m_engine = engine;
         if(m_engine)
-            m_engine->AddRef();
+            (void)m_engine->AddRef();
     }
 
 private:
@@ -716,7 +751,7 @@ public:
     {
         if(m_bool)
         {
-            m_bool->Release();
+            (void)m_bool->Release();
             m_bool = nullptr;
         }
     }
@@ -758,7 +793,7 @@ public:
     void reset(std::in_place_t, handle_type bool_) noexcept
     {
         if(m_bool)
-            m_bool->Release();
+            (void)m_bool->Release();
         m_bool = bool_;
     }
 
@@ -770,14 +805,14 @@ public:
         reset(nullptr);
         if(other.m_bool)
         {
-            other.m_bool->AddRef();
+            (void)other.m_bool->AddRef();
             m_bool = other.m_bool;
         }
 
         return *this;
     }
 
-    lockable_shared_bool& operator=(lockable_shared_bool&& other)
+    lockable_shared_bool& operator=(lockable_shared_bool&& other) noexcept
     {
         if(this == &other)
             return *this;
@@ -811,7 +846,7 @@ public:
         return m_bool->Get();
     }
 
-    void set_flag(bool value = true)
+    void set_flag(bool value = true) const
     {
         m_bool->Set(value);
     }
@@ -825,6 +860,13 @@ public:
     handle_type operator->() const noexcept
     {
         return m_bool;
+    }
+
+    auto operator*() const noexcept
+        -> AS_NAMESPACE_QUALIFIER asILockableSharedBool&
+    {
+        ASBIND20_ASSERT(m_bool != nullptr);
+        return *m_bool;
     }
 
     operator handle_type() const noexcept
@@ -888,14 +930,14 @@ public:
         : m_ti(ti)
     {
         if(m_ti)
-            m_ti->AddRef();
+            (void)m_ti->AddRef();
     }
 
     script_typeinfo(const script_typeinfo& other) noexcept
         : m_ti(other.m_ti)
     {
         if(m_ti)
-            m_ti->AddRef();
+            (void)m_ti->AddRef();
     }
 
     script_typeinfo(script_typeinfo&& other) noexcept
@@ -928,6 +970,11 @@ public:
         return m_ti;
     }
 
+    typeinfo_reference operator*() const noexcept
+    {
+        return *get();
+    }
+
     handle_type operator->() const noexcept
     {
         return get();
@@ -953,7 +1000,7 @@ public:
     {
         if(m_ti)
         {
-            m_ti->Release();
+            (void)m_ti->Release();
             m_ti = nullptr;
         }
     }
@@ -961,16 +1008,16 @@ public:
     void reset(handle_type ti)
     {
         if(m_ti)
-            m_ti->Release();
+            (void)m_ti->Release();
         m_ti = ti;
         if(m_ti)
-            m_ti->AddRef();
+            (void)m_ti->AddRef();
     }
 
     void reset(std::in_place_t, handle_type ti)
     {
         if(m_ti)
-            m_ti->Release();
+            (void)m_ti->Release();
         m_ti = ti;
     }
 
@@ -984,7 +1031,7 @@ public:
     }
 
     [[nodiscard]]
-    int subtype_id(AS_NAMESPACE_QUALIFIER asUINT idx = 0) const
+    int subtype_id(subtype_index_type idx = 0) const
     {
         if(!m_ti) [[unlikely]]
             return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
@@ -993,7 +1040,7 @@ public:
     }
 
     [[nodiscard]]
-    typeinfo_pointer subtype(AS_NAMESPACE_QUALIFIER asUINT idx = 0) const
+    typeinfo_pointer subtype(subtype_index_type idx = 0) const
     {
         if(!m_ti) [[unlikely]]
             return nullptr;
