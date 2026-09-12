@@ -85,6 +85,21 @@ public:
           )
     {}
 
+#ifdef ASBIND20_HAS_LIB_REFLECTION
+
+    explicit enum_(engine_reference engine)
+        : enum_(std::addressof(engine))
+    {}
+
+    explicit enum_(engine_pointer engine)
+        : enum_(
+              engine,
+              reflect<^^Enum>().get_decl()
+          )
+    {}
+
+#endif
+
     template <bool AppendOnly, string_like StringLike>
     enum_(appending_t<AppendOnly>, engine_pointer engine, StringLike&& name)
         : enum_(

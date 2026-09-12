@@ -18,12 +18,32 @@ struct
     [[= asbind20::rename("cross")]] int x;
 };
 
-[[= asbind20::rename("decorated")]]
-int func(
+class
+    [[= asbind20::rename("marionette")]]
+    puppet
+{
+public:
+    puppet() = default;
+
+    void inc_ref()
+    {
+        m_counter.inc();
+    }
+
+    void dec_ref()
+    {
+        m_counter.dec_and_try_delete(this);
+    }
+
+private:
+    asbind20::atomic_counter m_counter;
+    [[maybe_unused]]
+    int m_placeholder[4];
+};
+
+[[= asbind20::rename("decorated")]] int func(
     const daffodil&,
-    [[= asbind20::default_arg("42")]]
-    [[= asbind20::rename("val")]]
-    int arg
+    [[= asbind20::default_arg("42")]][[= asbind20::rename("val")]] int arg
 )
 {
     (void)arg;
@@ -34,26 +54,10 @@ enum renamed_enum
 {
     start[[= asbind20::rename("zero")]] = 0
 };
-} // namespace
 
-TEST(Annotation, Rename)
+void check_renamed_entities(asbind20::engine_pointer engine)
 {
     using namespace asbind20;
-    static_assert(
-        meta::detail::calc_type_name<^^daffodil>() ==
-        "narcissus"
-    );
-
-    auto engine = make_script_engine();
-    asbind_test::setup_message_callback(engine);
-    value_class<daffodil, true>(
-        engine, "narcissus", AS_NAMESPACE_QUALIFIER asOBJ_POD
-    )
-        .behaviours_by_traits()
-        .property(reflect<^^daffodil::x>());
-
-    enum_<renamed_enum>(engine, "renamed_enum")
-        .value(reflect<^^renamed_enum::start>());
 
     auto* m = create_module(engine, "rename_test");
     m->AddScriptSection(
@@ -72,6 +76,79 @@ TEST(Annotation, Rename)
     auto result = script_invoke<int>(ctx, get_cross_val, std::cref(d));
     ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
     EXPECT_EQ(result.value(), 7);
+}
+} // namespace
+
+TEST(Annotation, RenameGeneric)
+{
+    using namespace asbind20;
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine);
+
+    {
+        value_class<daffodil, true> v(
+            *engine, AS_NAMESPACE_QUALIFIER asOBJ_POD
+        );
+        v
+            .behaviours_by_traits()
+            .property(reflect<^^daffodil::x>());
+        EXPECT_EQ(v.get_name(), "narcissus");
+    }
+
+    {
+        enum_<renamed_enum> e(*engine);
+        e
+            .value(reflect<^^renamed_enum::start>());
+        EXPECT_EQ(e.get_name(), "renamed_enum");
+    }
+
+    {
+        ref_class<puppet, true> r(engine);
+        r
+            .addref(fp<&puppet::inc_ref>)
+            .release(fp<&puppet::dec_ref>);
+        EXPECT_EQ(r.get_name(), "marionette");
+    }
+
+    check_renamed_entities(engine);
+}
+
+TEST(Annotation, RenameNative)
+{
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
+
+    using namespace asbind20;
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine);
+
+    {
+        value_class<daffodil, false> v(
+            *engine, AS_NAMESPACE_QUALIFIER asOBJ_POD
+        );
+        v
+            .behaviours_by_traits()
+            .property(reflect<^^daffodil::x>());
+        EXPECT_EQ(v.get_name(), "narcissus");
+    }
+
+    {
+        enum_<renamed_enum> e(*engine);
+        e
+            .value(reflect<^^renamed_enum::start>());
+        EXPECT_EQ(e.get_name(), "renamed_enum");
+    }
+
+    {
+        ref_class<puppet, false> r(engine);
+        r
+            .addref(fp<&puppet::inc_ref>)
+            .release(fp<&puppet::dec_ref>);
+        EXPECT_EQ(r.get_name(), "marionette");
+    }
+
+    check_renamed_entities(engine);
 }
 
 TEST(Annotation, DefaultArg)

@@ -3034,6 +3034,31 @@ public:
           )
     {}
 
+#ifdef ASBIND20_HAS_LIB_REFLECTION
+
+    explicit basic_value_class(
+        engine_reference engine,
+        flag_type flags = 0
+    )
+        : basic_value_class(
+              std::addressof(engine),
+              flags
+          )
+    {}
+
+    explicit basic_value_class(
+        engine_pointer engine,
+        flag_type flags = 0
+    )
+        : basic_value_class(
+              engine,
+              reflect<^^Class>().get_decl(),
+              flags
+          )
+    {}
+
+#endif
+
     basic_value_class(
         appending_t<true>,
         engine_pointer engine,
@@ -4382,6 +4407,32 @@ public:
               flags
           )
     {}
+
+
+#ifdef ASBIND20_HAS_LIB_REFLECTION
+
+    explicit basic_ref_class(
+        engine_reference engine,
+        flag_type flags = 0
+    )
+        : basic_ref_class(
+              std::addressof(engine),
+              flags
+          )
+    {}
+
+    explicit basic_ref_class(
+        engine_pointer engine,
+        flag_type flags = 0
+    )
+        : basic_ref_class(
+              engine,
+              reflect<^^Class>().get_decl(),
+              flags
+          )
+    {}
+
+#endif
 
     template <bool AppendOnly>
     basic_ref_class(
