@@ -60,6 +60,7 @@ void check_renamed_entities(asbind20::engine_pointer engine)
     using namespace asbind20;
 
     auto* m = create_module(engine, "rename_test");
+    ASSERT_THAT(m, ::testing::NotNull());
     m->AddScriptSection(
         "rename_test",
         "int get_cross_val(const narcissus&in v)\n"
@@ -104,7 +105,7 @@ TEST(Annotation, RenameGeneric)
     }
 
     {
-        ref_class<puppet, true> r(engine);
+        ref_class<puppet, true> r(*engine);
         r
             .addref(fp<&puppet::inc_ref>)
             .release(fp<&puppet::dec_ref>);
@@ -141,7 +142,7 @@ TEST(Annotation, RenameNative)
     }
 
     {
-        ref_class<puppet, false> r(engine);
+        ref_class<puppet, false> r(*engine);
         r
             .addref(fp<&puppet::inc_ref>)
             .release(fp<&puppet::dec_ref>);
