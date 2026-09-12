@@ -143,8 +143,6 @@ namespace detail
 
             if(!ParseDefaultArg)
                 continue;
-            // TODO: Enable the folloing code after upgrading to GCC 16.1
-#if 1
             constexpr static auto arg_ann = std::define_static_array(
                 std::meta::annotations_of_with_type(param, ^^asbind20::default_arg)
             );
@@ -156,7 +154,6 @@ namespace detail
                 )
                               .get();
             }
-#endif
         }
 
         params_str += ')';
@@ -225,7 +222,7 @@ consteval cstring_ref refl_function_sig(
             detail::calc_full_type_name<ret_t>(true),
             ' ',
             func_identifier,
-            detail::calc_param_list_str<FuncInfo, NoFirst, NoLast, false>(),
+            detail::calc_param_list_str<FuncInfo, NoFirst, NoLast, ParseDefaultArg>(),
             suffix
         )
     );

@@ -38,11 +38,18 @@ TEST(Annotation, Rename)
 
 TEST(Annotation, DefaultArg)
 {
+    using namespace asbind20;
+
     constexpr std::string_view sv= std::meta::extract<asbind20::default_arg>(std::meta::annotations_of_with_type(
         std::meta::parameters_of(^^func)[0],
         ^^asbind20::default_arg
     )[0]).get();
     EXPECT_EQ(sv, "42");
+
+    EXPECT_EQ(
+        (asbind20::meta::refl_function_sig<^^func, false, false, true>()),
+        "int func(int arg=42)"
+    );
 }
 
 #endif
