@@ -14,6 +14,7 @@
 #include <concepts>
 #include <type_traits>
 #include "utility.hpp"
+#include "meta/enum_name.hpp"
 
 namespace asbind20
 {

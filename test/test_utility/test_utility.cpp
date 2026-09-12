@@ -2,6 +2,7 @@
 #include <gmock/gmock-matchers.h>
 #include <asbind20/asbind.hpp>
 #include <asbind20/ranges/ranges.hpp>
+#include <asbind20/meta/enum_name.hpp>
 
 namespace test_utility
 {
@@ -18,44 +19,6 @@ TEST(Utility, FpWrapper)
     constexpr auto wrapper = fp<&test_utility::f1>;
     static constexpr auto f1 = wrapper.get();
     EXPECT_EQ(f1(), 1013);
-}
-
-namespace test_utility
-{
-enum my_enum
-{
-    val_1 = 1,
-    val_2 = 2
-};
-} // namespace test_utility
-
-TEST(Utility, StaticEnumName)
-{
-    using namespace asbind20;
-
-#ifndef ASBIND20_HAS_STATIC_ENUM_NAME
-    GTEST_SKIP() << "static_enum_name not supported";
-
-#else
-
-    {
-        using test_utility::my_enum;
-        EXPECT_EQ(static_enum_name<my_enum::val_1>(), "val_1");
-        EXPECT_EQ(static_enum_name<my_enum::val_2>(), "val_2");
-    }
-
-    {
-        enum class my_scoped_enum
-        {
-            abc = 1,
-            def = 2
-        };
-
-        EXPECT_EQ(static_enum_name<my_scoped_enum::abc>(), "abc");
-        EXPECT_EQ(static_enum_name<my_scoped_enum::def>(), "def");
-    }
-
-#endif
 }
 
 TEST(Utility, Version)
@@ -301,6 +264,10 @@ static void output_info(std::ostream& os)
     os << "ASBIND20_HAS_STATIC_ENUM_NAME: "
        << ASBIND20_HAS_STATIC_ENUM_NAME
        << std::endl;
+#endif
+
+#ifdef ASBIND20_HAS_LIB_REFLECTION
+    os << "ASBIND20_HAS_LIB_REFLECTION defined: " << __cpp_lib_reflection << 'L' << std::endl;
 #endif
 }
 

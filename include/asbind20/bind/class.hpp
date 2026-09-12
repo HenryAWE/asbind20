@@ -17,6 +17,7 @@
 #include "behaviour.hpp"
 #include "function_tools.hpp"
 #include "../util/assume.hpp"
+#include "../meta/reflection.hpp"
 
 namespace asbind20
 {
@@ -2440,6 +2441,45 @@ public:
         return derived();
     }
 
+#ifdef ASBIND20_HAS_LIB_REFLECTION
+
+    template <std::meta::info FuncInfo>
+    Derived& method(
+        use_generic_t,
+        const meta::function_refl_proxy<FuncInfo>&
+    )
+    {
+        using proxy_t = meta::function_refl_proxy<FuncInfo>;
+        constexpr auto conv = method_callconv<proxy_t::get_func()>();
+        this->method(
+            use_generic,
+            proxy_t::get_decl(detail::cc<conv>),
+            fp<proxy_t::get_func()>
+        );
+        return derived();
+    }
+
+    template <std::meta::info FuncInfo>
+    Derived& method(
+        const meta::function_refl_proxy<FuncInfo>&
+    )
+    {
+        using proxy_t = meta::function_refl_proxy<FuncInfo>;
+        if constexpr(ForceGeneric)
+            this->method(use_generic, proxy_t{});
+        else
+        {
+            constexpr auto conv = method_callconv<proxy_t::get_func()>();
+            this->method(
+                proxy_t::get_decl(detail::cc<conv>),
+                proxy_t::get_func()
+            );
+        }
+        return derived();
+    }
+
+#endif
+
     template <fn_tools::wrapped_function Function>
     Derived& method(
         use_generic_t,
@@ -2473,6 +2513,20 @@ public:
         this->register_property(decl, off);
         return derived();
     }
+
+#ifdef ASBIND20_HAS_LIB_REFLECTION
+
+    template <std::meta::info Property>
+    Derived property(meta::prop_refl_proxy<Property>)
+    {
+        using proxy_t = meta::prop_refl_proxy<Property>;
+        this->register_property(
+            proxy_t::get_decl(), proxy_t::get_off()
+        );
+        return derived();
+    }
+
+#endif
 
     template <typename MemberPointer>
     requires(std::is_member_object_pointer_v<MemberPointer>)
@@ -2979,6 +3033,31 @@ public:
               flags
           )
     {}
+
+#ifdef ASBIND20_HAS_LIB_REFLECTION
+
+    explicit basic_value_class(
+        engine_reference engine,
+        flag_type flags = 0
+    )
+        : basic_value_class(
+              std::addressof(engine),
+              flags
+          )
+    {}
+
+    explicit basic_value_class(
+        engine_pointer engine,
+        flag_type flags = 0
+    )
+        : basic_value_class(
+              engine,
+              reflect<^^Class>().get_decl(),
+              flags
+          )
+    {}
+
+#endif
 
     basic_value_class(
         appending_t<true>,
@@ -4328,6 +4407,32 @@ public:
               flags
           )
     {}
+
+
+#ifdef ASBIND20_HAS_LIB_REFLECTION
+
+    explicit basic_ref_class(
+        engine_reference engine,
+        flag_type flags = 0
+    )
+        : basic_ref_class(
+              std::addressof(engine),
+              flags
+          )
+    {}
+
+    explicit basic_ref_class(
+        engine_pointer engine,
+        flag_type flags = 0
+    )
+        : basic_ref_class(
+              engine,
+              reflect<^^Class>().get_decl(),
+              flags
+          )
+    {}
+
+#endif
 
     template <bool AppendOnly>
     basic_ref_class(

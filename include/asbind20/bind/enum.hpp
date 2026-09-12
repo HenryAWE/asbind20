@@ -15,6 +15,7 @@
 #include "../fwd.hpp"
 #include "../meta.hpp"
 #include "common.hpp"
+#include "../meta/reflection.hpp"
 
 namespace asbind20
 {
@@ -84,6 +85,21 @@ public:
           )
     {}
 
+#ifdef ASBIND20_HAS_LIB_REFLECTION
+
+    explicit enum_(engine_reference engine)
+        : enum_(std::addressof(engine))
+    {}
+
+    explicit enum_(engine_pointer engine)
+        : enum_(
+              engine,
+              reflect<^^Enum>().get_decl()
+          )
+    {}
+
+#endif
+
     template <bool AppendOnly, string_like StringLike>
     enum_(appending_t<AppendOnly>, engine_pointer engine, StringLike&& name)
         : enum_(
@@ -123,7 +139,7 @@ public:
     /**
      * @brief Registering an enum value. Its declaration will be generated from its name in C++.
      *
-     * @note This function has some limitations. @sa static_enum_name
+     * @note This function has some limitations. @sa meta::static_enum_name
      *
      * @tparam Value Enum value
      */
@@ -138,6 +154,22 @@ public:
 
         return *this;
     }
+
+#ifdef ASBIND20_HAS_LIB_REFLECTION
+
+    template <std::meta::info Enumerator>
+    enum_& value(meta::enum_refl_proxy<Enumerator>)
+    {
+        using proxy_t = meta::enum_refl_proxy<Enumerator>;
+        register_enum_val(
+            proxy_t::get_decl(),
+            proxy_t::get_val()
+        );
+
+        return *this;
+    }
+
+#endif
 
     [[nodiscard]]
     const std::string& get_name() const noexcept
