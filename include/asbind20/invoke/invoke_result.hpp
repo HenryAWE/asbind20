@@ -256,7 +256,8 @@ protected:
 
     void swap(script_invoke_result_base& other) noexcept
     {
-        std::swap(m_ctx, other.m_ctx);
+        using std::swap;
+        swap(m_ctx, other.m_ctx);
     }
 
 private:

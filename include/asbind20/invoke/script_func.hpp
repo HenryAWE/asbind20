@@ -42,7 +42,6 @@ script_invoke_result<R> script_invoke(
     return get_context_result<R>(ctx);
 }
 
-
 /**
  * @brief Call a method on script object
  */
@@ -85,6 +84,7 @@ template <typename R, typename... Args>
 class script_function_ref<R(Args...)>
 {
 public:
+    using element_type = AS_NAMESPACE_QUALIFIER asIScriptFunction;
     using handle_type = function_pointer;
     using result_type = script_invoke_result<R>;
 
@@ -94,6 +94,9 @@ public:
     script_function_ref(handle_type func) noexcept
         : m_func(func) {}
 
+    script_function_ref(function_reference func) noexcept
+        : m_func(std::addressof(func)) {}
+
     void reset(std::nullptr_t = nullptr) noexcept
     {
         m_func = nullptr;
@@ -102,6 +105,11 @@ public:
     void reset(handle_type func) noexcept
     {
         m_func = func;
+    }
+
+    void reset(function_reference func) noexcept
+    {
+        m_func = std::addressof(func);
     }
 
     [[nodiscard]]
@@ -160,6 +168,7 @@ template <typename R, typename... Args>
 class script_method_ref<R(Args...)>
 {
 public:
+    using element_type = AS_NAMESPACE_QUALIFIER asIScriptFunction;
     using handle_type = function_pointer;
     using result_type = script_invoke_result<R>;
 
@@ -169,6 +178,9 @@ public:
     script_method_ref(handle_type func) noexcept
         : m_func(func) {}
 
+    script_method_ref(function_reference func) noexcept
+        : m_func(std::addressof(func)) {}
+
     void reset(std::nullptr_t = nullptr) noexcept
     {
         m_func = nullptr;
@@ -177,6 +189,11 @@ public:
     void reset(handle_type func) noexcept
     {
         m_func = func;
+    }
+
+    void reset(function_reference func) noexcept
+    {
+        m_func = std::addressof(func);
     }
 
     [[nodiscard]]
@@ -234,6 +251,7 @@ template <>
 class script_function<void>
 {
 public:
+    using element_type = AS_NAMESPACE_QUALIFIER asIScriptFunction;
     using handle_type = function_pointer;
 
     script_function() noexcept
@@ -252,6 +270,9 @@ public:
             (void)m_func->AddRef();
     }
 
+    script_function(function_reference func)
+        : script_function(std::addressof(func)) {}
+
     /**
      * @brief Assign a function object. It @b won't increase the reference count!
      *
@@ -261,6 +282,9 @@ public:
      */
     script_function(std::in_place_t, handle_type func) noexcept
         : m_func(func) {}
+
+    script_function(std::in_place_t, function_reference func) noexcept
+        : m_func(std::addressof(func)) {}
 
     ~script_function()
     {
@@ -338,9 +362,15 @@ public:
             (void)m_func->AddRef();
     }
 
+    void reset(function_reference func)
+    {
+        reset(std::addressof(func));
+    }
+
     void swap(script_function& other) noexcept
     {
-        std::swap(m_func, other.m_func);
+        using std::swap;
+        swap(m_func, other.m_func);
     }
 
 private:
@@ -365,6 +395,9 @@ public:
     explicit script_function(handle_type func)
         : my_base(func) {}
 
+    explicit script_function(function_reference func)
+        : my_base(func) {}
+
     /**
      * @brief Assign a function object. It @b won't increase the reference count!
      *
@@ -373,6 +406,9 @@ public:
      *          this wrapper, which will release it on destruction.
      */
     script_function(std::in_place_t, handle_type func) noexcept
+        : my_base(std::in_place, func) {}
+
+    script_function(std::in_place_t, function_reference func) noexcept
         : my_base(std::in_place, func) {}
 
     script_function& operator=(const script_function&) = default;
@@ -411,6 +447,12 @@ public:
     }
 };
 
+template <typename T>
+void swap(script_function<T>& lhs, script_function<T>& rhs) noexcept
+{
+    lhs.swap(rhs);
+}
+
 /**
  * @brief Wrapper of script method, a.k.a member function
  */
@@ -427,6 +469,9 @@ public:
     script_method(script_method&&) noexcept = default;
 
     explicit script_method(handle_type func)
+        : my_base(func) {}
+
+    explicit script_method(function_reference func)
         : my_base(func) {}
 
     script_method(script_method_ref<R(Args...)> rf) noexcept
@@ -485,6 +530,12 @@ public:
         return target();
     }
 };
+
+template <typename T>
+void swap(script_method<T>& lhs, script_method<T>& rhs) noexcept
+{
+    lhs.swap(rhs);
+}
 
 /**
  * @brief Pointer overloads of `script_invoke`
