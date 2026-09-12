@@ -96,6 +96,7 @@ private:
 class script_object
 {
 public:
+    using element_type = AS_NAMESPACE_QUALIFIER asIScriptObject;
     using handle_type = object_pointer;
 
     script_object() noexcept = default;
@@ -105,12 +106,27 @@ public:
 
     script_object(const script_object&) = delete;
 
+    script_object& operator=(const script_object&) = delete;
+
+    script_object& operator=(script_object&& other) noexcept
+    {
+        if(this == &other)
+            return *this;
+
+        reset();
+        m_obj = std::exchange(other.m_obj, nullptr);
+        return *this;
+    }
+
     explicit script_object(handle_type obj)
         : m_obj(obj)
     {
         if(m_obj)
             (void)m_obj->AddRef();
     }
+
+    explicit script_object(object_reference obj)
+        : script_object(std::addressof(obj)) {}
 
     ~script_object()
     {
@@ -175,16 +191,36 @@ public:
      */
     void reset(handle_type obj)
     {
+        // Avoid Release-then-AddRef on the same handle,
+        if(m_obj == obj) [[unlikely]]
+            return;
+
         if(m_obj)
             (void)m_obj->Release();
         m_obj = obj;
         if(obj)
-            obj->AddRef();
+            (void)obj->AddRef();
+    }
+
+    void reset(object_reference obj)
+    {
+        reset(std::addressof(obj));
+    }
+
+    void swap(script_object& other) noexcept
+    {
+        using std::swap;
+        swap(m_obj, other.m_obj);
     }
 
 private:
     handle_type m_obj = nullptr;
 };
+
+inline void swap(script_object& lhs, script_object& rhs) noexcept
+{
+    lhs.swap(rhs);
+}
 
 /**
  * @brief RAII helper for reusing active script context.
@@ -194,6 +230,7 @@ private:
 class [[nodiscard]] reuse_active_context
 {
 public:
+    using element_type = AS_NAMESPACE_QUALIFIER asIScriptContext;
     using handle_type = context_pointer;
 
     reuse_active_context() = delete;
@@ -328,6 +365,7 @@ private:
 class [[nodiscard]] request_context
 {
 public:
+    using element_type = AS_NAMESPACE_QUALIFIER asIScriptContext;
     using handle_type = context_pointer;
 
     request_context() = delete;
@@ -388,6 +426,7 @@ private:
 class script_context
 {
 public:
+    using element_type = AS_NAMESPACE_QUALIFIER asIScriptContext;
     using handle_type = context_pointer;
 
     script_context() noexcept = default;
@@ -483,21 +522,41 @@ public:
         m_ctx = ctx;
     }
 
+    void reset(std::in_place_t, element_type& ctx) noexcept
+    {
+        reset(std::in_place, std::addressof(ctx));
+    }
+
     void reset(handle_type ctx = nullptr)
     {
+        // Avoid Release-then-AddRef on the same handle,
+        if(m_ctx == ctx) [[unlikely]]
+            return;
+
         reset(std::in_place, ctx);
         if(m_ctx)
             (void)m_ctx->AddRef();
     }
 
+    void reset(element_type& ctx)
+    {
+        reset(std::addressof(ctx));
+    }
+
     void swap(script_context& other) noexcept
     {
-        std::swap(m_ctx, other.m_ctx);
+        using std::swap;
+        swap(m_ctx, other.m_ctx);
     }
 
 private:
     handle_type m_ctx = nullptr;
 };
+
+inline void swap(script_context& lhs, script_context& rhs) noexcept
+{
+    lhs.swap(rhs);
+}
 
 /**
  * @brief Script engine manager
@@ -505,6 +564,7 @@ private:
 class script_engine
 {
 public:
+    using element_type = AS_NAMESPACE_QUALIFIER asIScriptEngine;
     using handle_type = engine_pointer;
 
     script_engine() noexcept
@@ -517,6 +577,9 @@ public:
 
     explicit script_engine(handle_type engine) noexcept
         : m_engine(engine) {}
+
+    explicit script_engine(engine_reference engine) noexcept
+        : script_engine(std::addressof(engine)) {}
 
     script_engine& operator=(const script_engine&) = delete;
 
@@ -563,13 +626,29 @@ public:
     void reset(handle_type engine = nullptr) noexcept
     {
         if(m_engine)
-            m_engine->ShutDownAndRelease();
+            (void)m_engine->ShutDownAndRelease();
         m_engine = engine;
+    }
+
+    void reset(engine_reference engine) noexcept
+    {
+        reset(std::addressof(engine));
+    }
+
+    void swap(script_engine& other) noexcept
+    {
+        using std::swap;
+        swap(m_engine, other.m_engine);
     }
 
 private:
     handle_type m_engine;
 };
+
+inline void swap(script_engine& lhs, script_engine& rhs) noexcept
+{
+    lhs.swap(rhs);
+}
 
 using script_version_type = AS_NAMESPACE_QUALIFIER asDWORD;
 
@@ -601,6 +680,7 @@ using unique_script_engine = script_engine;
 class shared_script_engine
 {
 public:
+    using element_type = AS_NAMESPACE_QUALIFIER asIScriptEngine;
     using handle_type = engine_pointer;
 
     shared_script_engine() noexcept
@@ -609,7 +689,8 @@ public:
     shared_script_engine(const shared_script_engine& other)
         : m_engine(other.get())
     {
-        (void)m_engine->AddRef();
+        if(m_engine)
+            (void)m_engine->AddRef();
     }
 
     shared_script_engine(shared_script_engine&& other) noexcept
@@ -617,6 +698,9 @@ public:
 
     shared_script_engine(std::in_place_t, handle_type engine) noexcept
         : m_engine(engine) {}
+
+    shared_script_engine(std::in_place_t, engine_reference engine) noexcept
+        : shared_script_engine(std::in_place, std::addressof(engine)) {}
 
     shared_script_engine(const unique_script_engine&) = delete;
 
@@ -642,7 +726,7 @@ public:
 
     shared_script_engine& operator=(unique_script_engine&& other) noexcept
     {
-        m_engine = other.release();
+        reset(std::move(other));
         return *this;
     }
 
@@ -689,6 +773,10 @@ public:
 
     void reset(handle_type engine = nullptr)
     {
+        // Avoid Release-then-AddRef on the same handle,
+        if(m_engine == engine) [[unlikely]]
+            return;
+
         if(m_engine)
             (void)m_engine->Release();
         m_engine = engine;
@@ -696,18 +784,32 @@ public:
             (void)m_engine->AddRef();
     }
 
+    void reset(engine_reference engine)
+    {
+        reset(std::addressof(engine));
+    }
+
+    void swap(shared_script_engine& other) noexcept
+    {
+        using std::swap;
+        swap(m_engine, other.m_engine);
+    }
+
 private:
     handle_type m_engine;
 };
+
+inline void swap(shared_script_engine& lhs, shared_script_engine& rhs) noexcept
+{
+    lhs.swap(rhs);
+}
 
 [[nodiscard]]
 inline shared_script_engine make_shared_script_engine(
     script_version_type version = default_script_version
 )
 {
-    return shared_script_engine(
-        std::in_place, create_script_engine(version)
-    );
+    return {std::in_place, create_script_engine(version)};
 }
 
 /**
@@ -718,16 +820,27 @@ inline shared_script_engine make_shared_script_engine(
 class lockable_shared_bool
 {
 public:
-    using handle_type = AS_NAMESPACE_QUALIFIER asILockableSharedBool*;
+    using element_type = AS_NAMESPACE_QUALIFIER asILockableSharedBool;
+    using handle_type = element_type*;
 
     lockable_shared_bool() noexcept = default;
 
-    explicit lockable_shared_bool(handle_type bool_)
+    explicit lockable_shared_bool(handle_type bool_) noexcept
+    {
+        reset(bool_);
+    }
+
+    explicit lockable_shared_bool(element_type& bool_) noexcept
     {
         reset(bool_);
     }
 
     lockable_shared_bool(std::in_place_t, handle_type bool_) noexcept
+    {
+        reset(std::in_place, bool_);
+    }
+
+    lockable_shared_bool(std::in_place_t, element_type& bool_) noexcept
     {
         reset(std::in_place, bool_);
     }
@@ -742,7 +855,7 @@ public:
 
     ~lockable_shared_bool()
     {
-        reset(nullptr);
+        reset();
     }
 
     bool operator==(const lockable_shared_bool& other) const = default;
@@ -758,11 +871,20 @@ public:
 
     void reset(handle_type bool_) noexcept
     {
+        // Avoid Release-then-AddRef on the same handle,
+        if(m_bool == bool_) [[unlikely]]
+            return;
+
         if(m_bool)
-            m_bool->Release();
+            (void)m_bool->Release();
         m_bool = bool_;
         if(m_bool)
-            m_bool->AddRef();
+            (void)m_bool->AddRef();
+    }
+
+    void reset(element_type& bool_) noexcept
+    {
+        reset(std::addressof(bool_));
     }
 
     /**
@@ -773,7 +895,16 @@ public:
       *
       * @note If it failed to connect, this helper will be reset to nullptr.
       */
-    void connect_object(void* obj, typeinfo_pointer ti)
+    void connect_object(void* obj, const_typeinfo_reference ti)
+    {
+        reset(
+            ti.GetEngine()->GetWeakRefFlagOfScriptObject(
+                obj, std::addressof(ti)
+            )
+        );
+    }
+
+    void connect_object(void* obj, const_typeinfo_pointer ti)
     {
         if(!ti) [[unlikely]]
         {
@@ -781,7 +912,7 @@ public:
             return;
         }
 
-        reset(ti->GetEngine()->GetWeakRefFlagOfScriptObject(obj, ti));
+        connect_object(obj, *ti);
     }
 
     /**
@@ -795,6 +926,11 @@ public:
         if(m_bool)
             (void)m_bool->Release();
         m_bool = bool_;
+    }
+
+    void reset(std::in_place_t, element_type& bool_) noexcept
+    {
+        reset(std::in_place, std::addressof(bool_));
     }
 
     lockable_shared_bool& operator=(const lockable_shared_bool& other)
@@ -862,8 +998,7 @@ public:
         return m_bool;
     }
 
-    auto operator*() const noexcept
-        -> AS_NAMESPACE_QUALIFIER asILockableSharedBool&
+    element_type& operator*() const noexcept
     {
         ASBIND20_ASSERT(m_bool != nullptr);
         return *m_bool;
@@ -881,12 +1016,18 @@ public:
 
     void swap(lockable_shared_bool& other) noexcept
     {
-        std::swap(m_bool, other.m_bool);
+        using std::swap;
+        swap(m_bool, other.m_bool);
     }
 
 private:
     handle_type m_bool = nullptr;
 };
+
+inline void swap(lockable_shared_bool& lhs, lockable_shared_bool& rhs) noexcept
+{
+    lhs.swap(rhs);
+}
 
 /**
  * @brief Create a lockable shared bool for implementing weak reference
@@ -896,9 +1037,7 @@ private:
 [[nodiscard]]
 inline lockable_shared_bool make_lockable_shared_bool()
 {
-    return lockable_shared_bool(
-        std::in_place, AS_NAMESPACE_QUALIFIER asCreateLockableSharedBool()
-    );
+    return {std::in_place, AS_NAMESPACE_QUALIFIER asCreateLockableSharedBool()};
 }
 
 /**
@@ -907,6 +1046,7 @@ inline lockable_shared_bool make_lockable_shared_bool()
 class script_typeinfo
 {
 public:
+    using element_type = AS_NAMESPACE_QUALIFIER asITypeInfo;
     using handle_type = typeinfo_pointer;
 
     script_typeinfo() noexcept = default;
@@ -924,6 +1064,13 @@ public:
         : m_ti(ti) {}
 
     /**
+     * @brief Assign a type info object. It @b won't increase the reference count!
+     * @sa script_typeinfo(inplace_addref_t, handle_type)
+     */
+    explicit script_typeinfo(std::in_place_t, typeinfo_reference ti) noexcept
+        : m_ti(std::addressof(ti)) {}
+
+    /**
      * @brief Assign a type info object, and increase reference count
      */
     script_typeinfo(handle_type ti) noexcept
@@ -932,6 +1079,9 @@ public:
         if(m_ti)
             (void)m_ti->AddRef();
     }
+
+    script_typeinfo(typeinfo_reference ti) noexcept
+        : script_typeinfo(std::addressof(ti)) {}
 
     script_typeinfo(const script_typeinfo& other) noexcept
         : m_ti(other.m_ti)
@@ -1007,6 +1157,10 @@ public:
 
     void reset(handle_type ti)
     {
+        // Avoid Release-then-AddRef on the same handle,
+        if(m_ti == ti) [[unlikely]]
+            return;
+
         if(m_ti)
             (void)m_ti->Release();
         m_ti = ti;
@@ -1014,11 +1168,21 @@ public:
             (void)m_ti->AddRef();
     }
 
+    void reset(typeinfo_reference ti)
+    {
+        reset(std::addressof(ti));
+    }
+
     void reset(std::in_place_t, handle_type ti)
     {
         if(m_ti)
             (void)m_ti->Release();
         m_ti = ti;
+    }
+
+    void reset(std::in_place_t, typeinfo_reference ti) noexcept
+    {
+        reset(std::in_place, std::addressof(ti));
     }
 
     [[nodiscard]]
@@ -1048,9 +1212,20 @@ public:
         return m_ti->GetSubType(idx);
     }
 
+    void swap(script_typeinfo& other) noexcept
+    {
+        using std::swap;
+        swap(m_ti, other.m_ti);
+    }
+
 private:
     handle_type m_ti = nullptr;
 };
+
+inline void swap(script_typeinfo& lhs, script_typeinfo& rhs) noexcept
+{
+    lhs.swap(rhs);
+}
 
 namespace container
 {
