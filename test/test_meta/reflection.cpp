@@ -42,7 +42,23 @@ struct my_struct
         std::terminate();
     }
 };
+
+namespace prefix
+{
+    struct my_type
+    {};
+} // namespace prefix
 } // namespace
+
+TEST(Reflection, TypeName)
+{
+    using namespace asbind20;
+
+    EXPECT_EQ(
+        meta::detail::calc_type_name<^^prefix::my_type>(),
+        "my_type"
+    );
+}
 
 TEST(Reflection, FuncSig)
 {

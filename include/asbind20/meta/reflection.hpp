@@ -65,7 +65,12 @@ namespace detail
         if(std::same_as<type, std::uint64_t>)
             return "uint64";
 
-        return std::meta::display_string_of(type_info);
+        std::string_view name = std::meta::display_string_of(type_info);
+        if(auto pos = name.rfind("::"); pos != name.npos)
+        {
+            name.remove_prefix(pos + 2);
+        }
+        return name;
     }
 
     template <std::meta::info TypeInfo>
