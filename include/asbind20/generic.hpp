@@ -31,16 +31,37 @@ namespace asbind20
 #    pragma GCC diagnostic ignored "-Wold-style-cast"
 #endif
 
+
+namespace detail
+{
+    template <typename T>
+    struct gen_aux_obj_ret_type_of;
+
+    template <typename T>
+    requires(std::is_pointer_v<T>)
+    struct gen_aux_obj_ret_type_of<T>
+    {
+        using type = T;
+    };
+
+    template <typename T>
+    requires(!std::is_pointer_v<T>)
+    struct gen_aux_obj_ret_type_of<T>
+    {
+        using type = std::add_lvalue_reference_t<T>;
+    };
+} // namespace detail
+
 /**
  * @brief Get pointer/reference to the object
  *
  * @tparam T Object type, can be a pointer, otherwise the return type will a reference
  */
 template <typename T>
-auto get_generic_object(generic_pointer gen)
-    -> std::conditional_t<std::is_pointer_v<T>, T, std::add_lvalue_reference_t<T>>
+auto get_generic_object(generic_reference gen)
+    -> typename detail::gen_aux_obj_ret_type_of<T>::type
 {
-    void* obj = gen->GetObject();
+    void* obj = gen.GetObject();
     if constexpr(std::is_pointer_v<T>)
     {
         return static_cast<T>(obj);
@@ -53,10 +74,18 @@ auto get_generic_object(generic_pointer gen)
 }
 
 template <typename T>
-auto get_generic_auxiliary(generic_pointer gen)
-    -> std::conditional_t<std::is_pointer_v<T>, T, std::add_lvalue_reference_t<T>>
+auto get_generic_object(generic_pointer gen)
+    -> typename detail::gen_aux_obj_ret_type_of<T>::type
 {
-    void* obj = gen->GetAuxiliary();
+    ASBIND20_ASSERT(gen != nullptr);
+    return get_generic_object<T>(*gen);
+}
+
+template <typename T>
+auto get_generic_auxiliary(const_generic_reference gen)
+    -> typename detail::gen_aux_obj_ret_type_of<T>::type
+{
+    void* obj = gen.GetAuxiliary();
     if constexpr(std::is_pointer_v<T>)
     {
         return static_cast<T>(obj);
@@ -68,16 +97,32 @@ auto get_generic_auxiliary(generic_pointer gen)
     }
 }
 
+template <typename T>
+auto get_generic_auxiliary(const_generic_pointer gen)
+    -> typename detail::gen_aux_obj_ret_type_of<T>::type
+{
+    ASBIND20_ASSERT(gen != nullptr);
+    return get_generic_auxiliary<T>(*gen);
+}
+
 /**
  * @brief Get the hidden type information argument for template classes
  */
 inline typeinfo_pointer get_generic_typeinfo(
-    generic_pointer gen, arg_index_type idx = 0
+    generic_reference gen, arg_index_type idx = 0
 )
 {
     return *static_cast<typeinfo_pointer*>(
-        gen->GetAddressOfArg(idx)
+        gen.GetAddressOfArg(idx)
     );
+}
+
+inline typeinfo_pointer get_generic_typeinfo(
+    generic_pointer gen, arg_index_type idx = 0
+)
+{
+    ASBIND20_ASSERT(gen != nullptr);
+    return get_generic_typeinfo(*gen, idx);
 }
 
 template <typename T>
@@ -151,7 +196,7 @@ T get_generic_arg(
         else if constexpr(std::same_as<std::remove_cv_t<T>, double>)
             return gen->GetArgDouble(idx);
         else
-            static_assert(!sizeof(T), "Unsupported floating point type");
+            return *static_cast<T*>(gen->GetAddressOfArg(idx));
     }
     else
     {
@@ -244,7 +289,12 @@ int set_generic_return(
         else if constexpr(std::same_as<std::remove_cv_t<Return>, double>)
             return gen->SetReturnDouble(ret);
         else
-            static_assert(!sizeof(Return), "Unsupported floating point type");
+        {
+            // Long double and eExtended floating-point types
+            void* addr = gen->GetAddressOfReturnLocation();
+            new(addr) Return(ret);
+            return AS_NAMESPACE_QUALIFIER asSUCCESS;
+        }
     }
     else
     {

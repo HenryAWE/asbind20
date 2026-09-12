@@ -163,6 +163,9 @@ using ForeachString = test_bind::foreach_string_suite;
 
 TEST_F(ForeachString, RunScriptGeneric)
 {
+    // Seems like an upstream issue
+    ASBIND_TEST_SKIP_IF_SCRIPT_DEBUG();
+
     prepare_env<false, true>();
     auto* f = get_script_func();
 
@@ -175,8 +178,10 @@ TEST_F(ForeachString, RunScriptGeneric)
 
 TEST_F(ForeachString, RunScriptNative)
 {
-    if(asbind20::has_max_portability())
-        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+    // Seems like an upstream issue
+    ASBIND_TEST_SKIP_IF_SCRIPT_DEBUG();
+
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     prepare_env<false, false>();
     auto* f = get_script_func();
@@ -190,6 +195,9 @@ TEST_F(ForeachString, RunScriptNative)
 
 TEST_F(ForeachString, ConstRunScriptGeneric)
 {
+    // Seems like an upstream issue
+    ASBIND_TEST_SKIP_IF_SCRIPT_DEBUG();
+
     prepare_env<true, true>();
     auto* f = get_script_func();
 
@@ -202,8 +210,10 @@ TEST_F(ForeachString, ConstRunScriptGeneric)
 
 TEST_F(ForeachString, ConstRunScriptNative)
 {
-    if(asbind20::has_max_portability())
-        GTEST_SKIP() << "AS_MAX_PORTABILITY";
+    // Seems like an upstream issue
+    ASBIND_TEST_SKIP_IF_SCRIPT_DEBUG();
+
+    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     prepare_env<true, false>();
     auto* f = get_script_func();

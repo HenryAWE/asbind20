@@ -22,6 +22,7 @@
 #include "fwd.hpp"
 #include "detail/err_handler.hpp"
 #include "util/strutil.hpp"
+#include "util/ctxutil.hpp"
 #ifdef ASBIND20_HAS_LIB_FORMAT
 #    include <format>
 #endif
@@ -737,31 +738,7 @@ constexpr std::string string_concat(Args&&... args)
     return out;
 }
 
-/**
- * @brief Get current script context from a function called by script
- *
- * @return A pointer to the currently executing context, or null if no context is executing
- */
-[[nodiscard]]
-inline context_pointer current_context()
-{
-    return AS_NAMESPACE_QUALIFIER asGetActiveContext();
-}
 
-/**
- * @brief Check if the script context has exception
- */
-[[nodiscard]]
-inline bool has_script_exception(
-    context_pointer ctx = current_context()
-)
-{
-    if(!ctx) [[unlikely]]
-        return false;
-
-    return ctx->GetState() ==
-           AS_NAMESPACE_QUALIFIER asEXECUTION_EXCEPTION;
-}
 
 /**
  * @brief Atomic counter for multithreading

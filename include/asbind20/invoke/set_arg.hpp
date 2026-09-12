@@ -13,6 +13,12 @@ namespace asbind20
 #    pragma GCC diagnostic ignored "-Wold-style-cast"
 #endif
 
+#if defined(_MSC_VER)
+#    pragma warning(push)
+// Unreachable code
+#    pragma warning(disable : 4702)
+#endif
+
 template <typename T>
 int set_script_arg(
     context_reference ctx,
@@ -77,7 +83,7 @@ template <std::floating_point T>
 int set_script_arg(
     context_reference ctx,
     arg_index_type idx,
-    T val
+    const T& val
 )
 {
     using type = std::remove_cv_t<T>;
@@ -87,10 +93,10 @@ int set_script_arg(
     else if constexpr(std::same_as<type, double>)
         return ctx.SetArgDouble(idx, val);
     else
-        static_assert(!sizeof(T), "Invalid floating point");
-
-    // Suppress warning
-    util::unreachable();
+    {
+        // Extended floating-point types
+        return ctx.SetArgObject(idx, (void*)std::addressof(val));
+    }
 }
 
 inline int set_script_arg(
@@ -155,6 +161,10 @@ int set_script_arg(
 
 #if defined(__GNUC__) || defined(__clang__)
 #    pragma GCC diagnostic pop
+#endif
+
+#if defined(_MSC_VER)
+#    pragma warning(pop)
 #endif
 
 /**

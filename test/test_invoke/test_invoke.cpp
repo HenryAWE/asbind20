@@ -121,6 +121,34 @@ TEST(TestInvoke, CommonTypes)
         EXPECT_EQ("test"sv, result);
         EXPECT_EQ(val, 2);
 
+        {
+            auto extracted = result.extract();
+            EXPECT_TRUE(extracted);
+            EXPECT_EQ(extracted.error(), result.error());
+            EXPECT_EQ(extracted.value(), "test");
+        }
+
+        {
+            auto transformed = result.transform(
+                [](auto&& v)
+                { return v.size(); }
+            );
+            EXPECT_TRUE(transformed);
+            EXPECT_EQ(transformed.error(), result.error());
+            EXPECT_EQ(*transformed, 4); // strlen("test");
+        }
+
+        {
+            bool lambda_invoked = false;
+            auto transformed_to_void = result.transform(
+                [&](auto&&) -> void
+                { lambda_invoked = true; }
+            );
+            EXPECT_TRUE(transformed_to_void);
+            EXPECT_EQ(transformed_to_void.error(), result.error());
+            EXPECT_TRUE(lambda_invoked);
+        }
+
         auto opt = result.to_optional();
         EXPECT_THAT(opt, ::testing::Optional(::testing::_));
         EXPECT_EQ(*opt, "test");
@@ -267,6 +295,22 @@ TEST(TestInvoke, BadResult)
         request_context ctx(engine);
         auto result = script_invoke<int>(ctx, f);
 
+        {
+            auto extracted = result.extract();
+            EXPECT_FALSE(extracted);
+            EXPECT_EQ(extracted.error(), result.error());
+            EXPECT_EQ(extracted.value_or(3), 3);
+        }
+
+        {
+            auto transformed = result.transform(
+                [](auto&&)
+                { ADD_FAILURE() << "unreachable"; }
+            );
+            EXPECT_FALSE(transformed);
+            EXPECT_EQ(transformed.error(), result.error());
+        }
+
         ASSERT_FALSE(result_has_value(result));
         EXPECT_FALSE(result.has_value());
         EXPECT_EQ(result.error(), AS_NAMESPACE_QUALIFIER asEXECUTION_EXCEPTION);
@@ -296,6 +340,12 @@ TEST(TestInvoke, BadResult)
         request_context ctx(engine);
         // Ignore the int result by setting the template argument to void
         auto result = script_invoke<void>(ctx, f);
+
+        {
+            auto extracted = result.extract();
+            EXPECT_FALSE(extracted);
+            EXPECT_EQ(extracted.error(), result.error());
+        }
 
         ASSERT_FALSE(result_has_value(result));
         EXPECT_FALSE(result.has_value());

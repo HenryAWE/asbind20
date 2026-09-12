@@ -1,16 +1,24 @@
-#ifndef ASBIND20_INVOKE_RESULT_HPP
-#define ASBIND20_INVOKE_RESULT_HPP
+#ifndef ASBIND20_INVOKE_INVOKE_RESULT_HPP
+#define ASBIND20_INVOKE_INVOKE_RESULT_HPP
 
 #include <optional>
 #include "../fwd.hpp"
 #include "../type_traits.hpp"
 #include "../util/unreachable.hpp"
+#include "../util/script_result.hpp"
+#include "../detail/cmp_helpers.hpp"
 #ifdef ASBIND20_HAS_LIB_EXPECTED
 #    include <expected>
 #endif
 
 namespace asbind20
 {
+#if defined(_MSC_VER)
+#    pragma warning(push)
+// Unreachable code
+#    pragma warning(disable : 4702)
+#endif
+
 namespace detail
 {
     template <typename T>
@@ -81,6 +89,12 @@ decltype(auto) get_script_return(context_reference ctx)
         {
             return ctx.GetReturnDouble();
         }
+        else if constexpr(std::floating_point<primitive_t>)
+        {
+            // Extended floating points,
+            // e.g. std::float16_t from C++23
+            return *static_cast<T*>(ctx.GetAddressOfReturnValue());
+        }
         else
             static_assert(!sizeof(T), "Invalid type");
     }
@@ -97,6 +111,10 @@ decltype(auto) get_script_return(context_pointer ctx)
     ASBIND20_ASSERT(ctx != nullptr);
     return get_script_return<T>(*ctx);
 }
+
+#if defined(_MSC_VER)
+#    pragma warning(pop)
+#endif
 
 class bad_script_invoke_result_access : public std::exception
 {
@@ -240,7 +258,8 @@ protected:
 
     void swap(script_invoke_result_base& other) noexcept
     {
-        std::swap(m_ctx, other.m_ctx);
+        using std::swap;
+        swap(m_ctx, other.m_ctx);
     }
 
 private:
@@ -368,6 +387,49 @@ public:
     {
         script_invoke_result_base::swap(other);
     }
+
+    using result_type = script_result<return_type, script_result_policy::context_state>;
+
+    [[nodiscard]]
+    result_type extract() const
+    {
+        if(!has_value())
+            return {bad_script_result, error()};
+        return result_type(
+            std::piecewise_construct,
+            std::forward_as_tuple(**this),
+            std::forward_as_tuple(error())
+        );
+    }
+
+    template <typename F>
+    auto transform(F&& f) const
+    {
+        using val_t = std::remove_cv_t<std::invoke_result_t<F, return_type>>;
+        using ret_t = script_result<val_t, script_result_policy::context_state>;
+
+        if(!has_value())
+            return ret_t{bad_script_result, error()};
+        if constexpr(std::is_void_v<val_t>)
+        {
+            std::invoke(std::forward<F>(f), **this);
+            return ret_t{
+                std::piecewise_construct,
+                std::forward_as_tuple(),
+                std::forward_as_tuple(error())
+            };
+        }
+        else
+        {
+            return ret_t{
+                std::piecewise_construct,
+                std::forward_as_tuple(
+                    std::invoke(std::forward<F>(f), **this)
+                ),
+                std::forward_as_tuple(error())
+            };
+        }
+    }
 };
 
 /**
@@ -427,6 +489,20 @@ public:
     void swap(script_invoke_result& other) noexcept
     {
         script_invoke_result_base::swap(other);
+    }
+
+    using result_type = script_result<return_type, script_result_policy::context_state>;
+
+    [[nodiscard]]
+    result_type extract() const
+    {
+        if(!has_value())
+            return {bad_script_result, error()};
+        return result_type(
+            std::piecewise_construct,
+            std::forward_as_tuple(**this),
+            std::forward_as_tuple(error())
+        );
     }
 };
 
@@ -489,6 +565,20 @@ public:
     {
         script_invoke_result_base::swap(other);
     }
+
+    using result_type = script_result<void, script_result_policy::context_state>;
+
+    [[nodiscard]]
+    result_type extract() const
+    {
+        if(!has_value())
+            return {bad_script_result, error()};
+        return {
+            std::piecewise_construct,
+            std::forward_as_tuple(),
+            std::forward_as_tuple(error())
+        };
+    }
 };
 
 template <typename T>
@@ -516,14 +606,6 @@ struct is_script_invoke_result :
 template <typename T>
 inline constexpr bool is_script_invoke_result_v = is_script_invoke_result<T>::value;
 
-namespace detail
-{
-    template <typename T, typename U>
-    concept check_op_eq = requires(const T& lhs, const U& rhs) {
-        { lhs == rhs } -> std::convertible_to<bool>;
-    };
-} // namespace detail
-
 template <typename T, typename U>
 bool operator==(const script_invoke_result<T>& lhs, const script_invoke_result<U>& rhs)
     requires(detail::check_op_eq<T, U>)
@@ -548,37 +630,6 @@ bool operator==(const T& lhs, const script_invoke_result<U>& rhs)
 {
     return rhs.has_value() ? lhs == *rhs : false;
 }
-
-namespace detail
-{
-    template <typename T, typename U>
-    concept check_op_cmp = requires(const T& lhs, const U& rhs) {
-        { lhs == rhs } -> std::convertible_to<bool>;
-        { lhs < rhs } -> std::convertible_to<bool>;
-        { rhs < lhs } -> std::convertible_to<bool>;
-    } || requires(const T& lhs, const U& rhs) {
-        { lhs <=> rhs } -> std::convertible_to<std::partial_ordering>;
-    };
-
-    template <typename T, typename U>
-    std::partial_ordering cmp_weak_ord_helper(T&& lhs, U&& rhs)
-    {
-        using std::partial_ordering;
-        constexpr bool use_three_way = requires() {
-            { lhs <=> rhs } -> std::convertible_to<std::partial_ordering>;
-        };
-        if constexpr(use_three_way)
-            return std::forward<T>(lhs) <=> std::forward<U>(rhs);
-        else
-        {
-            // Logic of std::compare_partial_order_fallback
-            return std::forward<T>(lhs) == std::forward<U>(rhs) ? partial_ordering::equivalent :
-                   std::forward<T>(lhs) < std::forward<U>(rhs)  ? partial_ordering::less :
-                   std::forward<U>(rhs) < std::forward<T>(lhs)  ? partial_ordering::greater :
-                                                                  partial_ordering::unordered;
-        }
-    }
-} // namespace detail
 
 template <typename T, typename U>
 std::partial_ordering operator<=>(const script_invoke_result<T>& lhs, const script_invoke_result<U>& rhs)

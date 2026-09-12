@@ -168,7 +168,10 @@ static asbind20::module_pointer build_module(asbind20::engine_pointer engine)
     int r = m->Build();
     if(r < 0)
     {
-        ADD_FAILURE() << "failed to build module, r = " << r;
+        using asbind20::to_string;
+        ADD_FAILURE()
+            << "failed to build module, r = "
+            << to_string(static_cast<AS_NAMESPACE_QUALIFIER asERetCodes>(r));
         return nullptr;
     }
 
@@ -241,7 +244,9 @@ TEST(BindRefString, Extract)
         test_bind::ref_string_factory::get(), *result
     );
     EXPECT_THAT(
-        extracted,
+        extracted.to_optional(),
         ::testing::Optional(::testing::StrEq("test"))
     );
+    EXPECT_EQ(extracted.value(), "test");
+    EXPECT_EQ(std::as_const(extracted).value(), "test");
 }
