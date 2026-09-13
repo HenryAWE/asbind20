@@ -18,77 +18,81 @@
 
 namespace asbind20::meta
 {
-consteval std::meta::info remove_ptrref(std::meta::info type)
+consteval bool is_ptrref_type(std::meta::info r)
+{
+    return std::meta::is_pointer_type(r) || std::meta::is_reference_type(r);
+}
+
+consteval std::meta::info remove_ptrref(std::meta::info r)
 {
     return std::meta::remove_pointer(
-        std::meta::remove_reference(type)
+        std::meta::remove_reference(r)
     );
 }
 
-namespace detail
+consteval std::string_view script_integral_name_of(std::meta::info r)
 {
-    template <std::meta::info TypeInfo>
-    consteval std::string_view calc_type_name()
+    if(!std::meta::is_integral_type(r))
+        throw "r does not represent an integral type";
+
+    if(std::meta::is_same_type(r, ^^bool))
+        return "bool";
+
+    std::string result;
+    if(std::meta::is_unsigned_type(r))
+        result += 'u';
+    result += "int";
+    switch(std::meta::size_of(r))
     {
-        constexpr auto type_info = std::meta::remove_cvref(TypeInfo);
+    case 1:
+        result += '8';
+        break;
+    case 2:
+        result += "16";
+        break;
+    case 4:
+        // 32bit integers in AngelScript don't have suffix
+        break;
+    case 8:
+        result += "64";
+        break;
 
-        constexpr auto rename_ann =
-           std::define_static_array(std::meta::annotations_of_with_type(type_info, ^^asbind20::rename));
-        if constexpr(!rename_ann.empty())
-        {
-            return std::meta::extract<asbind20::rename>(
-                       rename_ann.back()
-            )
-                .get();
-        }
+    default:
+        // Compiler built-in 128bit integers or other strange integral types
+        throw "invalid integral type";
+    }
 
-        // "^^std::int8_t" will cause compilation error,
-        // because reflection has limitation on `using decl;`
-        // Use the old "std::same_as" solution.
-        using type = typename[:type_info:];
+    return std::define_static_string(result);
+}
 
-        if(std::same_as<type, std::int8_t>)
-            return "int8";
-        if(std::same_as<type, std::int16_t>)
-            return "int16";
-        if(std::same_as<type, std::int32_t>)
-            return "int";
-        if(std::same_as<type, std::int64_t>)
-            return "int64";
+consteval std::string_view script_identifier_of(std::meta::info r)
+{
+    auto rename_ann = std::meta::annotations_of_with_type(r, ^^asbind20::rename);
+    if(!rename_ann.empty())
+    {
+        return std::meta::extract<asbind20::rename>(rename_ann.back()).get();
+    }
 
-        if(std::same_as<type, std::uint8_t>)
-            return "uint8";
-        if(std::same_as<type, std::uint16_t>)
-            return "uint16";
-        if(std::same_as<type, std::uint32_t>)
-            return "uint";
-        if(std::same_as<type, std::uint64_t>)
-            return "uint64";
+    if(std::meta::is_type(r))
+    {
+        if(is_ptrref_type(r))
+            throw "r represents a reference or pointer type";
 
-        std::string_view name = std::meta::display_string_of(type_info);
-        if(auto pos = name.rfind("::"); pos != name.npos)
+        if(std::meta::is_integral_type(r))
+            return script_integral_name_of(r);
+        std::string_view name = std::meta::display_string_of(r);
+        if(auto pos = name.rfind("::"); pos != std::string_view::npos)
         {
             name.remove_prefix(pos + 2);
         }
         return name;
     }
 
-    template <std::meta::info Info>
-    consteval std::string_view calc_identifier_name()
-    {
-        constexpr auto rename_ann =
-           std::define_static_array(std::meta::annotations_of_with_type(Info, ^^asbind20::rename));
-        if constexpr(!rename_ann.empty())
-        {
-            return std::meta::extract<asbind20::rename>(
-                       rename_ann.back()
-            )
-                .get();
-        }
+    return std::meta::identifier_of(r);
+}
 
-        return std::meta::identifier_of(Info);
-    }
-
+namespace detail
+{
     template <std::meta::info TypeInfo>
     consteval std::string calc_full_type_name(
         bool no_additional_ref_mod
@@ -100,7 +104,7 @@ namespace detail
         std::string result;
         if constexpr(is_const)
             result += "const ";
-        result += calc_type_name<TypeInfo>();
+        result += script_identifier_of(std::meta::remove_cvref(TypeInfo));
         if constexpr(std::meta::is_reference_type(TypeInfo))
         {
             result += '&';
@@ -154,7 +158,7 @@ namespace detail
             if constexpr(std::meta::has_identifier(param))
             {
                 params_str += ' ';
-                params_str += calc_identifier_name<param>();
+                params_str += script_identifier_of(param);
             }
 
             if(!ParseDefaultArg)
@@ -200,6 +204,7 @@ namespace detail
         }
         return false;
     }
+
 } // namespace detail
 
 #    if defined(__GNUC__) && !defined(__clang__)
@@ -220,7 +225,7 @@ consteval cstring_ref refl_function_sig(
     constexpr auto ret_t = std::meta::return_type_of(FuncInfo);
 
     std::string_view func_identifier =
-        skip_func_name ? "f" : detail::calc_identifier_name<FuncInfo>();
+        skip_func_name ? "f" : script_identifier_of(FuncInfo);
 
     std::string suffix;
     if(force_const)
@@ -253,7 +258,7 @@ constexpr cstring_ref refl_property_decl()
         string_concat(
             detail::calc_full_type_name<type>(true),
             ' ',
-            detail::calc_identifier_name<PropInfo>()
+            script_identifier_of(PropInfo)
         )
     );
 }
@@ -324,7 +329,7 @@ struct enum_refl_proxy
     static constexpr cstring_ref get_decl()
     {
         return std::define_static_string(
-            detail::calc_identifier_name<Enumerator>()
+            script_identifier_of(Enumerator)
         );
     }
 
@@ -342,7 +347,7 @@ struct type_refl_proxy
     static constexpr cstring_ref get_decl()
     {
         return std::define_static_string(
-            detail::calc_type_name<TypeInfo>()
+            script_identifier_of(std::meta::remove_cvref(TypeInfo))
         );
     }
 };

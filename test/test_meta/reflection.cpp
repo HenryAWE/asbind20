@@ -54,9 +54,36 @@ TEST(Reflection, TypeName)
 {
     using namespace asbind20;
 
+    static_assert(
+        meta::script_integral_name_of(^^bool) == "bool"
+    );
+    static_assert(
+        meta::script_integral_name_of(^^AS_NAMESPACE_QUALIFIER asINT8) == "int8"
+    );
+    static_assert(
+        meta::script_integral_name_of(^^AS_NAMESPACE_QUALIFIER asINT16) == "int16"
+    );
+    static_assert(
+        meta::script_integral_name_of(^^AS_NAMESPACE_QUALIFIER asINT32) == "int"
+    );
+    static_assert(
+        meta::script_integral_name_of(^^AS_NAMESPACE_QUALIFIER asINT64) == "int64"
+    );
+    static_assert(
+        meta::script_integral_name_of(^^AS_NAMESPACE_QUALIFIER asUINT) == "uint"
+    );
+    static_assert(
+        meta::script_integral_name_of(^^AS_NAMESPACE_QUALIFIER asQWORD) == "uint64"
+    );
+
     EXPECT_EQ(
-        meta::detail::calc_type_name<^^prefix::my_type>(),
-        "my_type"
+        meta::script_identifier_of(^^bool), "bool"
+    );
+    EXPECT_EQ(
+        meta::script_identifier_of(^^prefix::my_type), "my_type"
+    );
+    EXPECT_EQ(
+        meta::script_identifier_of(^^prefix), "prefix"
     );
 }
 
@@ -449,6 +476,45 @@ TEST(Reflection, Enum)
         cstring_ref str = ti->GetEnumValueByIndex(0, &val);
         EXPECT_EQ(str, "scoped_zero");
         EXPECT_EQ(static_cast<my_enum0>(val), my_scoped_enum0::scoped_zero);
+    }
+}
+
+namespace
+{
+namespace ns0
+{
+    int f_in_ns()
+    {
+        return 1013;
+    }
+} // namespace ns0
+} // namespace
+
+TEST(Reflection, Namespace)
+{
+    using namespace asbind20;
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine);
+
+    {
+        namespace_ _(engine, ^^ns0);
+        global(engine)
+            .function(reflect<^^ns0::f_in_ns>());
+    }
+
+    auto* m = create_module(engine, "test_ns");
+    m->AddScriptSection(
+        "test_ns",
+        "int run0() { return ns0::f_in_ns(); }"
+    );
+    ASSERT_GE(m->Build(), 0);
+
+    {
+        auto* run0 = m->GetFunctionByName("run0");
+        request_context ctx(engine);
+        auto result = script_invoke<int>(ctx, run0);
+        ASBIND_TEST_EXPECT_INVOKE_RESULT(result);
+        EXPECT_EQ(result.value(), 1013);
     }
 }
 

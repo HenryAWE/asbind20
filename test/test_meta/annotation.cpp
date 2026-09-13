@@ -18,6 +18,15 @@ struct
     [[= asbind20::rename("cross")]] int x;
 };
 
+static_assert(
+    asbind20::meta::script_identifier_of(^^daffodil) ==
+    "narcissus"
+);
+static_assert(
+    asbind20::meta::script_identifier_of(^^daffodil::x) ==
+    "cross"
+);
+
 class
     [[= asbind20::rename("marionette")]]
     puppet
@@ -163,7 +172,7 @@ TEST(Annotation, DefaultArg)
                                         )[0]
     )
                                         .get();
-    EXPECT_EQ(sv, "42");
+    static_assert(sv == "42");
 
     EXPECT_EQ(
         (asbind20::meta::refl_function_sig<^^func, false, false, true>()),
