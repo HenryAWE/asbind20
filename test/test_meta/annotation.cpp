@@ -44,6 +44,11 @@ public:
         m_counter.dec_and_try_delete(this);
     }
 
+    int get_ref_count() const
+    {
+        return m_counter;
+    }
+
 private:
     asbind20::atomic_counter m_counter;
     [[maybe_unused]]
@@ -66,6 +71,16 @@ void writer(
 {
     ASSERT_THAT(output, ::testing::NotNull());
     output->x = val;
+}
+
+[[= asbind20::as_handle{}]] puppet* check_handle(
+    [[= asbind20::as_handle{}]] puppet* h
+)
+{
+    if(!h)
+        return nullptr;
+    EXPECT_GE(h->get_ref_count(), 1);
+    return nullptr;
 }
 
 enum renamed_enum
@@ -207,6 +222,13 @@ TEST(Annotation, ParameterAttributes)
             AS_NAMESPACE_QUALIFIER asCALL_CDECL
         ),
         "int decorated(const narcissus&in,int val=42)"
+    );
+    EXPECT_EQ(
+        asbind20::meta::script_function_declaration_of_with_calling_convention(
+            ^^check_handle,
+            AS_NAMESPACE_QUALIFIER asCALL_CDECL
+        ),
+        "marionette@ check_handle(marionette@ h)"
     );
 }
 

@@ -163,11 +163,15 @@ consteval std::string_view script_parameter_declaration_of(
 
     std::string result;
     const auto type_info = std::meta::type_of(r);
-    result += script_type_declaration_of(type_info);
+    const bool param_as_handle = has_annotation_with_type(r, ^^asbind20::as_handle);
+    result += script_type_declaration_of(type_info, param_as_handle);
     if(is_ptrref_type(type_info))
     {
         const bool prefer_out_ref = has_annotation_with_type(r, ^^asbind20::out_ref);
-        result += script_parameter_type_modifier_of(type_info, !prefer_out_ref);
+        if(prefer_out_ref && param_as_handle)
+            throw "as_handle and out_ref are mutually exclusive";
+        if(!param_as_handle)
+            result += script_parameter_type_modifier_of(type_info, !prefer_out_ref);
     }
 
     if(std::meta::has_identifier(r))
@@ -261,7 +265,9 @@ consteval std::string_view script_function_declaration_of_with_calling_conventio
 
     auto ret_type = std::meta::return_type_of(func);
     std::string decl = string_concat(
-        script_type_declaration_of(ret_type),
+        script_type_declaration_of(
+            ret_type, has_annotation_with_type(func, ^^as_handle)
+        ),
         ' ',
         func_identifer,
         '(',
