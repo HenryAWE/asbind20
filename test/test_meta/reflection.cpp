@@ -89,28 +89,48 @@ TEST(Reflection, TypeName)
 
 TEST(Reflection, FuncSig)
 {
+    using asbind20::meta::script_function_declaration_of_with_calling_convention;
+
     EXPECT_EQ(
-        asbind20::meta::refl_function_sig<^^func0>(),
+        script_function_declaration_of_with_calling_convention(
+            ^^func0,
+            AS_NAMESPACE_QUALIFIER asCALL_CDECL
+        ),
         "int func0()"
     );
     EXPECT_EQ(
-        asbind20::meta::refl_function_sig<^^func1>(),
+        script_function_declaration_of_with_calling_convention(
+            ^^func1,
+            AS_NAMESPACE_QUALIFIER asCALL_CDECL
+        ),
         "int func1(int8 arg0,float arg1)"
     );
     EXPECT_EQ(
-        asbind20::meta::refl_function_sig<^^func2>(),
+        script_function_declaration_of_with_calling_convention(
+            ^^func2,
+            AS_NAMESPACE_QUALIFIER asCALL_CDECL
+        ),
         "uint& func2(const int8&in arg0)"
     );
     EXPECT_EQ(
-        asbind20::meta::refl_function_sig<^^my_struct::mem_func>(),
+        script_function_declaration_of_with_calling_convention(
+            ^^my_struct::mem_func,
+            AS_NAMESPACE_QUALIFIER asCALL_CDECL
+        ),
         "int mem_func(float f_arg)"
     );
     EXPECT_EQ(
-        asbind20::meta::refl_function_sig<^^my_struct::c_mem_func>(),
+        script_function_declaration_of_with_calling_convention(
+            ^^my_struct::c_mem_func,
+            AS_NAMESPACE_QUALIFIER asCALL_THISCALL
+        ),
         "int c_mem_func(float f_arg)const"
     );
     EXPECT_EQ(
-        asbind20::meta::refl_function_sig<^^my_struct::c_mem_func>(true),
+        script_function_declaration_of_with_calling_convention(
+            ^^my_struct::c_mem_func,
+            AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL
+        ),
         "int c_mem_func(float f_arg)"
     );
 }
@@ -245,6 +265,14 @@ void check_reflected_global(asbind20::engine_pointer engine, wrapper& w)
     }
 }
 } // namespace
+
+static_assert(
+    asbind20::meta::script_function_declaration_of_with_calling_convention(
+        ^^wrapper::get,
+        AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL
+    ) ==
+    "int get()"
+);
 
 TEST(Reflection, GlobalNative)
 {

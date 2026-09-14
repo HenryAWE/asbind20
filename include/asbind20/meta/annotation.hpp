@@ -8,6 +8,18 @@
 
 namespace asbind20
 {
+/**
+ * @brief Mark a mutable reference / pointer parameter as output
+ */
+struct out_ref
+{};
+
+/**
+ * @brief Mark a reference / pointer parameter as AngelScript handle instead of reference
+ */
+struct as_handle
+{};
+
 struct rename
 {
     const char* name;

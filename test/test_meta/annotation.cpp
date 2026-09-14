@@ -59,6 +59,15 @@ private:
     std::terminate();
 }
 
+void writer(
+    [[= asbind20::out_ref()]] daffodil* output,
+    int val
+)
+{
+    ASSERT_THAT(output, ::testing::NotNull());
+    output->x = val;
+}
+
 enum renamed_enum
 {
     start[[= asbind20::rename("zero")]] = 0
@@ -161,21 +170,42 @@ TEST(Annotation, RenameNative)
     check_renamed_entities(engine);
 }
 
-TEST(Annotation, DefaultArg)
+TEST(Annotation, ParameterAttributes)
 {
     using namespace asbind20;
 
-    constexpr std::string_view sv = std::meta::extract<asbind20::default_arg>(
-                                        std::meta::annotations_of_with_type(
-                                            std::meta::parameters_of(^^func)[1],
-                                            ^^asbind20::default_arg
-                                        )[0]
-    )
-                                        .get();
-    static_assert(sv == "42");
+    static_assert(
+        meta::script_parameter_list_declaration_of_with_calling_convention(
+            ^^writer,
+            AS_NAMESPACE_QUALIFIER asCALL_CDECL
+        ) ==
+        "narcissus&out output,int val"
+    );
+
+    static_assert(
+        meta::script_function_declaration_of_with_calling_convention(
+            ^^writer,
+            AS_NAMESPACE_QUALIFIER asCALL_CDECL
+        ) ==
+        "void writer(narcissus&out output,int val)"
+    );
+
+    {
+        constexpr std::string_view sv = std::meta::extract<asbind20::default_arg>(
+                                           std::meta::annotations_of_with_type(
+                                               std::meta::parameters_of(^^func)[1],
+                                               ^^asbind20::default_arg
+                                           )[0]
+       )
+                                           .get();
+        static_assert(sv == "42");
+    }
 
     EXPECT_EQ(
-        (asbind20::meta::refl_function_sig<^^func, false, false, true>()),
+        asbind20::meta::script_function_declaration_of_with_calling_convention(
+            ^^func,
+            AS_NAMESPACE_QUALIFIER asCALL_CDECL
+        ),
         "int decorated(const narcissus&in,int val=42)"
     );
 }

@@ -10,14 +10,13 @@
 
 #ifdef ASBIND20_HAS_LIB_REFLECTION
 
-#    if defined(__GNUC__) && !defined(__clang__)
-#        pragma GCC diagnostic push
-// False positive for template for
-#        pragma GCC diagnostic ignored "-Wunused-but-set-variable"
-#    endif
-
 namespace asbind20::meta
 {
+consteval bool is_generic_function_type(std::meta::info r)
+{
+    return std::meta::is_convertible_type(r, ^^generic_function);
+}
+
 consteval bool is_ptrref_type(std::meta::info r)
 {
     return std::meta::is_pointer_type(r) || std::meta::is_reference_type(r);
@@ -28,6 +27,12 @@ consteval std::meta::info remove_ptrref(std::meta::info r)
     return std::meta::remove_pointer(
         std::meta::remove_reference(r)
     );
+}
+
+consteval bool has_annotation_with_type(std::meta::info r, std::meta::info ann)
+{
+    auto anns = std::meta::annotations_of_with_type(r, ann);
+    return !anns.empty();
 }
 
 consteval std::string_view script_integral_name_of(std::meta::info r)
@@ -91,176 +96,198 @@ consteval std::string_view script_identifier_of(std::meta::info r)
     return std::meta::identifier_of(r);
 }
 
-namespace detail
-{
-    template <std::meta::info TypeInfo>
-    consteval std::string calc_full_type_name(
-        bool no_additional_ref_mod
+consteval std::vector<std::meta::info> parameters_of_with_calling_convention(
+    std::meta::info r,
+    asbind20::detail::call_conv_type conv
     )
-    {
-        constexpr bool is_const = std::meta::is_const_type(
-            std::meta::remove_reference(TypeInfo)
-        );
-        std::string result;
-        if constexpr(is_const)
-            result += "const ";
-        result += script_identifier_of(std::meta::remove_cvref(TypeInfo));
-        if constexpr(std::meta::is_reference_type(TypeInfo))
-        {
-            result += '&';
-            if(!no_additional_ref_mod)
-            {
-                // TODO: Let user decide "inout" or "out" for mutable reference
-                result += is_const ? "in" : "inout";
-            }
-        }
-
-        return result;
-    }
-
-    template <std::meta::info FuncInfo>
-    consteval std::span<const std::meta::info> params_of(
-        bool no_first, bool no_last
-    )
-    {
-        constexpr auto params = std::define_static_array(
-            std::meta::parameters_of(FuncInfo)
-        );
-        if(no_first && !params.empty())
-            return std::span(params.begin() + 1, params.end());
-        if(no_last && !params.empty())
-            return std::span(params.begin(), params.end() - 1);
-        return params;
-    }
-
-    template <
-        std::meta::info FuncInfo,
-        bool NoFirst,
-        bool NoLast,
-        bool ParseDefaultArg>
-    constexpr std::string calc_param_list_str()
-    {
-        constexpr static auto params = params_of<FuncInfo>(
-            NoFirst, NoLast
-        );
-
-        std::string params_str;
-        params_str += '(';
-
-        bool first = true;
-        template for(constexpr auto param : params)
-        {
-            if(!first)
-                params_str += ',';
-            first = false;
-            params_str +=
-                detail::calc_full_type_name<std::meta::type_of(param)>(false);
-            if constexpr(std::meta::has_identifier(param))
-            {
-                params_str += ' ';
-                params_str += script_identifier_of(param);
-            }
-
-            if(!ParseDefaultArg)
-                continue;
-            constexpr static auto arg_ann = std::define_static_array(
-                std::meta::annotations_of_with_type(param, ^^asbind20::default_arg)
-            );
-            if constexpr(!arg_ann.empty())
-            {
-                params_str += '=';
-                params_str += std::meta::extract<asbind20::default_arg>(
-                              arg_ann.back()
-                )
-                              .get();
-            }
-        }
-
-        params_str += ')';
-        return params_str;
-    }
-
-    template <std::meta::info FuncInfo>
-    consteval bool is_const_method(bool check_first, bool check_last)
-    {
-        constexpr auto params = std::define_static_array(
-            std::meta::parameters_of(FuncInfo)
-        );
-
-        if(params.empty())
-            return false;
-
-        if(check_first)
-        {
-            return std::meta::is_const(
-                remove_ptrref(std::meta::type_of(params.front()))
-            );
-        }
-        if(check_last)
-        {
-            return std::meta::is_const(
-                remove_ptrref(std::meta::type_of(params.back()))
-            );
-        }
-        return false;
-    }
-
-} // namespace detail
-
-#    if defined(__GNUC__) && !defined(__clang__)
-#        pragma GCC diagnostic pop
-#    endif
-
-template <
-    std::meta::info FuncInfo,
-    bool NoFirst = false,
-    bool NoLast = false,
-    bool ParseDefaultArg = false>
-consteval cstring_ref refl_function_sig(
-    bool skip_mem_fn_const = false,
-    bool skip_func_name = false,
-    bool force_const = false
-)
 {
-    constexpr auto ret_t = std::meta::return_type_of(FuncInfo);
+    auto params = std::meta::parameters_of(r);
+    if(params.empty())
+        return {};
 
-    std::string_view func_identifier =
-        skip_func_name ? "f" : script_identifier_of(FuncInfo);
+    const bool no_first =
+        conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
+        conv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJFIRST;
+    const bool no_last =
+        conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST ||
+        conv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJLAST;
 
-    std::string suffix;
-    if(force_const)
-        suffix = "const";
-    // Constant member functions
-    else if(!skip_mem_fn_const &&
-            std::meta::is_class_member(FuncInfo) &&
-            std::meta::is_const(FuncInfo))
-    {
-        suffix += "const";
-    }
-
-    return std::define_static_string(
-        string_concat(
-            detail::calc_full_type_name<ret_t>(true),
-            ' ',
-            func_identifier,
-            detail::calc_param_list_str<FuncInfo, NoFirst, NoLast, ParseDefaultArg>(),
-            suffix
-        )
-    );
+    if(no_first)
+        params.erase(params.begin());
+    if(no_last)
+        params.pop_back();
+    return params;
 }
 
-template <std::meta::info PropInfo>
-constexpr cstring_ref refl_property_decl()
+consteval std::string_view script_type_declaration_of(
+    std::meta::info r,
+    bool prefer_handle = false
+)
 {
-    constexpr auto type = std::meta::type_of(PropInfo);
+    std::string result;
+    if(std::meta::is_const_type(remove_ptrref(r)))
+        result += "const ";
+    result += script_identifier_of(std::meta::remove_cvref(remove_ptrref(r)));
+    if(is_ptrref_type(r))
+    {
+        result += prefer_handle ? '@' : '&';
+    }
 
-    return std::define_static_string(
-        string_concat(
-            detail::calc_full_type_name<type>(true),
-            ' ',
-            script_identifier_of(PropInfo)
-        )
+    return std::define_static_string(result);
+}
+
+consteval std::string_view script_parameter_type_modifier_of(
+    std::meta::info r,
+    bool prefer_inout_for_mutable_ptrref = true
+    )
+{
+    if(!std::meta::is_type(r) || !is_ptrref_type(r))
+        throw "r does not represent a reference or pointer type";
+
+    auto referred_type = remove_ptrref(r);
+    if(std::meta::is_const_type(referred_type))
+        return "in";
+
+    // Mutable pointer or reference
+    if(prefer_inout_for_mutable_ptrref)
+        return "inout";
+    return "out";
+}
+
+consteval std::string_view script_parameter_declaration_of(
+    std::meta::info r
+)
+{
+    if(!std::meta::is_function_parameter(r))
+        throw "r does not represent a function parameter";
+
+    std::string result;
+    const auto type_info = std::meta::type_of(r);
+    result += script_type_declaration_of(type_info);
+    if(is_ptrref_type(type_info))
+    {
+        const bool prefer_out_ref = has_annotation_with_type(r, ^^asbind20::out_ref);
+        result += script_parameter_type_modifier_of(type_info, !prefer_out_ref);
+    }
+
+    if(std::meta::has_identifier(r))
+    {
+        result += ' ';
+        result += script_identifier_of(r);
+    }
+
+    auto arg_ann = std::meta::annotations_of_with_type(
+        r, ^^asbind20::default_arg
     );
+    if(!arg_ann.empty())
+    {
+        result += '=';
+        result += std::meta::extract<asbind20::default_arg>(arg_ann.back()).get();
+    }
+
+    return std::define_static_string(result);
+}
+
+consteval std::string_view script_parameter_list_declaration_of_with_calling_convention(
+    std::meta::info func,
+    asbind20::detail::call_conv_type conv = AS_NAMESPACE_QUALIFIER asCALL_CDECL
+)
+{
+    auto params = std::define_static_array(
+        parameters_of_with_calling_convention(func, conv)
+    );
+
+    std::string result;
+    bool first = true;
+    for(const auto& param : params)
+    {
+        if(!first)
+            result += ',';
+        first = false;
+        result += script_parameter_declaration_of(param);
+    }
+
+    return std::define_static_string(result);
+}
+
+// Detect the "const method" case for functions registered with OBJFIRST/LAST
+consteval bool is_const_method_with_calling_convention(
+    std::meta::info func,
+    asbind20::detail::call_conv_type conv
+    )
+{
+    const bool obj_first =
+        conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
+        conv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJFIRST;
+    const bool obj_last =
+        conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST ||
+        conv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJLAST;
+
+    if(!obj_first && !obj_last)
+        return false;
+
+    auto params = std::meta::parameters_of(func);
+    if(params.empty())
+        return false;
+
+    auto param_type = std::meta::type_of(
+        // Prefer OBJFIRST like rest of the library if both are true
+        obj_first ? params.front() : params.back()
+    );
+    return std::meta::is_const(remove_ptrref(param_type));
+}
+
+consteval std::string_view script_function_declaration_of_with_calling_convention(
+    std::meta::info func,
+    asbind20::detail::call_conv_type conv,
+    bool skip_func_name = false
+    )
+{
+    if(!std::meta::has_identifier(func))
+        skip_func_name = true;
+
+    std::string suffix;
+    if(conv != AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL)
+    {
+        if((std::meta::is_class_member(func) && std::meta::is_const(func)) ||
+           is_const_method_with_calling_convention(func, conv))
+        {
+            suffix += "const";
+        }
+    }
+
+    std::string_view func_identifer =
+        skip_func_name ? "f" : script_identifier_of(func);
+
+    auto ret_type = std::meta::return_type_of(func);
+    std::string decl = string_concat(
+        script_type_declaration_of(ret_type),
+        ' ',
+        func_identifer,
+        '(',
+        script_parameter_list_declaration_of_with_calling_convention(
+            func, conv
+        ),
+        ')'
+    );
+
+    return std::define_static_string(decl + suffix);
+}
+
+consteval std::string_view script_property_declaration_of(
+    std::meta::info prop,
+    bool prefer_handle = false
+)
+{
+    std::string result;
+
+    result += script_type_declaration_of(
+        std::meta::type_of(prop), prefer_handle
+    );
+    result += ' ';
+    result += script_identifier_of(prop);
+
+    return std::define_static_string(result);
 }
 
 template <std::meta::info Function>
@@ -274,18 +301,10 @@ struct function_refl_proxy
         asbind20::detail::call_conv_t<CallConv> = {}
     )
     {
-        constexpr bool skip_mem_fn_const =
-            CallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL;
-        constexpr bool no_first =
-            CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
-            CallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJFIRST;
-        constexpr bool no_last =
-            CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST ||
-            CallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJLAST;
-        return refl_function_sig<Function, no_first, no_last, true>(
-            skip_mem_fn_const,
-            false,
-            meta::detail::is_const_method<Function>(no_first, no_last)
+        return std::define_static_string(
+            script_function_declaration_of_with_calling_convention(
+                Function, CallConv
+            )
         );
     }
 
@@ -300,9 +319,14 @@ struct prop_refl_proxy
 {
     constexpr prop_refl_proxy() = default;
 
-    static constexpr cstring_ref get_decl() noexcept
+    static constexpr cstring_ref get_decl()
     {
-        return refl_property_decl<Property>();
+        return std::define_static_string(
+            script_property_declaration_of(
+                Property,
+                has_annotation_with_type(Property, ^^as_handle)
+            )
+        );
     }
 
     // For global properties
