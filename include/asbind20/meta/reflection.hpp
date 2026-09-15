@@ -99,7 +99,7 @@ consteval std::string_view script_identifier_of(std::meta::info r)
 consteval std::vector<std::meta::info> parameters_of_with_calling_convention(
     std::meta::info r,
     asbind20::detail::call_conv_type conv
-    )
+)
 {
     auto params = std::meta::parameters_of(r);
     if(params.empty())
@@ -139,7 +139,7 @@ consteval std::string_view script_type_declaration_of(
 consteval std::string_view script_parameter_type_modifier_of(
     std::meta::info r,
     bool prefer_inout_for_mutable_ptrref = true
-    )
+)
 {
     if(!std::meta::is_type(r) || !is_ptrref_type(r))
         throw "r does not represent a reference or pointer type";
@@ -218,7 +218,7 @@ consteval std::string_view script_parameter_list_declaration_of_with_calling_con
 consteval bool is_const_method_with_calling_convention(
     std::meta::info func,
     asbind20::detail::call_conv_type conv
-    )
+)
 {
     const bool obj_first =
         conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
@@ -245,7 +245,7 @@ consteval std::string_view script_function_declaration_of_with_calling_conventio
     std::meta::info func,
     asbind20::detail::call_conv_type conv,
     bool skip_func_name = false
-    )
+)
 {
     if(!std::meta::has_identifier(func))
         skip_func_name = true;
