@@ -164,3 +164,50 @@ jobs:
       - name: Test
         working-directory: ${{github.workspace}}/build
         run: ctest --output-on-failure
+
+    ArchLinuxGCC16:
+      runs-on: ubuntu-24.04
+      # Run the whole job inside an Arch Linux container, so that the latest
+      # rolling-release toolchain (at least GCC 16.2) can be tested.
+      #
+      # The host work directory is mounted at /__w inside the container while
+      # the github.workspace context still expands to the host path, which does
+      # not exist in the container. All paths below are relative to the default
+      # working directory that the runner maps to the container mount.
+      container: archlinux:base
+
+      name: ArchLinux x64 GCC (Docker, C++26 reflection)
+
+      steps:
+      - name: Install Dependencies
+        run: |
+            pacman -Syu --noconfirm
+            pacman -S --noconfirm --needed base-devel gcc cmake ninja git sudo
+
+      - name: Show Compiler Version
+        run: g++ --version
+
+      - uses: actions/checkout@v4
+
+      - name: Install AngelScript
+        run: ci/setup_angelscript.sh --version 2.38.0
+
+      # GCC only accepts -freflection together with -std=c++26, and CMake
+      # probes the compiler before applying asbind_cxxstd, so the standard
+      # must also be passed through CMAKE_CXX_FLAGS.
+      - name: Configure
+        run: >
+          cmake
+          -S .
+          -B build
+          -G Ninja
+          -Dasbind_cxxstd=26
+          -DCMAKE_CXX_FLAGS="-std=c++26 -freflection -DAS_USE_NAMESPACE=1"
+          -DCMAKE_BUILD_TYPE=Release
+          -Dasbind_build_test=1
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
