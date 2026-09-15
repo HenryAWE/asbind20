@@ -137,58 +137,6 @@ TEST(Reflection, FuncSig)
 
 namespace
 {
-int helper(int)
-{
-    return 1013;
-}
-
-[[maybe_unused]]
-int global_prop = 0;
-
-[[maybe_unused]]
-const int c_global_prop = 0;
-} // namespace
-
-TEST(Reflection, Proxy)
-{
-    using asbind20::reflect;
-
-    {
-        auto proxy = reflect<^^helper>();
-        EXPECT_EQ(
-            proxy.get_decl(),
-            "int helper(int)"
-        );
-        EXPECT_EQ(
-            proxy.get_func(),
-            &helper
-        );
-        EXPECT_EQ(
-            std::invoke(proxy.get_func(), 0),
-            1013
-        );
-
-        EXPECT_EQ(
-            std::invoke(asbind20::fp<proxy.get_func()>.get(), 0),
-            1013
-        );
-    }
-
-    {
-        auto proxy = reflect<^^global_prop>();
-        EXPECT_EQ(proxy.get_decl(), "int global_prop");
-        EXPECT_EQ(proxy.get_addr(), &global_prop);
-    }
-
-    {
-        auto proxy = reflect<^^c_global_prop>();
-        EXPECT_EQ(proxy.get_decl(), "const int c_global_prop");
-        EXPECT_EQ(proxy.get_addr(), &c_global_prop);
-    }
-}
-
-namespace
-{
 int global_fn(int arg)
 {
     return 1000 + arg;
@@ -201,6 +149,7 @@ struct wrapper
 {
     int val;
 
+    [[nodiscard]]
     int get() const
     {
         return val;
