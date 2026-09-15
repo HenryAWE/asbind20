@@ -42,6 +42,9 @@ consteval std::string_view script_integral_name_of(std::meta::info r)
 
     if(std::meta::is_same_type(r, ^^bool))
         return "bool";
+    // Special case
+    if(std::meta::is_same_type(r, ^^std::byte))
+        return "uint8";
 
     std::string result;
     if(std::meta::is_unsigned_type(r))
