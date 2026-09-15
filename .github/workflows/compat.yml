@@ -165,7 +165,7 @@ jobs:
         working-directory: ${{github.workspace}}/build
         run: ctest --output-on-failure
 
-    ArchLinuxGCC16:
+    ArchLinuxGCC:
       runs-on: ubuntu-24.04
       # Run the whole job inside an Arch Linux container, so that the latest
       # rolling-release toolchain (at least GCC 16.2) can be tested.
@@ -182,7 +182,7 @@ jobs:
       - name: Install Dependencies
         run: |
             pacman -Syu --noconfirm
-            pacman -S --noconfirm --needed base-devel gcc cmake ninja git sudo
+            pacman -S --noconfirm --needed base-devel gcc cmake ninja git sudo gtest
 
       - name: Show Compiler Version
         run: g++ --version
@@ -205,6 +205,7 @@ jobs:
           -DCMAKE_CXX_FLAGS="-std=c++26 -freflection -DAS_USE_NAMESPACE=1"
           -DCMAKE_BUILD_TYPE=Release
           -Dasbind_build_test=1
+          -Dasbind_prefer_system_gtest=ON
 
       - name: Build
         run: cmake --build build
