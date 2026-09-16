@@ -16,7 +16,11 @@ namespace detail
 
         std::string_view result;
 
-#if defined _MSC_VER && !defined __clang__ // clang-cl also defines _MSC_VER
+#ifdef ASBIND20_HAS_LIB_REFLECTION
+
+        result = std::meta::display_string_of(std::meta::dealias(^^T));
+
+#elif defined _MSC_VER && !defined __clang__ // clang-cl also defines _MSC_VER
         {
             result = __FUNCSIG__;
             auto start = result.find("type_name_of_impl<");
@@ -68,9 +72,16 @@ namespace detail
 } // namespace detail
 
 template <typename T>
-constexpr auto fixed_type_name() noexcept
+consteval std::string_view typename_of()
 {
-    constexpr std::string_view type_name = detail::type_name_of_impl<std::remove_cvref_t<T>>();
+    using type = std::remove_cvref_t<std::remove_pointer_t<T>>;
+    return detail::type_name_of_impl<type>();
+}
+
+template <typename T>
+consteval auto fixed_string_typename_of() noexcept
+{
+    constexpr std::string_view type_name = typename_of<T>();
     constexpr std::size_t size = type_name.size();
 
     return [&]<std::size_t... Is>(std::index_sequence<Is...>)
@@ -78,8 +89,6 @@ constexpr auto fixed_type_name() noexcept
         return util::fixed_string<size>(type_name[Is]...);
     }(std::make_index_sequence<size>());
 }
-
-
 } // namespace asbind20
 
 #endif

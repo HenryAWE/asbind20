@@ -1,7 +1,7 @@
 #ifndef ASBIND20_META_REFL_COMMON_HPP
 #define ASBIND20_META_REFL_COMMON_HPP
 
-// Common headers and utilities for meta programming
+// Common headers and utilities for metaprogramming
 
 #include <cstdint>
 #include "../detail/config.hpp"
@@ -10,5 +10,8 @@
 #ifdef ASBIND20_HAS_LIB_REFLECTION
 #    include <meta>
 #endif
+
+namespace asbind20::meta
+{}
 
 #endif

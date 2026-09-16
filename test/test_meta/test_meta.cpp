@@ -17,11 +17,11 @@ TEST(Meta, StaticEnumName)
 
 #else
 
-    using asbind20::meta::static_enum_name;
+    using asbind20::meta::enum_name_of;
 
     {
-        EXPECT_EQ(static_enum_name<my_enum::val_1>(), "val_1");
-        EXPECT_EQ(static_enum_name<my_enum::val_2>(), "val_2");
+        EXPECT_EQ(enum_name_of<my_enum::val_1>(), "val_1");
+        EXPECT_EQ(enum_name_of<my_enum::val_2>(), "val_2");
     }
 
     {
@@ -31,8 +31,8 @@ TEST(Meta, StaticEnumName)
             def = 2
         };
 
-        EXPECT_EQ(static_enum_name<my_scoped_enum::abc>(), "abc");
-        EXPECT_EQ(static_enum_name<my_scoped_enum::def>(), "def");
+        EXPECT_EQ(enum_name_of<my_scoped_enum::abc>(), "abc");
+        EXPECT_EQ(enum_name_of<my_scoped_enum::def>(), "def");
     }
 
 #endif
@@ -49,12 +49,12 @@ TEST(Meta, TypeName)
     using namespace asbind20;
 
     {
-        constexpr auto name = meta::fixed_type_name<int>();
+        constexpr auto name = meta::fixed_string_typename_of<int>();
         EXPECT_STREQ(name.c_str(), "int");
     }
 
     {
-        constexpr auto name = meta::fixed_type_name<my_type>();
+        constexpr auto name = meta::fixed_string_typename_of<my_type>();
         EXPECT_STREQ(name.c_str(), "my_type");
     }
 }

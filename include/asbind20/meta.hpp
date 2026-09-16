@@ -329,9 +329,9 @@ namespace meta
      * @tparam Value Enum value
      */
     template <auto Value>
-    auto fixed_enum_name() noexcept
+    auto fixed_string_enum_name_of() noexcept
     {
-        constexpr std::string_view name_view = static_enum_name<Value>();
+        constexpr std::string_view name_view = enum_name_of<Value>();
         constexpr std::size_t size = name_view.size();
 
         return [&]<std::size_t... Is>(std::index_sequence<Is...>)

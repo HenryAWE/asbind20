@@ -148,7 +148,7 @@ public:
     enum_& value()
     {
         register_enum_val(
-            meta::fixed_enum_name<Value>(),
+            meta::fixed_string_enum_name_of<Value>(),
             static_cast<compat::script_enum_value_type>(Value)
         );
 
