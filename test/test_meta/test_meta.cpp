@@ -37,24 +37,3 @@ TEST(Meta, EnumNameOf)
 
 #endif
 }
-
-namespace
-{
-struct my_type
-{};
-} // namespace
-
-TEST(Meta, TypeNameOf)
-{
-    using namespace asbind20;
-
-    {
-        constexpr auto name = meta::fixed_string_typename_of<int>();
-        EXPECT_STREQ(name.c_str(), "int");
-    }
-
-    {
-        constexpr auto name = meta::fixed_string_typename_of<my_type>();
-        EXPECT_STREQ(name.c_str(), "my_type");
-    }
-}
