@@ -239,7 +239,7 @@ namespace meta
 namespace meta
 {
     template <typename T>
-    requires(has_static_name<std::remove_cvref_t<T>>)
+    requires(has_script_typename<std::remove_cvref_t<T>>)
     consteval auto fixed_string_type_declaration_of()
     {
         using util::fixed_string;
@@ -247,7 +247,7 @@ namespace meta
 
         constexpr auto type_name = []()
         {
-            constexpr auto name = name_of<std::remove_cvref_t<T>>();
+            constexpr auto name = fixed_string_script_typename_of<std::remove_cvref_t<T>>();
             if constexpr(is_const)
                 return fixed_string("const ") + name;
             else

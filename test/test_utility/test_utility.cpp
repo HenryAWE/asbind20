@@ -67,20 +67,20 @@ TEST(NameOf, Arithmetic)
     using namespace asbind20::meta;
     using namespace std::literals;
 
-    EXPECT_EQ(name_of<bool>(), "bool"sv);
+    EXPECT_EQ(fixed_string_script_typename_of<bool>(), "bool"sv);
 
-    EXPECT_EQ(name_of<AS_NAMESPACE_QUALIFIER asINT8>(), "int8"sv);
-    EXPECT_EQ(name_of<AS_NAMESPACE_QUALIFIER asINT16>(), "int16"sv);
-    EXPECT_EQ(name_of<AS_NAMESPACE_QUALIFIER asINT32>(), "int"sv);
-    EXPECT_EQ(name_of<AS_NAMESPACE_QUALIFIER asINT64>(), "int64"sv);
+    EXPECT_EQ(fixed_string_script_typename_of<AS_NAMESPACE_QUALIFIER asINT8>(), "int8"sv);
+    EXPECT_EQ(fixed_string_script_typename_of<AS_NAMESPACE_QUALIFIER asINT16>(), "int16"sv);
+    EXPECT_EQ(fixed_string_script_typename_of<AS_NAMESPACE_QUALIFIER asINT32>(), "int"sv);
+    EXPECT_EQ(fixed_string_script_typename_of<AS_NAMESPACE_QUALIFIER asINT64>(), "int64"sv);
 
-    EXPECT_EQ(name_of<AS_NAMESPACE_QUALIFIER asBYTE>(), "uint8"sv);
-    EXPECT_EQ(name_of<AS_NAMESPACE_QUALIFIER asWORD>(), "uint16"sv);
-    EXPECT_EQ(name_of<AS_NAMESPACE_QUALIFIER asDWORD>(), "uint"sv);
-    EXPECT_EQ(name_of<AS_NAMESPACE_QUALIFIER asQWORD>(), "uint64"sv);
+    EXPECT_EQ(fixed_string_script_typename_of<AS_NAMESPACE_QUALIFIER asBYTE>(), "uint8"sv);
+    EXPECT_EQ(fixed_string_script_typename_of<AS_NAMESPACE_QUALIFIER asWORD>(), "uint16"sv);
+    EXPECT_EQ(fixed_string_script_typename_of<AS_NAMESPACE_QUALIFIER asDWORD>(), "uint"sv);
+    EXPECT_EQ(fixed_string_script_typename_of<AS_NAMESPACE_QUALIFIER asQWORD>(), "uint64"sv);
 
-    EXPECT_EQ(name_of<float>(), "float"sv);
-    EXPECT_EQ(name_of<double>(), "double"sv);
+    EXPECT_EQ(fixed_string_script_typename_of<float>(), "float"sv);
+    EXPECT_EQ(fixed_string_script_typename_of<double>(), "double"sv);
 }
 
 TEST(Meta, FixedString)

@@ -183,7 +183,7 @@ public:
     [[nodiscard]]
     static constexpr auto get_underlying_name() noexcept
     {
-        return meta::name_of<UnderlyingType>();
+        return meta::fixed_string_script_typename_of<UnderlyingType>();
     }
 
 private:

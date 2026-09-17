@@ -98,7 +98,7 @@ public:
             setup_foreach_controller(it_name, helper);
             helper.method(
                 use_generic,
-                string_concat(meta::name_of<ValueType>(), " opForValue(const ", it_name, Const ? "&in)const" : "&in)"),
+                string_concat(meta::fixed_string_script_typename_of<ValueType>(), " opForValue(const ", it_name, Const ? "&in)const" : "&in)"),
                 [](this_type& this_, const iterator& it) -> ValueType
                 {
                     (void)this_;
@@ -147,7 +147,7 @@ public:
         return this;
     }
 
-    template <meta::has_static_name ValueType>
+    template <meta::has_script_typename ValueType>
     value_proxy<ValueType> value()
     {
         return value_proxy<ValueType>(*this);
@@ -175,7 +175,7 @@ public:
         using value_type = typename std::iterator_traits<iterator>::reference;
         helper.method(
             use_generic,
-            string_concat(meta::name_of<value_type>(), " opForValue(const ", it_name, Const ? "&in)const" : "&in)"),
+            string_concat(meta::fixed_string_script_typename_of<value_type>(), " opForValue(const ", it_name, Const ? "&in)const" : "&in)"),
             [](this_type& this_, const iterator& it) -> value_type
             {
                 (void)this_;

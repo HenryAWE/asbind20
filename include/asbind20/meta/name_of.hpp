@@ -22,7 +22,7 @@ requires(
     std::same_as<std::remove_cvref_t<T>, T> &&
     !std::same_as<T, char>
 )
-consteval auto name_of() noexcept
+consteval auto fixed_string_script_typename_of() noexcept
 {
     if constexpr(std::same_as<T, bool>)
         return util::fixed_string("bool");
@@ -74,7 +74,7 @@ consteval auto name_of() noexcept
  * @tparam T Type to check
  */
 template <typename T>
-concept has_static_name =
+concept has_script_typename =
     std::is_arithmetic_v<T> &&
     !std::same_as<std::remove_cv_t<T>, char>;
 

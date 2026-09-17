@@ -2618,31 +2618,31 @@ public:
         return derived();
     }
 
-    template <meta::has_static_name To>
+    template <meta::has_script_typename To>
     Derived& opConv(use_generic_t)
     {
-        opConv<To>(use_generic, meta::name_of<To>());
+        opConv<To>(use_generic, meta::fixed_string_script_typename_of<To>());
         return derived();
     }
 
-    template <meta::has_static_name To>
+    template <meta::has_script_typename To>
     Derived& opConv()
     {
-        opConv<To>(meta::name_of<To>());
+        opConv<To>(meta::fixed_string_script_typename_of<To>());
         return derived();
     }
 
-    template <meta::has_static_name To>
+    template <meta::has_script_typename To>
     Derived& opImplConv(use_generic_t)
     {
-        opImplConv<To>(use_generic, meta::name_of<To>());
+        opImplConv<To>(use_generic, meta::fixed_string_script_typename_of<To>());
         return derived();
     }
 
-    template <meta::has_static_name To>
+    template <meta::has_script_typename To>
     Derived& opImplConv()
     {
-        opImplConv<To>(meta::name_of<To>());
+        opImplConv<To>(meta::fixed_string_script_typename_of<To>());
         return derived();
     }
 
