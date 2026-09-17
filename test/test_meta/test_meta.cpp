@@ -1,5 +1,5 @@
 #include <asbind_test/framework.hpp>
-#include <asbind20/meta/type_name.hpp>
+#include <asbind20/meta.hpp>
 
 namespace
 {
@@ -10,18 +10,18 @@ enum my_enum
 };
 } // namespace
 
-TEST(Meta, StaticEnumName)
+TEST(Meta, EnumNameOf)
 {
-#ifndef ASBIND20_HAS_STATIC_ENUM_NAME
-    GTEST_SKIP() << "static_enum_name not supported";
+#ifndef ASBIND20_HAS_ENUM_NAME_OF
+    GTEST_SKIP() << "enum_name_of not supported";
 
 #else
 
     using asbind20::meta::enum_name_of;
 
     {
-        EXPECT_EQ(enum_name_of<my_enum::val_1>(), "val_1");
-        EXPECT_EQ(enum_name_of<my_enum::val_2>(), "val_2");
+        EXPECT_EQ(enum_name_of<val_1>(), "val_1");
+        EXPECT_EQ(enum_name_of<val_2>(), "val_2");
     }
 
     {
@@ -44,7 +44,7 @@ struct my_type
 {};
 } // namespace
 
-TEST(Meta, TypeName)
+TEST(Meta, TypeNameOf)
 {
     using namespace asbind20;
 

@@ -1,5 +1,5 @@
 #include <asbind_test/framework.hpp>
-#include <asbind20/meta/type_name.hpp>
+#include <asbind20/meta/name_of.hpp>
 
 namespace
 {

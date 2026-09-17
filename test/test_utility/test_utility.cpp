@@ -2,7 +2,7 @@
 #include <gmock/gmock-matchers.h>
 #include <asbind20/asbind.hpp>
 #include <asbind20/ranges/ranges.hpp>
-#include <asbind20/meta/enum_name.hpp>
+#include <asbind20/meta/name_of.hpp>
 
 namespace test_utility
 {
@@ -64,6 +64,7 @@ TEST(Utility, Version)
 TEST(NameOf, Arithmetic)
 {
     using namespace asbind20;
+    using namespace asbind20::meta;
     using namespace std::literals;
 
     EXPECT_EQ(name_of<bool>(), "bool"sv);
@@ -117,12 +118,12 @@ TEST(Meta, FixedString)
     }
 
     {
-        constexpr auto decl = meta::full_fixed_name_of<int&>();
+        constexpr auto decl = meta::fixed_string_type_declaration_of<int&>();
         static_assert(decl.view() == "int&"); // Only for testing
     }
 
     {
-        constexpr auto decl = meta::full_fixed_name_of<const int&>();
+        constexpr auto decl = meta::fixed_string_type_declaration_of<const int&>();
         static_assert(decl.view() == "const int&in");
     }
 }

@@ -183,7 +183,7 @@ public:
     [[nodiscard]]
     static constexpr auto get_underlying_name() noexcept
     {
-        return name_of<UnderlyingType>();
+        return meta::name_of<UnderlyingType>();
     }
 
 private:

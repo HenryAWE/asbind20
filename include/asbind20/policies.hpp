@@ -37,11 +37,11 @@ struct apply_to
         return Size;
     }
 
-    template <has_static_name ListElementType>
+    template <meta::has_static_name ListElementType>
     requires(!std::is_void_v<ListElementType>)
     static constexpr std::string pattern()
     {
-        constexpr auto type_name = name_of<ListElementType>();
+        constexpr auto type_name = meta::name_of<ListElementType>();
 
         std::string result;
         result.reserve(2 + type_name.size() * Size + (Size - 1));
