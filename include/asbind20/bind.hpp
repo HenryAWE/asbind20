@@ -85,7 +85,7 @@ struct reflected_ns_name
     consteval reflected_ns_name(std::meta::info r)
     {
         if(!std::meta::is_namespace(r))
-            throw "r does not represent a namespace";
+            throw std::meta::exception("r does not represent a namespace", r);
         name = std::define_static_string(
             meta::script_identifier_of(r)
         );

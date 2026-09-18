@@ -38,7 +38,7 @@ consteval bool has_annotation_with_type(std::meta::info r, std::meta::info ann)
 consteval std::string_view script_integral_name_of(std::meta::info r)
 {
     if(!std::meta::is_integral_type(r))
-        throw "r does not represent an integral type";
+        throw std::meta::exception("r does not represent an integral type", r);
 
     if(std::meta::is_same_type(r, ^^bool))
         return "bool";
@@ -67,7 +67,7 @@ consteval std::string_view script_integral_name_of(std::meta::info r)
 
     default:
         // Compiler built-in 128bit integers or other strange integral types
-        throw "invalid integral type";
+        throw std::meta::exception("invalid integral type", r);
     }
 
     return std::define_static_string(result);
@@ -84,11 +84,13 @@ consteval std::string_view script_identifier_of(std::meta::info r)
     if(std::meta::is_type(r))
     {
         if(is_ptrref_type(r))
-            throw "r represents a reference or pointer type";
+            throw std::meta::exception("r represents a reference or pointer type", r);
 
         if(std::meta::is_integral_type(r))
             return script_integral_name_of(r);
-        std::string_view name = std::meta::display_string_of(r);
+        std::string_view name = std::meta::has_identifier(r) ?
+                                    std::meta::identifier_of(r) :
+                                    std::meta::display_string_of(r);
         if(auto pos = name.rfind("::"); pos != std::string_view::npos)
         {
             name.remove_prefix(pos + 2);
@@ -145,7 +147,7 @@ consteval std::string_view script_parameter_type_modifier_of(
 )
 {
     if(!std::meta::is_type(r) || !is_ptrref_type(r))
-        throw "r does not represent a reference or pointer type";
+        throw std::meta::exception("r does not represent a reference or pointer type", r);
 
     auto referred_type = remove_ptrref(r);
     if(std::meta::is_const_type(referred_type))
@@ -162,7 +164,7 @@ consteval std::string_view script_parameter_declaration_of(
 )
 {
     if(!std::meta::is_function_parameter(r))
-        throw "r does not represent a function parameter";
+        throw std::meta::exception("r does not represent a function parameter", r);
 
     std::string result;
     const auto type_info = std::meta::type_of(r);
@@ -172,7 +174,7 @@ consteval std::string_view script_parameter_declaration_of(
     {
         const bool prefer_out_ref = has_annotation_with_type(r, ^^asbind20::out_ref);
         if(prefer_out_ref && param_as_handle)
-            throw "as_handle and out_ref are mutually exclusive";
+            throw std::meta::exception("as_handle and out_ref are mutually exclusive", r);
         if(!param_as_handle)
             result += script_parameter_type_modifier_of(type_info, !prefer_out_ref);
     }

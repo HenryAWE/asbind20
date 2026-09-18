@@ -110,7 +110,7 @@ consteval std::string_view enum_name_of()
     }
 
     if(name.empty())
-        throw "bad enum value";
+        throw std::meta::exception("bad enum value", ^^enum_type);
 
 #elif defined(__clang__) || defined(__GNUC__)
     name = __PRETTY_FUNCTION__;
