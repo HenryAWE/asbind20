@@ -34,13 +34,11 @@ decltype(auto) get_script_return(context_reference ctx)
 {
     ASBIND20_ASSERT(ctx.GetState() == (AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED));
 
-    constexpr bool is_customized = requires() {
-        { type_traits<T>::get_return(ctx) } -> std::convertible_to<T>;
-    };
+    using traits_helper = detail::type_traits_helper<T>;
 
-    if constexpr(is_customized)
+    if constexpr(traits_helper::has_customized_ret_getter)
     {
-        return type_traits<T>::get_return(ctx);
+        return traits_helper::get_return(ctx);
     }
     else if constexpr(detail::is_script_obj<std::remove_cvref_t<T>>)
     {

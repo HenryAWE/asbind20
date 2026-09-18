@@ -14,6 +14,7 @@
 #include <concepts>
 #include <type_traits>
 #include "utility.hpp"
+#include "meta/name_of.hpp"
 
 namespace asbind20
 {
@@ -235,74 +236,18 @@ namespace meta
     inline constexpr bool is_stdcall_v = is_stdcall<F>::value;
 } // namespace meta
 
-template <typename T>
-requires(
-    std::same_as<std::remove_cvref_t<T>, T> &&
-    !std::same_as<T, char>
-)
-consteval auto name_of() noexcept
-{
-    if constexpr(std::same_as<T, bool>)
-        return util::fixed_string("bool");
-    else if constexpr(std::integral<T>)
-    {
-        if constexpr(std::is_unsigned_v<T>)
-        {
-            if constexpr(sizeof(T) == 1)
-                return util::fixed_string("uint8");
-            else if constexpr(sizeof(T) == 2)
-                return util::fixed_string("uint16");
-            else if constexpr(sizeof(T) == 4)
-                return util::fixed_string("uint");
-            else if constexpr(sizeof(T) == 8)
-                return util::fixed_string("uint64");
-            else
-                static_assert(!sizeof(T), "Invalid integral");
-        }
-        else if constexpr(std::is_signed_v<T>)
-        {
-            if constexpr(sizeof(T) == 1)
-                return util::fixed_string("int8");
-            else if constexpr(sizeof(T) == 2)
-                return util::fixed_string("int16");
-            else if constexpr(sizeof(T) == 4)
-                return util::fixed_string("int");
-            else if constexpr(sizeof(T) == 8)
-                return util::fixed_string("int64");
-            else
-                static_assert(!sizeof(T), "Invalid integral");
-        }
-    }
-    else if constexpr(std::floating_point<T>)
-    {
-        if constexpr(std::same_as<T, float>)
-            return util::fixed_string("float");
-        else if constexpr(std::same_as<T, double>)
-            return util::fixed_string("double");
-        else
-            static_assert(!sizeof(T), "Invalid floating point");
-    }
-    else
-        static_assert(!sizeof(T), "Invalid arithmetic");
-}
-
-template <typename T>
-concept has_static_name =
-    std::is_arithmetic_v<T> &&
-    !std::same_as<std::remove_cv_t<T>, char>;
-
 namespace meta
 {
     template <typename T>
-    requires(has_static_name<std::remove_cvref_t<T>>)
-    consteval auto full_fixed_name_of()
+    requires(has_script_typename<std::remove_cvref_t<T>>)
+    consteval auto fixed_string_type_declaration_of()
     {
         using util::fixed_string;
         constexpr bool is_const = std::is_const_v<std::remove_reference_t<T>>;
 
         constexpr auto type_name = []()
         {
-            constexpr auto name = name_of<std::remove_cvref_t<T>>();
+            constexpr auto name = fixed_string_script_typename_of<std::remove_cvref_t<T>>();
             if constexpr(is_const)
                 return fixed_string("const ") + name;
             else
@@ -328,9 +273,9 @@ namespace meta
      * @tparam Value Enum value
      */
     template <auto Value>
-    auto fixed_enum_name() noexcept
+    auto fixed_string_enum_name_of() noexcept
     {
-        constexpr std::string_view name_view = static_enum_name<Value>();
+        constexpr std::string_view name_view = enum_name_of<Value>();
         constexpr std::size_t size = name_view.size();
 
         return [&]<std::size_t... Is>(std::index_sequence<Is...>)

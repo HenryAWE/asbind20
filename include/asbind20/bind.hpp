@@ -76,6 +76,24 @@ private:
     }
 };
 
+#ifdef ASBIND20_HAS_LIB_REFLECTION
+
+struct reflected_ns_name
+{
+    const char* name;
+
+    consteval reflected_ns_name(std::meta::info r)
+    {
+        if(!std::meta::is_namespace(r))
+            throw std::meta::exception("r does not represent a namespace", r);
+        name = std::define_static_string(
+            meta::script_identifier_of(r)
+        );
+    }
+};
+
+#endif
+
 class [[nodiscard]] namespace_ : public engine_ref_holder
 {
     using my_base = engine_ref_holder;
@@ -117,6 +135,28 @@ public:
     {
         set_as(ns, nested);
     }
+
+#ifdef ASBIND20_HAS_LIB_REFLECTION
+
+    namespace_(
+        engine_pointer engine,
+        reflected_ns_name name
+    )
+        : my_base(engine)
+    {
+        set_as(name.name, false);
+    }
+
+    namespace_(
+        engine_reference engine,
+        reflected_ns_name name
+    )
+        : my_base(engine)
+    {
+        set_as(name.name, false);
+    }
+
+#endif
 
     ~namespace_()
     {

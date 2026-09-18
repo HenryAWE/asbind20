@@ -51,9 +51,9 @@ struct param_placeholder<T, true>
 
     [[nodiscard]]
     constexpr auto get_decl() const noexcept
-        requires(has_static_name<std::remove_cvref_t<T>>)
+        requires(meta::has_script_typename<std::remove_cvref_t<T>>)
     {
-        return meta::full_fixed_name_of<T>();
+        return meta::fixed_string_type_declaration_of<T>();
     }
 
     [[nodiscard]]
@@ -91,7 +91,7 @@ namespace detail
 
         if constexpr(!is_this_type)
         {
-            auto name = name_of<std::remove_cvref_t<T>>();
+            auto name = meta::fixed_string_script_typename_of<std::remove_cvref_t<T>>();
             return format_full_typename<T>(name.view());
         }
         else

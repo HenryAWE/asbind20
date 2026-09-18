@@ -2,6 +2,7 @@
 #include <gmock/gmock-matchers.h>
 #include <asbind20/asbind.hpp>
 #include <asbind20/ranges/ranges.hpp>
+#include <asbind20/meta/name_of.hpp>
 
 namespace test_utility
 {
@@ -18,44 +19,6 @@ TEST(Utility, FpWrapper)
     constexpr auto wrapper = fp<&test_utility::f1>;
     static constexpr auto f1 = wrapper.get();
     EXPECT_EQ(f1(), 1013);
-}
-
-namespace test_utility
-{
-enum my_enum
-{
-    val_1 = 1,
-    val_2 = 2
-};
-} // namespace test_utility
-
-TEST(Utility, StaticEnumName)
-{
-    using namespace asbind20;
-
-#ifndef ASBIND20_HAS_STATIC_ENUM_NAME
-    GTEST_SKIP() << "static_enum_name not supported";
-
-#else
-
-    {
-        using test_utility::my_enum;
-        EXPECT_EQ(static_enum_name<my_enum::val_1>(), "val_1");
-        EXPECT_EQ(static_enum_name<my_enum::val_2>(), "val_2");
-    }
-
-    {
-        enum class my_scoped_enum
-        {
-            abc = 1,
-            def = 2
-        };
-
-        EXPECT_EQ(static_enum_name<my_scoped_enum::abc>(), "abc");
-        EXPECT_EQ(static_enum_name<my_scoped_enum::def>(), "def");
-    }
-
-#endif
 }
 
 TEST(Utility, Version)
@@ -101,22 +64,23 @@ TEST(Utility, Version)
 TEST(NameOf, Arithmetic)
 {
     using namespace asbind20;
+    using namespace asbind20::meta;
     using namespace std::literals;
 
-    EXPECT_EQ(name_of<bool>(), "bool"sv);
+    EXPECT_EQ(fixed_string_script_typename_of<bool>(), "bool"sv);
 
-    EXPECT_EQ(name_of<AS_NAMESPACE_QUALIFIER asINT8>(), "int8"sv);
-    EXPECT_EQ(name_of<AS_NAMESPACE_QUALIFIER asINT16>(), "int16"sv);
-    EXPECT_EQ(name_of<AS_NAMESPACE_QUALIFIER asINT32>(), "int"sv);
-    EXPECT_EQ(name_of<AS_NAMESPACE_QUALIFIER asINT64>(), "int64"sv);
+    EXPECT_EQ(fixed_string_script_typename_of<AS_NAMESPACE_QUALIFIER asINT8>(), "int8"sv);
+    EXPECT_EQ(fixed_string_script_typename_of<AS_NAMESPACE_QUALIFIER asINT16>(), "int16"sv);
+    EXPECT_EQ(fixed_string_script_typename_of<AS_NAMESPACE_QUALIFIER asINT32>(), "int"sv);
+    EXPECT_EQ(fixed_string_script_typename_of<AS_NAMESPACE_QUALIFIER asINT64>(), "int64"sv);
 
-    EXPECT_EQ(name_of<AS_NAMESPACE_QUALIFIER asBYTE>(), "uint8"sv);
-    EXPECT_EQ(name_of<AS_NAMESPACE_QUALIFIER asWORD>(), "uint16"sv);
-    EXPECT_EQ(name_of<AS_NAMESPACE_QUALIFIER asDWORD>(), "uint"sv);
-    EXPECT_EQ(name_of<AS_NAMESPACE_QUALIFIER asQWORD>(), "uint64"sv);
+    EXPECT_EQ(fixed_string_script_typename_of<AS_NAMESPACE_QUALIFIER asBYTE>(), "uint8"sv);
+    EXPECT_EQ(fixed_string_script_typename_of<AS_NAMESPACE_QUALIFIER asWORD>(), "uint16"sv);
+    EXPECT_EQ(fixed_string_script_typename_of<AS_NAMESPACE_QUALIFIER asDWORD>(), "uint"sv);
+    EXPECT_EQ(fixed_string_script_typename_of<AS_NAMESPACE_QUALIFIER asQWORD>(), "uint64"sv);
 
-    EXPECT_EQ(name_of<float>(), "float"sv);
-    EXPECT_EQ(name_of<double>(), "double"sv);
+    EXPECT_EQ(fixed_string_script_typename_of<float>(), "float"sv);
+    EXPECT_EQ(fixed_string_script_typename_of<double>(), "double"sv);
 }
 
 TEST(Meta, FixedString)
@@ -154,12 +118,12 @@ TEST(Meta, FixedString)
     }
 
     {
-        constexpr auto decl = meta::full_fixed_name_of<int&>();
+        constexpr auto decl = meta::fixed_string_type_declaration_of<int&>();
         static_assert(decl.view() == "int&"); // Only for testing
     }
 
     {
-        constexpr auto decl = meta::full_fixed_name_of<const int&>();
+        constexpr auto decl = meta::fixed_string_type_declaration_of<const int&>();
         static_assert(decl.view() == "const int&in");
     }
 }
@@ -301,6 +265,10 @@ static void output_info(std::ostream& os)
     os << "ASBIND20_HAS_STATIC_ENUM_NAME: "
        << ASBIND20_HAS_STATIC_ENUM_NAME
        << std::endl;
+#endif
+
+#ifdef ASBIND20_HAS_LIB_REFLECTION
+    os << "ASBIND20_HAS_LIB_REFLECTION defined: " << __cpp_lib_reflection << 'L' << std::endl;
 #endif
 }
 
