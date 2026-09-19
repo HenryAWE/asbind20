@@ -464,11 +464,34 @@ namespace ns0
     {
         return 1013;
     }
+
+    namespace ns1
+    {}
+
+    namespace[[= asbind20::rename("ns2")]] renamed_ns
+    {}
 } // namespace ns0
 } // namespace
 
 TEST(Reflection, Namespace)
 {
+    EXPECT_EQ(
+        asbind20::meta::script_namespace_declaration_of(^^ns0, true),
+        "ns0"
+    );
+    EXPECT_EQ(
+        asbind20::meta::script_namespace_declaration_of(^^ns0::ns1, true),
+        "ns0::ns1"
+    );
+    EXPECT_EQ(
+        asbind20::meta::script_namespace_declaration_of(^^ns0::ns1, false),
+        "ns1"
+    );
+    EXPECT_EQ(
+        asbind20::meta::script_namespace_declaration_of(^^ns0::renamed_ns, true),
+        "ns0::ns2"
+    );
+
     using namespace asbind20;
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);

@@ -209,6 +209,39 @@ consteval std::string_view script_parameter_declaration_of(
     return std::define_static_string(result);
 }
 
+consteval std::string_view script_namespace_declaration_of(
+    std::meta::info r, bool full_declaration = false
+)
+{
+    bool is_alias = std::meta::is_namespace_alias(r);
+    if(is_alias && full_declaration)
+        throw std::meta::exception("full_declaration is not supported to namespace alias", r);
+    if(!std::meta::is_namespace(r))
+        throw std::meta::exception("r does not represent a namespace", r);
+
+    if(!full_declaration)
+        return std::meta::identifier_of(r);
+
+    std::string result(script_identifier_of(r));
+    std::meta::info current = r;
+    while(std::meta::has_parent(r))
+    {
+        current = std::meta::parent_of(current);
+        if(!std::meta::is_namespace(current))
+            break;
+        // Anonymous namespace
+        if(!std::meta::has_identifier(current))
+            break;
+        result = string_concat(
+            script_identifier_of(current),
+            "::",
+            result
+        );
+    }
+
+    return std::define_static_string(result);
+}
+
 consteval std::string_view script_parameter_list_declaration_of_with_calling_convention(
     std::meta::info func,
     asbind20::detail::call_conv_type conv = AS_NAMESPACE_QUALIFIER asCALL_CDECL
