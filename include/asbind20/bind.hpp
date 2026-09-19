@@ -87,7 +87,7 @@ struct reflected_ns_name
         if(!std::meta::is_namespace(r))
             throw std::meta::exception("r does not represent a namespace", r);
         name = std::define_static_string(
-            meta::script_identifier_of(r)
+            meta::script_namespace_declaration_of(r, true)
         );
     }
 };
