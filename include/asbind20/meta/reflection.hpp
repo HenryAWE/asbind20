@@ -35,6 +35,15 @@ consteval bool has_annotation_with_type(std::meta::info r, std::meta::info ann)
     return !anns.empty();
 }
 
+template <typename T>
+consteval std::optional<T> extract_last_annotation(std::meta::info r)
+{
+    auto anns = std::meta::annotations_of_with_type(r, ^^T);
+    if(anns.empty())
+        return std::nullopt;
+    return std::meta::extract<T>(anns.back());
+}
+
 consteval std::string_view script_integral_name_of(std::meta::info r)
 {
     if(!std::meta::is_integral_type(r))
@@ -168,13 +177,16 @@ consteval std::string_view script_parameter_declaration_of(
 
     std::string result;
     const auto type_info = std::meta::type_of(r);
-    const bool param_as_handle = has_annotation_with_type(r, ^^asbind20::as_handle);
+    auto ann_for_handle = extract_last_annotation<as_handle_t>(r);
+    const bool param_as_handle = ann_for_handle.has_value();
     result += script_type_declaration_of(type_info, param_as_handle);
     if(is_ptrref_type(type_info))
     {
-        const bool prefer_out_ref = has_annotation_with_type(r, ^^asbind20::out_ref);
+        const bool prefer_out_ref = has_annotation_with_type(r, ^^annotations::out_ref_t);
         if(prefer_out_ref && param_as_handle)
             throw std::meta::exception("as_handle and out_ref are mutually exclusive", r);
+        if(param_as_handle && ann_for_handle->auto_handle)
+            result += '+'; // auto handle of AngelScript "T@+"
         if(!param_as_handle)
             result += script_parameter_type_modifier_of(type_info, !prefer_out_ref);
     }
@@ -246,6 +258,25 @@ consteval bool is_const_method_with_calling_convention(
     return std::meta::is_const(remove_ptrref(param_type));
 }
 
+consteval std::string_view script_return_type_declaration_of(std::meta::info func)
+{
+    std::string result;
+
+    auto ann_of_handle = extract_last_annotation<as_handle_t>(func);
+    auto ret_type = std::meta::return_type_of(func);
+    result = script_type_declaration_of(
+            ret_type, ann_of_handle.has_value()
+    );
+
+    if(is_ptrref_type(ret_type) &&
+       ann_of_handle.has_value() && ann_of_handle->auto_handle)
+    {
+        result += '+';
+    }
+
+    return std::define_static_string(result);
+}
+
 consteval std::string_view script_function_declaration_of_with_calling_convention(
     std::meta::info func,
     asbind20::detail::call_conv_type conv,
@@ -268,11 +299,8 @@ consteval std::string_view script_function_declaration_of_with_calling_conventio
     std::string_view func_identifer =
         skip_func_name ? "f" : script_identifier_of(func);
 
-    auto ret_type = std::meta::return_type_of(func);
     std::string decl = string_concat(
-        script_type_declaration_of(
-            ret_type, has_annotation_with_type(func, ^^as_handle)
-        ),
+        script_return_type_declaration_of(func),
         ' ',
         func_identifer,
         '(',
@@ -335,7 +363,7 @@ struct prop_refl_proxy
         return std::define_static_string(
             script_property_declaration_of(
                 Property,
-                has_annotation_with_type(Property, ^^as_handle)
+                has_annotation_with_type(Property, ^^annotations::as_handle_t)
             )
         );
     }

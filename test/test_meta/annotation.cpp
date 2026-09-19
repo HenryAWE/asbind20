@@ -1,5 +1,6 @@
 #include <asbind_test/framework.hpp>
 #include <asbind20/meta/reflection.hpp>
+#include "test_meta.hpp"
 
 #ifdef ASBIND20_HAS_LIB_REFLECTION
 
@@ -65,7 +66,7 @@ private:
 }
 
 void writer(
-    [[= asbind20::out_ref()]] daffodil* output,
+    [[= asbind20::out_ref]] daffodil* output,
     int val
 )
 {
@@ -73,14 +74,24 @@ void writer(
     output->x = val;
 }
 
-[[= asbind20::as_handle{}]] puppet* check_handle(
-    [[= asbind20::as_handle{}]] puppet* h
+[[= asbind20::as_handle]] puppet* check_handle(
+    [[= asbind20::as_handle]] puppet* h
 )
 {
     if(!h)
         return nullptr;
     EXPECT_GE(h->get_ref_count(), 1);
     return nullptr;
+}
+
+[[= +asbind20::as_handle]] puppet* check_auto_handle(
+    [[= +asbind20::as_handle]] puppet* h
+)
+{
+    if(!h)
+        return nullptr;
+    EXPECT_GE(h->get_ref_count(), 2); // original + argument
+    return h;
 }
 
 enum renamed_enum
@@ -204,6 +215,13 @@ TEST(Annotation, ParameterAttributes)
         ) ==
         "void writer(narcissus&out output,int val)"
     );
+    static_assert(
+        meta::script_function_declaration_of_with_calling_convention(
+            ^^check_auto_handle,
+            AS_NAMESPACE_QUALIFIER asCALL_CDECL
+        ) ==
+        "marionette@+ check_auto_handle(marionette@+ h)"
+    );
 
     {
         constexpr std::string_view sv = std::meta::extract<asbind20::default_arg>(
@@ -230,6 +248,16 @@ TEST(Annotation, ParameterAttributes)
         ),
         "marionette@ check_handle(marionette@ h)"
     );
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine);
+
+    ref_class<puppet, false> r(*engine);
+    r
+        .addref(fp<&puppet::inc_ref>)
+        .release(fp<&puppet::dec_ref>);
+    global<true>(*engine)
+        .function(reflect<^^check_auto_handle>());
 }
 
 #endif

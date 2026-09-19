@@ -1,5 +1,16 @@
 #include <asbind_test/framework.hpp>
 #include <asbind20/meta.hpp>
+#include "test_meta.hpp"
+
+namespace test_meta
+{
+void placeholder_gfn(asbind20::generic_pointer gen)
+{
+    // Add a simple testcase here, so "gen" is not unused
+    EXPECT_THAT(gen, ::testing::NotNull());
+    asbind20::set_script_exception("unreachable");
+}
+} // namespace test_meta
 
 namespace
 {
