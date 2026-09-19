@@ -1,5 +1,4 @@
 #include <asbind_test/framework.hpp>
-#include <gmock/gmock.h>
 #include <sstream>
 #include <asbind20/debugging/dump_bytecode.hpp>
 
@@ -22,7 +21,6 @@ TEST(DumpByteCode, Print)
         bcs, ::testing::Not(::testing::IsEmpty())
     );
 
-#ifdef ASBIND20_HAS_LIB_FORMAT
     std::ostringstream ss;
     debugging::print_bytecode(ss, bcs);
 
@@ -30,6 +28,4 @@ TEST(DumpByteCode, Print)
         ss.str(),
         ::testing::HasSubstr("42")
     );
-
-#endif
 }
