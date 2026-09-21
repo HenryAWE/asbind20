@@ -90,56 +90,98 @@ private:
     }
 };
 
-/**
- * @brief Smart pointer for script object
- */
-class script_object
+template <typename Pointer>
+concept shared_script_object_pointer =
+    std::is_pointer_v<Pointer> &&
+    requires(Pointer p) {
+        p->AddRef();
+        p->Release();
+    };
+
+struct adopt_object_t
+{};
+
+inline constexpr adopt_object_t adopt_object{};
+
+template <shared_script_object_pointer SharedObjectPointer>
+class shared_script_object_interface
 {
 public:
-    using element_type = AS_NAMESPACE_QUALIFIER asIScriptObject;
-    using handle_type = object_pointer;
+    using pointer = SharedObjectPointer;
+    // for compatibility with asbind20 v1.x
+    using handle_type = pointer;
+    using element_type = std::remove_pointer_t<SharedObjectPointer>;
+    using reference = element_type&;
+    using const_reference = const element_type&;
 
-    script_object() noexcept = default;
+    constexpr shared_script_object_interface() noexcept = default;
 
-    script_object(script_object&& other) noexcept
-        : m_obj(std::exchange(other.m_obj, nullptr)) {}
-
-    script_object(const script_object&) = delete;
-
-    script_object& operator=(const script_object&) = delete;
-
-    script_object& operator=(script_object&& other) noexcept
-    {
-        if(this == &other)
-            return *this;
-
-        reset();
-        m_obj = std::exchange(other.m_obj, nullptr);
-        return *this;
-    }
-
-    explicit script_object(handle_type obj)
+    explicit shared_script_object_interface(pointer obj)
         : m_obj(obj)
     {
-        if(m_obj)
-            (void)m_obj->AddRef();
+        increase_ref_count();
     }
 
-    explicit script_object(object_reference obj)
-        : script_object(std::addressof(obj)) {}
+    explicit shared_script_object_interface(reference obj)
+        : shared_script_object_interface(std::addressof(obj))
+    {}
 
-    ~script_object()
+    shared_script_object_interface(adopt_object_t, pointer obj) noexcept
+        : m_obj(obj)
+    {}
+
+    shared_script_object_interface(adopt_object_t, reference obj) noexcept
+        : m_obj(std::addressof(obj))
+    {}
+
+    ~shared_script_object_interface()
     {
-        reset();
+        decrease_ref_count();
+    }
+
+    constexpr bool operator==(
+        const shared_script_object_interface& rhs
+    ) const noexcept
+    {
+        return m_obj == rhs.m_obj;
+    }
+
+    friend constexpr bool operator==(
+        pointer lhs, const shared_script_object_interface& rhs
+    ) noexcept
+    {
+        return lhs == rhs.get();
+    }
+
+    friend constexpr bool operator==(
+        const shared_script_object_interface& lhs, pointer rhs
+    ) noexcept
+    {
+        return lhs.get() == rhs;
+    }
+
+    friend constexpr bool operator==(
+        const_reference lhs, const shared_script_object_interface& rhs
+    ) noexcept
+    {
+        return std::addressof(lhs) == rhs.get();
+    }
+
+    friend constexpr bool operator==(
+        const shared_script_object_interface& lhs, const_reference rhs
+    ) noexcept
+    {
+        return lhs.get() == std::addressof(rhs);
     }
 
     [[nodiscard]]
-    handle_type get() const noexcept
+    pointer get() const noexcept
     {
         return m_obj;
     }
 
-    explicit operator handle_type() const noexcept
+    // TODO: Consider making this explicit
+    operator pointer() const noexcept
     {
         return get();
     }
@@ -149,12 +191,12 @@ public:
         return get() != nullptr;
     }
 
-    object_reference operator*() const noexcept
+    reference operator*() const noexcept
     {
         return *get();
     }
 
-    handle_type operator->() const noexcept
+    pointer operator->() const noexcept
     {
         return get();
     }
@@ -173,15 +215,12 @@ public:
     }
 
     /**
-     * @brief Reset object the null pointer
+     * @brief Reset object to the null pointer
      */
     void reset(std::nullptr_t = nullptr) noexcept
     {
-        if(m_obj)
-        {
-            (void)m_obj->Release();
-            m_obj = nullptr;
-        }
+        decrease_ref_count();
+        m_obj = nullptr;
     }
 
     /**
@@ -189,17 +228,15 @@ public:
      *
      * @param obj New object to store
      */
-    void reset(handle_type obj)
+    void reset(pointer obj)
     {
         // Avoid Release-then-AddRef on the same handle,
         if(m_obj == obj) [[unlikely]]
             return;
 
-        if(m_obj)
-            (void)m_obj->Release();
+        decrease_ref_count();
         m_obj = obj;
-        if(obj)
-            (void)obj->AddRef();
+        increase_ref_count();
     }
 
     void reset(object_reference obj)
@@ -207,14 +244,129 @@ public:
         reset(std::addressof(obj));
     }
 
-    void swap(script_object& other) noexcept
+    void reset(adopt_object_t, pointer obj)
+    {
+        // Avoid Release-then-AddRef on the same handle,
+        if(m_obj == obj) [[unlikely]]
+            return;
+
+        decrease_ref_count();
+        m_obj = obj;
+        // Don't increase the refernce count here
+    }
+
+    void reset(adopt_object_t, reference obj)
+    {
+        this->reset(adopt_object, std::addressof(obj));
+    }
+
+    void reset(shared_script_object_interface& obj)
+    {
+        if(this == &obj) [[unlikely]]
+            return;
+        this->reset(obj.get());
+    }
+
+    void reset(shared_script_object_interface&& obj) noexcept
+    {
+        if(this == &obj) [[unlikely]]
+            return;
+        this->reset(adopt_object, obj.release());
+    }
+
+    void reset(adopt_object_t, shared_script_object_interface& obj) = delete;
+
+    // For consistency with standard smart pointers,
+    // outputs the underlying pointer
+    friend std::ostream& operator<<(std::ostream& os, shared_script_object_interface& obj)
+    {
+        os << obj.get();
+        return os;
+    }
+
+protected:
+    void increase_ref_count() const
+    {
+        if(!m_obj)
+            return;
+        (void)m_obj->AddRef();
+    }
+
+    void decrease_ref_count() const
+    {
+        if(!m_obj)
+            return;
+        (void)m_obj->Release();
+    }
+
+    shared_script_object_interface(const shared_script_object_interface& other)
+        : m_obj(other.m_obj)
+    {
+        increase_ref_count();
+    }
+
+    shared_script_object_interface(shared_script_object_interface&& other) noexcept
+        : m_obj(other.release())
+    {}
+
+    shared_script_object_interface& operator=(
+        shared_script_object_interface&& other
+    ) noexcept
+    {
+        if(this == &other) [[unlikely]]
+            return *this;
+        reset(adopt_object, other.release());
+        return *this;
+    }
+
+    shared_script_object_interface& operator=(
+        const shared_script_object_interface& other
+    ) noexcept
+    {
+        if(this == &other) [[unlikely]]
+            return *this;
+        reset(other.get());
+        return *this;
+    }
+
+    void swap(shared_script_object_interface& other) noexcept
     {
         using std::swap;
         swap(m_obj, other.m_obj);
     }
 
 private:
-    handle_type m_obj = nullptr;
+    pointer m_obj = nullptr;
+};
+} // namespace asbind20
+
+template <asbind20::shared_script_object_pointer SharedObjectPointer>
+struct std::hash<asbind20::shared_script_object_interface<SharedObjectPointer>>
+{
+    constexpr std::size_t operator()(
+        const asbind20::shared_script_object_interface<SharedObjectPointer>& obj
+    ) const
+    {
+        return std::hash<SharedObjectPointer>{}(obj.get());
+    }
+};
+
+namespace asbind20
+{
+/**
+ * @brief Smart pointer for script object
+ */
+class script_object : public shared_script_object_interface<object_pointer>
+{
+    using my_base = shared_script_object_interface<object_pointer>;
+
+public:
+    using my_base::my_base;
+
+    void swap(script_object& other) noexcept
+    {
+        my_base::swap(other);
+    }
 };
 
 inline void swap(script_object& lhs, script_object& rhs) noexcept
@@ -422,23 +574,18 @@ private:
 
 /**
  * @brief RAII helper for script context
+ *
+ * @note Use `adopt_object` for taking over a context which already owns a reference,
+ *       such as the one returned by `asIScriptEngine::CreateContext()`.
  */
-class script_context
+class script_context : public shared_script_object_interface<context_pointer>
 {
+    using my_base = shared_script_object_interface<context_pointer>;
+
 public:
-    using element_type = AS_NAMESPACE_QUALIFIER asIScriptContext;
-    using handle_type = context_pointer;
+    using my_base::my_base;
 
     script_context() noexcept = default;
-
-    script_context(const script_context& other)
-    {
-        reset(other.get());
-    }
-
-    script_context(script_context&& other) noexcept
-        : m_ctx(std::exchange(other.m_ctx, nullptr))
-    {}
 
     /**
      * @brief Create context from the script engine.
@@ -451,106 +598,13 @@ public:
     {
         if(!engine) [[unlikely]]
             return;
-        reset(std::in_place, engine->CreateContext());
-    }
-
-    ~script_context()
-    {
-        reset(nullptr);
-    }
-
-    script_context& operator=(const script_context& rhs)
-    {
-        if(this == &rhs)
-            return *this;
-        reset(rhs.get());
-        return *this;
-    }
-
-    script_context& operator=(script_context&& rhs) noexcept
-    {
-        if(this == &rhs)
-            return *this;
-        reset(nullptr);
-        m_ctx = std::exchange(rhs.m_ctx, nullptr);
-        return *this;
-    }
-
-    [[nodiscard]]
-    handle_type get() const noexcept
-    {
-        return m_ctx;
-    }
-
-    operator handle_type() const noexcept
-    {
-        return get();
-    }
-
-    context_reference operator*() const noexcept
-    {
-        return *get();
-    }
-
-    handle_type operator->() const noexcept
-    {
-        return get();
-    }
-
-    explicit operator bool() const noexcept
-    {
-        return m_ctx != nullptr;
-    }
-
-    [[nodiscard]]
-    handle_type release() noexcept
-    {
-        return std::exchange(m_ctx, nullptr);
-    }
-
-    void reset(std::nullptr_t) noexcept
-    {
-        if(m_ctx)
-            (void)m_ctx->Release();
-        m_ctx = nullptr;
-    }
-
-    void reset(std::in_place_t, handle_type ctx)
-    {
-        if(m_ctx)
-            (void)m_ctx->Release();
-        m_ctx = ctx;
-    }
-
-    void reset(std::in_place_t, element_type& ctx) noexcept
-    {
-        reset(std::in_place, std::addressof(ctx));
-    }
-
-    void reset(handle_type ctx = nullptr)
-    {
-        // Avoid Release-then-AddRef on the same handle,
-        if(m_ctx == ctx) [[unlikely]]
-            return;
-
-        reset(std::in_place, ctx);
-        if(m_ctx)
-            (void)m_ctx->AddRef();
-    }
-
-    void reset(element_type& ctx)
-    {
-        reset(std::addressof(ctx));
+        reset(adopt_object, engine->CreateContext());
     }
 
     void swap(script_context& other) noexcept
     {
-        using std::swap;
-        swap(m_ctx, other.m_ctx);
+        my_base::swap(other);
     }
-
-private:
-    handle_type m_ctx = nullptr;
 };
 
 inline void swap(script_context& lhs, script_context& rhs) noexcept
@@ -677,52 +731,25 @@ inline script_engine make_script_engine(
 
 using unique_script_engine = script_engine;
 
-class shared_script_engine
+/**
+ * @brief RAII helper for shared script engine
+ *
+ * @note Use `adopt_object` for taking over an engine which already owns a reference,
+ *       such as the one returned by `create_script_engine()`.
+ */
+class shared_script_engine : public shared_script_object_interface<engine_pointer>
 {
+    using my_base = shared_script_object_interface<engine_pointer>;
+
 public:
-    using element_type = AS_NAMESPACE_QUALIFIER asIScriptEngine;
-    using handle_type = engine_pointer;
+    using my_base::my_base;
 
-    shared_script_engine() noexcept
-        : m_engine(nullptr) {}
-
-    shared_script_engine(const shared_script_engine& other)
-        : m_engine(other.get())
-    {
-        if(m_engine)
-            (void)m_engine->AddRef();
-    }
-
-    shared_script_engine(shared_script_engine&& other) noexcept
-        : m_engine(std::exchange(other.m_engine, nullptr)) {}
-
-    shared_script_engine(std::in_place_t, handle_type engine) noexcept
-        : m_engine(engine) {}
-
-    shared_script_engine(std::in_place_t, engine_reference engine) noexcept
-        : shared_script_engine(std::in_place, std::addressof(engine)) {}
+    shared_script_engine() noexcept = default;
 
     shared_script_engine(const unique_script_engine&) = delete;
 
     shared_script_engine(unique_script_engine&& other) noexcept
-        : m_engine(other.release()) {}
-
-    shared_script_engine& operator=(const shared_script_engine& other)
-    {
-        if(this == &other)
-            return *this;
-
-        reset(other.get());
-        return *this;
-    }
-
-    shared_script_engine& operator=(shared_script_engine&& other) noexcept
-    {
-        if(this == &other)
-            return *this;
-        reset(other.release());
-        return *this;
-    }
+        : my_base(adopt_object, other.release()) {}
 
     shared_script_engine& operator=(unique_script_engine&& other) noexcept
     {
@@ -730,73 +757,19 @@ public:
         return *this;
     }
 
-    ~shared_script_engine()
-    {
-        reset();
-    }
-
-    [[nodiscard]]
-    handle_type get() const noexcept
-    {
-        return m_engine;
-    }
-
-    operator handle_type() const noexcept
-    {
-        return get();
-    }
-
-    engine_reference operator*() const noexcept
-    {
-        return *get();
-    }
-
-    handle_type operator->() const noexcept
-    {
-        return get();
-    }
-
-    [[nodiscard]]
-    handle_type release() noexcept
-    {
-        return std::exchange(m_engine, nullptr);
-    }
+    using my_base::reset;
 
     void reset(const unique_script_engine&) = delete;
 
     void reset(unique_script_engine&& other)
     {
-        if(m_engine)
-            (void)m_engine->Release();
-        m_engine = other.release();
-    }
-
-    void reset(handle_type engine = nullptr)
-    {
-        // Avoid Release-then-AddRef on the same handle,
-        if(m_engine == engine) [[unlikely]]
-            return;
-
-        if(m_engine)
-            (void)m_engine->Release();
-        m_engine = engine;
-        if(m_engine)
-            (void)m_engine->AddRef();
-    }
-
-    void reset(engine_reference engine)
-    {
-        reset(std::addressof(engine));
+        reset(adopt_object, other.release());
     }
 
     void swap(shared_script_engine& other) noexcept
     {
-        using std::swap;
-        swap(m_engine, other.m_engine);
+        my_base::swap(other);
     }
-
-private:
-    handle_type m_engine;
 };
 
 inline void swap(shared_script_engine& lhs, shared_script_engine& rhs) noexcept
@@ -809,7 +782,7 @@ inline shared_script_engine make_shared_script_engine(
     script_version_type version = default_script_version
 )
 {
-    return {std::in_place, create_script_engine(version)};
+    return {adopt_object, create_script_engine(version)};
 }
 
 /**
@@ -817,75 +790,13 @@ inline shared_script_engine make_shared_script_engine(
  *
  * This class can be helpful for implementing weak reference support.
  */
-class lockable_shared_bool
+class lockable_shared_bool :
+    public shared_script_object_interface<AS_NAMESPACE_QUALIFIER asILockableSharedBool*>
 {
+    using my_base = shared_script_object_interface<AS_NAMESPACE_QUALIFIER asILockableSharedBool*>;
+
 public:
-    using element_type = AS_NAMESPACE_QUALIFIER asILockableSharedBool;
-    using handle_type = element_type*;
-
-    lockable_shared_bool() noexcept = default;
-
-    explicit lockable_shared_bool(handle_type bool_) noexcept
-    {
-        reset(bool_);
-    }
-
-    explicit lockable_shared_bool(element_type& bool_) noexcept
-    {
-        reset(bool_);
-    }
-
-    lockable_shared_bool(std::in_place_t, handle_type bool_) noexcept
-    {
-        reset(std::in_place, bool_);
-    }
-
-    lockable_shared_bool(std::in_place_t, element_type& bool_) noexcept
-    {
-        reset(std::in_place, bool_);
-    }
-
-    lockable_shared_bool(const lockable_shared_bool& other)
-    {
-        reset(other.m_bool);
-    }
-
-    lockable_shared_bool(lockable_shared_bool&& other) noexcept
-        : m_bool(std::exchange(other.m_bool, nullptr)) {}
-
-    ~lockable_shared_bool()
-    {
-        reset();
-    }
-
-    bool operator==(const lockable_shared_bool& other) const = default;
-
-    void reset(std::nullptr_t = nullptr) noexcept
-    {
-        if(m_bool)
-        {
-            (void)m_bool->Release();
-            m_bool = nullptr;
-        }
-    }
-
-    void reset(handle_type bool_) noexcept
-    {
-        // Avoid Release-then-AddRef on the same handle,
-        if(m_bool == bool_) [[unlikely]]
-            return;
-
-        if(m_bool)
-            (void)m_bool->Release();
-        m_bool = bool_;
-        if(m_bool)
-            (void)m_bool->AddRef();
-    }
-
-    void reset(element_type& bool_) noexcept
-    {
-        reset(std::addressof(bool_));
-    }
+    using my_base::my_base;
 
     /**
       * @brief Connect to the weak reference flag of object
@@ -915,47 +826,9 @@ public:
         connect_object(obj, *ti);
     }
 
-    /**
-     * @warning If you get the lockable shared bool by `GetWeakRefFlagOfScriptObject()`,
-     *          you should @b not use this function! Because it won't increase the reference count.
-     *
-     * @sa connect_object
-     */
-    void reset(std::in_place_t, handle_type bool_) noexcept
-    {
-        if(m_bool)
-            (void)m_bool->Release();
-        m_bool = bool_;
-    }
+    lockable_shared_bool& operator=(const lockable_shared_bool& other) = default;
 
-    void reset(std::in_place_t, element_type& bool_) noexcept
-    {
-        reset(std::in_place, std::addressof(bool_));
-    }
-
-    lockable_shared_bool& operator=(const lockable_shared_bool& other)
-    {
-        if(this == &other)
-            return *this;
-
-        reset(nullptr);
-        if(other.m_bool)
-        {
-            (void)other.m_bool->AddRef();
-            m_bool = other.m_bool;
-        }
-
-        return *this;
-    }
-
-    lockable_shared_bool& operator=(lockable_shared_bool&& other) noexcept
-    {
-        if(this == &other)
-            return *this;
-
-        lockable_shared_bool(std::move(other)).swap(*this);
-        return *this;
-    }
+    lockable_shared_bool& operator=(lockable_shared_bool&& other) noexcept = default;
 
     /**
      * @brief Lock the flag
@@ -963,7 +836,7 @@ public:
     void lock() const
     {
         ASBIND20_ASSERT(*this);
-        m_bool->Lock();
+        get()->Lock();
     }
 
     /**
@@ -972,56 +845,25 @@ public:
     void unlock() const noexcept
     {
         ASBIND20_ASSERT(*this);
-        m_bool->Unlock();
+        get()->Unlock();
     }
 
     [[nodiscard]]
     bool get_flag() const
     {
         ASBIND20_ASSERT(*this);
-        return m_bool->Get();
+        return get()->Get();
     }
 
     void set_flag(bool value = true) const
     {
-        m_bool->Set(value);
-    }
-
-    [[nodiscard]]
-    handle_type get() const noexcept
-    {
-        return m_bool;
-    }
-
-    handle_type operator->() const noexcept
-    {
-        return m_bool;
-    }
-
-    element_type& operator*() const noexcept
-    {
-        ASBIND20_ASSERT(m_bool != nullptr);
-        return *m_bool;
-    }
-
-    operator handle_type() const noexcept
-    {
-        return get();
-    }
-
-    explicit operator bool() const noexcept
-    {
-        return m_bool != nullptr;
+        get()->Set(value);
     }
 
     void swap(lockable_shared_bool& other) noexcept
     {
-        using std::swap;
-        swap(m_bool, other.m_bool);
+        my_base::swap(other);
     }
-
-private:
-    handle_type m_bool = nullptr;
 };
 
 inline void swap(lockable_shared_bool& lhs, lockable_shared_bool& rhs) noexcept
@@ -1037,189 +879,75 @@ inline void swap(lockable_shared_bool& lhs, lockable_shared_bool& rhs) noexcept
 [[nodiscard]]
 inline lockable_shared_bool make_lockable_shared_bool()
 {
-    return {std::in_place, AS_NAMESPACE_QUALIFIER asCreateLockableSharedBool()};
+    return {adopt_object, AS_NAMESPACE_QUALIFIER asCreateLockableSharedBool()};
 }
 
 /**
  * @brief RAII helper for `asITypeInfo*`.
+ *
+ * @note Assigning a type info object will increase its reference count.
+ *       Use `adopt_object` for taking over a reference you already own,
+ *       because the AngelScript APIs for getting type info generally don't
+ *       increase the reference count, such as being the hidden first argument
+ *       of template class constructor/factory.
  */
-class script_typeinfo
+class script_typeinfo : public shared_script_object_interface<typeinfo_pointer>
 {
+    using my_base = shared_script_object_interface<typeinfo_pointer>;
+
 public:
-    using element_type = AS_NAMESPACE_QUALIFIER asITypeInfo;
-    using handle_type = typeinfo_pointer;
-
-    script_typeinfo() noexcept = default;
+    using my_base::my_base;
 
     /**
-     * @brief Assign a type info object. It @b won't increase the reference count!
-     * @sa script_typeinfo(inplace_addref_t, handle_type)
+     * @brief Get the type ID of the stored type info
      *
-     * @warning DON'T use this constructor unless you know what you are doing!
-     *
-     * @note Generally, the AngelScript APIs for getting type info won't increase reference count,
-     *       such as being the hidden first argument of template class constructor/factory.
+     * @return Type ID, or `asINVALID_ARG` if no type info is stored
      */
-    explicit script_typeinfo(std::in_place_t, handle_type ti) noexcept
-        : m_ti(ti) {}
-
-    /**
-     * @brief Assign a type info object. It @b won't increase the reference count!
-     * @sa script_typeinfo(inplace_addref_t, handle_type)
-     */
-    explicit script_typeinfo(std::in_place_t, typeinfo_reference ti) noexcept
-        : m_ti(std::addressof(ti)) {}
-
-    /**
-     * @brief Assign a type info object, and increase reference count
-     */
-    script_typeinfo(handle_type ti) noexcept
-        : m_ti(ti)
-    {
-        if(m_ti)
-            (void)m_ti->AddRef();
-    }
-
-    script_typeinfo(typeinfo_reference ti) noexcept
-        : script_typeinfo(std::addressof(ti)) {}
-
-    script_typeinfo(const script_typeinfo& other) noexcept
-        : m_ti(other.m_ti)
-    {
-        if(m_ti)
-            (void)m_ti->AddRef();
-    }
-
-    script_typeinfo(script_typeinfo&& other) noexcept
-        : m_ti(std::exchange(other.m_ti, nullptr)) {}
-
-    ~script_typeinfo()
-    {
-        reset();
-    }
-
-    script_typeinfo& operator=(const script_typeinfo& other) noexcept
-    {
-        if(this == &other)
-            return *this;
-        reset(other.m_ti);
-        return *this;
-    }
-
-    script_typeinfo& operator=(script_typeinfo&& other) noexcept
-    {
-        if(this == &other)
-            return *this;
-        reset(other.release());
-        return *this;
-    }
-
-    [[nodiscard]]
-    handle_type get() const noexcept
-    {
-        return m_ti;
-    }
-
-    typeinfo_reference operator*() const noexcept
-    {
-        return *get();
-    }
-
-    handle_type operator->() const noexcept
-    {
-        return get();
-    }
-
-    operator handle_type() const noexcept
-    {
-        return get();
-    }
-
-    explicit operator bool() const noexcept
-    {
-        return m_ti != nullptr;
-    }
-
-    [[nodiscard]]
-    handle_type release() noexcept
-    {
-        return std::exchange(m_ti, nullptr);
-    }
-
-    void reset(std::nullptr_t = nullptr) noexcept
-    {
-        if(m_ti)
-        {
-            (void)m_ti->Release();
-            m_ti = nullptr;
-        }
-    }
-
-    void reset(handle_type ti)
-    {
-        // Avoid Release-then-AddRef on the same handle,
-        if(m_ti == ti) [[unlikely]]
-            return;
-
-        if(m_ti)
-            (void)m_ti->Release();
-        m_ti = ti;
-        if(m_ti)
-            (void)m_ti->AddRef();
-    }
-
-    void reset(typeinfo_reference ti)
-    {
-        reset(std::addressof(ti));
-    }
-
-    void reset(std::in_place_t, handle_type ti)
-    {
-        if(m_ti)
-            (void)m_ti->Release();
-        m_ti = ti;
-    }
-
-    void reset(std::in_place_t, typeinfo_reference ti) noexcept
-    {
-        reset(std::in_place, std::addressof(ti));
-    }
-
     [[nodiscard]]
     int type_id() const
     {
-        if(!m_ti) [[unlikely]]
+        if(!get()) [[unlikely]]
             return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
 
-        return m_ti->GetTypeId();
+        return get()->GetTypeId();
     }
 
+    /**
+     * @brief Get the type ID of the subtype
+     *
+     * @param idx Index of the subtype
+     * @return Type ID of the subtype, or `asINVALID_ARG` if no type info is stored
+     */
     [[nodiscard]]
     int subtype_id(subtype_index_type idx = 0) const
     {
-        if(!m_ti) [[unlikely]]
+        if(!get()) [[unlikely]]
             return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
 
-        return m_ti->GetSubTypeId(idx);
+        return get()->GetSubTypeId(idx);
     }
 
+    /**
+     * @brief Get the type info of the subtype
+     *
+     * @warning It @b won't increase the reference count of the returned type info!
+     *
+     * @param idx Index of the subtype
+     * @return Type info of the subtype, or `nullptr` if no type info is stored
+     */
     [[nodiscard]]
     typeinfo_pointer subtype(subtype_index_type idx = 0) const
     {
-        if(!m_ti) [[unlikely]]
+        if(!get()) [[unlikely]]
             return nullptr;
 
-        return m_ti->GetSubType(idx);
+        return get()->GetSubType(idx);
     }
 
     void swap(script_typeinfo& other) noexcept
     {
-        using std::swap;
-        swap(m_ti, other.m_ti);
+        my_base::swap(other);
     }
-
-private:
-    handle_type m_ti = nullptr;
 };
 
 inline void swap(script_typeinfo& lhs, script_typeinfo& rhs) noexcept
