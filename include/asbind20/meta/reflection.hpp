@@ -197,13 +197,11 @@ consteval std::string_view script_parameter_declaration_of(
         result += script_identifier_of(r);
     }
 
-    auto arg_ann = std::meta::annotations_of_with_type(
-        r, ^^asbind20::default_arg
-    );
-    if(!arg_ann.empty())
+    auto ann_for_arg = extract_last_annotation<annotations::default_arg>(r);
+    if(ann_for_arg.has_value())
     {
         result += '=';
-        result += std::meta::extract<asbind20::default_arg>(arg_ann.back()).get();
+        result += ann_for_arg->get();
     }
 
     return std::define_static_string(result);
@@ -270,6 +268,16 @@ consteval bool is_const_method_with_calling_convention(
     asbind20::detail::call_conv_type conv
 )
 {
+    if(conv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL)
+        return false;
+
+    if(conv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL)
+    {
+        if(!std::meta::is_class_member(func))
+            throw std::meta::exception("asCALL_THISCALL requires member function", func);
+        return std::meta::is_const(func);
+    }
+
     const bool obj_first =
         conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
         conv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJFIRST;
@@ -320,14 +328,8 @@ consteval std::string_view script_function_declaration_of_with_calling_conventio
         skip_func_name = true;
 
     std::string suffix;
-    if(conv != AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL)
-    {
-        if((std::meta::is_class_member(func) && std::meta::is_const(func)) ||
-           is_const_method_with_calling_convention(func, conv))
-        {
-            suffix += "const";
-        }
-    }
+    if(is_const_method_with_calling_convention(func, conv))
+        suffix += "const";
 
     std::string_view func_identifer =
         skip_func_name ? "f" : script_identifier_of(func);
