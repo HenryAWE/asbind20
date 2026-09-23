@@ -98,11 +98,39 @@ concept shared_script_object_pointer =
         p->Release();
     };
 
+/**
+ * @brief Tag type of `adopt_object`
+ *
+ * @sa adopt_object
+ */
 struct adopt_object_t
 {};
 
+/**
+ * @brief Tag for taking over a reference which is already owned
+ *
+ * The constructors and `reset()` of the RAII helpers increase the reference
+ * count of the passed object by default. Passing this tag instead tells the
+ * helper that the caller already owns a reference, so that the helper takes it
+ * over without increasing it. It is meant for the entities which come with
+ * ownership, such as the one returned by a function documented as returning a
+ * new reference.
+ *
+ * @sa shared_script_object_interface
+ */
 inline constexpr adopt_object_t adopt_object{};
 
+/**
+ * @brief Base class of the RAII helpers for reference counted script entities
+ *
+ * It implements the reference counting operations shared by the RAII helpers
+ * derived from it: copying and moving (which share and transfer the ownership),
+ * `reset()`, `release()`, comparison with another helper, with a pointer and
+ * with a reference of the underlying entity, hashing and output to a stream.
+ *
+ * @tparam SharedObjectPointer Pointer to a reference counted script entity,
+ *         such as `asIScriptObject*`
+ */
 template <shared_script_object_pointer SharedObjectPointer>
 class shared_script_object_interface
 {
@@ -726,6 +754,13 @@ using script_version_type = AS_NAMESPACE_QUALIFIER asDWORD;
 
 inline constexpr script_version_type default_script_version = ANGELSCRIPT_VERSION;
 
+/**
+ * @brief Create an AngelScript engine
+ *
+ * @note The returned engine is a raw pointer which owns a reference.
+ *       Use `make_script_engine()` for owning it exclusively, or
+ *       `make_shared_script_engine()` for sharing the ownership.
+ */
 [[nodiscard]]
 inline engine_pointer create_script_engine(
     script_version_type version = default_script_version
@@ -797,6 +832,9 @@ inline void swap(shared_script_engine& lhs, shared_script_engine& rhs) noexcept
     lhs.swap(rhs);
 }
 
+/**
+ * @brief Create a shared AngelScript engine
+ */
 [[nodiscard]]
 inline shared_script_engine make_shared_script_engine(
     script_version_type version = default_script_version

@@ -266,7 +266,11 @@ private:
  * @brief Wrapper of script function
  *
  * @note Use `adopt_object` for taking over a function object which already owns a reference,
- *       such as the one returned by `asIScriptModule::GetFunctionByName()`.
+ *       such as the one returned by `asIScriptModule::CompileFunction()`.
+ *       The APIs for querying an existing function, such as
+ *       `asIScriptModule::GetFunctionByName()`, return a borrowed pointer instead,
+ *       which does not own a reference, so it should be passed to the constructor
+ *       directly.
  */
 template <>
 class script_function<void> : public shared_script_object_interface<function_pointer>

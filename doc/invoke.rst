@@ -106,6 +106,8 @@ Script Function Objects
 ``script_function`` and ``script_method`` wrap an ``asIScriptFunction*`` with ownership semantics,
 tracking the module reference count to keep the function valid even after the module is discarded.
 ``script_function_ref`` and ``script_method_ref`` are non-owning counterparts.
+``get()`` returns the wrapped ``asIScriptFunction*``, and the owning wrappers can be copied, moved,
+compared and hashed by that pointer.
 
 .. code-block:: c++
 
@@ -116,8 +118,17 @@ tracking the module reference count to keep the function valid even after the mo
     m->AddScriptSection("test", "int test() { return 42; }");
     m->Build();
 
-    // Owning wrapper — keeps the module alive
+    // Owning wrapper — keeps the function alive after the module is discarded.
+    // `GetFunctionByName()` returns a borrowed pointer, so the constructor
+    // adds a reference here.
     asbind20::script_function<int()> f(m->GetFunctionByName("test"));
+
+    // Take over a reference which is already owned, without increasing the
+    // reference count. It is meant for the APIs returning a new reference,
+    // such as `asIScriptModule::CompileFunction()`.
+    asIScriptFunction* raw = nullptr;
+    m->CompileFunction("sec", "int compiled() { return 1; }", 0, 0, &raw);
+    asbind20::script_function<int()> owned(asbind20::adopt_object, raw);
 
     m->Discard(); // module is discarded, but f still holds a reference
 
@@ -127,16 +138,23 @@ tracking the module reference count to keep the function valid even after the mo
 
     // Non-owning lightweight reference
     asbind20::script_function_ref<int()> rf = f;
-    assert(rf.target() == f.target());
+    assert(rf.get() == f.get());
 
     // Convert ref back to owning
     asbind20::script_function<int()> another = rf;
-    assert(another.target() == rf.target());
+    assert(another.get() == rf.get());
 
     // Reset releases ownership
     f.reset();
     assert(!f);
-    assert(f.target() == nullptr);
+    assert(f.get() == nullptr);
+
+.. note::
+
+    The previous name of ``get()``, ``target()``, is kept as a deprecated alias.
+    ``script_function_ref`` and ``script_method_ref`` do not own the function and
+    therefore have no hash specialization; hash the owning wrapper or ``get()``
+    instead.
 
 ``script_method`` works the same way for member functions. Define a script class
 and wrap its methods:
