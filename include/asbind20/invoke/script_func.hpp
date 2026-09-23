@@ -114,7 +114,14 @@ public:
     }
 
     [[nodiscard]]
+    [[deprecated("Use get() instead")]]
     handle_type target() const noexcept
+    {
+        return m_func;
+    }
+
+    [[nodiscard]]
+    handle_type get() const noexcept
     {
         return m_func;
     }
@@ -131,19 +138,19 @@ public:
 
     friend bool operator==(const script_function_ref& lhs, handle_type rhs) noexcept
     {
-        return lhs.target() == rhs;
+        return lhs.get() == rhs;
     }
 
     friend bool operator==(handle_type lhs, const script_function_ref& rhs) noexcept
     {
-        return lhs == rhs.target();
+        return lhs == rhs.get();
     }
 
     result_type operator()(
         context_reference ctx, Args... args
     ) const
     {
-        handle_type func = target();
+        handle_type func = get();
         if(!func) [[unlikely]]
             detail::throw_bad_call();
 
@@ -198,7 +205,14 @@ public:
     }
 
     [[nodiscard]]
+    [[deprecated("Use get() instead")]]
     handle_type target() const noexcept
+    {
+        return m_func;
+    }
+
+    [[nodiscard]]
+    handle_type get() const noexcept
     {
         return m_func;
     }
@@ -215,12 +229,12 @@ public:
 
     friend bool operator==(const script_method_ref& lhs, handle_type rhs) noexcept
     {
-        return lhs.target() == rhs;
+        return lhs.get() == rhs;
     }
 
     friend bool operator==(handle_type lhs, const script_method_ref& rhs) noexcept
     {
-        return lhs == rhs.target();
+        return lhs == rhs.get();
     }
 
     template <script_object_handle Object>
@@ -228,7 +242,7 @@ public:
         context_reference ctx, Object&& obj, Args... args
     ) const
     {
-        handle_type func = target();
+        handle_type func = get();
         if(!func)
             detail::throw_bad_call();
 
@@ -266,6 +280,7 @@ public:
      * @brief Get the wrapped function object
      */
     [[nodiscard]]
+    [[deprecated("Use get() instead")]]
     handle_type target() const noexcept
     {
         return get();
@@ -315,13 +330,13 @@ public:
     script_function& operator=(script_function&&) noexcept = default;
 
     script_function(script_function_ref<R(Args...)> rf) noexcept
-        : my_base(rf.target()) {}
+        : my_base(rf.get()) {}
 
     result_type operator()(
         context_reference ctx, Args... args
     ) const
     {
-        handle_type func = target();
+        handle_type func = get();
         if(!func)
             detail::throw_bad_call();
 
@@ -343,7 +358,7 @@ public:
 
     operator script_function_ref<R(Args...)>() const noexcept
     {
-        return target();
+        return {get()};
     }
 };
 
@@ -375,7 +390,7 @@ public:
         : my_base(func) {}
 
     script_method(script_method_ref<R(Args...)> rf) noexcept
-        : my_base(rf.target()) {}
+        : my_base(rf.get()) {}
 
     script_method& operator=(const script_method&) = default;
     script_method& operator=(script_method&&) noexcept = default;
@@ -385,7 +400,7 @@ public:
         context_reference ctx, Object&& obj, Args... args
     ) const
     {
-        handle_type func = target();
+        handle_type func = get();
         if(!func)
             detail::throw_bad_call();
 
@@ -405,7 +420,7 @@ public:
         context_reference ctx, const void* obj, Args... args
     ) const
     {
-        handle_type func = target();
+        handle_type func = get();
         if(!func)
             detail::throw_bad_call();
 
@@ -427,7 +442,7 @@ public:
 
     operator script_method_ref<R(Args...)>() const noexcept
     {
-        return target();
+        return {get()};
     }
 };
 

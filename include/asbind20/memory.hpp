@@ -134,6 +134,9 @@ public:
         : m_obj(std::addressof(obj))
     {}
 
+    shared_script_object_interface(adopt_object_t, shared_script_object_interface&) = delete;
+    shared_script_object_interface(adopt_object_t, shared_script_object_interface&&) = delete;
+
     ~shared_script_object_interface()
     {
         decrease_ref_count();
@@ -239,11 +242,19 @@ public:
         increase_ref_count();
     }
 
-    void reset(object_reference obj)
+    void reset(reference obj)
     {
         reset(std::addressof(obj));
     }
 
+    /**
+     * @brief Reset object by taking over the ownership of a reference
+     *
+     * @note If the stored object is the same as `obj`, this function does
+     *       nothing, i.e., the caller keeps the ownership of the passed
+     *       reference. Use `reset(std::move(other))` to transfer the ownership
+     *       between helpers.
+     */
     void reset(adopt_object_t, pointer obj)
     {
         // Avoid Release-then-AddRef on the same handle,
@@ -252,7 +263,7 @@ public:
 
         decrease_ref_count();
         m_obj = obj;
-        // Don't increase the refernce count here
+        // Don't increase the reference count here
     }
 
     void reset(adopt_object_t, reference obj)
@@ -271,10 +282,11 @@ public:
     {
         if(this == &obj) [[unlikely]]
             return;
-        this->reset(adopt_object, obj.release());
+        take_over(obj.release());
     }
 
     void reset(adopt_object_t, shared_script_object_interface& obj) = delete;
+    void reset(adopt_object_t, shared_script_object_interface&& obj) = delete;
 
     // For consistency with standard smart pointers,
     // outputs the underlying pointer
@@ -299,6 +311,12 @@ protected:
         (void)m_obj->Release();
     }
 
+    void take_over(pointer obj) noexcept
+    {
+        decrease_ref_count();
+        m_obj = obj;
+    }
+
     shared_script_object_interface(const shared_script_object_interface& other)
         : m_obj(other.m_obj)
     {
@@ -315,7 +333,7 @@ protected:
     {
         if(this == &other) [[unlikely]]
             return *this;
-        reset(adopt_object, other.release());
+        take_over(other.release());
         return *this;
     }
 
@@ -763,7 +781,9 @@ public:
 
     void reset(unique_script_engine&& other)
     {
-        reset(adopt_object, other.release());
+        // The engine may be the same one, so the reference owned by this
+        // helper must be dropped before taking over the one of `other`.
+        take_over(other.release());
     }
 
     void swap(shared_script_engine& other) noexcept
@@ -825,6 +845,9 @@ public:
 
         connect_object(obj, *ti);
     }
+
+    lockable_shared_bool(const lockable_shared_bool& other) = default;
+    lockable_shared_bool(lockable_shared_bool&& other) noexcept = default;
 
     lockable_shared_bool& operator=(const lockable_shared_bool& other) = default;
 
@@ -954,7 +977,36 @@ inline void swap(script_typeinfo& lhs, script_typeinfo& rhs) noexcept
 {
     lhs.swap(rhs);
 }
+} // namespace asbind20
 
+template <>
+struct std::hash<asbind20::script_object>
+    : std::hash<asbind20::shared_script_object_interface<asbind20::object_pointer>>
+{};
+
+template <>
+struct std::hash<asbind20::script_context>
+    : std::hash<asbind20::shared_script_object_interface<asbind20::context_pointer>>
+{};
+
+template <>
+struct std::hash<asbind20::shared_script_engine>
+    : std::hash<asbind20::shared_script_object_interface<asbind20::engine_pointer>>
+{};
+
+template <>
+struct std::hash<asbind20::lockable_shared_bool>
+    : std::hash<
+          asbind20::shared_script_object_interface<AS_NAMESPACE_QUALIFIER asILockableSharedBool*>>
+{};
+
+template <>
+struct std::hash<asbind20::script_typeinfo>
+    : std::hash<asbind20::shared_script_object_interface<asbind20::typeinfo_pointer>>
+{};
+
+namespace asbind20
+{
 namespace container
 {
     /**

@@ -1088,7 +1088,7 @@ public:
             }
 
             sort_by_script_compare<true>(
-                cache->comp.get_opCmp().target(),
+                cache->comp.get_opCmp().get(),
                 asbind20::is_objhandle(subtype_id),
                 asc,
                 off,
