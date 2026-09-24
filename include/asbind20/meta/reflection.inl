@@ -82,7 +82,7 @@ consteval std::string_view script_integral_name_of(std::meta::info r)
 consteval std::string_view script_symbol_of(
     std::meta::operators op,
     unsigned int operand_count,
-    bool prefer_r_suffix_or_postifx
+    bool prefer_r_suffix_or_postfix
 )
 {
     using namespace std::string_literals;
@@ -132,17 +132,17 @@ consteval std::string_view script_symbol_of(
     case op_caret_equals: return "opXorAssign";
 
     case op_plus_plus:
-        result = "op"s + (prefer_r_suffix_or_postifx ? "Post" : "Pre") + "Inc";
+        result = "op"s + (prefer_r_suffix_or_postfix ? "Post" : "Pre") + "Inc";
         break;
     case op_minus_minus:
-        result = "op"s + (prefer_r_suffix_or_postifx ? "Post" : "Pre") + "Dec";
+        result = "op"s + (prefer_r_suffix_or_postfix ? "Post" : "Pre") + "Dec";
         break;
 
     default:
         throw std::invalid_argument(std::string("bad operator: ") + std::meta::symbol_of(op));
     }
 
-    if(has_reversed_version && prefer_r_suffix_or_postifx)
+    if(has_reversed_version && prefer_r_suffix_or_postfix)
         result += "_r";
     return std::define_static_string(result);
 }

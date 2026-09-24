@@ -268,7 +268,7 @@ namespace meta
     /**
      * @brief Get string representation of an enum value in fixed string
      *
-     * @note This function has limitations. @sa static_enum_name
+     * @note This function has limitations. @sa enum_name_of
      *
      * @tparam Value Enum value
      */

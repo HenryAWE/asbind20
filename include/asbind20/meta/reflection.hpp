@@ -28,7 +28,7 @@ consteval std::string_view script_integral_name_of(std::meta::info r);
 consteval std::string_view script_symbol_of(
     std::meta::operators op,
     unsigned int operand_count,
-    bool prefer_r_suffix_or_postifx = false
+    bool prefer_r_suffix_or_postfix = false
 );
 
 consteval std::string_view script_identifier_of(std::meta::info r);

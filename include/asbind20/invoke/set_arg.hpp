@@ -145,7 +145,7 @@ int set_script_arg(
 
     if constexpr(traits_helper::has_customized_arg_setter)
     {
-        return traits_helper ::set_arg(ctx, idx, obj);
+        return traits_helper::set_arg(ctx, idx, obj);
     }
     else
     {
