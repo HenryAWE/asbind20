@@ -61,7 +61,6 @@ consteval std::string_view script_parameter_list_declaration_of_with_calling_con
     asbind20::detail::call_conv_type conv = AS_NAMESPACE_QUALIFIER asCALL_CDECL
 );
 
-// Detect the "const method" case for functions registered with OBJFIRST/LAST
 consteval bool is_const_method_with_calling_convention(
     std::meta::info func,
     asbind20::detail::call_conv_type conv

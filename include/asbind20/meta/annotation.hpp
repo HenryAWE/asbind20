@@ -1,9 +1,6 @@
 #ifndef ASBIND20_META_ANNOTATION_HPP
 #define ASBIND20_META_ANNOTATION_HPP
 
-#include "annotation.hpp"
-
-
 #include <stdexcept>
 #include "refl_common.hpp"
 
