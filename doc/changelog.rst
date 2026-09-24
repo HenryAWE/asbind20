@@ -27,13 +27,15 @@ Breaking Change
     ``get()`` is no longer required. Note that passing a helper where a raw
     pointer is expected does not transfer the ownership.
 
-- Taking over an already owned reference now uses the ``adopt_object`` tag instead
-  of ``std::in_place_t``::
+- Taking over an already owned reference now uses the ``asbind20::adopt_object`` tag instead
+  of ``std::in_place_t``:
 
-      // Before
-      script_function<void> f(std::in_place, func);
-      // Now
-      script_function<void> f(adopt_object, func);
+  .. code-block:: c++
+
+    // Before
+    script_function<void> f(std::in_place, func);
+    // Now
+    script_function<void> f(adopt_object, func);
 
 - ``target()`` of the script function wrappers is deprecated in favor of ``get()``.
   The old name still works, but it triggers a ``[[deprecated]]`` warning.
@@ -72,29 +74,6 @@ Update
   assert on a null context, so existing call sites passing a pointer still work.
 
 - Make ``asbind20::library_version()`` informative.
-
-- New ``shared_script_object_interface`` and the ``adopt_object`` tag, which are
-  the common reference counting implementation of the RAII helpers. Deriving from
-  it implements copying, moving, ``reset()``, ``release()``, comparison, hashing
-  and stream output for any reference counted script entity.
-
-  ``adopt_object`` takes over a reference which the caller already owns, without
-  increasing the reference count. It is meant for the APIs returning a new
-  reference, such as ``asIScriptModule::CompileFunction()``. The APIs for querying
-  an existing entity, such as ``asIScriptModule::GetFunctionByName()``, return a
-  borrowed pointer instead, which should be passed to the helpers directly.
-
-  Adopting from another helper is rejected at compile time, because the source
-  helper still owns its own reference. Use ``reset(std::move(other))``, the copy
-  constructor or the move constructor to transfer the ownership between helpers.
-
-- The RAII helpers can now be compared with each other, with a raw pointer and
-  with a reference of the stored entity, so ``helper == nullptr`` and
-  ``helper == *ptr`` are valid. ``std::hash`` specializations are provided for
-  all of them, and they can be used as the key of ``std::unordered_map`` and
-  ``std::unordered_set``. Writing a helper to a stream prints the address of the
-  stored entity. ``reset()`` also accepts a reference of the underlying entity,
-  e.g. ``script_context::reset(asIScriptContext&)``.
 
 Bug fix
 ~~~~~~~
