@@ -224,10 +224,10 @@ TEST(Annotation, ParameterAttributes)
     );
 
     {
-        constexpr std::string_view sv = std::meta::extract<asbind20::default_arg>(
+        constexpr std::string_view sv = std::meta::extract<asbind20::default_arg_t>(
                                            std::meta::annotations_of_with_type(
                                                std::meta::parameters_of(^^func)[1],
-                                               ^^asbind20::default_arg
+                                               ^^asbind20::default_arg_t
                                            )[0]
        )
                                            .get();

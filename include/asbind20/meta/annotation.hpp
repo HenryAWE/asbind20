@@ -1,6 +1,9 @@
 #ifndef ASBIND20_META_ANNOTATION_HPP
 #define ASBIND20_META_ANNOTATION_HPP
 
+#include "annotation.hpp"
+
+
 #include <stdexcept>
 #include "refl_common.hpp"
 
@@ -35,9 +38,9 @@ private:
  */
 inline constexpr as_handle_t as_handle{};
 
-struct rename;
+struct rename_t;
 
-struct default_arg;
+struct default_arg_t;
 } // namespace asbind20::inline annotations
 
 #ifdef ASBIND20_HAS_LIB_REFLECTION
@@ -61,19 +64,35 @@ struct annotation_with_name
     }
 };
 
-struct rename : annotation_with_name
+struct rename_t : annotation_with_name
 {
-    explicit consteval rename(const char* name)
-        : annotation_with_name(name) {}
+    using annotation_with_name::annotation_with_name;
 };
 
-struct default_arg : annotation_with_name
+consteval rename_t rename(const char* name)
 {
-    explicit default_arg(std::nullptr_t) = delete;
+    return rename_t(name);
+}
 
-    explicit consteval default_arg(const char* name)
-        : annotation_with_name(name) {}
+consteval rename_t rename(const std::string& name)
+{
+    return rename_t(name.c_str());
+}
+
+struct default_arg_t : annotation_with_name
+{
+    using annotation_with_name::annotation_with_name;
 };
+
+consteval default_arg_t default_arg(const char* name)
+{
+    return default_arg_t(name);
+}
+
+consteval default_arg_t default_arg(const std::string& name)
+{
+    return default_arg_t(name.c_str());
+}
 } // namespace asbind20::inline annotations
 
 #endif

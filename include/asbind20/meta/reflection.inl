@@ -149,7 +149,7 @@ consteval std::string_view script_symbol_of(
 
 consteval std::string_view script_identifier_of(std::meta::info r)
 {
-    if(auto rename_ann = extract_last_annotation<annotations::rename>(r);
+    if(auto rename_ann = extract_last_annotation<annotations::rename_t>(r);
        rename_ann.has_value())
     {
         return rename_ann->get();
@@ -257,7 +257,7 @@ consteval std::string_view script_parameter_declaration_of(std::meta::info r)
         result += script_identifier_of(r);
     }
 
-    auto ann_for_arg = extract_last_annotation<annotations::default_arg>(r);
+    auto ann_for_arg = extract_last_annotation<annotations::default_arg_t>(r);
     if(ann_for_arg.has_value())
     {
         result += '=';

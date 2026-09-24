@@ -468,7 +468,7 @@ namespace ns0
     namespace ns1
     {}
 
-    namespace[[= asbind20::rename("ns2")]] renamed_ns
+    namespace[[= asbind20::rename_t("ns2")]] renamed_ns
     {}
 } // namespace ns0
 } // namespace
