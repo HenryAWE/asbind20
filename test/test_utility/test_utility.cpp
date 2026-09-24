@@ -261,9 +261,9 @@ static void output_info(std::ostream& os)
     os << "ASBIND20_HAS_STANDALONE_STDCALL defined" << std::endl;
 #endif
 
-#ifdef ASBIND20_HAS_STATIC_ENUM_NAME
-    os << "ASBIND20_HAS_STATIC_ENUM_NAME: "
-       << ASBIND20_HAS_STATIC_ENUM_NAME
+#ifdef ASBIND20_HAS_ENUM_NAME_OF
+    os << "ASBIND20_HAS_ENUM_NAME_OF: "
+       << ASBIND20_HAS_ENUM_NAME_OF
        << std::endl;
 #endif
 

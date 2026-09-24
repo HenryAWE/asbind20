@@ -50,6 +50,10 @@ namespace prefix
 } // namespace prefix
 } // namespace
 
+static_assert(
+    asbind20::meta::is_generic_function_type(^^AS_NAMESPACE_QUALIFIER asGENFUNC_t)
+);
+
 TEST(Reflection, TypeName)
 {
     using namespace asbind20;

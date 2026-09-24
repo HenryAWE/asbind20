@@ -2517,7 +2517,7 @@ public:
 #ifdef ASBIND20_HAS_LIB_REFLECTION
 
     template <std::meta::info Property>
-    Derived property(meta::prop_refl_proxy<Property>)
+    Derived& property(meta::prop_refl_proxy<Property>)
     {
         using proxy_t = meta::prop_refl_proxy<Property>;
         this->register_property(

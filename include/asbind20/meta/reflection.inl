@@ -282,7 +282,7 @@ consteval std::string_view script_namespace_declaration_of(
 
     std::string result(script_identifier_of(r));
     std::meta::info current = r;
-    while(std::meta::has_parent(r))
+    while(std::meta::has_parent(current))
     {
         current = std::meta::parent_of(current);
         if(!std::meta::is_namespace(current))

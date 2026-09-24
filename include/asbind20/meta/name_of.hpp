@@ -133,7 +133,7 @@ consteval std::string_view enum_name_of()
 #    define ASBIND20_HAS_ENUM_NAME_OF "__FUNCSIG__"
 
     name = __FUNCSIG__;
-    std::size_t start = name.find("static_enum_name<") + 13;
+    std::size_t start = name.find("enum_name_of<") + 13;
     std::size_t end = name.find_last_of('>');
     name = std::string_view(name.data() + start, end - start);
 
