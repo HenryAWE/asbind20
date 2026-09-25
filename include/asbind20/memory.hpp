@@ -11,15 +11,12 @@
 
 #include <cassert>
 #include <cstddef>
-#include <new>
 #include <utility>
 #include <type_traits>
 #include <string>
-#include <limits>
 #include "detail/err_handler.hpp"
 #include "detail/include_as.hpp"
 #include "utility.hpp"
-#include "debugging/gc_statistics.hpp"
 
 namespace asbind20
 {
@@ -50,44 +47,12 @@ public:
     constexpr ~script_allocator() = default;
 
     [[nodiscard]]
-    static constexpr pointer allocate(size_type n)
-    {
-        if(std::is_constant_evaluated())
-        {
-            std::allocator<T> tmp;
-            return tmp.allocate(n);
-        }
-        else
-        {
-            check_length(n);
+    static constexpr auto allocate(size_type n) -> pointer;
 
-            void* mem = AS_NAMESPACE_QUALIFIER asAllocMem(n * sizeof(T));
-            if(!mem) [[unlikely]]
-                asbind20::detail::throw_<std::bad_alloc>();
-            return pointer(mem);
-        }
-    }
-
-    static constexpr void deallocate(pointer mem, size_type n) noexcept
-    {
-        if(std::is_constant_evaluated())
-        {
-            std::allocator<T> tmp;
-            tmp.deallocate(mem, n);
-        }
-        else
-        {
-            (void)n; // unused
-            AS_NAMESPACE_QUALIFIER asFreeMem(static_cast<void*>(mem));
-        }
-    }
+    static constexpr void deallocate(pointer mem, size_type n) noexcept;
 
 private:
-    static void check_length(size_type n)
-    {
-        if(std::numeric_limits<size_type>::max() / sizeof(T) < n) [[unlikely]]
-            detail::throw_<std::bad_array_new_length>();
-    }
+    static void check_length(size_type n);
 };
 
 template <typename Pointer>
@@ -1387,5 +1352,7 @@ namespace container
     };
 } // namespace container
 } // namespace asbind20
+
+#include "memory.inl"
 
 #endif
