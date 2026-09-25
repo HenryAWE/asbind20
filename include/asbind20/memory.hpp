@@ -176,8 +176,7 @@ public:
         return m_obj;
     }
 
-    // TODO: Consider making this explicit
-    operator pointer() const noexcept
+    explicit operator pointer() const noexcept
     {
         return get();
     }
