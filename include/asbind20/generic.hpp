@@ -131,13 +131,11 @@ T get_generic_arg(
     arg_index_type idx
 )
 {
-    constexpr bool is_customized = requires() {
-        { type_traits<std::remove_cv_t<T>>::get_arg(gen, idx) } -> std::convertible_to<T>;
-    };
+    using traits_helper = detail::type_traits_helper<T>;
 
-    if constexpr(is_customized)
+    if constexpr(traits_helper::has_customized_arg_getter)
     {
-        return type_traits<std::remove_cv_t<T>>::get_arg(gen, idx);
+        return traits_helper::get_arg(*gen, idx);
     }
     else if constexpr(std::is_pointer_v<T>)
     {
@@ -214,19 +212,11 @@ int set_generic_return(
     std::type_identity_t<Return>&& ret
 )
 {
-    constexpr bool is_customized = requires() {
-        {
-            type_traits<std::remove_cv_t<Return>>::set_return(
-                gen, std::forward<Return>(ret)
-            )
-        } -> std::same_as<int>;
-    };
+    using traits_helper = detail::type_traits_helper<Return>;
 
-    if constexpr(is_customized)
+    if constexpr(traits_helper::has_customized_ret_setter)
     {
-        return type_traits<std::remove_cv_t<Return>>::set_return(
-            gen, std::forward<Return>(ret)
-        );
+        return traits_helper::set_return(*gen, std::forward<Return>(ret));
     }
     else if constexpr(std::is_reference_v<Return>)
     {
@@ -323,17 +313,11 @@ int set_generic_return_by(
     Args&&... args
 )
 {
-    constexpr bool is_customized = requires() {
-        {
-            type_traits<std::remove_cv_t<Return>>::set_return(
-                gen, std::declval<Return>()
-            )
-        } -> std::same_as<int>;
-    };
+    using traits_helper = detail::type_traits_helper<Return>;
     constexpr bool use_nrvo =
         !(std::is_reference_v<Return> || std::is_pointer_v<Return>) &&
         std::is_class_v<Return> &&
-        (!is_customized ||
+        (!traits_helper::has_customized_ret_setter ||
          std::is_move_constructible_v<Return>);
 
     if constexpr(std::is_void_v<Return>)

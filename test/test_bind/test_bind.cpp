@@ -417,7 +417,7 @@ TEST(TestBind, Enum)
     using test_bind::my_enum;
     {
         asbind20::enum_<my_enum> e(engine, "my_enum");
-#ifndef ASBIND20_HAS_STATIC_ENUM_NAME
+#ifndef ASBIND20_HAS_ENUM_NAME_OF
         e
             .value("A", my_enum::A)
             .value("B", my_enum::B);
