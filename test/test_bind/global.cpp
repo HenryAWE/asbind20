@@ -114,11 +114,11 @@ TEST(TestBind, GlobalNative)
 
     {
         asbind20::global g(engine);
-        EXPECT_EQ(g.get_engine(), engine);
+        EXPECT_EQ(g.get_engine(), engine.get());
         EXPECT_FALSE(g.force_generic());
     }
 
-    register_global_funcs(engine, wrapper, val);
+    register_global_funcs(engine.get(), wrapper, val);
 
     {
         asbind20::request_context ctx(engine);
@@ -171,11 +171,11 @@ TEST(TestBind, GlobalGeneric)
 
     {
         asbind20::global<true> g(engine);
-        EXPECT_EQ(g.get_engine(), engine);
+        EXPECT_EQ(g.get_engine(), engine.get());
         EXPECT_TRUE(g.force_generic());
     }
 
-    register_global_funcs(asbind20::use_generic, engine, wrapper, val);
+    register_global_funcs(asbind20::use_generic, engine.get(), wrapper, val);
 
     {
         asbind20::request_context ctx(engine);

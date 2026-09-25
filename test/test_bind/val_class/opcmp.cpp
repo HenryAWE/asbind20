@@ -91,8 +91,8 @@ TEST(OpCmp, Native)
     auto engine = asbind20::make_script_engine();
     asbind_test::setup_message_callback(engine);
 
-    test_bind::register_opCmp_check_helpers<false>(engine);
-    test_bind::check_opCmp(engine);
+    test_bind::register_opCmp_check_helpers<false>(engine.get());
+    test_bind::check_opCmp(engine.get());
 }
 
 TEST(OpCmp, Generic)
@@ -100,6 +100,6 @@ TEST(OpCmp, Generic)
     auto engine = asbind20::make_script_engine();
     asbind_test::setup_message_callback(engine);
 
-    test_bind::register_opCmp_check_helpers<true>(engine);
-    test_bind::check_opCmp(engine);
+    test_bind::register_opCmp_check_helpers<true>(engine.get());
+    test_bind::check_opCmp(engine.get());
 }

@@ -29,7 +29,7 @@ TEST(Ranges, AllMethodsWithStdViews)
     static_assert(std::ranges::input_range<abr::all_methods_view>);
 
     auto engine = asbind20::make_script_engine();
-    test_utility::setup_abc_interface(engine);
+    test_utility::setup_abc_interface(engine.get());
 
     auto* ti = engine->GetTypeInfoByName("abc");
     ASSERT_THAT(ti, ::testing::NotNull());
@@ -402,7 +402,7 @@ TEST(Ranges, GenericArguments)
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
-    asbind_test::setup_script_string(engine);
+    asbind_test::setup_script_string(engine.get());
 
     generic_function wrapper = [](asbind20::generic_pointer gen) -> void
     {
@@ -461,7 +461,7 @@ TEST(Ranges, GenericArgumentsOffset)
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
-    asbind_test::setup_script_string(engine);
+    asbind_test::setup_script_string(engine.get());
 
     generic_function offset_wrapper = [](generic_pointer gen) -> void
     {

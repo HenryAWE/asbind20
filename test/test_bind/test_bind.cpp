@@ -56,7 +56,7 @@ TEST(TestBind, Interface)
             .funcdef("int callback(int)")
             .method("int get(callback@) const");
 
-        EXPECT_EQ(i.get_engine(), engine);
+        EXPECT_EQ(i.get_engine(), engine.get());
     }
 
     auto* m = asbind20::create_module(engine, "test_interface");
@@ -427,7 +427,7 @@ TEST(TestBind, Enum)
             .value(my_enum::A, "A")
             .value<my_enum::B>(); // test auto-generated name
 
-        EXPECT_EQ(e.get_engine(), engine);
+        EXPECT_EQ(e.get_engine(), engine.get());
         EXPECT_EQ(e.get_name(), "my_enum");
 #endif
     }

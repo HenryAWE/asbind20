@@ -210,8 +210,8 @@ TEST(TestBind, BuiltinInt128TypeNative)
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
-    test_bind::register_int128<false>(engine);
-    test_bind::check_int128(engine);
+    test_bind::register_int128<false>(engine.get());
+    test_bind::check_int128(engine.get());
 }
 
 TEST(TestBind, BuiltinInt128TypeGeneric)
@@ -220,8 +220,8 @@ TEST(TestBind, BuiltinInt128TypeGeneric)
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
-    test_bind::register_int128<true>(engine);
-    test_bind::check_int128(engine);
+    test_bind::register_int128<true>(engine.get());
+    test_bind::check_int128(engine.get());
 }
 
 #endif

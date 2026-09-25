@@ -59,7 +59,7 @@ TEST(ExplicitCtor, Native)
         .behaviours_by_traits()
         .constructor<int>("int v", use_explicit);
 
-    check_explicit_ctor(engine, c.get_type_id());
+    check_explicit_ctor(engine.get(), c.get_type_id());
 }
 
 TEST(ExplicitCtor, Generic)
@@ -80,5 +80,5 @@ TEST(ExplicitCtor, Generic)
         .behaviours_by_traits()
         .constructor<int>("int v", use_explicit);
 
-    check_explicit_ctor(engine, c.get_type_id());
+    check_explicit_ctor(engine.get(), c.get_type_id());
 }

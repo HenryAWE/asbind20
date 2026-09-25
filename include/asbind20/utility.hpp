@@ -348,6 +348,13 @@ inline int get_script_string_type(
     return string_t_id;
 }
 
+template <script_engine_pointer_like Engine>
+[[nodiscard]]
+int get_script_string_type(const Engine& engine)
+{
+    return get_script_string_type(engine.get());
+}
+
 /**
  * @brief Check if a type id refers to the script string
  */
@@ -359,6 +366,13 @@ inline bool is_script_string(
     if(!engine) [[unlikely]]
         return false;
     return get_script_string_type(engine) == type_id;
+}
+
+template <script_engine_pointer_like Engine>
+[[nodiscard]]
+bool is_script_string(const Engine& engine, int type_id)
+{
+    return is_script_string(engine.get(), type_id);
 }
 
 /**
@@ -443,6 +457,19 @@ inline auto sizeof_script_type(
     if(!ti) [[unlikely]]
         return 0;
     return ti->GetSize();
+}
+
+[[nodiscard]]
+inline auto sizeof_script_type(const_engine_reference engine, int type_id)
+{
+    return sizeof_script_type(std::addressof(engine), type_id);
+}
+
+template <script_engine_pointer_like Engine>
+[[nodiscard]]
+auto sizeof_script_type(const Engine& engine, int type_id)
+{
+    return sizeof_script_type(engine.get(), type_id);
 }
 
 /**
@@ -1178,6 +1205,17 @@ inline module_pointer get_module(
     return get_module(*engine, module_name, create_if_not_exists);
 }
 
+template <script_engine_pointer_like Engine>
+[[nodiscard]]
+module_pointer get_module(
+    const Engine& engine,
+    cstring_ref module_name,
+    bool create_if_not_exists = false
+)
+{
+    return get_module(engine.get(), module_name, create_if_not_exists);
+}
+
 [[nodiscard]]
 inline module_pointer create_module(
     engine_reference engine,
@@ -1202,6 +1240,17 @@ inline module_pointer create_module(
         return nullptr;
 
     return create_module(*engine, module_name, overwrite);
+}
+
+template <script_engine_pointer_like Engine>
+[[nodiscard]]
+module_pointer create_module(
+    const Engine& engine,
+    cstring_ref module_name,
+    bool overwrite = true
+)
+{
+    return create_module(engine.get(), module_name, overwrite);
 }
 } // namespace asbind20
 

@@ -91,7 +91,7 @@ TEST(SmallVector, EnumAsElement)
     ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
-    setup_my_enum(engine);
+    setup_my_enum(engine.get());
 
     auto* enum_ti = engine->GetTypeInfoByName("my_enum");
     ASSERT_THAT(enum_ti, ::testing::NotNull());

@@ -1667,6 +1667,15 @@ inline void register_script_array(
     );
 }
 
+inline void register_script_array(
+    const asbind20::unique_script_engine& engine,
+    bool as_default = true,
+    bool generic = asbind20::has_max_portability()
+)
+{
+    register_script_array(engine.get(), as_default, generic);
+}
+
 template <std::size_t Size>
 script_array* new_script_array(
     asbind20::engine_pointer engine,
@@ -1687,6 +1696,15 @@ script_array* new_script_array(
         engine->NotifyGarbageCollectorOfNewObject(ptr, ti);
     }
     return ptr;
+}
+
+template <std::size_t Size>
+script_array* new_script_array(
+    const asbind20::unique_script_engine& engine,
+    asbind20::util::fixed_string<Size> subtype_decl
+)
+{
+    return new_script_array(engine.get(), subtype_decl);
 }
 } // namespace asbind_test
 

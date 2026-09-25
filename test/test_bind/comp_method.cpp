@@ -267,8 +267,8 @@ TEST(ValClassCompMethod, NativeOffset)
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
-    test_bind::register_val_comp<false, false>(engine);
-    test_bind::check_val_comp(engine);
+    test_bind::register_val_comp<false, false>(engine.get());
+    test_bind::check_val_comp(engine.get());
 }
 
 TEST(ValClassCompMethod, NativeMP)
@@ -279,8 +279,8 @@ TEST(ValClassCompMethod, NativeMP)
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
-    test_bind::register_val_comp<true, false>(engine);
-    test_bind::check_val_comp(engine);
+    test_bind::register_val_comp<true, false>(engine.get());
+    test_bind::check_val_comp(engine.get());
 }
 
 TEST(ValClassCompMethod, NativeOffsetNontype)
@@ -291,8 +291,8 @@ TEST(ValClassCompMethod, NativeOffsetNontype)
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
-    test_bind::register_val_comp<false, true>(engine);
-    test_bind::check_val_comp(engine);
+    test_bind::register_val_comp<false, true>(engine.get());
+    test_bind::check_val_comp(engine.get());
 }
 
 TEST(ValClassCompMethod, NativeMPNontype)
@@ -303,8 +303,8 @@ TEST(ValClassCompMethod, NativeMPNontype)
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
-    test_bind::register_val_comp<true, true>(engine);
-    test_bind::check_val_comp(engine);
+    test_bind::register_val_comp<true, true>(engine.get());
+    test_bind::check_val_comp(engine.get());
 }
 
 TEST(ValClassCompMethod, GenericOffset)
@@ -315,8 +315,8 @@ TEST(ValClassCompMethod, GenericOffset)
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
-    test_bind::register_val_comp<false, false>(use_generic, engine);
-    test_bind::check_val_comp(engine);
+    test_bind::register_val_comp<false, false>(use_generic, engine.get());
+    test_bind::check_val_comp(engine.get());
 }
 
 TEST(ValClassCompMethod, GenericMP)
@@ -325,8 +325,8 @@ TEST(ValClassCompMethod, GenericMP)
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
-    test_bind::register_val_comp<true, false>(use_generic, engine);
-    test_bind::check_val_comp(engine);
+    test_bind::register_val_comp<true, false>(use_generic, engine.get());
+    test_bind::check_val_comp(engine.get());
 }
 
 TEST(ValClassCompMethod, GenericOffsetExplicitly)
@@ -335,8 +335,8 @@ TEST(ValClassCompMethod, GenericOffsetExplicitly)
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
-    test_bind::register_val_comp<false, true>(use_generic, engine);
-    test_bind::check_val_comp(engine);
+    test_bind::register_val_comp<false, true>(use_generic, engine.get());
+    test_bind::check_val_comp(engine.get());
 }
 
 TEST(ValClassCompMethod, GenericMPExplicitly)
@@ -345,8 +345,8 @@ TEST(ValClassCompMethod, GenericMPExplicitly)
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
-    test_bind::register_val_comp<true, true>(use_generic, engine);
-    test_bind::check_val_comp(engine);
+    test_bind::register_val_comp<true, true>(use_generic, engine.get());
+    test_bind::check_val_comp(engine.get());
 }
 
 // Testing for reference types
@@ -450,8 +450,8 @@ TEST(RefClassCompMethod, NativeMP)
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
-    test_bind::register_ref_comp<false>(engine);
-    test_bind::check_ref_comp(engine);
+    test_bind::register_ref_comp<false>(engine.get());
+    test_bind::check_ref_comp(engine.get());
 }
 
 TEST(RefClassCompMethod, GenericMP)
@@ -460,6 +460,6 @@ TEST(RefClassCompMethod, GenericMP)
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
-    test_bind::register_ref_comp<true>(engine);
-    test_bind::check_ref_comp(engine);
+    test_bind::register_ref_comp<true>(engine.get());
+    test_bind::check_ref_comp(engine.get());
 }

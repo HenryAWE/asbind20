@@ -171,11 +171,11 @@ TEST(InitListNative, ValueAsIterators)
     ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_initlist_test_env(engine);
+    test_bind::setup_initlist_test_env(engine.get());
 
-    test_bind::register_vector_of_ints<false>(engine);
+    test_bind::register_vector_of_ints<false>(engine.get());
     test_bind::check_init_list<std::vector<int>>(
-        engine,
+        engine.get(),
         "vec_ints",
         [](auto& v) -> auto&
         { return v; }
@@ -185,11 +185,11 @@ TEST(InitListNative, ValueAsIterators)
 TEST(InitListGeneric, ValueAsIterators)
 {
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_initlist_test_env(engine);
+    test_bind::setup_initlist_test_env(engine.get());
 
-    test_bind::register_vector_of_ints<true>(engine);
+    test_bind::register_vector_of_ints<true>(engine.get());
     test_bind::check_init_list<std::vector<int>>(
-        engine,
+        engine.get(),
         "vec_ints",
         [](auto& v) -> auto&
         { return v; }
@@ -201,13 +201,13 @@ TEST(InitListNative, ValueRepeatListProxy)
     ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_initlist_test_env(engine);
+    test_bind::setup_initlist_test_env(engine.get());
 
     test_bind::register_my_vec_ints<asbind20::policies::repeat_list_proxy, false>(
-        engine
+        engine.get()
     );
     test_bind::check_init_list<test_bind::my_vec_ints>(
-        engine,
+        engine.get(),
         "my_vec_ints",
         [](auto& v) -> auto&
         { return v.data; }
@@ -217,13 +217,13 @@ TEST(InitListNative, ValueRepeatListProxy)
 TEST(InitListGeneric, ValueRepeatListProxy)
 {
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_initlist_test_env(engine);
+    test_bind::setup_initlist_test_env(engine.get());
 
     test_bind::register_my_vec_ints<asbind20::policies::repeat_list_proxy, true>(
-        engine
+        engine.get()
     );
     test_bind::check_init_list<test_bind::my_vec_ints>(
-        engine,
+        engine.get(),
         "my_vec_ints",
         [](auto& v) -> auto&
         { return v.data; }
@@ -235,13 +235,13 @@ TEST(InitListNative, ValuePointerAndSize)
     ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_initlist_test_env(engine);
+    test_bind::setup_initlist_test_env(engine.get());
 
     test_bind::register_my_vec_ints<asbind20::policies::pointer_and_size, false>(
-        engine
+        engine.get()
     );
     test_bind::check_init_list<test_bind::my_vec_ints>(
-        engine, "my_vec_ints", [](auto& v) -> auto&
+        engine.get(), "my_vec_ints", [](auto& v) -> auto&
         { return v.data; }
     );
 }
@@ -249,13 +249,13 @@ TEST(InitListNative, ValuePointerAndSize)
 TEST(InitListGeneric, ValuePointerAndSize)
 {
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_initlist_test_env(engine);
+    test_bind::setup_initlist_test_env(engine.get());
 
     test_bind::register_my_vec_ints<asbind20::policies::pointer_and_size, true>(
-        engine
+        engine.get()
     );
     test_bind::check_init_list<test_bind::my_vec_ints>(
-        engine,
+        engine.get(),
         "my_vec_ints",
         [](auto& v) -> auto&
         { return v.data; }
@@ -267,11 +267,11 @@ TEST(InitListNative, ValueAsInitializerList)
     ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_initlist_test_env(engine);
+    test_bind::setup_initlist_test_env(engine.get());
 
-    test_bind::register_from_init_list<false>(engine);
+    test_bind::register_from_init_list<false>(engine.get());
     test_bind::check_init_list<test_bind::from_init_list>(
-        engine,
+        engine.get(),
         "from_init_list",
         [](auto& v) -> auto&
         { return v.data; }
@@ -281,11 +281,11 @@ TEST(InitListNative, ValueAsInitializerList)
 TEST(InitListGeneric, ValueAsInitializerList)
 {
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_initlist_test_env(engine);
+    test_bind::setup_initlist_test_env(engine.get());
 
-    test_bind::register_from_init_list<true>(engine);
+    test_bind::register_from_init_list<true>(engine.get());
     test_bind::check_init_list<test_bind::from_init_list>(
-        engine,
+        engine.get(),
         "from_init_list",
         [](auto& v) -> auto&
         { return v.data; }
@@ -297,11 +297,11 @@ TEST(InitListNative, ValueAsSpan)
     ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_initlist_test_env(engine);
+    test_bind::setup_initlist_test_env(engine.get());
 
-    test_bind::register_from_span<false>(engine);
+    test_bind::register_from_span<false>(engine.get());
     test_bind::check_init_list<test_bind::from_span>(
-        engine,
+        engine.get(),
         "from_span",
         [](auto& v) -> auto&
         { return v.data; }
@@ -311,11 +311,11 @@ TEST(InitListNative, ValueAsSpan)
 TEST(InitListGeneric, ValueAsSpan)
 {
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_initlist_test_env(engine);
+    test_bind::setup_initlist_test_env(engine.get());
 
-    test_bind::register_from_span<true>(engine);
+    test_bind::register_from_span<true>(engine.get());
     test_bind::check_init_list<test_bind::from_span>(
-        engine,
+        engine.get(),
         "from_span",
         [](auto& v) -> auto&
         { return v.data; }
@@ -329,13 +329,13 @@ TEST(InitListNative, ValueFromRange)
     ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_initlist_test_env(engine);
+    test_bind::setup_initlist_test_env(engine.get());
 
     test_bind::register_my_vec_ints<asbind20::policies::as_from_range, false>(
-        engine
+        engine.get()
     );
     test_bind::check_init_list<test_bind::my_vec_ints>(
-        engine,
+        engine.get(),
         "my_vec_ints",
         [](auto& v) -> auto&
         { return v.data; }
@@ -345,13 +345,13 @@ TEST(InitListNative, ValueFromRange)
 TEST(InitListGeneric, ValueFromRange)
 {
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_initlist_test_env(engine);
+    test_bind::setup_initlist_test_env(engine.get());
 
     test_bind::register_my_vec_ints<asbind20::policies::as_from_range, true>(
-        engine
+        engine.get()
     );
     test_bind::check_init_list<test_bind::my_vec_ints>(
-        engine,
+        engine.get(),
         "my_vec_ints",
         [](auto& v) -> auto&
         { return v.data; }
@@ -577,19 +577,19 @@ TEST(InitListNative, RefApplyTo)
     ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_initlist_test_env(engine);
+    test_bind::setup_initlist_test_env(engine.get());
 
-    test_bind::register_ref_test_apply<false>(engine);
-    test_bind::check_ref_test_apply(engine);
+    test_bind::register_ref_test_apply<false>(engine.get());
+    test_bind::check_ref_test_apply(engine.get());
 }
 
 TEST(InitListGeneric, RefApplyTo)
 {
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_initlist_test_env(engine);
+    test_bind::setup_initlist_test_env(engine.get());
 
-    test_bind::register_ref_test_apply<true>(engine);
-    test_bind::check_ref_test_apply(engine);
+    test_bind::register_ref_test_apply<true>(engine.get());
+    test_bind::check_ref_test_apply(engine.get());
 }
 
 TEST(InitListNative, RefAsIterators)
@@ -597,23 +597,23 @@ TEST(InitListNative, RefAsIterators)
     ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_initlist_test_env(engine);
+    test_bind::setup_initlist_test_env(engine.get());
 
     test_bind::register_ref_test_vector_with<asbind20::policies::as_iterators, false>(
-        engine
+        engine.get()
     );
-    test_bind::check_ref_test_vector(engine);
+    test_bind::check_ref_test_vector(engine.get());
 }
 
 TEST(InitListGeneric, RefAsIterators)
 {
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_initlist_test_env(engine);
+    test_bind::setup_initlist_test_env(engine.get());
 
     test_bind::register_ref_test_vector_with<asbind20::policies::as_iterators, true>(
-        engine
+        engine.get()
     );
-    test_bind::check_ref_test_vector(engine);
+    test_bind::check_ref_test_vector(engine.get());
 }
 
 TEST(InitListNative, RefRepeatListProxy)
@@ -621,23 +621,23 @@ TEST(InitListNative, RefRepeatListProxy)
     ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_initlist_test_env(engine);
+    test_bind::setup_initlist_test_env(engine.get());
 
     test_bind::register_ref_test_vector_with<asbind20::policies::repeat_list_proxy, false>(
-        engine
+        engine.get()
     );
-    test_bind::check_ref_test_vector(engine);
+    test_bind::check_ref_test_vector(engine.get());
 }
 
 TEST(InitListGeneric, RefRepeatListProxy)
 {
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_initlist_test_env(engine);
+    test_bind::setup_initlist_test_env(engine.get());
 
     test_bind::register_ref_test_vector_with<asbind20::policies::repeat_list_proxy, true>(
-        engine
+        engine.get()
     );
-    test_bind::check_ref_test_vector(engine);
+    test_bind::check_ref_test_vector(engine.get());
 }
 
 TEST(InitListNative, RefPointerAndSize)
@@ -645,23 +645,23 @@ TEST(InitListNative, RefPointerAndSize)
     ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_initlist_test_env(engine);
+    test_bind::setup_initlist_test_env(engine.get());
 
     test_bind::register_ref_test_vector_with<asbind20::policies::pointer_and_size, false>(
-        engine
+        engine.get()
     );
-    test_bind::check_ref_test_vector(engine);
+    test_bind::check_ref_test_vector(engine.get());
 }
 
 TEST(InitListGeneric, RefPointerAndSize)
 {
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_initlist_test_env(engine);
+    test_bind::setup_initlist_test_env(engine.get());
 
     test_bind::register_ref_test_vector_with<asbind20::policies::pointer_and_size, true>(
-        engine
+        engine.get()
     );
-    test_bind::check_ref_test_vector(engine);
+    test_bind::check_ref_test_vector(engine.get());
 }
 
 TEST(InitListNative, RefAsInitializerList)
@@ -669,23 +669,23 @@ TEST(InitListNative, RefAsInitializerList)
     ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_initlist_test_env(engine);
+    test_bind::setup_initlist_test_env(engine.get());
 
     test_bind::register_ref_test_vector_with<asbind20::policies::as_initializer_list, false>(
-        engine
+        engine.get()
     );
-    test_bind::check_ref_test_vector(engine);
+    test_bind::check_ref_test_vector(engine.get());
 }
 
 TEST(InitListGeneric, RefAsInitializerList)
 {
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_initlist_test_env(engine);
+    test_bind::setup_initlist_test_env(engine.get());
 
     test_bind::register_ref_test_vector_with<asbind20::policies::as_initializer_list, true>(
-        engine
+        engine.get()
     );
-    test_bind::check_ref_test_vector(engine);
+    test_bind::check_ref_test_vector(engine.get());
 }
 
 TEST(InitListNative, RefAsSpan)
@@ -693,23 +693,23 @@ TEST(InitListNative, RefAsSpan)
     ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_initlist_test_env(engine);
+    test_bind::setup_initlist_test_env(engine.get());
 
     test_bind::register_ref_test_vector_with<asbind20::policies::as_span, false>(
-        engine
+        engine.get()
     );
-    test_bind::check_ref_test_vector(engine);
+    test_bind::check_ref_test_vector(engine.get());
 }
 
 TEST(InitListGeneric, RefAsSpan)
 {
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_initlist_test_env(engine);
+    test_bind::setup_initlist_test_env(engine.get());
 
     test_bind::register_ref_test_vector_with<asbind20::policies::as_span, true>(
-        engine
+        engine.get()
     );
-    test_bind::check_ref_test_vector(engine);
+    test_bind::check_ref_test_vector(engine.get());
 }
 
 #ifdef ASBIND20_HAS_CONTAINERS_RANGES
@@ -719,23 +719,23 @@ TEST(InitListNative, RefFromRange)
     ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_initlist_test_env(engine);
+    test_bind::setup_initlist_test_env(engine.get());
 
     test_bind::register_ref_test_vector_with<asbind20::policies::as_from_range, false>(
-        engine
+        engine.get()
     );
-    test_bind::check_ref_test_vector(engine);
+    test_bind::check_ref_test_vector(engine.get());
 }
 
 TEST(InitListGeneric, RefFromRange)
 {
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_initlist_test_env(engine);
+    test_bind::setup_initlist_test_env(engine.get());
 
     test_bind::register_ref_test_vector_with<asbind20::policies::as_from_range, true>(
-        engine
+        engine.get()
     );
-    test_bind::check_ref_test_vector(engine);
+    test_bind::check_ref_test_vector(engine.get());
 }
 
 #endif

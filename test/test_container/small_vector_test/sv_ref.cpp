@@ -23,7 +23,7 @@ TEST(SmallVector, RefHandleAsElement)
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
-    test_container::register_sv_ref_foo(engine);
+    test_container::register_sv_ref_foo(engine.get());
 
     auto* foo_ti = engine->GetTypeInfoByName("sv_ref_foo");
     ASSERT_THAT(foo_ti, ::testing::NotNull());
@@ -93,7 +93,7 @@ TEST(SmallVector, RefHandleResize)
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
-    test_container::register_sv_ref_foo(engine);
+    test_container::register_sv_ref_foo(engine.get());
 
     int foo_handle_id = engine->GetTypeIdByDecl("sv_ref_foo@");
     ASSERT_TRUE(is_objhandle(foo_handle_id));

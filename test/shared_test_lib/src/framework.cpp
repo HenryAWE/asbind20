@@ -125,6 +125,14 @@ void setup_message_callback(
     }
 }
 
+void setup_message_callback(
+    const asbind20::unique_script_engine& engine,
+    bool propagate_error_to_gtest
+)
+{
+    setup_message_callback(engine.get(), propagate_error_to_gtest);
+}
+
 static void exception_translator_impl(
     asbind20::context_pointer ctx, void*
 )
@@ -167,5 +175,12 @@ void setup_exception_translator(
     asbind20::set_exception_translator(
         engine, &exception_translator_impl
     );
+}
+
+void setup_exception_translator(
+    const asbind20::unique_script_engine& engine
+)
+{
+    setup_exception_translator(engine.get());
 }
 } // namespace asbind_test

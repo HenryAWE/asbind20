@@ -151,6 +151,20 @@ inline gc_statistics get_gc_statistics(
 
     return get_gc_statistics(*engine);
 }
+
+/**
+ * @brief Get the GC statistics
+ *
+ * @param engine Script engine.
+ */
+template <script_engine_pointer_like Engine>
+[[nodiscard]]
+gc_statistics get_gc_statistics(
+    const Engine& engine
+)
+{
+    return get_gc_statistics(engine.get());
+}
 } // namespace asbind20::debugging
 
 template <>

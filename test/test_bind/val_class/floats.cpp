@@ -279,7 +279,7 @@ TEST(TestBind, LongDoubleNative)
     global(engine)
         .function("float long_double_to_float(long_double val)", fp<&long_double_to_float>);
 
-    check_long_double(engine, true);
+    check_long_double(engine.get(), true);
 }
 
 TEST(TestBind, LongDoubleGeneric)
@@ -311,5 +311,5 @@ TEST(TestBind, LongDoubleGeneric)
     global<true>(engine)
         .function("float long_double_to_float(long_double val)", fp<&long_double_to_float>);
 
-    check_long_double(engine);
+    check_long_double(engine.get());
 }

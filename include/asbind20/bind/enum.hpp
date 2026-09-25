@@ -53,6 +53,10 @@ public:
     enum_(engine_reference engine, std::string name)
         : enum_(std::addressof(engine), std::move(name)) {}
 
+    template <script_engine_pointer_like Engine>
+    enum_(const Engine& engine, std::string name)
+        : enum_(engine.get(), std::move(name)) {}
+
     template <bool AppendOnly>
     enum_(appending_t<AppendOnly>, engine_pointer engine, std::string name)
         : my_base(engine), m_name(std::move(name))
@@ -65,6 +69,15 @@ public:
         : enum_(
               appending_t<AppendOnly>{},
               std::addressof(engine),
+              std::move(name)
+          )
+    {}
+
+    template <bool AppendOnly, script_engine_pointer_like Engine>
+    enum_(appending_t<AppendOnly>, const Engine& engine, std::string name)
+        : enum_(
+              appending_t<AppendOnly>{},
+              engine.get(),
               std::move(name)
           )
     {}
@@ -85,6 +98,14 @@ public:
           )
     {}
 
+    template <script_engine_pointer_like Engine, string_like StringLike>
+    enum_(const Engine& engine, StringLike&& name)
+        : enum_(
+              engine.get(),
+              std::forward<StringLike>(name)
+          )
+    {}
+
 #ifdef ASBIND20_HAS_LIB_REFLECTION
 
     explicit enum_(engine_reference engine)
@@ -96,6 +117,11 @@ public:
               engine,
               reflect<^^Enum>().get_decl()
           )
+    {}
+
+    template <script_engine_pointer_like Engine>
+    explicit enum_(const Engine& engine)
+        : enum_(engine.get())
     {}
 
 #endif
@@ -114,6 +140,15 @@ public:
         : enum_(
               appending_t<AppendOnly>{},
               std::addressof(engine),
+              std::forward<StringLike>(name)
+          )
+    {}
+
+    template <bool AppendOnly, script_engine_pointer_like Engine, string_like StringLike>
+    enum_(appending_t<AppendOnly>, const Engine& engine, StringLike&& name)
+        : enum_(
+              appending_t<AppendOnly>{},
+              engine.get(),
               std::forward<StringLike>(name)
           )
     {}

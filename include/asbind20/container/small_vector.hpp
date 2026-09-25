@@ -1371,6 +1371,11 @@ public:
         }
     }
 
+    template <script_engine_pointer_like Engine>
+    small_vector(const Engine& engine, int type_id)
+        : small_vector(engine.get(), type_id)
+    {}
+
     /**
      * @name Type information
      */

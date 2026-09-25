@@ -48,8 +48,17 @@ void setup_message_callback(
     bool propagate_error_to_gtest = true
 );
 
+void setup_message_callback(
+    const asbind20::unique_script_engine& engine,
+    bool propagate_error_to_gtest = true
+);
+
 void setup_exception_translator(
     asbind20::engine_pointer engine
+);
+
+void setup_exception_translator(
+    const asbind20::unique_script_engine& engine
 );
 } // namespace asbind_test
 

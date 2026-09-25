@@ -201,7 +201,7 @@ protected:
         asbind_test::setup_message_callback(m_engine);
 
         asbind_test::setup_script_assertion(m_engine);
-        register_val_gc<UseGeneric>(m_engine);
+        register_val_gc<UseGeneric>(m_engine.get());
 
         asbind20::global<true>(m_engine)
             .function(

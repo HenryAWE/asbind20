@@ -331,8 +331,8 @@ TEST(TestBind, TemplateValClassNative)
     asbind_test::setup_script_string(engine, false);
     asbind_test::setup_script_assertion(engine);
 
-    test_bind::register_template_val_class(engine);
-    check_template_val_class(engine);
+    test_bind::register_template_val_class(engine.get());
+    check_template_val_class(engine.get());
 }
 
 TEST(TestBind, TemplateValClassGeneric)
@@ -342,6 +342,6 @@ TEST(TestBind, TemplateValClassGeneric)
     asbind_test::setup_script_string(engine, true);
     asbind_test::setup_script_assertion(engine);
 
-    test_bind::register_template_val_class(asbind20::use_generic, engine);
-    check_template_val_class(engine);
+    test_bind::register_template_val_class(asbind20::use_generic, engine.get());
+    check_template_val_class(engine.get());
 }

@@ -19,4 +19,8 @@ std::string gen_full_assert_msg(
 void setup_script_assertion(
     asbind20::engine_pointer engine
 );
+
+void setup_script_assertion(
+    const asbind20::unique_script_engine& engine
+);
 } // namespace asbind_test

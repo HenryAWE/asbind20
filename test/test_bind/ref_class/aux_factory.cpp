@@ -181,9 +181,9 @@ TEST(AuxFactoryNative, AsGlobal)
     test_bind::aux_factory_helper helper(0);
 
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_env(engine);
+    test_bind::setup_env(engine.get());
 
-    test_bind::register_test_class<false>(engine)
+    test_bind::register_test_class<false>(engine.get())
         .factory_function("int", use_explicit, &test_bind::aux_factory_helper::create_aux_as_global, auxiliary(helper))
         .list_factory_function("repeat int", &test_bind::aux_factory_helper::create_aux_as_global_list, auxiliary(helper));
 
@@ -191,10 +191,10 @@ TEST(AuxFactoryNative, AsGlobal)
     EXPECT_CALL(mock, on_create()).Times(2);
     EXPECT_CALL(mock, on_list_create()).Times(1);
 
-    test_bind::check_aux_factory(engine, 0, 0);
+    test_bind::check_aux_factory(engine.get(), 0, 0);
     helper.predefined_value = 1000;
-    test_bind::check_aux_factory(engine, 1013, 13);
-    test_bind::check_aux_factory_list(engine, 1013);
+    test_bind::check_aux_factory(engine.get(), 1013, 13);
+    test_bind::check_aux_factory_list(engine.get(), 1013);
 }
 
 TEST(AuxFactoryGeneric, AsGlobal)
@@ -204,9 +204,9 @@ TEST(AuxFactoryGeneric, AsGlobal)
     test_bind::aux_factory_helper helper(0);
 
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_env(engine);
+    test_bind::setup_env(engine.get());
 
-    test_bind::register_test_class<true>(engine)
+    test_bind::register_test_class<true>(engine.get())
         .factory_function("int", use_explicit, fp<&test_bind::aux_factory_helper::create_aux_as_global>, auxiliary(helper))
         .list_factory_function("repeat int", fp<&test_bind::aux_factory_helper::create_aux_as_global_list>, auxiliary(helper));
 
@@ -214,10 +214,10 @@ TEST(AuxFactoryGeneric, AsGlobal)
     EXPECT_CALL(mock, on_create()).Times(2);
     EXPECT_CALL(mock, on_list_create()).Times(1);
 
-    test_bind::check_aux_factory(engine, 0, 0);
+    test_bind::check_aux_factory(engine.get(), 0, 0);
     helper.predefined_value = 1000;
-    test_bind::check_aux_factory(engine, 1013, 13);
-    test_bind::check_aux_factory_list(engine, 1013);
+    test_bind::check_aux_factory(engine.get(), 1013, 13);
+    test_bind::check_aux_factory_list(engine.get(), 1013);
 }
 
 TEST(AuxFactoryNative, AuxFirst)
@@ -229,9 +229,9 @@ TEST(AuxFactoryNative, AuxFirst)
     test_bind::aux_factory_helper helper(0);
 
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_env(engine);
+    test_bind::setup_env(engine.get());
 
-    test_bind::register_test_class<false>(engine)
+    test_bind::register_test_class<false>(engine.get())
         .factory_function("int", use_explicit, &test_bind::create_aux_auxfirst, auxiliary(helper))
         .list_factory_function("repeat int", &test_bind::create_aux_auxfirst_list, auxiliary(helper));
 
@@ -239,10 +239,10 @@ TEST(AuxFactoryNative, AuxFirst)
     EXPECT_CALL(mock, on_create()).Times(2);
     EXPECT_CALL(mock, on_list_create()).Times(1);
 
-    test_bind::check_aux_factory(engine, 0, 0);
+    test_bind::check_aux_factory(engine.get(), 0, 0);
     helper.predefined_value = 1000;
-    test_bind::check_aux_factory(engine, 1013, 13);
-    test_bind::check_aux_factory_list(engine, 1013);
+    test_bind::check_aux_factory(engine.get(), 1013, 13);
+    test_bind::check_aux_factory_list(engine.get(), 1013);
 }
 
 TEST(AuxFactoryGeneric, AuxFirst)
@@ -252,9 +252,9 @@ TEST(AuxFactoryGeneric, AuxFirst)
     test_bind::aux_factory_helper helper(0);
 
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_env(engine);
+    test_bind::setup_env(engine.get());
 
-    test_bind::register_test_class<true>(engine)
+    test_bind::register_test_class<true>(engine.get())
         .factory_function("int", use_explicit, fp<&test_bind::create_aux_auxfirst>, auxiliary(helper))
         .list_factory_function("repeat int", fp<&test_bind::create_aux_auxfirst_list>, auxiliary(helper));
 
@@ -262,10 +262,10 @@ TEST(AuxFactoryGeneric, AuxFirst)
     EXPECT_CALL(mock, on_create()).Times(2);
     EXPECT_CALL(mock, on_list_create()).Times(1);
 
-    test_bind::check_aux_factory(engine, 0, 0);
+    test_bind::check_aux_factory(engine.get(), 0, 0);
     helper.predefined_value = 1000;
-    test_bind::check_aux_factory(engine, 1013, 13);
-    test_bind::check_aux_factory_list(engine, 1013);
+    test_bind::check_aux_factory(engine.get(), 1013, 13);
+    test_bind::check_aux_factory_list(engine.get(), 1013);
 }
 
 TEST(AuxFactoryNative, AuxLast)
@@ -277,9 +277,9 @@ TEST(AuxFactoryNative, AuxLast)
     test_bind::aux_factory_helper helper(0);
 
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_env(engine);
+    test_bind::setup_env(engine.get());
 
-    test_bind::register_test_class<false>(engine)
+    test_bind::register_test_class<false>(engine.get())
         .factory_function("int", use_explicit, &test_bind::create_aux_auxlast, auxiliary(helper))
         .list_factory_function("repeat int", &test_bind::create_aux_auxlast_list, auxiliary(helper));
 
@@ -287,10 +287,10 @@ TEST(AuxFactoryNative, AuxLast)
     EXPECT_CALL(mock, on_create()).Times(2);
     EXPECT_CALL(mock, on_list_create()).Times(1);
 
-    test_bind::check_aux_factory(engine, 0, 0);
+    test_bind::check_aux_factory(engine.get(), 0, 0);
     helper.predefined_value = 1000;
-    test_bind::check_aux_factory(engine, 1013, 13);
-    test_bind::check_aux_factory_list(engine, 1013);
+    test_bind::check_aux_factory(engine.get(), 1013, 13);
+    test_bind::check_aux_factory_list(engine.get(), 1013);
 }
 
 TEST(AuxFactoryGeneric, AuxLast)
@@ -300,9 +300,9 @@ TEST(AuxFactoryGeneric, AuxLast)
     test_bind::aux_factory_helper helper(0);
 
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_env(engine);
+    test_bind::setup_env(engine.get());
 
-    test_bind::register_test_class<true>(engine)
+    test_bind::register_test_class<true>(engine.get())
         .factory_function("int", use_explicit, fp<&test_bind::create_aux_auxlast>, auxiliary(helper))
         .list_factory_function("repeat int", fp<&test_bind::create_aux_auxlast_list>, auxiliary(helper));
 
@@ -310,10 +310,10 @@ TEST(AuxFactoryGeneric, AuxLast)
     EXPECT_CALL(mock, on_create()).Times(2);
     EXPECT_CALL(mock, on_list_create()).Times(1);
 
-    test_bind::check_aux_factory(engine, 0, 0);
+    test_bind::check_aux_factory(engine.get(), 0, 0);
     helper.predefined_value = 1000;
-    test_bind::check_aux_factory(engine, 1013, 13);
-    test_bind::check_aux_factory_list(engine, 1013);
+    test_bind::check_aux_factory(engine.get(), 1013, 13);
+    test_bind::check_aux_factory_list(engine.get(), 1013);
 }
 
 TEST(AuxFactoryNative, AuxFirstManual)
@@ -325,9 +325,9 @@ TEST(AuxFactoryNative, AuxFirstManual)
     test_bind::aux_factory_helper helper(0);
 
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_env(engine);
+    test_bind::setup_env(engine.get());
 
-    test_bind::register_test_class<false>(engine)
+    test_bind::register_test_class<false>(engine.get())
         .factory_function("int", use_explicit, &test_bind::create_aux_auxfirst, auxiliary(helper), objfirst)
         .list_factory_function("repeat int", &test_bind::create_aux_auxfirst_list, auxiliary(helper), objfirst);
 
@@ -335,10 +335,10 @@ TEST(AuxFactoryNative, AuxFirstManual)
     EXPECT_CALL(mock, on_create()).Times(2);
     EXPECT_CALL(mock, on_list_create()).Times(1);
 
-    test_bind::check_aux_factory(engine, 0, 0);
+    test_bind::check_aux_factory(engine.get(), 0, 0);
     helper.predefined_value = 1000;
-    test_bind::check_aux_factory(engine, 1013, 13);
-    test_bind::check_aux_factory_list(engine, 1013);
+    test_bind::check_aux_factory(engine.get(), 1013, 13);
+    test_bind::check_aux_factory_list(engine.get(), 1013);
 }
 
 TEST(AuxFactoryGeneric, AuxFirstManual)
@@ -348,9 +348,9 @@ TEST(AuxFactoryGeneric, AuxFirstManual)
     test_bind::aux_factory_helper helper(0);
 
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_env(engine);
+    test_bind::setup_env(engine.get());
 
-    test_bind::register_test_class<true>(engine)
+    test_bind::register_test_class<true>(engine.get())
         .factory_function("int", use_explicit, fp<&test_bind::create_aux_auxfirst>, auxiliary(helper), objfirst)
         .list_factory_function("repeat int", fp<&test_bind::create_aux_auxfirst_list>, auxiliary(helper), objfirst);
 
@@ -358,10 +358,10 @@ TEST(AuxFactoryGeneric, AuxFirstManual)
     EXPECT_CALL(mock, on_create()).Times(2);
     EXPECT_CALL(mock, on_list_create()).Times(1);
 
-    test_bind::check_aux_factory(engine, 0, 0);
+    test_bind::check_aux_factory(engine.get(), 0, 0);
     helper.predefined_value = 1000;
-    test_bind::check_aux_factory(engine, 1013, 13);
-    test_bind::check_aux_factory_list(engine, 1013);
+    test_bind::check_aux_factory(engine.get(), 1013, 13);
+    test_bind::check_aux_factory_list(engine.get(), 1013);
 }
 
 TEST(AuxFactoryNative, AuxLastManual)
@@ -373,9 +373,9 @@ TEST(AuxFactoryNative, AuxLastManual)
     test_bind::aux_factory_helper helper(0);
 
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_env(engine);
+    test_bind::setup_env(engine.get());
 
-    test_bind::register_test_class<false>(engine)
+    test_bind::register_test_class<false>(engine.get())
         .factory_function("int", use_explicit, &test_bind::create_aux_auxlast, auxiliary(helper), objlast)
         .list_factory_function("repeat int", &test_bind::create_aux_auxlast_list, auxiliary(helper), objlast);
 
@@ -383,10 +383,10 @@ TEST(AuxFactoryNative, AuxLastManual)
     EXPECT_CALL(mock, on_create()).Times(2);
     EXPECT_CALL(mock, on_list_create()).Times(1);
 
-    test_bind::check_aux_factory(engine, 0, 0);
+    test_bind::check_aux_factory(engine.get(), 0, 0);
     helper.predefined_value = 1000;
-    test_bind::check_aux_factory(engine, 1013, 13);
-    test_bind::check_aux_factory_list(engine, 1013);
+    test_bind::check_aux_factory(engine.get(), 1013, 13);
+    test_bind::check_aux_factory_list(engine.get(), 1013);
 }
 
 TEST(AuxFactoryGeneric, AuxLastManual)
@@ -396,9 +396,9 @@ TEST(AuxFactoryGeneric, AuxLastManual)
     test_bind::aux_factory_helper helper(0);
 
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_env(engine);
+    test_bind::setup_env(engine.get());
 
-    test_bind::register_test_class<true>(engine)
+    test_bind::register_test_class<true>(engine.get())
         .factory_function("int", use_explicit, fp<&test_bind::create_aux_auxlast>, auxiliary(helper), objlast)
         .list_factory_function("repeat int", fp<&test_bind::create_aux_auxlast_list>, auxiliary(helper), objlast);
 
@@ -406,10 +406,10 @@ TEST(AuxFactoryGeneric, AuxLastManual)
     EXPECT_CALL(mock, on_create()).Times(2);
     EXPECT_CALL(mock, on_list_create()).Times(1);
 
-    test_bind::check_aux_factory(engine, 0, 0);
+    test_bind::check_aux_factory(engine.get(), 0, 0);
     helper.predefined_value = 1000;
-    test_bind::check_aux_factory(engine, 1013, 13);
-    test_bind::check_aux_factory_list(engine, 1013);
+    test_bind::check_aux_factory(engine.get(), 1013, 13);
+    test_bind::check_aux_factory_list(engine.get(), 1013);
 }
 
 namespace test_bind
@@ -583,9 +583,9 @@ TEST(AuxFactoryTemplateNative, AsGlobal)
     test_bind::aux_factory_helper_template helper(0);
 
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_env(engine);
+    test_bind::setup_env(engine.get());
 
-    test_bind::register_test_class_template<false>(engine)
+    test_bind::register_test_class_template<false>(engine.get())
         .factory_function("int", use_explicit, &test_bind::aux_factory_helper_template::create_aux_template_as_global, auxiliary(helper))
         .list_factory_function("repeat int", &test_bind::aux_factory_helper_template::create_aux_template_as_global_list, auxiliary(helper));
 
@@ -593,10 +593,10 @@ TEST(AuxFactoryTemplateNative, AsGlobal)
     EXPECT_CALL(mock, on_create()).Times(2);
     EXPECT_CALL(mock, on_list_create()).Times(1);
 
-    test_bind::check_aux_factory_template(engine, 0, 0);
+    test_bind::check_aux_factory_template(engine.get(), 0, 0);
     helper.predefined_value = 1000;
-    test_bind::check_aux_factory_template(engine, 1013, 13);
-    test_bind::check_aux_factory_template_list(engine, 1013);
+    test_bind::check_aux_factory_template(engine.get(), 1013, 13);
+    test_bind::check_aux_factory_template_list(engine.get(), 1013);
 }
 
 TEST(AuxFactoryTemplateGeneric, AsGlobal)
@@ -606,9 +606,9 @@ TEST(AuxFactoryTemplateGeneric, AsGlobal)
     test_bind::aux_factory_helper_template helper(0);
 
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_env(engine);
+    test_bind::setup_env(engine.get());
 
-    test_bind::register_test_class_template<true>(engine)
+    test_bind::register_test_class_template<true>(engine.get())
         .factory_function("int", use_explicit, fp<&test_bind::aux_factory_helper_template::create_aux_template_as_global>, auxiliary(helper))
         .list_factory_function("repeat int", fp<&test_bind::aux_factory_helper_template::create_aux_template_as_global_list>, auxiliary(helper));
 
@@ -616,10 +616,10 @@ TEST(AuxFactoryTemplateGeneric, AsGlobal)
     EXPECT_CALL(mock, on_create()).Times(2);
     EXPECT_CALL(mock, on_list_create()).Times(1);
 
-    test_bind::check_aux_factory_template(engine, 0, 0);
+    test_bind::check_aux_factory_template(engine.get(), 0, 0);
     helper.predefined_value = 1000;
-    test_bind::check_aux_factory_template(engine, 1013, 13);
-    test_bind::check_aux_factory_template_list(engine, 1013);
+    test_bind::check_aux_factory_template(engine.get(), 1013, 13);
+    test_bind::check_aux_factory_template_list(engine.get(), 1013);
 }
 
 TEST(AuxFactoryTemplateNative, AuxFirst)
@@ -631,9 +631,9 @@ TEST(AuxFactoryTemplateNative, AuxFirst)
     test_bind::aux_factory_helper_template helper(0);
 
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_env(engine);
+    test_bind::setup_env(engine.get());
 
-    test_bind::register_test_class_template<false>(engine)
+    test_bind::register_test_class_template<false>(engine.get())
         .factory_function("int", use_explicit, &test_bind::create_aux_template_auxfirst, auxiliary(helper))
         .list_factory_function("repeat int", &test_bind::create_aux_template_auxfirst_list, auxiliary(helper));
 
@@ -641,10 +641,10 @@ TEST(AuxFactoryTemplateNative, AuxFirst)
     EXPECT_CALL(mock, on_create()).Times(2);
     EXPECT_CALL(mock, on_list_create()).Times(1);
 
-    test_bind::check_aux_factory_template(engine, 0, 0);
+    test_bind::check_aux_factory_template(engine.get(), 0, 0);
     helper.predefined_value = 1000;
-    test_bind::check_aux_factory_template(engine, 1013, 13);
-    test_bind::check_aux_factory_template_list(engine, 1013);
+    test_bind::check_aux_factory_template(engine.get(), 1013, 13);
+    test_bind::check_aux_factory_template_list(engine.get(), 1013);
 }
 
 TEST(AuxFactoryTemplateGeneric, AuxFirst)
@@ -654,9 +654,9 @@ TEST(AuxFactoryTemplateGeneric, AuxFirst)
     test_bind::aux_factory_helper_template helper(0);
 
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_env(engine);
+    test_bind::setup_env(engine.get());
 
-    test_bind::register_test_class_template<true>(engine)
+    test_bind::register_test_class_template<true>(engine.get())
         .factory_function("int", use_explicit, fp<&test_bind::create_aux_template_auxfirst>, auxiliary(helper))
         .list_factory_function("repeat int", fp<&test_bind::create_aux_template_auxfirst_list>, auxiliary(helper));
 
@@ -664,10 +664,10 @@ TEST(AuxFactoryTemplateGeneric, AuxFirst)
     EXPECT_CALL(mock, on_create()).Times(2);
     EXPECT_CALL(mock, on_list_create()).Times(1);
 
-    test_bind::check_aux_factory_template(engine, 0, 0);
+    test_bind::check_aux_factory_template(engine.get(), 0, 0);
     helper.predefined_value = 1000;
-    test_bind::check_aux_factory_template(engine, 1013, 13);
-    test_bind::check_aux_factory_template_list(engine, 1013);
+    test_bind::check_aux_factory_template(engine.get(), 1013, 13);
+    test_bind::check_aux_factory_template_list(engine.get(), 1013);
 }
 
 TEST(AuxFactoryTemplateNative, AuxLast)
@@ -679,9 +679,9 @@ TEST(AuxFactoryTemplateNative, AuxLast)
     test_bind::aux_factory_helper_template helper(0);
 
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_env(engine);
+    test_bind::setup_env(engine.get());
 
-    test_bind::register_test_class_template<false>(engine)
+    test_bind::register_test_class_template<false>(engine.get())
         .factory_function("int", use_explicit, &test_bind::create_aux_template_auxlast, auxiliary(helper))
         .list_factory_function("repeat int", &test_bind::create_aux_template_auxlast_list, auxiliary(helper));
 
@@ -689,10 +689,10 @@ TEST(AuxFactoryTemplateNative, AuxLast)
     EXPECT_CALL(mock, on_create()).Times(2);
     EXPECT_CALL(mock, on_list_create()).Times(1);
 
-    test_bind::check_aux_factory_template(engine, 0, 0);
+    test_bind::check_aux_factory_template(engine.get(), 0, 0);
     helper.predefined_value = 1000;
-    test_bind::check_aux_factory_template(engine, 1013, 13);
-    test_bind::check_aux_factory_template_list(engine, 1013);
+    test_bind::check_aux_factory_template(engine.get(), 1013, 13);
+    test_bind::check_aux_factory_template_list(engine.get(), 1013);
 }
 
 TEST(AuxFactoryTemplateGeneric, AuxLast)
@@ -702,9 +702,9 @@ TEST(AuxFactoryTemplateGeneric, AuxLast)
     test_bind::aux_factory_helper_template helper(0);
 
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_env(engine);
+    test_bind::setup_env(engine.get());
 
-    test_bind::register_test_class_template<true>(engine)
+    test_bind::register_test_class_template<true>(engine.get())
         .factory_function("int", use_explicit, fp<&test_bind::create_aux_template_auxlast>, auxiliary(helper))
         .list_factory_function("repeat int", fp<&test_bind::create_aux_template_auxlast_list>, auxiliary(helper));
 
@@ -712,10 +712,10 @@ TEST(AuxFactoryTemplateGeneric, AuxLast)
     EXPECT_CALL(mock, on_create()).Times(2);
     EXPECT_CALL(mock, on_list_create()).Times(1);
 
-    test_bind::check_aux_factory_template(engine, 0, 0);
+    test_bind::check_aux_factory_template(engine.get(), 0, 0);
     helper.predefined_value = 1000;
-    test_bind::check_aux_factory_template(engine, 1013, 13);
-    test_bind::check_aux_factory_template_list(engine, 1013);
+    test_bind::check_aux_factory_template(engine.get(), 1013, 13);
+    test_bind::check_aux_factory_template_list(engine.get(), 1013);
 }
 
 TEST(AuxFactoryTemplateNative, AuxFirstManual)
@@ -727,9 +727,9 @@ TEST(AuxFactoryTemplateNative, AuxFirstManual)
     test_bind::aux_factory_helper_template helper(0);
 
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_env(engine);
+    test_bind::setup_env(engine.get());
 
-    test_bind::register_test_class_template<false>(engine)
+    test_bind::register_test_class_template<false>(engine.get())
         .factory_function("int", use_explicit, &test_bind::create_aux_template_auxfirst, auxiliary(helper), objfirst)
         .list_factory_function("repeat int", &test_bind::create_aux_template_auxfirst_list, auxiliary(helper), objfirst);
 
@@ -737,10 +737,10 @@ TEST(AuxFactoryTemplateNative, AuxFirstManual)
     EXPECT_CALL(mock, on_create()).Times(2);
     EXPECT_CALL(mock, on_list_create()).Times(1);
 
-    test_bind::check_aux_factory_template(engine, 0, 0);
+    test_bind::check_aux_factory_template(engine.get(), 0, 0);
     helper.predefined_value = 1000;
-    test_bind::check_aux_factory_template(engine, 1013, 13);
-    test_bind::check_aux_factory_template_list(engine, 1013);
+    test_bind::check_aux_factory_template(engine.get(), 1013, 13);
+    test_bind::check_aux_factory_template_list(engine.get(), 1013);
 }
 
 TEST(AuxFactoryTemplateGeneric, AuxFirstManual)
@@ -750,9 +750,9 @@ TEST(AuxFactoryTemplateGeneric, AuxFirstManual)
     test_bind::aux_factory_helper_template helper(0);
 
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_env(engine);
+    test_bind::setup_env(engine.get());
 
-    test_bind::register_test_class_template<true>(engine)
+    test_bind::register_test_class_template<true>(engine.get())
         .factory_function("int", use_explicit, fp<&test_bind::create_aux_template_auxfirst>, auxiliary(helper), objfirst)
         .list_factory_function("repeat int", fp<&test_bind::create_aux_template_auxfirst_list>, auxiliary(helper), objfirst);
 
@@ -760,10 +760,10 @@ TEST(AuxFactoryTemplateGeneric, AuxFirstManual)
     EXPECT_CALL(mock, on_create()).Times(2);
     EXPECT_CALL(mock, on_list_create()).Times(1);
 
-    test_bind::check_aux_factory_template(engine, 0, 0);
+    test_bind::check_aux_factory_template(engine.get(), 0, 0);
     helper.predefined_value = 1000;
-    test_bind::check_aux_factory_template(engine, 1013, 13);
-    test_bind::check_aux_factory_template_list(engine, 1013);
+    test_bind::check_aux_factory_template(engine.get(), 1013, 13);
+    test_bind::check_aux_factory_template_list(engine.get(), 1013);
 }
 
 TEST(AuxFactoryTemplateNative, AuxLastManual)
@@ -775,9 +775,9 @@ TEST(AuxFactoryTemplateNative, AuxLastManual)
     test_bind::aux_factory_helper_template helper(0);
 
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_env(engine);
+    test_bind::setup_env(engine.get());
 
-    test_bind::register_test_class_template<false>(engine)
+    test_bind::register_test_class_template<false>(engine.get())
         .factory_function("int", use_explicit, &test_bind::create_aux_template_auxlast, auxiliary(helper), objlast)
         .list_factory_function("repeat int", &test_bind::create_aux_template_auxlast_list, auxiliary(helper), objlast);
 
@@ -785,10 +785,10 @@ TEST(AuxFactoryTemplateNative, AuxLastManual)
     EXPECT_CALL(mock, on_create()).Times(2);
     EXPECT_CALL(mock, on_list_create()).Times(1);
 
-    test_bind::check_aux_factory_template(engine, 0, 0);
+    test_bind::check_aux_factory_template(engine.get(), 0, 0);
     helper.predefined_value = 1000;
-    test_bind::check_aux_factory_template(engine, 1013, 13);
-    test_bind::check_aux_factory_template_list(engine, 1013);
+    test_bind::check_aux_factory_template(engine.get(), 1013, 13);
+    test_bind::check_aux_factory_template_list(engine.get(), 1013);
 }
 
 TEST(AuxFactoryTemplateGeneric, AuxLastManual)
@@ -798,9 +798,9 @@ TEST(AuxFactoryTemplateGeneric, AuxLastManual)
     test_bind::aux_factory_helper_template helper(0);
 
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_env(engine);
+    test_bind::setup_env(engine.get());
 
-    test_bind::register_test_class_template<true>(engine)
+    test_bind::register_test_class_template<true>(engine.get())
         .factory_function("int", use_explicit, fp<&test_bind::create_aux_template_auxlast>, auxiliary(helper), objlast)
         .list_factory_function("repeat int", fp<&test_bind::create_aux_template_auxlast_list>, auxiliary(helper), objlast);
 
@@ -808,8 +808,8 @@ TEST(AuxFactoryTemplateGeneric, AuxLastManual)
     EXPECT_CALL(mock, on_create()).Times(2);
     EXPECT_CALL(mock, on_list_create()).Times(1);
 
-    test_bind::check_aux_factory_template(engine, 0, 0);
+    test_bind::check_aux_factory_template(engine.get(), 0, 0);
     helper.predefined_value = 1000;
-    test_bind::check_aux_factory_template(engine, 1013, 13);
-    test_bind::check_aux_factory_template_list(engine, 1013);
+    test_bind::check_aux_factory_template(engine.get(), 1013, 13);
+    test_bind::check_aux_factory_template_list(engine.get(), 1013);
 }

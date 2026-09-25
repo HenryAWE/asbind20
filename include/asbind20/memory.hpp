@@ -424,6 +424,13 @@ public:
         m_ctx = engine->RequestContext();
     }
 
+    template <script_engine_pointer_like Engine>
+    explicit reuse_active_context(
+        const Engine& engine, bool propagate_error = true
+    )
+        : reuse_active_context(engine.get(), propagate_error)
+    {}
+
     ~reuse_active_context()
     {
         if(!m_ctx) [[unlikely]]
@@ -544,6 +551,15 @@ public:
         m_ctx = m_engine->RequestContext();
     }
 
+    explicit request_context(engine_reference engine)
+        : request_context(std::addressof(engine))
+    {}
+
+    template <script_engine_pointer_like Engine>
+    explicit request_context(const Engine& engine)
+        : request_context(engine.get())
+    {}
+
     ~request_context()
     {
         if(m_ctx) [[likely]]
@@ -611,6 +627,13 @@ public:
         reset(adopt_object, engine->CreateContext());
     }
 
+    template <script_engine_pointer_like Engine>
+    explicit script_context(
+        const Engine& engine
+    )
+        : script_context(engine.get())
+    {}
+
     void swap(script_context& other) noexcept
     {
         my_base::swap(other);
@@ -666,7 +689,7 @@ public:
         return m_engine;
     }
 
-    operator handle_type() const noexcept
+    explicit operator handle_type() const noexcept
     {
         return get();
     }
@@ -745,8 +768,6 @@ inline script_engine make_script_engine(
         create_script_engine(version)
     );
 }
-
-using unique_script_engine = script_engine;
 
 /**
  * @brief RAII helper for shared script engine

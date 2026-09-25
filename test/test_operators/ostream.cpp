@@ -86,8 +86,8 @@ TEST(TestOperators, OStreamNative)
     // Use "static" to guarantee lifetime
     static std::ostringstream oss;
     oss.str(std::string());
-    test_operators::register_ostream<false>(oss, engine);
-    test_operators::run_ostream_test_script(engine);
+    test_operators::register_ostream<false>(oss, engine.get());
+    test_operators::run_ostream_test_script(engine.get());
 
     test_operators::check_ostream_output(oss.str());
 }
@@ -103,8 +103,8 @@ TEST(TestOperators, OStreamGeneric)
     // Use "static" to guarantee lifetime
     static std::ostringstream oss;
     oss.str(std::string());
-    test_operators::register_ostream<true>(oss, engine);
-    test_operators::run_ostream_test_script(engine);
+    test_operators::register_ostream<true>(oss, engine.get());
+    test_operators::run_ostream_test_script(engine.get());
 
     test_operators::check_ostream_output(oss.str());
 }

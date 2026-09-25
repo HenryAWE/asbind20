@@ -175,7 +175,7 @@ TEST(Appending, Enum)
     enum_<enum_for_appending>(appending, engine, "e")
         .value(enum_for_appending::b, "b");
 
-    test_bind::check_enum_appending(engine);
+    test_bind::check_enum_appending(engine.get());
 }
 
 TEST(TryAppending, Enum)
@@ -193,7 +193,7 @@ TEST(TryAppending, Enum)
     enum_<enum_for_appending>(appending, engine, "e"sv)
         .value(enum_for_appending::b, "b");
 
-    test_bind::check_enum_appending(engine);
+    test_bind::check_enum_appending(engine.get());
 }
 
 namespace test_bind
@@ -240,7 +240,7 @@ TEST(Appending, RefClass)
     ref_class<ref_class_for_appending>(appending, engine, "rc")
         .property("int data", &ref_class_for_appending::data);
 
-    test_bind::check_ref_class(engine);
+    test_bind::check_ref_class(engine.get());
 }
 
 TEST(Appending, RefClassWithAdditionalFlags)
@@ -269,7 +269,7 @@ TEST(Appending, RefClassWithAdditionalFlags)
     ref_class<gc_ref_class_for_appending>(appending, engine, "rc")
         .property("int data", &gc_ref_class_for_appending::data);
 
-    test_bind::check_ref_class(engine);
+    test_bind::check_ref_class(engine.get());
 }
 
 TEST(TryAppending, RefClass)
@@ -290,7 +290,7 @@ TEST(TryAppending, RefClass)
     ref_class<ref_class_for_appending>(appending, engine, "rc"sv)
         .property("int data", &ref_class_for_appending::data);
 
-    test_bind::check_ref_class(engine);
+    test_bind::check_ref_class(engine.get());
 }
 
 namespace test_bind
@@ -341,7 +341,7 @@ TEST(Appending, Interface)
     interface(appending, engine, "intf")
         .method("int b(int)");
 
-    test_bind::check_interface_appending(engine);
+    test_bind::check_interface_appending(engine.get());
 }
 
 TEST(TryAppending, Interface)
@@ -355,10 +355,10 @@ TEST(TryAppending, Interface)
     interface i(try_appending, engine, "intf"sv);
     i.method("int a()");
     EXPECT_EQ(i.get_name(), "intf");
-    EXPECT_EQ(i.get_engine(), engine);
+    EXPECT_EQ(i.get_engine(), engine.get());
 
     interface(appending, engine, "intf"sv)
         .method("int b(int)");
 
-    test_bind::check_interface_appending(engine);
+    test_bind::check_interface_appending(engine.get());
 }

@@ -21,6 +21,21 @@ public:
     ) noexcept
         : m_engine(engine), m_sv(code) {}
 
+    tokenize_view(
+        const_engine_reference engine,
+        std::string_view code
+    )
+        : tokenize_view(std::addressof(engine), code)
+    {}
+
+    template <script_engine_pointer_like Engine>
+    tokenize_view(
+        const Engine& engine,
+        std::string_view code
+    )
+        : tokenize_view(engine.get(), code)
+    {}
+
     class sentinel
     {};
 
@@ -191,6 +206,21 @@ namespace views
             ) const noexcept
             {
                 return proxy(engine);
+            }
+
+            proxy operator()(
+                const_engine_reference engine
+            ) const noexcept
+            {
+                return proxy(std::addressof(engine));
+            }
+
+            template <script_engine_pointer_like Engine>
+            proxy operator()(
+                const Engine& engine
+            ) const noexcept
+            {
+                return proxy(engine.get());
             }
         };
     } // namespace detail

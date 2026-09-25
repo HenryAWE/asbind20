@@ -206,27 +206,27 @@ TEST(BindRefString, Native)
     ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_bind_ref_string_env(engine, false);
+    test_bind::setup_bind_ref_string_env(engine.get(), false);
 
-    test_bind::run_script(engine);
+    test_bind::run_script(engine.get());
 }
 
 TEST(BindRefString, Generic)
 {
     auto engine = asbind20::make_script_engine();
-    test_bind::setup_bind_ref_string_env(engine, true);
+    test_bind::setup_bind_ref_string_env(engine.get(), true);
 
-    test_bind::run_script(engine);
+    test_bind::run_script(engine.get());
 }
 
 TEST(BindRefString, Extract)
 {
     auto engine = asbind20::make_script_engine();
     test_bind::setup_bind_ref_string_env(
-        engine, asbind20::has_max_portability()
+        engine.get(), asbind20::has_max_portability()
     );
 
-    auto* m = test_bind::build_module(engine);
+    auto* m = test_bind::build_module(engine.get());
     if(!m)
         return;
 

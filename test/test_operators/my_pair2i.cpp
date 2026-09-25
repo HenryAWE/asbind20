@@ -334,7 +334,7 @@ TEST(TestOperators, MyPair2iNative)
         .use((const_this + param<const string&>("const string&in"))->return_<string>("string"))
         .use((param<const string&>("const string&in") + const_this)->return_<string>("string"));
 
-    test_operators::run_pair2i_test_script(engine);
+    test_operators::run_pair2i_test_script(engine.get());
 }
 
 TEST(TestOperators, MyPair2iGeneric)
@@ -363,7 +363,7 @@ TEST(TestOperators, MyPair2iGeneric)
         .use((const_this + param<const string&>("const string&in"))->return_<string>("string"))
         .use((param<const string&>("const string&in") + const_this)->return_<string>("string"));
 
-    test_operators::run_pair2i_test_script(engine);
+    test_operators::run_pair2i_test_script(engine.get());
 }
 
 TEST(TestOperators, MyPair2iNativeWithDecl)
@@ -394,7 +394,7 @@ TEST(TestOperators, MyPair2iNativeWithDecl)
         .use((const_this + param<const string&>("const string&in"))->return_<string>("string"))
         .use((param<const string&>("const string&in") + const_this)->return_<string>("string"));
 
-    test_operators::run_pair2i_test_script(engine);
+    test_operators::run_pair2i_test_script(engine.get());
 }
 
 TEST(TestOperators, MyPair2iGenericWithDecl)
@@ -423,5 +423,5 @@ TEST(TestOperators, MyPair2iGenericWithDecl)
         .use((const_this + param<const string&>("const string&in"))->return_<string>("string"))
         .use((param<const string&>("const string&in") + const_this)->return_<string>("string"));
 
-    test_operators::run_pair2i_test_script(engine);
+    test_operators::run_pair2i_test_script(engine.get());
 }

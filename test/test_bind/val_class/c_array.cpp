@@ -220,8 +220,8 @@ TEST(TestCArray, Native)
     auto engine = asbind20::make_script_engine();
     asbind_test::setup_message_callback(engine);
 
-    test_bind::register_int_array(engine);
-    test_bind::check_int_array(engine);
+    test_bind::register_int_array(engine.get());
+    test_bind::check_int_array(engine.get());
 }
 
 TEST(TestCArray, Generic)
@@ -229,8 +229,8 @@ TEST(TestCArray, Generic)
     auto engine = asbind20::make_script_engine();
     asbind_test::setup_message_callback(engine);
 
-    test_bind::register_int_array(asbind20::use_generic, engine);
-    test_bind::check_int_array(engine);
+    test_bind::register_int_array(asbind20::use_generic, engine.get());
+    test_bind::check_int_array(engine.get());
 }
 
 TEST(TestStringCArray, Native)
@@ -240,8 +240,8 @@ TEST(TestStringCArray, Native)
     auto engine = asbind20::make_script_engine();
     asbind_test::setup_message_callback(engine);
 
-    test_bind::register_string_array<false>(engine);
-    test_bind::check_string_array(engine);
+    test_bind::register_string_array<false>(engine.get());
+    test_bind::check_string_array(engine.get());
 }
 
 TEST(TestStringCArray, Generic)
@@ -249,6 +249,6 @@ TEST(TestStringCArray, Generic)
     auto engine = asbind20::make_script_engine();
     asbind_test::setup_message_callback(engine);
 
-    test_bind::register_string_array<true>(engine);
-    test_bind::check_string_array(engine);
+    test_bind::register_string_array<true>(engine.get());
+    test_bind::check_string_array(engine.get());
 }
