@@ -11,6 +11,22 @@ a reference of the stored entity, hashed by the address of the stored entity, an
 output stream, which prints that address. Therefore, they can be used as the key of
 ``std::unordered_map`` and ``std::unordered_set``.
 
+Converting a helper to the underlying raw pointer is ``explicit``, so the helper never decays into a
+pointer silently. Call ``get()`` when a raw pointer is needed, such as when calling a function which
+is not part of asbind20:
+
+.. code-block:: c++
+
+    auto engine = asbind20::make_script_engine();
+
+    asIScriptEngine* raw = engine.get();
+    raw->SetEngineProperty(asEP_USE_CHARACTER_LITERALS, true);
+
+Passing a helper where a raw pointer is expected does not transfer the ownership. In the other
+direction, the interfaces of asbind20 taking an engine accept the helpers directly, so
+``global(engine)``, ``create_module(engine, "my_module")`` and friends work without an explicit
+``get()``.
+
 ``script_engine`` is the unique owner of an engine, while ``request_context`` and
 ``reuse_active_context`` are non-copyable guards which return the context to the engine.
 
@@ -138,8 +154,8 @@ IO Helpers
 Loading Script Sections
 -----------------------
 
-.. doxygenfunction:: asbind20::io::load_string
-.. doxygenfunction:: asbind20::io::load_file
+.. doxygenfunction:: asbind20::io::load_string(module_pointer, cstring_ref, std::string_view, int)
+.. doxygenfunction:: asbind20::io::load_file(module_pointer, const std::filesystem::path &, std::ios_base::openmode)
 
 
 Miscellaneous Utilities
@@ -365,7 +381,7 @@ The view is an input range — it does not support random access or multi-pass i
 Debugging
 =========
 
-.. doxygenfunction:: asbind20::debugging::get_function_section_name
+.. doxygenfunction:: asbind20::debugging::get_function_section_name(const_function_pointer)
 
 GC Statistics
 -------------
@@ -373,15 +389,16 @@ GC Statistics
 .. doxygenstruct:: asbind20::debugging::gc_statistics
   :members:
   :undoc-members:
-.. doxygenfunction:: asbind20::debugging::get_gc_statistics
+.. doxygenfunction:: asbind20::debugging::get_gc_statistics(const_engine_pointer)
 
 String Extraction
 -----------------
 
 Tools for extracting string from script without knowing its underlying type.
 
-.. doxygenclass:: asbind20::debugging::extract_string_result
-    :members:
-    :undoc-members:
+The result is an alias of ``asbind20::script_result<std::string>``, so the returned
+value can be inspected in the same way as any other script invocation result.
 
-.. doxygenfunction:: asbind20::debugging::extract_string(const asIStringFactory*, const void*)
+.. doxygentypedef:: asbind20::debugging::extract_string_result
+
+.. doxygenfunction:: asbind20::debugging::extract_string(const_string_factory_pointer, const void*)

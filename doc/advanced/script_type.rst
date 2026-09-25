@@ -12,7 +12,12 @@ Type Traits for Script Type IDs
 .. doxygenfunction:: asbind20::is_enum_type
 .. doxygenfunction:: asbind20::is_objhandle
 .. doxygenfunction:: asbind20::type_requires_gc
-.. doxygenfunction:: asbind20::sizeof_script_type
+
+``sizeof_script_type`` comes with overloads taking an engine pointer, an engine
+reference, or one of the RAII engine helpers:
+
+.. doxygenfunction:: asbind20::sizeof_script_type(const_engine_pointer, int)
+.. doxygenfunction:: asbind20::sizeof_script_type(const_engine_reference, int)
 
 Dispatching Function Calls Based on Type IDs
 --------------------------------------------
