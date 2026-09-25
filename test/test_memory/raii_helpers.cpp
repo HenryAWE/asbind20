@@ -1,4 +1,5 @@
 #include <asbind_test/framework.hpp>
+#include <sstream>
 #include <unordered_set>
 
 TEST(RAII, LockableSharedBool)
@@ -7,10 +8,12 @@ TEST(RAII, LockableSharedBool)
 
     lockable_shared_bool flag = asbind20::make_lockable_shared_bool();
     ASSERT_TRUE(flag);
+    EXPECT_THAT(flag, ::testing::NotNull());
 
     lockable_shared_bool copy(flag);
     EXPECT_EQ(copy.get(), flag.get());
     EXPECT_TRUE(copy);
+    EXPECT_THAT(copy, ::testing::NotNull());
 
     lockable_shared_bool moved(std::move(copy));
     EXPECT_EQ(moved.get(), flag.get());
@@ -34,6 +37,62 @@ TEST(RAII, LockableSharedBool)
 
     moved.set_flag(false);
     EXPECT_FALSE(moved.get_flag());
+}
+
+TEST(RAII, ScriptEngine)
+{
+    using asbind20::engine_pointer;
+    using asbind20::script_engine;
+    using asbind20::shared_script_engine;
+
+    // Conversions are explicit
+    static_assert(!std::is_convertible_v<const script_engine&, bool>);
+    static_assert(!std::is_convertible_v<const script_engine&, engine_pointer>);
+
+    script_engine null_engine;
+    EXPECT_FALSE(null_engine);
+    EXPECT_THAT(null_engine, ::testing::IsNull());
+    EXPECT_EQ(null_engine, nullptr);
+    EXPECT_EQ(null_engine, null_engine);
+
+    auto engine = asbind20::make_script_engine();
+    EXPECT_TRUE(engine);
+    EXPECT_THAT(engine, ::testing::NotNull());
+    EXPECT_NE(engine, nullptr);
+
+    // Comparison with a raw pointer works in both directions
+    engine_pointer raw = engine.get();
+    EXPECT_EQ(engine, raw);
+    EXPECT_EQ(raw, engine);
+    EXPECT_NE(null_engine, raw);
+    EXPECT_NE(engine, null_engine);
+
+    auto shared = asbind20::make_shared_script_engine();
+    engine_pointer shared_raw = shared.get();
+    EXPECT_THAT(shared, ::testing::NotNull());
+    EXPECT_EQ(shared, shared_raw);
+    EXPECT_EQ(shared_raw, shared);
+    EXPECT_NE(shared, nullptr);
+
+    shared_script_engine null_shared;
+    EXPECT_THAT(null_shared, ::testing::IsNull());
+    EXPECT_EQ(null_shared, nullptr);
+    EXPECT_NE(null_shared, shared_raw);
+
+    script_engine moved(std::move(engine));
+    EXPECT_TRUE(moved);
+    EXPECT_EQ(moved, raw);
+    EXPECT_FALSE(engine);
+    EXPECT_EQ(engine, nullptr);
+    EXPECT_THAT(engine, ::testing::IsNull());
+
+    moved.reset();
+    EXPECT_FALSE(moved);
+    EXPECT_THAT(moved, ::testing::IsNull());
+
+    shared.reset();
+    EXPECT_FALSE(shared);
+    EXPECT_THAT(shared, ::testing::IsNull());
 }
 
 TEST(RAII, Hashing)

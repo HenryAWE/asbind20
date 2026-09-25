@@ -11,6 +11,7 @@
 
 #include <cassert>
 #include <cstddef>
+#include <ostream>
 #include <utility>
 #include <type_traits>
 #include <string>
@@ -282,7 +283,7 @@ public:
 
     // For consistency with standard smart pointers,
     // outputs the underlying pointer
-    friend std::ostream& operator<<(std::ostream& os, shared_script_object_interface& obj)
+    friend std::ostream& operator<<(std::ostream& os, const shared_script_object_interface& obj)
     {
         os << obj.get();
         return os;
@@ -653,6 +654,7 @@ class script_engine
 public:
     using element_type = AS_NAMESPACE_QUALIFIER asIScriptEngine;
     using handle_type = engine_pointer;
+    using pointer = engine_pointer;
 
     script_engine() noexcept
         : m_engine(nullptr) {}
@@ -689,9 +691,33 @@ public:
         return m_engine;
     }
 
+    bool operator==(const script_engine& rhs) const noexcept
+    {
+        return m_engine == rhs.m_engine;
+    }
+
+    friend bool operator==(
+        const script_engine& lhs, pointer rhs
+    ) noexcept
+    {
+        return lhs.get() == rhs;
+    }
+
+    friend bool operator==(
+        pointer lhs, const script_engine& rhs
+    ) noexcept
+    {
+        return lhs == rhs.get();
+    }
+
     explicit operator handle_type() const noexcept
     {
         return get();
+    }
+
+    explicit operator bool() const noexcept
+    {
+        return get() != nullptr;
     }
 
     engine_reference operator*() const noexcept
@@ -726,6 +752,14 @@ public:
     {
         using std::swap;
         swap(m_engine, other.m_engine);
+    }
+
+    // For consistency with standard smart pointers,
+    // outputs the underlying pointer
+    friend std::ostream& operator<<(std::ostream& os, const script_engine& engine)
+    {
+        os << engine.get();
+        return os;
     }
 
 private:
@@ -1003,29 +1037,23 @@ inline void swap(script_typeinfo& lhs, script_typeinfo& rhs) noexcept
 } // namespace asbind20
 
 template <>
-struct std::hash<asbind20::script_object>
-    : std::hash<asbind20::shared_script_object_interface<asbind20::object_pointer>>
+struct std::hash<asbind20::script_object> : std::hash<asbind20::shared_script_object_interface<asbind20::object_pointer>>
 {};
 
 template <>
-struct std::hash<asbind20::script_context>
-    : std::hash<asbind20::shared_script_object_interface<asbind20::context_pointer>>
+struct std::hash<asbind20::script_context> : std::hash<asbind20::shared_script_object_interface<asbind20::context_pointer>>
 {};
 
 template <>
-struct std::hash<asbind20::shared_script_engine>
-    : std::hash<asbind20::shared_script_object_interface<asbind20::engine_pointer>>
+struct std::hash<asbind20::shared_script_engine> : std::hash<asbind20::shared_script_object_interface<asbind20::engine_pointer>>
 {};
 
 template <>
-struct std::hash<asbind20::lockable_shared_bool>
-    : std::hash<
-          asbind20::shared_script_object_interface<AS_NAMESPACE_QUALIFIER asILockableSharedBool*>>
+struct std::hash<asbind20::lockable_shared_bool> : std::hash<asbind20::shared_script_object_interface<AS_NAMESPACE_QUALIFIER asILockableSharedBool*>>
 {};
 
 template <>
-struct std::hash<asbind20::script_typeinfo>
-    : std::hash<asbind20::shared_script_object_interface<asbind20::typeinfo_pointer>>
+struct std::hash<asbind20::script_typeinfo> : std::hash<asbind20::shared_script_object_interface<asbind20::typeinfo_pointer>>
 {};
 
 namespace asbind20
