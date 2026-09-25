@@ -13,7 +13,7 @@ template <typename T>
 constexpr auto script_allocator<T>::allocate(size_type n)
     -> pointer
 {
-    if consteval
+    if(std::is_constant_evaluated())
     {
         std::allocator<T> tmp;
         return tmp.allocate(n);
@@ -32,7 +32,7 @@ constexpr auto script_allocator<T>::allocate(size_type n)
 template <typename T>
 constexpr void script_allocator<T>::deallocate(pointer mem, size_type n) noexcept
 {
-    if consteval
+    if(std::is_constant_evaluated())
     {
         std::allocator<T> tmp;
         tmp.deallocate(mem, n);
