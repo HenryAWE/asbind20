@@ -131,11 +131,13 @@ public:
     shared_script_object_interface(adopt_object_t, shared_script_object_interface&) = delete;
     shared_script_object_interface(adopt_object_t, shared_script_object_interface&&) = delete;
 
+protected:
     ~shared_script_object_interface()
     {
         decrease_ref_count();
     }
 
+public:
     constexpr bool operator==(
         const shared_script_object_interface& rhs
     ) const noexcept
