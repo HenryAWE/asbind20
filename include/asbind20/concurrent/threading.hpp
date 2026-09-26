@@ -101,7 +101,9 @@ template <typename F, typename... Args>
 auto async(F&& f, Args&&... args)
 {
     return concurrent::async(
-        std::launch::any, std::forward<F>(f), std::forward<Args>(args)...
+        std::launch::async | std::launch::deferred,
+        std::forward<F>(f),
+        std::forward<Args>(args)...
     );
 }
 } // namespace asbind20::concurrent
