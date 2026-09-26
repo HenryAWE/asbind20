@@ -22,7 +22,7 @@ GC Behaviours of Reference Types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The process of determining the dead objects uses the first four of the behaviours below,
-while the destruction of the objects is done by forcing the release of the object's references.
+while the destruction of the objects is done by forcing the release of the objects' references.
 
 Example implementation of a garbage collected type:
 
@@ -113,7 +113,7 @@ Value types are normally not thought of as being part of circular references as 
 However, if a value type can hold a reference to a type, and then that type can have the value type as a member,
 a circular reference can be established preventing the reference type from being released.
 
-Typically, this is caused by holding a script object as member of value class;
+Typically, this is caused by holding a script object as a member of the value class.
 
 You only need behaviours of ``asBEHAVE_ENUMREFS`` and ``asBEHAVE_RELEASEREFS`` for a value type.
 
@@ -126,8 +126,8 @@ You only need behaviours of ``asBEHAVE_ENUMREFS`` and ``asBEHAVE_RELEASEREFS`` f
 Notifying GC of New Object
 --------------------------
 
-The GC of AngelScript needs to know that a new object is created,
-this can be done automatically by ``policies::notify_gc`` of asbind20.
+The AngelScript GC needs to know when a new object is created;
+this can be done automatically by asbind20's ``policies::notify_gc``.
 
 .. code-block:: c++
 
@@ -162,7 +162,7 @@ you can use the (list) factory function with auxiliary object.
         .list_factory_function("repeat int", &from_init_list, auxiliary(this_type));
 
 .. note::
-    If you create objects of garbage collected type from the application side,
+    If you create objects of a garbage-collected type from the application side,
     you must also notify the garbage collector of its existence,
     so it's a good idea to make sure all code uses the same way of creating objects of this type,
     for example, a wrapper function.

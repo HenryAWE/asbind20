@@ -1,14 +1,14 @@
 Customize Type Conversion Rules
 ===============================
 
-Sometimes the default auto-conversion tools provided by asbind20 are not enough for handling special user-defined types,
-it requires user to provide rules for translating them between C++ and AngelScript.
+Sometimes the default auto-conversion tools provided by asbind20 are not enough for handling special user-defined types;
+you need to provide rules for translating them between C++ and AngelScript.
 
 Example for ``std::byte``
 -------------------------
 
 The ``std::byte`` is defined using ``enum class byte : unsigned char {};``.
-However, the default logic of type translator will convert enumerations to ``int`` because all underlying type of ``enum`` in AngelScript is ``int`` by default.
+However, the default logic of the type translator will convert enumerations to ``int`` because the underlying type of every ``enum`` in AngelScript is ``int`` by default.
 
 .. _custom-rule-for-enum-underlying:
 
@@ -27,8 +27,8 @@ Example usage:
         public asbind20::underlying_enum_traits<std::byte>
     {};
 
-Here is detailed example for how to make ``std::byte`` be treated as ``uint8`` by asbind20.
-You can apply this logic to the type that you want to have customized rules.
+Here is a detailed example showing how to make ``std::byte`` be treated as ``uint8`` by asbind20.
+You can apply this logic to any type for which you want customized rules.
 
 .. code-block:: c++
 

@@ -2,8 +2,8 @@ Storing Script Objects
 ======================
 
 Sometimes you may want to store script objects and use them later,
-or to implement your own container for script objects.
-There are some tools provided by asbind20 for storing script objects.
+or implement your own container for script objects.
+asbind20 provides some tools for storing script objects.
 
 Storing a Single Script Object
 ------------------------------
@@ -78,7 +78,7 @@ Iterators
 ^^^^^^^^^
 
 ``const_iterator`` is a random-access iterator that stores an offset into the vector rather than
-a raw pointer. This makes it safe against reallocation — an invalid iterator from script can be
+a raw pointer. This makes it safe against reallocation — an invalid iterator from the script can be
 detected by the host without crashing. Dereferencing yields ``const void*`` to the element.
 
 .. code-block:: c++

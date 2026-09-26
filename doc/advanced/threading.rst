@@ -1,7 +1,7 @@
 Multithreading
 ==============
 
-There are some utilities for using AngelScript in the multithreading environment.
+There are some utilities for using AngelScript in a multithreading environment.
 
 .. note::
   AngelScript does not support multithreading on all platforms.
@@ -12,7 +12,7 @@ Initializing and Cleaning the Multithreading Environment
 --------------------------------------------------------
 
 `According to the official document <https://www.angelcode.com/angelscript/sdk/docs/manual/doc_adv_multithread.html#doc_adv_multithread_1>`_,
-AngelScript needs some additional efforts to work in the multithreading environment.
+AngelScript needs some additional effort to work in a multithreading environment.
 
 The following functions are provided by the external header ``concurrent/threading.hpp``.
 

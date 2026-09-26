@@ -4,9 +4,9 @@ Registering an Object Type
 Registering a Reference Type
 ----------------------------
 
-The basic reference type will be instantiated by factory function and managed by reference counting.
+The basic reference type will be instantiated by a factory function and managed by reference counting.
 
-Unlike the value type, the underlying C++ type for reference type can be incomplete type.
+Unlike the value type, the underlying C++ type of a reference type can be an incomplete type.
 This is designed to support the common C API pattern,
 which typically consists of an opaque structure pointer and a set of C functions.
 
@@ -16,9 +16,9 @@ Factory
 Factory Functions
 ^^^^^^^^^^^^^^^^^
 
-Factory functions can be automatically generated from constructors of C++ type.
-The memory for new object will be allocated using ``new``,
-so if an allocation function provided by user is required, you can create a custom overload of ``operator new``.
+Factory functions can be automatically generated from the constructors of the C++ type.
+The memory for a new object will be allocated using ``new``,
+so if an allocation function provided by the user is required, you can create a custom overload of ``operator new``.
 
 If you already have a function for instantiating the class, you can register it by ``.factory_function``.
 
@@ -83,7 +83,7 @@ It might be useful to call the factory with a helper object.
 
 .. note::
   If the factory function with an auxiliary object is not a member function,
-  the parameter for receiving pointer to auxiliary object will be located by the following logic:
+  the parameter that receives the pointer to the auxiliary object is located by the following logic:
 
   1. Check if the first/last parameter is a reference/pointer to the helper object
   2. If both first and last parameters satisfy the condition, asbind20 will prefer the first one.
@@ -97,7 +97,7 @@ It might be useful to call the factory with a helper object.
         .factory_function("int", &create_from_int, auxiliary(instance), objfirst)
         .factory_function("float", &create_from_float, auxiliary(instance), objlast);
 
-Specially, the auxiliary object can be the ``asITypeInfo*`` of type being registered.
+In particular, the auxiliary object can be the ``asITypeInfo*`` of the type being registered.
 This can be done by the tag ``this_type``.
 
 This might be helpful when dealing with garbage collected types.
@@ -116,7 +116,7 @@ This might be helpful when dealing with garbage collected types.
 List Factory
 ^^^^^^^^^^^^
 
-List factory allows the reference type to be created from an initialization list.
+The list factory allows the reference type to be created from an initialization list.
 
 :doc:`It will be discussed in a separate page. <advanced/init_list>`
 
@@ -154,7 +154,7 @@ The basic reference type uses reference counting to manage its lifetime.
 Tips for Reference Types
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-- For reference counted type, the reference counter should be set to ``1`` during initialization.
+- For a reference-counted type, the reference counter should be set to ``1`` during initialization.
 
 - If your type involves GC, you need to notify the GC of a newly instantiated object by ``NotifyGarbageCollectorOfNewObject``,
   `as explained in AngelScript's official document <https://www.angelcode.com/angelscript/sdk/docs/manual/doc_gc_object.html#doc_reg_gcref_2>`_.
@@ -164,7 +164,7 @@ Tips for Reference Types
 Registering a Value Type
 ------------------------
 
-The underlying C++ type for value type must be a complete type,
+The underlying C++ type of a value type must be a complete type,
 i.e., ``sizeof(T)`` is a valid expression.
 
 Flags of Value Type
@@ -176,13 +176,13 @@ then the type can be registered with the flag ``asOBJ_POD``.
 In this case AngelScript doesn't require the default constructor, assignment behaviour, or destructor,
 as it will be able to automatically handle these cases the same way it handles built-in primitives.
 
-If you plan on passing or returning the type by value to registered functions that uses native calling convention,
+If you plan on passing or returning the type by value to registered functions that use the native calling convention,
 you also need to inform how the type is implemented in the application.
 But if you only plan on :doc:`using generic calling conventions <advanced/generic>`,
-or don't pass these types by value then you don't need to worry about that.
+or don't pass these types by value, then you don't need to worry about that.
 
-The asbind20 will handle common flags for you.
-However, due to limitation of C++, the following flags still need user to provide them manually.
+asbind20 will handle common flags for you.
+However, due to a limitation of C++, the user still needs to provide the following flags manually.
 
 .. list-table::
   :widths: 25 75
@@ -209,15 +209,15 @@ However, due to limitation of C++, the following flags still need user to provid
     - The C++ class contains unions as members
 
 .. note::
-  C++ compiler may provide some functions automatically if one of the members is of a type that requires it.
+  The C++ compiler may provide some functions automatically if one of the members is of a type that requires it.
   So even if the type you want to register doesn't have a declared default constructor,
   it may still be necessary to register the type with the flag ``asOBJ_APP_CLASS_MORE_CONSTRUCTORS``.
 
 .. warning::
-  Be careful to inform the correct flags,
-  because if the wrong flags are used you may get unexpected behaviour when calling registered functions that receives or returns these types by value.
-  Common problems are stack corruptions or invalid memory accesses.
-  In some cases you may face more silent errors that may be difficult to detect,
+  Be careful to specify the correct flags,
+  because if the wrong flags are used you may get unexpected behaviour when calling registered functions that receive or return these types by value.
+  Common problems are stack corruption or invalid memory accesses.
+  In some cases you may encounter more subtle errors that may be difficult to detect,
   e.g., the function is not returning the expected values.
 
 You can also read the official documentation about
@@ -229,8 +229,8 @@ Constructors and Destructor
 Constructor Functions
 ^^^^^^^^^^^^^^^^^^^^^
 
-The memory of value types are allocated by AngelScript,
-then the memory needs to be initialized using the placement ``new``.
+The memory of value types is allocated by AngelScript,
+then the memory needs to be initialized using placement ``new``.
 
 If you already have a function for initializing the class, you can register it by ``.constructor_function``.
 You can also use a lambda to create a constructor function in-place.
@@ -268,7 +268,7 @@ You need to provide a parameter list for constructors other than the default/cop
            { new(mem) my_val_class(get_val(arg0, arg1)); }
         );
 
-If you want certain factories to be marked with ``explicit``, you can use the tag ``use_explicit``.
+If you want certain constructors to be marked with ``explicit``, you can use the tag ``use_explicit``.
 Just put the tag right after the parameter list.
 
 .. code-block:: c++
@@ -278,10 +278,10 @@ Just put the tag right after the parameter list.
         .constructor_function("int", asbind20::use_explicit, &init_by_int);
 
 .. note::
-  The parameter for receiving pointer to allocated memory will be located by the following logic:
+  The parameter that receives the pointer to the allocated memory is located by the following logic:
 
   1. Check if the first/last parameter is a reference/pointer to the type being registered
-  2. Check if the type of first/last parameter is ``void*``
+  2. Check if the type of the first/last parameter is ``void*``
   3. If both first and last parameters satisfy the condition, asbind20 will prefer the first one.
 
   If this is not the desired behaviour, you can manually specify the position of that special parameter.
@@ -310,13 +310,13 @@ Destructor
 Automatically Registering Required Behaviours
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-You can call the ``.behaviours_by_traits()`` to automatically register type behaviours required by the type flags.
+You can call ``.behaviours_by_traits()`` to automatically register the type behaviours required by the type flags.
 It will register default constructor, copy constructor, destructor,
 and assignment operator (``operator=``/``opAssign``) according to the type flags.
 
 .. warning::
   Be careful not to register those behaviours again by standalone helpers,
-  otherwise you will get an error message about duplicated things.
+  otherwise you will get an error message about duplicated behaviours.
 
 This helper function uses flags provided by ``asGetTypeTraits<T>()`` by default.
 
@@ -406,12 +406,12 @@ member functions taking an object parameter from a helper object can also be reg
         .method("float foobar_4(float arg) const", &helper::foobar_4, asbind20::auxiliary(instance));
 
 .. note::
-  The parameter for receiving object will be located by the following logic:
+  The parameter that receives the object is located by the following logic:
 
   1. Check if the first/last parameter is a reference/pointer to the type being registered.
   2. If both first and last parameters satisfy the condition, asbind20 will prefer the first one.
 
-    This is designed to keep consistency with existing C++ paradigm,
+    This is designed to keep consistency with the existing C++ paradigm,
     such as how ``std::invoke`` deals with a member function pointer.
 
   If this is not the desired behaviour, you can manually specify the position of that special parameter.
@@ -476,7 +476,7 @@ then it is possible to register the methods of the composite members without wra
         .method("void set(int arg)", &comp_helper::set, composite(offsetof(my_class, indirect)));
 
 .. note::
-  The usage of the ``composite`` helper is :ref:`different <generic-composite>` when you want to create generic wrapper for composite methods
+  The usage of the ``composite`` helper is :ref:`different <generic-composite>` when you want to create a generic wrapper for composite methods.
 
 Tips for Registering Methods
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -484,7 +484,7 @@ Tips for Registering Methods
 1. Registering Argument-Dependent Interfaces
 
   The member functions you want to register may have default arguments.
-  Besides, some C++ libraries use the `argument-dependent lookup (ADL) <https://en.cppreference.com/w/cpp/language/adl>`_ to extend their interfaces.
+  Besides, some C++ libraries use `argument-dependent lookup (ADL) <https://en.cppreference.com/w/cpp/language/adl>`_ to extend their interfaces.
 
   You need a wrapper function for this kind of interface.
   For convenience, you can also register them by lambda expressions.
@@ -504,7 +504,7 @@ Tips for Registering Methods
 
 2. Overloaded Member Functions in C++
 
-  It will be ambiguous to take address of overloaded functions,
+  It is ambiguous to take the address of overloaded functions,
   you need to use ``overload_cast`` with arguments to choose the function you want.
 
   .. code-block:: c++
@@ -584,7 +584,7 @@ Registering Types with Similar Interfaces
 -----------------------------------------
 
 Sometimes you may want to reuse code for binding similar types.
-The binding generators of classes provide ``.use`` for reusing a certain set of registering code.
+The binding generators of classes provide ``.use`` for reusing a certain set of registration code.
 
 For example,
 if your reference classes all use ``addref`` and ``release`` for reference counting,
@@ -599,7 +599,7 @@ you can create a helper to register those behaviours.
         {
             using class_type = typename BindingGenerator::class_type;
 
-            // Assuming those types have the same interfaces
+            // Assuming those types have the same interface
             c
                 .addref(&class_type::addref)
                 .release(&class_type::release);
@@ -646,18 +646,18 @@ Given constant C++ references ``a`` and ``b``, as well as a variable ``val`` of 
 | ``T& opPreInc/Dec()``                  | ``++val`` / ``--val``             |
 +----------------------------------------+-----------------------------------+
 
-The operators with ``T&`` as return type will return reference to the object being used,
-so multiple assignment can be chained.
+The operators with ``T&`` as the return type will return a reference to the object being used,
+so multiple assignments can be chained.
 
 .. note::
     .. doxygenfunction:: asbind20::translate_three_way
 
-    This wrapper requires ``operator<=>`` returns ``std::weak_ordering`` at least,
+    This wrapper requires ``operator<=>`` to return at least ``std::weak_ordering``,
     i.e., **no** ``std::partial_ordering`` support.
     The result of three-way comparison will be translated to an integral value recognized by AngelScript.
 
-If the type is registered as value type, there will be some additional predefined helpers.
-These helpers will return result by value, so they cannot be used by a reference class.
+If the type is registered as a value type, there will be some additional predefined helpers.
+These helpers will return the result by value, so they cannot be used by a reference class.
 
 +----------------------------------------+-----------------------------------+
 | AngelScript Declaration                | Equivalent C++ Code               |
@@ -710,7 +710,7 @@ Type Conversion Operators
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The type conversion operators can be used to convert types without a conversion constructor.
-`This official document <https://www.angelcode.com/angelscript/sdk/docs/manual/doc_script_class_ops.html#doc_script_class_conv>`_ has explained the logic of type conversion in AngelScript
+`This official document <https://www.angelcode.com/angelscript/sdk/docs/manual/doc_script_class_ops.html#doc_script_class_conv>`_ has explained the logic of type conversion in AngelScript.
 
 .. code-block:: c++
 
@@ -728,7 +728,7 @@ The generated conversion operators will use the expression ``static_cast<T>(val)
     // ...
         // Type declaration can be omitted for primitive types
         .opImplConv<bool>()
-        // Remember to register support of string at first
+        // Remember to register string support first
         .opConv<std::string>("string");
 
 More Complex Operators
@@ -766,7 +766,7 @@ which is designed to simulate the trailing return type ``auto f() -> Return`` si
         // float my_class::operator~() const
         .use(~const_this)
         // Unlike the predefined helpers,
-        // this doesn't require the return type to be the same with the type being registered.
+        // this doesn't require the return type to be the same as the type being registered.
         .use(--_this)
         .use(_this++)
         .use(_this += param<int>)
@@ -774,13 +774,13 @@ which is designed to simulate the trailing return type ``auto f() -> Return`` si
         .use(const_this[param<int>]);
 
 .. note::
-  In some libraries like the STL, the ``operator[]`` doesn't have a boundary check.
+  In some libraries like the STL, ``operator[]`` doesn't perform a bounds check.
   You still need a wrapper function with checks for registering it.
-  Otherwise bad script can directly crash your application, instead of giving a clear error message.
+  Otherwise, a bad script can directly crash your application instead of producing a clear error message.
 
-If the ``operator*`` doesn't return the type being registered,
+If ``operator*`` doesn't return the type being registered,
 e.g., dot product of a math vector which returns a scalar type,
-the predefined helpers will fail to deal with this kind of operator overloads,
+the predefined helpers will fail to deal with this kind of operator overload,
 but this tool can be your best friend.
 
 .. code-block:: c++
@@ -790,7 +790,7 @@ but this tool can be your best friend.
         .use(const_this * const_this);
 
 
-If the type involves in the operator is neither the class type being registered nor primitive types,
+If the type involved in the operator is neither the class type being registered nor a primitive type,
 you may need to manually pass the script parameter declaration.
 
 .. code-block:: c++
@@ -799,8 +799,8 @@ you may need to manually pass the script parameter declaration.
         .use((const_this + param<const string&>("const string&in"))->return_<string>("string"))
         .use((param<const string&>("const string&in") + const_this)->return_<string>("string"));
 
-With the power of this tool, you can even register the ``<iostream>`` to AngelScript.
-Here is an example from the unit test of asbind20.
+With the power of this tool, you can even register ``<iostream>`` with AngelScript.
+Here is an example from the unit tests of asbind20.
 
 .. code-block:: c++
 
@@ -840,7 +840,7 @@ Here is a simple way to add support for a container-like type:
         // Or more explicitly
         .use(foreach(iter)->template value<int>()); // Note that you need a "template" keyword for dependent name
 
-If the name of your value type cannot be auto-generated, e.g. non-primitive types, you can specify them manually.
+If the name of your value type cannot be auto-generated, e.g. for non-primitive types, you can specify it manually.
 
 .. code-block:: c++
 
@@ -851,7 +851,7 @@ Member Aliases
 --------------
 You can register a member ``funcdef``.
 
-Here use the ``script_array`` from unit tests as an example.
+Here we use the ``script_array`` from the unit tests as an example.
 The same logic also applies to other classes.
 
 .. code-block:: c++
@@ -868,12 +868,12 @@ Template Types
 --------------
 
 A template type in AngelScript works similarly to how templates work in C++.
-The scripts will be able to instantiate different forms of the template type by specifying which subtype that should be used.
+The scripts will be able to instantiate different forms of the template type by specifying which subtype should be used.
 The methods for the instance will then be adapted to this subtype,
 so that the correct handling of parameters and return types will be applied.
 
 It is quite complex to implement a template class for AngelScript,
-so they are described in a separate page.
+so they are described on a separate page.
 
 .. toctree::
   :maxdepth: 2

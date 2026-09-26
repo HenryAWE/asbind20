@@ -1,7 +1,7 @@
 Handling AngelScript Types
 ==========================
 
-If you are registering functions with variable type argument or template classes,
+If you are registering functions with a variable type argument or template classes,
 you will definitely need tools to deal with AngelScript types.
 
 Type Traits for Script Type IDs
@@ -22,8 +22,8 @@ reference, or one of the RAII engine helpers:
 Dispatching Function Calls Based on Type IDs
 --------------------------------------------
 
-This feature is similar to how `std::visit` and `std::variant` works.
-It can be used for developing templated container for AngelScript.
+This feature is similar to how `std::visit` and `std::variant` work.
+It can be used for developing a templated container for AngelScript.
 
 .. doxygenfunction:: asbind20::visit_primitive_type
 .. doxygenfunction:: asbind20::visit_script_type
@@ -79,7 +79,7 @@ types to ``visit_primitive_type`` and object handles as ``void*``:
         data_end
     );
 
-If you are certain that types you are dealing with are all primitive types,
+If you are certain that the types you are dealing with are all primitive types,
 you can use the primitive-specific function.
 
 .. doxygenfunction:: copy_primitive_value

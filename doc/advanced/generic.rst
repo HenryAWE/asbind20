@@ -4,23 +4,23 @@ Generic Wrappers
 Wrap a Specific Method, Function, Behaviour
 -------------------------------------------
 
-With the power of non-type template parameter (NTTP),
-asbind20 can generate generic wrapper of any function by macro-free utilities.
-Additionally, it supports wrapping a function with variable type (declared by ``?`` in the AngelScript).
+With the power of non-type template parameters (NTTP),
+asbind20 can generate a generic wrapper for any function using macro-free utilities.
+Additionally, it supports wrapping a function with a variable type (declared by ``?`` in AngelScript).
 
-This can be useful for binding interface on platform without native calling convention support, e.g., Emscripten.
+This can be useful for binding an interface on a platform without native calling convention support, e.g., Emscripten.
 
 .. doxygenfunction:: asbind20::has_max_portability
 
-Besides, generic calling convention might have better performance than native calling convention when binding functions of shorter parameter list,
+Besides, the generic calling convention might have better performance than the native calling convention when binding functions with a shorter parameter list,
 but this is platform dependent.
 You can check benchmarks of asbind20 to decide whether to prefer using generic calling convention.
 
 Global Functions
 ~~~~~~~~~~~~~~~~
 
-Due to the limitation of C++, you need to pass the function pointer by the helper ``fp<>``.
-But lambda expression still can be directly registered.
+Due to a limitation of C++, you need to pass the function pointer using the ``fp<>`` helper.
+But a lambda expression can still be directly registered.
 
 .. code-block:: c++
 
@@ -49,7 +49,7 @@ But lambda expression still can be directly registered.
 Ordinary Methods and Behaviours
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Generic wrappers for methods and behaviours are generated in the similar way.
+Generic wrappers for methods and behaviours are generated in a similar way.
 
 .. code-block:: c++
 
@@ -72,13 +72,13 @@ Generic wrappers for methods and behaviours are generated in the similar way.
         // just register it as usual
         .method("int gfn(float arg)", &gfn);
 
-Functions with Variable Type Argument
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Functions with a Variable Type Argument
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Functions with variable type argument receive the variable parameter (``?``) from AngelScript by a pair of ``void*`` and ``int``.
-The first one contains address of argument, while the second one contains the type ID.
+Functions with a variable type argument receive the variable parameter (``?``) from AngelScript as a pair of ``void*`` and ``int``.
+The first contains the address of the argument, while the second contains the type ID.
 
-The helper ``var_type<Is...>`` needs the indices of ``?`` in **script** parameter list.
+The helper ``var_type<Is...>`` needs the indices of ``?`` in the **script** parameter list.
 
 .. list-table:: Examples
   :widths: 25 25 50
@@ -134,9 +134,9 @@ Example code:
 Wrapping Composite Methods
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The interface of AngelScript only accepts ``THISCALL`` for the composite methods,
+The AngelScript interface only accepts ``THISCALL`` for composite methods,
 which means the generic wrapper should take the composite offset into consideration at compile-time.
-If you want to generate generic wrapper for composite methods,
+If you want to generate a generic wrapper for composite methods,
 you need to tell the generator how to access the composite data.
 
 The major difference from the native one is how to use the ``composite`` helper.
@@ -173,8 +173,8 @@ Wrap a Group of Methods, Functions, or Behaviours
 -------------------------------------------------
 
 If you want to force a group of registered functions to be generic,
-you can set the ``ForceGeneric`` flag of binding generator to ``true``.
-You can use this flag to avoid the code for registering the application interface being flooded by ``use_generic``.
+you can set the ``ForceGeneric`` flag of the binding generator to ``true``.
+You can use this flag to avoid flooding the application interface registration code with ``use_generic``.
 
 .. code-block:: c++
 
@@ -182,12 +182,12 @@ You can use this flag to avoid the code for registering the application interfac
     asbind20::ref_class<my_ref_class, true>(...);
     asbind20::global<true>(...);
 
-Trying to register functions by native calling convention with ``ForceGeneric`` enabled will trigger a compile-time error.
+Trying to register functions using the native calling convention with ``ForceGeneric`` enabled will trigger a compile-time error.
 If you are targeting a platform without native calling convention support by AngelScript, this flag can be helpful to discover bugs early.
 
 .. note::
 
-    If you use an outer template argument to control the mode of binding generator,
+    If you use an outer template argument to control the mode of the binding generator,
     the generator will be a dependent name, thus you need an additional ``template`` disambiguator to use the binding generator.
 
     .. code-block:: c++

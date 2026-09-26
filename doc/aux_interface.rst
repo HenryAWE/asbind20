@@ -26,7 +26,7 @@ Type Aliases
 Function definitions can be registered when you wish to allow the script to pass function pointers to the application,
 e.g. to implement callback routines.
 
-Enumeration types and ``typedef``\ s can also be registered to improve readability of the scripts.
+Enumeration types and ``typedef``\ s can also be registered to improve script readability.
 
 .. doxygenclass:: asbind20::global
     :members: funcdef, typedef_, using_
@@ -63,11 +63,11 @@ Enumerations
         .value(my_enum::B, "B");
 
 .. note::
-  Up until version 2.39, AngelScript used a 32-bit integer to store the underlying value of enums,
-  before it supported customizable underlying types.
+  Before version 2.39, AngelScript stored the underlying value of enums in a 32-bit integer;
+  support for customizable underlying types was added in version 2.39.
   Please make sure those values don't overflow or underflow.
 
-Besides, the library provides a convenient interface for generating string representation of enum value at compile-time.
+Besides, the library provides a convenient interface for generating a string representation of an enum value at compile time.
 
 The following code is equivalent to the above one:
 
@@ -78,9 +78,9 @@ The following code is equivalent to the above one:
         .value<my_enum::B>();
 
 .. note::
-  However, as static reflection is still waiting for C++26, this feature relies on compiler extension.
+  However, since C++26 static reflection is not yet available, this feature relies on a compiler extension.
   It's guaranteed to work on mainstream compilers (MSVC, GCC, and Clang).
-  **It has some limitations**. For example, it cannot generate string representation for enums with same value.
+  **It has some limitations**. For example, it cannot generate a string representation for enums with duplicate values.
 
   .. code-block:: c++
 
@@ -90,7 +90,7 @@ The following code is equivalent to the above one:
         B = 1 // Not supported for this kind of enum value
     };
 
-Since the version 2.39, AngelScript supports enumerations with custom underlying types.
+Since version 2.39, AngelScript supports enumerations with custom underlying types.
 
 You can register them by ``enum_underlying``,
 which is an alias of ``enum_<Enum, std::underlying_type_t<Enum>>``.
@@ -111,7 +111,7 @@ which is an alias of ``enum_<Enum, std::underlying_type_t<Enum>>``.
 
 .. note::
 
-    If you need to interact these enums from C++ side,
+    If you need to interact with these enums from the C++ side,
     the enums with custom underlying type :ref:`need to specify the conversion rules <custom-rule-for-enum-underlying>`.
 
 Listener API
@@ -122,7 +122,7 @@ Listener API
 
 Every binding generator (``value_class``, ``ref_class``, ``global``, ``enum_``, ``interface``) accepts an optional
 ``Listener`` template parameter. When an entity is registered, the generator invokes the corresponding callback
-on the listener, passing itself and the returned value from AngelScript API.
+on the listener, passing itself and the value returned from the AngelScript API.
 
 This allows you to:
 

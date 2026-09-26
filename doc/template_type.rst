@@ -4,7 +4,7 @@ Registering Template Types
 Constructors and Factories
 --------------------------
 
-For template types, AngelScript will pass a hidden ``asITypeInfo*`` in the front of arguments,
+For template types, AngelScript will pass a hidden ``asITypeInfo*`` at the front of the arguments,
 indicating an instantiation of the template.
 It will be automatically handled by the library with the special binding generators of templated types,
 which are named ``template_value_class`` and ``template_ref_class``.
@@ -48,7 +48,7 @@ Methods of a Template Class
 ---------------------------
 
 Methods are registered the same way as ordinary types.
-You can directly use the subtype in the declaration of method.
+You can directly use the subtype in the method declaration.
 
 .. code-block:: c++
 
@@ -63,7 +63,7 @@ You can directly use the subtype in the declaration of method.
   If the subtype might be an object handle,
   you probably need to consider the keyword ``if_handle_then_const``.
 
-  You can also read `official document explaining this <https://www.angelcode.com/angelscript/sdk/docs/manual/doc_adv_template.html#doc_adv_template_1_1>`_
+  You can also read the `official document explaining this <https://www.angelcode.com/angelscript/sdk/docs/manual/doc_adv_template.html#doc_adv_template_1_1>`_
 
   .. code-block:: c++
 
@@ -75,12 +75,12 @@ Callback for Validating Template Instantiations
 ===============================================
 
 In order to avoid unnecessary runtime validations of invalid template instantiations,
-the application should preferably register a validator by ``.template_callback``.
-Its underlying type behaviour is ``asBEHAVE_TEMPLATE_CALLBACK``.
+the application should preferably register a validator with ``.template_callback``.
+Its underlying behaviour is ``asBEHAVE_TEMPLATE_CALLBACK``.
 
 The callback function must be a global function that receives a pointer to ``asITypeInfo*`` as its first parameter,
 and should return a boolean.
-If the template instance is valid the return value should be ``true``.
+If the template instance is valid, the return value should be ``true``.
 
 The function should also take a second parameter with an output reference to a boolean.
 This parameter should be set to ``true`` by the function if the template instance should not be garbage collected,
@@ -120,7 +120,7 @@ Template Specializations
 
 When registering a template specialization,
 you override the template instance that AngelScript would normally create when compiling a declaration with the template type.
-This allow the application to register a completely different object with its own implementation for template specializations.
+This allows the application to register a completely different object with its own implementation for template specializations.
 
 Template specializations are registered like :doc:`ordinary types <object_type>`,
 except the type name should be the instantiated name.

@@ -65,7 +65,7 @@ You can synthesize a global function from a member function and an instance:
     asbind20::global(engine)
         .function("int f()", &my_class::f, asbind20::auxiliary(instance));
 
-When the ``f()`` is called by script, it's equivalent to ``instance.f()`` in C++.
+When ``f()`` is called from script, it's equivalent to ``instance.f()`` in C++.
 
 Lambdas
 ~~~~~~~
@@ -98,7 +98,7 @@ It can be retrieved via ``asIScriptGeneric::GetAuxiliary()``.
         .function("int from_aux()", &from_aux, asbind20::aux_value(1013));
 
 .. note::
-    DO NOT use this helper unless you know what you are exactly doing!
+    DO NOT use this helper unless you know exactly what you are doing!
 
 Force-Generic Mode
 ~~~~~~~~~~~~~~~~~~
@@ -161,7 +161,7 @@ Registered by ``set_message_callback``.
         assert(msg_count >= 0); // callback fires for each compiler message
     }
 
-A member function can also be used as message callback.
+A member function can also be used as a message callback.
 
 .. code-block:: c++
 

@@ -1,7 +1,7 @@
 Changelog
 =========
 
-Changelog since the version 1.5.0.
+Changelog since version 1.5.0.
 
 2.1.0
 -----
@@ -11,7 +11,7 @@ Breaking Change
 
 - The customization points in ``type_traits`` (``set_arg``, ``set_script_arg`` and
   ``get_return``) now receive both ``context_reference`` and ``context_pointer``.
-  Old interfaces are kept for compatibility with existing user-defined specializations .
+  Old interfaces are kept for compatibility with existing user-defined specializations.
 
 - ``script_invoke_result<T&>::value_or`` now returns a copy of ``T`` instead of a
   reference to it, matching the value semantics of the primary template.
@@ -122,7 +122,7 @@ Bug fix
 
 - Miscellaneous fix.
 
-- Fix a `set_script_arg` bug when user passing built-in 128-bit integers as argument.
+- Fix a `set_script_arg` bug when the user passes built-in 128-bit integers as an argument.
 
 - Fix a reference leak when moving between two RAII helpers which already hold the
   same entity, e.g. ``a = std::move(b)`` where ``a`` and ``b`` refer to the same

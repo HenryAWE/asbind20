@@ -8,9 +8,9 @@ Prerequisites
 If the compiler and standard library support newer features like C++23,
 asbind20 will enable support for them.
 
-There is a nightly build script in CI of asbind20,
+There is a nightly build script in asbind20's CI,
 testing its compatibility with `the latest WIP version of AngelScript <https://www.angelcode.com/angelscript/wip.php>`_.
-If you are using a WIP version of AS for newest features or fixes,
+If you are using a WIP version of AS for the newest features or fixes,
 you need to consider using the latest release of asbind20,
 or even the development branch.
 
@@ -47,7 +47,7 @@ However, asbind20 on other platforms, architectures or compiler toolchains suppo
     - wasm
     - emsdk 4.0.18
 
-- The "latest" or "latest-stable" in the above table mean the (stable) latest version of compiler toolchain available in CI when asbind20 releases a new stable version.
+- The "latest" or "latest-stable" in the above table mean the (stable) latest version of the compiler toolchain available in CI when asbind20 releases a new stable version.
   You can check the release date of historical versions in the :doc:`changelog`.
 
 - Newer Clang toolchains (like Clang 18+) support both libstdc++ and libc++,
@@ -56,18 +56,18 @@ However, asbind20 on other platforms, architectures or compiler toolchains suppo
 - Additionally, the Clang 18 toolchain on x64 Linux is tested for compiling with address sanitizer and ``AS_USE_NAMESPACE`` enabled.
 
 .. note::
-  This library on older compiler toolchains, like GCC 12, still works as expected under most situations,
+  This library on older compiler toolchains, like GCC 12, still works as expected in most situations,
   but it might need some workarounds to deal with defects of the compiler, e.g., additional ``typename`` in template-related code.
   Please use newer compiler toolchains if possible.
 
 Integrate into Your Project
 ===========================
 
-Please follow the `tutorial of AngelScript to build and install it <https://www.angelcode.com/angelscript/sdk/docs/manual/doc_compile_lib.html>`_ at first,
+Please first follow the `tutorial of AngelScript to build and install it <https://www.angelcode.com/angelscript/sdk/docs/manual/doc_compile_lib.html>`_,
 or use a package manager like `vcpkg <https://github.com/microsoft/vcpkg>`_.
 
 Besides, if your project has a custom location of ``<angelscript.h>``, you can include it before any asbind20 headers.
-This library will not include the AngelScript library for the second time by detecting the macro ``ANGELSCRIPT_H``.
+This library detects the ``ANGELSCRIPT_H`` macro to avoid including the AngelScript library a second time.
 
 1. Copy into Your Project
 -------------------------
@@ -140,7 +140,7 @@ Then, link the library in a ``CMakeLists.txt``.
 3. Integration with XMake Projects
 ----------------------------------
 
-Since the version 1.6.0, asbind20 has been accepted into the `official package registry (xmake-repo) <https://github.com/xmake-io/xmake-repo>`_.
+Since version 1.6.0, asbind20 has been accepted into the `official package registry (xmake-repo) <https://github.com/xmake-io/xmake-repo>`_.
 You can easily add asbind20 as a dependency of your project.
 
 .. code-block:: lua

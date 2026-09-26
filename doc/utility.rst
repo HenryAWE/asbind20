@@ -1,14 +1,14 @@
 RAII Helpers
 ============
 
-`RAII <https://en.cppreference.com/w/cpp/language/raii>`_ helpers for managing lifetime of AngelScript objects.
+`RAII <https://en.cppreference.com/w/cpp/language/raii>`_ helpers for managing the lifetime of AngelScript objects.
 
 The helpers which share the ownership of an entity — ``script_object``, ``script_context``,
 ``shared_script_engine``, ``script_typeinfo``, ``lockable_shared_bool`` and the script function
 wrappers — are value types: copying one of them increases the reference count of the stored entity
 and moving it transfers the ownership. They can be compared with each other, with a pointer and with
 a reference of the stored entity, hashed by the address of the stored entity, and written to an
-output stream, which prints that address. Therefore, they can be used as the key of
+output stream, which prints that address. Therefore, they can be used as keys in
 ``std::unordered_map`` and ``std::unordered_set``.
 
 Converting a helper to the underlying raw pointer is ``explicit``, so the helper never decays into a
@@ -394,7 +394,7 @@ GC Statistics
 String Extraction
 -----------------
 
-Tools for extracting string from script without knowing its underlying type.
+Tools for extracting a string from script without knowing its underlying type.
 
 The result is an alias of ``asbind20::script_result<std::string>``, so the returned
 value can be inspected in the same way as any other script invocation result.

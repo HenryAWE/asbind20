@@ -9,16 +9,16 @@ List Factories and Constructors
 Similar to normal factories and constructors,
 the list factories for reference types and list constructors for value types can be registered by ``.list_factory`` and ``.list_constructor``, respectively.
 
-If you already have wrapper functions, you can register them by ``.list_factory_function`` or ``.list_constructor_function``
+If you already have wrapper functions, you can register them by ``.list_factory_function`` or ``.list_constructor_function``.
 
-This kind of helper needs you to provide the pattern of the initialization list, such as ``float, float`` or ``repeat int``.
-For helpers using the constructors of C++ class directly, you can also specify the optional template parameter ``ElementType`` for the element type of initialization list.
-If the list pattern contains ``repeat`` or ``?`` that need to parse manually, you can just use the default template parameter,
+These helpers require you to provide the pattern of the initialization list, such as ``float, float`` or ``repeat int``.
+For helpers using the constructors of the C++ class directly, you can also specify the optional template parameter ``ElementType`` for the element type of the initialization list.
+If the list pattern contains ``repeat`` or ``?`` that need to be parsed manually, you can just use the default template parameter,
 which is ``void``.
 
-The helpers expect the constructors or wrapper functions use a pointer (``ElementType*``) to receive the buffer of initialization list.
-The requirements about return value and other parameters are the same as normal factories and constructors,
-which is described in :doc:`how to register an object type <../object_type>`.
+The helpers expect the constructors or wrapper functions to use a pointer (``ElementType*``) to receive the initialization list buffer.
+The requirements about the return value and other parameters are the same as normal factories and constructors,
+which are described in :doc:`how to register an object type <../object_type>`.
 
 .. code-block:: c++
 
@@ -51,7 +51,7 @@ which is described in :doc:`how to register an object type <../object_type>`.
 .. note::
   Unlike C++, each type in AngelScript can only have **one** list factory or constructor.
 
-For repeated pattern, asbind20 provides a helper class to parse it from a raw ``void*``.
+For a repeated pattern, asbind20 provides a helper class to parse it from a raw ``void*``.
 
 .. doxygenclass:: asbind20::script_init_list_repeat
   :members:
@@ -60,7 +60,7 @@ For repeated pattern, asbind20 provides a helper class to parse it from a raw ``
 Initialization List Policies
 ----------------------------
 
-The asbind20 provides some policies for adapting existing C++ paradigm for constructing from a range of value.
+asbind20 provides some policies for adapting the existing C++ paradigm for constructing from a range of values.
 
 Policies are passed via ``use_policy``, which accepts one or more policy types:
 
@@ -85,7 +85,7 @@ Quick summary of available initialization list policies:
      - Raw AS initialization list. It's useful when you want to deal with the raw data.
    * - ``repeat_list_proxy``
      - ``script_init_list_repeat``
-     - Convert the memory to proxy.
+     - Convert the memory to a proxy.
    * - ``apply_to<Size>``
      - Individual arguments |br| (e.g. ``int, int, int`` for ``Size=3``)
      - **Only works with fixed-size patterns** like ``{int, int, int}``, not ``repeat int``
@@ -219,9 +219,9 @@ Policies for the pattern with repeated elements, i.e., containing ``repeat`` in 
         .list_factory<int>("repeat int", use_policy<policies::as_initializer_list>);
 
   .. note::
-      This policy is implemented by non-standard code, please check the macro ``ASBIND20_HAS_AS_INITIALIZER_LIST`` at first.
+      This policy is implemented with non-standard code; please check the macro ``ASBIND20_HAS_AS_INITIALIZER_LIST`` first.
 
-      Currently, this policy are supported on MSVC STL, libstdc++, and libc++.
+      Currently, this policy is supported on MSVC STL, libstdc++, and libc++.
 
 4. As the ``std::span``
 
@@ -265,5 +265,5 @@ Policies for the pattern with repeated elements, i.e., containing ``repeat`` in 
         .list_factory<int>("repeat int", use_policy<policies::as_from_range>);
 
   .. note::
-    This policy is only available when compiler supports C++23 ``__cpp_lib_containers_ranges``.
+    This policy is only available when the compiler supports C++23 ``__cpp_lib_containers_ranges``.
     You can check whether the macro ``ASBIND20_HAS_CONTAINERS_RANGES`` is defined.
