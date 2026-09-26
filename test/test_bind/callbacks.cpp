@@ -54,7 +54,7 @@ TEST(MessageCallback, Global)
         engine, &test_bind::msg_callback_helper::stdcall_cb, &helper
     );
     EXPECT_CALL(*helper.mock, on_message(_)).Times(1);
-    test_bind::write_msg_helper(engine, "msg");
+    test_bind::write_msg_helper(engine.get(), "msg");
 }
 
 TEST(MessageCallback, Member)
@@ -68,7 +68,7 @@ TEST(MessageCallback, Member)
         engine, &test_bind::msg_callback_helper::mem_cb, asbind20::auxiliary(helper)
     );
     EXPECT_CALL(*helper.mock, on_message(_)).Times(1);
-    test_bind::write_msg_helper(engine, "msg");
+    test_bind::write_msg_helper(engine.get(), "msg");
 }
 
 #ifndef ASBIND20_NO_EXCEPTIONS
@@ -163,8 +163,8 @@ TEST(ExceptionCallback, Member)
     );
 
     EXPECT_CALL(*helper.mock, on_exception(_)).Times(1);
-    test_bind::setup_funcs(engine);
-    test_bind::trigger_ex_in_script(engine);
+    test_bind::setup_funcs(engine.get());
+    test_bind::trigger_ex_in_script(engine.get());
 }
 
 #endif

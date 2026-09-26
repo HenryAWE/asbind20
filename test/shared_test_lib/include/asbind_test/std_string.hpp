@@ -28,12 +28,21 @@ void configure_engine_for_ext_string(
     asbind20::engine_pointer engine
 );
 
+void configure_engine_for_ext_string(
+    const asbind20::unique_script_engine& engine
+);
+
 /**
  * @brief Setup `char32_t` as script char
  * @note Request asEP_USE_CHARACTER_LITERALS set to true
  */
 void setup_script_char(
     asbind20::engine_pointer engine,
+    bool generic = asbind20::has_max_portability()
+);
+
+void setup_script_char(
+    const asbind20::unique_script_engine& engine,
     bool generic = asbind20::has_max_portability()
 );
 
@@ -229,6 +238,12 @@ void setup_script_string(
     bool as_default = true
 );
 
+void setup_script_string(
+    const asbind20::unique_script_engine& engine,
+    bool generic = asbind20::has_max_portability(),
+    bool as_default = true
+);
+
 /**
  * @brief Convert a character to string
  */
@@ -242,6 +257,11 @@ inline std::string script_chr(char32_t ch)
 
 void setup_string_utils(
     asbind20::engine_pointer engine,
+    bool generic = asbind20::has_max_portability()
+);
+
+void setup_string_utils(
+    const asbind20::unique_script_engine& engine,
     bool generic = asbind20::has_max_portability()
 );
 } // namespace asbind_test

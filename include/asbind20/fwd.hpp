@@ -99,6 +99,16 @@ namespace compat
 
 #endif
 } // namespace compat
+
+class script_engine;
+using unique_script_engine = script_engine;
+class shared_script_engine;
+
+template <typename T>
+concept script_engine_pointer_like =
+    std::same_as<std::remove_cv_t<T>, unique_script_engine> ||
+    std::same_as<std::remove_cv_t<T>, shared_script_engine>;
+
 } // namespace asbind20
 
 #endif

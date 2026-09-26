@@ -171,7 +171,7 @@ TEST(SmallVector, CopyCtorHandle)
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
-    test_container::register_sv_ref_foo(engine);
+    test_container::register_sv_ref_foo(engine.get());
 
     int sv_ref_foo_handle_tid = engine->GetTypeIdByDecl("sv_ref_foo@");
     ASSERT_PRED1(&is_objhandle, sv_ref_foo_handle_tid);

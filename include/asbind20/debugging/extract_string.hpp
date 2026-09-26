@@ -13,6 +13,7 @@
 #include "../detail/config.hpp"
 #include "../fwd.hpp"
 #include "../util/script_result.hpp"
+#include "../util/assume.hpp"
 
 namespace asbind20::debugging
 {
@@ -87,6 +88,15 @@ inline extract_string_result extract_string(
         return {bad_script_result, AS_NAMESPACE_QUALIFIER asINVALID_ARG};
 
     return extract_string(*engine, str);
+}
+
+template <script_engine_pointer_like Engine>
+[[nodiscard]]
+extract_string_result extract_string(
+    const Engine& engine, const void* str
+)
+{
+    return extract_string(engine.get(), str);
 }
 
 #endif

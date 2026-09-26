@@ -68,7 +68,7 @@ public:
 private:
     // Takes ownership of `f` without increasing the reference count
     compile_function_result(function_pointer f, int r) noexcept
-        : m_func(std::in_place, f), m_r(r) {}
+        : m_func(adopt_object, f), m_r(r) {}
 
 public:
     compile_function_result(compile_function_result&& other) noexcept = default;

@@ -53,7 +53,7 @@ TEST(ExplicitFactory, Native)
     c
         .factory<int>("int v", use_explicit);
 
-    check_explicit_factory(engine, c.get_type_id());
+    check_explicit_factory(engine.get(), c.get_type_id());
 }
 
 TEST(ExplicitFactory, Generic)
@@ -71,5 +71,5 @@ TEST(ExplicitFactory, Generic)
     c
         .factory<int>("int v", use_explicit);
 
-    check_explicit_factory(engine, c.get_type_id());
+    check_explicit_factory(engine.get(), c.get_type_id());
 }

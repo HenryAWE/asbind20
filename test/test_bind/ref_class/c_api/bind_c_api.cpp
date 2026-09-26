@@ -83,8 +83,8 @@ TEST(CAPI, Native)
     auto engine = asbind20::make_script_engine();
     asbind_test::setup_message_callback(engine);
 
-    test_bind::register_c_api_test(engine);
-    test_bind::test_c_api(engine);
+    test_bind::register_c_api_test(engine.get());
+    test_bind::test_c_api(engine.get());
 }
 
 TEST(CAPI, Generic)
@@ -92,6 +92,6 @@ TEST(CAPI, Generic)
     auto engine = asbind20::make_script_engine();
     asbind_test::setup_message_callback(engine);
 
-    test_bind::register_c_api_test(asbind20::use_generic, engine);
-    test_bind::test_c_api(engine);
+    test_bind::register_c_api_test(asbind20::use_generic, engine.get());
+    test_bind::test_c_api(engine.get());
 }

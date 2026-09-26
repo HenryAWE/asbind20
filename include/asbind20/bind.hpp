@@ -53,6 +53,14 @@ public:
         set_impl(mask);
     }
 
+    template <script_engine_pointer_like Engine>
+    access_mask(
+        const Engine& engine,
+        mask_type mask
+    )
+        : access_mask(engine.get(), mask)
+    {}
+
     ~access_mask()
     {
         get_engine()->SetDefaultAccessMask(m_prev);
@@ -116,6 +124,11 @@ public:
         set_as_global();
     }
 
+    template <script_engine_pointer_like Engine>
+    explicit namespace_(const Engine& engine)
+        : namespace_(engine.get())
+    {}
+
     namespace_(
         engine_pointer engine,
         std::string_view ns,
@@ -135,6 +148,15 @@ public:
     {
         set_as(ns, nested);
     }
+
+    template <script_engine_pointer_like Engine>
+    namespace_(
+        const Engine& engine,
+        std::string_view ns,
+        bool nested = true
+    )
+        : namespace_(engine.get(), ns, nested)
+    {}
 
 #ifdef ASBIND20_HAS_LIB_REFLECTION
 
@@ -155,6 +177,14 @@ public:
     {
         set_as(name.name, false);
     }
+
+    template <script_engine_pointer_like Engine>
+    namespace_(
+        const Engine& engine,
+        reflected_ns_name name
+    )
+        : namespace_(engine.get(), name)
+    {}
 
 #endif
 
@@ -238,6 +268,10 @@ public:
     basic_interface(engine_reference engine, std::string name)
         : basic_interface(std::addressof(engine), std::move(name)) {}
 
+    template <script_engine_pointer_like Engine>
+    basic_interface(const Engine& engine, std::string name)
+        : basic_interface(engine.get(), std::move(name)) {}
+
     template <bool AppendOnly>
     basic_interface(appending_t<AppendOnly>, engine_pointer engine, std::string name)
         : my_base(engine), m_name(std::move(name))
@@ -265,6 +299,15 @@ public:
           )
     {}
 
+    template <bool AppendOnly, script_engine_pointer_like Engine>
+    basic_interface(appending_t<AppendOnly>, const Engine& engine, std::string name)
+        : basic_interface(
+              appending_t<AppendOnly>{},
+              engine.get(),
+              std::move(name)
+          )
+    {}
+
     template <string_like StringLike>
     basic_interface(
         engine_pointer engine,
@@ -283,6 +326,17 @@ public:
     )
         : basic_interface(
               std::addressof(engine),
+              std::forward<StringLike>(name)
+          )
+    {}
+
+    template <script_engine_pointer_like Engine, string_like StringLike>
+    basic_interface(
+        const Engine& engine,
+        StringLike&& name
+    )
+        : basic_interface(
+              engine.get(),
               std::forward<StringLike>(name)
           )
     {}
@@ -309,6 +363,19 @@ public:
         : basic_interface(
               appending_t<AppendOnly>{},
               std::addressof(engine),
+              std::forward<StringLike>(name)
+          )
+    {}
+
+    template <bool AppendOnly, script_engine_pointer_like Engine, string_like StringLike>
+    basic_interface(
+        appending_t<AppendOnly>,
+        const Engine& engine,
+        StringLike&& name
+    )
+        : basic_interface(
+              appending_t<AppendOnly>{},
+              engine.get(),
               std::forward<StringLike>(name)
           )
     {}
@@ -400,6 +467,17 @@ int set_message_callback(
     );
 }
 
+template <script_engine_pointer_like Engine, native_function Callback>
+requires(!std::is_member_function_pointer_v<Callback>)
+int set_message_callback(
+    const Engine& engine,
+    Callback fn,
+    void* obj = nullptr
+)
+{
+    return set_message_callback(engine.get(), fn, obj);
+}
+
 /**
  * @brief Set a member function as the message callback.
  */
@@ -429,6 +507,17 @@ int set_message_callback(
         aux.get_address(),
         AS_NAMESPACE_QUALIFIER asCALL_THISCALL
     );
+}
+
+template <script_engine_pointer_like Engine, native_function Callback, typename T>
+requires(std::is_member_function_pointer_v<Callback>)
+int set_message_callback(
+    const Engine& engine,
+    Callback fn,
+    auxiliary_wrapper<T> aux
+)
+{
+    return set_message_callback(engine.get(), fn, aux);
 }
 
 /**
@@ -472,6 +561,17 @@ int set_exception_translator(
     );
 }
 
+template <script_engine_pointer_like Engine, native_function Callback>
+requires(!std::is_member_function_pointer_v<Callback>)
+int set_exception_translator(
+    const Engine& engine,
+    Callback fn,
+    void* obj = nullptr
+)
+{
+    return set_exception_translator(engine.get(), fn, obj);
+}
+
 /**
  * @brief Set a member function as the exception translator.
  */
@@ -501,6 +601,17 @@ int set_exception_translator(
         aux.get_address(),
         AS_NAMESPACE_QUALIFIER asCALL_THISCALL
     );
+}
+
+template <script_engine_pointer_like Engine, native_function Callback, typename T>
+requires(std::is_member_function_pointer_v<Callback>)
+int set_exception_translator(
+    const Engine& engine,
+    Callback fn,
+    auxiliary_wrapper<T> aux
+)
+{
+    return set_exception_translator(engine.get(), fn, aux);
 }
 } // namespace asbind20
 

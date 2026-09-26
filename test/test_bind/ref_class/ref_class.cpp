@@ -264,18 +264,18 @@ TEST(TestBind, RefClassNative)
 
     auto engine = asbind20::make_script_engine();
     asbind_test::setup_script_assertion(engine);
-    register_ref_class(engine);
+    register_ref_class(engine.get());
 
-    check_ref_class(engine);
+    check_ref_class(engine.get());
 }
 
 TEST(TestBind, RefClassGeneric)
 {
     auto engine = asbind20::make_script_engine();
     asbind_test::setup_script_assertion(engine);
-    register_ref_class(asbind20::use_generic, engine);
+    register_ref_class(asbind20::use_generic, engine.get());
 
-    check_ref_class(engine);
+    check_ref_class(engine.get());
 }
 
 namespace test_bind
@@ -412,9 +412,9 @@ TEST(TestBind, RefClassForHelperNative)
     auto engine = asbind20::make_script_engine();
     asbind_test::setup_script_assertion(engine);
     test_bind::ref_helper helper;
-    test_bind::register_ref_class_for_helper<false>(engine, helper);
+    test_bind::register_ref_class_for_helper<false>(engine.get(), helper);
 
-    test_bind::check_ref_class_for_helper(engine, helper);
+    test_bind::check_ref_class_for_helper(engine.get(), helper);
 }
 
 TEST(TestBind, RefClassForHelperGeneric)
@@ -422,9 +422,9 @@ TEST(TestBind, RefClassForHelperGeneric)
     auto engine = asbind20::make_script_engine();
     asbind_test::setup_script_assertion(engine);
     test_bind::ref_helper helper;
-    test_bind::register_ref_class_for_helper<true>(engine, helper);
+    test_bind::register_ref_class_for_helper<true>(engine.get(), helper);
 
-    test_bind::check_ref_class_for_helper(engine, helper);
+    test_bind::check_ref_class_for_helper(engine.get(), helper);
 }
 
 namespace test_bind
@@ -562,16 +562,16 @@ TEST(RefClassCompProperty, OffsetCompOffsetNative)
 
     using namespace test_bind;
     auto engine = asbind20::make_script_engine();
-    setup_ref_class_comp_prop_test<false, false, false>(engine);
-    check_ref_class_comp_property(engine);
+    setup_ref_class_comp_prop_test<false, false, false>(engine.get());
+    check_ref_class_comp_property(engine.get());
 }
 
 TEST(RefClassCompProperty, OffsetCompOffsetGeneric)
 {
     using namespace test_bind;
     auto engine = asbind20::make_script_engine();
-    setup_ref_class_comp_prop_test<true, false, false>(engine);
-    check_ref_class_comp_property(engine);
+    setup_ref_class_comp_prop_test<true, false, false>(engine.get());
+    check_ref_class_comp_property(engine.get());
 }
 
 TEST(RefClassCompProperty, MPCompOffsetNative)
@@ -580,16 +580,16 @@ TEST(RefClassCompProperty, MPCompOffsetNative)
 
     using namespace test_bind;
     auto engine = asbind20::make_script_engine();
-    setup_ref_class_comp_prop_test<false, true, false>(engine);
-    check_ref_class_comp_property(engine);
+    setup_ref_class_comp_prop_test<false, true, false>(engine.get());
+    check_ref_class_comp_property(engine.get());
 }
 
 TEST(RefClassCompProperty, MPCompOffsetGeneric)
 {
     using namespace test_bind;
     auto engine = asbind20::make_script_engine();
-    setup_ref_class_comp_prop_test<true, true, false>(engine);
-    check_ref_class_comp_property(engine);
+    setup_ref_class_comp_prop_test<true, true, false>(engine.get());
+    check_ref_class_comp_property(engine.get());
 }
 
 TEST(RefClassCompProperty, OffsetCompMPNative)
@@ -598,16 +598,16 @@ TEST(RefClassCompProperty, OffsetCompMPNative)
 
     using namespace test_bind;
     auto engine = asbind20::make_script_engine();
-    setup_ref_class_comp_prop_test<false, false, true>(engine);
-    check_ref_class_comp_property(engine);
+    setup_ref_class_comp_prop_test<false, false, true>(engine.get());
+    check_ref_class_comp_property(engine.get());
 }
 
 TEST(RefClassCompProperty, OffsetCompMPGeneric)
 {
     using namespace test_bind;
     auto engine = asbind20::make_script_engine();
-    setup_ref_class_comp_prop_test<true, false, false>(engine);
-    check_ref_class_comp_property(engine);
+    setup_ref_class_comp_prop_test<true, false, false>(engine.get());
+    check_ref_class_comp_property(engine.get());
 }
 
 TEST(RefClassCompProperty, MPCompMPNative)
@@ -616,14 +616,14 @@ TEST(RefClassCompProperty, MPCompMPNative)
 
     using namespace test_bind;
     auto engine = asbind20::make_script_engine();
-    setup_ref_class_comp_prop_test<false, true, true>(engine);
-    check_ref_class_comp_property(engine);
+    setup_ref_class_comp_prop_test<false, true, true>(engine.get());
+    check_ref_class_comp_property(engine.get());
 }
 
 TEST(RefClassCompProperty, MPCompMPGeneric)
 {
     using namespace test_bind;
     auto engine = asbind20::make_script_engine();
-    setup_ref_class_comp_prop_test<true, true, true>(engine);
-    check_ref_class_comp_property(engine);
+    setup_ref_class_comp_prop_test<true, true, true>(engine.get());
+    check_ref_class_comp_property(engine.get());
 }

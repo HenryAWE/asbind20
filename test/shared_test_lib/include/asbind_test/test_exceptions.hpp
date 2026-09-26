@@ -67,6 +67,12 @@ void register_instantly_throw(asbind20::engine_pointer engine)
 }
 
 template <bool UseGeneric>
+void register_instantly_throw(const asbind20::unique_script_engine& engine)
+{
+    register_instantly_throw<UseGeneric>(engine.get());
+}
+
+template <bool UseGeneric>
 void register_throw_on_copy(asbind20::engine_pointer engine)
 {
     using namespace asbind20;
@@ -80,5 +86,11 @@ void register_throw_on_copy(asbind20::engine_pointer engine)
         engine, "throw_on_copy", flags
     )
         .behaviours_by_traits(flags);
+}
+
+template <bool UseGeneric>
+void register_throw_on_copy(const asbind20::unique_script_engine& engine)
+{
+    register_throw_on_copy<UseGeneric>(engine.get());
 }
 } // namespace asbind_test

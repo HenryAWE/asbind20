@@ -16,12 +16,75 @@ Breaking Change
 - ``script_invoke_result<T&>::value_or`` now returns a copy of ``T`` instead of a
   reference to it, matching the value semantics of the primary template.
 
+- The RAII helpers (``script_object``, ``script_context``, ``shared_script_engine``,
+  ``script_typeinfo``, ``lockable_shared_bool``, ``script_function`` and
+  ``script_method``) are now implemented on top of the new
+  ``shared_script_object_interface``. They are copyable, and copying one of them
+  shares the ownership by increasing the reference count, whereas ``script_object``
+  used to be move-only.
+
+- The RAII helpers no longer convert to the underlying raw pointer implicitly.
+  Call ``get()`` instead:
+
+  .. code-block:: c++
+
+    auto engine = asbind20::make_script_engine();
+
+    // Before
+    asIScriptEngine* raw = engine;
+    // Now
+    asIScriptEngine* raw = engine.get();
+
+  Boolean tests and comparison with a raw pointer keep working, because the helpers
+  provide an explicit ``operator bool`` and comparison operators instead of relying
+  on the implicit conversion:
+
+  .. code-block:: c++
+
+    // Still valid
+    if(engine) { /* ... */ }
+    if(ctx->GetEngine() == engine) { /* ... */ }
+    if(engine == nullptr) { /* ... */ }
+
+    // Still valid for script_object, script_context, shared_script_engine, etc.
+    if(script_obj) { /* ... */ }
+
+  Note that passing a helper where a raw pointer is expected does not transfer the
+  ownership. The interfaces which take an engine accept the helpers directly, so most
+  call sites do not need ``get()`` at all. See the update note below.
+
+- Taking over an already owned reference now uses the ``asbind20::adopt_object`` tag instead
+  of ``std::in_place_t``:
+
+  .. code-block:: c++
+
+    // Before
+    script_function<void> f(std::in_place, func);
+    // Now
+    script_function<void> f(adopt_object, func);
+
+- ``target()`` of the script function wrappers is deprecated in favor of ``get()``.
+  The old name still works, but it triggers a ``[[deprecated]]`` warning.
+
 Update
 ~~~~~~
 
 - More utilities.
 
 - Some interfaces now have overloads taking reference as parameter.
+
+- The interfaces taking an engine now have overloads accepting the RAII helpers
+  (``script_engine`` and ``shared_script_engine``) directly, so they can be passed
+  without calling ``get()``.
+
+  User code which passes a helper to its own functions taking a raw pointer should
+  call ``get()`` explicitly, as described in the breaking change above.
+
+- ``script_engine`` now has an explicit ``operator bool``.
+
+- The stream output operator of ``shared_script_object_interface`` now takes the helper
+  by const reference, so the helpers sharing the ownership of an entity can be printed
+  as well, e.g. when GTest/GMock reports a failed assertion.
 
 - Bring back GCC 12 support.
 
@@ -60,6 +123,13 @@ Bug fix
 - Miscellaneous fix.
 
 - Fix a `set_script_arg` bug when user passing built-in 128-bit integers as argument.
+
+- Fix a reference leak when moving between two RAII helpers which already hold the
+  same entity, e.g. ``a = std::move(b)`` where ``a`` and ``b`` refer to the same
+  object. The reference owned by the source helper used to be dropped without
+  being taken over, so it was never released. ``script_typeinfo`` was affected,
+  and the shared implementation no longer has this problem for any of the
+  helpers.
 
 2.0.1
 -----

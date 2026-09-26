@@ -35,7 +35,6 @@ namespace asbind20
  *
  * @note This function requires the class to be default constructible
  */
-[[nodiscard]]
 inline script_object instantiate_class(
     context_pointer ctx,
     const_typeinfo_pointer class_info
@@ -58,6 +57,13 @@ inline script_object instantiate_class(
     return result.has_value() ? *result : script_object();
 }
 
+inline script_object instantiate_class(
+    context_pointer ctx,
+    const script_typeinfo& class_info
+)
+{
+    return instantiate_class(ctx, class_info.get());
+}
 } // namespace asbind20
 
 #endif

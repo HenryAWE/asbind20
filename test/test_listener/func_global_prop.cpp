@@ -46,14 +46,14 @@ static void test_record_functions(asbind20::engine_pointer engine)
 
 TEST_F(ListenerTest, RecordFunctionsGeneric)
 {
-    test_listener::test_record_functions<true>(engine);
+    test_listener::test_record_functions<true>(engine.get());
 }
 
 TEST_F(ListenerTest, RecordFunctionsNative)
 {
     ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
-    test_listener::test_record_functions<false>(engine);
+    test_listener::test_record_functions<false>(engine.get());
 }
 
 TEST_F(ListenerTest, RecordProperties)

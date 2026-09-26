@@ -141,8 +141,8 @@ TEST(TestForeach, IntSeqGeneric)
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
 
-    test_bind::register_int_generator<true, false, true>(engine);
-    auto* f = test_bind::prepare_int_seq_test(engine);
+    test_bind::register_int_generator<true, false, true>(engine.get());
+    auto* f = test_bind::prepare_int_seq_test(engine.get());
 
     request_context ctx(engine);
     auto result = script_invoke<int>(ctx, f);
@@ -162,8 +162,8 @@ TEST(TestForeach, IntSeqNative)
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
 
-    test_bind::register_int_generator<true, false, false>(engine);
-    auto* f = test_bind::prepare_int_seq_test(engine);
+    test_bind::register_int_generator<true, false, false>(engine.get());
+    auto* f = test_bind::prepare_int_seq_test(engine.get());
 
     request_context ctx(engine);
     auto result = script_invoke<int>(ctx, f);
@@ -181,8 +181,8 @@ TEST(TestForeach, IntSeqExplicitGeneric)
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
 
-    test_bind::register_int_generator<true, true, true>(engine);
-    auto* f = test_bind::prepare_int_seq_test(engine);
+    test_bind::register_int_generator<true, true, true>(engine.get());
+    auto* f = test_bind::prepare_int_seq_test(engine.get());
 
     request_context ctx(engine);
     auto result = script_invoke<int>(ctx, f);
@@ -202,8 +202,8 @@ TEST(TestForeach, IntSeqExplicitNative)
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
 
-    test_bind::register_int_generator<true, true, false>(engine);
-    auto* f = test_bind::prepare_int_seq_test(engine);
+    test_bind::register_int_generator<true, true, false>(engine.get());
+    auto* f = test_bind::prepare_int_seq_test(engine.get());
 
     request_context ctx(engine);
     auto result = script_invoke<int>(ctx, f);

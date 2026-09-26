@@ -46,6 +46,10 @@ public:
     explicit global(engine_pointer engine)
         : my_base(engine) {}
 
+    template <script_engine_pointer_like Engine>
+    explicit global(const Engine& engine)
+        : my_base(engine.get()) {}
+
     explicit global(engine_reference engine)
         : global(std::addressof(engine)) {}
 
@@ -64,6 +68,14 @@ public:
         engine_reference engine
     )
         : global(std::addressof(engine))
+    {}
+
+    template <bool AppendOnly, script_engine_pointer_like Engine>
+    global(
+        appending_t<AppendOnly>,
+        const Engine& engine
+    )
+        : global(engine.get())
     {}
 
     using my_base::get_engine;
@@ -461,6 +473,9 @@ public:
 global(engine_pointer) -> global<false>;
 
 global(const script_engine&) -> global<false>;
+
+template <script_engine_pointer_like Engine>
+global(const Engine&) -> global<false>;
 
 template <bool AppendOnly>
 global(appending_t<AppendOnly>, engine_pointer) -> global<false>;

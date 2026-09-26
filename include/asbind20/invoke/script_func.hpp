@@ -13,6 +13,7 @@
 #include <functional>
 #include <utility>
 #include "../fwd.hpp"
+#include "../memory.hpp"
 #include "../detail/err_handler.hpp"
 #include "set_arg.hpp"
 #include "invoke_result.hpp"
@@ -113,7 +114,14 @@ public:
     }
 
     [[nodiscard]]
+    [[deprecated("Use get() instead")]]
     handle_type target() const noexcept
+    {
+        return m_func;
+    }
+
+    [[nodiscard]]
+    handle_type get() const noexcept
     {
         return m_func;
     }
@@ -130,19 +138,19 @@ public:
 
     friend bool operator==(const script_function_ref& lhs, handle_type rhs) noexcept
     {
-        return lhs.target() == rhs;
+        return lhs.get() == rhs;
     }
 
     friend bool operator==(handle_type lhs, const script_function_ref& rhs) noexcept
     {
-        return lhs == rhs.target();
+        return lhs == rhs.get();
     }
 
     result_type operator()(
         context_reference ctx, Args... args
     ) const
     {
-        handle_type func = target();
+        handle_type func = get();
         if(!func) [[unlikely]]
             detail::throw_bad_call();
 
@@ -197,7 +205,14 @@ public:
     }
 
     [[nodiscard]]
+    [[deprecated("Use get() instead")]]
     handle_type target() const noexcept
+    {
+        return m_func;
+    }
+
+    [[nodiscard]]
+    handle_type get() const noexcept
     {
         return m_func;
     }
@@ -214,12 +229,12 @@ public:
 
     friend bool operator==(const script_method_ref& lhs, handle_type rhs) noexcept
     {
-        return lhs.target() == rhs;
+        return lhs.get() == rhs;
     }
 
     friend bool operator==(handle_type lhs, const script_method_ref& rhs) noexcept
     {
-        return lhs == rhs.target();
+        return lhs == rhs.get();
     }
 
     template <script_object_handle Object>
@@ -227,7 +242,7 @@ public:
         context_reference ctx, Object&& obj, Args... args
     ) const
     {
-        handle_type func = target();
+        handle_type func = get();
         if(!func)
             detail::throw_bad_call();
 
@@ -247,134 +262,38 @@ private:
     handle_type m_func;
 };
 
+/**
+ * @brief Wrapper of script function
+ *
+ * @note Use `adopt_object` for taking over a function object which already owns a reference,
+ *       such as the one returned by `asIScriptModule::CompileFunction()`.
+ *       The APIs for querying an existing function, such as
+ *       `asIScriptModule::GetFunctionByName()`, return a borrowed pointer instead,
+ *       which does not own a reference, so it should be passed to the constructor
+ *       directly.
+ */
 template <>
-class script_function<void>
+class script_function<void> : public shared_script_object_interface<function_pointer>
 {
+    using my_base = shared_script_object_interface<function_pointer>;
+
 public:
-    using element_type = AS_NAMESPACE_QUALIFIER asIScriptFunction;
-    using handle_type = function_pointer;
-
-    script_function() noexcept
-        : m_func(nullptr) {}
-
-    script_function(const script_function& other)
-        : script_function(other.target()) {}
-
-    script_function(script_function&& other) noexcept
-        : m_func(std::exchange(other.m_func, nullptr)) {}
-
-    script_function(handle_type func)
-        : m_func(func)
-    {
-        if(m_func)
-            (void)m_func->AddRef();
-    }
-
-    script_function(function_reference func)
-        : script_function(std::addressof(func)) {}
+    using my_base::my_base;
 
     /**
-     * @brief Assign a function object. It @b won't increase the reference count!
-     *
-     * @warning DON'T use this constructor unless you know what you are doing!
-     *          The ownership of the passed function object is transferred to
-     *          this wrapper, which will release it on destruction.
+     * @brief Get the wrapped function object
      */
-    script_function(std::in_place_t, handle_type func) noexcept
-        : m_func(func) {}
-
-    script_function(std::in_place_t, function_reference func) noexcept
-        : m_func(std::addressof(func)) {}
-
-    ~script_function()
-    {
-        reset();
-    }
-
-    script_function& operator=(const script_function& other)
-    {
-        if(this == &other)
-            return *this;
-
-        reset(other.target());
-
-        return *this;
-    }
-
-    script_function& operator=(script_function&& other) noexcept
-    {
-        script_function(std::move(other)).swap(*this);
-        return *this;
-    }
-
     [[nodiscard]]
+    [[deprecated("Use get() instead")]]
     handle_type target() const noexcept
     {
-        return m_func;
-    }
-
-    bool operator==(script_function const& other) const noexcept = default;
-
-    friend bool operator==(const script_function& lhs, handle_type rhs) noexcept
-    {
-        return lhs.target() == rhs;
-    }
-
-    friend bool operator==(handle_type lhs, const script_function& rhs) noexcept
-    {
-        return lhs == rhs.target();
-    }
-
-    explicit operator bool() const noexcept
-    {
-        return static_cast<bool>(target());
-    }
-
-    explicit operator handle_type() const noexcept
-    {
-        return target();
-    }
-
-    handle_type operator->() const noexcept
-    {
-        return target();
-    }
-
-    void reset(std::nullptr_t = nullptr) noexcept
-    {
-        if(m_func)
-        {
-            (void)m_func->Release();
-            m_func = nullptr;
-        }
-    }
-
-    void reset(handle_type func)
-    {
-        // Avoid Release-then-AddRef on the same handle,
-        if(m_func == func) [[unlikely]]
-            return;
-
-        if(m_func)
-            (void)m_func->Release();
-        m_func = func;
-        if(m_func)
-            (void)m_func->AddRef();
-    }
-
-    void reset(function_reference func)
-    {
-        reset(std::addressof(func));
+        return get();
     }
 
     void swap(script_function& other) noexcept
     {
-        using std::swap;
-        swap(m_func, other.m_func);
+        my_base::swap(other);
     }
-
-private:
-    handle_type m_func;
 };
 
 /**
@@ -405,23 +324,23 @@ public:
      *          The ownership of the passed function object is transferred to
      *          this wrapper, which will release it on destruction.
      */
-    script_function(std::in_place_t, handle_type func) noexcept
-        : my_base(std::in_place, func) {}
+    script_function(adopt_object_t, handle_type func) noexcept
+        : my_base(adopt_object, func) {}
 
-    script_function(std::in_place_t, function_reference func) noexcept
-        : my_base(std::in_place, func) {}
+    script_function(adopt_object_t, function_reference func) noexcept
+        : my_base(adopt_object, func) {}
 
     script_function& operator=(const script_function&) = default;
     script_function& operator=(script_function&&) noexcept = default;
 
     script_function(script_function_ref<R(Args...)> rf) noexcept
-        : my_base(rf.target()) {}
+        : my_base(rf.get()) {}
 
     result_type operator()(
         context_reference ctx, Args... args
     ) const
     {
-        handle_type func = target();
+        handle_type func = get();
         if(!func)
             detail::throw_bad_call();
 
@@ -443,7 +362,7 @@ public:
 
     operator script_function_ref<R(Args...)>() const noexcept
     {
-        return target();
+        return {get()};
     }
 };
 
@@ -475,7 +394,7 @@ public:
         : my_base(func) {}
 
     script_method(script_method_ref<R(Args...)> rf) noexcept
-        : my_base(rf.target()) {}
+        : my_base(rf.get()) {}
 
     script_method& operator=(const script_method&) = default;
     script_method& operator=(script_method&&) noexcept = default;
@@ -485,7 +404,7 @@ public:
         context_reference ctx, Object&& obj, Args... args
     ) const
     {
-        handle_type func = target();
+        handle_type func = get();
         if(!func)
             detail::throw_bad_call();
 
@@ -505,7 +424,7 @@ public:
         context_reference ctx, const void* obj, Args... args
     ) const
     {
-        handle_type func = target();
+        handle_type func = get();
         if(!func)
             detail::throw_bad_call();
 
@@ -527,7 +446,7 @@ public:
 
     operator script_method_ref<R(Args...)>() const noexcept
     {
-        return target();
+        return {get()};
     }
 };
 

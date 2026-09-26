@@ -22,11 +22,11 @@ TEST(ScriptFunction, Ownership)
     {
         // Resetting to the same function object should be a no-op,
         // avoiding Release-then-AddRef on the same handle
-        function_pointer target = f.target();
-        f.reset(target);
-        EXPECT_EQ(f.target(), target);
-        f.reset(f.target());
-        EXPECT_EQ(f.target(), target);
+        function_pointer get = f.get();
+        f.reset(get);
+        EXPECT_EQ(f.get(), get);
+        f.reset(f.get());
+        EXPECT_EQ(f.get(), get);
 
         request_context ctx(engine);
         auto result = f(ctx);
@@ -48,10 +48,10 @@ TEST(ScriptFunction, Ownership)
     // By reference
     {
         script_function_ref<int()> rf = f;
-        EXPECT_EQ(f.target(), rf.target());
+        EXPECT_EQ(f.get(), rf.get());
         EXPECT_TRUE(rf);
-        EXPECT_EQ(rf, f.target());
-        EXPECT_EQ(f.target(), rf);
+        EXPECT_EQ(rf, f.get());
+        EXPECT_EQ(f.get(), rf);
         EXPECT_EQ(rf, rf);
 
         request_context ctx(engine);
@@ -61,7 +61,7 @@ TEST(ScriptFunction, Ownership)
         EXPECT_EQ(result.value(), 42);
 
         script_function<int()> another = rf;
-        EXPECT_EQ(another.target(), rf.target());
+        EXPECT_EQ(another.get(), rf.get());
     }
 
     {
@@ -74,15 +74,15 @@ TEST(ScriptFunction, Ownership)
 
     {
         auto another = f;
-        EXPECT_EQ(another.target(), f.target());
+        EXPECT_EQ(another.get(), f.get());
 
         // Copy assignment where both wrappers refer to the same function object
         f = another;
-        EXPECT_EQ(f.target(), another.target());
+        EXPECT_EQ(f.get(), another.get());
 
         f.reset();
         EXPECT_THAT(f, ::testing::IsFalse());
-        EXPECT_THAT(f.target(), ::testing::IsNull());
+        EXPECT_THAT(f.get(), ::testing::IsNull());
     }
 }
 
@@ -123,7 +123,7 @@ TEST(ScriptMethod, Ownership)
 
     {
         script_method_ref<int()> rf = test;
-        EXPECT_EQ(test.target(), rf.target());
+        EXPECT_EQ(test.get(), rf.get());
 
         auto result = rf(ctx, foo);
 
@@ -131,15 +131,15 @@ TEST(ScriptMethod, Ownership)
         EXPECT_EQ(result.value(), 42);
 
         script_method<int()> another = rf;
-        EXPECT_EQ(another.target(), rf.target());
+        EXPECT_EQ(another.get(), rf.get());
     }
 
     {
         auto another = test;
-        EXPECT_EQ(another.target(), test.target());
+        EXPECT_EQ(another.get(), test.get());
 
         test.reset();
         EXPECT_THAT(test, ::testing::IsFalse());
-        EXPECT_THAT(test.target(), ::testing::IsNull());
+        EXPECT_THAT(test.get(), ::testing::IsNull());
     }
 }

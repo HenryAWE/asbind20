@@ -3,12 +3,45 @@ RAII Helpers
 
 `RAII <https://en.cppreference.com/w/cpp/language/raii>`_ helpers for managing lifetime of AngelScript objects.
 
+The helpers which share the ownership of an entity — ``script_object``, ``script_context``,
+``shared_script_engine``, ``script_typeinfo``, ``lockable_shared_bool`` and the script function
+wrappers — are value types: copying one of them increases the reference count of the stored entity
+and moving it transfers the ownership. They can be compared with each other, with a pointer and with
+a reference of the stored entity, hashed by the address of the stored entity, and written to an
+output stream, which prints that address. Therefore, they can be used as the key of
+``std::unordered_map`` and ``std::unordered_set``.
+
+Converting a helper to the underlying raw pointer is ``explicit``, so the helper never decays into a
+pointer silently. Call ``get()`` when a raw pointer is needed, such as when calling a function which
+is not part of asbind20:
+
+.. code-block:: c++
+
+    auto engine = asbind20::make_script_engine();
+
+    asIScriptEngine* raw = engine.get();
+    raw->SetEngineProperty(asEP_USE_CHARACTER_LITERALS, true);
+
+Passing a helper where a raw pointer is expected does not transfer the ownership. In the other
+direction, the interfaces of asbind20 taking an engine accept the helpers directly, so
+``global(engine)``, ``create_module(engine, "my_module")`` and friends work without an explicit
+``get()``.
+
+``script_engine`` is the unique owner of an engine, while ``request_context`` and
+``reuse_active_context`` are non-copyable guards which return the context to the engine.
+
 Script Engine
 -------------
 
 .. doxygenfunction:: asbind20::make_script_engine
 
 .. doxygenclass:: asbind20::script_engine
+  :members:
+  :undoc-members:
+
+.. doxygenfunction:: asbind20::make_shared_script_engine
+
+.. doxygenclass:: asbind20::shared_script_engine
   :members:
   :undoc-members:
 
@@ -22,6 +55,10 @@ Script Context
   :undoc-members:
 
 .. doxygenclass:: asbind20::reuse_active_context
+  :members:
+  :undoc-members:
+
+.. doxygenclass:: asbind20::script_context
   :members:
   :undoc-members:
 
@@ -49,6 +86,62 @@ Lockable Shared Bool
 
 .. doxygenfunction:: asbind20::make_lockable_shared_bool
 
+Shared Object Interface
+-----------------------
+
+``shared_script_object_interface`` implements the reference counting shared by all the helpers above.
+Deriving from it gives a helper the whole set of operations for free:
+
+.. code-block:: c++
+
+    class my_object
+    {
+    public:
+        int AddRef() const;
+        int Release() const;
+    };
+
+    class my_object_handle
+        : public asbind20::shared_script_object_interface<my_object*>
+    {
+        using my_base = asbind20::shared_script_object_interface<my_object*>;
+
+    public:
+        using my_base::my_base;
+    };
+
+By default, the constructors and ``reset()`` increase the reference count of the passed entity.
+The ``adopt_object`` tag tells the helper that the caller already owns a reference, so that the helper
+takes that reference over instead of adding a new one:
+
+.. code-block:: c++
+
+    my_object_handle handle(obj);                          // Adds a reference
+    my_object_handle adopted(asbind20::adopt_object, obj); // Takes over a reference owned by the caller
+
+    handle.reset(obj);                                     // Adds a reference
+    handle.reset(asbind20::adopt_object, obj);             // Takes over a reference owned by the caller
+    handle.reset(*obj);                                    // Adds a reference, from a reference
+    handle.reset(std::move(adopted));                      // Transfers the ownership from another helper
+
+.. note::
+
+    Adopting from another helper is rejected at compile time, because the source helper still owns its
+    own reference, and adopting its entity without clearing it would result in two owners of one
+    reference. Use ``reset(std::move(other))``, the copy constructor or the move constructor to transfer
+    the ownership between helpers. For the same reason, ``reset(adopt_object, obj)`` does nothing if the
+    stored entity is already ``obj``, i.e., the caller keeps the ownership of the passed reference.
+
+.. doxygenstruct:: asbind20::adopt_object_t
+  :members:
+  :undoc-members:
+
+.. doxygenvariable:: asbind20::adopt_object
+
+.. doxygenclass:: asbind20::shared_script_object_interface
+  :members:
+  :undoc-members:
+
 IO Helpers
 ==========
 
@@ -61,8 +154,8 @@ IO Helpers
 Loading Script Sections
 -----------------------
 
-.. doxygenfunction:: asbind20::io::load_string
-.. doxygenfunction:: asbind20::io::load_file
+.. doxygenfunction:: asbind20::io::load_string(module_pointer, cstring_ref, std::string_view, int)
+.. doxygenfunction:: asbind20::io::load_file(module_pointer, const std::filesystem::path &, std::ios_base::openmode)
 
 
 Miscellaneous Utilities
@@ -288,7 +381,7 @@ The view is an input range — it does not support random access or multi-pass i
 Debugging
 =========
 
-.. doxygenfunction:: asbind20::debugging::get_function_section_name
+.. doxygenfunction:: asbind20::debugging::get_function_section_name(const_function_pointer)
 
 GC Statistics
 -------------
@@ -296,15 +389,16 @@ GC Statistics
 .. doxygenstruct:: asbind20::debugging::gc_statistics
   :members:
   :undoc-members:
-.. doxygenfunction:: asbind20::debugging::get_gc_statistics
+.. doxygenfunction:: asbind20::debugging::get_gc_statistics(const_engine_pointer)
 
 String Extraction
 -----------------
 
 Tools for extracting string from script without knowing its underlying type.
 
-.. doxygenclass:: asbind20::debugging::extract_string_result
-    :members:
-    :undoc-members:
+The result is an alias of ``asbind20::script_result<std::string>``, so the returned
+value can be inspected in the same way as any other script invocation result.
 
-.. doxygenfunction:: asbind20::debugging::extract_string(const asIStringFactory*, const void*)
+.. doxygentypedef:: asbind20::debugging::extract_string_result
+
+.. doxygenfunction:: asbind20::debugging::extract_string(const_string_factory_pointer, const void*)

@@ -11,7 +11,7 @@ protected:
     void SetUp() override
     {
         engine = asbind20::make_script_engine();
-        ASSERT_TRUE(engine);
+        ASSERT_THAT(engine, ::testing::NotNull());
 
         // Error will be reported by listeners
         asbind_test::setup_message_callback(engine, false);

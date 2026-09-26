@@ -71,10 +71,10 @@ TEST(TestBind, VectorBoolNative)
     asbind_test::setup_script_assertion(engine);
 
     std::vector<bool> v;
-    register_vector_bool<false>(engine);
+    register_vector_bool<false>(engine.get());
     global<true>(engine)
         .property("vec_bool v", v);
-    check_vector_bool(engine);
+    check_vector_bool(engine.get());
 }
 
 TEST(TestBind, VectorBoolGeneric)
@@ -86,8 +86,8 @@ TEST(TestBind, VectorBoolGeneric)
     asbind_test::setup_script_assertion(engine);
 
     std::vector<bool> v;
-    register_vector_bool<true>(engine);
+    register_vector_bool<true>(engine.get());
     global<true>(engine)
         .property("vec_bool v", v);
-    check_vector_bool(engine);
+    check_vector_bool(engine.get());
 }

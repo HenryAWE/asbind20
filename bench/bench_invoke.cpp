@@ -31,7 +31,7 @@ static void get_int_auto_get(benchmark::State& state)
     using namespace std::string_literals;
 
     auto engine = make_script_engine();
-    auto* f = bench_invoke::prepare_get_int(engine);
+    auto* f = bench_invoke::prepare_get_int(engine.get());
 
     request_context ctx(engine);
     for(auto&& _ : state)
@@ -51,7 +51,7 @@ static void get_int_manual_get(benchmark::State& state)
     using namespace std::string_literals;
 
     auto engine = make_script_engine();
-    auto* f = bench_invoke::prepare_get_int(engine);
+    auto* f = bench_invoke::prepare_get_int(engine.get());
 
     request_context ctx(engine);
     for(auto&& _ : state)
@@ -152,9 +152,9 @@ static void native_to_lower_auto_get(benchmark::State& state)
     using namespace std::string_literals;
 
     auto engine = make_script_engine();
-    bench_invoke::setup_to_lower_env<false>(engine);
+    bench_invoke::setup_to_lower_env<false>(engine.get());
     script_function<std::string(const std::string&)> run(
-        bench_invoke::prepare_to_lower(engine)
+        bench_invoke::prepare_to_lower(engine.get())
     );
 
     request_context ctx(engine);
@@ -175,8 +175,8 @@ static void native_to_lower_manual_get(benchmark::State& state)
     using namespace std::string_literals;
 
     auto engine = make_script_engine();
-    bench_invoke::setup_to_lower_env<false>(engine);
-    auto* f = bench_invoke::prepare_to_lower(engine);
+    bench_invoke::setup_to_lower_env<false>(engine.get());
+    auto* f = bench_invoke::prepare_to_lower(engine.get());
 
     request_context ctx(engine);
     for(auto&& _ : state)
@@ -206,9 +206,9 @@ static void generic_to_lower_auto_get(benchmark::State& state)
     using namespace std::string_literals;
 
     auto engine = make_script_engine();
-    bench_invoke::setup_to_lower_env<true>(engine);
+    bench_invoke::setup_to_lower_env<true>(engine.get());
     script_function<std::string(const std::string&)> run(
-        bench_invoke::prepare_to_lower(engine)
+        bench_invoke::prepare_to_lower(engine.get())
     );
 
     request_context ctx(engine);
@@ -229,8 +229,8 @@ static void generic_to_lower_manual_get(benchmark::State& state)
     using namespace std::string_literals;
 
     auto engine = make_script_engine();
-    bench_invoke::setup_to_lower_env<true>(engine);
-    auto* f = bench_invoke::prepare_to_lower(engine);
+    bench_invoke::setup_to_lower_env<true>(engine.get());
+    auto* f = bench_invoke::prepare_to_lower(engine.get());
 
     request_context ctx(engine);
     for(auto&& _ : state)

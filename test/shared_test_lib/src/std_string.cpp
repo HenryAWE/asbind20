@@ -18,6 +18,13 @@ void configure_engine_for_ext_string(
     );
 }
 
+void configure_engine_for_ext_string(
+    const asbind20::unique_script_engine& engine
+)
+{
+    configure_engine_for_ext_string(engine.get());
+}
+
 void setup_script_char(
     asbind20::engine_pointer engine, bool generic
 )
@@ -52,6 +59,13 @@ void setup_script_char(
         helper(std::true_type{});
     else
         helper(std::false_type{});
+}
+
+void setup_script_char(
+    const asbind20::unique_script_engine& engine, bool generic
+)
+{
+    setup_script_char(engine.get(), generic);
 }
 
 namespace script_string
@@ -363,6 +377,15 @@ void setup_script_string(
         setup_script_string_impl<false>(engine, as_default);
 }
 
+void setup_script_string(
+    const asbind20::unique_script_engine& engine,
+    bool generic,
+    bool as_default
+)
+{
+    setup_script_string(engine.get(), generic, as_default);
+}
+
 void setup_string_utils(
     asbind20::engine_pointer engine,
     bool generic
@@ -383,5 +406,13 @@ void setup_string_utils(
         helper(std::true_type{});
     else
         helper(std::false_type{});
+}
+
+void setup_string_utils(
+    const asbind20::unique_script_engine& engine,
+    bool generic
+)
+{
+    setup_string_utils(engine.get(), generic);
 }
 } // namespace asbind_test

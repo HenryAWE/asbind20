@@ -121,7 +121,7 @@ TEST(TestBind, Float16Native)
     global(engine)
         .function("float f16_to_float(float16 val)", fp<&f16_to_float>);
 
-    check_f16(engine);
+    check_f16(engine.get());
 }
 
 TEST(TestBind, Float16Generic)
@@ -154,7 +154,7 @@ TEST(TestBind, Float16Generic)
     global<true>(engine)
         .function("float f16_to_float(float16 val)", fp<&f16_to_float>);
 
-    check_f16(engine);
+    check_f16(engine.get());
 }
 
 #endif
@@ -279,7 +279,7 @@ TEST(TestBind, LongDoubleNative)
     global(engine)
         .function("float long_double_to_float(long_double val)", fp<&long_double_to_float>);
 
-    check_long_double(engine, true);
+    check_long_double(engine.get(), true);
 }
 
 TEST(TestBind, LongDoubleGeneric)
@@ -311,5 +311,5 @@ TEST(TestBind, LongDoubleGeneric)
     global<true>(engine)
         .function("float long_double_to_float(long_double val)", fp<&long_double_to_float>);
 
-    check_long_double(engine);
+    check_long_double(engine.get());
 }

@@ -462,9 +462,9 @@ protected:
         asbind_test::setup_message_callback(m_engine);
         asbind_test::setup_script_assertion(m_engine);
         if constexpr(UseGeneric)
-            register_trivial_value_class(asbind20::use_generic, m_engine);
+            register_trivial_value_class(asbind20::use_generic, m_engine.get());
         else
-            register_trivial_value_class(m_engine);
+            register_trivial_value_class(m_engine.get());
     }
 
     void TearDown() override
@@ -743,7 +743,7 @@ protected:
 
         asbind_test::setup_message_callback(m_engine);
         asbind_test::setup_script_assertion(m_engine);
-        register_friend_ops<UseGeneric>(m_engine, m_helper);
+        register_friend_ops<UseGeneric>(m_engine.get(), m_helper);
     }
 
     void TearDown() override
@@ -916,16 +916,16 @@ TEST(ValClassCompProperty, OffsetCompOffsetNative)
 
     using namespace test_bind;
     auto engine = asbind20::make_script_engine();
-    setup_val_class_comp_prop_test<false, false, false>(engine);
-    check_val_class_comp_property(engine);
+    setup_val_class_comp_prop_test<false, false, false>(engine.get());
+    check_val_class_comp_property(engine.get());
 }
 
 TEST(ValClassCompProperty, OffsetCompOffsetGeneric)
 {
     using namespace test_bind;
     auto engine = asbind20::make_script_engine();
-    setup_val_class_comp_prop_test<true, false, false>(engine);
-    check_val_class_comp_property(engine);
+    setup_val_class_comp_prop_test<true, false, false>(engine.get());
+    check_val_class_comp_property(engine.get());
 }
 
 TEST(ValClassCompProperty, MPCompOffsetNative)
@@ -934,16 +934,16 @@ TEST(ValClassCompProperty, MPCompOffsetNative)
 
     using namespace test_bind;
     auto engine = asbind20::make_script_engine();
-    setup_val_class_comp_prop_test<false, true, false>(engine);
-    check_val_class_comp_property(engine);
+    setup_val_class_comp_prop_test<false, true, false>(engine.get());
+    check_val_class_comp_property(engine.get());
 }
 
 TEST(ValClassCompProperty, MPCompOffsetGeneric)
 {
     using namespace test_bind;
     auto engine = asbind20::make_script_engine();
-    setup_val_class_comp_prop_test<true, true, false>(engine);
-    check_val_class_comp_property(engine);
+    setup_val_class_comp_prop_test<true, true, false>(engine.get());
+    check_val_class_comp_property(engine.get());
 }
 
 TEST(ValClassCompProperty, OffsetCompMPNative)
@@ -952,16 +952,16 @@ TEST(ValClassCompProperty, OffsetCompMPNative)
 
     using namespace test_bind;
     auto engine = asbind20::make_script_engine();
-    setup_val_class_comp_prop_test<false, false, true>(engine);
-    check_val_class_comp_property(engine);
+    setup_val_class_comp_prop_test<false, false, true>(engine.get());
+    check_val_class_comp_property(engine.get());
 }
 
 TEST(ValClassCompProperty, OffsetCompMPGeneric)
 {
     using namespace test_bind;
     auto engine = asbind20::make_script_engine();
-    setup_val_class_comp_prop_test<true, false, false>(engine);
-    check_val_class_comp_property(engine);
+    setup_val_class_comp_prop_test<true, false, false>(engine.get());
+    check_val_class_comp_property(engine.get());
 }
 
 TEST(ValClassCompProperty, MPCompMPNative)
@@ -970,14 +970,14 @@ TEST(ValClassCompProperty, MPCompMPNative)
 
     using namespace test_bind;
     auto engine = asbind20::make_script_engine();
-    setup_val_class_comp_prop_test<false, true, true>(engine);
-    check_val_class_comp_property(engine);
+    setup_val_class_comp_prop_test<false, true, true>(engine.get());
+    check_val_class_comp_property(engine.get());
 }
 
 TEST(ValClassCompProperty, MPCompMPGeneric)
 {
     using namespace test_bind;
     auto engine = asbind20::make_script_engine();
-    setup_val_class_comp_prop_test<true, true, true>(engine);
-    check_val_class_comp_property(engine);
+    setup_val_class_comp_prop_test<true, true, true>(engine.get());
+    check_val_class_comp_property(engine.get());
 }

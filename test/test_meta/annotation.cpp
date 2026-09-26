@@ -156,7 +156,7 @@ TEST(Annotation, RenameGeneric)
         EXPECT_EQ(r.get_name(), "marionette");
     }
 
-    check_renamed_entities(engine);
+    check_renamed_entities(engine.get());
 }
 
 TEST(Annotation, RenameNative)
@@ -193,7 +193,7 @@ TEST(Annotation, RenameNative)
         EXPECT_EQ(r.get_name(), "marionette");
     }
 
-    check_renamed_entities(engine);
+    check_renamed_entities(engine.get());
 }
 
 TEST(Annotation, ParameterAttributes)

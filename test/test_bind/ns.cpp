@@ -71,5 +71,5 @@ TEST(ScriptNamespace, SetDefault)
     }
     EXPECT_STREQ(engine->GetDefaultNamespace(), "unused");
 
-    test_bind::check_func_with_ns(engine);
+    test_bind::check_func_with_ns(engine.get());
 }

@@ -100,8 +100,8 @@ static void native_small_fn(benchmark::State& state)
     assert(!has_max_portability());
 
     auto engine = make_script_engine();
-    bench_fn::setup_small_fn_env<false>(engine);
-    auto run = bench_fn::prepare_small_fn(engine);
+    bench_fn::setup_small_fn_env<false>(engine.get());
+    auto run = bench_fn::prepare_small_fn(engine.get());
 
     request_context ctx(engine);
     for(auto&& _ : state)
@@ -121,8 +121,8 @@ static void generic_small_fn(benchmark::State& state)
     using namespace asbind20;
 
     auto engine = make_script_engine();
-    bench_fn::setup_small_fn_env<true>(engine);
-    auto run = bench_fn::prepare_small_fn(engine);
+    bench_fn::setup_small_fn_env<true>(engine.get());
+    auto run = bench_fn::prepare_small_fn(engine.get());
 
     request_context ctx(engine);
     for(auto&& _ : state)
@@ -152,7 +152,7 @@ static void handwritten_generic_small_fn(benchmark::State& state)
     global<true>(engine)
         .function("int small_fn(int a, int b)", gfn);
 
-    auto run = bench_fn::prepare_small_fn(engine);
+    auto run = bench_fn::prepare_small_fn(engine.get());
 
     request_context ctx(engine);
     for(auto&& _ : state)

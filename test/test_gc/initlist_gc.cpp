@@ -335,7 +335,7 @@ protected:
 
         asbind_test::setup_message_callback(m_engine);
         asbind_test::setup_script_assertion(m_engine);
-        register_gc_init_list<IListPolicy, UseGeneric>(m_engine);
+        register_gc_init_list<IListPolicy, UseGeneric>(m_engine.get());
     }
 
     void TearDown() override
@@ -406,7 +406,7 @@ protected:
 
         asbind_test::setup_message_callback(m_engine);
         asbind_test::setup_script_assertion(m_engine);
-        register_gc_init_list_simple<UseGeneric>(m_engine);
+        register_gc_init_list_simple<UseGeneric>(m_engine.get());
     }
 
     void TearDown() override
@@ -504,7 +504,7 @@ protected:
 
         asbind_test::setup_message_callback(m_engine);
         asbind_test::setup_script_assertion(m_engine);
-        register_gc_init_list<asbind20::policies::apply_to<Size>, UseGeneric>(m_engine);
+        register_gc_init_list<asbind20::policies::apply_to<Size>, UseGeneric>(m_engine.get());
     }
 
     void TearDown() override
@@ -720,7 +720,7 @@ protected:
         asbind_test::setup_script_assertion(m_engine);
 
         using namespace asbind20;
-        auto c = register_gc_init_list_basic_methods<UseGeneric>(m_engine);
+        auto c = register_gc_init_list_basic_methods<UseGeneric>(m_engine.get());
         if constexpr(Objfirst)
         {
             c.list_factory_function("repeat int", fp<&gc_init_list_custom_list_factory_objfirst>, auxiliary(this_type));
@@ -975,7 +975,7 @@ protected:
 
         asbind_test::setup_message_callback(m_engine);
         asbind_test::setup_script_assertion(m_engine);
-        register_gc_init_list_temp_methods<ListElemType, UseGeneric>(m_engine);
+        register_gc_init_list_temp_methods<ListElemType, UseGeneric>(m_engine.get());
     }
 
     void TearDown() override

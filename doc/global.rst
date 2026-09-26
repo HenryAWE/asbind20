@@ -136,8 +136,8 @@ Message Callback
 
 Registered by ``set_message_callback``.
 
-.. doxygenfunction:: asbind20::set_message_callback(asIScriptEngine*,Callback,void*)
-.. doxygenfunction:: asbind20::set_message_callback(asIScriptEngine*,Callback,auxiliary_wrapper<T>)
+.. doxygenfunction:: asbind20::set_message_callback(engine_pointer,Callback,void*)
+.. doxygenfunction:: asbind20::set_message_callback(engine_pointer,Callback,auxiliary_wrapper<T>)
 
 .. code-block:: c++
 
@@ -190,8 +190,8 @@ Exception Translator
 
 Registered by ``set_exception_translator``.
 
-.. doxygenfunction:: asbind20::set_exception_translator(asIScriptEngine*,Callback,void*)
-.. doxygenfunction:: asbind20::set_exception_translator(asIScriptEngine*,Callback,auxiliary_wrapper<T>)
+.. doxygenfunction:: asbind20::set_exception_translator(engine_pointer,Callback,void*)
+.. doxygenfunction:: asbind20::set_exception_translator(engine_pointer,Callback,auxiliary_wrapper<T>)
 
 .. note::
   If your AngelScript is built without exception support (``asGetLibraryOptions()`` reports ``AS_NO_EXCEPTIONS``),

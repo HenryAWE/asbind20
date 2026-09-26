@@ -3008,6 +3008,16 @@ public:
               std::addressof(engine), std::move(name), flags
           ) {}
 
+    template <script_engine_pointer_like Engine>
+    basic_value_class(
+        const Engine& engine,
+        std::string name,
+        flag_type flags = 0
+    )
+        : basic_value_class(
+              engine.get(), std::move(name), flags
+          ) {}
+
     template <string_like StringLike>
     basic_value_class(
         engine_pointer engine,
@@ -3029,6 +3039,19 @@ public:
     )
         : basic_value_class(
               std::addressof(engine),
+              std::forward<StringLike>(name),
+              flags
+          )
+    {}
+
+    template <script_engine_pointer_like Engine, string_like StringLike>
+    basic_value_class(
+        const Engine& engine,
+        StringLike&& name,
+        flag_type flags = 0
+    )
+        : basic_value_class(
+              engine.get(),
               std::forward<StringLike>(name),
               flags
           )
@@ -3057,6 +3080,18 @@ public:
           )
     {}
 
+    template <script_engine_pointer_like Engine>
+    explicit basic_value_class(
+        const Engine& engine,
+        flag_type flags = 0
+    )
+        : basic_value_class(
+              engine.get(),
+              reflect<^^Class>().get_decl(),
+              flags
+          )
+    {}
+
 #endif
 
     basic_value_class(
@@ -3078,6 +3113,16 @@ public:
               appending_t<true>{}, std::addressof(engine), name
           ) {}
 
+    template <script_engine_pointer_like Engine>
+    basic_value_class(
+        appending_t<true>,
+        const Engine& engine,
+        std::string name
+    )
+        : basic_value_class(
+              appending_t<true>{}, engine.get(), name
+          ) {}
+
     template <string_like StringLike>
     basic_value_class(
         appending_t<true>,
@@ -3087,6 +3132,19 @@ public:
         : basic_value_class(
               appending_t<true>{},
               engine,
+              util::string_like_to_string(std::forward<StringLike>(name))
+          )
+    {}
+
+    template <script_engine_pointer_like Engine, string_like StringLike>
+    basic_value_class(
+        appending_t<true>,
+        const Engine& engine,
+        StringLike&& name
+    )
+        : basic_value_class(
+              appending_t<true>{},
+              engine.get(),
               util::string_like_to_string(std::forward<StringLike>(name))
           )
     {}
@@ -4382,6 +4440,16 @@ public:
               std::addressof(engine), std::move(name), flags
           ) {}
 
+    template <script_engine_pointer_like Engine>
+    basic_ref_class(
+        const Engine& engine,
+        std::string name,
+        flag_type flags = 0
+    )
+        : basic_ref_class(
+              engine.get(), std::move(name), flags
+          ) {}
+
     template <string_like StringLike>
     basic_ref_class(
         engine_pointer engine,
@@ -4408,6 +4476,19 @@ public:
           )
     {}
 
+    template <script_engine_pointer_like Engine, string_like StringLike>
+    basic_ref_class(
+        const Engine& engine,
+        StringLike&& name,
+        flag_type flags = 0
+    )
+        : basic_ref_class(
+              engine.get(),
+              std::forward<StringLike>(name),
+              flags
+          )
+    {}
+
 
 #ifdef ASBIND20_HAS_LIB_REFLECTION
 
@@ -4428,6 +4509,17 @@ public:
         : basic_ref_class(
               engine,
               reflect<^^Class>().get_decl(),
+              flags
+          )
+    {}
+
+    template <script_engine_pointer_like Engine>
+    explicit basic_ref_class(
+        const Engine& engine,
+        flag_type flags = 0
+    )
+        : basic_ref_class(
+              engine.get(),
               flags
           )
     {}
@@ -4459,6 +4551,17 @@ public:
           )
     {}
 
+    template <bool AppendOnly, script_engine_pointer_like Engine>
+    basic_ref_class(
+        appending_t<AppendOnly>,
+        const Engine& engine,
+        std::string name
+    )
+        : basic_ref_class(
+              appending_t<AppendOnly>{}, engine.get(), std::move(name)
+          )
+    {}
+
     template <bool AppendOnly, string_like StringLike>
     basic_ref_class(
         appending_t<AppendOnly>,
@@ -4481,6 +4584,19 @@ public:
         : basic_ref_class(
               appending_t<AppendOnly>{},
               std::addressof(engine),
+              std::forward<StringLike>(name)
+          )
+    {}
+
+    template <bool AppendOnly, script_engine_pointer_like Engine, string_like StringLike>
+    basic_ref_class(
+        appending_t<AppendOnly>,
+        const Engine& engine,
+        StringLike&& name
+    )
+        : basic_ref_class(
+              appending_t<AppendOnly>{},
+              engine.get(),
               std::forward<StringLike>(name)
           )
     {}

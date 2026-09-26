@@ -25,7 +25,7 @@ static void save_byte_code_sstream(benchmark::State& state)
     using namespace asbind20;
 
     auto engine = make_script_engine();
-    auto* m = bench_io::prepare_module(engine);
+    auto* m = bench_io::prepare_module(engine.get());
 
     for(auto&& _ : state)
     {
@@ -40,7 +40,7 @@ static void save_byte_code_sstream_stripped(benchmark::State& state)
     using namespace asbind20;
 
     auto engine = make_script_engine();
-    auto* m = bench_io::prepare_module(engine);
+    auto* m = bench_io::prepare_module(engine.get());
 
     for(auto&& _ : state)
     {
@@ -55,7 +55,7 @@ static void save_byte_code_output_it(benchmark::State& state)
     using namespace asbind20;
 
     auto engine = make_script_engine();
-    auto* m = bench_io::prepare_module(engine);
+    auto* m = bench_io::prepare_module(engine.get());
 
     for(auto&& _ : state)
     {
@@ -70,7 +70,7 @@ static void save_byte_code_output_it_stripped(benchmark::State& state)
     using namespace asbind20;
 
     auto engine = make_script_engine();
-    auto* m = bench_io::prepare_module(engine);
+    auto* m = bench_io::prepare_module(engine.get());
 
     for(auto&& _ : state)
     {
@@ -94,7 +94,7 @@ static void prepare_byte_code(Result&& result, bool strip_debug_info = false)
     // temp engine
     auto engine = asbind20::make_script_engine();
 
-    auto* m = prepare_module(engine);
+    auto* m = prepare_module(engine.get());
     [[maybe_unused]]
     int r = asbind20::save_byte_code(std::forward<Result>(result), m, strip_debug_info);
     assert(r >= 0);

@@ -67,4 +67,11 @@ void setup_script_assertion(
     global<true>(engine)
         .function("void assert(bool cond)", fp<&assert_impl>);
 }
+
+void setup_script_assertion(
+    const asbind20::unique_script_engine& engine
+)
+{
+    setup_script_assertion(engine.get());
+}
 } // namespace asbind_test
