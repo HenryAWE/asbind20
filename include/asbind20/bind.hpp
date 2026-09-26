@@ -188,7 +188,7 @@ public:
 
 #endif
 
-    ~namespace_()
+    ~namespace_() noexcept(false)
     {
         set_ns_impl(m_prev.c_str());
     }
@@ -237,11 +237,16 @@ private:
 
     void set_ns_impl(const char* ns) const
     {
-        [[maybe_unused]]
         int r = get_engine()->SetDefaultNamespace(
             ns
         );
-        ASBIND20_ASSERT(r >= 0);
+        if(r < 0) [[unlikely]]
+        {
+            detail::throw_<std::system_error>(
+                make_error_code(static_cast<AS_NAMESPACE_QUALIFIER asERetCodes>(r)),
+                "asIScriptEngine::SetDefaultNamespace() failed"
+            );
+        }
     }
 };
 
