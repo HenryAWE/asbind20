@@ -28,6 +28,6 @@ inline void unreachable()
 #    endif
 #endif
 }
-} // namespace asbind20::detail
+} // namespace asbind20::util
 
 #endif
