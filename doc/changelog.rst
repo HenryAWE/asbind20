@@ -6,6 +6,8 @@ Changelog since version 1.5.0.
 2.1.0
 -----
 
+2026-9-27
+
 Breaking Change
 ~~~~~~~~~~~~~~~
 
