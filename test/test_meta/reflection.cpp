@@ -243,7 +243,7 @@ TEST(Reflection, GlobalNative)
         .function(reflect<^^wrapper::get>(), auxiliary(w))
         .function(reflect<^^wrapper::set>(), auxiliary(w));
 
-    check_reflected_global(engine, w);
+    check_reflected_global(engine.get(), w);
 }
 
 TEST(Reflection, GlobalGeneric)
@@ -261,7 +261,7 @@ TEST(Reflection, GlobalGeneric)
         .function(reflect<^^wrapper::get>(), auxiliary(w))
         .function(reflect<^^wrapper::set>(), auxiliary(w));
 
-    check_reflected_global(engine, w);
+    check_reflected_global(engine.get(), w);
 }
 
 namespace
@@ -383,7 +383,7 @@ TEST(Reflection, ClassNative)
     check_registered_my_class_interface(
         engine->GetTypeInfoByName("my_class")
     );
-    check_reflected_val_class(engine);
+    check_reflected_val_class(engine.get());
 }
 
 TEST(Reflection, ClassGeneric)
@@ -405,7 +405,7 @@ TEST(Reflection, ClassGeneric)
     check_registered_my_class_interface(
         engine->GetTypeInfoByName("my_class")
     );
-    check_reflected_val_class(engine);
+    check_reflected_val_class(engine.get());
 }
 
 namespace
