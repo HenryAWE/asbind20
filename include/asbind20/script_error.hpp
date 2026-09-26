@@ -37,12 +37,17 @@ public:
         }
     }
 
-    static asERetCodes_category& instance()
+    static asERetCodes_category& instance() noexcept
     {
         static asERetCodes_category c;
         return c;
     }
 };
+
+inline std::error_category& script_return_code_category() noexcept
+{
+    return asERetCodes_category::instance();
+}
 } // namespace asbind20
 
 template <>
@@ -58,7 +63,7 @@ inline std::error_code make_error_code(AS_NAMESPACE_QUALIFIER asERetCodes val)
 {
     return {
         static_cast<int>(val),
-        ::asbind20::asERetCodes_category::instance()
+        ::asbind20::script_return_code_category()
     };
 }
 

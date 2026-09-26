@@ -51,9 +51,6 @@ public:
     static constexpr auto allocate(size_type n) -> pointer;
 
     static constexpr void deallocate(pointer mem, size_type n) noexcept;
-
-private:
-    static void check_length(size_type n);
 };
 
 template <typename Pointer>

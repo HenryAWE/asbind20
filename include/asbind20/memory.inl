@@ -20,7 +20,8 @@ constexpr auto script_allocator<T>::allocate(size_type n)
     }
     else
     {
-        check_length(n);
+        if(std::numeric_limits<size_type>::max() / sizeof(T) < n) [[unlikely]]
+            detail::throw_<std::bad_array_new_length>();
 
         void* mem = AS_NAMESPACE_QUALIFIER asAllocMem(n * sizeof(T));
         if(!mem) [[unlikely]]
@@ -42,13 +43,6 @@ constexpr void script_allocator<T>::deallocate(pointer mem, size_type n) noexcep
         (void)n; // unused
         AS_NAMESPACE_QUALIFIER asFreeMem(static_cast<void*>(mem));
     }
-}
-
-template <typename T>
-void script_allocator<T>::check_length(size_type n)
-{
-    if(std::numeric_limits<size_type>::max() / sizeof(T) < n) [[unlikely]]
-        detail::throw_<std::bad_array_new_length>();
 }
 } // namespace asbind20
 
