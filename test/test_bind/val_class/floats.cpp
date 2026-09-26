@@ -121,7 +121,7 @@ TEST(TestBind, Float16Native)
     global(engine)
         .function("float f16_to_float(float16 val)", fp<&f16_to_float>);
 
-    check_f16(engine);
+    check_f16(engine.get());
 }
 
 TEST(TestBind, Float16Generic)
@@ -154,7 +154,7 @@ TEST(TestBind, Float16Generic)
     global<true>(engine)
         .function("float f16_to_float(float16 val)", fp<&f16_to_float>);
 
-    check_f16(engine);
+    check_f16(engine.get());
 }
 
 #endif
