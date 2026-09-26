@@ -4,6 +4,30 @@
 #include <chrono>
 #include <asbind20/concurrent/threading.hpp>
 
+namespace
+{
+asbind20::module_pointer make_helper_module(asbind20::engine_reference engine)
+{
+    auto* m = asbind20::create_module(engine, "script_multithreading");
+    if(!m)
+    {
+        ADD_FAILURE() << "failed to create module";
+        std::terminate();
+    }
+    m->AddScriptSection(
+        "script_multithreading",
+        "int fn(int arg) { return arg * 2; }"
+    );
+    if(int r = m->Build(); r < 0)
+    {
+        ADD_FAILURE() << "build failed: r = " << r;
+        std::terminate();
+    }
+
+    return m;
+}
+} // namespace
+
 TEST(Threading, AutoCleanUp)
 {
     ASBIND_TEST_SKIP_IF_NO_THREADS();
@@ -15,12 +39,7 @@ TEST(Threading, AutoCleanUp)
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);
 
-    auto* m = asbind20::create_module(engine, "script_multithreading");
-    m->AddScriptSection(
-        "script_multithreading",
-        "int fn(int arg) { return arg * 2; }"
-    );
-    ASSERT_GE(m->Build(), 0);
+    auto* m = make_helper_module(*engine);
     auto* f = m->GetFunctionByName("fn");
     ASSERT_THAT(f, ::testing::NotNull());
 
@@ -51,4 +70,34 @@ TEST(Threading, AutoCleanUp)
         EXPECT_EQ(st, std::cv_status::no_timeout);
     }
     EXPECT_EQ(result, 20);
+}
+
+TEST(Threading, Async)
+{
+    ASBIND_TEST_SKIP_IF_NO_THREADS();
+
+    using namespace asbind20;
+    using namespace std::chrono_literals;
+    concurrent::prepare_multithread();
+
+    auto engine = make_script_engine();
+    asbind_test::setup_message_callback(engine);
+
+    auto* m = make_helper_module(*engine);
+    auto* f = m->GetFunctionByName("fn");
+    ASSERT_THAT(f, ::testing::NotNull());
+
+    auto result = concurrent::async(
+        [f, &engine]()
+        {
+            request_context ctx(engine);
+            auto result = script_invoke<int>(ctx, f, 21);
+            return result.value();
+        }
+    );
+    std::this_thread::sleep_for(1ms);
+    result.wait();
+
+    EXPECT_TRUE(result.valid());
+    EXPECT_EQ(result.get(), 42);
 }
