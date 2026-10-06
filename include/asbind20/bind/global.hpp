@@ -471,6 +471,7 @@ public:
 };
 
 global(engine_pointer) -> global<false>;
+global(engine_reference) -> global<false>;
 
 global(const script_engine&) -> global<false>;
 

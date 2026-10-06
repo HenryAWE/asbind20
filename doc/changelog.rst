@@ -6,6 +6,11 @@ Changelog since version 1.5.0.
 2.1.1
 -----
 
+Bug fix
+~~~~~~~
+
+- Make more interfaces accept reference.
+
 2.1.0
 -----
 
