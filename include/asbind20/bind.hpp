@@ -440,6 +440,12 @@ int set_message_callback(
     void* obj = nullptr
 ) = delete;
 
+int set_message_callback(
+    engine_reference engine,
+    generic_function gfn,
+    void* obj = nullptr
+) = delete;
+
 /**
  * @brief Set the message callback.
  */
@@ -470,6 +476,17 @@ int set_message_callback(
         obj,
         detail::deduce_function_callconv<Callback>()
     );
+}
+
+template <native_function Callback>
+requires(!std::is_member_function_pointer_v<Callback>)
+int set_message_callback(
+    engine_reference engine,
+    Callback fn,
+    void* obj = nullptr
+)
+{
+    return set_message_callback(std::addressof(engine), fn, obj);
 }
 
 template <script_engine_pointer_like Engine, native_function Callback>
@@ -514,6 +531,17 @@ int set_message_callback(
     );
 }
 
+template <native_function Callback, typename T>
+requires(std::is_member_function_pointer_v<Callback>)
+int set_message_callback(
+    engine_reference engine,
+    Callback fn,
+    auxiliary_wrapper<T> aux
+)
+{
+    return set_message_callback(std::addressof(engine), fn, aux);
+}
+
 template <script_engine_pointer_like Engine, native_function Callback, typename T>
 requires(std::is_member_function_pointer_v<Callback>)
 int set_message_callback(
@@ -530,6 +558,12 @@ int set_message_callback(
  */
 int set_exception_translator(
     engine_pointer engine,
+    generic_function gfn,
+    void* obj = nullptr
+) = delete;
+
+int set_exception_translator(
+    engine_reference engine,
     generic_function gfn,
     void* obj = nullptr
 ) = delete;
@@ -564,6 +598,17 @@ int set_exception_translator(
         obj,
         detail::deduce_function_callconv<Callback>()
     );
+}
+
+template <native_function Callback>
+requires(!std::is_member_function_pointer_v<Callback>)
+int set_exception_translator(
+    engine_reference engine,
+    Callback fn,
+    void* obj = nullptr
+)
+{
+    return set_exception_translator(std::addressof(engine), fn, obj);
 }
 
 template <script_engine_pointer_like Engine, native_function Callback>
@@ -606,6 +651,17 @@ int set_exception_translator(
         aux.get_address(),
         AS_NAMESPACE_QUALIFIER asCALL_THISCALL
     );
+}
+
+template <native_function Callback, typename T>
+requires(std::is_member_function_pointer_v<Callback>)
+int set_exception_translator(
+    engine_reference engine,
+    Callback fn,
+    auxiliary_wrapper<T> aux
+)
+{
+    return set_exception_translator(std::addressof(engine), fn, aux);
 }
 
 template <script_engine_pointer_like Engine, native_function Callback, typename T>

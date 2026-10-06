@@ -2562,6 +2562,14 @@ public:
     }
 
     Derived& as_string(
+        string_factory_reference str_factory
+    )
+    {
+        this->register_as_string(str_factory);
+        return derived();
+    }
+
+    Derived& as_string(
         string_factory_pointer str_factory
     )
     {
