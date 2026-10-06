@@ -8,13 +8,15 @@ namespace
 {
 // All supported CTAD forms of the global generator must deduce global<false>.
 static_assert(std::is_same_v<
-              decltype(asbind20::global(std::declval<asIScriptEngine&>())),
+              decltype(asbind20::global(
+                  std::declval<AS_NAMESPACE_QUALIFIER asIScriptEngine&>()
+              )),
               asbind20::global<false>>);
 
 static_assert(std::is_same_v<
               decltype(asbind20::global(
                   std::declval<asbind20::appending_t<false>>(),
-                  std::declval<asIScriptEngine&>()
+                  std::declval<AS_NAMESPACE_QUALIFIER asIScriptEngine&>()
               )),
               asbind20::global<false>>);
 
