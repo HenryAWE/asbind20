@@ -6,6 +6,11 @@ Changelog since version 1.5.0.
 2.1.1
 -----
 
+Update
+~~~~~~
+
+- Better operator support.
+
 Bug fix
 ~~~~~~~
 
