@@ -1030,6 +1030,105 @@ public:
     }
 };
 
+// The lambda version of the generic wrapper for the factory with an auxiliary object
+template <
+    noncapturing_native_lambda Lambda,
+    bool Template,
+    call_conv_type OriginalCallConv>
+requires(
+    OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
+    OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
+)
+class generic_wrapper_factory_aux_lambda
+{
+    using function_type = std::decay_t<decltype(+Lambda{})>;
+    using traits = function_traits<function_type>;
+    using args_tuple = typename traits::args_tuple;
+    using auxiliary_type = std::conditional_t<
+        OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST,
+        typename traits::first_arg_type,
+        typename traits::last_arg_type>;
+
+    // For templated classes
+    static void* invoke_factory(generic_pointer gen)
+        requires(Template)
+    {
+        // Argument count except the typeinfo and auxiliary object
+        constexpr std::size_t user_arg_v = traits::arg_count_v - 2;
+
+        return [gen]<std::size_t... Is>(std::index_sequence<Is...>) -> void*
+        {
+            if constexpr(OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
+            {
+                return std::invoke(
+                    Lambda{},
+                    get_generic_auxiliary<auxiliary_type>(gen),
+                    get_generic_typeinfo(gen),
+                    get_generic_arg<std::tuple_element_t<Is + 2, args_tuple>>(
+                        gen, static_cast<arg_index_type>(Is) + 1
+                    )...
+                );
+            }
+            else // OriginalCallConv == asCALL_CDECL_OBJLAST
+            {
+                return std::invoke(
+                    Lambda{},
+                    get_generic_typeinfo(gen),
+                    get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(
+                        gen, static_cast<arg_index_type>(Is) + 1
+                    )...,
+                    get_generic_auxiliary<auxiliary_type>(gen)
+                );
+            }
+        }(std::make_index_sequence<user_arg_v>());
+    }
+
+    // For non-templated classes
+    static void* invoke_factory(generic_pointer gen)
+        requires(!Template)
+    {
+        // Argument count except the auxiliary object
+        constexpr std::size_t user_arg_v = traits::arg_count_v - 1;
+
+        return [gen]<std::size_t... Is>(std::index_sequence<Is...>) -> void*
+        {
+            if constexpr(OriginalCallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST)
+            {
+                return std::invoke(
+                    Lambda{},
+                    get_generic_auxiliary<auxiliary_type>(gen),
+                    // Plus 1 to skip the auxiliary object at the first position
+                    get_generic_arg<std::tuple_element_t<Is + 1, args_tuple>>(
+                        gen, static_cast<arg_index_type>(Is)
+                    )...
+                );
+            }
+            else // OriginalCallConv == asCALL_CDECL_OBJLAST
+            {
+                return std::invoke(
+                    Lambda{},
+                    get_generic_arg<std::tuple_element_t<Is, args_tuple>>(
+                        gen, static_cast<arg_index_type>(Is)
+                    )...,
+                    get_generic_auxiliary<auxiliary_type>(gen)
+                );
+            }
+        }(std::make_index_sequence<user_arg_v>());
+    }
+
+    static void wrapper_impl(generic_pointer gen)
+    {
+        void* ptr = invoke_factory(gen);
+        gen->SetReturnAddress(ptr);
+    }
+
+public:
+    static constexpr generic_function generate() noexcept
+    {
+        return &wrapper_impl;
+    }
+};
+
 template <
     bool IsTemplate,
     auto AuxFactoryFunc,
@@ -1046,6 +1145,26 @@ constexpr auto auxiliary_factory_to_asGENFUNC_t(
 {
     using gen_t = generic_wrapper_factory_aux<
         AuxFactoryFunc,
+        IsTemplate,
+        CallConv>;
+    return gen_t::generate();
+}
+
+template <
+    bool IsTemplate,
+    noncapturing_native_lambda Lambda,
+    call_conv_type CallConv>
+requires(
+    CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
+    CallConv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST
+)
+constexpr auto auxiliary_factory_to_asGENFUNC_t(
+    const Lambda&,
+    call_conv_t<CallConv>
+)
+{
+    using gen_t = generic_wrapper_factory_aux_lambda<
+        Lambda,
         IsTemplate,
         CallConv>;
     return gen_t::generate();
