@@ -1668,6 +1668,7 @@ protected:
         string_factory_pointer factory
     )
     {
+        ASBIND20_ASSERT(factory != nullptr);
         this->register_as_string(*factory);
     }
 

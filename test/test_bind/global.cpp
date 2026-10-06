@@ -1,6 +1,30 @@
 #include <gtest/gtest.h>
+#include <type_traits>
+#include <utility>
 #include <asbind_test/framework.hpp>
 #include <asbind20/asbind.hpp>
+
+namespace
+{
+// All supported CTAD forms of the global generator must deduce global<false>.
+static_assert(std::is_same_v<
+              decltype(asbind20::global(std::declval<asIScriptEngine&>())),
+              asbind20::global<false>>);
+
+static_assert(std::is_same_v<
+              decltype(asbind20::global(
+                  std::declval<asbind20::appending_t<false>>(),
+                  std::declval<asIScriptEngine&>()
+              )),
+              asbind20::global<false>>);
+
+static_assert(std::is_same_v<
+              decltype(asbind20::global(
+                  std::declval<asbind20::appending_t<false>>(),
+                  std::declval<const asbind20::script_engine&>()
+              )),
+              asbind20::global<false>>);
+} // namespace
 
 namespace test_bind
 {

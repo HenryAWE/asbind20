@@ -452,7 +452,7 @@ int set_message_callback(
 template <native_function Callback>
 requires(!std::is_member_function_pointer_v<Callback>)
 int set_message_callback(
-    engine_pointer engine,
+    engine_reference engine,
     Callback fn,
     void* obj = nullptr
 )
@@ -469,9 +469,7 @@ int set_message_callback(
 
 #endif
 
-    if(!engine) [[unlikely]]
-        return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
-    return engine->SetMessageCallback(
+    return engine.SetMessageCallback(
         to_asSFuncPtr(fn),
         obj,
         detail::deduce_function_callconv<Callback>()
@@ -481,12 +479,14 @@ int set_message_callback(
 template <native_function Callback>
 requires(!std::is_member_function_pointer_v<Callback>)
 int set_message_callback(
-    engine_reference engine,
+    engine_pointer engine,
     Callback fn,
     void* obj = nullptr
 )
 {
-    return set_message_callback(std::addressof(engine), fn, obj);
+    if(!engine) [[unlikely]]
+        return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
+    return set_message_callback(*engine, fn, obj);
 }
 
 template <script_engine_pointer_like Engine, native_function Callback>
@@ -506,7 +506,7 @@ int set_message_callback(
 template <native_function Callback, typename T>
 requires(std::is_member_function_pointer_v<Callback>)
 int set_message_callback(
-    engine_pointer engine,
+    engine_reference engine,
     Callback fn,
     auxiliary_wrapper<T> aux
 )
@@ -522,9 +522,7 @@ int set_message_callback(
 
 #endif
 
-    if(!engine) [[unlikely]]
-        return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
-    return engine->SetMessageCallback(
+    return engine.SetMessageCallback(
         to_asSFuncPtr(fn),
         aux.get_address(),
         AS_NAMESPACE_QUALIFIER asCALL_THISCALL
@@ -534,12 +532,14 @@ int set_message_callback(
 template <native_function Callback, typename T>
 requires(std::is_member_function_pointer_v<Callback>)
 int set_message_callback(
-    engine_reference engine,
+    engine_pointer engine,
     Callback fn,
     auxiliary_wrapper<T> aux
 )
 {
-    return set_message_callback(std::addressof(engine), fn, aux);
+    if(!engine) [[unlikely]]
+        return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
+    return set_message_callback(*engine, fn, aux);
 }
 
 template <script_engine_pointer_like Engine, native_function Callback, typename T>
@@ -574,7 +574,7 @@ int set_exception_translator(
 template <native_function Callback>
 requires(!std::is_member_function_pointer_v<Callback>)
 int set_exception_translator(
-    engine_pointer engine,
+    engine_reference engine,
     Callback fn,
     void* obj = nullptr
 )
@@ -591,9 +591,7 @@ int set_exception_translator(
 
 #endif
 
-    if(!engine) [[unlikely]]
-        return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
-    return engine->SetTranslateAppExceptionCallback(
+    return engine.SetTranslateAppExceptionCallback(
         to_asSFuncPtr(fn),
         obj,
         detail::deduce_function_callconv<Callback>()
@@ -603,12 +601,14 @@ int set_exception_translator(
 template <native_function Callback>
 requires(!std::is_member_function_pointer_v<Callback>)
 int set_exception_translator(
-    engine_reference engine,
+    engine_pointer engine,
     Callback fn,
     void* obj = nullptr
 )
 {
-    return set_exception_translator(std::addressof(engine), fn, obj);
+    if(!engine) [[unlikely]]
+        return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
+    return set_exception_translator(*engine, fn, obj);
 }
 
 template <script_engine_pointer_like Engine, native_function Callback>
@@ -628,7 +628,7 @@ int set_exception_translator(
 template <native_function Callback, typename T>
 requires(std::is_member_function_pointer_v<Callback>)
 int set_exception_translator(
-    engine_pointer engine,
+    engine_reference engine,
     Callback fn,
     auxiliary_wrapper<T> aux
 )
@@ -644,9 +644,7 @@ int set_exception_translator(
 
 #endif
 
-    if(!engine) [[unlikely]]
-        return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
-    return engine->SetTranslateAppExceptionCallback(
+    return engine.SetTranslateAppExceptionCallback(
         to_asSFuncPtr(fn),
         aux.get_address(),
         AS_NAMESPACE_QUALIFIER asCALL_THISCALL
@@ -656,12 +654,14 @@ int set_exception_translator(
 template <native_function Callback, typename T>
 requires(std::is_member_function_pointer_v<Callback>)
 int set_exception_translator(
-    engine_reference engine,
+    engine_pointer engine,
     Callback fn,
     auxiliary_wrapper<T> aux
 )
 {
-    return set_exception_translator(std::addressof(engine), fn, aux);
+    if(!engine) [[unlikely]]
+        return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
+    return set_exception_translator(*engine, fn, aux);
 }
 
 template <script_engine_pointer_like Engine, native_function Callback, typename T>

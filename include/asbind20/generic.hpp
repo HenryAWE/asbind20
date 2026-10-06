@@ -127,7 +127,7 @@ inline typeinfo_pointer get_generic_typeinfo(
 
 template <typename T>
 T get_generic_arg(
-    generic_pointer gen,
+    generic_reference gen,
     arg_index_type idx
 )
 {
@@ -135,7 +135,7 @@ T get_generic_arg(
 
     if constexpr(traits_helper::has_customized_arg_getter)
     {
-        return traits_helper::get_arg(*gen, idx);
+        return traits_helper::get_arg(gen, idx);
     }
     else if constexpr(std::is_pointer_v<T>)
     {
@@ -143,20 +143,20 @@ T get_generic_arg(
 
         if constexpr(std::same_as<value_t, AS_NAMESPACE_QUALIFIER asIScriptObject>)
         {
-            void* ptr = gen->GetArgObject(idx);
+            void* ptr = gen.GetArgObject(idx);
             return static_cast<object_pointer>(ptr);
         }
         else if constexpr(std::same_as<value_t, AS_NAMESPACE_QUALIFIER asITypeInfo>)
         {
-            return *static_cast<typeinfo_pointer*>(gen->GetAddressOfArg(idx));
+            return *static_cast<typeinfo_pointer*>(gen.GetAddressOfArg(idx));
         }
         else if constexpr(std::same_as<value_t, AS_NAMESPACE_QUALIFIER asIScriptEngine>)
         {
-            return *static_cast<engine_pointer*>(gen->GetAddressOfArg(idx));
+            return *static_cast<engine_pointer*>(gen.GetAddressOfArg(idx));
         }
         else
         {
-            void* ptr = gen->GetArgAddress(idx);
+            void* ptr = gen.GetArgAddress(idx);
             return T(ptr);
         }
     }
@@ -168,7 +168,7 @@ T get_generic_arg(
     else if constexpr(std::is_class_v<T>)
     {
         using pointer_t = std::remove_reference_t<T>*;
-        return std::move(*static_cast<pointer_t>(gen->GetArgObject(idx)));
+        return std::move(*static_cast<pointer_t>(gen.GetArgObject(idx)));
     }
     else if constexpr(std::is_enum_v<T>)
     {
@@ -177,24 +177,24 @@ T get_generic_arg(
     else if constexpr(std::integral<T>)
     {
         if constexpr(sizeof(T) == sizeof(AS_NAMESPACE_QUALIFIER asBYTE))
-            return static_cast<T>(gen->GetArgByte(idx));
+            return static_cast<T>(gen.GetArgByte(idx));
         else if constexpr(sizeof(T) == sizeof(AS_NAMESPACE_QUALIFIER asWORD))
-            return static_cast<T>(gen->GetArgWord(idx));
+            return static_cast<T>(gen.GetArgWord(idx));
         else if constexpr(sizeof(T) == sizeof(AS_NAMESPACE_QUALIFIER asDWORD))
-            return static_cast<T>(gen->GetArgDWord(idx));
+            return static_cast<T>(gen.GetArgDWord(idx));
         else if constexpr(sizeof(T) == sizeof(AS_NAMESPACE_QUALIFIER asQWORD))
-            return static_cast<T>(gen->GetArgQWord(idx));
+            return static_cast<T>(gen.GetArgQWord(idx));
         else
             static_assert(!sizeof(T), "Integer size too large");
     }
     else if constexpr(std::floating_point<T>)
     {
         if constexpr(std::same_as<std::remove_cv_t<T>, float>)
-            return gen->GetArgFloat(idx);
+            return gen.GetArgFloat(idx);
         else if constexpr(std::same_as<std::remove_cv_t<T>, double>)
-            return gen->GetArgDouble(idx);
+            return gen.GetArgDouble(idx);
         else
-            return *static_cast<T*>(gen->GetAddressOfArg(idx));
+            return *static_cast<T*>(gen.GetAddressOfArg(idx));
     }
     else
     {
@@ -204,6 +204,16 @@ T get_generic_arg(
     // The branches without return statement should be covered by static_assert.
     // We're suppressing warning here.
     util::unreachable();
+}
+
+template <typename T>
+T get_generic_arg(
+    generic_pointer gen,
+    arg_index_type idx
+)
+{
+    ASBIND20_ASSERT(gen != nullptr);
+    return get_generic_arg<T>(*gen, idx);
 }
 
 template <typename Return>
