@@ -214,7 +214,7 @@ TEST(LambdaFactory, UseGenericTag)
     test_bind::lambda_factory_helper helper;
     helper.predefined_value = 1000;
 
-    ref_class<class_type> c(engine, "lambda_factory_class");
+    ref_class<class_type, true> c(engine, "lambda_factory_class");
     c
         .addref(fp<&class_type::addref>)
         .release(fp<&class_type::release>)
@@ -334,8 +334,6 @@ TEST(LambdaFactory, ExplicitNative)
 
 TEST(LambdaFactory, ExplicitGeneric)
 {
-    ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
-
     auto engine = asbind20::make_script_engine();
     asbind_test::setup_message_callback(engine);
 
