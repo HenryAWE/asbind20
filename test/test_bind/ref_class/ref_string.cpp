@@ -142,7 +142,7 @@ static void register_ref_string(asbind20::use_generic_t, asbind20::engine_pointe
             [](ref_string* ref)
             { return static_cast<AS_NAMESPACE_QUALIFIER asUINT>(ref->str.size()); }
         )
-        .as_string(&ref_string_factory::get());
+        .as_string(ref_string_factory::get());
 }
 
 static void setup_bind_ref_string_env(

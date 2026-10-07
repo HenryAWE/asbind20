@@ -127,7 +127,7 @@ inline typeinfo_pointer get_generic_typeinfo(
 
 template <typename T>
 T get_generic_arg(
-    generic_pointer gen,
+    generic_reference gen,
     arg_index_type idx
 )
 {
@@ -135,7 +135,7 @@ T get_generic_arg(
 
     if constexpr(traits_helper::has_customized_arg_getter)
     {
-        return traits_helper::get_arg(*gen, idx);
+        return traits_helper::get_arg(gen, idx);
     }
     else if constexpr(std::is_pointer_v<T>)
     {
@@ -143,20 +143,20 @@ T get_generic_arg(
 
         if constexpr(std::same_as<value_t, AS_NAMESPACE_QUALIFIER asIScriptObject>)
         {
-            void* ptr = gen->GetArgObject(idx);
+            void* ptr = gen.GetArgObject(idx);
             return static_cast<object_pointer>(ptr);
         }
         else if constexpr(std::same_as<value_t, AS_NAMESPACE_QUALIFIER asITypeInfo>)
         {
-            return *static_cast<typeinfo_pointer*>(gen->GetAddressOfArg(idx));
+            return *static_cast<typeinfo_pointer*>(gen.GetAddressOfArg(idx));
         }
         else if constexpr(std::same_as<value_t, AS_NAMESPACE_QUALIFIER asIScriptEngine>)
         {
-            return *static_cast<engine_pointer*>(gen->GetAddressOfArg(idx));
+            return *static_cast<engine_pointer*>(gen.GetAddressOfArg(idx));
         }
         else
         {
-            void* ptr = gen->GetArgAddress(idx);
+            void* ptr = gen.GetArgAddress(idx);
             return T(ptr);
         }
     }
@@ -168,7 +168,7 @@ T get_generic_arg(
     else if constexpr(std::is_class_v<T>)
     {
         using pointer_t = std::remove_reference_t<T>*;
-        return std::move(*static_cast<pointer_t>(gen->GetArgObject(idx)));
+        return std::move(*static_cast<pointer_t>(gen.GetArgObject(idx)));
     }
     else if constexpr(std::is_enum_v<T>)
     {
@@ -177,24 +177,24 @@ T get_generic_arg(
     else if constexpr(std::integral<T>)
     {
         if constexpr(sizeof(T) == sizeof(AS_NAMESPACE_QUALIFIER asBYTE))
-            return static_cast<T>(gen->GetArgByte(idx));
+            return static_cast<T>(gen.GetArgByte(idx));
         else if constexpr(sizeof(T) == sizeof(AS_NAMESPACE_QUALIFIER asWORD))
-            return static_cast<T>(gen->GetArgWord(idx));
+            return static_cast<T>(gen.GetArgWord(idx));
         else if constexpr(sizeof(T) == sizeof(AS_NAMESPACE_QUALIFIER asDWORD))
-            return static_cast<T>(gen->GetArgDWord(idx));
+            return static_cast<T>(gen.GetArgDWord(idx));
         else if constexpr(sizeof(T) == sizeof(AS_NAMESPACE_QUALIFIER asQWORD))
-            return static_cast<T>(gen->GetArgQWord(idx));
+            return static_cast<T>(gen.GetArgQWord(idx));
         else
             static_assert(!sizeof(T), "Integer size too large");
     }
     else if constexpr(std::floating_point<T>)
     {
         if constexpr(std::same_as<std::remove_cv_t<T>, float>)
-            return gen->GetArgFloat(idx);
+            return gen.GetArgFloat(idx);
         else if constexpr(std::same_as<std::remove_cv_t<T>, double>)
-            return gen->GetArgDouble(idx);
+            return gen.GetArgDouble(idx);
         else
-            return *static_cast<T*>(gen->GetAddressOfArg(idx));
+            return *static_cast<T*>(gen.GetAddressOfArg(idx));
     }
     else
     {
@@ -206,9 +206,19 @@ T get_generic_arg(
     util::unreachable();
 }
 
+template <typename T>
+T get_generic_arg(
+    generic_pointer gen,
+    arg_index_type idx
+)
+{
+    ASBIND20_ASSERT(gen != nullptr);
+    return get_generic_arg<T>(*gen, idx);
+}
+
 template <typename Return>
 int set_generic_return(
-    generic_pointer gen,
+    generic_reference gen,
     std::type_identity_t<Return>&& ret
 )
 {
@@ -216,7 +226,7 @@ int set_generic_return(
 
     if constexpr(traits_helper::has_customized_ret_setter)
     {
-        return traits_helper::set_return(*gen, std::forward<Return>(ret));
+        return traits_helper::set_return(gen, std::forward<Return>(ret));
     }
     else if constexpr(std::is_reference_v<Return>)
     {
@@ -231,23 +241,23 @@ int set_generic_return(
             std::same_as<std::remove_cv_t<Return>, object_pointer> ||
             std::same_as<std::remove_cv_t<Return>, const_object_pointer>
         )
-            return gen->SetReturnObject(ptr);
+            return gen.SetReturnObject(ptr);
         else
         {
-            return gen->SetReturnAddress(ptr);
+            return gen.SetReturnAddress(ptr);
         }
     }
     else if constexpr(std::is_class_v<Return>)
     {
         if constexpr(meta::placement_newable_from<Return, Return&&>)
         {
-            void* mem = gen->GetAddressOfReturnLocation();
+            void* mem = gen.GetAddressOfReturnLocation();
             new(mem) Return(std::forward<Return>(ret));
             return AS_NAMESPACE_QUALIFIER asSUCCESS;
         }
         else
         {
-            return gen->SetReturnObject((void*)std::addressof(ret));
+            return gen.SetReturnObject((void*)std::addressof(ret));
         }
     }
     else if constexpr(std::is_enum_v<Return>)
@@ -259,29 +269,29 @@ int set_generic_return(
     else if constexpr(std::integral<Return>)
     {
         if constexpr(sizeof(Return) == sizeof(AS_NAMESPACE_QUALIFIER asBYTE))
-            return gen->SetReturnByte(static_cast<AS_NAMESPACE_QUALIFIER asBYTE>(ret));
+            return gen.SetReturnByte(static_cast<AS_NAMESPACE_QUALIFIER asBYTE>(ret));
         else if constexpr(sizeof(Return) == sizeof(AS_NAMESPACE_QUALIFIER asWORD))
-            return gen->SetReturnWord(static_cast<AS_NAMESPACE_QUALIFIER asWORD>(ret));
+            return gen.SetReturnWord(static_cast<AS_NAMESPACE_QUALIFIER asWORD>(ret));
         else if constexpr(sizeof(Return) == sizeof(AS_NAMESPACE_QUALIFIER asDWORD))
-            return gen->SetReturnDWord(static_cast<AS_NAMESPACE_QUALIFIER asDWORD>(ret));
+            return gen.SetReturnDWord(static_cast<AS_NAMESPACE_QUALIFIER asDWORD>(ret));
         else if constexpr(sizeof(Return) == sizeof(AS_NAMESPACE_QUALIFIER asQWORD))
-            return gen->SetReturnQWord(static_cast<AS_NAMESPACE_QUALIFIER asQWORD>(ret));
+            return gen.SetReturnQWord(static_cast<AS_NAMESPACE_QUALIFIER asQWORD>(ret));
         else // Compiler extension like __int128
         {
-            new(gen->GetAddressOfReturnLocation()) Return(ret);
+            new(gen.GetAddressOfReturnLocation()) Return(ret);
             return AS_NAMESPACE_QUALIFIER asSUCCESS;
         }
     }
     else if constexpr(std::floating_point<Return>)
     {
         if constexpr(std::same_as<std::remove_cv_t<Return>, float>)
-            return gen->SetReturnFloat(ret);
+            return gen.SetReturnFloat(ret);
         else if constexpr(std::same_as<std::remove_cv_t<Return>, double>)
-            return gen->SetReturnDouble(ret);
+            return gen.SetReturnDouble(ret);
         else
         {
-            // Long double and eExtended floating-point types
-            void* addr = gen->GetAddressOfReturnLocation();
+            // Long double and extended floating-point types
+            void* addr = gen.GetAddressOfReturnLocation();
             new(addr) Return(ret);
             return AS_NAMESPACE_QUALIFIER asSUCCESS;
         }
@@ -292,6 +302,16 @@ int set_generic_return(
     }
 
     util::unreachable();
+}
+
+template <typename Return>
+int set_generic_return(
+    generic_pointer gen,
+    std::type_identity_t<Return>&& ret
+)
+{
+    ASBIND20_ASSERT(gen != nullptr);
+    return set_generic_return<Return>(*gen, std::forward<Return>(ret));
 }
 
 /**
@@ -308,7 +328,7 @@ int set_generic_return(
  */
 template <typename Return, typename Fn, typename... Args>
 int set_generic_return_by(
-    generic_pointer gen,
+    generic_reference gen,
     Fn&& fn,
     Args&&... args
 )
@@ -326,7 +346,7 @@ int set_generic_return_by(
     }
     else if constexpr(use_nrvo) // Try NRVO for non-moveable types
     {
-        void* mem = gen->GetAddressOfReturnLocation();
+        void* mem = gen.GetAddressOfReturnLocation();
         new(mem) Return(std::invoke(std::forward<Fn>(fn), std::forward<Args>(args)...));
     }
     else
@@ -338,6 +358,19 @@ int set_generic_return_by(
     }
 
     return AS_NAMESPACE_QUALIFIER asSUCCESS;
+}
+
+template <typename Return, typename Fn, typename... Args>
+int set_generic_return_by(
+    generic_pointer gen,
+    Fn&& fn,
+    Args&&... args
+)
+{
+    ASBIND20_ASSERT(gen != nullptr);
+    return set_generic_return_by<Return>(
+        *gen, std::forward<Fn>(fn), std::forward<Args>(args)...
+    );
 }
 
 /**
@@ -353,7 +386,7 @@ template <
     typename FunctionType,
     AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
 decltype(auto) get_generic_this(
-    generic_pointer gen
+    generic_reference gen
 )
 {
     using traits = function_traits<FunctionType>;
@@ -363,9 +396,9 @@ decltype(auto) get_generic_this(
 
     void* ptr = nullptr;
     if constexpr(from_auxiliary)
-        ptr = gen->GetAuxiliary();
+        ptr = gen.GetAuxiliary();
     else
-        ptr = gen->GetObject();
+        ptr = gen.GetObject();
 
     if constexpr(
         CallConv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL ||
@@ -399,6 +432,17 @@ decltype(auto) get_generic_this(
     }
     else
         static_assert(!CallConv && false, "This calling convention doesn't have a this pointer");
+}
+
+template <
+    typename FunctionType,
+    AS_NAMESPACE_QUALIFIER asECallConvTypes CallConv>
+decltype(auto) get_generic_this(
+    generic_pointer gen
+)
+{
+    ASBIND20_ASSERT(gen != nullptr);
+    return get_generic_this<FunctionType, CallConv>(*gen);
 }
 
 #ifdef _MSC_VER

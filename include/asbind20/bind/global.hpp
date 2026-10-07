@@ -471,6 +471,7 @@ public:
 };
 
 global(engine_pointer) -> global<false>;
+global(engine_reference) -> global<false>;
 
 global(const script_engine&) -> global<false>;
 
@@ -479,6 +480,12 @@ global(const Engine&) -> global<false>;
 
 template <bool AppendOnly>
 global(appending_t<AppendOnly>, engine_pointer) -> global<false>;
+
+template <bool AppendOnly>
+global(appending_t<AppendOnly>, engine_reference) -> global<false>;
+
+template <bool AppendOnly, script_engine_pointer_like Engine>
+global(appending_t<AppendOnly>, const Engine&) -> global<false>;
 } // namespace asbind20
 
 #endif

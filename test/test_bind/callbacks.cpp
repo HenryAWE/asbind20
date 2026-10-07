@@ -71,6 +71,34 @@ TEST(MessageCallback, Member)
     test_bind::write_msg_helper(engine.get(), "msg");
 }
 
+TEST(MessageCallback, GlobalEngineRef)
+{
+    using ::testing::_;
+
+    test_bind::msg_callback_helper helper;
+    auto engine = asbind20::make_script_engine();
+
+    asbind20::set_message_callback(
+        *engine, &test_bind::msg_callback_helper::stdcall_cb, &helper
+    );
+    EXPECT_CALL(*helper.mock, on_message(_)).Times(1);
+    test_bind::write_msg_helper(engine.get(), "msg");
+}
+
+TEST(MessageCallback, MemberEngineRef)
+{
+    using ::testing::_;
+
+    test_bind::msg_callback_helper helper;
+    auto engine = asbind20::make_script_engine();
+
+    asbind20::set_message_callback(
+        *engine, &test_bind::msg_callback_helper::mem_cb, asbind20::auxiliary(helper)
+    );
+    EXPECT_CALL(*helper.mock, on_message(_)).Times(1);
+    test_bind::write_msg_helper(engine.get(), "msg");
+}
+
 #ifndef ASBIND20_NO_EXCEPTIONS
 
 namespace test_bind
@@ -160,6 +188,22 @@ TEST(ExceptionCallback, Member)
     test_bind::ex_translator_helper helper;
     asbind20::set_exception_translator(
         engine, &test_bind::ex_translator_helper::translate, asbind20::auxiliary(helper)
+    );
+
+    EXPECT_CALL(*helper.mock, on_exception(_)).Times(1);
+    test_bind::setup_funcs(engine.get());
+    test_bind::trigger_ex_in_script(engine.get());
+}
+
+TEST(ExceptionCallback, MemberEngineRef)
+{
+    using ::testing::_;
+
+    auto engine = asbind20::make_script_engine();
+
+    test_bind::ex_translator_helper helper;
+    asbind20::set_exception_translator(
+        *engine, &test_bind::ex_translator_helper::translate, asbind20::auxiliary(helper)
     );
 
     EXPECT_CALL(*helper.mock, on_exception(_)).Times(1);

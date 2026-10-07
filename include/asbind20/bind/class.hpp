@@ -1668,6 +1668,7 @@ protected:
         string_factory_pointer factory
     )
     {
+        ASBIND20_ASSERT(factory != nullptr);
         this->register_as_string(*factory);
     }
 
@@ -2558,6 +2559,14 @@ public:
         listener_traits_type::on_funcdef(
             this->get_listener(), *this, r
         );
+        return derived();
+    }
+
+    Derived& as_string(
+        string_factory_reference str_factory
+    )
+    {
+        this->register_as_string(str_factory);
         return derived();
     }
 
@@ -4688,7 +4697,7 @@ private:
     }
 
 public:
-    template <typename Factory>
+    template <native_function Factory>
     requires(!std::is_member_function_pointer_v<Factory>)
     basic_ref_class& factory_function(
         std::string_view params,
@@ -4703,7 +4712,7 @@ public:
         return *this;
     }
 
-    template <typename Factory>
+    template <native_function Factory>
     requires(!std::is_member_function_pointer_v<Factory>)
     basic_ref_class& factory_function(
         std::string_view params,
@@ -4720,7 +4729,7 @@ public:
     }
 
     template <
-        typename Factory,
+        native_function Factory,
         typename Auxiliary>
     basic_ref_class& factory_function(
         std::string_view params,
@@ -4741,7 +4750,7 @@ public:
     }
 
     template <
-        typename Factory,
+        native_function Factory,
         typename Auxiliary>
     basic_ref_class& factory_function(
         std::string_view params,
@@ -4763,7 +4772,7 @@ public:
     }
 
     template <
-        typename Factory,
+        native_function Factory,
         typename Auxiliary,
         bool ObjFirst>
     basic_ref_class& factory_function(
@@ -4786,7 +4795,7 @@ public:
     }
 
     template <
-        typename Factory,
+        native_function Factory,
         typename Auxiliary,
         bool ObjFirst>
     basic_ref_class& factory_function(
@@ -4805,6 +4814,149 @@ public:
             conv,
             my_base::get_auxiliary_address(aux)
         );
+
+        return *this;
+    }
+
+    // Lambda overloads. The lambda is converted to a plain function pointer
+    // and then delegated to the overloads above/on the generic side.
+    template <noncapturing_native_lambda Lambda>
+    basic_ref_class& factory_function(
+        std::string_view params,
+        const Lambda&
+    )
+    {
+        if constexpr(ForceGeneric)
+            this->factory_function(use_generic, params, Lambda{});
+        else
+            this->factory_function(params, +Lambda{});
+
+        return *this;
+    }
+
+    template <noncapturing_native_lambda Lambda>
+    basic_ref_class& factory_function(
+        std::string_view params,
+        use_explicit_t,
+        const Lambda&
+    )
+    {
+        if constexpr(ForceGeneric)
+            this->factory_function(use_generic, params, use_explicit, Lambda{});
+        else
+            this->factory_function(params, use_explicit, +Lambda{});
+
+        return *this;
+    }
+
+    template <
+        noncapturing_native_lambda Lambda,
+        typename Auxiliary>
+    basic_ref_class& factory_function(
+        std::string_view params,
+        const Lambda&,
+        auxiliary_wrapper<Auxiliary> aux
+    )
+    {
+        if constexpr(ForceGeneric)
+            this->factory_function(use_generic, params, Lambda{}, aux);
+        else
+        {
+            constexpr auto conv =
+                deduce_factory_cc<decltype(+Lambda{}), Auxiliary>();
+            this->register_factory_function(
+                false,
+                params,
+                +Lambda{},
+                conv,
+                my_base::get_auxiliary_address(aux)
+            );
+        }
+
+        return *this;
+    }
+
+    template <
+        noncapturing_native_lambda Lambda,
+        typename Auxiliary>
+    basic_ref_class& factory_function(
+        std::string_view params,
+        use_explicit_t,
+        const Lambda&,
+        auxiliary_wrapper<Auxiliary> aux
+    )
+    {
+        if constexpr(ForceGeneric)
+            this->factory_function(use_generic, params, use_explicit, Lambda{}, aux);
+        else
+        {
+            constexpr auto conv =
+                deduce_factory_cc<decltype(+Lambda{}), Auxiliary>();
+            this->register_factory_function(
+                true,
+                params,
+                +Lambda{},
+                conv,
+                my_base::get_auxiliary_address(aux)
+            );
+        }
+
+        return *this;
+    }
+
+    template <
+        noncapturing_native_lambda Lambda,
+        typename Auxiliary,
+        bool ObjFirst>
+    basic_ref_class& factory_function(
+        std::string_view params,
+        const Lambda&,
+        auxiliary_wrapper<Auxiliary> aux,
+        obj_loc_t<ObjFirst>
+    )
+    {
+        if constexpr(ForceGeneric)
+            this->factory_function(use_generic, params, Lambda{}, aux, obj_loc<ObjFirst>);
+        else
+        {
+            constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, false);
+            this->register_factory_function(
+                false,
+                params,
+                +Lambda{},
+                conv,
+                my_base::get_auxiliary_address(aux)
+            );
+        }
+
+        return *this;
+    }
+
+    template <
+        noncapturing_native_lambda Lambda,
+        typename Auxiliary,
+        bool ObjFirst>
+    basic_ref_class& factory_function(
+        std::string_view params,
+        use_explicit_t,
+        const Lambda&,
+        auxiliary_wrapper<Auxiliary> aux,
+        obj_loc_t<ObjFirst>
+    )
+    {
+        if constexpr(ForceGeneric)
+            this->factory_function(use_generic, params, use_explicit, Lambda{}, aux, obj_loc<ObjFirst>);
+        else
+        {
+            constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, false);
+            this->register_factory_function(
+                true,
+                params,
+                +Lambda{},
+                conv,
+                my_base::get_auxiliary_address(aux)
+            );
+        }
 
         return *this;
     }
@@ -5014,6 +5166,152 @@ public:
             params,
             detail::auxiliary_factory_to_asGENFUNC_t<Template>(
                 fp<AuxFactoryFunc>, detail::cc<conv>
+            ),
+            detail::generic_cc,
+            my_base::get_auxiliary_address(aux)
+        );
+
+        return *this;
+    }
+
+    // Lambda overloads for the generic calling convention
+    template <noncapturing_native_lambda Lambda>
+    basic_ref_class& factory_function(
+        use_generic_t,
+        std::string_view params,
+        const Lambda&
+    )
+    {
+        constexpr auto conv = deduce_factory_cc<decltype(+Lambda{})>();
+        this->register_factory_function(
+            false,
+            params,
+            detail::to_asGENFUNC_t(
+                Lambda{}, detail::cc<conv>
+            ),
+            detail::generic_cc
+        );
+
+        return *this;
+    }
+
+    template <noncapturing_native_lambda Lambda>
+    basic_ref_class& factory_function(
+        use_generic_t,
+        std::string_view params,
+        use_explicit_t,
+        const Lambda&
+    )
+    {
+        constexpr auto conv = deduce_factory_cc<decltype(+Lambda{})>();
+        this->register_factory_function(
+            true,
+            params,
+            detail::to_asGENFUNC_t(
+                Lambda{}, detail::cc<conv>
+            ),
+            detail::generic_cc
+        );
+
+        return *this;
+    }
+
+    template <
+        noncapturing_native_lambda Lambda,
+        typename Auxiliary>
+    basic_ref_class& factory_function(
+        use_generic_t,
+        std::string_view params,
+        const Lambda&,
+        auxiliary_wrapper<Auxiliary> aux
+    )
+    {
+        constexpr auto conv =
+            deduce_factory_cc<decltype(+Lambda{}), Auxiliary>();
+        this->register_factory_function(
+            false,
+            params,
+            detail::auxiliary_factory_to_asGENFUNC_t<Template>(
+                Lambda{}, detail::cc<conv>
+            ),
+            detail::generic_cc,
+            my_base::get_auxiliary_address(aux)
+        );
+
+        return *this;
+    }
+
+    template <
+        noncapturing_native_lambda Lambda,
+        typename Auxiliary>
+    basic_ref_class& factory_function(
+        use_generic_t,
+        std::string_view params,
+        use_explicit_t,
+        const Lambda&,
+        auxiliary_wrapper<Auxiliary> aux
+    )
+    {
+        constexpr auto conv =
+            deduce_factory_cc<decltype(+Lambda{}), Auxiliary>();
+        this->register_factory_function(
+            true,
+            params,
+            detail::auxiliary_factory_to_asGENFUNC_t<Template>(
+                Lambda{}, detail::cc<conv>
+            ),
+            detail::generic_cc,
+            my_base::get_auxiliary_address(aux)
+        );
+
+        return *this;
+    }
+
+    template <
+        noncapturing_native_lambda Lambda,
+        typename Auxiliary,
+        bool ObjFirst>
+    basic_ref_class& factory_function(
+        use_generic_t,
+        std::string_view params,
+        const Lambda&,
+        auxiliary_wrapper<Auxiliary> aux,
+        obj_loc_t<ObjFirst>
+    )
+    {
+        constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, false);
+        this->register_factory_function(
+            false,
+            params,
+            detail::auxiliary_factory_to_asGENFUNC_t<Template>(
+                Lambda{}, detail::cc<conv>
+            ),
+            detail::generic_cc,
+            my_base::get_auxiliary_address(aux)
+        );
+
+        return *this;
+    }
+
+    template <
+        noncapturing_native_lambda Lambda,
+        typename Auxiliary,
+        bool ObjFirst>
+    basic_ref_class& factory_function(
+        use_generic_t,
+        std::string_view params,
+        use_explicit_t,
+        const Lambda&,
+        auxiliary_wrapper<Auxiliary> aux,
+        obj_loc_t<ObjFirst>
+    )
+    {
+        constexpr auto conv = detail::conv_of_loc(obj_loc<ObjFirst>, false);
+        this->register_factory_function(
+            true,
+            params,
+            detail::auxiliary_factory_to_asGENFUNC_t<Template>(
+                Lambda{}, detail::cc<conv>
             ),
             detail::generic_cc,
             my_base::get_auxiliary_address(aux)

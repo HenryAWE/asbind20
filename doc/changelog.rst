@@ -3,6 +3,20 @@ Changelog
 
 Changelog since version 1.5.0.
 
+2.1.1
+-----
+
+Update
+~~~~~~
+
+- Better operator support.
+- ``factory_function()`` now supports lambda.
+
+Bug fix
+~~~~~~~
+
+- Make more interfaces accept reference.
+
 2.1.0
 -----
 

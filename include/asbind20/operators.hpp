@@ -262,6 +262,18 @@ namespace detail
         }
     };
 
+    // opEquals - always returns bool
+    struct op_equals
+    {
+        static constexpr std::string_view name = "opEquals";
+
+        template <typename L, typename R>
+        static bool apply(L& l, R& r)
+        {
+            return l == r;
+        }
+    };
+
     // Unary operator tags
 #define ASBIND20_OP_TAG_UNARY_PREFIX(Name, Op)          \
     struct Name                                         \
@@ -501,7 +513,7 @@ namespace detail
         template <typename Return, typename RegisterHelper>
         void register_impl(RegisterHelper& ar, std::string_view ret_decl) const
         {
-            static_assert(std::same_as<Return, int>, "opCmp(_r) only returns int");
+            static_assert(std::same_as<Return, int>, "opCmp only returns int");
             using class_type = typename RegisterHelper::class_type;
             using L = this_arg_t<class_type, LhsConst>;
             using R = this_arg_t<class_type, RhsConst>;
@@ -538,7 +550,7 @@ namespace detail
         template <typename Return, typename RegisterHelper>
         void register_impl(RegisterHelper& ar, std::string_view) const
         {
-            static_assert(std::same_as<Return, int>, "opCmp(_r) only returns int");
+            static_assert(std::same_as<Return, int>, "opCmp only returns int");
             using class_type = typename RegisterHelper::class_type;
             using L = this_arg_t<class_type, ThisConst>;
 
@@ -558,40 +570,76 @@ namespace detail
         using deduce_return_t = int;
     };
 
-    // Case 3: param <=> this
-    template <typename Lhs, bool AutoDecl, bool ThisConst>
-    class cmp_param_this_op :
-        private param_placeholder<Lhs, AutoDecl>,
-        public operator_base<cmp_param_this_op<Lhs, AutoDecl, ThisConst>, false>
+    // opEquals - always returns bool, no return_proxy_with_decl
+    //
+    // Note: AngelScript has no "opEquals_r". When the class type is the right
+    // operand, the compiler will use the class's "opEquals" with the operands
+    // switched. So all cases below register the same "opEquals" method, and
+    // the same parameter type must not be registered in both directions.
+
+    // Case 1: this == this
+    template <bool LhsConst, bool RhsConst>
+    class equals_this_this_op : public operator_base<equals_this_this_op<LhsConst, RhsConst>, false>
     {
-        using param_type = param_placeholder<Lhs, AutoDecl>;
-
     public:
-        cmp_param_this_op(const param_type& p) : param_type(p) {}
-
-        using operator_base<cmp_param_this_op, false>::operator();
-
         template <typename Return, typename RegisterHelper>
         void register_impl(RegisterHelper& ar, std::string_view) const
         {
-            static_assert(std::same_as<Return, int>, "opCmp(_r) only returns int");
+            static_assert(std::same_as<Return, bool>, "opEquals only returns bool");
             using class_type = typename RegisterHelper::class_type;
-            using R = this_arg_t<class_type, ThisConst>;
+            using L = this_arg_t<class_type, LhsConst>;
+            using R = this_arg_t<class_type, RhsConst>;
 
-            auto decl = detail::gen_binary_param_decl<AutoDecl, Lhs>(
-                "int", string_concat(op_cmp::name, "_r"), this->param_type::get_decl(), ThisConst
+            auto decl = detail::gen_binary_auto_decl</*Ref=*/true, RhsConst>(
+                "bool", op_equals::name, ar.get_name(), LhsConst
             );
 
             ar.method(
                 decl,
-                [](Lhs l, R& r) -> int
-                { return op_cmp::apply(l, r); },
-                objlast
+                [](L& l, R& r) -> bool
+                { return op_equals::apply(l, r); },
+                objfirst
             );
         }
 
         template <typename RegisterHelper>
-        using deduce_return_t = int;
+        using deduce_return_t = bool;
+    };
+
+    // Case 2: this == param
+    template <bool ThisConst, typename Rhs, bool AutoDecl>
+    class equals_this_param_op :
+        private param_placeholder<Rhs, AutoDecl>,
+        public operator_base<equals_this_param_op<ThisConst, Rhs, AutoDecl>, false>
+    {
+        using param_type = param_placeholder<Rhs, AutoDecl>;
+
+    public:
+        equals_this_param_op(const param_type& p) : param_type(p) {}
+
+        using operator_base<equals_this_param_op, false>::operator();
+
+        template <typename Return, typename RegisterHelper>
+        void register_impl(RegisterHelper& ar, std::string_view) const
+        {
+            static_assert(std::same_as<Return, bool>, "opEquals only returns bool");
+            using class_type = typename RegisterHelper::class_type;
+            using L = this_arg_t<class_type, ThisConst>;
+
+            auto decl = detail::gen_binary_param_decl<AutoDecl, Rhs>(
+                "bool", op_equals::name, this->param_type::get_decl(), ThisConst
+            );
+
+            ar.method(
+                decl,
+                [](L& l, Rhs r) -> bool
+                { return op_equals::apply(l, r); },
+                objfirst
+            );
+        }
+
+        template <typename RegisterHelper>
+        using deduce_return_t = bool;
     };
 
     // Index operator class templates
@@ -841,7 +889,6 @@ constexpr auto operator--(this_placeholder<ThisConst>, int)
         return {lhs};                                                                                   \
     }
 
-ASBIND20_BINARY_OVERLOADS(<=>, detail::op_cmp)
 ASBIND20_BINARY_OVERLOADS(+, detail::opAdd)
 ASBIND20_BINARY_OVERLOADS(-, detail::opSub)
 ASBIND20_BINARY_OVERLOADS(*, detail::opMul)
@@ -854,6 +901,56 @@ ASBIND20_BINARY_OVERLOADS(<<, detail::opShl)
 ASBIND20_BINARY_OVERLOADS(>>, detail::opShr)
 
 #undef ASBIND20_BINARY_OVERLOADS
+
+template <bool LhsConst, bool RhsConst>
+constexpr auto operator<=>(this_placeholder<LhsConst>, this_placeholder<RhsConst>)
+    -> detail::cmp_this_this_op<LhsConst, RhsConst>
+{
+    return {};
+}
+
+template <bool ThisConst, typename T2, bool Auto>
+constexpr auto operator<=>(this_placeholder<ThisConst>, const param_placeholder<T2, Auto>& rhs)
+    -> detail::cmp_this_param_op<ThisConst, T2, Auto>
+{
+    return {rhs};
+}
+
+template <typename T1, bool Auto, bool ThisConst>
+constexpr void operator<=>(
+    const param_placeholder<T1, Auto>&, this_placeholder<ThisConst>
+)
+{
+    static_assert(
+        !std::same_as<T1, T1>,
+        "Reversed opCmp is not supported: AngelScript has no 'opCmp_r'"
+    );
+}
+
+template <bool LhsConst, bool RhsConst>
+constexpr auto operator==(this_placeholder<LhsConst>, this_placeholder<RhsConst>)
+    -> detail::equals_this_this_op<LhsConst, RhsConst>
+{
+    return {};
+}
+
+template <bool ThisConst, typename T2, bool Auto>
+constexpr auto operator==(this_placeholder<ThisConst>, const param_placeholder<T2, Auto>& rhs)
+    -> detail::equals_this_param_op<ThisConst, T2, Auto>
+{
+    return {rhs};
+}
+
+template <typename T1, bool Auto, bool ThisConst>
+constexpr void operator==(
+    const param_placeholder<T1, Auto>&, this_placeholder<ThisConst>
+)
+{
+    static_assert(
+        !std::same_as<T1, T1>,
+        "Reversed opEquals is not supported: AngelScript has no 'opEquals_r'"
+    );
+}
 
 } // namespace asbind20
 
