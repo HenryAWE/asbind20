@@ -98,7 +98,7 @@ static void check_eq_value(asbind20::engine_pointer engine)
 }
 } // namespace test_operators
 
-TEST(OpEquals, Native)
+TEST(Equals, Native)
 {
     ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
@@ -109,7 +109,7 @@ TEST(OpEquals, Native)
     test_operators::check_eq_value(engine.get());
 }
 
-TEST(OpEquals, Generic)
+TEST(Equals, Generic)
 {
     auto engine = asbind20::make_script_engine();
     asbind_test::setup_message_callback(engine);

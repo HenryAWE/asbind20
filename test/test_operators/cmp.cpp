@@ -115,7 +115,7 @@ static void check_cmp_value(asbind20::engine_pointer engine)
 }
 } // namespace test_operators
 
-TEST(OpCmp, Native)
+TEST(Compare, Native)
 {
     ASBIND_TEST_SKIP_IF_MAX_PORTABILITY();
 
@@ -126,7 +126,7 @@ TEST(OpCmp, Native)
     test_operators::check_cmp_value(engine.get());
 }
 
-TEST(OpCmp, Generic)
+TEST(Compare, Generic)
 {
     auto engine = asbind20::make_script_engine();
     asbind_test::setup_message_callback(engine);
