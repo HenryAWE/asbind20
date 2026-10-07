@@ -11,20 +11,20 @@
 
 #pragma once
 
+#include <limits>
+#include <charconv>
 #include <algorithm>
 #include "../detail/config.hpp"
 #include "../detail/include_as.hpp"
 #include "to_string.hpp"
-#ifdef ASBIND20_HAS_LIB_FORMAT
-#    include <format>
-#endif
+#include "fmtlib.hpp"
 
 namespace asbind20::io
 {
 namespace detail
 {
     template <typename OutputIt>
-    OutputIt copy_cstr_to(const char* cstr, OutputIt out)
+    constexpr OutputIt copy_cstr_to(const char* cstr, OutputIt out)
     {
         for(const char* p = cstr; *p != '\0'; ++p)
         {
@@ -35,49 +35,32 @@ namespace detail
         return out;
     }
 
-    template <typename CharT, std::size_t SizeChar, std::size_t SizeWChar>
-    consteval decltype(auto) statically_widen(
-        const char (&str)[SizeChar], const wchar_t (&wstr)[SizeWChar]
-    )
-    {
-        if constexpr(std::same_as<CharT, wchar_t>)
-            return wstr;
-        else
-            return str;
-    }
-
-#define ASBIND20_IO_STATICALLY_WIDEN(char_t, str) \
-    (::asbind20::io::detail::statically_widen<char_t>(str, L##str))
-
     template <typename CharT, typename OutputIt>
-    auto output_fallback(OutputIt out, std::string_view type_name, int underlying)
+    constexpr auto output_fallback(
+        OutputIt out, std::string_view type_name, int underlying
+    ) -> OutputIt
     {
         out = std::copy(type_name.cbegin(), type_name.cend(), out);
 
-#ifdef ASBIND20_HAS_LIB_FORMAT
-        return std::format_to(
-            std::move(out), ASBIND20_IO_STATICALLY_WIDEN(CharT, "({})"), underlying
-        );
-
-#else
         *out = '(';
         ++out;
         {
-            auto str = std::to_string(underlying);
-            out = std::copy(str.cbegin(), str.cend(), out);
+            char buf[std::numeric_limits<int>::digits10 + 2];
+            auto result = std::to_chars(buf, buf + std::size(buf), underlying);
+            ASBIND20_ASSERT(result.ec == std::errc{});
+            out = std::copy(buf, result.ptr, out);
         }
         *out = ')';
         ++out;
 
         return out;
-#endif
     }
 } // namespace detail
 
 template <typename CharT = char, typename OutputIt>
-auto copy_debug_representation_to(
+constexpr auto copy_debug_representation_to(
     AS_NAMESPACE_QUALIFIER asEContextState state, bool skip_prefix, OutputIt out
-)
+) -> OutputIt
 {
     const char* cstr = asbind20::detail::state_to_cstr(state);
     if(!cstr) [[unlikely]]
@@ -94,9 +77,9 @@ auto copy_debug_representation_to(
 }
 
 template <typename CharT = char, typename OutputIt>
-auto copy_debug_representation_to(
+constexpr auto copy_debug_representation_to(
     AS_NAMESPACE_QUALIFIER asERetCodes ret, bool skip_prefix, OutputIt out
-)
+) -> OutputIt
 {
     const char* cstr = asbind20::detail::ret_to_cstr(ret);
     if(!cstr) [[unlikely]]
@@ -113,9 +96,9 @@ auto copy_debug_representation_to(
 }
 
 template <typename CharT = char, typename OutputIt>
-auto copy_debug_representation_to(
+constexpr auto copy_debug_representation_to(
     AS_NAMESPACE_QUALIFIER asEMsgType msg_type, bool skip_prefix, OutputIt out
-)
+) -> OutputIt
 {
     const char* cstr = asbind20::detail::msg_type_to_cstr(msg_type);
     if(!cstr) [[unlikely]]
@@ -132,9 +115,9 @@ auto copy_debug_representation_to(
 }
 
 template <typename CharT, typename OutputIt>
-auto copy_debug_representation_to(
+constexpr auto copy_debug_representation_to(
     AS_NAMESPACE_QUALIFIER asETokenClass tc, bool skip_prefix, OutputIt out
-)
+) -> OutputIt
 {
     const char* cstr = asbind20::detail::tc_to_cstr(tc);
     if(!cstr) [[unlikely]]
@@ -180,13 +163,13 @@ public:
     }
 
     [[nodiscard]]
-    bool full_representation() const noexcept
+    constexpr bool full_representation() const noexcept
     {
         return m_full_representation;
     }
 
     [[nodiscard]]
-    bool print_underlying() const noexcept
+    constexpr bool print_underlying() const noexcept
     {
         return m_print_underlying;
     }
@@ -237,7 +220,5 @@ struct std::formatter<ASEnum, CharT> :
 };
 
 #endif
-
-#undef ASBIND20_IO_STATICALLY_WIDEN
 
 #endif

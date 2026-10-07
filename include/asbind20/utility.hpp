@@ -23,9 +23,7 @@
 #include "detail/err_handler.hpp"
 #include "util/strutil.hpp"
 #include "util/ctxutil.hpp"
-#ifdef ASBIND20_HAS_LIB_FORMAT
-#    include <format>
-#endif
+#include "io/fmtlib.hpp"
 
 namespace asbind20
 {
@@ -1111,35 +1109,6 @@ void set_script_exception(
 }
 
 #ifdef ASBIND20_HAS_LIB_FORMAT
-
-namespace io
-{
-#    if __cpp_lib_format >= 202207L
-    template <typename... Args>
-    using format_string = std::format_string<Args...>;
-
-    namespace detail
-    {
-        constexpr std::string_view fmt_string_to_view(const auto& fmtstr)
-        {
-            return fmtstr.get();
-        }
-    } // namespace detail
-
-#    else
-    template <typename... Args>
-    using format_string = std::string_view;
-
-    namespace detail
-    {
-        constexpr std::string_view fmt_string_to_view(const auto& fmtstr)
-        {
-            return fmtstr;
-        }
-    } // namespace detail
-#    endif
-
-} // namespace io
 
 inline void vformat_script_exception(
     std::string_view fmt,
