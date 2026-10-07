@@ -10,6 +10,7 @@ Update
 ~~~~~~
 
 - Better operator support.
+- ``factory_function()`` now supports lambda.
 
 Bug fix
 ~~~~~~~
