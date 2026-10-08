@@ -11,6 +11,7 @@
 
 #include <string>
 #include "../fwd.hpp"
+#include "../util/ctxutil.hpp"
 #include "../utility.hpp"
 
 namespace asbind20::debugging
@@ -38,6 +39,17 @@ public:
     ) noexcept
         : m_section_name(section_name_),
           m_function_name(function_name_),
+          m_line(line_),
+          m_column(column_)
+    {}
+
+    constexpr explicit script_source_location(
+        cstring_ref section_name_,
+        value_type line_,
+        value_type column_ = 0
+    ) noexcept
+        : m_section_name(section_name_),
+          m_function_name(),
           m_line(line_),
           m_column(column_)
     {}
@@ -148,6 +160,14 @@ public:
         if(!ctx) [[unlikely]]
             return {};
         return from_context(*ctx, stack_level);
+    }
+
+    [[nodiscard]]
+    static script_source_location from_current_context(
+        stack_level_type stack_level = 0
+    )
+    {
+        return from_context(current_context(), stack_level);
     }
 
 private:

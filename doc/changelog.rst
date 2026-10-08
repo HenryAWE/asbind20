@@ -12,6 +12,7 @@ Update
 - Better operator support.
 - ``factory_function()`` now supports lambda.
 - APIs for formatting log messages.
+- Update source location support.
 
 Bug fix
 ~~~~~~~
