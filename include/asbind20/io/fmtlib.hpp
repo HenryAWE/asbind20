@@ -12,6 +12,8 @@
 
 #ifdef ASBIND20_HAS_LIB_FORMAT
 
+#    define ASBIND20_HAS_FMTLIB "<format>"
+
 #    include <format>
 
 namespace asbind20::io
@@ -34,6 +36,7 @@ namespace detail
         (::asbind20::io::detail::statically_widen<char_t>(str, L##str))
 
 #    if __cpp_lib_format >= 202207L
+// TODO: Move this into the fmtlib namespace
 template <typename... Args>
 using format_string = std::format_string<Args...>;
 
@@ -58,6 +61,14 @@ namespace detail
 } // namespace detail
 #    endif
 
+namespace fmtlib
+{
+    using io::format_string;
+    using ::std::format;
+    using ::std::make_format_args;
+    using ::std::format_args;
+    using ::std::vformat;
+} // namespace fmtlib
 } // namespace asbind20::io
 
 #endif

@@ -30,6 +30,18 @@ public:
     constexpr script_source_location() noexcept = default;
     constexpr script_source_location(const script_source_location&) noexcept = default;
 
+    constexpr explicit script_source_location(
+        cstring_ref section_name_,
+        cstring_ref function_name_ = cstring_ref{},
+        value_type line_ = 0,
+        value_type column_ = 0
+    ) noexcept
+        : m_section_name(section_name_),
+          m_function_name(function_name_),
+          m_line(line_),
+          m_column(column_)
+    {}
+
     script_source_location& operator=(const script_source_location&) noexcept = default;
 
     [[nodiscard]]
