@@ -6,6 +6,8 @@ Changelog since version 1.5.0.
 2.1.1
 -----
 
+2026-10-8
+
 Update
 ~~~~~~
 
