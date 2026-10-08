@@ -3,7 +3,7 @@
 
 namespace
 {
-class recorder
+class [[maybe_unused]] recorder
 {
 public:
     std::array<std::string, 3> buffer;
@@ -25,6 +25,8 @@ public:
     }
 };
 } // namespace
+
+#ifdef ASBIND20_HAS_FMTLIB
 
 TEST(Logging, FormattingByLevel)
 {
@@ -88,3 +90,5 @@ TEST(Logging, Log)
 
     engine->ClearMessageCallback();
 }
+
+#endif
