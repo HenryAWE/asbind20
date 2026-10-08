@@ -11,8 +11,7 @@ using log_level_type = AS_NAMESPACE_QUALIFIER asEMsgType;
 
 #ifdef ASBIND20_HAS_FMTLIB
 
-template <typename... Args>
-int vlog(
+inline int vlog(
     log_level_type type,
     engine_reference engine,
     const script_source_location& loc,
@@ -29,8 +28,7 @@ int vlog(
     );
 }
 
-template <typename... Args>
-int vlog(
+inline int vlog(
     log_level_type type,
     engine_pointer engine,
     const script_source_location& loc,
@@ -38,10 +36,12 @@ int vlog(
     io::fmtlib::format_args args
 )
 {
+    if(!engine) [[unlikely]]
+        return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
     return vlog(type, *engine, loc, fmt, args);
 }
 
-template <script_engine_pointer_like Engine, typename... Args>
+template <script_engine_pointer_like Engine>
 int vlog(
     log_level_type type,
     const Engine& engine,

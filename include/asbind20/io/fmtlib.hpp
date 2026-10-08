@@ -65,8 +65,8 @@ namespace fmtlib
 {
     using io::format_string;
     using ::std::format;
-    using ::std::make_format_args;
     using ::std::format_args;
+    using ::std::make_format_args;
     using ::std::vformat;
 } // namespace fmtlib
 } // namespace asbind20::io
