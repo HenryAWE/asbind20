@@ -165,6 +165,43 @@ jobs:
         working-directory: ${{github.workspace}}/build
         run: ctest --output-on-failure
 
+    ClangFmtLib:
+      runs-on: ubuntu-24.04
+
+      name: Clang 18 ({fmt} backend)
+
+      steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+            sudo apt-get update
+            sudo apt-get install -y cmake ninja-build clang-18 clang++-18 libfmt-dev
+            sudo update-alternatives --install /usr/bin/cc cc /usr/bin/clang-18 100
+            sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++-18 100
+
+      - name: Install AngelScript
+        working-directory: ${{github.workspace}}/ci
+        run: ./setup_angelscript.sh --version 2.38.0
+
+      - name: Configure
+        run: >
+          cmake
+          -S ${{github.workspace}}
+          -B build
+          -G Ninja
+          -Dasbind_cxxstd=20
+          -Dasbind_use_fmtlib=1
+          -DCMAKE_BUILD_TYPE=Release
+          -Dasbind_build_test=1
+
+      - name: Build
+        run: cmake --build ${{github.workspace}}/build
+
+      - name: Test
+        working-directory: ${{github.workspace}}/build
+        run: ctest --output-on-failure
+
     ArchLinuxGCC:
       runs-on: ubuntu-24.04
       # Run the whole job inside an Arch Linux container, so that the latest

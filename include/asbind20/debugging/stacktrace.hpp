@@ -283,6 +283,20 @@ public:
 
 #elif defined(ASBIND20_USE_FMTLIB)
 
+// {fmt} provides a generic formatter for every range in <fmt/ranges.h> since {fmt} 11.
+// Since `basic_stacktrace` is a range too,
+// its formatter would be an ambiguous partial specialization
+#    if __has_include(<fmt/ranges.h>)
+#        include <fmt/ranges.h>
+
+template <typename Allocator, typename Char>
+struct fmt::range_format_kind<
+    asbind20::debugging::basic_stacktrace<Allocator>,
+    Char> : std::integral_constant<fmt::range_format, fmt::range_format::disabled>
+{};
+
+#    endif
+
 template <>
 struct fmt::formatter<asbind20::debugging::stacktrace_entry> :
     fmt::formatter<std::string>
