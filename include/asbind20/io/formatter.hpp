@@ -180,7 +180,7 @@ private:
 };
 } // namespace asbind20::io
 
-#if defined(ASBIND20_HAS_LIB_FORMAT) && !defined(ASBIND20_CONFIG_NO_STD_FORMATTER)
+#if defined(ASBIND20_HAS_LIB_FORMAT) && !defined(ASBIND20_USE_FMTLIB) && !defined(ASBIND20_CONFIG_NO_STD_FORMATTER)
 
 template <typename ASEnum, typename CharT>
 requires(
@@ -206,7 +206,48 @@ struct std::formatter<ASEnum, CharT> :
 
         if(print_underlying())
         {
-            return std::format_to(
+            return asbind20::io::fmtlib::format_to(
+                ctx.out(),
+                ASBIND20_IO_STATICALLY_WIDEN(CharT, "{:d}"),
+                static_cast<int>(val)
+            );
+        }
+
+        return asbind20::io::copy_debug_representation_to<CharT>(
+            val, !full_representation(), ctx.out()
+        );
+    }
+};
+
+#endif
+
+#if defined(ASBIND20_USE_FMTLIB)
+
+template <typename ASEnum, typename CharT>
+requires(
+    std::same_as<ASEnum, AS_NAMESPACE_QUALIFIER asEContextState> ||
+    std::same_as<ASEnum, AS_NAMESPACE_QUALIFIER asERetCodes> ||
+    std::same_as<ASEnum, AS_NAMESPACE_QUALIFIER asEMsgType> ||
+    std::same_as<ASEnum, AS_NAMESPACE_QUALIFIER asETokenClass>
+)
+struct fmt::formatter<ASEnum, CharT> :
+    asbind20::io::angelscript_enum_formatter_base
+{
+    constexpr formatter() noexcept = default;
+    constexpr formatter(const formatter&) noexcept = default;
+
+    template <typename FormatContext>
+    constexpr auto format(ASEnum val, FormatContext& ctx) const
+        -> typename FormatContext::iterator
+    {
+        static_assert(
+            std::is_same_v<typename FormatContext::char_type, CharT>,
+            "Inconsistent character type"
+        );
+
+        if(print_underlying())
+        {
+            return fmt::format_to(
                 ctx.out(),
                 ASBIND20_IO_STATICALLY_WIDEN(CharT, "{:d}"),
                 static_cast<int>(val)

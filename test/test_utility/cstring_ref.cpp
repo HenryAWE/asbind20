@@ -99,18 +99,26 @@ TEST(CStringRef, Output)
         EXPECT_THAT(ss.str(), ::testing::IsEmpty());
     }
 
-#ifdef ASBIND20_HAS_LIB_FORMAT
+#ifdef ASBIND20_HAS_FORMAT_LIBRARY
 
     {
         cstring_ref csr = "test";
 
-        EXPECT_EQ(std::format("{}", csr), "test");
+        EXPECT_EQ(asbind20::io::fmtlib::format("{}", csr), "test");
     }
 
     {
         cstring_ref csr;
 
-        EXPECT_THAT(std::format("{}", csr), ::testing::IsEmpty());
+        EXPECT_THAT(
+            asbind20::io::fmtlib::format("{}", csr),
+            ::testing::IsEmpty()
+        );
+    }
+
+    {
+        util::fixed_string text("test");
+        EXPECT_EQ(asbind20::io::fmtlib::format("{}", text), "test");
     }
 
 #endif

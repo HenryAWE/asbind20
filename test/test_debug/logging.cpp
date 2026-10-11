@@ -26,7 +26,7 @@ public:
 };
 } // namespace
 
-#ifdef ASBIND20_HAS_FMTLIB
+#ifdef ASBIND20_HAS_FORMAT_LIBRARY
 
 TEST(Logging, FormattingByLevel)
 {

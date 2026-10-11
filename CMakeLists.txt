@@ -38,12 +38,21 @@ mark_as_advanced(asbind_prefer_system_gtest)
 option(asbind_prefer_system_bench "Prefer system Benchmark" OFF)
 mark_as_advanced(asbind_prefer_system_bench)
 
+option(asbind_use_fmtlib "Use {fmt} for formatting" OFF)
+mark_as_advanced(asbind_use_fmtlib)
+
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 if(NOT DEFINED asbind_cxxstd)
     set(asbind_cxxstd 20 CACHE STRING "Preferred C++ standard to use for asbind20")
 endif()
 target_compile_features(asbind20 INTERFACE cxx_std_${asbind_cxxstd})
+
+if(asbind_use_fmtlib)
+    find_package(fmt CONFIG REQUIRED)
+    target_link_libraries(asbind20 INTERFACE fmt::fmt)
+    target_compile_definitions(asbind20 INTERFACE ASBIND20_USE_FMTLIB=1)
+endif()
 
 if(${asbind_build_test})
     if(NOT ${asbind_prefer_system_gtest})

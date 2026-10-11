@@ -3,6 +3,20 @@
 #include <asbind20/debugging.hpp>
 #include <asbind20/debugging/stacktrace.hpp>
 
+#ifdef ASBIND20_HAS_FORMAT_LIBRARY
+
+TEST(Trace, Format)
+{
+    EXPECT_EQ(
+        asbind20::io::fmtlib::format(
+            "{}", asbind20::debugging::stacktrace{}
+        ),
+        ""
+    );
+}
+
+#endif
+
 TEST(Trace, Print)
 {
     using namespace asbind20;

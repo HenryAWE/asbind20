@@ -14,9 +14,7 @@
 #include <string>
 #include <string_view>
 #include "../detail/config.hpp"
-#ifdef ASBIND20_HAS_LIB_FORMAT
-#    include <format>
-#endif
+#include "../io/fmtlib.hpp"
 
 namespace asbind20
 {
@@ -428,7 +426,7 @@ namespace util
 } // namespace util
 } // namespace asbind20
 
-#ifdef ASBIND20_HAS_LIB_FORMAT
+#if defined(ASBIND20_HAS_LIB_FORMAT) && !defined(ASBIND20_USE_FMTLIB)
 
 template <>
 struct std::formatter<asbind20::cstring_ref> : std::formatter<std::string_view>
@@ -448,6 +446,30 @@ struct std::formatter<asbind20::util::fixed_string<Size>> : std::formatter<std::
     auto format(const asbind20::util::fixed_string<Size>& str, FormatContext& ctx) const
     {
         using my_base = std::formatter<std::string_view>;
+        return my_base::format(str.view(), ctx);
+    }
+};
+
+#elif defined(ASBIND20_USE_FMTLIB)
+
+template <>
+struct fmt::formatter<asbind20::cstring_ref> : fmt::formatter<std::string_view>
+{
+    template <typename FormatContext>
+    auto format(asbind20::cstring_ref str, FormatContext& ctx) const
+    {
+        using my_base = fmt::formatter<std::string_view>;
+        return my_base::format(static_cast<std::string_view>(str), ctx);
+    }
+};
+
+template <std::size_t Size>
+struct fmt::formatter<asbind20::util::fixed_string<Size>> : fmt::formatter<std::string_view>
+{
+    template <typename FormatContext>
+    auto format(const asbind20::util::fixed_string<Size>& str, FormatContext& ctx) const
+    {
+        using my_base = fmt::formatter<std::string_view>;
         return my_base::format(str.view(), ctx);
     }
 };

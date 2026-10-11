@@ -112,75 +112,77 @@ TEST(Stringify, CopyDebugRepresentation)
     }
 }
 
-#ifdef ASBIND20_HAS_LIB_FORMAT
+#ifdef ASBIND20_HAS_FORMAT_LIBRARY
 
 TEST(Stringify, Formatter)
 {
+    using namespace asbind20::io::fmtlib;
+
     EXPECT_EQ(
-        std::format("{}", AS_NAMESPACE_QUALIFIER asALREADY_REGISTERED),
+        format("{}", AS_NAMESPACE_QUALIFIER asALREADY_REGISTERED),
         "ALREADY_REGISTERED"
     );
     EXPECT_EQ(
-        std::format("{:?}", AS_NAMESPACE_QUALIFIER asALREADY_REGISTERED),
+        format("{:?}", AS_NAMESPACE_QUALIFIER asALREADY_REGISTERED),
         "asALREADY_REGISTERED"
     );
     EXPECT_EQ(
-        std::format(L"{:?}", AS_NAMESPACE_QUALIFIER asALREADY_REGISTERED),
+        format(L"{:?}", AS_NAMESPACE_QUALIFIER asALREADY_REGISTERED),
         L"asALREADY_REGISTERED"
     );
     EXPECT_EQ(
-        std::format("{}", AS_NAMESPACE_QUALIFIER asERetCodes(1)),
+        format("{}", AS_NAMESPACE_QUALIFIER asERetCodes(1)),
         "asERetCodes(1)"
     );
     EXPECT_EQ(
-        std::format("{:d}", AS_NAMESPACE_QUALIFIER asERetCodes(1)),
+        format("{:d}", AS_NAMESPACE_QUALIFIER asERetCodes(1)),
         "1"
     );
     EXPECT_EQ(
-        std::format(L"{:d}", AS_NAMESPACE_QUALIFIER asERetCodes(1)),
+        format(L"{:d}", AS_NAMESPACE_QUALIFIER asERetCodes(1)),
         L"1"
     );
 
     EXPECT_EQ(
-        std::format("{}", AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED),
+        format("{}", AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED),
         "FINISHED"
     );
     EXPECT_EQ(
-        std::format("{:?}", AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED),
+        format("{:?}", AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED),
         "asEXECUTION_FINISHED"
     );
     EXPECT_EQ(
-        std::format(L"{:?}", AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED),
+        format(L"{:?}", AS_NAMESPACE_QUALIFIER asEXECUTION_FINISHED),
         L"asEXECUTION_FINISHED"
     );
     EXPECT_EQ(
-        std::format("{}", AS_NAMESPACE_QUALIFIER asEContextState(-1)),
+        format("{}", AS_NAMESPACE_QUALIFIER asEContextState(-1)),
         "asEContextState(-1)"
     );
     EXPECT_EQ(
-        std::format("{:d}", AS_NAMESPACE_QUALIFIER asEContextState(-1)),
+        format("{:d}", AS_NAMESPACE_QUALIFIER asEContextState(-1)),
         "-1"
     );
     EXPECT_EQ(
-        std::format(L"{:d}", AS_NAMESPACE_QUALIFIER asEContextState(-1)),
+        format(L"{:d}", AS_NAMESPACE_QUALIFIER asEContextState(-1)),
         L"-1"
     );
 
     EXPECT_EQ(
-        std::format("{}", AS_NAMESPACE_QUALIFIER asMSGTYPE_ERROR),
+        format("{}", AS_NAMESPACE_QUALIFIER asMSGTYPE_ERROR),
         "ERROR"
     );
     EXPECT_EQ(
-        std::format(L"{}", AS_NAMESPACE_QUALIFIER asMSGTYPE_ERROR),
+        format(L"{}", AS_NAMESPACE_QUALIFIER asMSGTYPE_ERROR),
         L"ERROR"
     );
 
     EXPECT_EQ(
-        std::format("{}", AS_NAMESPACE_QUALIFIER asTC_IDENTIFIER),
+        format("{}", AS_NAMESPACE_QUALIFIER asTC_IDENTIFIER),
         "IDENTIFIER"
     );
     EXPECT_EQ(
-        std::format(L"{}", AS_NAMESPACE_QUALIFIER asTC_IDENTIFIER),
+        format(L"{}", AS_NAMESPACE_QUALIFIER asTC_IDENTIFIER),
         L"IDENTIFIER"
     );
 }

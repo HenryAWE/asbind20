@@ -11,9 +11,7 @@
 
 #include <string>
 #include "../fwd.hpp"
-#ifdef ASBIND20_HAS_LIB_FORMAT
-#    include <format>
-#endif
+#include "fmtlib.hpp"
 
 namespace asbind20
 {
@@ -128,8 +126,8 @@ inline std::string to_string(AS_NAMESPACE_QUALIFIER asEContextState state)
         return cstr;
     else
     {
-#ifdef ASBIND20_HAS_LIB_FORMAT
-        return std::format("asEContextState({})", static_cast<int>(state));
+#ifdef ASBIND20_HAS_FORMAT_LIBRARY
+        return io::fmtlib::format("asEContextState({})", static_cast<int>(state));
 #else
         return "asEContextState(" +
                std::to_string(static_cast<int>(state)) +
@@ -149,8 +147,8 @@ inline std::wstring to_wstring(AS_NAMESPACE_QUALIFIER asEContextState state)
     }
     else
     {
-#ifdef ASBIND20_HAS_LIB_FORMAT
-        return std::format(L"asEContextState({})", static_cast<int>(state));
+#ifdef ASBIND20_HAS_FORMAT_LIBRARY
+        return io::fmtlib::format(L"asEContextState({})", static_cast<int>(state));
 #else
         return L"asEContextState(" +
                std::to_wstring(static_cast<int>(state)) +
@@ -175,8 +173,8 @@ inline std::string to_string(AS_NAMESPACE_QUALIFIER asERetCodes ret)
         return cstr;
     else
     {
-#ifdef ASBIND20_HAS_LIB_FORMAT
-        return std::format("asERetCodes({})", static_cast<int>(ret));
+#ifdef ASBIND20_HAS_FORMAT_LIBRARY
+        return io::fmtlib::format("asERetCodes({})", static_cast<int>(ret));
 #else
         return "asERetCodes(" +
                std::to_string(static_cast<int>(ret)) +
@@ -196,8 +194,8 @@ inline std::wstring to_wstring(AS_NAMESPACE_QUALIFIER asERetCodes ret)
     }
     else
     {
-#ifdef ASBIND20_HAS_LIB_FORMAT
-        return std::format(L"asERetCodes({})", static_cast<int>(ret));
+#ifdef ASBIND20_HAS_FORMAT_LIBRARY
+        return io::fmtlib::format(L"asERetCodes({})", static_cast<int>(ret));
 #else
         return L"asERetCodes(" +
                std::to_wstring(static_cast<int>(ret)) +
@@ -214,8 +212,8 @@ inline std::string to_string(AS_NAMESPACE_QUALIFIER asEMsgType msg_type)
         return cstr;
     else
     {
-#ifdef ASBIND20_HAS_LIB_FORMAT
-        return std::format("asEMsgType({})", static_cast<int>(msg_type));
+#ifdef ASBIND20_HAS_FORMAT_LIBRARY
+        return io::fmtlib::format("asEMsgType({})", static_cast<int>(msg_type));
 #else
         return "asEMsgType(" +
                std::to_string(static_cast<int>(msg_type)) +
@@ -235,8 +233,8 @@ inline std::wstring to_wstring(AS_NAMESPACE_QUALIFIER asEMsgType msg_type)
     }
     else
     {
-#ifdef ASBIND20_HAS_LIB_FORMAT
-        return std::format(L"asEMsgType({})", static_cast<int>(msg_type));
+#ifdef ASBIND20_HAS_FORMAT_LIBRARY
+        return io::fmtlib::format(L"asEMsgType({})", static_cast<int>(msg_type));
 #else
         return L"asEMsgType(" +
                std::to_wstring(static_cast<int>(msg_type)) +
@@ -253,8 +251,8 @@ inline std::string to_string(AS_NAMESPACE_QUALIFIER asETokenClass tc)
         return cstr;
     else
     {
-#ifdef ASBIND20_HAS_LIB_FORMAT
-        return std::format("asETokenClass({})", static_cast<int>(tc));
+#ifdef ASBIND20_HAS_FORMAT_LIBRARY
+        return io::fmtlib::format("asETokenClass({})", static_cast<int>(tc));
 #else
         return "asETokenClass(" +
                std::to_string(static_cast<int>(tc)) +
@@ -274,8 +272,8 @@ inline std::wstring to_wstring(AS_NAMESPACE_QUALIFIER asETokenClass tc)
     }
     else
     {
-#ifdef ASBIND20_HAS_LIB_FORMAT
-        return std::format(L"asETokenClass({})", static_cast<int>(tc));
+#ifdef ASBIND20_HAS_FORMAT_LIBRARY
+        return io::fmtlib::format(L"asETokenClass({})", static_cast<int>(tc));
 #else
         return L"asETokenClass(" +
                std::to_wstring(static_cast<int>(tc)) +

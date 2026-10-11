@@ -7,9 +7,7 @@
 #include <vector>
 #include "../fwd.hpp"
 #include "../utility.hpp"
-#ifdef ASBIND20_HAS_LIB_FORMAT
-#    include <format>
-#endif
+#include "../io/fmtlib.hpp"
 
 namespace asbind20::debugging
 {
@@ -243,7 +241,7 @@ std::string to_string(const basic_stacktrace<Allocator>& trace)
 }
 } // namespace asbind20::debugging
 
-#ifdef ASBIND20_HAS_LIB_FORMAT
+#if defined(ASBIND20_HAS_LIB_FORMAT) && !defined(ASBIND20_USE_FMTLIB)
 
 template <>
 struct std::formatter<asbind20::debugging::stacktrace_entry> :
@@ -280,6 +278,42 @@ public:
         return my_base::format(
             to_string(trace), ctx
         );
+    }
+};
+
+#elif defined(ASBIND20_USE_FMTLIB)
+
+template <>
+struct fmt::formatter<asbind20::debugging::stacktrace_entry> :
+    fmt::formatter<std::string>
+{
+private:
+    using my_base = fmt::formatter<std::string>;
+
+public:
+    auto format(
+        const asbind20::debugging::stacktrace_entry& entry,
+        fmt::format_context& ctx
+    ) const
+    {
+        return my_base::format(to_string(entry), ctx);
+    }
+};
+
+template <typename Allocator>
+struct fmt::formatter<asbind20::debugging::basic_stacktrace<Allocator>> :
+    fmt::formatter<std::string>
+{
+private:
+    using my_base = fmt::formatter<std::string>;
+
+public:
+    auto format(
+        const asbind20::debugging::basic_stacktrace<Allocator>& trace,
+        fmt::format_context& ctx
+    ) const
+    {
+        return my_base::format(to_string(trace), ctx);
     }
 };
 

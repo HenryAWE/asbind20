@@ -75,13 +75,17 @@ TEST(StringLike, Adaptor)
     }
 }
 
-#ifdef ASBIND20_HAS_LIB_FORMAT
+#ifdef ASBIND20_HAS_FORMAT_LIBRARY
 
 TEST(SetException, FormatException)
 {
     using namespace asbind20;
 
-    SCOPED_TRACE(std::format("__cpp_lib_format={}L", __cpp_lib_format));
+    SCOPED_TRACE(
+        asbind20::io::fmtlib::format(
+            "Formatting backend: {}", ASBIND20_HAS_FORMAT_LIBRARY
+        )
+    );
 
     auto engine = make_script_engine();
     asbind_test::setup_message_callback(engine);

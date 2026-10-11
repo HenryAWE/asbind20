@@ -10,12 +10,6 @@
 #include <string_view>
 #include "../detail/config.hpp"
 
-#ifdef ASBIND20_HAS_LIB_FORMAT
-
-#    define ASBIND20_HAS_FMTLIB "<format>"
-
-#    include <format>
-
 namespace asbind20::io
 {
 namespace detail
@@ -32,9 +26,18 @@ namespace detail
     }
 } // namespace detail
 
-#    define ASBIND20_IO_STATICALLY_WIDEN(char_t, str) \
-        (::asbind20::io::detail::statically_widen<char_t>(str, L##str))
+#define ASBIND20_IO_STATICALLY_WIDEN(char_t, str) \
+    (::asbind20::io::detail::statically_widen<char_t>(str, L##str))
+} // namespace asbind20::io
 
+#if defined(ASBIND20_HAS_LIB_FORMAT) && !defined(ASBIND20_USE_FMTLIB)
+
+#    define ASBIND20_HAS_FORMAT_LIBRARY "<format>"
+
+#    include <format>
+
+namespace asbind20::io
+{
 namespace fmtlib
 {
 #    if __cpp_lib_format >= 202207L
@@ -58,6 +61,7 @@ namespace fmtlib
 
     using ::std::format;
     using ::std::format_args;
+    using ::std::format_to;
     using ::std::make_format_args;
     using ::std::vformat;
 } // namespace fmtlib
@@ -65,6 +69,33 @@ namespace fmtlib
 
 #endif
 
-// TODO: Allow users to choose {fmt} as a formatting backend
+// Allow users to choose {fmt} as a formatting backend
+#if defined(ASBIND20_USE_FMTLIB)
+
+#    define ASBIND20_HAS_FORMAT_LIBRARY "{fmt}"
+
+#    include <fmt/format.h>
+#    include <fmt/xchar.h>
+
+namespace asbind20::io
+{
+namespace fmtlib
+{
+    using ::fmt::format;
+    using ::fmt::format_args;
+    using ::fmt::format_string;
+    using ::fmt::format_to;
+    using ::fmt::make_format_args;
+    using ::fmt::vformat;
+
+    constexpr std::string_view format_string_to_view(const auto& fmtstr)
+    {
+        const ::fmt::string_view view = fmtstr;
+        return {view.data(), view.size()};
+    }
+} // namespace fmtlib
+} // namespace asbind20::io
+
+#endif
 
 #endif

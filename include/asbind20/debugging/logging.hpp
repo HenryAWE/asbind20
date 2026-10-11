@@ -9,7 +9,7 @@ namespace asbind20::debugging::inline logging
 {
 using log_level_type = AS_NAMESPACE_QUALIFIER asEMsgType;
 
-#ifdef ASBIND20_HAS_FMTLIB
+#ifdef ASBIND20_HAS_FORMAT_LIBRARY
 
 inline int vlog(
     log_level_type type,
