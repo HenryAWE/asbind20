@@ -40,7 +40,7 @@ inline bytecode_span get_bytecode(function_pointer f)
 #    pragma GCC diagnostic ignored "-Wold-style-cast"
 #endif
 
-#ifndef ASBIND20_HAS_FORMAT_LIBRARY
+#ifdef ASBIND20_HAS_FORMAT_LIBRARY
 
 template <typename OutputIt>
 std::pair<OutputIt, int> dump_single_bytecode(
