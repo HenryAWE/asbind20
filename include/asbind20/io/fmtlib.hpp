@@ -35,35 +35,27 @@ namespace detail
 #    define ASBIND20_IO_STATICALLY_WIDEN(char_t, str) \
         (::asbind20::io::detail::statically_widen<char_t>(str, L##str))
 
-#    if __cpp_lib_format >= 202207L
-// TODO: Move this into the fmtlib namespace
-template <typename... Args>
-using format_string = std::format_string<Args...>;
-
-namespace detail
+namespace fmtlib
 {
-    constexpr std::string_view fmt_string_to_view(const auto& fmtstr)
+#    if __cpp_lib_format >= 202207L
+    template <typename... Args>
+    using format_string = std::format_string<Args...>;
+
+    constexpr std::string_view format_string_to_view(const auto& fmtstr)
     {
         return fmtstr.get();
     }
-} // namespace detail
 
 #    else
-template <typename... Args>
-using format_string = std::string_view;
+    template <typename... Args>
+    using format_string = std::string_view;
 
-namespace detail
-{
-    constexpr std::string_view fmt_string_to_view(const auto& fmtstr)
+    constexpr std::string_view format_string_to_view(const auto& fmtstr)
     {
         return fmtstr;
     }
-} // namespace detail
 #    endif
 
-namespace fmtlib
-{
-    using io::format_string;
     using ::std::format;
     using ::std::format_args;
     using ::std::make_format_args;

@@ -1124,11 +1124,11 @@ inline void vformat_script_exception(
 
 template <typename... Args>
 void format_script_exception(
-    io::format_string<Args...> fmt, Args&&... args
+    io::fmtlib::format_string<Args...> fmt, Args&&... args
 )
 {
     vformat_script_exception(
-        io::detail::fmt_string_to_view(fmt),
+        io::fmtlib::format_string_to_view(fmt),
         std::make_format_args(args...),
         true
     );
@@ -1136,11 +1136,11 @@ void format_script_exception(
 
 template <typename... Args>
 void format_script_exception_no_catch(
-    io::format_string<Args...> fmt, Args&&... args
+    io::fmtlib::format_string<Args...> fmt, Args&&... args
 )
 {
     vformat_script_exception(
-        io::detail::fmt_string_to_view(fmt),
+        io::fmtlib::format_string_to_view(fmt),
         std::make_format_args(args...),
         false
     );
