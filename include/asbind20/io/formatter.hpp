@@ -59,6 +59,25 @@ namespace detail
 
 template <typename CharT = char, typename OutputIt>
 constexpr auto copy_debug_representation_to(
+    AS_NAMESPACE_QUALIFIER asEEngineProp prop, bool skip_prefix, OutputIt out
+) -> OutputIt
+{
+    const char* cstr = asbind20::detail::engine_prop_to_cstr(prop);
+    if(!cstr) [[unlikely]]
+    {
+        using namespace std::string_view_literals;
+        return detail::output_fallback<CharT>(
+            out, "asEEngineProp"sv, static_cast<int>(prop)
+        );
+    }
+
+    if(skip_prefix)
+        cstr += sizeof("asEP"); // Skip "asEP_"
+    return detail::copy_cstr_to(cstr, std::move(out));
+}
+
+template <typename CharT = char, typename OutputIt>
+constexpr auto copy_debug_representation_to(
     AS_NAMESPACE_QUALIFIER asEContextState state, bool skip_prefix, OutputIt out
 ) -> OutputIt
 {
@@ -187,7 +206,8 @@ requires(
     std::same_as<ASEnum, AS_NAMESPACE_QUALIFIER asEContextState> ||
     std::same_as<ASEnum, AS_NAMESPACE_QUALIFIER asERetCodes> ||
     std::same_as<ASEnum, AS_NAMESPACE_QUALIFIER asEMsgType> ||
-    std::same_as<ASEnum, AS_NAMESPACE_QUALIFIER asETokenClass>
+    std::same_as<ASEnum, AS_NAMESPACE_QUALIFIER asETokenClass> ||
+    std::same_as<ASEnum, AS_NAMESPACE_QUALIFIER asEEngineProp>
 )
 struct std::formatter<ASEnum, CharT> :
     asbind20::io::angelscript_enum_formatter_base
@@ -228,7 +248,8 @@ requires(
     std::same_as<ASEnum, AS_NAMESPACE_QUALIFIER asEContextState> ||
     std::same_as<ASEnum, AS_NAMESPACE_QUALIFIER asERetCodes> ||
     std::same_as<ASEnum, AS_NAMESPACE_QUALIFIER asEMsgType> ||
-    std::same_as<ASEnum, AS_NAMESPACE_QUALIFIER asETokenClass>
+    std::same_as<ASEnum, AS_NAMESPACE_QUALIFIER asETokenClass> ||
+    std::same_as<ASEnum, AS_NAMESPACE_QUALIFIER asEEngineProp>
 )
 struct fmt::formatter<ASEnum, CharT> :
     asbind20::io::angelscript_enum_formatter_base

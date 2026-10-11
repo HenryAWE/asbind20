@@ -107,6 +107,59 @@ case AS_NAMESPACE_QUALIFIER enumerator: return #enumerator
         }
     }
 
+    constexpr const char* engine_prop_to_cstr(
+        AS_NAMESPACE_QUALIFIER asEEngineProp prop
+    ) noexcept
+    {
+        switch(prop)
+        {
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_ALLOW_UNSAFE_REFERENCES);
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_OPTIMIZE_BYTECODE);
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_COPY_SCRIPT_SECTIONS);
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_MAX_STACK_SIZE);
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_USE_CHARACTER_LITERALS);
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_ALLOW_MULTILINE_STRINGS);
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_ALLOW_IMPLICIT_HANDLE_TYPES);
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_BUILD_WITHOUT_LINE_CUES);
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_INIT_GLOBAL_VARS_AFTER_BUILD);
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_REQUIRE_ENUM_SCOPE);
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_SCRIPT_SCANNER);
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_INCLUDE_JIT_INSTRUCTIONS);
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_STRING_ENCODING);
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_PROPERTY_ACCESSOR_MODE);
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_EXPAND_DEF_ARRAY_TO_TMPL);
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_AUTO_GARBAGE_COLLECT);
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_DISALLOW_GLOBAL_VARS);
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_ALWAYS_IMPL_DEFAULT_CONSTRUCT);
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_COMPILER_WARNINGS);
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_DISALLOW_VALUE_ASSIGN_FOR_REF_TYPE);
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_ALTER_SYNTAX_NAMED_ARGS);
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_DISABLE_INTEGER_DIVISION);
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_DISALLOW_EMPTY_LIST_ELEMENTS);
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_PRIVATE_PROP_AS_PROTECTED);
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_ALLOW_UNICODE_IDENTIFIERS);
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_HEREDOC_TRIM_MODE);
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_MAX_NESTED_CALLS);
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_GENERIC_CALL_MODE);
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_INIT_STACK_SIZE);
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_INIT_CALL_STACK_SIZE);
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_MAX_CALL_STACK_SIZE);
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_IGNORE_DUPLICATE_SHARED_INTF);
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_NO_DEBUG_OUTPUT);
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_DISABLE_SCRIPT_CLASS_GC);
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_JIT_INTERFACE_VERSION);
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_ALWAYS_IMPL_DEFAULT_COPY);
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_ALWAYS_IMPL_DEFAULT_COPY_CONSTRUCT);
+#if ANGELSCRIPT_VERSION >= 23800
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_MEMBER_INIT_MODE);
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_BOOL_CONVERSION_MODE);
+            ASBIND20_DETAIL_TO_CSTR_HELPER(asEP_FOREACH_SUPPORT);
+#endif
+        [[unlikely]] default:
+            return nullptr;
+        }
+    }
+
 #undef ASBIND20_DETAIL_TO_CSTR_HELPER
 } // namespace detail
 
@@ -277,6 +330,53 @@ inline std::wstring to_wstring(AS_NAMESPACE_QUALIFIER asETokenClass tc)
 #else
         return L"asETokenClass(" +
                std::to_wstring(static_cast<int>(tc)) +
+               L')';
+#endif
+    }
+}
+
+/**
+ * @brief Convert engine property enum to string
+ *
+ * @param prop Engine property
+ * @return String representation of the property.
+ *         If the value is invalid, the result will be `"asEEngineProp({prop})"`,
+ *         e.g. `"asEEngineProp(-1)"`.
+ */
+[[nodiscard]]
+inline std::string to_string(AS_NAMESPACE_QUALIFIER asEEngineProp prop)
+{
+    const char* cstr = detail::engine_prop_to_cstr(prop);
+    if(cstr) [[likely]]
+        return cstr;
+    else
+    {
+#ifdef ASBIND20_HAS_FORMAT_LIBRARY
+        return io::fmtlib::format("asEEngineProp({})", static_cast<int>(prop));
+#else
+        return "asEEngineProp(" +
+               std::to_string(static_cast<int>(prop)) +
+               ')';
+#endif
+    }
+}
+
+[[nodiscard]]
+inline std::wstring to_wstring(AS_NAMESPACE_QUALIFIER asEEngineProp prop)
+{
+    const char* cstr = detail::engine_prop_to_cstr(prop);
+    if(cstr) [[likely]]
+    {
+        std::string_view sv = cstr;
+        return std::wstring(sv.cbegin(), sv.cend());
+    }
+    else
+    {
+#ifdef ASBIND20_HAS_FORMAT_LIBRARY
+        return io::fmtlib::format(L"asEEngineProp({})", static_cast<int>(prop));
+#else
+        return L"asEEngineProp(" +
+               std::to_wstring(static_cast<int>(prop)) +
                L')';
 #endif
     }
