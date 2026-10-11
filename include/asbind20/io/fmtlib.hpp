@@ -90,8 +90,18 @@ namespace fmtlib
 
     constexpr std::string_view format_string_to_view(const auto& fmtstr)
     {
-        const ::fmt::string_view view = fmtstr;
-        return {view.data(), view.size()};
+        // {fmt} 10 added `get()`, while {fmt} 12.2 deprecated the implicit
+        // conversion to `string_view`, so prefer `get()` when it is available.
+        if constexpr(requires { fmtstr.get(); })
+        {
+            const ::fmt::string_view view = fmtstr.get();
+            return {view.data(), view.size()};
+        }
+        else
+        {
+            const ::fmt::string_view view = fmtstr;
+            return {view.data(), view.size()};
+        }
     }
 } // namespace fmtlib
 } // namespace asbind20::io
