@@ -9,7 +9,8 @@ Changelog since version 1.5.0.
 Update
 ~~~~~~
 
-
+- Add an optional `{fmt}` backend for formatting APIs and propagate its dependency
+  through the CMake package when selected.
 
 2.1.1
 -----
