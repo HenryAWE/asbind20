@@ -69,6 +69,7 @@ Contents:
   :caption: Utilities
 
   utility
+  formatting
 
 .. toctree::
   :maxdepth: 1
