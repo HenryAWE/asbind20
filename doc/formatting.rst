@@ -140,6 +140,16 @@ underlying integers are right-aligned by default, like numbers:
 The width can also be given by a nested replacement field, e.g.
 ``io::fmtlib::format("{:{}}", asTC_IDENTIFIER, 12)``.
 
+The AngelScript stack traces follow the standard library formatters for
+``<stacktrace>``: ``stacktrace_entry`` accepts ``[[fill]align][width]`` only,
+while ``basic_stacktrace`` accepts no format specifier at all and is always
+formatted as ``to_string`` would return it.
+
+.. code-block:: c++
+
+    io::fmtlib::format("{}", entry);       // the entry description, e.g. "foo (test.as:1:2)"
+    io::fmtlib::format("{:*>40}", entry);  // the description padded to 40 characters
+
 .. note::
 
     The stack trace formatters currently support ``char`` output only, so

@@ -3,7 +3,9 @@
 
 #pragma once
 
+#include <algorithm>
 #include <sstream>
+#include <string>
 #include <vector>
 #include "../fwd.hpp"
 #include "../utility.hpp"
@@ -239,45 +241,117 @@ std::string to_string(const basic_stacktrace<Allocator>& trace)
 {
     return trace.description();
 }
+
+namespace detail
+{
+    /**
+     * @brief Write a string padded according to the fill, alignment and width
+     *
+     * The width is resolved from the format context, so that a dynamic width is
+     * supported as well.
+     */
+    template <typename CharT, typename FormatContext, typename OutputIt>
+    OutputIt write_padded(
+        const asbind20::io::fmtlib::basic_format_data<CharT>& data,
+        const std::string& text,
+        const FormatContext& ctx,
+        OutputIt out
+    )
+    {
+        using alignment = typename asbind20::io::fmtlib::basic_format_data<CharT>::alignment;
+
+        std::size_t left_padding = 0;
+        std::size_t right_padding = 0;
+
+        if(const std::size_t width = data.width(ctx); width > text.size())
+        {
+            const std::size_t padding = width - text.size();
+            switch(data.align(alignment::align_left))
+            {
+            case alignment::align_middle:
+                left_padding = padding / 2;
+                right_padding = padding - left_padding;
+                break;
+
+            case alignment::align_right:
+                left_padding = padding;
+                break;
+
+            default:
+            case alignment::align_left:
+                right_padding = padding;
+                break;
+            }
+        }
+
+        out = std::fill_n(out, left_padding, data.fill());
+        out = std::copy(text.begin(), text.end(), out);
+        out = std::fill_n(out, right_padding, data.fill());
+        return out;
+    }
+} // namespace detail
 } // namespace asbind20::debugging
 
 #if defined(ASBIND20_HAS_LIB_FORMAT) && !defined(ASBIND20_USE_FMTLIB)
 
+// Aligned with `std::formatter<std::stacktrace_entry>`:
+// the format specification is `[[fill]align][width]`
 template <>
-struct std::formatter<asbind20::debugging::stacktrace_entry> :
-    std::formatter<std::string>
+struct std::formatter<asbind20::debugging::stacktrace_entry>
 {
-private:
-    using my_base = std::formatter<std::string>;
-
 public:
+    constexpr auto parse(std::format_parse_context& ctx)
+    {
+        auto it = m_data.parse(ctx);
+        if(it != ctx.end() && *it != '}')
+        {
+            asbind20::io::detail::throw_format_error(
+                "invalid format specifier for stacktrace_entry"
+            );
+        }
+        return it;
+    }
+
     auto format(
         const asbind20::debugging::stacktrace_entry& entry,
         std::format_context& ctx
     ) const
     {
-        return my_base::format(
-            to_string(entry), ctx
+        const std::string text = asbind20::debugging::to_string(entry);
+        return asbind20::debugging::detail::write_padded(
+            m_data, text, ctx, ctx.out()
         );
     }
+
+private:
+    asbind20::io::fmtlib::basic_format_data<char> m_data;
 };
 
+// Aligned with `std::formatter<std::basic_stacktrace>`:
+// no format specifier is allowed
 template <typename Allocator>
-struct std::formatter<asbind20::debugging::basic_stacktrace<Allocator>> :
-    std::formatter<std::string>
+struct std::formatter<asbind20::debugging::basic_stacktrace<Allocator>>
 {
-private:
-    using my_base = std::formatter<std::string>;
-
 public:
+    constexpr auto parse(std::format_parse_context& ctx)
+    {
+        auto it = ctx.begin();
+        if(it != ctx.end() && *it != '}')
+        {
+            asbind20::io::detail::throw_format_error(
+                "invalid format specifier for basic_stacktrace"
+            );
+        }
+        return it;
+    }
+
     auto format(
         const asbind20::debugging::basic_stacktrace<Allocator>& trace,
         std::format_context& ctx
     ) const
     {
-        return my_base::format(
-            to_string(trace), ctx
-        );
+        const std::string text = asbind20::debugging::to_string(trace);
+        return std::copy(text.cbegin(), text.cend(), ctx.out());
     }
 };
 
@@ -297,37 +371,64 @@ struct fmt::range_format_kind<
 
 #    endif
 
+// Aligned with `std::formatter<std::stacktrace_entry>`:
+// the format specification is `[[fill]align][width]`
 template <>
-struct fmt::formatter<asbind20::debugging::stacktrace_entry> :
-    fmt::formatter<std::string>
+struct fmt::formatter<asbind20::debugging::stacktrace_entry>
 {
-private:
-    using my_base = fmt::formatter<std::string>;
-
 public:
+    constexpr auto parse(fmt::format_parse_context& ctx)
+    {
+        auto it = m_data.parse(ctx);
+        if(it != ctx.end() && *it != '}')
+        {
+            asbind20::io::detail::throw_format_error(
+                "invalid format specifier for stacktrace_entry"
+            );
+        }
+        return it;
+    }
+
     auto format(
         const asbind20::debugging::stacktrace_entry& entry,
         fmt::format_context& ctx
     ) const
     {
-        return my_base::format(to_string(entry), ctx);
+        const std::string text = asbind20::debugging::to_string(entry);
+        return asbind20::debugging::detail::write_padded(
+            m_data, text, ctx, ctx.out()
+        );
     }
+
+private:
+    asbind20::io::fmtlib::basic_format_data<char> m_data;
 };
 
+// Aligned with `std::formatter<std::basic_stacktrace>`:
+// no format specifier is allowed
 template <typename Allocator>
-struct fmt::formatter<asbind20::debugging::basic_stacktrace<Allocator>> :
-    fmt::formatter<std::string>
+struct fmt::formatter<asbind20::debugging::basic_stacktrace<Allocator>>
 {
-private:
-    using my_base = fmt::formatter<std::string>;
-
 public:
+    constexpr auto parse(fmt::format_parse_context& ctx)
+    {
+        auto it = ctx.begin();
+        if(it != ctx.end() && *it != '}')
+        {
+            asbind20::io::detail::throw_format_error(
+                "invalid format specifier for basic_stacktrace"
+            );
+        }
+        return it;
+    }
+
     auto format(
         const asbind20::debugging::basic_stacktrace<Allocator>& trace,
         fmt::format_context& ctx
     ) const
     {
-        return my_base::format(to_string(trace), ctx);
+        const std::string text = asbind20::debugging::to_string(trace);
+        return std::copy(text.cbegin(), text.cend(), ctx.out());
     }
 };
 
