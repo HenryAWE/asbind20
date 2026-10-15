@@ -20,8 +20,8 @@ Whichever backend is active, asbind20 refers to it through the
     std::string name = asbind20::io::fmtlib::format("{}", asTC_IDENTIFIER);
 
 ``asbind20::io::fmtlib`` provides ``format_string``, ``format``, ``format_to``,
-``format_args``, ``make_format_args`` and ``vformat``, mirroring the interface of
-the selected library.
+``format_args``, ``make_format_args``, ``vformat`` and ``format_error``,
+mirroring the interface of the selected library.
 
 Selecting a Backend
 -------------------
@@ -102,7 +102,7 @@ asbind20 registers formatters for the following types:
   * - ``asbind20::debugging::stacktrace_entry``, ``asbind20::debugging::basic_stacktrace``
     - ``<asbind20/debugging/stacktrace.hpp>``
 
-The AngelScript enumerators accept three format specifiers:
+The AngelScript enumerators accept the following presentation types:
 
 .. list-table::
   :widths: auto
@@ -116,17 +116,29 @@ The AngelScript enumerators accept three format specifiers:
     - The full enumerator name, e.g. ``asTC_IDENTIFIER``
   * - ``{:d}``
     - The underlying integer value
+  * - ``{:x}``
+    - The underlying integer value in hexadecimal
 
 If a value does not match any enumerator of its type, the output falls back to
 ``TypeName(value)``, e.g. ``asEEngineProp(-1)``; both backends produce the same text.
+
+The common fill, alignment and width specifiers are supported as well, and are
+applied to the result of every presentation type.
+The enumerator names are left-aligned by default, like strings, while the
+underlying integers are right-aligned by default, like numbers:
 
 .. code-block:: c++
 
     using namespace asbind20;
 
-    io::fmtlib::format("{}", asTC_IDENTIFIER);    // "IDENTIFIER"
-    io::fmtlib::format("{:?}", asTC_IDENTIFIER);  // "asTC_IDENTIFIER"
-    io::fmtlib::format("{:d}", asTC_IDENTIFIER);  // the underlying integer
+    io::fmtlib::format("{}", asTC_IDENTIFIER);        // "IDENTIFIER"
+    io::fmtlib::format("{:?}", asTC_IDENTIFIER);      // "asTC_IDENTIFIER"
+    io::fmtlib::format("{:d}", asTC_IDENTIFIER);      // the underlying integer
+    io::fmtlib::format("{:*>12}", asTC_IDENTIFIER);   // "**IDENTIFIER"
+    io::fmtlib::format("{:8d}", asEP_ALLOW_UNSAFE_REFERENCES); // "       1"
+
+The width can also be given by a nested replacement field, e.g.
+``io::fmtlib::format("{:{}}", asTC_IDENTIFIER, 12)``.
 
 .. note::
 
@@ -142,5 +154,8 @@ Related APIs
 - ``asbind20::io::copy_debug_representation_to`` writes a representation to an
   output iterator instead of a string, which is convenient for stream-based code.
   It is declared in ``<asbind20/io/formatter.hpp>``.
+- ``asbind20::io::fmtlib::basic_format_data`` and its ``parse`` member function
+  implement the common fill, alignment and width specifiers, and can be reused
+  by custom formatters. It is declared in ``<asbind20/io/fmtlib.hpp>``.
 - :ref:`Formatted logging <formatted-logging>` and the bytecode dumper described
   in :doc:`utility` use the selected backend as well.

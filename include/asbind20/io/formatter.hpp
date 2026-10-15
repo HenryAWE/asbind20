@@ -11,9 +11,11 @@
 
 #pragma once
 
+#include <cstddef>
 #include <limits>
 #include <charconv>
 #include <algorithm>
+#include <iterator>
 #include "../detail/config.hpp"
 #include "../detail/include_as.hpp"
 #include "to_string.hpp"
@@ -55,6 +57,49 @@ namespace detail
 
         return out;
     }
+
+    /**
+     * @brief Output iterator that only counts the characters written to it
+     *
+     * It is used for measuring a field before it can be padded to a width.
+     * All copies share the counter, so both @c "*it++ = c" and @c "*it = c"
+     * are counted exactly once.
+     */
+    template <typename CharT>
+    class counting_output_iterator
+    {
+    public:
+        using value_type = CharT;
+        using difference_type = std::ptrdiff_t;
+        using iterator_category = std::output_iterator_tag;
+
+        explicit constexpr counting_output_iterator(std::size_t& count) noexcept
+            : m_count(&count) {}
+
+        constexpr counting_output_iterator& operator*() noexcept
+        {
+            return *this;
+        }
+
+        constexpr counting_output_iterator& operator++() noexcept
+        {
+            return *this;
+        }
+
+        constexpr counting_output_iterator operator++(int) noexcept
+        {
+            return *this;
+        }
+
+        constexpr counting_output_iterator& operator=(CharT) noexcept
+        {
+            ++(*m_count);
+            return *this;
+        }
+
+    private:
+        std::size_t* m_count;
+    };
 } // namespace detail
 
 template <typename CharT = char, typename OutputIt>
@@ -152,29 +197,78 @@ constexpr auto copy_debug_representation_to(
     return detail::copy_cstr_to(cstr, std::move(out));
 }
 
+template <typename T>
+concept formattable_angelscript_enum =
+    std::same_as<T, AS_NAMESPACE_QUALIFIER asEContextState> ||
+    std::same_as<T, AS_NAMESPACE_QUALIFIER asERetCodes> ||
+    std::same_as<T, AS_NAMESPACE_QUALIFIER asEMsgType> ||
+    std::same_as<T, AS_NAMESPACE_QUALIFIER asETokenClass> ||
+    std::same_as<T, AS_NAMESPACE_QUALIFIER asEEngineProp>;
+
+/**
+ * @brief Length of the debug representation of an enumerator
+ */
+template <typename CharT = char, formattable_angelscript_enum ASEnum>
+constexpr std::size_t debug_representation_length(ASEnum val, bool skip_prefix)
+{
+    std::size_t count = 0;
+    copy_debug_representation_to<CharT>(
+        val, skip_prefix, detail::counting_output_iterator<CharT>(count)
+    );
+    return count;
+}
+
+/**
+ * @brief Base class of the formatters for AngelScript enumerators
+ *
+ * Besides the presentation types of the enumerator, the common fill,
+ * alignment and width specifiers are supported through
+ * @c io::fmtlib::basic_format_data, e.g. @c "{:*>8?}" or @c "{:{}d}".
+ */
+template <typename CharT = char>
 class angelscript_enum_formatter_base
 {
 public:
+    using char_type = CharT;
+    using format_data_type = fmtlib::basic_format_data<CharT>;
+    using alignment = typename format_data_type::alignment;
+
+    static constexpr alignment align_default = format_data_type::align_default;
+    static constexpr alignment align_left = format_data_type::align_left;
+    static constexpr alignment align_middle = format_data_type::align_middle;
+    static constexpr alignment align_right = format_data_type::align_right;
+
     constexpr angelscript_enum_formatter_base() noexcept = default;
     constexpr angelscript_enum_formatter_base(const angelscript_enum_formatter_base&) noexcept = default;
 
     template <typename ParseContext>
     constexpr auto parse(ParseContext& ctx)
     {
-        using char_type = typename ParseContext::char_type;
+        using context_char_type = typename ParseContext::char_type;
+        static_assert(
+            std::same_as<context_char_type, char_type>,
+            "Inconsistent character type"
+        );
 
-        auto it = ctx.begin();
-        if(it == ctx.end() || *it == char_type('}'))
+        // Common fill, alignment and width specifiers
+        auto it = m_data.parse(ctx);
+        if(it == ctx.end() || *it == context_char_type('}'))
             return it;
 
-        if(char_type ch = *it; ch == char_type('?'))
+        // Presentation type of the enumerator
+        if(context_char_type ch = *it; ch == context_char_type('?'))
         {
             m_full_representation = true;
             ++it;
         }
-        else if(ch == char_type('d'))
+        else if(ch == context_char_type('d'))
         {
-            m_print_underlying = true;
+            m_base = 10;
+            ++it;
+        }
+        else if(ch == context_char_type('x'))
+        {
+            m_base = 16;
             ++it;
         }
 
@@ -190,27 +284,159 @@ public:
     [[nodiscard]]
     constexpr bool print_underlying() const noexcept
     {
-        return m_print_underlying;
+        return m_base != 0;
+    }
+
+    [[nodiscard]]
+    constexpr const format_data_type& format_data() const noexcept
+    {
+        return m_data;
+    }
+
+protected:
+    [[nodiscard]]
+    int get_base() const noexcept
+    {
+        return m_base;
     }
 
 private:
+    format_data_type m_data;
+    // 0 = Don't print as underlying number
+    int m_base = 0;
     bool m_full_representation : 1 = false;
-    bool m_print_underlying : 1 = false;
+};
+
+template <formattable_angelscript_enum ASEnum, typename CharT = char>
+class angelscript_enum_formatter : public angelscript_enum_formatter_base<CharT>
+{
+public:
+    using base_type = angelscript_enum_formatter_base<CharT>;
+    using format_data_type = typename base_type::format_data_type;
+    using alignment = typename base_type::alignment;
+
+    constexpr angelscript_enum_formatter() noexcept = default;
+    constexpr angelscript_enum_formatter(const angelscript_enum_formatter&) noexcept = default;
+
+protected:
+    template <typename OutputIt, typename FormatContext>
+    OutputIt format_to(OutputIt out, ASEnum val, const FormatContext& ctx) const
+    {
+        const format_data_type& data = this->format_data();
+        const std::size_t width = data.width(ctx);
+
+        if(this->print_underlying())
+        {
+            // The underlying value is formatted like an integer, so the
+            // default alignment is right
+            char buf[std::numeric_limits<int>::digits10 + 3];
+            const auto result = std::to_chars(
+                buf, buf + std::size(buf), static_cast<int>(val), this->get_base()
+            );
+            ASBIND20_ASSERT(result.ec == std::errc{});
+
+            return write_padded(
+                out,
+                buf,
+                static_cast<std::size_t>(result.ptr - buf),
+                width,
+                base_type::align_right
+            );
+        }
+
+        // The debug representation is formatted like a string, so the default
+        // alignment is left
+        if(width == 0)
+        {
+            return io::copy_debug_representation_to<CharT>(
+                val, !this->full_representation(), out
+            );
+        }
+
+        // The representation has to be measured before it can be aligned, so
+        // write it twice: once to a counting output iterator and once to the
+        // real output
+        const std::size_t len = debug_representation_length<CharT>(
+            val, !this->full_representation()
+        );
+
+        std::size_t left_padding = 0;
+        std::size_t right_padding = 0;
+        compute_padding(
+            data, len, width, base_type::align_left, left_padding, right_padding
+        );
+
+        out = std::fill_n(out, left_padding, data.fill());
+        out = io::copy_debug_representation_to<CharT>(
+            val, !this->full_representation(), out
+        );
+        out = std::fill_n(out, right_padding, data.fill());
+        return out;
+    }
+
+private:
+    template <typename OutputIt>
+    OutputIt write_padded(
+        OutputIt out,
+        const char* text,
+        std::size_t len,
+        std::size_t width,
+        alignment default_align
+    ) const
+    {
+        const format_data_type& data = this->format_data();
+
+        std::size_t left_padding = 0;
+        std::size_t right_padding = 0;
+        compute_padding(data, len, width, default_align, left_padding, right_padding);
+
+        out = std::fill_n(out, left_padding, data.fill());
+        out = std::copy(text, text + len, out);
+        out = std::fill_n(out, right_padding, data.fill());
+        return out;
+    }
+
+    static constexpr void compute_padding(
+        const format_data_type& data,
+        std::size_t len,
+        std::size_t width,
+        alignment default_align,
+        std::size_t& left_padding,
+        std::size_t& right_padding
+    )
+    {
+        left_padding = 0;
+        right_padding = 0;
+
+        if(width <= len)
+            return;
+
+        const std::size_t padding = width - len;
+        switch(data.align(default_align))
+        {
+        case base_type::align_middle:
+            left_padding = padding / 2;
+            right_padding = padding - left_padding;
+            break;
+
+        case base_type::align_right:
+            left_padding = padding;
+            break;
+
+        default:
+        case base_type::align_left:
+            right_padding = padding;
+            break;
+        }
+    }
 };
 } // namespace asbind20::io
 
 #if defined(ASBIND20_HAS_LIB_FORMAT) && !defined(ASBIND20_USE_FMTLIB) && !defined(ASBIND20_CONFIG_NO_STD_FORMATTER)
 
-template <typename ASEnum, typename CharT>
-requires(
-    std::same_as<ASEnum, AS_NAMESPACE_QUALIFIER asEContextState> ||
-    std::same_as<ASEnum, AS_NAMESPACE_QUALIFIER asERetCodes> ||
-    std::same_as<ASEnum, AS_NAMESPACE_QUALIFIER asEMsgType> ||
-    std::same_as<ASEnum, AS_NAMESPACE_QUALIFIER asETokenClass> ||
-    std::same_as<ASEnum, AS_NAMESPACE_QUALIFIER asEEngineProp>
-)
+template <asbind20::io::formattable_angelscript_enum ASEnum, typename CharT>
 struct std::formatter<ASEnum, CharT> :
-    asbind20::io::angelscript_enum_formatter_base
+    asbind20::io::angelscript_enum_formatter<ASEnum, CharT>
 {
     constexpr formatter() noexcept = default;
     constexpr formatter(const formatter&) noexcept = default;
@@ -224,18 +450,7 @@ struct std::formatter<ASEnum, CharT> :
             "Inconsistent character type"
         );
 
-        if(print_underlying())
-        {
-            return asbind20::io::fmtlib::format_to(
-                ctx.out(),
-                ASBIND20_IO_STATICALLY_WIDEN(CharT, "{:d}"),
-                static_cast<int>(val)
-            );
-        }
-
-        return asbind20::io::copy_debug_representation_to<CharT>(
-            val, !full_representation(), ctx.out()
-        );
+        return this->format_to(ctx.out(), val, ctx);
     }
 };
 
@@ -243,16 +458,9 @@ struct std::formatter<ASEnum, CharT> :
 
 #if defined(ASBIND20_USE_FMTLIB)
 
-template <typename ASEnum, typename CharT>
-requires(
-    std::same_as<ASEnum, AS_NAMESPACE_QUALIFIER asEContextState> ||
-    std::same_as<ASEnum, AS_NAMESPACE_QUALIFIER asERetCodes> ||
-    std::same_as<ASEnum, AS_NAMESPACE_QUALIFIER asEMsgType> ||
-    std::same_as<ASEnum, AS_NAMESPACE_QUALIFIER asETokenClass> ||
-    std::same_as<ASEnum, AS_NAMESPACE_QUALIFIER asEEngineProp>
-)
+template <asbind20::io::formattable_angelscript_enum ASEnum, typename CharT>
 struct fmt::formatter<ASEnum, CharT> :
-    asbind20::io::angelscript_enum_formatter_base
+    asbind20::io::angelscript_enum_formatter<ASEnum, CharT>
 {
     constexpr formatter() noexcept = default;
     constexpr formatter(const formatter&) noexcept = default;
@@ -266,18 +474,7 @@ struct fmt::formatter<ASEnum, CharT> :
             "Inconsistent character type"
         );
 
-        if(print_underlying())
-        {
-            return fmt::format_to(
-                ctx.out(),
-                ASBIND20_IO_STATICALLY_WIDEN(CharT, "{:d}"),
-                static_cast<int>(val)
-            );
-        }
-
-        return asbind20::io::copy_debug_representation_to<CharT>(
-            val, !full_representation(), ctx.out()
-        );
+        return this->format_to(ctx.out(), val, ctx);
     }
 };
 

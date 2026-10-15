@@ -192,8 +192,16 @@ TEST(Stringify, Formatter)
         "1"
     );
     EXPECT_EQ(
+        format("{:x}", AS_NAMESPACE_QUALIFIER asERetCodes(15)),
+        "f"
+    );
+    EXPECT_EQ(
         format(L"{:d}", AS_NAMESPACE_QUALIFIER asERetCodes(1)),
         L"1"
+    );
+    EXPECT_EQ(
+        format(L"{:x}", AS_NAMESPACE_QUALIFIER asERetCodes(15)),
+        L"f"
     );
 
     EXPECT_EQ(
@@ -264,5 +272,112 @@ TEST(Stringify, Formatter)
         L"1"
     );
 }
+
+TEST(Stringify, EnumFormatterCommonSpec)
+{
+    using namespace asbind20::io::fmtlib;
+
+    // The underlying value is formatted exactly like an integer
+    for(int value : {0, 1, -1, 15, -16, 255, 2147483647, -2147483647 - 1})
+    {
+        EXPECT_EQ(
+            format("{:d}", AS_NAMESPACE_QUALIFIER asERetCodes(value)),
+            format("{:d}", value)
+        );
+        EXPECT_EQ(
+            format("{:x}", AS_NAMESPACE_QUALIFIER asERetCodes(value)),
+            format("{:x}", value)
+        );
+        EXPECT_EQ(
+            format("{:>12d}", AS_NAMESPACE_QUALIFIER asERetCodes(value)),
+            format("{:>12d}", value)
+        );
+    }
+
+    // Fill, alignment and width of the enumerator name
+    EXPECT_EQ(format("{:12}", AS_NAMESPACE_QUALIFIER asTC_IDENTIFIER), "IDENTIFIER  ");
+    EXPECT_EQ(format("{:<12}", AS_NAMESPACE_QUALIFIER asTC_IDENTIFIER), "IDENTIFIER  ");
+    EXPECT_EQ(format("{:>12}", AS_NAMESPACE_QUALIFIER asTC_IDENTIFIER), "  IDENTIFIER");
+    EXPECT_EQ(format("{:^12}", AS_NAMESPACE_QUALIFIER asTC_IDENTIFIER), " IDENTIFIER ");
+    EXPECT_EQ(format("{:*>12}", AS_NAMESPACE_QUALIFIER asTC_IDENTIFIER), "**IDENTIFIER");
+    EXPECT_EQ(format("{:*<12}", AS_NAMESPACE_QUALIFIER asTC_IDENTIFIER), "IDENTIFIER**");
+    EXPECT_EQ(format("{:*^12}", AS_NAMESPACE_QUALIFIER asTC_IDENTIFIER), "*IDENTIFIER*");
+    // A width smaller than the field does not truncate it
+    EXPECT_EQ(format("{:*>4}", AS_NAMESPACE_QUALIFIER asTC_IDENTIFIER), "IDENTIFIER");
+
+    // ... and of the full representation
+    EXPECT_EQ(
+        format("{:*>18?}", AS_NAMESPACE_QUALIFIER asTC_IDENTIFIER),
+        "***asTC_IDENTIFIER"
+    );
+
+    // The underlying value is aligned like an integer, i.e. right by default
+    EXPECT_EQ(
+        format("{:8d}", AS_NAMESPACE_QUALIFIER asEP_ALLOW_UNSAFE_REFERENCES),
+        "       1"
+    );
+    EXPECT_EQ(
+        format("{:*>8d}", AS_NAMESPACE_QUALIFIER asEP_ALLOW_UNSAFE_REFERENCES),
+        "*******1"
+    );
+    EXPECT_EQ(format("{:*<8x}", AS_NAMESPACE_QUALIFIER asERetCodes(15)), "f*******");
+    EXPECT_EQ(format("{:^8x}", AS_NAMESPACE_QUALIFIER asERetCodes(15)), "   f    ");
+
+    // Wide characters are supported as well
+    EXPECT_EQ(
+        format(L"{:*>12}", AS_NAMESPACE_QUALIFIER asTC_IDENTIFIER),
+        L"**IDENTIFIER"
+    );
+    EXPECT_EQ(
+        format(L"{:8d}", AS_NAMESPACE_QUALIFIER asEP_ALLOW_UNSAFE_REFERENCES),
+        L"       1"
+    );
+
+    // Dynamic width
+    EXPECT_EQ(
+        format("{:{}}", AS_NAMESPACE_QUALIFIER asTC_IDENTIFIER, 12),
+        "IDENTIFIER  "
+    );
+    EXPECT_EQ(
+        format("{:*^{}}", AS_NAMESPACE_QUALIFIER asTC_IDENTIFIER, 12),
+        "*IDENTIFIER*"
+    );
+    EXPECT_EQ(
+        format("{:>{}d}", AS_NAMESPACE_QUALIFIER asEP_ALLOW_UNSAFE_REFERENCES, 8),
+        "       1"
+    );
+    EXPECT_EQ(
+        format("{0:>{1}d}", AS_NAMESPACE_QUALIFIER asEP_ALLOW_UNSAFE_REFERENCES, 8),
+        "       1"
+    );
+    EXPECT_EQ(
+        format(L"{:*^{}}", AS_NAMESPACE_QUALIFIER asTC_IDENTIFIER, 12),
+        L"*IDENTIFIER*"
+    );
+
+    // Dynamic width combined with a presentation type
+    EXPECT_EQ(
+        format("{:*>{}?}", AS_NAMESPACE_QUALIFIER asTC_IDENTIFIER, 18),
+        "***asTC_IDENTIFIER"
+    );
+    EXPECT_EQ(
+        format("{:*<{}x}", AS_NAMESPACE_QUALIFIER asERetCodes(15), 8),
+        "f*******"
+    );
+}
+
+#    if !defined(ASBIND20_NO_EXCEPTIONS)
+
+TEST(Stringify, EnumFormatterError)
+{
+    using namespace asbind20::io;
+
+    EXPECT_THROW(
+        (void)fmtlib::format("{:{}}", AS_NAMESPACE_QUALIFIER asTC_IDENTIFIER, "invalid"),
+        fmtlib::format_error
+    );
+}
+
+#    endif
 
 #endif
