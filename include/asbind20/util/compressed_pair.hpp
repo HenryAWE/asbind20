@@ -2,6 +2,7 @@
 #define ASBIND20_UTIL_COMPRESSED_PAIR_HPP
 
 #include <tuple>
+#include <type_traits>
 #include <utility>
 
 namespace asbind20::util
@@ -103,7 +104,8 @@ namespace detail
             std::index_sequence<Indices1...>,
             std::index_sequence<Indices2...>
         )
-            : m_first(std::get<Indices1>(tuple1)...), m_second(std::get<Indices2>(tuple2)...)
+            : m_first(std::get<Indices1>(std::forward<Tuple1>(tuple1))...),
+              m_second(std::get<Indices2>(std::forward<Tuple2>(tuple2))...)
         {}
 
     private:
@@ -132,7 +134,8 @@ namespace detail
             std::index_sequence<Indices1...>,
             std::index_sequence<Indices2...>
         )
-            : T1(std::get<Indices1>(tuple1)...), m_second(std::get<Indices2>(tuple2)...)
+            : T1(std::get<Indices1>(std::forward<Tuple1>(tuple1))...),
+              m_second(std::get<Indices2>(std::forward<Tuple2>(tuple2))...)
         {}
 
     private:
@@ -160,7 +163,8 @@ namespace detail
             std::index_sequence<Indices1...>,
             std::index_sequence<Indices2...>
         )
-            : T2(std::get<Indices2>(tuple2)...), m_first(std::get<Indices1>(tuple1)...)
+            : T2(std::get<Indices2>(std::forward<Tuple2>(tuple2))...),
+              m_first(std::get<Indices1>(std::forward<Tuple1>(tuple1))...)
         {}
 
     private:
@@ -188,7 +192,8 @@ namespace detail
             std::index_sequence<Indices1...>,
             std::index_sequence<Indices2...>
         )
-            : T1(std::get<Indices1>(tuple1)...), T2(std::get<Indices2>(tuple2)...)
+            : T1(std::get<Indices1>(std::forward<Tuple1>(tuple1))...),
+              T2(std::get<Indices2>(std::forward<Tuple2>(tuple2))...)
         {}
     };
 
@@ -231,8 +236,10 @@ public:
         : my_base(
               std::forward<Tuple1>(tuple1),
               std::forward<Tuple2>(tuple2),
-              std::make_index_sequence<std::tuple_size_v<Tuple1>>(),
-              std::make_index_sequence<std::tuple_size_v<Tuple2>>()
+              // The tuples may be lvalues, so the cv-qualifiers and references
+              // must be removed before asking for their size.
+              std::make_index_sequence<std::tuple_size_v<std::remove_cvref_t<Tuple1>>>(),
+              std::make_index_sequence<std::tuple_size_v<std::remove_cvref_t<Tuple2>>>()
           )
     {}
 

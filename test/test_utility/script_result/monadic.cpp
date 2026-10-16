@@ -1,5 +1,6 @@
 #include <asbind_test/framework.hpp>
 #include <asbind20/util/script_result.hpp>
+#include <memory>
 #include <string>
 #include <utility>
 
@@ -861,4 +862,34 @@ TEST(ScriptResult, TransformConstRvalue)
     static_assert(std::same_as<decltype(mapped), script_result<int>>);
     EXPECT_TRUE(mapped);
     EXPECT_EQ(mapped.value(), 42);
+}
+
+TEST(ScriptResult, TransformMoveOnlyValue)
+{
+    using asbind20::bad_script_result;
+    using asbind20::script_result;
+
+    // The mapped value must be forwarded, so move-only results are supported
+    script_result<int> result(41);
+    auto mapped = result.transform(
+        [](int& value)
+        { return std::make_unique<int>(value + 1); }
+    );
+
+    static_assert(std::same_as<
+                  decltype(mapped),
+                  script_result<std::unique_ptr<int>>>);
+    ASSERT_TRUE(mapped);
+    ASSERT_NE(mapped.value(), nullptr);
+    EXPECT_EQ(*mapped.value(), 42);
+
+    // The error status is still propagated
+    script_result<int> failed(bad_script_result, -5);
+    auto mapped_failed = failed.transform(
+        [](int& value)
+        { return std::make_unique<int>(value); }
+    );
+
+    EXPECT_FALSE(mapped_failed);
+    EXPECT_EQ(mapped_failed.error(), -5);
 }

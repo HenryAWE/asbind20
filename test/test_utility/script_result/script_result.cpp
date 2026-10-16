@@ -258,6 +258,141 @@ TEST(ScriptResult, MoveOnlyValue)
     EXPECT_EQ(*assigned.value(), 42);
 }
 
+namespace
+{
+class tracked_value
+{
+public:
+    static inline int copy_count = 0;
+    static inline int move_count = 0;
+
+    tracked_value() = default;
+
+    explicit tracked_value(int value) noexcept
+        : m_value(value) {}
+
+    tracked_value(const tracked_value& other) noexcept
+        : m_value(other.m_value)
+    {
+        ++copy_count;
+    }
+
+    tracked_value(tracked_value&& other) noexcept
+        : m_value(other.m_value)
+    {
+        other.m_value = -1;
+        ++move_count;
+    }
+
+    tracked_value& operator=(const tracked_value&) = default;
+    tracked_value& operator=(tracked_value&&) = default;
+
+    [[nodiscard]]
+    int value() const noexcept
+    {
+        return m_value;
+    }
+
+private:
+    int m_value = 0;
+};
+} // namespace
+
+TEST(ScriptResult, RValueConstruction)
+{
+    using asbind20::bad_script_result;
+    using asbind20::script_result;
+
+    static_assert(std::is_nothrow_constructible_v<
+                  script_result<tracked_value>,
+                  tracked_value&&>);
+    static_assert(!std::is_nothrow_constructible_v<
+                  script_result<tracked_value>,
+                  const tracked_value&>);
+
+    // The r-value constructor must move the value instead of copying it
+    {
+        tracked_value::copy_count = 0;
+        tracked_value::move_count = 0;
+
+        tracked_value value(42);
+        script_result<tracked_value> result(std::move(value));
+
+        EXPECT_TRUE(result);
+        EXPECT_EQ(result.value().value(), 42);
+        EXPECT_EQ(tracked_value::copy_count, 0);
+        EXPECT_EQ(tracked_value::move_count, 1);
+    }
+
+    // The l-value constructor still copies
+    {
+        tracked_value::copy_count = 0;
+        tracked_value::move_count = 0;
+
+        const tracked_value value(7);
+        script_result<tracked_value> result(value);
+
+        EXPECT_TRUE(result);
+        EXPECT_EQ(result.value().value(), 7);
+        EXPECT_EQ(tracked_value::copy_count, 1);
+        EXPECT_EQ(tracked_value::move_count, 0);
+    }
+
+    // Piecewise construction must forward the tuple elements
+    {
+        tracked_value::copy_count = 0;
+        tracked_value::move_count = 0;
+
+        script_result<tracked_value> result(
+            std::piecewise_construct,
+            std::forward_as_tuple(tracked_value(9)),
+            std::forward_as_tuple(0)
+        );
+
+        EXPECT_TRUE(result);
+        EXPECT_EQ(result.value().value(), 9);
+        EXPECT_EQ(tracked_value::copy_count, 0);
+        EXPECT_EQ(tracked_value::move_count, 1);
+    }
+
+    // l-values are still copied, leaving the source intact
+    {
+        tracked_value value(5);
+        auto args = std::forward_as_tuple(value);
+
+        tracked_value::copy_count = 0;
+        tracked_value::move_count = 0;
+
+        script_result<tracked_value> result(
+            std::piecewise_construct, args, std::forward_as_tuple(0)
+        );
+
+        EXPECT_TRUE(result);
+        EXPECT_EQ(result.value().value(), 5);
+        EXPECT_EQ(tracked_value::copy_count, 1);
+        EXPECT_EQ(tracked_value::move_count, 0);
+        EXPECT_EQ(value.value(), 5);
+    }
+
+    // Move-only type through the r-value constructor
+    {
+        script_result<std::unique_ptr<int>> result(std::make_unique<int>(3));
+
+        ASSERT_TRUE(result);
+        ASSERT_NE(result.value(), nullptr);
+        EXPECT_EQ(*result.value(), 3);
+    }
+
+    // A failing status is still normalized when a value is present
+    {
+        script_result<tracked_value> result(tracked_value(1), -1);
+
+        EXPECT_TRUE(result);
+        EXPECT_EQ(result.error(), 0);
+        EXPECT_EQ(result.value().value(), 1);
+    }
+}
+
 TEST(ScriptResult, Compare)
 {
     using asbind20::bad_script_result;
