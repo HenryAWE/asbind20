@@ -3,9 +3,8 @@
 
 #include <span>
 #include "../detail/config.hpp"
-#ifdef ASBIND20_HAS_LIB_FORMAT
-#    include <format>
-#else
+#include "../io/fmtlib.hpp"
+#ifndef ASBIND20_HAS_FORMAT_LIBRARY
 #    include <ostream>
 #    include <streambuf>
 #    include <iomanip>
@@ -41,7 +40,7 @@ inline bytecode_span get_bytecode(function_pointer f)
 #    pragma GCC diagnostic ignored "-Wold-style-cast"
 #endif
 
-#ifdef ASBIND20_HAS_LIB_FORMAT
+#ifdef ASBIND20_HAS_FORMAT_LIBRARY
 
 template <typename OutputIt>
 std::pair<OutputIt, int> dump_single_bytecode(
@@ -77,27 +76,27 @@ std::pair<OutputIt, int> dump_single_bytecode(
         break;
 
     case asBCTYPE_W_ARG:
-        out = std::format_to(
+        out = io::fmtlib::format_to(
             out, "{:<8} {}", name, asBC_WORDARG0(bc)
         );
         break;
 
     case asBCTYPE_wW_ARG:
     case asBCTYPE_rW_ARG:
-        out = std::format_to(
+        out = io::fmtlib::format_to(
             out, "{:<8} v{}", name, asBC_WORDARG0(bc)
         );
         break;
 
     case asBCTYPE_wW_rW_ARG:
     case asBCTYPE_rW_rW_ARG:
-        out = std::format_to(
+        out = io::fmtlib::format_to(
             out, "{:<8s} v{}, v{}", name, asBC_WORDARG0(bc), asBC_WORDARG1(bc)
         );
         break;
 
     case asBCTYPE_wW_W_ARG:
-        out = std::format_to(
+        out = io::fmtlib::format_to(
             out, "{:<8s} v{}, {}", name, asBC_WORDARG0(bc), asBC_WORDARG1(bc)
         );
         break;
@@ -109,12 +108,12 @@ std::pair<OutputIt, int> dump_single_bytecode(
         case asBC_ADDIf:
         case asBC_SUBIf:
         case asBC_MULIf:
-            out = std::format_to(
+            out = io::fmtlib::format_to(
                 out, "{:<8s} v{}, {}, {:f}", name, asBC_WORDARG0(bc), asBC_WORDARG1(bc), asBC_FLOATARG(bc)
             );
             break;
         default:
-            out = std::format_to(
+            out = io::fmtlib::format_to(
                 out, "{:<8s} v{}, {}, {}", name, asBC_WORDARG0(bc), asBC_WORDARG1(bc), asBC_INTARG(bc)
             );
             break;
@@ -126,7 +125,7 @@ std::pair<OutputIt, int> dump_single_bytecode(
     case asBCTYPE_W_DW_ARG:
         if(c == asBC_SetV1)
         {
-            out = std::format_to(
+            out = io::fmtlib::format_to(
                 out,
                 "{:<8s} v{}, {:#x}",
                 name,
@@ -136,7 +135,7 @@ std::pair<OutputIt, int> dump_single_bytecode(
         }
         else if(c == asBC_SetV2)
         {
-            out = std::format_to(
+            out = io::fmtlib::format_to(
                 out,
                 "{:<8s} v{}, {:#x}",
                 name,
@@ -146,7 +145,7 @@ std::pair<OutputIt, int> dump_single_bytecode(
         }
         else if(c == asBC_SetV4)
         {
-            out = std::format_to(
+            out = io::fmtlib::format_to(
                 out,
                 "{:<8s} v{}, {:#x} (i:{}, f:{})",
                 name,
@@ -158,13 +157,13 @@ std::pair<OutputIt, int> dump_single_bytecode(
         }
         else if(c == asBC_CMPIf)
         {
-            out = std::format_to(
+            out = io::fmtlib::format_to(
                 out, " {:<8s} v{}, {:f}", name, asBC_WORDARG0(bc), asBC_FLOATARG(bc)
             );
         }
         else
         {
-            out = std::format_to(
+            out = io::fmtlib::format_to(
                 out,
                 "{:<8s} v{}, {}",
                 name,

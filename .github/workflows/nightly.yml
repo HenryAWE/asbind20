@@ -1,4 +1,4 @@
-# Testing asbind20 with the latest WIP version of AngelScript
+# Testing asbind20 with the latest WIP versions of its dependencies
 
 name: Nightly
 
@@ -45,6 +45,62 @@ jobs:
           -B build
           -G Ninja
           -Dasbind_cxxstd=${{matrix.cxxstd}}
+          -DCMAKE_BUILD_TYPE=Release
+          -Dasbind_build_test=1
+          -Dasbind_build_bench=1
+
+      - name: Build
+        run: cmake --build ${{github.workspace}}/build
+
+      - name: Test
+        working-directory: ${{github.workspace}}/build
+        run: ctest --output-on-failure
+
+      - name: Benchmark
+        working-directory: ${{github.workspace}}/build/bench
+        run: ${{github.workspace}}/ci/run_benchmarks.sh
+
+    ClangFmtLibFromSource:
+      runs-on: ubuntu-24.04
+
+      name: Linux x64 Clang 19 C++23 ({fmt} from source)
+
+      steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+            sudo apt-get update
+            sudo apt-get install -y cmake ninja-build clang-19 clang++-19
+            sudo update-alternatives --install /usr/bin/cc cc /usr/bin/clang-19 100
+            sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++-19 100
+
+      # Build the latest {fmt} from source, so that the {fmt} backend
+      # (ASBIND20_USE_FMTLIB) is tested against a much newer version than the
+      # one shipped by the distro.
+      - name: Install {fmt} from Source
+        working-directory: ${{github.workspace}}
+        run: |
+            git clone --depth 1 https://github.com/fmtlib/fmt.git fmt-src
+            cd fmt-src
+            git log -1 # Print the latest commit info
+            cmake -GNinja -DCMAKE_BUILD_TYPE=Release -S . -B build -DFMT_TEST=OFF -DFMT_DOC=OFF -DCMAKE_INSTALL_PREFIX="${{github.workspace}}/fmt-install"
+            cmake --build build
+            cmake --install build
+
+      - name: Install AngelScript WIP
+        working-directory: ${{github.workspace}}/ci
+        run: ./setup_angelscript.sh --version latest
+
+      - name: Configure
+        run: >
+          cmake
+          -S ${{github.workspace}}
+          -B build
+          -G Ninja
+          -Dasbind_cxxstd=23
+          -DCMAKE_PREFIX_PATH=${{github.workspace}}/fmt-install
+          -Dasbind_use_fmtlib=1
           -DCMAKE_BUILD_TYPE=Release
           -Dasbind_build_test=1
           -Dasbind_build_bench=1

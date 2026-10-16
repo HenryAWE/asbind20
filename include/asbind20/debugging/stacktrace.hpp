@@ -3,13 +3,13 @@
 
 #pragma once
 
+#include <algorithm>
 #include <sstream>
+#include <string>
 #include <vector>
 #include "../fwd.hpp"
 #include "../utility.hpp"
-#ifdef ASBIND20_HAS_LIB_FORMAT
-#    include <format>
-#endif
+#include "../io/fmtlib.hpp"
 
 namespace asbind20::debugging
 {
@@ -241,47 +241,154 @@ std::string to_string(const basic_stacktrace<Allocator>& trace)
 {
     return trace.description();
 }
+
+namespace detail
+{
+    // Currently only supports CharT = char,
+    // Keep this template argument for future
+    template <typename CharT>
+    class stacktrace_entry_formatter
+    {
+    public:
+        // Aligned with `std::formatter<std::stacktrace_entry>`:
+        // the format specification is `[[fill]align][width]`
+        template <typename ParseContext>
+        constexpr auto parse(ParseContext& ctx)
+        {
+            auto it = m_data.parse(ctx);
+            if(it != ctx.end() && *it != '}')
+            {
+                io::detail::throw_format_error(
+                    "invalid format specifier for stacktrace_entry"
+                );
+            }
+            return it;
+        }
+
+        template <typename FormatContext>
+        auto format(
+            const asbind20::debugging::stacktrace_entry& entry,
+            FormatContext& ctx
+        ) const
+        {
+            const std::string text = asbind20::debugging::to_string(entry);
+            return write_padded(text, ctx, ctx.out());
+        }
+
+    private:
+        template <typename FormatContext, typename OutputIt>
+        OutputIt write_padded(
+            const std::string& text,
+            const FormatContext& ctx,
+            OutputIt out
+        ) const
+        {
+            using alignment = typename io::fmtlib::basic_format_data<char>::alignment;
+
+            std::size_t left_padding = 0;
+            std::size_t right_padding = 0;
+
+            if(const std::size_t width = m_data.width(ctx); width > text.size())
+            {
+                const std::size_t padding = width - text.size();
+                switch(m_data.align(alignment::align_left))
+                {
+                case alignment::align_middle:
+                    left_padding = padding / 2;
+                    right_padding = padding - left_padding;
+                    break;
+
+                case alignment::align_right:
+                    left_padding = padding;
+                    break;
+
+                default:
+                case alignment::align_left:
+                    right_padding = padding;
+                    break;
+                }
+            }
+
+            out = std::fill_n(out, left_padding, m_data.fill());
+            out = std::copy(text.begin(), text.end(), out);
+            out = std::fill_n(out, right_padding, m_data.fill());
+            return out;
+        }
+
+        io::fmtlib::basic_format_data<CharT> m_data;
+    };
+
+    // Currently only supports CharT = char,
+    // Keep this template argument for future
+    template <typename Allocator, typename CharT>
+    class basic_stacktrace_formatter
+    {
+    public:
+        // Aligned with `std::formatter<std::basic_stacktrace>`:
+        // no format specifier is allowed
+        template <typename ParseContext>
+        constexpr auto parse(ParseContext& ctx)
+        {
+            auto it = ctx.begin();
+            if(it != ctx.end() && *it != '}')
+            {
+                io::detail::throw_format_error(
+                    "invalid format specifier for basic_stacktrace"
+                );
+            }
+            return it;
+        }
+
+        template <typename FormatContext>
+        auto format(
+            const asbind20::debugging::basic_stacktrace<Allocator>& trace,
+            FormatContext& ctx
+        ) const
+        {
+            const std::string text = debugging::to_string(trace);
+            return std::copy(text.begin(), text.end(), ctx.out());
+        }
+    };
+} // namespace detail
 } // namespace asbind20::debugging
 
-#ifdef ASBIND20_HAS_LIB_FORMAT
+#if defined(ASBIND20_HAS_LIB_FORMAT) && !defined(ASBIND20_USE_FMTLIB)
 
 template <>
 struct std::formatter<asbind20::debugging::stacktrace_entry> :
-    std::formatter<std::string>
-{
-private:
-    using my_base = std::formatter<std::string>;
-
-public:
-    auto format(
-        const asbind20::debugging::stacktrace_entry& entry,
-        std::format_context& ctx
-    ) const
-    {
-        return my_base::format(
-            to_string(entry), ctx
-        );
-    }
-};
+    asbind20::debugging::detail::stacktrace_entry_formatter<char>
+{};
 
 template <typename Allocator>
 struct std::formatter<asbind20::debugging::basic_stacktrace<Allocator>> :
-    std::formatter<std::string>
-{
-private:
-    using my_base = std::formatter<std::string>;
+    asbind20::debugging::detail::basic_stacktrace_formatter<Allocator, char>
+{};
 
-public:
-    auto format(
-        const asbind20::debugging::basic_stacktrace<Allocator>& trace,
-        std::format_context& ctx
-    ) const
-    {
-        return my_base::format(
-            to_string(trace), ctx
-        );
-    }
-};
+#elif defined(ASBIND20_USE_FMTLIB)
+
+// {fmt} provides a generic formatter for every range in <fmt/ranges.h> since {fmt} 11.
+// Since `basic_stacktrace` is a range too,
+// its formatter would be an ambiguous partial specialization
+#    if __has_include(<fmt/ranges.h>)
+#        include <fmt/ranges.h>
+
+template <typename Allocator, typename Char>
+struct fmt::range_format_kind<
+    asbind20::debugging::basic_stacktrace<Allocator>,
+    Char> : std::integral_constant<fmt::range_format, fmt::range_format::disabled>
+{};
+
+#    endif
+
+template <>
+struct fmt::formatter<asbind20::debugging::stacktrace_entry> :
+    asbind20::debugging::detail::stacktrace_entry_formatter<char>
+{};
+
+template <typename Allocator>
+struct fmt::formatter<asbind20::debugging::basic_stacktrace<Allocator>> :
+    asbind20::debugging::detail::basic_stacktrace_formatter<Allocator, char>
+{};
 
 #endif
 

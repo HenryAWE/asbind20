@@ -185,6 +185,23 @@ A member function can also be used as a message callback.
 
 See `AngelScript documentation <https://www.angelcode.com/angelscript/sdk/docs/manual/doc_compile_script.html#doc_compile_script_msg>`_ for details.
 
+.. _formatted-logging:
+
+Formatted Logging
+~~~~~~~~~~~~~~~~~
+
+Formatted logging helpers are available when a formatting backend is selected:
+the standard library ``<format>`` or the optional `{fmt} <https://fmt.dev/>`_ one.
+See :doc:`Formatting Backends <formatting>` for how to choose a backend.
+
+.. code-block:: c++
+
+    #include <asbind20/debugging/logging.hpp>
+
+    asbind20::debugging::logging::info(
+        engine, location, "Loaded {} modules", module_count
+    );
+
 Exception Translator
 ~~~~~~~~~~~~~~~~~~~~
 

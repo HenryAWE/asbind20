@@ -9,7 +9,7 @@ namespace asbind20::debugging::inline logging
 {
 using log_level_type = AS_NAMESPACE_QUALIFIER asEMsgType;
 
-#ifdef ASBIND20_HAS_FMTLIB
+#ifdef ASBIND20_HAS_FORMAT_LIBRARY
 
 inline int vlog(
     log_level_type type,
@@ -58,7 +58,7 @@ int log(
     log_level_type type,
     engine_reference engine,
     const script_source_location& loc,
-    io::format_string<Args...> fmt,
+    io::fmtlib::format_string<Args...> fmt,
     Args&&... args
 )
 {
@@ -66,7 +66,7 @@ int log(
         type,
         engine,
         loc,
-        io::detail::fmt_string_to_view(fmt),
+        io::fmtlib::format_string_to_view(fmt),
         io::fmtlib::make_format_args(args...)
     );
 }
@@ -76,7 +76,7 @@ int log(
     log_level_type type,
     engine_pointer engine,
     const script_source_location& loc,
-    io::format_string<Args...> fmt,
+    io::fmtlib::format_string<Args...> fmt,
     Args&&... args
 )
 {
@@ -90,7 +90,7 @@ int log(
     log_level_type type,
     const Engine& engine,
     const script_source_location& loc,
-    io::format_string<Args...> fmt,
+    io::fmtlib::format_string<Args...> fmt,
     Args&&... args
 )
 {
@@ -101,7 +101,7 @@ template <typename... Args>
 int info(
     engine_reference engine,
     const script_source_location& loc,
-    io::format_string<Args...> fmt,
+    io::fmtlib::format_string<Args...> fmt,
     Args&&... args
 )
 {
@@ -109,7 +109,7 @@ int info(
         AS_NAMESPACE_QUALIFIER asMSGTYPE_INFORMATION,
         engine,
         loc,
-        io::detail::fmt_string_to_view(fmt),
+        io::fmtlib::format_string_to_view(fmt),
         io::fmtlib::make_format_args(args...)
     );
 }
@@ -118,7 +118,7 @@ template <typename... Args>
 int info(
     engine_pointer engine,
     const script_source_location& loc,
-    io::format_string<Args...> fmt,
+    io::fmtlib::format_string<Args...> fmt,
     Args&&... args
 )
 {
@@ -131,7 +131,7 @@ template <script_engine_pointer_like Engine, typename... Args>
 int info(
     const Engine& engine,
     const script_source_location& loc,
-    io::format_string<Args...> fmt,
+    io::fmtlib::format_string<Args...> fmt,
     Args&&... args
 )
 {
@@ -142,7 +142,7 @@ template <typename... Args>
 int warn(
     engine_reference engine,
     const script_source_location& loc,
-    io::format_string<Args...> fmt,
+    io::fmtlib::format_string<Args...> fmt,
     Args&&... args
 )
 {
@@ -150,7 +150,7 @@ int warn(
         AS_NAMESPACE_QUALIFIER asMSGTYPE_WARNING,
         engine,
         loc,
-        io::detail::fmt_string_to_view(fmt),
+        io::fmtlib::format_string_to_view(fmt),
         io::fmtlib::make_format_args(args...)
     );
 }
@@ -159,7 +159,7 @@ template <typename... Args>
 int warn(
     engine_pointer engine,
     const script_source_location& loc,
-    io::format_string<Args...> fmt,
+    io::fmtlib::format_string<Args...> fmt,
     Args&&... args
 )
 {
@@ -172,7 +172,7 @@ template <script_engine_pointer_like Engine, typename... Args>
 int warn(
     const Engine& engine,
     const script_source_location& loc,
-    io::format_string<Args...> fmt,
+    io::fmtlib::format_string<Args...> fmt,
     Args&&... args
 )
 {
@@ -183,7 +183,7 @@ template <typename... Args>
 int error(
     engine_reference engine,
     const script_source_location& loc,
-    io::format_string<Args...> fmt,
+    io::fmtlib::format_string<Args...> fmt,
     Args&&... args
 )
 {
@@ -191,7 +191,7 @@ int error(
         AS_NAMESPACE_QUALIFIER asMSGTYPE_ERROR,
         engine,
         loc,
-        io::detail::fmt_string_to_view(fmt),
+        io::fmtlib::format_string_to_view(fmt),
         io::fmtlib::make_format_args(args...)
     );
 }
@@ -200,7 +200,7 @@ template <typename... Args>
 int error(
     engine_pointer engine,
     const script_source_location& loc,
-    io::format_string<Args...> fmt,
+    io::fmtlib::format_string<Args...> fmt,
     Args&&... args
 )
 {
@@ -213,7 +213,7 @@ template <script_engine_pointer_like Engine, typename... Args>
 int error(
     const Engine& engine,
     const script_source_location& loc,
-    io::format_string<Args...> fmt,
+    io::fmtlib::format_string<Args...> fmt,
     Args&&... args
 )
 {

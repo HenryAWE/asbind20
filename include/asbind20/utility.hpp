@@ -1108,40 +1108,40 @@ void set_script_exception(
     );
 }
 
-#ifdef ASBIND20_HAS_LIB_FORMAT
+#ifdef ASBIND20_HAS_FORMAT_LIBRARY
 
 inline void vformat_script_exception(
     std::string_view fmt,
-    std::format_args args,
+    io::fmtlib::format_args args,
     bool allow_catch = true
 )
 {
     set_script_exception(
-        std::vformat(fmt, args),
+        io::fmtlib::vformat(fmt, args),
         allow_catch
     );
 }
 
 template <typename... Args>
 void format_script_exception(
-    io::format_string<Args...> fmt, Args&&... args
+    io::fmtlib::format_string<Args...> fmt, Args&&... args
 )
 {
     vformat_script_exception(
-        io::detail::fmt_string_to_view(fmt),
-        std::make_format_args(args...),
+        io::fmtlib::format_string_to_view(fmt),
+        io::fmtlib::make_format_args(args...),
         true
     );
 }
 
 template <typename... Args>
 void format_script_exception_no_catch(
-    io::format_string<Args...> fmt, Args&&... args
+    io::fmtlib::format_string<Args...> fmt, Args&&... args
 )
 {
     vformat_script_exception(
-        io::detail::fmt_string_to_view(fmt),
-        std::make_format_args(args...),
+        io::fmtlib::format_string_to_view(fmt),
+        io::fmtlib::make_format_args(args...),
         false
     );
 }

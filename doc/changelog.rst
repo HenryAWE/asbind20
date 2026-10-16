@@ -9,7 +9,8 @@ Changelog since version 1.5.0.
 Update
 ~~~~~~
 
-
+- Add an optional `{fmt}` backend for formatting APIs.
+  User can define ``ASBIND20_USE_FMTLIB`` to enable it. The default backend is still ``std::format`` if available.
 
 2.1.1
 -----

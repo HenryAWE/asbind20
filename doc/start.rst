@@ -4,6 +4,9 @@ Prerequisites
 - AngelScript 2.37.0 or newer.
 - Any C++ compiler that supports C++20 features required by this library.
   This library mainly depends on ``requires`` and ``<concepts>`` from C++20.
+- (Optional) `{fmt} <https://fmt.dev/>`_ if you want to use it instead of the
+  standard library ``<format>`` as the formatting backend.
+  See :doc:`formatting` for details.
 
 If the compiler and standard library support newer features like C++23,
 asbind20 will enable support for them.
