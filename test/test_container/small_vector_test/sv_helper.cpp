@@ -16,6 +16,28 @@ int_sv_type make_int_sv(std::initializer_list<int> values)
     return sv;
 }
 
+int_sv_type make_heap_full_int_sv()
+{
+    int_sv_type sv(nullptr, AS_NAMESPACE_QUALIFIER asTYPEID_INT32);
+    const std::size_t static_cap = sv.static_capacity();
+
+    // Grow onto the heap, then fill it exactly to its capacity.
+    for(std::size_t i = 0; i < static_cap + 1; ++i)
+    {
+        int val = static_cast<int>(i);
+        sv.push_back(&val);
+    }
+    EXPECT_GT(sv.capacity(), static_cap) << "expected a heap buffer";
+
+    while(sv.size() < sv.capacity())
+    {
+        int val = static_cast<int>(sv.size());
+        sv.push_back(&val);
+    }
+    EXPECT_EQ(sv.size(), sv.capacity());
+    return sv;
+}
+
 void register_sv_ref_foo(asbind20::engine_pointer engine)
 {
     using namespace asbind20;

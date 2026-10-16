@@ -15,6 +15,10 @@ using int_sv_type = asbind20::container::small_vector<
 // so we can pass nullptr for the engine and use the type ID directly
 int_sv_type make_int_sv(std::initializer_list<int> values = {});
 
+// Make an int vector whose elements live in a heap buffer that is filled
+// exactly to its capacity, so that the next growth reallocates (and frees) it.
+int_sv_type make_heap_full_int_sv();
+
 // Helper class for testing small_vector with reference-counted handle elements
 class sv_ref_foo
 {
@@ -30,6 +34,19 @@ public:
     ~sv_ref_foo()
     {
         --live_count;
+        if(child)
+            child->release();
+    }
+
+    // Take ownership of another object of the same type. Used to test the case
+    // where the source slot lives inside the object being released.
+    void set_child(sv_ref_foo* c)
+    {
+        if(child)
+            child->release();
+        child = c;
+        if(child)
+            child->addref();
     }
 
     void addref()
@@ -63,6 +80,9 @@ public:
     }
 
     int data = 0;
+
+    // Owning handle to another object of the same type (see `set_child`).
+    sv_ref_foo* child = nullptr;
 
     inline static std::atomic_int live_count = 0;
 

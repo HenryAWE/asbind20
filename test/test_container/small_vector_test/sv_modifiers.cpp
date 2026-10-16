@@ -268,3 +268,43 @@ TEST(SmallVector, VisitPrimitive)
     v.visit(sum_visitor(sum2), cv.cbegin() + 2, cv.cend());
     EXPECT_EQ(sum2, 2 + 3 + 4);
 }
+
+// Regression tests: pushing an element taken from the vector itself. The
+// source slot lives in the buffer that reserve() reallocates and frees, so it
+// must be read before the growth.
+
+TEST(SmallVector, PushBackFromItselfReallocating)
+{
+    auto v = test_container::make_heap_full_int_sv();
+    ASSERT_EQ(v.size(), v.capacity());
+
+    const int first = *static_cast<int*>(v[0]);
+    const std::size_t old_cap = v.capacity();
+
+    v.push_back(v[0]); // source slot is inside the buffer being reallocated
+
+    ASSERT_EQ(v.size(), old_cap + 1);
+    EXPECT_GT(v.capacity(), old_cap);
+    EXPECT_EQ(*static_cast<int*>(v[0]), first);
+    EXPECT_EQ(*static_cast<int*>(v[v.size() - 1]), first);
+}
+
+TEST(SmallVector, PushBackNFromItselfReallocating)
+{
+    auto v = test_container::make_heap_full_int_sv();
+    ASSERT_EQ(v.size(), v.capacity());
+
+    const int first = *static_cast<int*>(v[0]);
+    const std::size_t old_size = v.size();
+    const std::size_t old_cap = v.capacity();
+
+    v.push_back_n(3, v[0]);
+
+    ASSERT_EQ(v.size(), old_size + 3);
+    EXPECT_GT(v.capacity(), old_cap);
+    for(std::size_t i = old_size; i < v.size(); ++i)
+    {
+        SCOPED_TRACE(string_concat("i = ", std::to_string(i)));
+        EXPECT_EQ(*static_cast<int*>(v[i]), first);
+    }
+}

@@ -462,8 +462,11 @@ private:
 
         void push_back(const void* ref)
         {
+            // `ref` may point into our own storage, so snapshot the value
+            // before reserve() possibly reallocates (and frees) the buffer.
+            value_type value = *static_cast<const value_type*>(ref);
             reserve(size() + 1);
-            emplace_back_impl(*static_cast<const value_type*>(ref));
+            emplace_back_impl(value);
         }
 
         void emplace_back()
@@ -474,9 +477,12 @@ private:
 
         void push_back_n(size_type n, const void* ref)
         {
+            // `ref` may point into our own storage, so snapshot the value
+            // before reserve() possibly reallocates (and frees) the buffer.
+            value_type value = *static_cast<const value_type*>(ref);
             reserve(size() + n);
             m_p_end = std::fill_n(
-                m_p_end, n, *static_cast<const value_type*>(ref)
+                m_p_end, n, value
             );
         }
 
@@ -499,10 +505,15 @@ private:
         {
             if(size_type current_size = size(); where > current_size)
                 throw_out_of_range();
-            else if(where == current_size)
+
+            // `ref` may point into our own storage.
+            // Snapshot the value before the buffer is shifted or reallocated
+            value_type value = *static_cast<const value_type*>(ref);
+
+            if(where == size())
             {
                 reserve(size() + 1);
-                emplace_back_impl(*static_cast<const value_type*>(ref));
+                emplace_back_impl(value);
                 return;
             }
 
@@ -516,7 +527,7 @@ private:
                     elem_to_move * sizeof(value_type)
                 );
                 ++m_p_end;
-                *p_where = *static_cast<const value_type*>(ref);
+                *p_where = value;
             }
             else
             {
@@ -529,7 +540,7 @@ private:
                 std::memcpy(
                     tmp, m_p_begin, where * sizeof(value_type)
                 );
-                *(tmp + where) = *static_cast<const value_type*>(ref);
+                *(tmp + where) = value;
                 std::memcpy(
                     tmp + where + 1,
                     m_p_begin + where,
@@ -822,9 +833,13 @@ private:
 
         void push_back(const void* ref)
         {
+            // `ref` may point at a slot inside our own storage, so resolve it
+            // before reserve() possibly reallocates (and frees) the buffer.
+            void* src = ref_to_obj(ref);
+
             this->reserve(this->size() + 1);
 
-            void* obj = copy_obj(ref_to_obj(ref));
+            void* obj = copy_obj(src);
             if constexpr(!IsHandle)
             {
                 if(!obj) [[unlikely]]
@@ -857,13 +872,17 @@ private:
 
         void push_back_n(size_type n, const void* ref)
         {
+            // `ref` may point at a slot inside our own storage, so resolve it
+            // before reserve() possibly reallocates (and frees) the buffer.
+            void* src = ref_to_obj(ref);
+
             this->reserve(this->size() + n);
             typeinfo_pointer ti = this->elem_type_info();
             engine_pointer engine = ti->GetEngine();
 
             for(size_type i = 0; i < n; ++i)
             {
-                void* obj = copy_obj_impl(engine, ti, ref_to_obj(ref));
+                void* obj = copy_obj_impl(engine, ti, src);
                 if constexpr(!IsHandle)
                 {
                     if(!obj) [[unlikely]]
@@ -1091,9 +1110,14 @@ private:
             {
                 if constexpr(IsHandle)
                 {
-                    engine->ReleaseScriptObject(dst, ti);
+                    // Assigning an element to itself is a no-op
+                    if(dst == obj) [[unlikely]]
+                        return;
+
+                    void* old_obj = dst;
                     engine->AddRefScriptObject(obj, ti);
                     dst = obj;
+                    engine->ReleaseScriptObject(old_obj, ti);
                 }
                 else
                 {

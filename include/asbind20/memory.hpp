@@ -1252,7 +1252,10 @@ namespace container
          * @param data Stored value
          * @param engine Script engine
          * @param type_id Type ID. Must @b NOT be void (`asTYPEID_VOID`)
-         * @param ref Address of the value. Must @b NOT be `nullptr`
+         * @param ref Address of the value. Must @b NOT be `nullptr`.
+         *            It may be the address of the stored value itself.
+         *            Assigning the stored handle to itself is a no-op and
+         *            won't release it prematurely.
          *
          * @return True if successful
          *
@@ -1269,16 +1272,17 @@ namespace container
             else if(is_objhandle(type_id))
             {
                 auto* ti = engine->GetTypeInfoById(type_id);
+                void* handle = *static_cast<void* const*>(ref);
+
+                // Assigning the stored handle to itself is a no-op
+                if(data.handle == handle) [[unlikely]]
+                    return true;
+
+                if(handle)
+                    engine->AddRefScriptObject(handle, ti);
                 if(data.handle)
                     engine->ReleaseScriptObject(data.handle, ti);
-                void* handle = *static_cast<void* const*>(ref);
                 data.handle = handle;
-                if(handle)
-                {
-                    engine->AddRefScriptObject(
-                        handle, ti
-                    );
-                }
             }
             else
             {
@@ -1299,7 +1303,10 @@ namespace container
          * @param data Stored value
          * @param engine Script engine
          * @param type_id Type ID. Must @b NOT be void (`asTYPEID_VOID`)
-         * @param out Address of the destination. Must @b NOT be `nullptr`
+         * @param out Address of the destination. Must @b NOT be `nullptr`.
+         *            It may be the address of the stored value itself.
+         *            Assigning the stored handle to itself is a no-op and
+         *            won't release it prematurely.
          *
          * @return True if successful
          *
@@ -1319,15 +1326,19 @@ namespace container
                 void** out_handle = static_cast<void**>(out);
 
                 auto* ti = engine->GetTypeInfoById(type_id);
-                if(*out_handle)
-                    engine->ReleaseScriptObject(*out_handle, ti);
-                *out_handle = data.handle;
-                if(data.handle)
-                {
-                    engine->AddRefScriptObject(
-                        data.handle, ti
-                    );
-                }
+
+                void* handle = data.handle;
+                void* old_handle = *out_handle;
+
+                // Assigning the stored handle to itself is a no-op
+                if(old_handle == handle) [[unlikely]]
+                    return true;
+
+                if(handle)
+                    engine->AddRefScriptObject(handle, ti);
+                *out_handle = handle;
+                if(old_handle)
+                    engine->ReleaseScriptObject(old_handle, ti);
             }
             else
             {

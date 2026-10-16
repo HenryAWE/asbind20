@@ -107,7 +107,8 @@ TEST(SmallVector, InsertOutOfRange)
 
     int val = 42;
     EXPECT_THAT(
-        [&]() { v.insert(v.size() + 1, &val); },
+        [&]()
+        { v.insert(v.size() + 1, &val); },
         ::testing::Throws<std::out_of_range>()
     );
 }
@@ -117,7 +118,8 @@ TEST(SmallVector, EraseOutOfRange)
     auto v = make_int_sv({0, 1});
 
     EXPECT_THAT(
-        [&]() { v.erase(v.size(), 1); },
+        [&]()
+        { v.erase(v.size(), 1); },
         ::testing::Throws<std::out_of_range>()
     );
 
@@ -132,7 +134,8 @@ TEST(SmallVector, AssignOutOfRange)
 
     int val = 42;
     EXPECT_THAT(
-        [&]() { v.assign(v.size(), &val); },
+        [&]()
+        { v.assign(v.size(), &val); },
         ::testing::Throws<std::out_of_range>()
     );
 }
@@ -142,7 +145,8 @@ TEST(SmallVector, RemoveOutOfRange)
     auto v = make_int_sv({0, 1});
 
     EXPECT_THAT(
-        [&]() { v.remove(v.size()); },
+        [&]()
+        { v.remove(v.size()); },
         ::testing::Throws<std::out_of_range>()
     );
 }
@@ -152,7 +156,8 @@ TEST(SmallVector, ReverseOutOfRange)
     auto v = make_int_sv({0, 1});
 
     EXPECT_THAT(
-        [&]() { v.reverse(v.size()); },
+        [&]()
+        { v.reverse(v.size()); },
         ::testing::Throws<std::out_of_range>()
     );
 }
@@ -169,7 +174,8 @@ TEST(SmallVector, VisitOutOfRange)
         (void)stop;
     };
     EXPECT_THAT(
-        [&]() { v.visit(visitor, v.size(), 1); },
+        [&]()
+        { v.visit(visitor, v.size(), 1); },
         ::testing::Throws<std::out_of_range>()
     );
 }
@@ -185,9 +191,74 @@ TEST(SmallVector, VisitEmptyOutOfRange)
         (void)stop;
     };
     EXPECT_THAT(
-        [&]() { v.visit(visitor, 0, 0); },
+        [&]()
+        { v.visit(visitor, 0, 0); },
         ::testing::Throws<std::out_of_range>()
     );
 }
 
 #endif
+
+// Regression test: inserting an element taken from the vector itself. The
+// source must be snapshotted before the buffer is shifted, otherwise the value
+// would be read from the wrong position. `v.insert(1, v[2])` must insert the
+// value originally at index 2.
+TEST(SmallVector, InsertFromItselfInPlace)
+{
+    auto v = make_int_sv({0, 1, 2});
+    ASSERT_EQ(v.size(), 3);
+    ASSERT_EQ(v.capacity(), v.static_capacity()); // in-place branch
+
+    v.insert(1, v[2]);
+
+    ASSERT_EQ(v.size(), 4);
+    EXPECT_EQ(*static_cast<int*>(v[0]), 0);
+    EXPECT_EQ(*static_cast<int*>(v[1]), 2)
+        << "must insert the value originally at index 2";
+    EXPECT_EQ(*static_cast<int*>(v[2]), 1);
+    EXPECT_EQ(*static_cast<int*>(v[3]), 2);
+}
+
+TEST(SmallVector, InsertFromItselfReallocating)
+{
+    // Fill the static storage so that the insertion has to reallocate.
+    sv_type v(nullptr, AS_NAMESPACE_QUALIFIER asTYPEID_INT32);
+    for(std::size_t i = 0; i < v.static_capacity(); ++i)
+    {
+        int val = static_cast<int>(i);
+        v.push_back(&val);
+    }
+    ASSERT_EQ(v.capacity(), v.static_capacity());
+
+    const int first = *static_cast<int*>(v[0]);
+    v.insert(1, v[0]); // source slot lives in the buffer being reallocated
+
+    ASSERT_EQ(v.size(), v.static_capacity() + 1);
+    EXPECT_GT(v.capacity(), v.static_capacity());
+    EXPECT_EQ(*static_cast<int*>(v[0]), first);
+    EXPECT_EQ(*static_cast<int*>(v[1]), first);
+    for(std::size_t i = 2; i < v.size(); ++i)
+    {
+        SCOPED_TRACE(string_concat("i = ", std::to_string(i)));
+        EXPECT_EQ(*static_cast<int*>(v[i]), static_cast<int>(i - 1));
+    }
+}
+
+TEST(SmallVector, InsertAtEndFromItselfReallocating)
+{
+    // Use a heap buffer that is exactly full, so the insertion reallocates and
+    // frees the buffer holding the source slot.
+    auto v = test_container::make_heap_full_int_sv();
+    ASSERT_EQ(v.size(), v.capacity());
+
+    const std::size_t old_size = v.size();
+    const std::size_t old_cap = v.capacity();
+    const int first = *static_cast<int*>(v[0]);
+
+    v.insert(v.size(), v[0]); // == push_back, but through insert()
+
+    ASSERT_EQ(v.size(), old_size + 1);
+    EXPECT_GT(v.capacity(), old_cap);
+    EXPECT_EQ(*static_cast<int*>(v[0]), first);
+    EXPECT_EQ(*static_cast<int*>(v[v.size() - 1]), first);
+}
