@@ -325,7 +325,18 @@ namespace util
 
             if constexpr(std::same_as<arg_type, std::string_view>)
             {
-                if(arg.data()[arg.size()] == '\0')
+                if(arg.empty())
+                { // Empty string view
+                    return with_cstr_impl(
+                        std::forward<Fn>(fn),
+                        std::tuple_cat(
+                            tp,
+                            std::tuple<const char*>("")
+                        ),
+                        std::forward<Args>(args)...
+                    );
+                }
+                else if(arg.data()[arg.size()] == '\0')
                 {
                     return with_cstr_impl(
                         std::forward<Fn>(fn),

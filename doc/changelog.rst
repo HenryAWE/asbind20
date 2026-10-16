@@ -12,6 +12,11 @@ Update
 - Add an optional `{fmt}` backend for formatting APIs.
   User can define ``ASBIND20_USE_FMTLIB`` to enable it. The default backend is still ``std::format`` if available.
 
+Bug fix
+~~~~~~~
+
+- Fix crash in ``with_cstr`` caused by empty string view.
+
 2.1.1
 -----
 

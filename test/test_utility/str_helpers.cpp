@@ -52,6 +52,43 @@ TEST(WithCStr, WithCStr)
         );
         EXPECT_EQ(result, "hello hello world");
     }
+
+    {
+        const char* cstr = nullptr;
+        util::with_cstr(
+            [&](const char* str)
+            { cstr = str; },
+            std::string_view{}
+        );
+        EXPECT_THAT(cstr, ::testing::NotNull());
+        EXPECT_STREQ(cstr, "");
+    }
+
+    {
+        const char* cstr = nullptr;
+        util::with_cstr(
+            [&](const char* str)
+            { cstr = str; },
+            "hello world"sv.substr(0, 0)
+        );
+        EXPECT_THAT(cstr, ::testing::NotNull());
+        EXPECT_STREQ(cstr, "");
+    }
+
+    // A null-terminated view is passed through without copying.
+    {
+        std::string_view view = "hello"sv;
+        util::with_cstr(
+            [](const char* str, const char* original)
+            {
+                EXPECT_STREQ(str, original);
+                EXPECT_EQ(str, original)
+                    << "Address should not be different";
+            },
+            view,
+            view.data()
+        );
+    }
 }
 
 TEST(StringLike, Adaptor)
