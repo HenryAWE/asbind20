@@ -168,3 +168,148 @@ TEST_F(ScriptStringNative, CtorFn)
     auto engine = get_engine();
     test_script_string::test_ctor_fn(engine);
 }
+
+TEST_F(TestStringFactoryGeneric, Constructor)
+{
+    EXPECT_EQ(this->run_string(R"(return "string factory";)"), "string factory");
+    EXPECT_EQ(this->run_string(R"(return string();)"), "");
+    EXPECT_EQ(this->run_string(R"(return string(3, 'A');)"), "AAA");
+}
+
+TEST_F(TestStringFactoryNative, Constructor)
+{
+    EXPECT_EQ(this->run_string(R"(return "string factory";)"), "string factory");
+    EXPECT_EQ(this->run_string(R"(return string();)"), "");
+    EXPECT_EQ(this->run_string(R"(return string(3, 'A');)"), "AAA");
+}
+
+TEST_F(TestStringFactoryGeneric, RemovePrefixAndSuffix)
+{
+    EXPECT_EQ(
+        this->run_string(R"(return "string factory".remove_prefix(0);)"),
+        "string factory"
+    );
+    EXPECT_EQ(
+        this->run_string(R"(return "string factory".remove_suffix(0);)"),
+        "string factory"
+    );
+    EXPECT_EQ(
+        this->run_string(R"(return "string factory".remove_prefix(7);)"),
+        "factory"
+    );
+    EXPECT_EQ(
+        this->run_string(R"(return "string factory".remove_suffix(8);)"),
+        "string"
+    );
+    EXPECT_EQ(
+        this->run_string(R"(return "string factory".remove_prefix(100);)"),
+        ""
+    );
+    EXPECT_EQ(
+        this->run_string(R"(return "string factory".remove_suffix(100);)"),
+        ""
+    );
+}
+
+TEST_F(TestStringFactoryNative, RemovePrefixAndSuffix)
+{
+    EXPECT_EQ(
+        this->run_string(R"(return "string factory".remove_prefix(0);)"),
+        "string factory"
+    );
+    EXPECT_EQ(
+        this->run_string(R"(return "string factory".remove_suffix(0);)"),
+        "string factory"
+    );
+    EXPECT_EQ(
+        this->run_string(R"(return "string factory".remove_prefix(7);)"),
+        "factory"
+    );
+    EXPECT_EQ(
+        this->run_string(R"(return "string factory".remove_suffix(8);)"),
+        "string"
+    );
+    EXPECT_EQ(
+        this->run_string(R"(return "string factory".remove_prefix(100);)"),
+        ""
+    );
+    EXPECT_EQ(
+        this->run_string(R"(return "string factory".remove_suffix(100);)"),
+        ""
+    );
+}
+
+namespace test_script_string
+{
+static void test_host_interop(asbind20::engine_pointer engine)
+{
+    auto* m = asbind20::create_module(engine, "host_script_string_interop");
+    ASSERT_THAT(m, ::testing::NotNull());
+
+    m->AddScriptSection(
+        "test_script_string.as",
+        "string create_str() { return \"hello\"; }\n"
+        "void output_ref(string &out str) { str = \"hello\" + \" from ref\"; }\n"
+        "void check_str(const string &in str) { assert(str == \"world\"); }\n"
+        "void check_str_val(string str) { assert(str == \"world\"); }\n"
+        "uint64 get_hash(const string&in str) { return str.hash(); }"
+    );
+    ASSERT_GE(m->Build(), 0);
+
+    asbind20::request_context ctx(engine);
+    {
+        auto str = asbind20::script_invoke<std::string>(
+            ctx, m->GetFunctionByName("create_str")
+        );
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(str);
+        EXPECT_EQ(str.value(), "hello");
+    }
+
+    {
+        std::string str = "origin";
+        auto result = asbind20::script_invoke<void>(
+            ctx, m->GetFunctionByName("output_ref"), std::ref(str)
+        );
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
+        EXPECT_EQ(str, "hello from ref");
+    }
+
+    {
+        std::string str = "world";
+        auto result = asbind20::script_invoke<void>(
+            ctx, m->GetFunctionByName("check_str"), std::cref(str)
+        );
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
+    }
+
+    {
+        std::string str = "world";
+        auto result = asbind20::script_invoke<void>(
+            ctx, m->GetFunctionByName("check_str"), str
+        );
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
+    }
+
+    {
+        const std::string str = "hash";
+        auto result = asbind20::script_invoke<std::uint64_t>(
+            ctx, m->GetFunctionByName("get_hash"), std::cref(str)
+        );
+        ASBIND_TEST_ASSERT_INVOKE_RESULT(result);
+        const std::uint64_t expected_val = std::hash<std::string_view>{}(str);
+        EXPECT_EQ(result.value(), expected_val);
+    }
+}
+} // namespace test_script_string
+
+TEST_F(ScriptStringGeneric, HostInterop)
+{
+    asbind_test::setup_script_assertion(get_engine());
+    test_script_string::test_host_interop(get_engine());
+}
+
+TEST_F(ScriptStringNative, HostInterop)
+{
+    asbind_test::setup_script_assertion(get_engine());
+    test_script_string::test_host_interop(get_engine());
+}

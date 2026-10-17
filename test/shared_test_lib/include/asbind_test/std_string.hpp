@@ -18,6 +18,8 @@
 
 namespace asbind_test
 {
+class script_array;
+
 /**
  * @brief Set engine properties for string extension
  *
@@ -229,6 +231,21 @@ namespace script_string
 
     std::string string_erase(
         const std::string& this_, index_type where, size_type n
+    );
+
+    // The script array is defined in "array.hpp".
+    // These functions are implemented in "std_string.cpp" to avoid
+    // pulling the array header into the string header.
+    script_array* string_split(
+        const std::string& this_, const std::string& delimiter, bool skip_empty
+    );
+
+    script_array* string_split_ch(
+        const std::string& this_, char32_t ch, bool skip_empty
+    );
+
+    script_array* string_split_simple(
+        const std::string& this_, bool skip_empty
     );
 } // namespace script_string
 

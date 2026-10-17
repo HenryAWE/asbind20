@@ -87,6 +87,33 @@ static void check_sort(asbind20::engine_pointer engine)
         "assert(arr.size == 3);"
     );
 }
+
+static void check_sort_by(asbind20::engine_pointer engine)
+{
+    SCOPED_TRACE(__func__);
+
+    run_string(
+        engine,
+        "sort_by_primitive",
+        "int[] arr = {1, 2, 3, 4, 5, 6, 7, 8, 9};\n"
+        "assert(arr.size == 9);\n"
+        "arr.sort_by(function(l, r) { return l % 3 < r % 3; }, stable: true);\n"
+        "assert(arr == {3, 6, 9, 1, 4, 7, 2, 5, 8});\n"
+        "assert(arr.size == 9);\n"
+        "arr.sort_by(function(l, r) { return l > r; });\n"
+        "assert(arr == {9, 8, 7, 6, 5, 4, 3, 2, 1});"
+    );
+
+    run_string(
+        engine,
+        "sort_by_string",
+        "string[] arr = {\"aaa\", \"ccb\", \"ccc\", \"bbb\"};\n"
+        "assert(arr.size == 4);\n"
+        "arr.sort_by(function(l, r) { return l[0] > r[0]; }, stable: true);\n"
+        "assert(arr.size == 4);\n"
+        "assert(arr == {\"ccb\", \"ccc\", \"bbb\", \"aaa\"});"
+    );
+}
 } // namespace test_script_array
 
 using TestArrayNative = test_script_array::basic_array_suite<false>;
@@ -95,19 +122,23 @@ using TestArrayGeneric = test_script_array::basic_array_suite<true>;
 TEST_F(TestArrayNative, CompareElem)
 {
     auto* engine = get_engine();
+    asbind_test::setup_script_char(engine, true);
     asbind_test::setup_script_string(engine, true);
 
     test_script_array::check_count(engine);
     test_script_array::check_count_if(engine);
     test_script_array::check_sort(engine);
+    test_script_array::check_sort_by(engine);
 }
 
 TEST_F(TestArrayGeneric, CompareElem)
 {
     auto* engine = get_engine();
+    asbind_test::setup_script_char(engine, true);
     asbind_test::setup_script_string(engine, true);
 
     test_script_array::check_count(engine);
     test_script_array::check_count_if(engine);
     test_script_array::check_sort(engine);
+    test_script_array::check_sort_by(engine);
 }

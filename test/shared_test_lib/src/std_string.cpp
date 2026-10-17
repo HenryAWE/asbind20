@@ -1,5 +1,9 @@
 #include <asbind_test/std_string.hpp>
+#include <asbind_test/array.hpp>
 #include <asbind_test/framework.hpp>
+#include <charconv>
+#include <concepts>
+#include <cstdint>
 
 namespace asbind_test
 {
@@ -278,6 +282,100 @@ namespace script_string
     }
 } // namespace script_string
 
+namespace script_string
+{
+    namespace
+    {
+        script_array* new_string_array()
+        {
+            asbind20::context_pointer ctx = asbind20::current_context();
+            if(!ctx) [[unlikely]]
+                return nullptr;
+
+            auto* engine = ctx->GetEngine();
+
+            using asbind20::util::fixed_string;
+            return new_script_array(engine, fixed_string("string"));
+        }
+
+        void string_split_impl(
+            script_array& out,
+            std::string_view str,
+            std::string_view delimiter,
+            bool skip_empty
+        )
+        {
+            if(delimiter.empty())
+            {
+                return;
+            }
+
+            auto push_seg = [&out](std::string_view sv)
+            {
+                std::string s(sv);
+                out.push_back(&s);
+            };
+
+            std::size_t pos = 0;
+            while(true)
+            {
+                std::size_t next = str.find(delimiter, pos);
+                if(next == std::string_view::npos)
+                {
+                    std::string_view seg = str.substr(pos);
+                    if(!seg.empty() || !skip_empty)
+                        push_seg(seg);
+                    break;
+                }
+
+                std::string_view seg = str.substr(pos, next - pos);
+                if(!seg.empty() || !skip_empty)
+                    push_seg(seg);
+                pos = next + delimiter.size();
+            }
+        }
+    } // namespace
+
+    script_array* string_split(
+        const std::string& this_, const std::string& delimiter, bool skip_empty
+    )
+    {
+        script_array* arr = new_string_array();
+        if(!arr) [[unlikely]]
+            return nullptr;
+        string_split_impl(*arr, this_, delimiter, skip_empty);
+        return arr;
+    }
+
+    script_array* string_split_ch(
+        const std::string& this_, char32_t ch, bool skip_empty
+    )
+    {
+        script_array* arr = new_string_array();
+        if(!arr) [[unlikely]]
+            return nullptr;
+
+        char buf[4];
+        unsigned int size_bytes = utf8::u8_int_to_bytes(ch, buf);
+
+        string_split_impl(
+            *arr, this_, std::string_view(buf, size_bytes), skip_empty
+        );
+        return arr;
+    }
+
+    script_array* string_split_simple(
+        const std::string& this_, bool skip_empty
+    )
+    {
+        script_array* arr = new_string_array();
+        if(!arr) [[unlikely]]
+            return nullptr;
+        string_split_impl(*arr, this_, " ", skip_empty);
+        return arr;
+    }
+} // namespace script_string
+
 template <bool UseGeneric>
 static void setup_script_string_impl(
     asbind20::engine_pointer engine,
@@ -342,6 +440,11 @@ static void setup_script_string_impl(
         .method("string replace(int where, uint n, const string&in str, int pos=0, uint len=uint(-1)) const", fp<&string_replace>)
         .method("string insert(int where, const string&in str, int pos=0, uint len=uint(-1)) const", fp<&string_insert>)
         .method("string erase(int where, uint n=1) const", fp<&string_erase>)
+        .method(
+            "uint64 hash() const",
+            [](const std::string& this_) -> std::uint64_t
+            { return std::hash<std::string>{}(this_); }
+        )
         .method("bool contains(const string&in str) const", fp<&string_contains>);
 
     if(has_ch_api)
@@ -359,6 +462,15 @@ static void setup_script_string_impl(
             .method("bool ends_with(char ch) const", fp<&string_ends_with_ch>)
             .method("char opIndex(int idx) const", fp<&string_opIndex>)
             .method("bool contains(char ch) const", fp<&string_contains_ch>);
+    }
+
+    if(engine->GetDefaultArrayTypeId() >= 0)
+    {
+        c
+            .method("array<string>@ split(bool skip_empty=true) const", fp<&string_split_simple>)
+            .method("array<string>@ split(const string&in delimiter, bool skip_empty=true) const", fp<&string_split>);
+        if(has_ch_api)
+            c.method("array<string>@ split(char delimiter, bool skip_empty=true) const", fp<&string_split_ch>);
     }
 
     if(as_default)
@@ -386,26 +498,82 @@ void setup_script_string(
     setup_script_string(engine.get(), generic, as_default);
 }
 
+namespace
+{
+    std::string script_bool_to_string(bool val)
+    {
+        return val ? "true" : "false";
+    }
+
+    template <std::integral Int>
+    std::string script_int_to_string(Int val, int base)
+    {
+        char buf[128];
+        auto result = std::to_chars(buf, buf + 128, val, base);
+        if(result.ec != std::errc{}) [[unlikely]]
+        {
+            asbind20::set_script_exception(
+                asbind20::string_concat(
+                    "to_string<", asbind20::meta::typename_of<Int>(), ">(): error"
+                )
+            );
+        }
+
+        return std::string(buf, result.ptr);
+    }
+
+    template <typename Float>
+    std::string script_float_to_string(Float val, std::chars_format fmt)
+    {
+        char buf[128];
+        auto result = std::to_chars(buf, buf + 128, val, fmt);
+        if(result.ec != std::errc{}) [[unlikely]]
+        {
+            asbind20::set_script_exception(
+                asbind20::string_concat(
+                    "to_string<", asbind20::meta::typename_of<Float>(), ">(): error"
+                )
+            );
+        }
+
+        return std::string(buf, result.ptr);
+    }
+
+    template <bool UseGeneric>
+    void setup_string_utils_impl(asbind20::engine_pointer engine)
+    {
+        using namespace asbind20;
+
+        enum_underlying<std::chars_format>(engine, "float_format")
+            .value("scientific", std::chars_format::scientific)
+            .value("hex", std::chars_format::hex)
+            .value("general", std::chars_format::general)
+            .value("fixed", std::chars_format::fixed);
+
+        global<UseGeneric> g(engine);
+        g
+            .function("string to_string(bool val)", fp<&script_bool_to_string>)
+            .function("string to_string(int val, int base=10)", fp<&script_int_to_string<std::int32_t>>)
+            .function("string to_string(uint val, int base=10)", fp<&script_int_to_string<std::uint32_t>>)
+            .function("string to_string(int64 val, int base=10)", fp<&script_int_to_string<std::int64_t>>)
+            .function("string to_string(uint64 val, int base=10)", fp<&script_int_to_string<std::uint64_t>>)
+            .function("string to_string(float val, float_format fmt=float_format::general)", fp<&script_float_to_string<float>>)
+            .function("string to_string(double val, float_format fmt=float_format::general)", fp<&script_float_to_string<double>>);
+
+        if(engine->GetTypeIdByDecl("char") >= 0)
+            g.function("string chr(char ch)", fp<&script_chr>);
+    }
+} // namespace
+
 void setup_string_utils(
     asbind20::engine_pointer engine,
     bool generic
 )
 {
-    using namespace asbind20;
-
-    if(engine->GetTypeInfoByName("char"))
-        return;
-
-    auto helper = [engine]<bool UseGeneric>(std::bool_constant<UseGeneric>)
-    {
-        global<UseGeneric>(engine)
-            .function("string chr(char ch)", fp<&script_chr>);
-    };
-
     if(generic)
-        helper(std::true_type{});
+        setup_string_utils_impl<true>(engine);
     else
-        helper(std::false_type{});
+        setup_string_utils_impl<false>(engine);
 }
 
 void setup_string_utils(
