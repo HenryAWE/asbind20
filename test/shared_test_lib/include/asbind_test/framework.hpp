@@ -60,6 +60,22 @@ void setup_exception_translator(
 void setup_exception_translator(
     const asbind20::unique_script_engine& engine
 );
+
+// Check if the current translation unit is compiled with AddressSanitizer
+constexpr bool has_address_sanitizer() noexcept
+{
+#if defined(__SANITIZE_ADDRESS__)
+    return true;
+#elif defined(__clang__) && defined(__has_feature)
+#    if __has_feature(address_sanitizer)
+    return true;
+#    else
+    return false;
+#    endif
+#else
+    return false;
+#endif
+}
 } // namespace asbind_test
 
 #define ASBIND_TEST_SKIP_IF_MAX_PORTABILITY()           \
@@ -81,6 +97,13 @@ void setup_exception_translator(
     {                                                   \
         if(::asbind20::script_debug_mode())           \
             GTEST_SKIP() << "script library DEBUG found"; \
+    } while(0)
+
+#define ASBIND_TEST_SKIP_IF_ADDRESS_SANITIZER()    \
+    do                                             \
+    {                                              \
+        if(::asbind_test::has_address_sanitizer()) \
+            GTEST_SKIP() << "AddressSanitizer enabled"; \
     } while(0)
 
 #define ASBIND_TEST_EXPECT_INVOKE_RESULT(result)              \

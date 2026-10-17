@@ -1,4 +1,3 @@
-include(GoogleTest)
 include(asbindTestFramework)
 
 aux_source_directory(. test_script_string_src)
