@@ -56,7 +56,23 @@ void script_weakref::reset(void* ref)
     m_ref = ref;
     if(ref)
     {
-        m_flag.connect_object(ref, referenced_type());
+#ifndef ASBIND20_NO_EXCEPTIONS
+        try
+#endif
+        {
+            m_flag.connect_object(ref, referenced_type());
+        }
+#ifndef ASBIND20_NO_EXCEPTIONS
+        catch(...)
+        {
+            // The handle is owned by this function (it came from a `T@`
+            // parameter), so it must be released even if obtaining the
+            // weakref flag failed.
+            m_ref = nullptr;
+            m_ti->GetEngine()->ReleaseScriptObject(ref, referenced_type());
+            throw;
+        }
+#endif
 
         // Release the ref since we're only supposed to hold a weakref
         m_ti->GetEngine()->ReleaseScriptObject(ref, referenced_type());
