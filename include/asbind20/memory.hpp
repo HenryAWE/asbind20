@@ -431,7 +431,7 @@ public:
         : reuse_active_context(engine.get(), propagate_error)
     {}
 
-    ~reuse_active_context()
+    ~reuse_active_context() noexcept(false)
     {
         if(!m_ctx) [[unlikely]]
             return;
@@ -560,7 +560,7 @@ public:
         : request_context(engine.get())
     {}
 
-    ~request_context()
+    ~request_context() noexcept(false)
     {
         if(m_ctx) [[likely]]
             m_engine->ReturnContext(m_ctx);
