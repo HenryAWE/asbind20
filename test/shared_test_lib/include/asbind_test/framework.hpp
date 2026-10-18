@@ -92,17 +92,17 @@ constexpr bool has_address_sanitizer() noexcept
             GTEST_SKIP() << "AS_NO_THREADS found"; \
     } while(0)
 
-#define ASBIND_TEST_SKIP_IF_SCRIPT_DEBUG()           \
-    do                                                  \
-    {                                                   \
-        if(::asbind20::script_debug_mode())           \
+#define ASBIND_TEST_SKIP_IF_SCRIPT_DEBUG()                \
+    do                                                    \
+    {                                                     \
+        if(::asbind20::script_debug_mode())               \
             GTEST_SKIP() << "script library DEBUG found"; \
     } while(0)
 
-#define ASBIND_TEST_SKIP_IF_ADDRESS_SANITIZER()    \
-    do                                             \
-    {                                              \
-        if(::asbind_test::has_address_sanitizer()) \
+#define ASBIND_TEST_SKIP_IF_ADDRESS_SANITIZER()         \
+    do                                                  \
+    {                                                   \
+        if(::asbind_test::has_address_sanitizer())      \
             GTEST_SKIP() << "AddressSanitizer enabled"; \
     } while(0)
 
