@@ -17,12 +17,14 @@
 #include <utility>
 #include <compare>
 #include <functional>
+#include <memory>
 #include <type_traits>
 #include <concepts>
 #include "fwd.hpp"
 #include "detail/err_handler.hpp"
 #include "util/strutil.hpp"
 #include "util/ctxutil.hpp"
+#include "util/unreachable.hpp"
 #include "io/fmtlib.hpp"
 
 namespace asbind20
@@ -92,17 +94,56 @@ struct var_type_t : public std::index_sequence<Is...>
 template <std::size_t... Is>
 inline constexpr var_type_t<Is...> var_type{};
 
+namespace detail
+{
+    template <typename T>
+    union member_offset_storage
+    {
+        T value;
+        char bytes[sizeof(T)];
+
+        member_offset_storage() {}
+        ~member_offset_storage() {}
+    };
+
+    // This object is only used by taking address of its members,
+    // and it is never used outside compile-time.
+    template <typename T>
+    extern const T member_offset_probe{};
+} // namespace detail
+
 /**
  * @brief Get offset from a member pointer
+ *
+ * This function can be evaluated at compile-time if the member pointer is a constant expression.
+ * Unlike `offsetof`, it also supports classes with non-standard layout.
  *
  * @note This function is implemented by undefined behavior but is expected to work on most platforms
  */
 template <typename T, typename Class>
-std::size_t member_offset(T Class::* mp) noexcept
+constexpr std::size_t member_offset(T Class::* mp) noexcept
 {
-    // TODO: Make this helper constexpr. Reference: https://godbolt.org/z/v87PvT44a
-    Class* p = nullptr;
-    return std::size_t(std::addressof(p->*mp)) - std::size_t(p);
+    if constexpr(std::is_abstract_v<Class>)
+    {
+        // An abstract class cannot be used as an object type (even as a union member),
+        // so the compile-time probing is not available in this case.
+        Class* p = nullptr;
+        return std::size_t(std::addressof(p->*mp)) - std::size_t(p);
+    }
+    else
+    {
+        const auto& unknown = detail::member_offset_probe<detail::member_offset_storage<Class>>;
+
+        const void* address = std::addressof((unknown.value).*mp);
+        for(std::size_t i = 0; i < sizeof(Class); ++i)
+        {
+            if(address == static_cast<const void*>(unknown.bytes + i))
+                return i;
+        }
+
+        // Unreachable for a valid member object pointer
+        util::unreachable();
+    }
 }
 
 class composite_wrapper
@@ -138,10 +179,8 @@ class composite_wrapper_nontype<MemberObject>
 public:
     using composite_wrapper_tag = void;
 
-    operator composite_wrapper() const noexcept
+    constexpr operator composite_wrapper() const noexcept
     {
-        // The implementation of member_offset is not constexpr-friendly,
-        // so this function should not be constexpr.
         return composite_wrapper(member_offset(MemberObject));
     }
 };
@@ -165,7 +204,7 @@ constexpr composite_wrapper composite(std::size_t off) noexcept
 
 template <typename MemberPointer>
 requires(std::is_member_object_pointer_v<MemberPointer>)
-composite_wrapper composite(MemberPointer mp) noexcept
+constexpr composite_wrapper composite(MemberPointer mp) noexcept
 {
     return composite_wrapper(member_offset(mp));
 }
@@ -762,8 +801,6 @@ constexpr std::string string_concat(Args&&... args)
     string_concat_inplace(out, std::forward<Args>(args)...);
     return out;
 }
-
-
 
 /**
  * @brief Atomic counter for multithreading
