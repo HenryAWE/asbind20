@@ -149,7 +149,9 @@ static_assert(asbind20::member_offset(&has_const_member::ci) == sizeof(int));
 static_assert(asbind20::member_offset(&multiple::c) == sizeof(base_a) + sizeof(base_b));
 
 constexpr std::size_t polymorphic_offset = asbind20::member_offset(&polymorphic::v);
-constexpr std::size_t virtual_member_offset = asbind20::member_offset(&with_virtual_base::d);
+// Only used by MemberOffset.VirtualBase, which is not run on the Microsoft ABI.
+[[maybe_unused]] constexpr std::size_t virtual_member_offset =
+    asbind20::member_offset(&with_virtual_base::d);
 
 // Composite wrapper
 
@@ -223,7 +225,23 @@ TEST(MemberOffset, NonStandardLayout)
         asbind20::member_offset(static_cast<int multiple::*>(&multiple::a)),
         actual_member_offset(multi, static_cast<int multiple::*>(&multiple::a))
     );
+}
 
+// Classes with virtual bases are not supported by the runtime probing on the
+// Microsoft ABI. A data member pointer of such a class is resolved through the
+// vbtable pointer stored in the object, so applying it to the never-constructed
+// probe object dereferences a null vbtable pointer (access violation).
+// The Itanium ABI used by GCC/Clang resolves these pointers with a constant
+// offset, so the probing works there.
+// Note that the old nullptr-based implementation never supported them on the
+// Microsoft ABI either.
+TEST(MemberOffset, VirtualBase)
+{
+#if defined(_MSC_VER)
+    GTEST_SKIP()
+        << "The Microsoft ABI needs a valid vbtable pointer to apply a member pointer of "
+           "a class with virtual bases";
+#else
     with_virtual_base vobj{};
     EXPECT_EQ(
         asbind20::member_offset(&with_virtual_base::d),
@@ -236,6 +254,7 @@ TEST(MemberOffset, NonStandardLayout)
         asbind20::member_offset(&virtual_base::vb),
         actual_member_offset(vbase, &virtual_base::vb)
     );
+#endif
 }
 
 TEST(MemberOffset, AbstractClass)

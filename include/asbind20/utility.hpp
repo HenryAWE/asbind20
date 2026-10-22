@@ -118,6 +118,12 @@ namespace detail
  * This function can be evaluated at compile-time if the member pointer is a constant expression.
  * Unlike `offsetof`, it also supports classes with non-standard layout.
  *
+ * @warning On the Microsoft ABI (MSVC and clang-cl), a data member pointer of a class with
+ * virtual bases is resolved through the vbtable pointer stored in the object. Applying such
+ * a member pointer to the never-constructed probe object dereferences a null vbtable pointer,
+ * so classes with virtual bases are not supported by the runtime probing there.
+ * (The Itanium ABI used by GCC/Clang resolves them with a constant offset, so it is unaffected.)
+ *
  * @note This function is implemented by undefined behavior but is expected to work on most platforms
  */
 template <typename T, typename Class>
