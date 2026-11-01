@@ -42,6 +42,8 @@ static void check_exception_safety(asbind20::engine_pointer engine)
 
 TEST_F(TestArrayNative, ExceptionSafety)
 {
+    ASBIND_TEST_SKIP_IF_NO_EXCEPTIONS();
+
     // AngelScript 2.38's x64 native calling convention trampoline cannot
     // unwind the C++ exception thrown by the assignment operator in the
     // initialization list case when AddressSanitizer is enabled, so the
@@ -53,6 +55,8 @@ TEST_F(TestArrayNative, ExceptionSafety)
 
 TEST_F(TestArrayGeneric, ExceptionSafety)
 {
+    ASBIND_TEST_SKIP_IF_NO_EXCEPTIONS();
+
     test_script_array::check_exception_safety(get_engine());
 }
 

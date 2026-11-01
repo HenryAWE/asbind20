@@ -72,6 +72,15 @@ TEST(Threading, AutoCleanUp)
     EXPECT_EQ(result, 20);
 }
 
+// The armel sysroot (base AAPCS) ships a libstdc++ built without Linux futex
+// support, so std::future/std::async cannot be linked on that ABI.  Keep the
+// test visible (as a skip) instead of breaking the whole test binary.
+#if defined(__arm__) && !defined(__ARM_PCS_VFP)
+TEST(Threading, Async)
+{
+    GTEST_SKIP() << "armel libstdc++ is built without futex support";
+}
+#else
 TEST(Threading, Async)
 {
     ASBIND_TEST_SKIP_IF_NO_THREADS();
@@ -101,3 +110,4 @@ TEST(Threading, Async)
     EXPECT_TRUE(result.valid());
     EXPECT_EQ(result.get(), 42);
 }
+#endif // armel / futex

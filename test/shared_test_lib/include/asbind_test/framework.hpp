@@ -85,6 +85,13 @@ constexpr bool has_address_sanitizer() noexcept
             GTEST_SKIP() << "AS_MAX_PORTABILITY found"; \
     } while(0)
 
+#define ASBIND_TEST_SKIP_IF_NO_EXCEPTIONS()           \
+    do                                                \
+    {                                                 \
+        if(!::asbind20::has_exceptions())             \
+            GTEST_SKIP() << "AS_NO_EXCEPTIONS found"; \
+    } while(0)
+
 #define ASBIND_TEST_SKIP_IF_NO_THREADS()           \
     do                                             \
     {                                              \

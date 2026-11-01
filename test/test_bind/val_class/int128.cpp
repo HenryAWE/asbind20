@@ -3,7 +3,9 @@
 #include <asbind_test/framework.hpp>
 #include <asbind20/asbind.hpp>
 
-#ifdef __GNUC__
+// __int128 is a compiler extension which is not available on every target
+// (e.g. 32-bit ARM has no 128-bit integer type).
+#if defined(__GNUC__) && defined(__SIZEOF_INT128__)
 namespace test_bind
 {
 // Ignoring "ISO C++ does not support '__int128' for 'type name'"

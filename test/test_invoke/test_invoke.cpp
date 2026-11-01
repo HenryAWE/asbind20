@@ -257,6 +257,8 @@ static ::testing::AssertionResult check_result_ex(
 
 TEST(TestInvoke, BadResult)
 {
+    ASBIND_TEST_SKIP_IF_NO_EXCEPTIONS();
+
     using namespace asbind20;
     using asbind_test::result_has_value;
 

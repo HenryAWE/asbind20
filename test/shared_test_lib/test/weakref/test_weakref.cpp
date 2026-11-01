@@ -241,6 +241,8 @@ TEST_F(WeakrefGeneric, HostClass)
 
 TEST_F(WeakrefNative, HostClassException)
 {
+    ASBIND_TEST_SKIP_IF_NO_EXCEPTIONS();
+
     // AngelScript 2.38's x64 native calling convention trampoline cannot
     // unwind the C++ exception thrown by the host weakref flag callback when
     // AddressSanitizer is enabled, so the exception is not translated into a
@@ -253,6 +255,8 @@ TEST_F(WeakrefNative, HostClassException)
 
 TEST_F(WeakrefGeneric, HostClassException)
 {
+    ASBIND_TEST_SKIP_IF_NO_EXCEPTIONS();
+
     test_weakref::register_host_weakref_ex<true>(get_engine());
     test_weakref::check_host_weakref_ex(get_engine());
 }

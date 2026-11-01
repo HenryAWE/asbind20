@@ -1157,8 +1157,18 @@ private:
 #    pragma GCC diagnostic pop
 #endif
 
-    static constexpr std::size_t impl_storage_size =
-        std::max(sizeof(impl_enum), sizeof(impl_object<false>));
+    // The inline storage must be large enough for every implementation
+    static constexpr std::size_t impl_storage_size = std::max({
+            sizeof(impl_enum),
+            sizeof(impl_object<false>),
+            sizeof(impl_primitive<AS_NAMESPACE_QUALIFIER asTYPEID_UINT64>),
+            sizeof(impl_primitive<AS_NAMESPACE_QUALIFIER asTYPEID_DOUBLE>)
+        });
+
+    static_assert(
+        impl_storage_size >= sizeof(impl_primitive<AS_NAMESPACE_QUALIFIER asTYPEID_DOUBLE>),
+        "inline storage must fit the largest primitive implementation"
+    );
 
     alignas(std::max_align_t) std::byte m_impl_data[impl_storage_size];
 

@@ -181,6 +181,8 @@ static void trigger_ex_in_script(asbind20::engine_pointer engine)
 
 TEST(ExceptionCallback, Member)
 {
+    ASBIND_TEST_SKIP_IF_NO_EXCEPTIONS();
+
     using ::testing::_;
 
     auto engine = asbind20::make_script_engine();
@@ -197,6 +199,8 @@ TEST(ExceptionCallback, Member)
 
 TEST(ExceptionCallback, MemberEngineRef)
 {
+    ASBIND_TEST_SKIP_IF_NO_EXCEPTIONS();
+
     using ::testing::_;
 
     auto engine = asbind20::make_script_engine();

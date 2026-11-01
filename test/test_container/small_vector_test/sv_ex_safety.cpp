@@ -5,6 +5,8 @@
 
 TEST(SmallVector, ExceptionSafety)
 {
+    ASBIND_TEST_SKIP_IF_NO_EXCEPTIONS();
+
     using namespace asbind20;
 
     auto engine = make_script_engine();
