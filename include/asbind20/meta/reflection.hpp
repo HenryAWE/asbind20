@@ -64,38 +64,7 @@ consteval std::string_view script_parameter_list_declaration_of_with_calling_con
 consteval bool is_const_method_with_calling_convention(
     std::meta::info func,
     asbind20::detail::call_conv_type conv
-)
-{
-    if(conv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_ASGLOBAL)
-        return false;
-
-    if(conv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL)
-    {
-        if(!std::meta::is_class_member(func))
-            throw std::meta::exception("asCALL_THISCALL requires member function", func);
-        return std::meta::is_const(func);
-    }
-
-    const bool obj_first =
-        conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJFIRST ||
-        conv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJFIRST;
-    const bool obj_last =
-        conv == AS_NAMESPACE_QUALIFIER asCALL_CDECL_OBJLAST ||
-        conv == AS_NAMESPACE_QUALIFIER asCALL_THISCALL_OBJLAST;
-
-    if(!obj_first && !obj_last)
-        return false;
-
-    auto params = std::meta::parameters_of(func);
-    if(params.empty())
-        return false;
-
-    auto param_type = std::meta::type_of(
-        // Prefer OBJFIRST like rest of the library if both are true
-        obj_first ? params.front() : params.back()
-    );
-    return std::meta::is_const(remove_ptrref(param_type));
-}
+);
 
 consteval std::string_view script_return_type_declaration_of(std::meta::info func);
 
