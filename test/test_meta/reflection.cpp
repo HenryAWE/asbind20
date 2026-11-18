@@ -139,6 +139,79 @@ TEST(Reflection, FuncSig)
     );
 }
 
+consteval std::vector<std::meta::info> collect_constructors(
+    std::meta::info cls, std::meta::access_context ctx = std::meta::access_context::current()
+)
+{
+    if(!is_class_type(cls))
+        throw std::meta::exception("must be class", cls);
+
+    auto pred = [](std::meta::info r) -> bool
+    {
+        if(!is_constructor(r))
+            return false;
+        bool spec =
+            is_default_constructor(r) ||
+            is_copy_constructor(r) ||
+            is_move_constructor(r);
+        return !spec;
+    };
+
+    return members_of(cls, ctx) |
+           std::views::filter(pred) |
+           std::ranges::to<std::vector>();
+}
+
+template <typename T>
+consteval std::span<const char* const> collect_ctor_arg_lists()
+{
+    std::vector<std::string> sigs;
+    auto ctors = collect_constructors(dealias(^^T));
+    for(auto i : ctors)
+    {
+        auto p_list = asbind20::meta::script_parameter_list_declaration_of_with_calling_convention(
+            i,
+            AS_NAMESPACE_QUALIFIER asCALL_CDECL
+        );
+        sigs.emplace_back(p_list);
+    }
+
+    std::vector<const char*> sv;
+    for(const auto& s : sigs)
+        sv.push_back(std::define_static_string(s));
+
+    return std::define_static_array(sv);
+}
+
+namespace
+{
+struct ctor_test
+{
+    ctor_test(int);
+    ctor_test(float x, float y);
+    ctor_test([[= asbind20::default_arg("42")]] std::uint8_t u8);
+};
+}
+
+TEST(Reflection, SpecFuncSig)
+{
+    static constexpr auto sigs = collect_ctor_arg_lists<ctor_test>();
+    static_assert(sigs.size() == 3);
+
+    EXPECT_THAT(
+        sigs,
+        ::testing::Contains(::testing::StrEq("int"))
+    );
+    EXPECT_THAT(
+        sigs,
+        ::testing::Contains(::testing::StrEq("float x,float y"))
+    );
+    EXPECT_THAT(
+        sigs,
+        ::testing::Contains(::testing::StrEq("uint8 u8=42"))
+    );
+}
+
 namespace
 {
 int global_fn(int arg)

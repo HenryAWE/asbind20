@@ -260,4 +260,52 @@ TEST(Annotation, ParameterAttributes)
         .function(reflect<^^check_auto_handle>());
 }
 
+namespace
+{
+struct refl_members
+{
+    [[maybe_unused]]
+    void f_a()
+    {}
+
+    [[= asbind20::skip]] [[maybe_unused]]
+    void f_b()
+    {}
+
+    [[maybe_unused]]
+    void f_c()
+    {}
+};
+
+// Test helper
+consteval const char* get_all_str(std::span<const std::meta::info> mems)
+{
+    std::string result;
+    bool first = true;
+    for(const auto& i : mems)
+    {
+        if(!first)
+            result += ",";
+        first = false;
+        if(!std::meta::has_identifier(i))
+            continue;
+        result += asbind20::meta::script_identifier_of(i);
+    }
+
+    return std::define_static_string(result);
+}
+} // namespace
+
+TEST(Annotation, SkippedMembers)
+{
+    EXPECT_THAT(
+        get_all_str(asbind20::meta::registrable_members_of(^^refl_members)),
+        ::testing::HasSubstr("f_a,f_c")
+    );
+    EXPECT_THAT(
+        get_all_str(asbind20::meta::registrable_members_of(^^refl_members)),
+        ::testing::Not(::testing::HasSubstr("f_b"))
+    );
+}
+
 #endif

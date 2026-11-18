@@ -2,6 +2,7 @@
 #define ASBIND20_META_REFLECTION_HPP
 
 #include <cstdint>
+#include <ranges>
 #include "../util/strutil.hpp"
 #include "../utility.hpp"
 #include "refl_common.hpp"
@@ -20,8 +21,39 @@ consteval std::meta::info remove_ptrref(std::meta::info r);
 
 consteval bool has_annotation_with_type(std::meta::info r, std::meta::info ann);
 
+consteval bool is_skipped(std::meta::info r)
+{
+    return has_annotation_with_type(r, ^^annotations::skip_t);
+}
+
 template <typename T>
 consteval std::optional<T> extract_last_annotation(std::meta::info r);
+
+consteval std::vector<std::meta::info> registrable_members_of(
+    std::meta::info r,
+    std::meta::access_context ctx = std::meta::access_context::current()
+)
+{
+    std::vector base =
+        std::meta::members_of(r, ctx) |
+        std::views::filter(std::not_fn(&is_skipped)) |
+        std::ranges::to<std::vector>();
+    if(is_class_type(r))
+    {
+        return base |
+               std::views::filter(
+                   [](std::meta::info v) -> bool
+                   {
+                       bool skip_this = is_static_member(v);
+                       skip_this |= is_move_constructor(v) || is_move_assignment(v);
+                       return !skip_this;
+                   }
+               ) |
+               std::ranges::to<std::vector>();
+    }
+
+    throw std::meta::exception("invalid reflection", r);
+}
 
 consteval std::string_view script_integral_name_of(std::meta::info r);
 

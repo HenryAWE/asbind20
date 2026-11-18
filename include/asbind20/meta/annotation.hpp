@@ -6,6 +6,11 @@
 
 namespace asbind20::inline annotations
 {
+struct skip_t
+{};
+
+inline constexpr skip_t skip{};
+
 struct out_ref_t
 {};
 
