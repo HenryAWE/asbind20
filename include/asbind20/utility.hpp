@@ -375,20 +375,23 @@ constexpr bool is_objhandle(int type_id) noexcept
  * @param engine Script engine
  */
 [[nodiscard]]
-inline int get_script_string_type(
-    const_engine_pointer engine
-)
+inline int get_script_string_type(const_engine_reference engine)
 {
-    if(!engine) [[unlikely]]
-        return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
-
 #if ANGELSCRIPT_VERSION >= 23800
-    int string_t_id = engine->GetStringFactory();
+    int string_t_id = engine.GetStringFactory();
 #else
-    int string_t_id = engine->GetStringFactoryReturnTypeId();
+    int string_t_id = engine.GetStringFactoryReturnTypeId();
 #endif
 
     return string_t_id;
+}
+
+[[nodiscard]]
+inline int get_script_string_type(const_engine_pointer engine)
+{
+    if(!engine) [[unlikely]]
+        return AS_NAMESPACE_QUALIFIER asINVALID_ARG;
+    return get_script_string_type(*engine);
 }
 
 template <script_engine_pointer_like Engine>
@@ -403,12 +406,20 @@ int get_script_string_type(const Engine& engine)
  */
 [[nodiscard]]
 inline bool is_script_string(
+    const_engine_reference engine, int type_id
+)
+{
+    return get_script_string_type(engine) == type_id;
+}
+
+[[nodiscard]]
+inline bool is_script_string(
     const_engine_pointer engine, int type_id
 )
 {
     if(!engine) [[unlikely]]
         return false;
-    return get_script_string_type(engine) == type_id;
+    return is_script_string(*engine, type_id);
 }
 
 template <script_engine_pointer_like Engine>
