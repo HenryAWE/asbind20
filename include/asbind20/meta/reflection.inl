@@ -386,13 +386,13 @@ consteval std::string_view script_function_declaration_of_with_calling_conventio
     if(is_const_method_with_calling_convention(func, conv))
         suffix += "const";
 
-    std::string_view func_identifer =
+    std::string_view func_identifier =
         skip_func_name ? "f" : script_identifier_of(func);
 
     std::string decl = string_concat(
         script_return_type_declaration_of(func),
         ' ',
-        func_identifer,
+        func_identifier,
         '(',
         script_parameter_list_declaration_of_with_calling_convention(
             func, conv
