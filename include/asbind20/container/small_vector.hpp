@@ -1405,6 +1405,10 @@ public:
         }
     }
 
+    small_vector(engine_reference engine, int type_id)
+        : small_vector(std::addressof(engine), type_id)
+    {}
+
     template <script_engine_pointer_like Engine>
     small_vector(const Engine& engine, int type_id)
         : small_vector(engine.get(), type_id)
