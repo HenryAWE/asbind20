@@ -961,10 +961,17 @@ public:
      * @param idx The parameter index of the list. Usually, this should be 0 for ordinary types and 1 for template classes.
      */
     explicit script_init_list_repeat(
+        generic_reference gen,
+        arg_index_type idx = 0
+    )
+        : script_init_list_repeat(*static_cast<void**>(gen.GetAddressOfArg(idx)))
+    {}
+
+    explicit script_init_list_repeat(
         generic_pointer gen,
         arg_index_type idx = 0
     )
-        : script_init_list_repeat(*static_cast<void**>(gen->GetAddressOfArg(idx)))
+        : script_init_list_repeat(*gen, idx)
     {}
 
     script_init_list_repeat& operator=(const script_init_list_repeat&) noexcept = default;
