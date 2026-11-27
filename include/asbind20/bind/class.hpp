@@ -3145,6 +3145,19 @@ public:
           )
     {}
 
+    template <string_like StringLike>
+    basic_value_class(
+        appending_t<true>,
+        engine_reference engine,
+        StringLike&& name
+    )
+        : basic_value_class(
+              appending_t<true>{},
+              std::addressof(engine),
+              util::string_like_to_string(std::forward<StringLike>(name))
+          )
+    {}
+
     template <script_engine_pointer_like Engine, string_like StringLike>
     basic_value_class(
         appending_t<true>,

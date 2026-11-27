@@ -175,6 +175,14 @@ namespace views
                 return tokenize_view(engine, code);
             }
 
+            tokenize_view operator()(
+                const_engine_reference engine,
+                std::string_view code
+            ) const
+            {
+                return tokenize_view(engine, code);
+            }
+
             class proxy
             {
             public:

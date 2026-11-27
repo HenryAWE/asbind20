@@ -424,6 +424,12 @@ public:
         m_ctx = engine->RequestContext();
     }
 
+    explicit reuse_active_context(
+        engine_reference engine, bool propagate_error = true
+    )
+        : reuse_active_context(std::addressof(engine), propagate_error)
+    {}
+
     template <script_engine_pointer_like Engine>
     explicit reuse_active_context(
         const Engine& engine, bool propagate_error = true
@@ -625,6 +631,11 @@ public:
         if(!engine) [[unlikely]]
             return;
         reset(adopt_object, engine->CreateContext());
+    }
+
+    explicit script_context(engine_reference engine)
+    {
+        reset(adopt_object, engine.CreateContext());
     }
 
     template <script_engine_pointer_like Engine>

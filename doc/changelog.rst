@@ -17,6 +17,7 @@ Bug fix
 
 - Fix crash in ``with_cstr`` caused by empty string view.
 - Fix multiple use-after-free.
+- Fix missing reference interfaces.
 
 2.1.1
 -----
