@@ -76,6 +76,22 @@ constexpr bool has_address_sanitizer() noexcept
     return false;
 #endif
 }
+
+// Check if the current translation unit is compiled with ThreadSanitizer
+constexpr bool has_thread_sanitizer() noexcept
+{
+#if defined(__SANITIZE_THREAD__)
+    return true;
+#elif defined(__clang__) && defined(__has_feature)
+#    if __has_feature(thread_sanitizer)
+    return true;
+#    else
+    return false;
+#    endif
+#else
+    return false;
+#endif
+}
 } // namespace asbind_test
 
 #define ASBIND_TEST_SKIP_IF_MAX_PORTABILITY()           \
@@ -111,6 +127,13 @@ constexpr bool has_address_sanitizer() noexcept
     {                                                   \
         if(::asbind_test::has_address_sanitizer())      \
             GTEST_SKIP() << "AddressSanitizer enabled"; \
+    } while(0)
+
+#define ASBIND_TEST_SKIP_IF_THREAD_SANITIZER()         \
+    do                                                 \
+    {                                                  \
+        if(::asbind_test::has_thread_sanitizer())      \
+            GTEST_SKIP() << "ThreadSanitizer enabled"; \
     } while(0)
 
 #define ASBIND_TEST_EXPECT_INVOKE_RESULT(result)              \
