@@ -103,11 +103,13 @@ TEST_F(MTStrFactoryTestNative, RunScript)
             f
         );
     }
+    // Join the threads so that their thread-local cleanup (see
+    // auto_thread_cleanup()) and context destruction complete before the
+    // engine and the contexts go out of scope.
     for(auto& t : threads)
-        t.detach();
+        t.join();
 
-    while(counter.load(std::memory_order_consume) != static_cast<int>(contexts.size()))
-        std::this_thread::yield();
+    EXPECT_EQ(counter.load(), static_cast<int>(contexts.size()));
 }
 
 TEST_F(MTStrFactoryTestGeneric, RunScript)
@@ -132,9 +134,11 @@ TEST_F(MTStrFactoryTestGeneric, RunScript)
             f
         );
     }
+    // Join the threads so that their thread-local cleanup (see
+    // auto_thread_cleanup()) and context destruction complete before the
+    // engine and the contexts go out of scope.
     for(auto& t : threads)
-        t.detach();
+        t.join();
 
-    while(counter.load(std::memory_order_consume) != static_cast<int>(contexts.size()))
-        std::this_thread::yield();
+    EXPECT_EQ(counter.load(), static_cast<int>(contexts.size()));
 }

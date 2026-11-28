@@ -46,9 +46,11 @@ TEST_F(TestArrayNative, ExceptionSafety)
 
     // AngelScript 2.38's x64 native calling convention trampoline cannot
     // unwind the C++ exception thrown by the assignment operator in the
-    // initialization list case when AddressSanitizer is enabled, so the
-    // exception is not translated into a script exception.
+    // initialization list case when sanitizer instrumentation is enabled
+    // (reproduced with AddressSanitizer and ThreadSanitizer + Clang 18), so
+    // the exception is not translated into a script exception.
     ASBIND_TEST_SKIP_IF_ADDRESS_SANITIZER();
+    ASBIND_TEST_SKIP_IF_THREAD_SANITIZER();
 
     test_script_array::check_exception_safety(get_engine());
 }

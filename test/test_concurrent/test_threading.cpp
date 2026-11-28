@@ -62,14 +62,22 @@ TEST(Threading, AutoCleanUp)
     };
 
     std::thread thr(helper, 10);
-    EXPECT_EQ(result, -1);
-    thr.detach();
     {
+        // Wait for the helper to finish, then join it before the condition
+        // variable, the engine and the other stack objects go out of scope.
+        // Detaching the thread would let it outlive this test and race with
+        // their destruction.
         std::unique_lock lock(mx);
-        std::cv_status st = cv.wait_until(lock, std::chrono::system_clock::now() + 10s);
-        EXPECT_EQ(st, std::cv_status::no_timeout);
+        bool done = cv.wait_until(
+            lock,
+            std::chrono::system_clock::now() + 10s,
+            [&result]()
+            { return result == 20; }
+        );
+        EXPECT_TRUE(done);
+        EXPECT_EQ(result, 20);
     }
-    EXPECT_EQ(result, 20);
+    thr.join();
 }
 
 // The armel sysroot (base AAPCS) ships a libstdc++ built without Linux futex
