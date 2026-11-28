@@ -1,0 +1,19 @@
+# ThreadSanitizer suppressions for the asbind20 test suite.
+#
+# Usage:
+#   TSAN_OPTIONS="suppressions=$PWD/ci/tsan.supp" ctest --output-on-failure
+#
+# The suppressed reports come from the AngelScript dependency, not from
+# asbind20 itself.
+#
+# asCScriptFunction::AddRef()/Release() (as_scriptfunction.cpp) contain a
+# non-atomic write of the one-byte `gcFlag` member next to the atomic external
+# reference count. Preparing/invoking the same script function from several
+# threads at once (as MTStrFactoryTest* does) therefore makes those writes
+# race. This is an upstream issue that still exists in AngelScript 2.40.0 WIP;
+# the write is a plain store of `false`, but it is still undefined behaviour.
+#
+# Remove these entries once upstream AngelScript makes `gcFlag` atomic or
+# removes the write.
+race:asCScriptFunction::AddRef
+race:asCScriptFunction::Release
